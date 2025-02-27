@@ -60,6 +60,7 @@ pub struct RustIRPGNode {
     layer_id: i32,
     node_id: i32,
     is_instance_pin: bool,
+    node_name: *const c_char,
 }
 
 /// IR PG edge of the PG netlist.

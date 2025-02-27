@@ -468,6 +468,11 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMapWithGPU(
 }
 #endif
 
+/**
+ * @brief build pg net wire topology.
+ * 
+ * @return unsigned 
+ */
 unsigned PowerEngine::buildPGNetWireTopo() {
   auto* idb_adapter =
       dynamic_cast<ista::TimingIDBAdapter*>(_timing_engine->get_db_adapter());
@@ -490,12 +495,12 @@ unsigned PowerEngine::buildPGNetWireTopo() {
     return idb_adapter->getResistance(layer_id, wire_length, width);
   };
 
-  IRPGNetlistBuilder pg_netlist_builder;
-  pg_netlist_builder.build(vdd_net, calc_resistance);
-  pg_netlist_builder.createRustPGNetlist();
-  pg_netlist_builder.createRustRCData();
+  
+  _pg_netlist_builder.build(vdd_net, calc_resistance);
+  _pg_netlist_builder.createRustPGNetlist();
+  _pg_netlist_builder.createRustRCData();
 
-  auto* rc_data = pg_netlist_builder.get_rust_rc_data();
+  auto* rc_data = _pg_netlist_builder.get_rust_rc_data();
 
   _ipower->set_rust_pg_rc_data(rc_data);
 

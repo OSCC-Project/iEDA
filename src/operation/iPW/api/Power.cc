@@ -818,18 +818,21 @@ unsigned Power::runCompleteFlow() {
  * @return unsigned 
  */
 unsigned Power::runIRAnalysis() {
-  std::vector<IRInstancePower> instance_power_data =  getInstancePowerData();
 
-  iIR ir_analysis;
-  ir_analysis.init();
-  ir_analysis.setInstancePowerData(std::move(instance_power_data));
+  _ir_analysis.init();
+
+  // set power data.
+  std::vector<IRInstancePower> instance_power_data =  getInstancePowerData();  
+  _ir_analysis.setInstancePowerData(std::move(instance_power_data));
   
   // const char* spef_file_path = "/home/taosimin/ir_example/aes/aes_vdd_vss.spef";
   // ir_analysis.readSpef(spef_file_path);
+  
+  // set rc data.
+  _ir_analysis.set_rc_data(_rust_pg_rc_data);
 
-  ir_analysis.set_rc_data(_rust_pg_rc_data);
-
-  ir_analysis.solveIRDrop("VDD");
+  // calc ir drop.
+  _ir_analysis.solveIRDrop("VDD");
 
   return 1;
 }

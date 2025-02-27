@@ -70,17 +70,19 @@ class IRPGNode {
 
   void set_node_id(unsigned id) { _node_id = id; }
   auto get_node_id() const { return _node_id; }
-
   void set_is_instance_pin() { _is_instance_pin = true; }
   bool is_instance_pin() const { return _is_instance_pin; }
+
+  void set_node_name(const char* name) { _node_name = name; }
+  auto get_node_name() const { return _node_name; }
 
  private:
   IRNodeCoord _coord;  //!< The coord of the node.
   int _layer_id;       //!< The layer id of the node.
-
   int _node_id = -1; //!< The node id of the pg nodes.
-
   bool _is_instance_pin = false; //!< The node is instance VDD/GND.
+  const char* _node_name = nullptr; //!< The name of the node.
+
 };
 
 /**
@@ -112,12 +114,13 @@ class IRPGEdge {
   auto& get_node2() const { return _node2; }
 
   void set_resistance(double resistance) { _resistance = resistance; }
+  double get_resistance() const { return _resistance; }
 
  private:
   int64_t _node1;  //!< The first node id.
   int64_t _node2;  //!< The second node id.
 
-  double _resistance = 0.0;
+  double _resistance = 0.0; //!< The edge resistance.
 };
 
 /**
@@ -171,12 +174,22 @@ class IRPGNetlist {
   auto& get_edges() { return _edges; }
   auto getEdgeNum() { return _edges.size(); }
 
+  void addNodeIdToName(unsigned node_id, std::string name) {
+    _node_id_to_name[node_id] = std::move(name);
+  }
+  auto& get_node_id_to_name() { return _node_id_to_name; }
+  auto& getNodeName(unsigned node_id) {
+    return _node_id_to_name[node_id];
+  }
+
   void printToYaml(std::string yaml_path);
 
  private:
   std::list<IRPGNode> _nodes;  //!< The nodes of the netlist.
   std::vector<IRPGNode*> _nodes_image; //!< The nodes image for fast access.
   std::vector<IRPGEdge> _edges;  //!< The edges of the netlist.
+
+  std::map<unsigned, std::string> _node_id_to_name; //!< The node id to node name.
 
   std::string _net_name;
 };

@@ -268,9 +268,16 @@ pub fn create_rc_data_from_topo(pg_netlist: &RustIRPGNetlist) -> RCOneNetData {
 
     for pg_node in pg_netlist.nodes.iter() {
         let node_id = pg_node.node_id;
-        let node_name = format!("{}:{}", net_name, node_id);
-        let rc_node = RCNode::new(node_name);
-        one_net_data.add_node(rc_node);
+        if pg_node.is_instance_pin {
+            let node_name = c_str_to_r_str(pg_node.node_name);
+            let mut rc_node = RCNode::new(node_name);
+            rc_node.set_is_inst_pin();
+            one_net_data.add_node(rc_node);
+        } else {
+            let node_name = format!("{}:{}", net_name, node_id);
+            let rc_node = RCNode::new(node_name);
+            one_net_data.add_node(rc_node);
+        }
     }
 
     for pg_edge in pg_netlist.edges.iter() {

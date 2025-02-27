@@ -94,6 +94,8 @@ class PowerEngine {
   Power *_ipower = nullptr;
   ista::TimingEngine *_timing_engine = nullptr;
 
+  IRPGNetlistBuilder _pg_netlist_builder;
+
   // Singleton power engine.
   static PowerEngine *_power_engine;
   FORBIDDEN_COPY(PowerEngine);

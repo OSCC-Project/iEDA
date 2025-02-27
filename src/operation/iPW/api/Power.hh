@@ -148,6 +148,7 @@ class Power {
   std::map<PwrGroupData::PwrGroupType, std::vector<PwrGroupData*>>
       _type_to_group_data;  //!< The mapping of type to group data.
 
+  iIR _ir_analysis;
   const void* _rust_pg_rc_data; //!< The rust power/ground rc data.
 
   static Power* _power;

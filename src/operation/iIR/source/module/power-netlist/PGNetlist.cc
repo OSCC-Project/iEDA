@@ -130,7 +130,7 @@ std::vector<BGSegment> IRPGNetlistBuilder::buildBGSegments(
 void IRPGNetlistBuilder::build(
     idb::IdbSpecialNet* special_net,
     std::function<double(unsigned, unsigned)> calc_resistance) {
-  IRPGNetlist pg_netlist;
+  IRPGNetlist& pg_netlist = _pg_netlists.emplace_back();
   pg_netlist.set_net_name(special_net->get_net_name());
 
   unsigned line_segment_num = 0;
@@ -245,6 +245,12 @@ void IRPGNetlistBuilder::build(
         instance_pin_layer));
     instance_pin_node->set_is_instance_pin();
 
+    std::string node_name = instance_pin->get_instance()->get_name() + ":" +
+                            instance_pin->get_pin_name();    
+    pg_netlist.addNodeIdToName(instance_pin_node->get_node_id(), std::move(node_name));
+    auto& stored_node_name = pg_netlist.getNodeName(instance_pin_node->get_node_id());
+    instance_pin_node->set_node_name(stored_node_name.c_str());
+
     for (auto* via_segment_node : via_segment_nodes) {
       // via should be on the same row with the instance pin.
       if (via_segment_node->get_coord().second == instance_pin_coord->get_y()) {
@@ -261,7 +267,7 @@ void IRPGNetlistBuilder::build(
   // for debug.
   // pg_netlist.printToYaml("/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml");
 
-  _pg_netlists.emplace_back(std::move(pg_netlist));
+  
 }
 
 /**
