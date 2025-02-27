@@ -91,14 +91,6 @@ void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLay
           for (auto j : result) {
             namespace bg = boost::geometry;
             auto wire2 = wire_list[j.second];
-            if (bg::intersects(wire_rect, j.first)) {
-              std::cout << "Boxes intersect" << std::endl;
-            }
-
-            // 判断是否仅接触
-            if (bg::touches(wire_rect, j.first)) {
-              std::cout << "Boxes touch" << std::endl;
-            }
             wire_polyset += wire2;
           }
           if (wire_polyset.empty()) {
@@ -147,25 +139,13 @@ void DrcConditionManager::checkSpacingTable(std::string layer, DrcEngineLayout* 
         for (int i = 0; i < wire_list.size(); i++) {
           ieda_solver::GeometryPolygonSet expand_wire;
           expand_wire += wire_list[i];
+          wire_set += wire_list[i];
           ieda_solver::bloat(expand_wire, direction, expand_size);
           auto wire_with_jogs = prl_polygon_map_t[i];
           auto expand_region = expand_wire - wire_with_jogs;
           check_region += expand_region;
         }
-        // auto wire_with_jogs = prl_polygon_map[width_idx];
-#ifdef DEBUG
-        auto wire_with_jogs = layer_polyset;
-        // FIXME: THIS STEP IS RUNTIME EXPENSIVE
-        ieda_solver::get_interact(wire_with_jogs, wire_set);
-        auto wire_with_jogs = prl_polygon_map[width_idx];
-        ieda_solver::GeometryPolygonSet xor_check = wire_set_interact_test ^ wire_with_jogs;
-        std::vector<ieda_solver::GeometryRect> xor_check_list;
-        gtl::get_rectangles(xor_check_list, xor_check);
-        if (xor_check_list.size() > 0) {
-          printf("Debug: wire_with_jogs and wire_set have intersection\n");
-        }
-#endif
-
+        check_region = check_region & layer_polyset;
         std::vector<ieda_solver::GeometryRect> check_region_rects;
         ieda_solver::gtl::get_rectangles(check_region_rects, check_region);
 
