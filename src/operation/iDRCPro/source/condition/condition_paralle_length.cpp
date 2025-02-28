@@ -49,9 +49,12 @@ void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLay
     std::vector<ieda_solver::GeometryRect> wire_list;
     boost::polygon::get_max_rectangles(wire_list, sub_layout->get_engine()->get_polyset());  // layout->get_layout_engine()->getWires();
     bg::index::rtree<std::pair<ieda_solver::BgRect, int>, bg::index::quadratic<16>> wireRTree;
-    for (int i = 0; i < wire_list.size(); i++) {
-      ieda_solver::BgRect rtree_rect(ieda_solver::BgPoint(boost::polygon::xl(wire_list[i]), boost::polygon::yl(wire_list[i])),
-                                     ieda_solver::BgPoint(boost::polygon::xh(wire_list[i]), boost::polygon::yh(wire_list[i])));
+    std::vector<ieda_solver::GeometryRect> wire_rect_list;
+    sub_layout->get_engine()->get_polyset().get(wire_rect_list);
+    for (int i = 0; i < wire_rect_list.size(); i++) {
+      auto rect_tmp = wire_rect_list[i];
+      ieda_solver::BgRect rtree_rect(ieda_solver::BgPoint(boost::polygon::xl(rect_tmp), boost::polygon::yl(rect_tmp)),
+                                     ieda_solver::BgPoint(boost::polygon::xh(rect_tmp), boost::polygon::yh(rect_tmp)));
       wireRTree.insert(std::make_pair(rtree_rect, i));
     }
 
@@ -60,8 +63,8 @@ void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLay
       auto wire_direction = ieda_solver::getWireDirection(wire);
       auto width_direction = wire_direction.get_perpendicular();
       int wire_width = ieda_solver::getWireWidth(wire, width_direction);
-      ieda_solver::BgRect wire_rect(ieda_solver::BgPoint(boost::polygon::xl(wire_list[i]), boost::polygon::yl(wire_list[i])),
-                                    ieda_solver::BgPoint(boost::polygon::xh(wire_list[i]), boost::polygon::yh(wire_list[i])));
+      // ieda_solver::BgRect wire_rect(ieda_solver::BgPoint(boost::polygon::xl(wire_list[i]), boost::polygon::yl(wire_list[i])),
+      //                               ieda_solver::BgPoint(boost::polygon::xh(wire_list[i]), boost::polygon::yh(wire_list[i])));
 
       ieda_solver::BgRect rtree_rect(ieda_solver::BgPoint(boost::polygon::xl(wire_list[i]) - 1, boost::polygon::yl(wire_list[i]) - 1),
                                      ieda_solver::BgPoint(boost::polygon::xh(wire_list[i]) + 1, boost::polygon::yh(wire_list[i]) + 1));
@@ -90,7 +93,7 @@ void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLay
           ieda_solver::GeometryPolygonSet wire_polyset;
           for (auto j : result) {
             namespace bg = boost::geometry;
-            auto wire2 = wire_list[j.second];
+            auto wire2 = wire_rect_list[j.second];
             wire_polyset += wire2;
           }
           if (wire_polyset.empty()) {
