@@ -15,6 +15,8 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
+#include <vector>
+
 #include "condition_manager.h"
 #include "engine_layout.h"
 #include "idm.h"
@@ -78,10 +80,9 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
 
   /// check polygon self
   {
-    auto& origin_polygons = layout->get_layout_engine()->getLayoutPolygons();  /// copy polyset
-    for (auto& origin_polygon : origin_polygons) {
+    for (auto& [net_id, sub_layout] : layout->get_sub_layouts()) {
       ieda_solver::GeometryPolygonSet origin_polyset;
-      origin_polyset += origin_polygon;
+      origin_polyset += sub_layout->get_engine()->get_polyset();
       origin_polyset.clean();  /// eliminate overlaps
 
       for (auto direction : {ieda_solver::HORIZONTAL, ieda_solver::VERTICAL}) {
@@ -132,7 +133,6 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
   }
   // DEBUGOUTPUT(DEBUGHIGHLIGHT("Min Spacing:\t") << violation_num << "\tresults = " << results.size()
   //                                              << "\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta());
-
 }
 
 }  // namespace idrc
