@@ -357,9 +357,9 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
         buildOrientNetMap(dr_box);
         exemptPinShape(dr_box);
         // debugCheckDRBox(dr_box);
-        // debugPlotDRBox(dr_box, -1, "before");
+        // debugPlotDRBox(dr_box, "before");
         routeDRBox(dr_box);
-        // debugPlotDRBox(dr_box, -1, "after");
+        // debugPlotDRBox(dr_box, "after");
       }
       selectBestResult(dr_box);
       freeDRBox(dr_box);
@@ -2314,7 +2314,7 @@ void DetailedRouter::debugCheckDRBox(DRBox& dr_box)
   }
 }
 
-void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag)
+void DetailedRouter::debugPlotDRBox(DRBox& dr_box, std::string flag)
 {
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::string& dr_temp_directory_path = RTDM.getConfig().dr_temp_directory_path;
@@ -2635,15 +2635,13 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::s
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
     GPStruct task_struct(RTUTIL.getString("task(net_", dr_task->get_net_idx(), ")"));
 
-    if (curr_task_idx == -1 || dr_task->get_net_idx() == curr_task_idx) {
-      for (DRGroup& dr_group : dr_task->get_dr_group_list()) {
-        for (LayerCoord& coord : dr_group.get_coord_list()) {
-          GPBoundary gp_boundary;
-          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kKey));
-          gp_boundary.set_rect(RTUTIL.getEnlargedRect(coord, point_size));
-          gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(coord.get_layer_idx()));
-          task_struct.push(gp_boundary);
-        }
+    for (DRGroup& dr_group : dr_task->get_dr_group_list()) {
+      for (LayerCoord& coord : dr_group.get_coord_list()) {
+        GPBoundary gp_boundary;
+        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kKey));
+        gp_boundary.set_rect(RTUTIL.getEnlargedRect(coord, point_size));
+        gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(coord.get_layer_idx()));
+        task_struct.push(gp_boundary);
       }
     }
     {

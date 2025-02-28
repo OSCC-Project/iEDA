@@ -146,7 +146,7 @@ class PinAccessor
 #if 1  // debug
   void debugPlotPAModel(PAModel& pa_model, std::string flag);
   void debugCheckPABox(PABox& pa_box);
-  void debugPlotPABox(PABox& pa_box, int32_t curr_task_idx, std::string flag);
+  void debugPlotPABox(PABox& pa_box,  std::string flag);
 #endif
 };
 

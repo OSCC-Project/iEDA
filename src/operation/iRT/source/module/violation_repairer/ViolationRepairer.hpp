@@ -71,14 +71,15 @@ class ViolationRepairer
   void buildGraphShapeMap(VRBox& vr_box);
   void routeVRBox(VRBox& vr_box);
   void initSingleTask(VRBox& vr_box, ViolationType& violation_type);
-  void routeBySameLayerCutSpacing(VRBox& vr_box);
-  void routeByParallelRunLengthSpacing(VRBox& vr_box);
-  void routeByMinimumArea(VRBox& vr_box);
-  bool isSolved(VRBox& vr_box);
+  std::vector<VRSolution> getVRSolutionList(VRBox& vr_box, ViolationType& violation_type);
+  void routeBySameLayerCutSpacing(VRBox& vr_box, std::vector<VRSolution>& vr_solution_list);
+  void routeByParallelRunLengthSpacing(VRBox& vr_box, std::vector<VRSolution>& vr_solution_list);
+  void routeByMinimumArea(VRBox& vr_box, std::vector<VRSolution>& vr_solution_list);
+  VRSolution getNewSolution(VRBox& vr_box);
+  void updateCurrResultList(VRBox& vr_box, VRSolution& vr_solution);
   void updateCurrViolationList(VRBox& vr_box);
   std::vector<Violation> getHybridNetViolationList(VRBox& vr_box);
   void updateCurrSolvedStatus(VRBox& vr_box);
-  void resetResult(VRBox& vr_box);
   void updateTaskResult(VRBox& vr_box);
   void updateTaskPatch(VRBox& vr_box);
   void updateViolationList(VRBox& vr_box);
@@ -113,7 +114,7 @@ class ViolationRepairer
 #if 1  // debug
   void debugPlotVRModel(VRModel& vr_model, std::string flag);
   void debugCheckVRBox(VRBox& vr_box);
-  void debugPlotVRBox(VRBox& vr_box, int32_t curr_task_idx, std::string flag);
+  void debugPlotVRBox(VRBox& vr_box, std::string flag);
 #endif
 };
 
