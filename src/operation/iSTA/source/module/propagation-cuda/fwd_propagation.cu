@@ -214,7 +214,16 @@ void copy_to_host_graph(GPU_Graph& the_host_graph, GPU_Graph& the_device_graph,
     cudaStreamDestroy(stream[index]);
   }
 
-  // TODO(to taosimin) free the gpu memory.
+  cudaFree(the_device_graph._vertices);
+  cudaFree(the_device_graph._arcs);
+  cudaFree(the_device_graph._flatten_slew_data);
+  cudaFree(the_device_graph._flatten_at_data);
+  cudaFree(the_device_graph._flatten_node_cap_data);
+  cudaFree(the_device_graph._flatten_node_delay_data);
+  cudaFree(the_device_graph._flatten_node_impulse_data);
+  cudaFree(the_device_graph._flatten_arc_delay_data);
+
+  CUDA_CHECK_ERROR();
   CUDA_LOG_INFO("copy to host graph end");
   CUDA_PROF_END(0, "gpu data copy to host");
 }
