@@ -174,28 +174,53 @@ void DrcConditionManager::checkSpacingTable(std::string layer, DrcEngineLayout* 
         std::vector<ieda_solver::GeometryRect> check_region_rects;
         ieda_solver::gtl::get_rectangles(check_region_rects, check_region);
 
-        ieda_solver::GeometryPolygonSet violation_region_set;
-        for (auto& rect : check_region_rects) {
-          int length = ieda_solver::getWireWidth(rect, direction);
-          int prl = ieda_solver::getWireWidth(rect, direction.get_perpendicular());
+        if (is_corner) {
+          ieda_solver::GeometryPolygonSet violation_region_set;
+          for (auto& rect : check_region_rects) {
+            int length = ieda_solver::getWireWidth(rect, direction);
+            int prl = ieda_solver::getWireWidth(rect, direction.get_perpendicular());
 
-          ieda_solver::bloat(rect, direction, expand_size - length + 1);
-          violation_region_set += rect;
+            ieda_solver::bloat(rect, direction, expand_size - length);
+            ieda_solver::bloat(rect, direction.get_perpendicular(), expand_size - prl);
+
+            violation_region_set += rect;
+          }
+          ieda_solver::GeometryPolygonSet touch_wire_region(violation_region_set - check_region);
+          ieda_solver::get_interact(touch_wire_region, wire_set);
+          touch_wire_region = touch_wire_region - wire_set;
+          std::vector<ieda_solver::GeometryRect> current_violations;
+          touch_wire_region.get(current_violations);
+
+          DEBUGOUTPUT(DEBUGHIGHLIGHT("PRL Spacing violations:\t") << current_violations.size());
+
+          for (auto& rect : current_violations) {
+            addViolation(rect, layer, ViolationEnumType::kPRLSpacing);
+          }
+          prl_count += current_violations.size();
+
+        } else {
+          ieda_solver::GeometryPolygonSet violation_region_set;
+          for (auto& rect : check_region_rects) {
+            int length = ieda_solver::getWireWidth(rect, direction);
+            int prl = ieda_solver::getWireWidth(rect, direction.get_perpendicular());
+
+            ieda_solver::bloat(rect, direction, expand_size - length + 1);
+            violation_region_set += rect;
+          }
+          ieda_solver::GeometryPolygonSet touch_wire_region(violation_region_set - check_region);
+          ieda_solver::get_interact(touch_wire_region, wire_set);
+          touch_wire_region = touch_wire_region - wire_set;
+
+          std::vector<ieda_solver::GeometryRect> current_violations;
+          touch_wire_region.get(current_violations);
+
+          DEBUGOUTPUT(DEBUGHIGHLIGHT("PRL Spacing violations:\t") << current_violations.size());
+
+          for (auto& rect : current_violations) {
+            addViolation(rect, layer, ViolationEnumType::kPRLSpacing);
+          }
+          prl_count += current_violations.size();
         }
-
-        ieda_solver::GeometryPolygonSet touch_wire_region(violation_region_set - check_region);
-        ieda_solver::get_interact(touch_wire_region, wire_set);
-        touch_wire_region = touch_wire_region - wire_set;
-
-        std::vector<ieda_solver::GeometryRect> current_violations;
-        touch_wire_region.get(current_violations);
-
-        DEBUGOUTPUT(DEBUGHIGHLIGHT("PRL Spacing violations:\t") << current_violations.size());
-
-        for (auto& rect : current_violations) {
-          addViolation(rect, layer, ViolationEnumType::kPRLSpacing);
-        }
-        prl_count += current_violations.size();
       };
 
       check_by_direction(ieda_solver::HORIZONTAL, false);
