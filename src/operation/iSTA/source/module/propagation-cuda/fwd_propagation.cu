@@ -214,6 +214,9 @@ void copy_to_host_graph(GPU_Graph& the_host_graph, GPU_Graph& the_device_graph,
     cudaStreamDestroy(stream[index]);
   }
 
+  CUDA_LOG_INFO("copy to host graph end");
+  CUDA_PROF_END(0, "gpu data copy to host");
+
   cudaFree(the_device_graph._vertices);
   cudaFree(the_device_graph._arcs);
   cudaFree(the_device_graph._flatten_slew_data);
@@ -224,8 +227,7 @@ void copy_to_host_graph(GPU_Graph& the_host_graph, GPU_Graph& the_device_graph,
   cudaFree(the_device_graph._flatten_arc_delay_data);
 
   CUDA_CHECK_ERROR();
-  CUDA_LOG_INFO("copy to host graph end");
-  CUDA_PROF_END(0, "gpu data copy to host");
+
 }
 
 /**
