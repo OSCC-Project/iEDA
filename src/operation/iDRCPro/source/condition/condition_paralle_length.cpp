@@ -60,6 +60,7 @@ void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLay
       wireRTree.insert(std::make_pair(rtree_rect, i));
       // whole_wire_polyset += rect_tmp;
     }
+
     // auto check_xor = whole_wire_polyset ^ sub_layout->get_engine()->get_polyset();
     // std::vector<ieda_solver::GeometryRect> check_rect_list;
     // boost::polygon::get_rectangles(check_rect_list, check_xor);
@@ -103,7 +104,7 @@ void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLay
             auto wire2 = wire_list[j.second];
             wire_polyset += wire2;
           }
-          wire_polyset.clean();
+          // wire_polyset.clean();
           if (wire_polyset.empty()) {
             continue;
           }
