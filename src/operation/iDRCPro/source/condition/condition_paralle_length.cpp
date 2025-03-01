@@ -138,24 +138,37 @@ void DrcConditionManager::checkSpacingTable(std::string layer, DrcEngineLayout* 
     } else {
       prl_length_list[0] = 0;
     }
-
+    // FIXME: prl only support 2 length
     for (auto& [width_idx, wire_list] : prl_wire_map) {
       int prl_idx = width_idx - 1;
       int expand_size = idb_spacing_array[width_idx][prl_length_list.size() - 1];
       int required_prl = prl_length_list[prl_idx];
       auto& prl_polygon_map_t = prl_polygon_map[width_idx];
 
-      auto check_by_direction = [&](ieda_solver::GeometryOrientation direction) {
+      auto check_by_direction = [&](ieda_solver::GeometryOrientation direction, bool is_corner) {
         ieda_solver::GeometryPolygonSet wire_set;
         ieda_solver::GeometryPolygonSet check_region;
         for (int i = 0; i < wire_list.size(); i++) {
           ieda_solver::GeometryPolygonSet expand_wire;
           expand_wire += wire_list[i];
           wire_set += wire_list[i];
-          ieda_solver::bloat(expand_wire, direction, expand_size);
           auto wire_with_jogs = prl_polygon_map_t[i];
-          auto expand_region = expand_wire - wire_with_jogs;
-          check_region += expand_region;
+          if (!is_corner) {
+            ieda_solver::bloat(expand_wire, direction, expand_size);
+            auto expand_region = expand_wire - wire_with_jogs;
+            check_region += expand_region;
+          } else {
+            ieda_solver::GeometryPolygonSet p_1 = expand_wire;
+            ieda_solver::bloat(p_1, ieda_solver::HORIZONTAL, expand_size);
+            ieda_solver::GeometryPolygonSet p_2 = expand_wire;
+            ieda_solver::bloat(p_2, ieda_solver::VERTICAL, expand_size);
+            ieda_solver::bloat(expand_wire, ieda_solver::VERTICAL, expand_size);
+            ieda_solver::bloat(expand_wire, ieda_solver::HORIZONTAL, expand_size);
+            auto expand_region = expand_wire - p_1;
+            auto expand_region2 = expand_region - p_2;
+            auto expand_region3 = expand_region2 - wire_with_jogs;
+            check_region += expand_region3;
+          }
         }
         check_region = check_region & layer_polyset;
         std::vector<ieda_solver::GeometryRect> check_region_rects;
@@ -165,14 +178,14 @@ void DrcConditionManager::checkSpacingTable(std::string layer, DrcEngineLayout* 
         for (auto& rect : check_region_rects) {
           int length = ieda_solver::getWireWidth(rect, direction);
           int prl = ieda_solver::getWireWidth(rect, direction.get_perpendicular());
-          if (prl > required_prl && length <= expand_size) {
-            ieda_solver::bloat(rect, direction, expand_size - length);
-            violation_region_set += rect;
-          }
+
+          ieda_solver::bloat(rect, direction, expand_size - length + 1);
+          violation_region_set += rect;
         }
 
         ieda_solver::GeometryPolygonSet touch_wire_region(violation_region_set - check_region);
         ieda_solver::get_interact(touch_wire_region, wire_set);
+        touch_wire_region = touch_wire_region - wire_set;
 
         std::vector<ieda_solver::GeometryRect> current_violations;
         touch_wire_region.get(current_violations);
@@ -185,8 +198,9 @@ void DrcConditionManager::checkSpacingTable(std::string layer, DrcEngineLayout* 
         prl_count += current_violations.size();
       };
 
-      check_by_direction(ieda_solver::HORIZONTAL);
-      check_by_direction(ieda_solver::VERTICAL);
+      check_by_direction(ieda_solver::HORIZONTAL, false);
+      check_by_direction(ieda_solver::VERTICAL, false);
+      check_by_direction(ieda_solver::VERTICAL, true);
     }
   }
   DEBUGOUTPUT(DEBUGHIGHLIGHT("PRL Spacing:\t") << prl_count << "\ttime = " << states.elapsedRunTime()

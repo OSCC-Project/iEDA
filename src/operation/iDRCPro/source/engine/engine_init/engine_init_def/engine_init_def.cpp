@@ -67,21 +67,11 @@ void DrcEngineInitDef::initDataFromInstances()
       continue;
     }
     /// obs
-    if (!idb_inst->get_cell_master()->is_block()) {
-      /// instance pins
-      for (auto* idb_pin : idb_inst->get_pin_list()->get_pin_list()) {
-        initDataFromPin(idb_pin);
-      }
-      // for (auto* idb_obs : idb_inst->get_obs_box_list()) {
-      //   initDataFromShape(idb_obs, NET_ID_OBS);
-      // }
-    } else {
-      for (auto* idb_pin : idb_inst->get_pin_list()->get_pin_list()) {
-        initDataFromPin(idb_pin);
-      }
-      for (auto* idb_obs : idb_inst->get_obs_box_list()) {
-        initDataFromShape(idb_obs, NET_ID_OBS);
-      }
+    for (auto* idb_pin : idb_inst->get_pin_list()->get_pin_list()) {
+      initDataFromPin(idb_pin);
+    }
+    for (auto* idb_obs : idb_inst->get_obs_box_list()) {
+      initDataFromShape(idb_obs, NET_ID_OBS);
     }
 
     number++;
