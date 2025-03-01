@@ -15,6 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
+#include <cassert>
 #include <cstdio>
 
 #include "condition_manager.h"
@@ -49,14 +50,20 @@ void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLay
     std::vector<ieda_solver::GeometryRect> wire_list;
     boost::polygon::get_max_rectangles(wire_list, sub_layout->get_engine()->get_polyset());  // layout->get_layout_engine()->getWires();
     bg::index::rtree<std::pair<ieda_solver::BgRect, int>, bg::index::quadratic<16>> wireRTree;
-    std::vector<ieda_solver::GeometryRect> wire_rect_list;
-    sub_layout->get_engine()->get_polyset().get(wire_rect_list);
-    for (int i = 0; i < wire_rect_list.size(); i++) {
-      auto rect_tmp = wire_rect_list[i];
+    // std::vector<ieda_solver::GeometryRect> wire_rect_list;
+    // boost::polygon::get_rectangles(wire_rect_list, sub_layout->get_engine()->get_polyset());
+    // ieda_solver::GeometryPolygonSet whole_wire_polyset;
+    for (int i = 0; i < wire_list.size(); i++) {
+      auto rect_tmp = wire_list[i];
       ieda_solver::BgRect rtree_rect(ieda_solver::BgPoint(boost::polygon::xl(rect_tmp), boost::polygon::yl(rect_tmp)),
                                      ieda_solver::BgPoint(boost::polygon::xh(rect_tmp), boost::polygon::yh(rect_tmp)));
       wireRTree.insert(std::make_pair(rtree_rect, i));
+      // whole_wire_polyset += rect_tmp;
     }
+    // auto check_xor = whole_wire_polyset ^ sub_layout->get_engine()->get_polyset();
+    // std::vector<ieda_solver::GeometryRect> check_rect_list;
+    // boost::polygon::get_rectangles(check_rect_list, check_xor);
+    // assert(check_rect_list.empty() == true);
 
     for (int i = 0; i < wire_list.size(); i++) {
       auto wire = wire_list[i];
@@ -93,9 +100,10 @@ void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLay
           ieda_solver::GeometryPolygonSet wire_polyset;
           for (auto j : result) {
             namespace bg = boost::geometry;
-            auto wire2 = wire_rect_list[j.second];
+            auto wire2 = wire_list[j.second];
             wire_polyset += wire2;
           }
+          wire_polyset.clean();
           if (wire_polyset.empty()) {
             continue;
           }
