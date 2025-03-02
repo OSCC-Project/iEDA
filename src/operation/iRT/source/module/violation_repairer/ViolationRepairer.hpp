@@ -72,9 +72,9 @@ class ViolationRepairer
   void routeVRBox(VRBox& vr_box);
   void initSingleTask(VRBox& vr_box, ViolationType& violation_type);
   std::vector<VRSolution> getVRSolutionList(VRBox& vr_box, ViolationType& violation_type);
-  void routeBySameLayerCutSpacing(VRBox& vr_box, std::vector<VRSolution>& vr_solution_list);
-  void routeByParallelRunLengthSpacing(VRBox& vr_box, std::vector<VRSolution>& vr_solution_list);
-  void routeByMinimumArea(VRBox& vr_box, std::vector<VRSolution>& vr_solution_list);
+  std::vector<VRSolution> routeBySameLayerCutSpacing(VRBox& vr_box);
+  std::vector<VRSolution> routeByParallelRunLengthSpacing(VRBox& vr_box);
+  std::vector<VRSolution> routeByMinimumArea(VRBox& vr_box);
   VRSolution getNewSolution(VRBox& vr_box);
   void updateCurrResultList(VRBox& vr_box, VRSolution& vr_solution);
   void updateCurrViolationList(VRBox& vr_box);
@@ -92,6 +92,11 @@ class ViolationRepairer
   void uploadNetResult(VRModel& vr_model);
   void uploadNetPatch(VRModel& vr_model);
   bool stopIteration(VRModel& vr_model);
+
+#if 1  // get env
+  double getEnvCost(VRBox& vr_box, int32_t net_idx, Segment<LayerCoord>& segment);
+  double getEnvCost(VRBox& vr_box, int32_t net_idx, EXTLayerRect& patch);
+#endif
 
 #if 1  // update env
   void updateFixedRectToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);

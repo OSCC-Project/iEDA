@@ -729,16 +729,15 @@ void ViolationRepairer::initSingleTask(VRBox& vr_box, ViolationType& violation_t
 std::vector<VRSolution> ViolationRepairer::getVRSolutionList(VRBox& vr_box, ViolationType& violation_type)
 {
   std::vector<VRSolution> vr_solution_list;
-
   switch (violation_type) {
     case ViolationType::kSameLayerCutSpacing:
-      routeBySameLayerCutSpacing(vr_box, vr_solution_list);
+      vr_solution_list = routeBySameLayerCutSpacing(vr_box);
       break;
     case ViolationType::kParallelRunLengthSpacing:
-      routeByParallelRunLengthSpacing(vr_box, vr_solution_list);
+      vr_solution_list = routeByParallelRunLengthSpacing(vr_box);
       break;
     case ViolationType::kMinimumArea:
-      routeByMinimumArea(vr_box, vr_solution_list);
+      vr_solution_list = routeByMinimumArea(vr_box);
       break;
     default:
       RTLOG.error(Loc::current(), "Not support violation_type!");
@@ -747,28 +746,88 @@ std::vector<VRSolution> ViolationRepairer::getVRSolutionList(VRBox& vr_box, Viol
   return vr_solution_list;
 }
 
-void ViolationRepairer::routeBySameLayerCutSpacing(VRBox& vr_box, std::vector<VRSolution>& vr_solution_list)
+std::vector<VRSolution> ViolationRepairer::routeBySameLayerCutSpacing(VRBox& vr_box)
 {
-  // Violation& violation = vr_box.get_curr_violation();
-  // {
-  // }
+  std::vector<VRSolution> vr_solution_list;
+  return vr_solution_list;
 }
 
-void ViolationRepairer::routeByParallelRunLengthSpacing(VRBox& vr_box, std::vector<VRSolution>& vr_solution_list)
+std::vector<VRSolution> ViolationRepairer::routeByParallelRunLengthSpacing(VRBox& vr_box)
 {
-  Violation& violation = vr_box.get_curr_violation();
+  std::vector<VRSolution> vr_solution_list;
   {
     VRSolution vr_solution = getNewSolution(vr_box);
-    vr_solution.get_routing_patch_list().push_back(violation.get_violation_shape());
+    vr_solution.get_routing_patch_list().push_back(vr_box.get_curr_violation().get_violation_shape());
     vr_solution_list.push_back(vr_solution);
   }
+  return vr_solution_list;
 }
 
-void ViolationRepairer::routeByMinimumArea(VRBox& vr_box, std::vector<VRSolution>& vr_solution_list)
+std::vector<VRSolution> ViolationRepairer::routeByMinimumArea(VRBox& vr_box)
 {
-  // Violation& violation = vr_box.get_curr_violation();
-  // {
-  // }
+  int32_t manufacture_grid = RTDM.getDatabase().get_manufacture_grid();
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+
+  int32_t curr_net_idx = vr_box.get_curr_net_idx();
+  EXTLayerRect& violation_shape = vr_box.get_curr_violation().get_violation_shape();
+  int32_t violation_layer_idx = violation_shape.get_layer_idx();
+
+  PlanarRect bounding_box;
+  {
+    PlanarRect violation_real_rect = violation_shape.get_real_rect();
+    std::vector<PlanarRect> rect_list;
+    for (NetShape& net_shape : RTDM.getNetShapeList(curr_net_idx, vr_box.get_curr_routing_segment_list())) {
+      if (!net_shape.get_is_routing()) {
+        continue;
+      }
+      if (violation_layer_idx == net_shape.get_layer_idx() && RTUTIL.isClosedOverlap(violation_real_rect, net_shape.get_rect())) {
+        rect_list.push_back(net_shape.get_rect());
+      }
+    }
+    for (EXTLayerRect& patch : vr_box.get_curr_routing_patch_list()) {
+      if (violation_layer_idx == patch.get_layer_idx() && RTUTIL.isClosedOverlap(violation_real_rect, patch.get_real_rect())) {
+        rect_list.push_back(patch.get_real_rect());
+      }
+    }
+    bounding_box = RTUTIL.getBoundingBox(rect_list);
+  }
+  std::map<double, std::vector<EXTLayerRect>> env_cost_real_patch_map;
+  {
+    RoutingLayer& routing_layer = routing_layer_list[violation_layer_idx];
+    int32_t half_width = routing_layer.get_min_width() / 2;
+    int32_t half_length = routing_layer.get_min_area() / routing_layer.get_min_width() / 2;
+    if (routing_layer.isPreferH()) {
+      for (int32_t y : {bounding_box.get_ll_y() + (half_width), bounding_box.get_ur_y() - (half_width)}) {
+        for (int32_t x = bounding_box.get_ur_x() - half_length; x <= bounding_box.get_ll_x() + half_length; x += manufacture_grid) {
+          EXTLayerRect patch;
+          patch.set_real_rect(RTUTIL.getEnlargedRect(PlanarCoord(x, y), half_length, half_width, half_length, half_width));
+          patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(patch.get_real_rect(), gcell_axis));
+          patch.set_layer_idx(violation_layer_idx);
+          env_cost_real_patch_map[getEnvCost(vr_box, curr_net_idx, patch)].push_back(patch);
+        }
+      }
+    } else {
+      for (int32_t x : {bounding_box.get_ll_x() + (half_width), bounding_box.get_ur_x() - (half_width)}) {
+        for (int32_t y = bounding_box.get_ur_y() - half_length; y <= bounding_box.get_ll_y() + half_length; y += manufacture_grid) {
+          EXTLayerRect patch;
+          patch.set_real_rect(RTUTIL.getEnlargedRect(PlanarCoord(x, y), half_width, half_length, half_width, half_length));
+          patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(patch.get_real_rect(), gcell_axis));
+          patch.set_layer_idx(violation_layer_idx);
+          env_cost_real_patch_map[getEnvCost(vr_box, curr_net_idx, patch)].push_back(patch);
+        }
+      }
+    }
+  }
+  std::vector<VRSolution> vr_solution_list;
+  if (!env_cost_real_patch_map.empty()) {
+    for (EXTLayerRect& patch : env_cost_real_patch_map.begin()->second) {
+      VRSolution vr_solution = getNewSolution(vr_box);
+      vr_solution.get_routing_patch_list().push_back(patch);
+      vr_solution_list.push_back(vr_solution);
+    }
+  }
+  return vr_solution_list;
 }
 
 VRSolution ViolationRepairer::getNewSolution(VRBox& vr_box)
@@ -1082,6 +1141,20 @@ bool ViolationRepairer::stopIteration(VRModel& vr_model)
   }
   return false;
 }
+
+#if 1  // get env
+
+double ViolationRepairer::getEnvCost(VRBox& vr_box, int32_t net_idx, Segment<LayerCoord>& segment)
+{
+  return 0;
+}
+
+double ViolationRepairer::getEnvCost(VRBox& vr_box, int32_t net_idx, EXTLayerRect& patch)
+{
+  return 0;
+}
+
+#endif
 
 #if 1  // update env
 
