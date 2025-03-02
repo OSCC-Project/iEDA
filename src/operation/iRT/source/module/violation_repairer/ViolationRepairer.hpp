@@ -72,6 +72,7 @@ class ViolationRepairer
   void routeVRBox(VRBox& vr_box);
   void initSingleTask(VRBox& vr_box, ViolationType& violation_type);
   std::vector<VRSolution> getVRSolutionList(VRBox& vr_box, ViolationType& violation_type);
+  std::vector<VRSolution> routeByCutShort(VRBox& vr_box);
   std::vector<VRSolution> routeBySameLayerCutSpacing(VRBox& vr_box);
   std::vector<VRSolution> routeByParallelRunLengthSpacing(VRBox& vr_box);
   std::vector<VRSolution> routeByMinimumArea(VRBox& vr_box);

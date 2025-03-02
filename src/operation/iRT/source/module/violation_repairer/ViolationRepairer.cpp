@@ -672,7 +672,8 @@ void ViolationRepairer::buildGraphShapeMap(VRBox& vr_box)
 
 void ViolationRepairer::routeVRBox(VRBox& vr_box)
 {
-  for (ViolationType violation_type : {ViolationType::kSameLayerCutSpacing, ViolationType::kParallelRunLengthSpacing, ViolationType::kMinimumArea}) {
+  for (ViolationType violation_type :
+       {ViolationType::kCutShort, ViolationType::kSameLayerCutSpacing, ViolationType::kParallelRunLengthSpacing, ViolationType::kMinimumArea}) {
     while (true) {
       initSingleTask(vr_box, violation_type);
       if (vr_box.get_curr_net_idx() == -1) {
@@ -730,6 +731,9 @@ std::vector<VRSolution> ViolationRepairer::getVRSolutionList(VRBox& vr_box, Viol
 {
   std::vector<VRSolution> vr_solution_list;
   switch (violation_type) {
+    case ViolationType::kCutShort:
+      vr_solution_list = routeByCutShort(vr_box);
+      break;
     case ViolationType::kSameLayerCutSpacing:
       vr_solution_list = routeBySameLayerCutSpacing(vr_box);
       break;
@@ -746,9 +750,182 @@ std::vector<VRSolution> ViolationRepairer::getVRSolutionList(VRBox& vr_box, Viol
   return vr_solution_list;
 }
 
+std::vector<VRSolution> ViolationRepairer::routeByCutShort(VRBox& vr_box)
+{
+  std::vector<VRSolution> vr_solution_list;
+
+  VRSolution vr_solution = getNewSolution(vr_box);
+  std::vector<Segment<LayerCoord>>& routing_segment_list = vr_solution.get_routing_segment_list();
+  std::vector<EXTLayerRect>& routing_patch_list = vr_solution.get_routing_patch_list();
+
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
+
+  int32_t curr_net_idx = vr_box.get_curr_net_idx();
+  EXTLayerRect& violation_shape = vr_box.get_curr_violation().get_violation_shape();
+  PlanarRect violation_real_rect = violation_shape.get_real_rect();
+  int32_t violation_layer_idx = violation_shape.get_layer_idx();
+
+  ViaMaster& via_master = layer_via_master_list[violation_layer_idx].front();
+
+  std::vector<PlanarRect> spacing_cuts;
+  for (NetShape& net_shape : RTDM.getNetShapeList(curr_net_idx, vr_box.get_curr_routing_segment_list())) {
+    if (net_shape.get_is_routing()) {
+      continue;
+    }
+    if (net_shape.get_layer_idx() == via_master.get_cut_layer_idx() && RTUTIL.isClosedOverlap(violation_real_rect, net_shape.get_rect())) {
+      spacing_cuts.push_back(net_shape.get_rect());
+    }
+  }
+  if (spacing_cuts.size() >= 2) {  // short的cut数量大于2才有意义
+    std::vector<PlanarCoord> del_coord_list;
+    PlanarCoord remain_coord;
+    remain_coord = spacing_cuts[0].getMidPoint();
+    for (size_t i = 1; i < spacing_cuts.size(); i++) {
+      del_coord_list.push_back(spacing_cuts[i].getMidPoint());  // 留下非fixed的第一个
+    }
+
+    for (PlanarRect cut_shape : spacing_cuts) {
+      std::function<bool(Segment<LayerCoord>&)> cmp_segment_coord_func = [&](Segment<LayerCoord>& segment) {
+        for (PlanarCoord coord : del_coord_list) {
+          LayerCoord &first_coord = segment.get_first(), &second_coord = segment.get_second();
+          if (first_coord.get_layer_idx() > second_coord.get_layer_idx()) {
+            std::swap(first_coord, second_coord);
+          }
+          if (first_coord.get_layer_idx() != second_coord.get_layer_idx() && first_coord.get_layer_idx() == violation_layer_idx
+              && first_coord.get_x() == coord.get_x() && first_coord.get_y() == coord.get_y()) {
+            // RTLOG.info(Loc::current(), "get a remove segment");
+            return true;
+          }
+        }
+        return false;
+      };
+      routing_segment_list.erase(std::remove_if(routing_segment_list.begin(), routing_segment_list.end(), cmp_segment_coord_func), routing_segment_list.end());
+    }
+    for (size_t i = 1; i < del_coord_list.size(); i++) {  // 连接被删除之间的点
+      for (int32_t layer_idx : {violation_shape.get_layer_idx(), violation_shape.get_layer_idx() + 1}) {
+        LayerCoord first(del_coord_list[i], layer_idx);
+        LayerCoord second(del_coord_list[i - 1], layer_idx);
+        std::vector<Segment<LayerCoord>> segment_list;
+        if (first.get_x() == second.get_x() || first.get_y() == second.get_y()) {
+          segment_list.push_back(Segment<LayerCoord>(first, second));
+        } else {
+          // 理论上要基于cost选择segment,但是现在先简单测试一下
+          LayerCoord third(first);
+          third.set_y(second.get_y());
+          segment_list.push_back(Segment<LayerCoord>(first, third));
+          segment_list.push_back(Segment<LayerCoord>(third, second));
+        }
+        routing_segment_list.insert(routing_segment_list.end(), segment_list.begin(), segment_list.end());
+      }
+    }
+    for (int32_t layer_idx : {violation_shape.get_layer_idx(), violation_shape.get_layer_idx() + 1}) {  // 连接剩下的点与被删除的点
+      LayerCoord first(del_coord_list[0], layer_idx);
+      LayerCoord second(remain_coord, layer_idx);
+      std::vector<Segment<LayerCoord>> segment_list;
+      if (first.get_x() == second.get_x() || first.get_y() == second.get_y()) {
+        segment_list.push_back(Segment<LayerCoord>(first, second));
+      } else {
+        // 理论上要基于cost选择segment,但是现在先简单测试一下
+        LayerCoord third(first);
+        third.set_y(second.get_y());
+        segment_list.push_back(Segment<LayerCoord>(first, third));
+        segment_list.push_back(Segment<LayerCoord>(third, second));
+      }
+      routing_segment_list.insert(routing_segment_list.end(), segment_list.begin(), segment_list.end());
+    }
+  }
+
+  vr_solution_list.push_back(vr_solution);
+  return vr_solution_list;
+}
+
 std::vector<VRSolution> ViolationRepairer::routeBySameLayerCutSpacing(VRBox& vr_box)
 {
   std::vector<VRSolution> vr_solution_list;
+  VRSolution vr_solution = getNewSolution(vr_box);
+  std::vector<Segment<LayerCoord>>& routing_segment_list = vr_solution.get_routing_segment_list();
+  std::vector<EXTLayerRect>& routing_patch_list = vr_solution.get_routing_patch_list();
+
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
+
+  int32_t curr_net_idx = vr_box.get_curr_net_idx();
+  EXTLayerRect& violation_shape = vr_box.get_curr_violation().get_violation_shape();
+  PlanarRect violation_real_rect = violation_shape.get_real_rect();
+  int32_t violation_layer_idx = violation_shape.get_layer_idx();
+
+  ViaMaster& via_master = layer_via_master_list[violation_layer_idx].front();
+
+  std::vector<PlanarRect> spacing_cuts;
+  for (NetShape& net_shape : RTDM.getNetShapeList(curr_net_idx, vr_box.get_curr_routing_segment_list())) {
+    if (net_shape.get_is_routing()) {
+      continue;
+    }
+    if (net_shape.get_layer_idx() == via_master.get_cut_layer_idx() && RTUTIL.isClosedOverlap(violation_real_rect, net_shape.get_rect())) {
+      spacing_cuts.push_back(net_shape.get_rect());
+    }
+  }
+  if (spacing_cuts.size() >= 2) {  // short的cut数量大于2才有意义
+    std::vector<PlanarCoord> del_coord_list;
+    PlanarCoord remain_coord;
+    remain_coord = spacing_cuts[0].getMidPoint();
+    for (size_t i = 1; i < spacing_cuts.size(); i++) {
+      del_coord_list.push_back(spacing_cuts[i].getMidPoint());  // 留下非fixed的第一个
+    }
+
+    for (PlanarRect cut_shape : spacing_cuts) {
+      std::function<bool(Segment<LayerCoord>&)> cmp_segment_coord_func = [&](Segment<LayerCoord>& segment) {
+        for (PlanarCoord coord : del_coord_list) {
+          LayerCoord &first_coord = segment.get_first(), &second_coord = segment.get_second();
+          if (first_coord.get_layer_idx() > second_coord.get_layer_idx()) {
+            std::swap(first_coord, second_coord);
+          }
+          if (first_coord.get_layer_idx() != second_coord.get_layer_idx() && first_coord.get_layer_idx() == violation_layer_idx
+              && first_coord.get_x() == coord.get_x() && first_coord.get_y() == coord.get_y()) {
+            // RTLOG.info(Loc::current(), "get a remove segment");
+            return true;
+          }
+        }
+        return false;
+      };
+      routing_segment_list.erase(std::remove_if(routing_segment_list.begin(), routing_segment_list.end(), cmp_segment_coord_func), routing_segment_list.end());
+    }
+    for (size_t i = 1; i < del_coord_list.size(); i++) {  // 连接被删除之间的点
+      for (int32_t layer_idx : {violation_shape.get_layer_idx(), violation_shape.get_layer_idx() + 1}) {
+        LayerCoord first(del_coord_list[i], layer_idx);
+        LayerCoord second(del_coord_list[i - 1], layer_idx);
+        std::vector<Segment<LayerCoord>> segment_list;
+        if (first.get_x() == second.get_x() || first.get_y() == second.get_y()) {
+          segment_list.push_back(Segment<LayerCoord>(first, second));
+        } else {
+          // 理论上要基于cost选择segment,但是现在先简单测试一下
+          LayerCoord third(first);
+          third.set_y(second.get_y());
+          segment_list.push_back(Segment<LayerCoord>(first, third));
+          segment_list.push_back(Segment<LayerCoord>(third, second));
+        }
+        routing_segment_list.insert(routing_segment_list.end(), segment_list.begin(), segment_list.end());
+      }
+    }
+    for (int32_t layer_idx : {violation_shape.get_layer_idx(), violation_shape.get_layer_idx() + 1}) {  // 连接剩下的点与被删除的点
+      LayerCoord first(del_coord_list[0], layer_idx);
+      LayerCoord second(remain_coord, layer_idx);
+      std::vector<Segment<LayerCoord>> segment_list;
+      if (first.get_x() == second.get_x() || first.get_y() == second.get_y()) {
+        segment_list.push_back(Segment<LayerCoord>(first, second));
+      } else {
+        // 理论上要基于cost选择segment,但是现在先简单测试一下
+        LayerCoord third(first);
+        third.set_y(second.get_y());
+        segment_list.push_back(Segment<LayerCoord>(first, third));
+        segment_list.push_back(Segment<LayerCoord>(third, second));
+      }
+      routing_segment_list.insert(routing_segment_list.end(), segment_list.begin(), segment_list.end());
+    }
+  }
+
+  vr_solution_list.push_back(vr_solution);
   return vr_solution_list;
 }
 
