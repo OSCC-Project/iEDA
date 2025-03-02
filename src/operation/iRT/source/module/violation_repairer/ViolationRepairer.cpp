@@ -811,10 +811,24 @@ std::vector<VRSolution> ViolationRepairer::routeByCutShort(VRBox& vr_box)
           segment_list.push_back(Segment<LayerCoord>(first, second));
         } else {
           // 理论上要基于cost选择segment,但是现在先简单测试一下
-          LayerCoord third(first);
-          third.set_y(second.get_y());
-          segment_list.push_back(Segment<LayerCoord>(first, third));
-          segment_list.push_back(Segment<LayerCoord>(third, second));
+          LayerCoord third_coord_a(first);
+          LayerCoord third_coord_b(second);
+          std::vector<Segment<LayerCoord>> cadidate_segment_list_a;
+          std::vector<Segment<LayerCoord>> cadidate_segment_list_b;
+          third_coord_a.set_y(second.get_y());
+          third_coord_b.set_y(first.get_y());
+          int32_t cost_a, cost_b;
+          cadidate_segment_list_a.emplace_back(first, third_coord_a);
+          cadidate_segment_list_a.emplace_back(third_coord_a, second);
+          cadidate_segment_list_b.emplace_back(first, third_coord_b);
+          cadidate_segment_list_b.emplace_back(third_coord_b, second);
+          cost_a = getEnvCost(vr_box, curr_net_idx, cadidate_segment_list_a[0]) + getEnvCost(vr_box, curr_net_idx, cadidate_segment_list_a[1]);
+          cost_b = getEnvCost(vr_box, curr_net_idx, cadidate_segment_list_b[0]) + getEnvCost(vr_box, curr_net_idx, cadidate_segment_list_b[1]);
+          if (cost_a < cost_b) {
+            segment_list.insert(segment_list.end(), cadidate_segment_list_a.begin(), cadidate_segment_list_a.end());
+          } else {
+            segment_list.insert(segment_list.end(), cadidate_segment_list_b.begin(), cadidate_segment_list_b.end());
+          }
         }
         routing_segment_list.insert(routing_segment_list.end(), segment_list.begin(), segment_list.end());
       }
@@ -900,10 +914,24 @@ std::vector<VRSolution> ViolationRepairer::routeBySameLayerCutSpacing(VRBox& vr_
           segment_list.push_back(Segment<LayerCoord>(first, second));
         } else {
           // 理论上要基于cost选择segment,但是现在先简单测试一下
-          LayerCoord third(first);
-          third.set_y(second.get_y());
-          segment_list.push_back(Segment<LayerCoord>(first, third));
-          segment_list.push_back(Segment<LayerCoord>(third, second));
+          LayerCoord third_coord_a(first);
+          LayerCoord third_coord_b(second);
+          std::vector<Segment<LayerCoord>> cadidate_segment_list_a;
+          std::vector<Segment<LayerCoord>> cadidate_segment_list_b;
+          third_coord_a.set_y(second.get_y());
+          third_coord_b.set_y(first.get_y());
+          int32_t cost_a, cost_b;
+          cadidate_segment_list_a.emplace_back(first, third_coord_a);
+          cadidate_segment_list_a.emplace_back(third_coord_a, second);
+          cadidate_segment_list_b.emplace_back(first, third_coord_b);
+          cadidate_segment_list_b.emplace_back(third_coord_b, second);
+          cost_a = getEnvCost(vr_box, curr_net_idx, cadidate_segment_list_a[0]) + getEnvCost(vr_box, curr_net_idx, cadidate_segment_list_a[1]);
+          cost_b = getEnvCost(vr_box, curr_net_idx, cadidate_segment_list_b[0]) + getEnvCost(vr_box, curr_net_idx, cadidate_segment_list_b[1]);
+          if (cost_a < cost_b) {
+            segment_list.insert(segment_list.end(), cadidate_segment_list_a.begin(), cadidate_segment_list_a.end());
+          } else {
+            segment_list.insert(segment_list.end(), cadidate_segment_list_b.begin(), cadidate_segment_list_b.end());
+          }
         }
         routing_segment_list.insert(routing_segment_list.end(), segment_list.begin(), segment_list.end());
       }
