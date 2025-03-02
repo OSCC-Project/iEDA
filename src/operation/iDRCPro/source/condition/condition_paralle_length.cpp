@@ -92,25 +92,25 @@ void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLay
             break;
           }
         }
-        if (width_idx > 0) {
-          if (prl_wire_map.count(width_idx) == 0) {
-            prl_wire_map[width_idx] = {};
-            prl_polygon_map[width_idx] = {};
-          }
-          prl_wire_map[width_idx].push_back(wire);
-          ieda_solver::GeometryPolygonSet wire_polyset;
-          for (auto j : result) {
-            namespace bg = boost::geometry;
-            auto wire2 = wire_list[j.second];
-            wire_polyset += wire2;
-          }
-          // wire_polyset.clean();
-          if (wire_polyset.empty()) {
-            continue;
-          }
-
-          prl_polygon_map[width_idx].push_back(wire_polyset);
+        // if (width_idx > 0) {
+        if (prl_wire_map.count(width_idx) == 0) {
+          prl_wire_map[width_idx] = {};
+          prl_polygon_map[width_idx] = {};
         }
+        prl_wire_map[width_idx].push_back(wire);
+        ieda_solver::GeometryPolygonSet wire_polyset;
+        for (auto j : result) {
+          namespace bg = boost::geometry;
+          auto wire2 = wire_list[j.second];
+          wire_polyset += wire2;
+        }
+        // wire_polyset.clean();
+        if (wire_polyset.empty()) {
+          continue;
+        }
+
+        prl_polygon_map[width_idx].push_back(wire_polyset);
+        // }
       }
     }
   }
@@ -222,9 +222,10 @@ void DrcConditionManager::checkSpacingTable(std::string layer, DrcEngineLayout* 
           prl_count += current_violations.size();
         }
       };
-
-      check_by_direction(ieda_solver::HORIZONTAL, false);
-      check_by_direction(ieda_solver::VERTICAL, false);
+      if (width_idx != 0) {
+        check_by_direction(ieda_solver::HORIZONTAL, false);
+        check_by_direction(ieda_solver::VERTICAL, false);
+      }
       check_by_direction(ieda_solver::VERTICAL, true);
     }
   }
