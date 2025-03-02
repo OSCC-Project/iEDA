@@ -98,9 +98,10 @@ void LargeModel::generateFeature(const std::string dir)
   auto* patch_grid = _data_manager.patch_dm == nullptr ? nullptr : &_data_manager.patch_dm->get_patch_grid();
   LmFeature feature(&_data_manager.layout_dm.get_layout(), patch_grid, dir);
 
+  feature.buildFeatureTiming();
   feature.buildFeatureDrc();
   feature.buildFeatureStatis();
-  feature.buildFeatureTiming();
+  
 }
 
 /// for run large model sta api.

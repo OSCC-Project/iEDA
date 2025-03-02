@@ -1284,4 +1284,44 @@ bool InitSTA::isClockNet(const std::string& net_name) const {
   return STA_INST->isClockNet(net_name.c_str());
 }
 
+/**
+ * @brief The timing map of the patch.
+ * 
+ * @param patch 
+ * @return std::map<int, double> 
+ */
+std::map<int, double> InitSTA::patchTimingMap(
+    std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch) {
+  std::map<int, double> patch_timing_map;
+
+  auto inst_timing_map =
+      STA_INST->get_ista()->displayTimingMap(ista::AnalysisMode::kMax);
+
+  auto* idb_adapter = STA_INST->getIDBAdapter();
+  auto dbu = idb_adapter->get_dbu();
+  auto to_dbu = [dbu](auto coord) { return coord * dbu; };
+
+  for (const auto& [patch_id, coord] : patch) {
+    auto [l_range, u_range] = coord;
+    const int patch_lx = l_range.first;
+    const int patch_ly = l_range.second;
+    const int patch_ux = u_range.first;
+    const int patch_uy = u_range.second;
+
+    for (auto [coord, inst_slack] : inst_timing_map) {
+      auto inst_x = to_dbu(coord.first);
+      auto inst_y = to_dbu(coord.second);
+      if (patch_lx <= inst_x && inst_x <= patch_ux && patch_ly <= inst_y && inst_y <= patch_uy) {
+        if (patch_timing_map.count(patch_id) == 0) {
+          patch_timing_map[patch_id] = inst_slack;
+        } else {
+          patch_timing_map[patch_id] = std::min(patch_timing_map[patch_id], inst_slack);
+        }
+      }
+    }
+  }
+
+  return patch_timing_map;
+}
+
 }  // namespace ieval

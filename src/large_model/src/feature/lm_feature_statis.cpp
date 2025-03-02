@@ -26,6 +26,7 @@
 #include "Log.hh"
 #include "congestion_api.h"
 #include "density_api.h"
+#include "timing_api.hh"
 #include "idm.h"
 #include "lm_grid_info.h"
 #include "omp.h"
@@ -34,8 +35,8 @@
 namespace ilm {
 void LmFeatureStatis::build()
 {
-  feature_graph();
   feature_patch();
+  feature_graph();  
 }
 
 void LmFeatureStatis::feature_graph()
@@ -219,6 +220,8 @@ void LmFeatureStatis::feature_patch()
   omp_init_lock(&lck);
 
   // 评估器特征计算，返回的是 patch_id 和 value 的 map
+  std::map<int, double> cell_timing_map = TimingPower_API_INST->patchTimingMap(patch_xy_map);
+
   std::map<int, int> pin_density_map = DENSITY_API_INST->patchPinDensity(patch_xy_map);
   LOG_INFO << "finish pin_density_map, runtime: " << stats.elapsedRunTime();
 
@@ -236,6 +239,8 @@ void LmFeatureStatis::feature_patch()
 
   std::map<int, double> egr_congestion_map = CONGESTION_API_INST->patchEGRCongestion(patch_xy_map);
   LOG_INFO << "finish egr_congestion_map, runtime: " << stats.elapsedRunTime();
+
+  
 
   #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < (int) patchs.size(); ++i) {

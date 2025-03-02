@@ -154,6 +154,8 @@ class InitSTA
 
   bool isClockNet(const std::string& net_name) const;
 
+  std::map<int, double> patchTimingMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch);
+
 
  private:
   void leaglization(const std::vector<std::shared_ptr<salt::Pin>>& pins);
@@ -162,6 +164,7 @@ class InitSTA
 
   void initPowerEngine();
   void updateResult(const std::string& routing_type);
+  
 
   static InitSTA* _init_sta;
 

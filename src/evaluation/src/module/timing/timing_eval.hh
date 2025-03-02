@@ -59,6 +59,8 @@ class TimingEval
 
   bool isClockNet(const std::string& net_name) const;
 
+  std::map<int, double> patchTimingMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch);
+
  private:
   static TimingEval* _timing_eval;
 };

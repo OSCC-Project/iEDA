@@ -133,4 +133,8 @@ bool TimingEval::isClockNet(const std::string& net_name) const
   return EVAL_INIT_STA_INST->isClockNet(net_name);
 }
 
+std::map<int, double> TimingEval::patchTimingMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch) {
+  return EVAL_INIT_STA_INST->patchTimingMap(patch);
+}
+
 }  // namespace ieval
