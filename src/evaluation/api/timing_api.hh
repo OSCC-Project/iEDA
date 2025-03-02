@@ -61,6 +61,8 @@ class TimingAPI
   bool isClockNet(const std::string& net_name) const;
 
   std::map<int, double> patchTimingMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch_xy_map);
+  std::map<int, double> patchPowerMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch_xy_map);
+  std::map<int, double> patchIRDropMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch_xy_map);
 
  private:
   static TimingAPI* _timing_api;

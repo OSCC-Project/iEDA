@@ -595,6 +595,26 @@ std::vector<IRInstancePower> Power::getInstancePowerData() {
   instance_power_data.emplace_back(std::move(instance_power));
   return instance_power_data;
 }
+/**
+ * @brief get instance power map.
+ * 
+ * @return std::map<Instance::Coordinate, double> 
+ */
+std::map<Instance::Coordinate, double> Power::displayInstancePowerMap() {
+  std::map<Instance::Coordinate, double> instance_power_map;
+
+  PwrGroupData* group_data;
+  FOREACH_PWR_GROUP_DATA(this, group_data) {
+    if (dynamic_cast<Net*>(group_data->get_obj())) {
+      continue;
+    }
+
+    auto* inst = dynamic_cast<Instance*>(group_data->get_obj());
+    instance_power_map[inst->get_coordinate().value()] = group_data->get_total_power();
+  }
+
+  return instance_power_map;
+}
 
 /**
  * @brief init power graph data

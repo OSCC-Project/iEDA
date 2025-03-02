@@ -117,4 +117,12 @@ std::map<int, double> TimingAPI::patchTimingMap(std::map<int, std::pair<std::pai
   return EVAL_STA_INST->patchTimingMap(patch_xy_map);
 }
 
+std::map<int, double> TimingAPI::patchPowerMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch_xy_map) {
+  return EVAL_STA_INST->patchPowerMap(patch_xy_map);
+}
+
+std::map<int, double> TimingAPI::patchIRDropMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch_xy_map) {
+  return EVAL_STA_INST->patchIRDropMap(patch_xy_map);
+}
+
 }  // namespace ieval
