@@ -806,7 +806,7 @@ std::vector<VRSolution> ViolationRepairer::routeByCutShort(VRBox& vr_box)
     }
     // 从routing_segment_list中选择n-1条边并判断联通性
     std::vector<std::vector<Segment<PlanarCoord>>> cadidate_topo_list_list = RTUTIL.getCombList(all_topo_list, cut_mid_coord_list.size());  // 所有候选
-    std::vector<std::vector<Segment<PlanarCoord>>> topo_list_list;  // 可用候选拓扑
+    std::vector<std::vector<Segment<PlanarCoord>>> topo_list_list;                                                                          // 可用候选拓扑
     for (std::vector<Segment<PlanarCoord>> cadidate_topo_list : cadidate_topo_list_list) {
       // 判断连通性加入可用候选拓扑
       if (RTUTIL.passCheckingConnectivity(cut_mid_coord_list, cadidate_topo_list)) {
@@ -875,124 +875,126 @@ std::vector<VRSolution> ViolationRepairer::routeByCutShort(VRBox& vr_box)
 
 std::vector<VRSolution> ViolationRepairer::routeBySameLayerCutSpacing(VRBox& vr_box)
 {
-  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
 
   int32_t curr_net_idx = vr_box.get_curr_net_idx();
   EXTLayerRect& violation_shape = vr_box.get_curr_violation().get_violation_shape();
-  PlanarRect violation_real_rect = violation_shape.get_real_rect();
   int32_t violation_layer_idx = violation_shape.get_layer_idx();
 
   ViaMaster& via_master = layer_via_master_list[violation_layer_idx].front();
 
-  std::vector<PlanarCoord> cut_mid_coord_list;
-  for (NetShape& net_shape : RTDM.getNetShapeList(curr_net_idx, vr_box.get_curr_routing_segment_list())) {
-    if (net_shape.get_is_routing()) {
-      continue;
-    }
-    if (net_shape.get_layer_idx() == via_master.get_cut_layer_idx() && RTUTIL.isClosedOverlap(violation_real_rect, net_shape.get_rect())) {
-      cut_mid_coord_list.push_back(net_shape.get_rect().getMidPoint());
+  std::vector<PlanarCoord> via_coord_list;
+  {
+    PlanarRect violation_real_rect = violation_shape.get_real_rect();
+    for (NetShape& net_shape : RTDM.getNetShapeList(curr_net_idx, vr_box.get_curr_routing_segment_list())) {
+      if (net_shape.get_is_routing()) {
+        continue;
+      }
+      if (net_shape.get_layer_idx() == via_master.get_cut_layer_idx() && RTUTIL.isClosedOverlap(violation_real_rect, net_shape.get_rect())) {
+        via_coord_list.push_back(net_shape.get_rect().getMidPoint());
+      }
     }
   }
-  std::vector<VRSolution> vr_solution_list;
-  if (cut_mid_coord_list.size() >= 2) {                                              // short的cut数量大于2才有意义
-    std::vector<std::vector<Segment<LayerCoord>>> remain_routing_segment_list_list;  // 删除不同点时所对应的情况
-    for (size_t i = 0; i < cut_mid_coord_list.size(); i++) {
-      std::vector<PlanarCoord> delete_coord_list;
-      for (size_t j = 0; j < cut_mid_coord_list.size(); j++) {
+  if (via_coord_list.size() <= 1) {
+    return {};
+  }
+  std::vector<std::vector<Segment<LayerCoord>>> orig_routing_segment_list_list;
+  {
+    for (size_t i = 0; i < via_coord_list.size(); i++) {
+      std::vector<LayerCoord> del_coord_list;
+      for (size_t j = 0; j < via_coord_list.size(); j++) {
         if (i == j) {
           continue;
         }
-        delete_coord_list.push_back(cut_mid_coord_list[j]);  // 留下非fixed的第一个
+        del_coord_list.emplace_back(via_coord_list[j], violation_layer_idx);
       }
-      std::vector<Segment<LayerCoord>> routing_segment_list;
+      std::vector<Segment<LayerCoord>> orig_routing_segment_list;
       for (Segment<LayerCoord>& routing_segment : vr_box.get_curr_routing_segment_list()) {
-        PlanarCoord& coord = routing_segment.get_first().get_planar_coord();
-        int32_t first_layer_idx = routing_segment.get_first().get_layer_idx();
-        int32_t second_layer_idx = routing_segment.get_second().get_layer_idx();
-        RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
-        if (first_layer_idx != second_layer_idx && first_layer_idx == violation_layer_idx && RTUTIL.exist(delete_coord_list, coord)) {
+        LayerCoord first_coord = routing_segment.get_first();
+        LayerCoord second_coord = routing_segment.get_second();
+        RTUTIL.swapByCMP(first_coord, second_coord, CmpLayerCoordByLayerASC());
+        if (first_coord == second_coord && RTUTIL.exist(del_coord_list, first_coord)) {
           continue;
         }
-        routing_segment_list.push_back(routing_segment);
+        orig_routing_segment_list.push_back(routing_segment);
       }
-      remain_routing_segment_list_list.push_back(routing_segment_list);
+      orig_routing_segment_list_list.push_back(orig_routing_segment_list);
     }
-
-    std::vector<Segment<PlanarCoord>> all_topo_list;  // size为n(n-1)/2 0:直线,1:上拐角,2:下拐角
-    for (size_t i = 0; i < cut_mid_coord_list.size(); i++) {
-      for (size_t j = i + 1; j < cut_mid_coord_list.size(); j++) {
-        PlanarCoord first_coord = cut_mid_coord_list[i];
-        PlanarCoord second_coord = cut_mid_coord_list[j];
-        all_topo_list.emplace_back(first_coord, second_coord);  // 可能是直线,也可能是斜线
-      }
-    }
-    // 从routing_segment_list中选择n-1条边并判断联通性
-    std::vector<std::vector<Segment<PlanarCoord>>> cadidate_topo_list_list = RTUTIL.getCombList(all_topo_list, cut_mid_coord_list.size());  // 所有候选
-    std::vector<std::vector<Segment<PlanarCoord>>> topo_list_list;  // 可用候选拓扑
-    for (std::vector<Segment<PlanarCoord>> cadidate_topo_list : cadidate_topo_list_list) {
-      // 判断连通性加入可用候选拓扑
-      if (RTUTIL.passCheckingConnectivity(cut_mid_coord_list, cadidate_topo_list)) {
-        topo_list_list.push_back(cadidate_topo_list);
+  }
+  std::vector<std::vector<Segment<LayerCoord>>> below_routing_segment_list_list;
+  std::vector<std::vector<Segment<LayerCoord>>> above_routing_segment_list_list;
+  {
+    std::vector<Segment<PlanarCoord>> all_topo_list;
+    for (size_t i = 0; i < via_coord_list.size(); i++) {
+      for (size_t j = i + 1; j < via_coord_list.size(); j++) {
+        all_topo_list.emplace_back(via_coord_list[i], via_coord_list[j]);
       }
     }
-    // 从可用候选拓扑中得到得到routing segment
-    std::vector<std::vector<Segment<PlanarCoord>>> routing_segment_list_list;
-    for (std::vector<Segment<PlanarCoord>> topo_list : topo_list_list) {
-      std::vector<std::vector<std::vector<Segment<PlanarCoord>>>> topo_segment_list_list_list;  // 所有的直线topo,一个方案是一个list
-      for (Segment<PlanarCoord> topo : topo_list) {
-        std::vector<std::vector<Segment<PlanarCoord>>> topo_segment_list_list;  // 每个topo_segment_list是一个方案，topo_segment_list_list是方案合集
-        PlanarCoord first_coord = topo.get_first();
-        PlanarCoord second_coord = topo.get_second();
+    for (std::vector<Segment<PlanarCoord>>& topo_list : RTUTIL.getCombList(all_topo_list, via_coord_list.size() - 1)) {
+      if (!RTUTIL.passCheckingConnectivity(via_coord_list, topo_list)) {
+        continue;
+      }
+      std::vector<std::vector<std::vector<Segment<PlanarCoord>>>> topo_segment_list_list_list;
+      for (Segment<PlanarCoord>& topo : topo_list) {
+        PlanarCoord& first_coord = topo.get_first();
+        PlanarCoord& second_coord = topo.get_second();
+        std::vector<std::vector<Segment<PlanarCoord>>> topo_segment_list_list;
         if (RTUTIL.isOblique(first_coord, second_coord)) {
           std::vector<PlanarCoord> inflection_list;
           inflection_list.emplace_back(first_coord.get_x(), second_coord.get_y());
           inflection_list.emplace_back(second_coord.get_x(), first_coord.get_y());
-          for (size_t i; i < inflection_list.size(); i++) {
+          for (PlanarCoord& inflection_coord : inflection_list) {
             std::vector<Segment<PlanarCoord>> topo_segment_list;
-            topo_segment_list.emplace_back(first_coord, inflection_list[i]);
-            topo_segment_list.emplace_back(inflection_list[i], second_coord);
+            topo_segment_list.emplace_back(first_coord, inflection_coord);
+            topo_segment_list.emplace_back(inflection_coord, second_coord);
             topo_segment_list_list.push_back(topo_segment_list);
           }
           topo_segment_list_list_list.push_back(topo_segment_list_list);
         } else {
           std::vector<Segment<PlanarCoord>> topo_segment_list;
-          topo_segment_list.push_back(topo);
+          topo_segment_list.emplace_back(first_coord, second_coord);
           topo_segment_list_list.push_back(topo_segment_list);
           topo_segment_list_list_list.push_back(topo_segment_list_list);
         }
       }
-      // 生成所有组合方案，加到routing_segment_list_list中
-      for (std::vector<std::vector<Segment<PlanarCoord>>> segment_list_list : RTUTIL.getCombList(topo_segment_list_list_list)) {
-        std::vector<Segment<PlanarCoord>> routing_segment_list;
-        for (std::vector<Segment<PlanarCoord>> segment_list : segment_list_list) {
-          for (Segment<PlanarCoord> segment : segment_list) {
-            routing_segment_list.push_back(segment);
+      for (std::vector<std::vector<Segment<PlanarCoord>>>& topo_segment_list_list : RTUTIL.getCombList(topo_segment_list_list_list)) {
+        std::vector<Segment<LayerCoord>> below_routing_segment_list;
+        std::vector<Segment<LayerCoord>> above_routing_segment_list;
+        for (std::vector<Segment<PlanarCoord>>& topo_segment_list : topo_segment_list_list) {
+          for (Segment<PlanarCoord>& topo_segment : topo_segment_list) {
+            PlanarCoord& first_coord = topo_segment.get_first();
+            PlanarCoord& second_coord = topo_segment.get_second();
+            below_routing_segment_list.emplace_back(LayerCoord(first_coord, violation_layer_idx), LayerCoord(second_coord, violation_layer_idx));
+            above_routing_segment_list.emplace_back(LayerCoord(first_coord, violation_layer_idx + 1), LayerCoord(second_coord, violation_layer_idx + 1));
           }
         }
-        routing_segment_list_list.push_back(routing_segment_list);
-      }
-    }
-    // 对segment进行组合，方案数：删除点方案*((两点之间的连接数量的乘积) * (两点之间的连接数量的乘积) --这里由layer产生--)
-    for (std::vector<Segment<LayerCoord>> remain_routing_segment_list : remain_routing_segment_list_list) {  // 删除点方案
-      for (int32_t i = 0; i < routing_segment_list_list.size(); i++) {
-        for (int32_t j = 0; j < routing_segment_list_list.size(); j++) {
-          VRSolution vr_solution = getNewSolution(vr_box);
-          for (Segment<PlanarCoord> segment : routing_segment_list_list[i]) {
-            remain_routing_segment_list.emplace_back(LayerCoord(segment.get_first(), violation_layer_idx),
-                                                     LayerCoord(segment.get_second(), violation_layer_idx));
-          }
-          for (Segment<PlanarCoord> segment : routing_segment_list_list[j]) {
-            remain_routing_segment_list.emplace_back(LayerCoord(segment.get_first(), violation_layer_idx + 1),
-                                                     LayerCoord(segment.get_second(), violation_layer_idx + 1));
-          }
-          vr_solution.set_routing_segment_list(remain_routing_segment_list);
-          vr_solution_list.push_back(vr_solution);
-        }
+        below_routing_segment_list_list.push_back(below_routing_segment_list);
+        above_routing_segment_list_list.push_back(above_routing_segment_list);
       }
     }
   }
+  std::vector<VRSolution> vr_solution_list;
+  for (std::vector<Segment<LayerCoord>>& orig_routing_segment_list : orig_routing_segment_list_list) {
+    for (std::vector<Segment<LayerCoord>>& below_routing_segment_list : below_routing_segment_list_list) {
+      for (std::vector<Segment<LayerCoord>>& above_routing_segment_list : above_routing_segment_list_list) {
+        VRSolution vr_solution = getNewSolution(vr_box);
+        vr_solution.set_routing_segment_list(orig_routing_segment_list);
 
+        double env_cost = 0;
+        for (Segment<LayerCoord>& below_routing_segment : below_routing_segment_list) {
+          vr_solution.get_routing_segment_list().push_back(below_routing_segment);
+          env_cost += getEnvCost(vr_box, curr_net_idx, below_routing_segment);
+        }
+        for (Segment<LayerCoord>& above_routing_segment : above_routing_segment_list) {
+          vr_solution.get_routing_segment_list().push_back(above_routing_segment);
+          env_cost += getEnvCost(vr_box, curr_net_idx, above_routing_segment);
+        }
+        vr_solution.set_env_cost(env_cost);
+        vr_solution_list.push_back(vr_solution);
+      }
+    }
+  }
+  std::sort(vr_solution_list.begin(), vr_solution_list.end(), CmpVRSolution());
   return vr_solution_list;
 }
 
