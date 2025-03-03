@@ -796,99 +796,70 @@ std::vector<VRSolution> ViolationRepairer::routeByCutShort(VRBox& vr_box)
       remain_routing_segment_list_list.push_back(routing_segment_list);
     }
 
-    std::vector<std::pair<int32_t, Segment<PlanarCoord>>> all_segment_list;  // size为n(n-1)/2 0:直线,1:上拐角,2:下拐角
+    std::vector<Segment<PlanarCoord>> all_topo_list;  // size为n(n-1)/2 0:直线,1:上拐角,2:下拐角
     for (size_t i = 0; i < cut_mid_coord_list.size(); i++) {
       for (size_t j = i + 1; j < cut_mid_coord_list.size(); j++) {
         PlanarCoord first_coord = cut_mid_coord_list[i];
         PlanarCoord second_coord = cut_mid_coord_list[j];
-        // 可能是直线,也可能是斜线,先把斜线标记上,用作不同的方案
-        if (RTUTIL.isRightAngled(first_coord, second_coord)) {
-          all_segment_list.emplace_back(0, Segment<PlanarCoord>(first_coord, second_coord));
-        } else {
-          all_segment_list.emplace_back(1, Segment<PlanarCoord>(first_coord, second_coord));
-          all_segment_list.emplace_back(2, Segment<PlanarCoord>(first_coord, second_coord));
-        }
+        all_topo_list.emplace_back(first_coord, second_coord);  // 可能是直线,也可能是斜线
       }
     }
-    // 从routing_segment_list中选择n-1个点并判断联通性
-    std::vector<int32_t> mask(all_segment_list.size(), 0);
-    std::fill(mask.begin(), mask.begin() + cut_mid_coord_list.size() - 1, 1);  // cut_mid_coord_list.size() - 1条边即可
-    std::vector<std::vector<std::pair<int32_t, Segment<PlanarCoord>>>> cadidate_segment_list_list;
-    // 生成所有组合并过滤
-    do {
-      std::vector<std::pair<int32_t, Segment<PlanarCoord>>> cadidate_segment_list;
-      std::set<PlanarCoord, CmpPlanarCoordByXASC> coord_list;
-      std::map<PlanarCoord, std::vector<PlanarCoord>, CmpPlanarCoordByXASC> graph;  // 对应的图
-      std::map<PlanarCoord, bool, CmpPlanarCoordByXASC> visited_coord;
-      for (int32_t i = 0; i < all_segment_list.size(); ++i) {
-        if (mask[i]) {
-          cadidate_segment_list.push_back(all_segment_list[i]);
-
-          PlanarCoord first_coord = all_segment_list[i].second.get_first();
-          PlanarCoord second_coord = all_segment_list[i].second.get_second();
-          graph[first_coord].push_back(second_coord);
-          graph[second_coord].push_back(first_coord);
-          visited_coord[first_coord] = false;
-          visited_coord[second_coord] = false;
+    // 从routing_segment_list中选择n-1条边并判断联通性
+    std::vector<std::vector<Segment<PlanarCoord>>> cadidate_topo_list_list = RTUTIL.getCombList(all_topo_list, cut_mid_coord_list.size());  // 所有候选
+    std::vector<std::vector<Segment<PlanarCoord>>> topo_list_list;  // 可用候选拓扑
+    for (std::vector<Segment<PlanarCoord>> cadidate_topo_list : cadidate_topo_list_list) {
+      // 判断连通性加入可用候选拓扑
+      if (RTUTIL.passCheckingConnectivity(cut_mid_coord_list, cadidate_topo_list)) {
+        topo_list_list.push_back(cadidate_topo_list);
+      }
+    }
+    // 从可用候选拓扑中得到得到routing segment
+    std::vector<std::vector<Segment<PlanarCoord>>> routing_segment_list_list;
+    for (std::vector<Segment<PlanarCoord>> topo_list : topo_list_list) {
+      std::vector<std::vector<std::vector<Segment<PlanarCoord>>>> topo_segment_list_list_list;  // 所有的直线topo,一个方案是一个list
+      for (Segment<PlanarCoord> topo : topo_list) {
+        std::vector<std::vector<Segment<PlanarCoord>>> topo_segment_list_list;  // 每个topo_segment_list是一个方案，topo_segment_list_list是方案合集
+        PlanarCoord first_coord = topo.get_first();
+        PlanarCoord second_coord = topo.get_second();
+        if (RTUTIL.isOblique(first_coord, second_coord)) {
+          std::vector<PlanarCoord> inflection_list;
+          inflection_list.emplace_back(first_coord.get_x(), second_coord.get_y());
+          inflection_list.emplace_back(second_coord.get_x(), first_coord.get_y());
+          for (size_t i; i < inflection_list.size(); i++) {
+            std::vector<Segment<PlanarCoord>> topo_segment_list;
+            topo_segment_list.emplace_back(first_coord, inflection_list[i]);
+            topo_segment_list.emplace_back(inflection_list[i], second_coord);
+            topo_segment_list_list.push_back(topo_segment_list);
+          }
+          topo_segment_list_list_list.push_back(topo_segment_list_list);
+        } else {
+          std::vector<Segment<PlanarCoord>> topo_segment_list;
+          topo_segment_list.push_back(topo);
+          topo_segment_list_list.push_back(topo_segment_list);
+          topo_segment_list_list_list.push_back(topo_segment_list_list);
         }
       }
-      // 用dfs判断是否联通
-      PlanarCoord start_coord = graph.cbegin()->first;
-      std::function<void(std::map<PlanarCoord, std::vector<PlanarCoord>,CmpPlanarCoordByXASC>&, PlanarCoord&, std::map<PlanarCoord, bool,CmpPlanarCoordByXASC>&)> dfs
-          = [&](std::map<PlanarCoord, std::vector<PlanarCoord>,CmpPlanarCoordByXASC>& graph, PlanarCoord& start, std::map<PlanarCoord, bool,CmpPlanarCoordByXASC>& visited_coord) {
-              visited_coord[start] = true;
-              for (PlanarCoord neighbor : graph[start]) {
-                if (!visited_coord[neighbor]) {
-                  dfs(graph, neighbor, visited_coord);
-                }
-              }
-            };
-      visited_coord[start_coord] = true;
-      dfs(graph, start_coord, visited_coord);
-      bool all_visited = std::all_of(visited_coord.begin(), visited_coord.end(), [](const auto& pair) { return pair.second; });
-      if (visited_coord.size() == cut_mid_coord_list.size() && all_visited) {
-        cadidate_segment_list_list.push_back(cadidate_segment_list);
-      }
-    } while (std::prev_permutation(mask.begin(), mask.end()));
-    // 生成所有的直线segment
-    std::vector<std::vector<Segment<PlanarCoord>>> cadidate_routing_segment_list_list;
-    for (std::vector<std::pair<int32_t, Segment<PlanarCoord>>>& cadidate_segment_list : cadidate_segment_list_list) {
-      std::vector<Segment<PlanarCoord>> cadidate_routing_segment_list;
-      for (std::pair<int32_t, Segment<PlanarCoord>>& cadidate_segment : cadidate_segment_list) {
-        PlanarCoord first_coord = cadidate_segment.second.get_first();
-        PlanarCoord second_coord = cadidate_segment.second.get_second();
-        std::vector<PlanarCoord> inflection_list;
-        inflection_list.emplace_back(first_coord.get_x(), second_coord.get_y());
-        inflection_list.emplace_back(second_coord.get_x(), first_coord.get_y());
-        switch (cadidate_segment.first) {
-          case 0:
-            cadidate_routing_segment_list.emplace_back(first_coord, second_coord);
-            break;
-          case 1:
-            cadidate_routing_segment_list.emplace_back(first_coord, inflection_list[0]);
-            cadidate_routing_segment_list.emplace_back(inflection_list[0], second_coord);
-            break;
-          case 2:
-            cadidate_routing_segment_list.emplace_back(first_coord, inflection_list[1]);
-            cadidate_routing_segment_list.emplace_back(inflection_list[1], second_coord);
-            break;
-          default:
-            RTLOG.error(Loc::current(), "error number of segment!");
-            break;
+      // 生成所有组合方案，加到routing_segment_list_list中
+      for (std::vector<std::vector<Segment<PlanarCoord>>> segment_list_list : RTUTIL.getCombList(topo_segment_list_list_list)) {
+        std::vector<Segment<PlanarCoord>> routing_segment_list;
+        for (std::vector<Segment<PlanarCoord>> segment_list : segment_list_list) {
+          for (Segment<PlanarCoord> segment : segment_list) {
+            routing_segment_list.push_back(segment);
+          }
         }
+        routing_segment_list_list.push_back(routing_segment_list);
       }
-      cadidate_routing_segment_list_list.push_back(cadidate_routing_segment_list);
     }
     // 对segment进行组合，方案数：删除点方案*((两点之间的连接数量的乘积) * (两点之间的连接数量的乘积) --这里由layer产生--)
     for (std::vector<Segment<LayerCoord>> remain_routing_segment_list : remain_routing_segment_list_list) {  // 删除点方案
-      for (int32_t i = 0; i < cadidate_routing_segment_list_list.size(); i++) {
-        for (int32_t j = 0; j < cadidate_routing_segment_list_list.size(); j++) {
+      for (int32_t i = 0; i < routing_segment_list_list.size(); i++) {
+        for (int32_t j = 0; j < routing_segment_list_list.size(); j++) {
           VRSolution vr_solution = getNewSolution(vr_box);
-          for (Segment<PlanarCoord> segment : cadidate_routing_segment_list_list[i]) {
+          for (Segment<PlanarCoord> segment : routing_segment_list_list[i]) {
             remain_routing_segment_list.emplace_back(LayerCoord(segment.get_first(), violation_layer_idx),
                                                      LayerCoord(segment.get_second(), violation_layer_idx));
           }
-          for (Segment<PlanarCoord> segment : cadidate_routing_segment_list_list[j]) {
+          for (Segment<PlanarCoord> segment : routing_segment_list_list[j]) {
             remain_routing_segment_list.emplace_back(LayerCoord(segment.get_first(), violation_layer_idx + 1),
                                                      LayerCoord(segment.get_second(), violation_layer_idx + 1));
           }
@@ -948,99 +919,70 @@ std::vector<VRSolution> ViolationRepairer::routeBySameLayerCutSpacing(VRBox& vr_
       remain_routing_segment_list_list.push_back(routing_segment_list);
     }
 
-    std::vector<std::pair<int32_t, Segment<PlanarCoord>>> all_segment_list;  // size为n(n-1)/2 0:直线,1:上拐角,2:下拐角
+    std::vector<Segment<PlanarCoord>> all_topo_list;  // size为n(n-1)/2 0:直线,1:上拐角,2:下拐角
     for (size_t i = 0; i < cut_mid_coord_list.size(); i++) {
       for (size_t j = i + 1; j < cut_mid_coord_list.size(); j++) {
         PlanarCoord first_coord = cut_mid_coord_list[i];
         PlanarCoord second_coord = cut_mid_coord_list[j];
-        // 可能是直线,也可能是斜线,先把斜线标记上,用作不同的方案
-        if (RTUTIL.isRightAngled(first_coord, second_coord)) {
-          all_segment_list.emplace_back(0, Segment<PlanarCoord>(first_coord, second_coord));
-        } else {
-          all_segment_list.emplace_back(1, Segment<PlanarCoord>(first_coord, second_coord));
-          all_segment_list.emplace_back(2, Segment<PlanarCoord>(first_coord, second_coord));
-        }
+        all_topo_list.emplace_back(first_coord, second_coord);  // 可能是直线,也可能是斜线
       }
     }
-    // 从routing_segment_list中选择n-1个点并判断联通性
-    std::vector<int32_t> mask(all_segment_list.size(), 0);
-    std::fill(mask.begin(), mask.begin() + cut_mid_coord_list.size() - 1, 1);  // cut_mid_coord_list.size() - 1条边即可
-    std::vector<std::vector<std::pair<int32_t, Segment<PlanarCoord>>>> cadidate_segment_list_list;
-    // 生成所有组合并过滤
-    do {
-      std::vector<std::pair<int32_t, Segment<PlanarCoord>>> cadidate_segment_list;
-      std::set<PlanarCoord, CmpPlanarCoordByXASC> coord_list;
-      std::map<PlanarCoord, std::vector<PlanarCoord>, CmpPlanarCoordByXASC> graph;  // 对应的图
-      std::map<PlanarCoord, bool, CmpPlanarCoordByXASC> visited_coord;
-      for (int32_t i = 0; i < all_segment_list.size(); ++i) {
-        if (mask[i]) {
-          cadidate_segment_list.push_back(all_segment_list[i]);
-
-          PlanarCoord first_coord = all_segment_list[i].second.get_first();
-          PlanarCoord second_coord = all_segment_list[i].second.get_second();
-          graph[first_coord].push_back(second_coord);
-          graph[second_coord].push_back(first_coord);
-          visited_coord[first_coord] = false;
-          visited_coord[second_coord] = false;
+    // 从routing_segment_list中选择n-1条边并判断联通性
+    std::vector<std::vector<Segment<PlanarCoord>>> cadidate_topo_list_list = RTUTIL.getCombList(all_topo_list, cut_mid_coord_list.size());  // 所有候选
+    std::vector<std::vector<Segment<PlanarCoord>>> topo_list_list;  // 可用候选拓扑
+    for (std::vector<Segment<PlanarCoord>> cadidate_topo_list : cadidate_topo_list_list) {
+      // 判断连通性加入可用候选拓扑
+      if (RTUTIL.passCheckingConnectivity(cut_mid_coord_list, cadidate_topo_list)) {
+        topo_list_list.push_back(cadidate_topo_list);
+      }
+    }
+    // 从可用候选拓扑中得到得到routing segment
+    std::vector<std::vector<Segment<PlanarCoord>>> routing_segment_list_list;
+    for (std::vector<Segment<PlanarCoord>> topo_list : topo_list_list) {
+      std::vector<std::vector<std::vector<Segment<PlanarCoord>>>> topo_segment_list_list_list;  // 所有的直线topo,一个方案是一个list
+      for (Segment<PlanarCoord> topo : topo_list) {
+        std::vector<std::vector<Segment<PlanarCoord>>> topo_segment_list_list;  // 每个topo_segment_list是一个方案，topo_segment_list_list是方案合集
+        PlanarCoord first_coord = topo.get_first();
+        PlanarCoord second_coord = topo.get_second();
+        if (RTUTIL.isOblique(first_coord, second_coord)) {
+          std::vector<PlanarCoord> inflection_list;
+          inflection_list.emplace_back(first_coord.get_x(), second_coord.get_y());
+          inflection_list.emplace_back(second_coord.get_x(), first_coord.get_y());
+          for (size_t i; i < inflection_list.size(); i++) {
+            std::vector<Segment<PlanarCoord>> topo_segment_list;
+            topo_segment_list.emplace_back(first_coord, inflection_list[i]);
+            topo_segment_list.emplace_back(inflection_list[i], second_coord);
+            topo_segment_list_list.push_back(topo_segment_list);
+          }
+          topo_segment_list_list_list.push_back(topo_segment_list_list);
+        } else {
+          std::vector<Segment<PlanarCoord>> topo_segment_list;
+          topo_segment_list.push_back(topo);
+          topo_segment_list_list.push_back(topo_segment_list);
+          topo_segment_list_list_list.push_back(topo_segment_list_list);
         }
       }
-      // 用dfs判断是否联通
-      PlanarCoord start_coord = graph.cbegin()->first;
-      std::function<void(std::map<PlanarCoord, std::vector<PlanarCoord>,CmpPlanarCoordByXASC>&, PlanarCoord&, std::map<PlanarCoord, bool,CmpPlanarCoordByXASC>&)> dfs
-          = [&](std::map<PlanarCoord, std::vector<PlanarCoord>,CmpPlanarCoordByXASC>& graph, PlanarCoord& start, std::map<PlanarCoord, bool,CmpPlanarCoordByXASC>& visited_coord) {
-              visited_coord[start] = true;
-              for (PlanarCoord neighbor : graph[start]) {
-                if (!visited_coord[neighbor]) {
-                  dfs(graph, neighbor, visited_coord);
-                }
-              }
-            };
-      visited_coord[start_coord] = true;
-      dfs(graph, start_coord, visited_coord);
-      bool all_visited = std::all_of(visited_coord.begin(), visited_coord.end(), [](const auto& pair) { return pair.second; });
-      if (visited_coord.size() == cut_mid_coord_list.size() && all_visited) {
-        cadidate_segment_list_list.push_back(cadidate_segment_list);
-      }
-    } while (std::prev_permutation(mask.begin(), mask.end()));
-    // 生成所有的直线segment
-    std::vector<std::vector<Segment<PlanarCoord>>> cadidate_routing_segment_list_list;
-    for (std::vector<std::pair<int32_t, Segment<PlanarCoord>>>& cadidate_segment_list : cadidate_segment_list_list) {
-      std::vector<Segment<PlanarCoord>> cadidate_routing_segment_list;
-      for (std::pair<int32_t, Segment<PlanarCoord>>& cadidate_segment : cadidate_segment_list) {
-        PlanarCoord first_coord = cadidate_segment.second.get_first();
-        PlanarCoord second_coord = cadidate_segment.second.get_second();
-        std::vector<PlanarCoord> inflection_list;
-        inflection_list.emplace_back(first_coord.get_x(), second_coord.get_y());
-        inflection_list.emplace_back(second_coord.get_x(), first_coord.get_y());
-        switch (cadidate_segment.first) {
-          case 0:
-            cadidate_routing_segment_list.emplace_back(first_coord, second_coord);
-            break;
-          case 1:
-            cadidate_routing_segment_list.emplace_back(first_coord, inflection_list[0]);
-            cadidate_routing_segment_list.emplace_back(inflection_list[0], second_coord);
-            break;
-          case 2:
-            cadidate_routing_segment_list.emplace_back(first_coord, inflection_list[1]);
-            cadidate_routing_segment_list.emplace_back(inflection_list[1], second_coord);
-            break;
-          default:
-            RTLOG.error(Loc::current(), "error number of segment!");
-            break;
+      // 生成所有组合方案，加到routing_segment_list_list中
+      for (std::vector<std::vector<Segment<PlanarCoord>>> segment_list_list : RTUTIL.getCombList(topo_segment_list_list_list)) {
+        std::vector<Segment<PlanarCoord>> routing_segment_list;
+        for (std::vector<Segment<PlanarCoord>> segment_list : segment_list_list) {
+          for (Segment<PlanarCoord> segment : segment_list) {
+            routing_segment_list.push_back(segment);
+          }
         }
+        routing_segment_list_list.push_back(routing_segment_list);
       }
-      cadidate_routing_segment_list_list.push_back(cadidate_routing_segment_list);
     }
     // 对segment进行组合，方案数：删除点方案*((两点之间的连接数量的乘积) * (两点之间的连接数量的乘积) --这里由layer产生--)
     for (std::vector<Segment<LayerCoord>> remain_routing_segment_list : remain_routing_segment_list_list) {  // 删除点方案
-      for (int32_t i = 0; i < cadidate_routing_segment_list_list.size(); i++) {
-        for (int32_t j = 0; j < cadidate_routing_segment_list_list.size(); j++) {
+      for (int32_t i = 0; i < routing_segment_list_list.size(); i++) {
+        for (int32_t j = 0; j < routing_segment_list_list.size(); j++) {
           VRSolution vr_solution = getNewSolution(vr_box);
-          for (Segment<PlanarCoord> segment : cadidate_routing_segment_list_list[i]) {
+          for (Segment<PlanarCoord> segment : routing_segment_list_list[i]) {
             remain_routing_segment_list.emplace_back(LayerCoord(segment.get_first(), violation_layer_idx),
                                                      LayerCoord(segment.get_second(), violation_layer_idx));
           }
-          for (Segment<PlanarCoord> segment : cadidate_routing_segment_list_list[j]) {
+          for (Segment<PlanarCoord> segment : routing_segment_list_list[j]) {
             remain_routing_segment_list.emplace_back(LayerCoord(segment.get_first(), violation_layer_idx + 1),
                                                      LayerCoord(segment.get_second(), violation_layer_idx + 1));
           }
