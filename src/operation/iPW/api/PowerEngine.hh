@@ -82,6 +82,8 @@ class PowerEngine {
   std::vector<MacroConnection> buildMacroConnectionMap(unsigned max_hop);
 
   unsigned buildPGNetWireTopo(std::string power_net_name);
+  unsigned readPGSpef(const char* spef_file) { return _ipower->readPGSpef(spef_file); }
+  unsigned runIRAnalysis(std::string power_net_name) { return _ipower->runIRAnalysis(power_net_name);}
 
 #ifdef USE_GPU
   std::vector<MacroConnection> buildMacroConnectionMapWithGPU(unsigned max_hop);
