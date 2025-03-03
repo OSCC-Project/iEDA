@@ -1318,12 +1318,66 @@ bool ViolationRepairer::stopIteration(VRModel& vr_model)
 
 double ViolationRepairer::getEnvCost(VRBox& vr_box, int32_t net_idx, Segment<LayerCoord>& segment)
 {
-  return 0;
+  double env_cost = 0;
+  for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
+    for (auto& [graph_net_idx, fixed_rect_set] : vr_box.get_graph_type_layer_net_fixed_rect_map()[net_shape.get_is_routing()][net_shape.get_layer_idx()]) {
+      if (net_shape.get_net_idx() == graph_net_idx) {
+        continue;
+      }
+      for (const PlanarRect& fixed_rect : fixed_rect_set) {
+        if (RTUTIL.isOpenOverlap(net_shape.get_rect(), fixed_rect)) {
+          env_cost++;
+        }
+      }
+    }
+    for (auto& [graph_net_idx, routed_rect_set] : vr_box.get_graph_type_layer_net_routed_rect_map()[net_shape.get_is_routing()][net_shape.get_layer_idx()]) {
+      if (net_shape.get_net_idx() == graph_net_idx) {
+        continue;
+      }
+      for (const PlanarRect& routed_rect : routed_rect_set) {
+        if (RTUTIL.isOpenOverlap(net_shape.get_rect(), routed_rect)) {
+          env_cost++;
+        }
+      }
+    }
+    for (const PlanarRect& violation : vr_box.get_graph_layer_violation_map()[net_shape.get_layer_idx()]) {
+      if (RTUTIL.isClosedOverlap(net_shape.get_rect(), violation)) {
+        env_cost++;
+      }
+    }
+  }
+  return env_cost;
 }
 
 double ViolationRepairer::getEnvCost(VRBox& vr_box, int32_t net_idx, EXTLayerRect& patch)
 {
-  return 0;
+  double env_cost = 0;
+  for (auto& [graph_net_idx, fixed_rect_set] : vr_box.get_graph_type_layer_net_fixed_rect_map()[true][patch.get_layer_idx()]) {
+    if (net_idx == graph_net_idx) {
+      continue;
+    }
+    for (const PlanarRect& fixed_rect : fixed_rect_set) {
+      if (RTUTIL.isOpenOverlap(patch.get_real_rect(), fixed_rect)) {
+        env_cost++;
+      }
+    }
+  }
+  for (auto& [graph_net_idx, routed_rect_set] : vr_box.get_graph_type_layer_net_routed_rect_map()[true][patch.get_layer_idx()]) {
+    if (net_idx == graph_net_idx) {
+      continue;
+    }
+    for (const PlanarRect& routed_rect : routed_rect_set) {
+      if (RTUTIL.isOpenOverlap(patch.get_real_rect(), routed_rect)) {
+        env_cost++;
+      }
+    }
+  }
+  for (const PlanarRect& violation : vr_box.get_graph_layer_violation_map()[patch.get_layer_idx()]) {
+    if (RTUTIL.isClosedOverlap(patch.get_real_rect(), violation)) {
+      env_cost++;
+    }
+  }
+  return env_cost;
 }
 
 #endif
