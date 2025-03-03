@@ -186,7 +186,7 @@ pub extern "C" fn read_spef(c_power_net_spef: *const c_char) -> *const c_void {
 #[no_mangle]
 pub extern "C" fn create_pg_node(c_pg_netlist: *mut c_void, c_pg_node: *const RustIRPGNode) -> *const c_void {
     let pg_node = unsafe { *c_pg_node };
-    println!("{:?}", pg_node);
+    // println!("{:?}", pg_node);
     let mut pg_netlist = unsafe { Box::from_raw(c_pg_netlist as *mut RustIRPGNetlist) };
     pg_netlist.nodes.push(pg_node);
     Box::into_raw(pg_netlist) as *const c_void
@@ -196,7 +196,7 @@ pub extern "C" fn create_pg_node(c_pg_netlist: *mut c_void, c_pg_node: *const Ru
 #[no_mangle]
 pub extern "C" fn create_pg_edge(c_pg_netlist: *const c_void, c_pg_edge: *const RustIRPGEdge) -> *const c_void {
     let pg_edge = unsafe { *c_pg_edge };
-    println!("{:?}", pg_edge);
+    // println!("{:?}", pg_edge);
 
     let mut pg_netlist = unsafe { Box::from_raw(c_pg_netlist as *mut RustIRPGNetlist) };
     pg_netlist.edges.push(pg_edge);
