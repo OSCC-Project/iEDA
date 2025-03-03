@@ -78,6 +78,7 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
 
   /// check polygon self
   {
+#if 0
     auto& origin_polygons = layout->get_layout_engine()->getLayoutPolygons();  /// copy polyset
     for (auto& origin_polygon : origin_polygons) {
       ieda_solver::GeometryPolygonSet origin_polyset;
@@ -109,7 +110,7 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
           }
         }
       }
-#if 0
+
       // check diagnal spacing >= min spacing
       auto violation_set = origin_polyset;  /// copy polyset
       violation_set.clean();                /// eliminate overlaps
@@ -133,8 +134,8 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
         addViolation(results[i], layer, ViolationEnumType::kDefaultSpacing);
         violation_num++;
       }
-#endif
     }
+#endif
   }
 
   /// check different poly
