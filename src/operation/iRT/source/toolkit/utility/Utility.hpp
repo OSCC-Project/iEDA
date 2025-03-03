@@ -2080,6 +2080,40 @@ class Utility
     return is_connectivity;
   }
 
+  static bool passCheckingConnectivity(std::vector<PlanarCoord>& key_coord_list, std::vector<Segment<PlanarCoord>>& routing_segment_list)
+  {
+    return true;
+    // std::vector<std::pair<bool, Segment<T>>> visited_value_pair_list;
+    // visited_value_pair_list.reserve(segment_list.size());
+    // for (size_t i = 0; i < segment_list.size(); i++) {
+    //   visited_value_pair_list.emplace_back(false, segment_list[i]);
+    // }
+    // TNode<T>* root = new TNode(root_value);
+    // std::queue<TNode<T>*> node_queue = initQueue(root);
+    // while (!node_queue.empty()) {
+    //   TNode<T>* node = getFrontAndPop(node_queue);
+    //   T& value = node->value();
+
+    //   std::vector<TNode<T>*> next_node_list;
+    //   for (size_t i = 0; i < visited_value_pair_list.size(); i++) {
+    //     std::pair<bool, Segment<T>>& visited_value_pair = visited_value_pair_list[i];
+    //     if (visited_value_pair.first == true) {
+    //       continue;
+    //     }
+    //     T& value1 = visited_value_pair.second.get_first();
+    //     T& value2 = visited_value_pair.second.get_second();
+    //     if (value == value1 || value == value2) {
+    //       TNode<T>* child_node = (value == value1 ? new TNode(value2) : new TNode(value1));
+    //       next_node_list.push_back(child_node);
+    //       node->addChild(child_node);
+    //       visited_value_pair.first = true;
+    //     }
+    //   }
+    //   addListToQueue(node_queue, next_node_list);
+    // }
+    // return MTree<T>(root);
+  }
+
   /**
    * curr_layer_idx在可布线层内
    *    如果不是最高可布线层,向上打孔
