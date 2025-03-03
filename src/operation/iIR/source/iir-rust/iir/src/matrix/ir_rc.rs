@@ -271,7 +271,7 @@ pub fn create_rc_data_from_topo(pg_netlist: &RustIRPGNetlist) -> RCOneNetData {
         if pg_node.is_instance_pin || pg_node.is_bump {
             let node_name = c_str_to_r_str(pg_node.node_name);
             let mut rc_node = RCNode::new(node_name);
-            
+
             if pg_node.is_bump {
                 rc_node.set_is_bump();
             } else{
@@ -317,7 +317,6 @@ pub fn build_conductance_matrix(rc_one_net_data: &RCOneNetData) -> TriMatI<f64, 
         }
     }
 
-    //TODO(to taosimin) process the bump node.
     for rc_resistance in resistances {
         let node1_id = rc_resistance.from_node_id;
         let node2_id = rc_resistance.to_node_id;

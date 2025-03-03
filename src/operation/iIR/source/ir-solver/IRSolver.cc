@@ -43,12 +43,17 @@ namespace iir {
  */
 void PrintMatrix(Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
                  Eigen::Index base_index) {
-  for (Eigen::Index i = base_index; i < base_index + 100; ++i) {
-    for (Eigen::Index j = base_index; j < base_index + 100; ++j) {
-      LOG_INFO << "Element at (" << i << ", " << j
-               << "): " << G_matrix.coeff(i, j);
+  std::ofstream out("/home/taosimin/iEDA24/iEDA/bin/matrix.txt", std::ios::trunc);
+  for (Eigen::Index i = base_index; i < base_index + G_matrix.rows(); ++i) {
+    for (Eigen::Index j = base_index; j < base_index + G_matrix.cols(); ++j) {
+      // LOG_INFO << "Element at (" << i << ", " << j
+      //          << "): " << G_matrix.coeff(i, j);
+      out << std::fixed << std::setprecision(6) << G_matrix.coeff(i, j) << " ";
     }
+    out << "\n";
   }
+
+  out.close();
 }
 
 /**
@@ -63,13 +68,17 @@ std::vector<double> IRSolver::operator()(
     Eigen::VectorXd& J_vector) {
   unsigned node_num = J_vector.size();
 
-  Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
-  solver.analyzePattern(G_matrix);
-  solver.factorize(G_matrix);
+  Eigen::SimplicialLLT<Eigen::SparseMatrix<double>> solver;
+  // solver.analyzePattern(G_matrix);
+  // solver.factorize(G_matrix);
+  solver.compute(G_matrix);
 
-  if (solver.info() != Eigen::Success) {
+  LOG_INFO << "G matrix size: " << G_matrix.rows() << " * " << G_matrix.cols();
+
+  auto ret_value = solver.info();
+  if (ret_value != Eigen::Success) {
     PrintMatrix(G_matrix, 0);
-    LOG_FATAL << "LU solver error";
+    LOG_FATAL << "LU solver error " << ret_value;
   }
 
   Eigen::VectorXd v_vector = solver.solve(J_vector);

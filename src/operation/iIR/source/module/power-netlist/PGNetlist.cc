@@ -25,6 +25,7 @@
 #include "log/Log.hh"
 #include <iostream>
 #include <fstream>
+#include <random>
 #include "string/Str.hh"
 
 #include "iir-rust/IRRustC.hh"
@@ -176,6 +177,7 @@ void IRPGNetlistBuilder::build(
         if (!pg_points.contains(left_tuple)) {
           auto& pg_node = pg_netlist.addNode({left_x, left_y}, left_layer_id);
           segment_to_point[i].insert(&pg_node);
+          pg_points.insert(left_tuple);
         }
       }
     }
@@ -212,9 +214,10 @@ void IRPGNetlistBuilder::build(
   LOG_INFO << "line edge num: " << line_edge_num;
   
   // Then we build the via segment edge.
-  std::vector<IRPGNode*> via_segment_nodes;
+  std::map<int, std::set<IRPGNode*, IRNodeComparator>> coordy_to_via_segment_nodes; // via nodes sort by coord y, then x.
   // FIXME(to taosimin), should not hard code the instance pin layer.
   unsigned instance_pin_layer = 2;
+  // start from via segments.
   for (unsigned i = line_segment_num; i < bg_segments.size(); ++i) {
     auto bg_start = bg_segments[i].first;
     auto bg_end = bg_segments[i].second;
@@ -230,10 +233,11 @@ void IRPGNetlistBuilder::build(
     }
     
     if (bg_start.get<2>() == instance_pin_layer) {
-      via_segment_nodes.push_back(via_start_node);
+      coordy_to_via_segment_nodes[via_start_node->get_coord().second].insert(via_start_node);
     }
     
     auto& pg_edge = pg_netlist.addEdge(via_start_node, via_end_node);
+    // TODO(to taosimin), hard code the via resistance, need know the resistance of via.
     pg_edge.set_resistance(0.001);
   }
   
@@ -241,6 +245,10 @@ void IRPGNetlistBuilder::build(
   LOG_INFO << "via edge num: " << via_edge_num;
 
   // Finally, connect the instance pin list and PG Port.
+  std::random_device rd; 
+  std::mt19937 gen(rd()); 
+  std::uniform_real_distribution<> dis(0.0, 1.0);
+
   auto instance_pin_list = special_net->get_instance_pin_list()->get_pin_list();
   for (auto* instance_pin : instance_pin_list) {
     // LOG_INFO << "connect instance pin: "
@@ -258,15 +266,51 @@ void IRPGNetlistBuilder::build(
     pg_netlist.addNodeIdToName(instance_pin_node->get_node_id(), std::move(node_name));
     auto& stored_node_name = pg_netlist.getNodeName(instance_pin_node->get_node_id());
     instance_pin_node->set_node_name(stored_node_name.c_str());
+    
+    int via_last_coord_y = 0;
+    std::vector<IRPGNode*> via_connected_nodes;
 
-    for (auto* via_segment_node : via_segment_nodes) {
+    // lambda for choose close point.
+    auto choose_closer_point = [](int point, int left, int right) {
+      int distToLeft = abs(point - left);
+      int distToRight = abs(point - right);
+
+      return distToLeft <= distToRight ? left : right;
+    };
+
+    for (auto& [coord_y, via_segment_nodes] : coordy_to_via_segment_nodes) {
       // via should be on the same row with the instance pin.
-      if (via_segment_node->get_coord().second == instance_pin_coord->get_y()) {
-        auto& pg_edge = pg_netlist.addEdge(via_segment_node, instance_pin_node);
-        // hard code the last instance resistance.
-        pg_edge.set_resistance(0.001);
+      if (coord_y == instance_pin_coord->get_y()) {
+        for (auto* via_segment_node : via_segment_nodes) {
+          via_connected_nodes.push_back(via_segment_node);
+        }
+      } else if (coord_y > instance_pin_coord->get_y()) {
+        // choose the nearest distance nodes.
+        int choose_y = via_last_coord_y
+                           ? choose_closer_point(instance_pin_coord->get_y(),
+                                                 via_last_coord_y, coord_y)
+                           : coord_y;
+        for (auto* via_segment_node : coordy_to_via_segment_nodes[choose_y]) {
+          via_connected_nodes.push_back(via_segment_node);
+        }
+      } else {
+        via_last_coord_y = coord_y;
+        continue;
       }
-      
+
+      for (auto* via_connected_node : via_connected_nodes) {
+        auto& pg_edge =
+            pg_netlist.addEdge(via_connected_node, instance_pin_node);
+        // hard code the last instance resistance.
+        double random_value = dis(gen);
+        // random is to disturbance the value for LU decomposition.
+        pg_edge.set_resistance(10 + random_value);
+      }
+
+      if (via_connected_nodes.size() > 0) {
+        // instance pin node has already been connected, break.
+        break;
+      }
     }
   }
 

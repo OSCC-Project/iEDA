@@ -826,7 +826,7 @@ unsigned Power::runIRAnalysis(std::string power_net_name) {
   _ir_analysis.setInstancePowerData(std::move(instance_power_data));
   
   // const char* spef_file_path = "/home/taosimin/ir_example/aes/aes_vdd_vss.spef";
-  // ir_analysis.readSpef(spef_file_path);
+  // _ir_analysis.readSpef(spef_file_path);
   
   // set rc data.
   _ir_analysis.set_rc_data(_rust_pg_rc_data);

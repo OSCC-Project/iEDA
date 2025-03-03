@@ -105,6 +105,22 @@ struct IRNodeComparator {
 };
 
 /**
+ * @brief node comparator for store IR Node according to the row order for row edge connected.
+ * 
+ */
+struct IRNodeRowComparator {
+  bool operator()(const IRPGNode* lhs, const IRPGNode* rhs) const {
+    auto lhs_coord = lhs->get_coord();
+    auto rhs_coord = rhs->get_coord();
+
+    if (lhs_coord.second != rhs_coord.second) {
+      return lhs_coord.second < rhs_coord.second;
+    }
+    return lhs_coord.first < rhs_coord.first;
+  }
+};
+
+/**
  * @brief PG network edge.
  *
  */

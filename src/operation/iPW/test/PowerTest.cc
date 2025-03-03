@@ -297,7 +297,7 @@ TEST_F(PowerTest, estimateIR) {
 
   timing_engine->buildGraph();
 
-  timing_engine->updateTiming();
+  timing_engine->get_ista()->updateTiming();
   timing_engine->reportTiming();
 
   Sta* ista = Sta::getOrCreateSta();

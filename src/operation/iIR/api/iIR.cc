@@ -88,7 +88,7 @@ unsigned iIR::solveIRDrop(const char* net_name) {
       build_one_net_instance_current_vector(_power_data, _rc_data, net_name);
   auto J_vector = ir_matrix.buildCurrentVector(current_rust_map,
                                                one_net_matrix_data.node_num);
-
+  
   IRSolver ir_solver;
   auto grid_voltages = ir_solver(G_matrix, J_vector);
 
