@@ -3405,6 +3405,26 @@ class Utility
     return std::set<T>(result.begin(), result.end());
   }
 
+  /**
+   * 从多个list中,每个选择一个元素并生成所有可能的组合
+   */
+  template <typename T>
+  static std::vector<std::vector<T>> getCombList(std::vector<std::vector<T>>& list)
+  {
+    std::vector<std::vector<T>> a;
+    return a;
+  }
+
+  /**
+   * 从一个list中,生成只包含n个元素所有可能的组合
+   */
+  template <typename T>
+  static std::vector<std::vector<T>> getCombList(std::vector<T>& list, int32_t n)
+  {
+    std::vector<std::vector<T>> a;
+    return a;
+  }
+
 #endif
 
  private:
