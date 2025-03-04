@@ -18,6 +18,7 @@
 #include <string>
 
 #include "condition_manager.h"
+#include "engine_geometry_creator.h"
 #include "engine_layout.h"
 #include "idm.h"
 
@@ -71,13 +72,13 @@ void DrcConditionManager::checkCutOverlap(std::string layer, DrcEngineLayout* la
 
     for (auto rect : results) {
       if (shrink_rect(rect, 1)) {
-        addViolation(rect, layer, ViolationEnumType::kShort);
+        addViolation(rect, layer, ViolationEnumType::kCutShort);
         total_drc++;
       }
     }
   }
 
-  DEBUGOUTPUT(DEBUGHIGHLIGHT("Metal Short:\t") << total_drc << "\tlayer " << layer << "\tnets = " << layout->get_sub_layouts().size()
+  DEBUGOUTPUT(DEBUGHIGHLIGHT("Cut Short:\t") << total_drc << "\tlayer " << layer << "\tnets = " << layout->get_sub_layouts().size()
                                                << "\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta());
 
   delete engine;
