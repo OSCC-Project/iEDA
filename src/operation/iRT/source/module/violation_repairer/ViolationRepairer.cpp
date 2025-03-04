@@ -790,7 +790,7 @@ std::vector<VRSolution> ViolationRepairer::routeByCutShort(VRBox& vr_box)
         LayerCoord first_coord = routing_segment.get_first();
         LayerCoord second_coord = routing_segment.get_second();
         RTUTIL.swapByCMP(first_coord, second_coord, CmpLayerCoordByLayerASC());
-        if (first_coord == second_coord && RTUTIL.exist(del_coord_list, first_coord)) {
+        if (first_coord.get_planar_coord() == second_coord.get_planar_coord() && RTUTIL.exist(del_coord_list, first_coord)) {
           continue;
         }
         orig_routing_segment_list.push_back(routing_segment);
