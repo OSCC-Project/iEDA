@@ -65,8 +65,8 @@ void writeGuide(std::vector<Net>& net_list, const std::string& guide_file_path)
     Net& net = net_list[i];
     (*guide_file_stream) << net.get_net_name() << "\n(\n";
     for (Guide& guide : net.get_guide_list()) {
-      (*guide_file_stream) << guide.get_ll_x() << " " << guide.get_ll_y() << " " << guide.get_ur_x() << " " << guide.get_ur_y() << " "
-                           << guide.get_layer_name() << "\n";
+      (*guide_file_stream) << guide.get_ll_x() << " " << guide.get_ll_y() << " " << guide.get_ur_x() << " " << guide.get_ur_y() << " " << guide.get_layer_name()
+                           << "\n";
     }
     (*guide_file_stream) << ")\n";
     if ((i + 1) % 10000 == 0) {
@@ -89,8 +89,7 @@ int32_t main()
   std::cout << "////////////////////////////////////////////" << std::endl;
   std::cout << "guide_file_path_read: " << guide_file_path_read << std::endl;
   std::cout << "guide_file_path_write: " << guide_file_path_write << std::endl;
-  std::cout << "************ file_diff_lines_num: " << countDifferentLines(guide_file_path_read, guide_file_path_write) << " ************"
-            << std::endl;
+  std::cout << "************ file_diff_lines_num: " << countDifferentLines(guide_file_path_read, guide_file_path_write) << " ************" << std::endl;
   std::cout << "////////////////////////////////////////////" << std::endl;
 
   return 0;

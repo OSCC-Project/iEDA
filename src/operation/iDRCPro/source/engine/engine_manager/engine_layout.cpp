@@ -16,6 +16,8 @@
 // ***************************************************************************************
 #include "engine_layout.h"
 
+#include <cstdio>
+
 #include "engine_geometry_creator.h"
 #include "geometry_boost.h"
 #include "idrc_dm.h"
@@ -97,7 +99,7 @@ ieda_solver::GeometryBoost* DrcEngineLayout::get_net_engine(int net_id)
 //   return point_number;
 // }
 
-void DrcEngineLayout::combineLayout(DrcDataManager* data_manager)
+void DrcEngineLayout::combineLayout()
 {
   for (auto& [net_id, sub_layout] : _sub_layouts) {
     _engine->addGeometry(sub_layout->get_engine());
@@ -105,7 +107,7 @@ void DrcEngineLayout::combineLayout(DrcDataManager* data_manager)
     /// build engine sublayout RTree
     addRTreeSubLayout(sub_layout);
   }
-
+#if 0
   /// save intersect layout for each sublayout
   std::vector<DrcEngineSubLayout*> sub_layouts;
   /// init sublayout drc map & sublayout list
@@ -135,14 +137,16 @@ void DrcEngineLayout::combineLayout(DrcDataManager* data_manager)
       }
     }
   }
+#endif
 }
 
 void DrcEngineLayout::addRTreeSubLayout(DrcEngineSubLayout* sub_layout)
 {
-  auto bounding_box = sub_layout->get_engine()->bounding_box();
-  ieda_solver::BgRect rtree_rect(ieda_solver::BgPoint(std::get<0>(bounding_box), std::get<1>(bounding_box)),
-                                 ieda_solver::BgPoint(std::get<2>(bounding_box), std::get<3>(bounding_box)));
-  _query_tree.insert(std::make_pair(rtree_rect, sub_layout));
+  for (auto rect : sub_layout->get_engine()->getRects()) {
+    ieda_solver::BgRect rtree_rect(ieda_solver::BgPoint(boost::polygon::xl(rect), boost::polygon::yl(rect)),
+                                   ieda_solver::BgPoint(boost::polygon::xh(rect), boost::polygon::yh(rect)));
+    _query_tree.insert(std::make_pair(rtree_rect, sub_layout));
+  }
 }
 
 std::vector<std::pair<ieda_solver::BgRect, DrcEngineSubLayout*>> DrcEngineLayout::querySubLayouts(int llx, int lly, int urx, int ury)
@@ -163,9 +167,11 @@ std::set<int> DrcEngineLayout::querySubLayoutNetId(int llx, int lly, int urx, in
     if (sub_layout == nullptr) {
       continue;
     }
-    if (sub_layout->isIntersect(llx, lly, urx, ury)) {
-      net_ids.insert(sub_layout->get_id());
-    }
+    net_ids.insert(sub_layout->get_id());
+    // FIXME: REMOVE this extra check
+    // if (!sub_layout->isIntersect(llx, lly, urx, ury)) {
+    //   printf("Error: sub_layout is not intersect with query rect\n");
+    // }
   }
 
   return net_ids;

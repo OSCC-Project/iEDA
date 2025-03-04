@@ -6,6 +6,9 @@ target_include_directories(tool_api_idrc
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
+if(USE_PROFILER)
+    add_definitions(-DUSE_PROFILER)
+endif(USE_PROFILER)
 
 target_link_libraries(tool_api_idrc
     PUBLIC 

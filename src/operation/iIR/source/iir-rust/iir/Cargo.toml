@@ -23,7 +23,7 @@ rustflags = ["-Z", "threads=8"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-spef-parser = "0.2.4"
+spef = { package = "spef-parser", version = "0.2.5" }
 csv = "1.1.6"
 serde = { version = "1.0.193", features = ["derive"] }
 env_logger = "0.10.0"

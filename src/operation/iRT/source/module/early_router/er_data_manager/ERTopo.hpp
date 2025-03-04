@@ -37,10 +37,7 @@ class ERTopo
   void set_net_idx(const int32_t net_idx) { _net_idx = net_idx; }
   void set_er_group_list(const std::vector<ERGroup>& er_group_list) { _er_group_list = er_group_list; }
   void set_bounding_box(const PlanarRect& bounding_box) { _bounding_box = bounding_box; }
-  void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list)
-  {
-    _routing_segment_list = routing_segment_list;
-  }
+  void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list) { _routing_segment_list = routing_segment_list; }
   // function
 
  private:

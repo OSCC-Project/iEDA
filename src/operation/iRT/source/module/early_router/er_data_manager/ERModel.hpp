@@ -51,20 +51,14 @@ class ERModel
   std::vector<ERNode*>& get_single_topo_visited_node_list() { return _single_topo_visited_node_list; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
   void set_curr_er_topo(ERTopo* curr_er_topo) { _curr_er_topo = curr_er_topo; }
-  void set_start_node_list_list(const std::vector<std::vector<ERNode*>>& start_node_list_list)
-  {
-    _start_node_list_list = start_node_list_list;
-  }
+  void set_start_node_list_list(const std::vector<std::vector<ERNode*>>& start_node_list_list) { _start_node_list_list = start_node_list_list; }
   void set_end_node_list_list(const std::vector<std::vector<ERNode*>>& end_node_list_list) { _end_node_list_list = end_node_list_list; }
   void set_path_node_list(const std::vector<ERNode*>& path_node_list) { _path_node_list = path_node_list; }
   void set_single_topo_visited_node_list(const std::vector<ERNode*>& single_topo_visited_node_list)
   {
     _single_topo_visited_node_list = single_topo_visited_node_list;
   }
-  void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list)
-  {
-    _routing_segment_list = routing_segment_list;
-  }
+  void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list) { _routing_segment_list = routing_segment_list; }
   // single path
   PriorityQueue<ERNode*, std::vector<ERNode*>, CmpERNodeCost>& get_open_queue() { return _open_queue; }
   std::vector<ERNode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }

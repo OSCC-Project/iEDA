@@ -13,6 +13,7 @@ add_subdirectory(api)
 add_subdirectory(source/iir-rust)
 add_subdirectory(source/ir-solver)
 add_subdirectory(source/module/matrix)
+add_subdirectory(source/module/power-netlist)
 add_subdirectory(test)
 
 aux_source_directory(./ SRC)

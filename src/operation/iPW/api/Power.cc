@@ -57,7 +57,7 @@ Power* Power::getOrCreatePower(StaGraph* sta_graph) {
   if (_power == nullptr) {
     if (_power == nullptr) {
       std::lock_guard<std::mutex> lock(mt);
-      _power = new Power(sta_graph);
+      _power = new Power(sta_graph);      
     }
   }
   return _power;
@@ -278,6 +278,72 @@ unsigned Power::updatePower() {
   }
 
   return 1;
+}
+
+/**
+ * @brief get the instance owned group.
+ *
+ * @param inst
+ * @return std::optional<PwrGroupData::PwrGroupType>
+ */
+std::optional<PwrGroupData::PwrGroupType> Power::getInstPowerGroup(
+    Instance* the_inst) {
+  auto* lib_cell = the_inst->get_inst_cell();
+  std::array<std::function<std::optional<PwrGroupData::PwrGroupType>(Instance *
+                                                                     the_inst)>,
+             7>
+      group_prioriy_array{
+          [this, lib_cell](
+              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
+            // judge whether io cell.
+            return std::nullopt;
+          },
+          [this, lib_cell](
+              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
+            // judge whether memory.
+            return std::nullopt;
+          },
+          [this, lib_cell](
+              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
+            // judge whether black box.
+            return std::nullopt;
+          },
+          [this, lib_cell](
+              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
+            // judge whether register.
+            if (lib_cell->isSequentialCell()) {
+              return PwrGroupData::PwrGroupType::kSeq;
+            }
+            return std::nullopt;
+          },
+          [this, lib_cell](
+              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
+            // judge whether clock network.
+            Pin* pin;
+            FOREACH_INSTANCE_PIN(the_inst, pin) {
+              auto* the_pwr_vertex = _power_graph.getPowerVertex(pin);
+              if (the_pwr_vertex->is_clock_network()) {
+                return PwrGroupData::PwrGroupType::kClockNetwork;
+              }
+            }
+            return std::nullopt;
+          },
+          [this, lib_cell](
+              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
+            // judge whether register.
+            if (!lib_cell->isSequentialCell()) {
+              return PwrGroupData::PwrGroupType::kComb;
+            }
+            return std::nullopt;
+          }};
+
+  for (auto group_type_func : group_prioriy_array) {
+    auto power_type = group_type_func(the_inst);
+    if (power_type) {
+      return power_type;
+    }
+  }
+  return std::nullopt;
 }
 
 /**
@@ -569,6 +635,34 @@ unsigned Power::reportInstancePowerCSV(const char* rpt_file_name) {
 }
 
 /**
+ * @brief get instance power data.
+ * 
+ * @return unsigned 
+ */
+std::vector<IRInstancePower> Power::getInstancePowerData() {
+  std::vector<IRInstancePower> instance_power_data;
+
+  IRInstancePower instance_power;
+  PwrGroupData* group_data;
+  FOREACH_PWR_GROUP_DATA(this, group_data) {
+    if (dynamic_cast<Net*>(group_data->get_obj())) {
+      continue;
+    }
+
+    auto* inst = dynamic_cast<Instance*>(group_data->get_obj());
+    instance_power._instance_name = inst->get_name();
+    instance_power._nominal_voltage = group_data->get_nom_voltage();
+    instance_power._internal_power = group_data->get_internal_power();
+    instance_power._switch_power = group_data->get_switch_power();
+    instance_power._leakage_power = group_data->get_leakage_power();
+    instance_power._total_power = group_data->get_total_power();
+  }
+  
+  instance_power_data.emplace_back(std::move(instance_power));
+  return instance_power_data;
+}
+
+/**
  * @brief init power graph data
  *
  * @param
@@ -785,69 +879,32 @@ unsigned Power::runCompleteFlow() {
 }
 
 /**
- * @brief get the instance owned group.
- *
- * @param inst
- * @return std::optional<PwrGroupData::PwrGroupType>
+ * @brief read pg spef file.
+ * 
+ * @param spef_file 
+ * @return unsigned 
  */
-std::optional<PwrGroupData::PwrGroupType> Power::getInstPowerGroup(
-    Instance* the_inst) {
-  auto* lib_cell = the_inst->get_inst_cell();
-  std::array<std::function<std::optional<PwrGroupData::PwrGroupType>(Instance *
-                                                                     the_inst)>,
-             7>
-      group_prioriy_array{
-          [this, lib_cell](
-              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
-            // judge whether io cell.
-            return std::nullopt;
-          },
-          [this, lib_cell](
-              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
-            // judge whether memory.
-            return std::nullopt;
-          },
-          [this, lib_cell](
-              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
-            // judge whether black box.
-            return std::nullopt;
-          },
-          [this, lib_cell](
-              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
-            // judge whether register.
-            if (lib_cell->isSequentialCell()) {
-              return PwrGroupData::PwrGroupType::kSeq;
-            }
-            return std::nullopt;
-          },
-          [this, lib_cell](
-              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
-            // judge whether clock network.
-            Pin* pin;
-            FOREACH_INSTANCE_PIN(the_inst, pin) {
-              auto* the_pwr_vertex = _power_graph.getPowerVertex(pin);
-              if (the_pwr_vertex->is_clock_network()) {
-                return PwrGroupData::PwrGroupType::kClockNetwork;
-              }
-            }
-            return std::nullopt;
-          },
-          [this, lib_cell](
-              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
-            // judge whether register.
-            if (!lib_cell->isSequentialCell()) {
-              return PwrGroupData::PwrGroupType::kComb;
-            }
-            return std::nullopt;
-          }};
-
-  for (auto group_type_func : group_prioriy_array) {
-    auto power_type = group_type_func(the_inst);
-    if (power_type) {
-      return power_type;
-    }
-  }
-  return std::nullopt;
+unsigned Power::readPGSpef(const char* spef_file) {  
+  _ir_analysis.readSpef(spef_file);
+  return 1;
 }
+
+/**
+ * @brief run ir analysis.
+ * 
+ * @return unsigned 
+ */
+unsigned Power::runIRAnalysis(std::string power_net_name) {
+  // set power data.
+  std::vector<IRInstancePower> instance_power_data =  getInstancePowerData();  
+  _ir_analysis.setInstancePowerData(std::move(instance_power_data));
+
+  // calc ir drop.
+  _ir_analysis.solveIRDrop(power_net_name.c_str());
+
+  return 1;
+}
+
+
 
 }  // namespace ipower
