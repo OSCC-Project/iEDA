@@ -191,6 +191,28 @@ void DrcEngineManager::filterData()
 
   for (auto& [layer, layout] : get_engine_layouts(LayoutType::kCut)) {
     // TODO: cut rule
+
+    if (false == needChecking(layer, LayoutType::kCut)) {
+      continue;
+    }
+
+    DEBUGOUTPUT("Need to check layer:\t" << layer);
+
+    /// cut array
+    _condition_manager->checkCutArraySpacing(layer, layout);
+
+    // cut overlap
+    _condition_manager->checkCutOverlap(layer, layout);
+
+    // min spacing
+    _condition_manager->checkCutSpacing(layer, layout);
+
+    // width
+    _condition_manager->checkCutWidth(layer, layout);
+
+    // enclosure
+    _condition_manager->checkCutEnclosure(layer, layout);
+
   }
 
   DEBUGOUTPUT("Finish drc checking:\t");

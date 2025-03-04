@@ -6,6 +6,7 @@ add_library(idrc_condition_manager
   condition_polygon.cpp
   condition_paralle_length.cpp
   condition_area.cpp
+  condition_cut.cpp
 )
 
 target_link_libraries(idrc_condition_manager

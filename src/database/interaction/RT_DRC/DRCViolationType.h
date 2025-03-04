@@ -35,7 +35,13 @@ enum class ViolationEnumType
   kNotch,
   kConnectivity,
   kCornerFill,
-  kMax
+  kMax,
+  // CUT violation
+  kCutShort,
+  kCutSpacing,
+  kCutWidth,
+  kCutArraySpacing,
+  kCutEnclosure,
 };
 
 #define NET_ID_ENVIRONMENT -1
@@ -71,6 +77,17 @@ struct GetViolationTypeName
         return "Notch Spacing";
       case ViolationEnumType::kCornerFill:
         return "Corner Fill Spacing";
+        // CUT violation
+      case ViolationEnumType::kCutShort:
+        return "CutShort";
+      case ViolationEnumType::kCutSpacing:
+        return "CutSpacing";
+      case ViolationEnumType::kCutWidth:
+        return "CutWidth";
+      case ViolationEnumType::kCutArraySpacing:
+        return "CutArraySpacing";
+      case ViolationEnumType::kCutEnclosure:
+        return "CutEnclosure";
       default:
         return "None";
     }
@@ -103,6 +120,18 @@ struct GetViolationType
       return ViolationEnumType::kNotch;
     } else if (type_name == "Corner Fill Spacing") {
       return ViolationEnumType::kCornerFill;
+    }
+    // CUT violation
+    else if (type_name == "CutShort") {
+      return ViolationEnumType::kCutShort;
+    } else if (type_name == "CutSpacing") {
+      return ViolationEnumType::kCutSpacing;
+    } else if (type_name == "CutWidth") {
+      return ViolationEnumType::kCutWidth;
+    } else if (type_name == "CutArraySpacing") {
+      return ViolationEnumType::kCutArraySpacing;
+    } else if (type_name == "CutEnclosure") {
+      return ViolationEnumType::kCutEnclosure;
     } else {
       return ViolationEnumType::kNone;
     }

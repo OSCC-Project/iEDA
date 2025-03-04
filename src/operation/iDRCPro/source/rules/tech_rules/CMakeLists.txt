@@ -8,6 +8,7 @@ add_library(idrc_pro_tech_rules
     rule_condition_width.cpp
     rule_condition_spacing.cpp
     rule_condition_edge.cpp
+    rule_condition_cut.cpp
 )
 
 target_link_libraries(idrc_pro_tech_rules 

@@ -50,6 +50,12 @@ class DrcConditionManager
   void checkParallelLengthSpacing(std::string layer, DrcEngineLayout* layout);
   void checkJogToJogSpacing(std::string layer, DrcEngineLayout* layout);
 
+  // cut width
+  void checkCutSpacing(std::string layer, DrcEngineLayout* layout);
+  void checkCutArraySpacing(std::string layer, DrcEngineLayout* layout);
+  void checkCutEnclosure(std::string layer, DrcEngineLayout* layout);
+  void checkCutOverlap(std::string layer, DrcEngineLayout* layout);
+  void checkCutWidth(std::string layer, DrcEngineLayout* layout);
  private:
   DrcViolationManager* _violation_manager;
   DrcCheckerType _check_type;

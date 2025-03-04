@@ -39,7 +39,13 @@ class DrcRuleBuilder
   void buildRoutingLayerSpacing(ConditionRuleLayer* rule_layer, idb::IdbLayerRouting* idb_routing_layer);
   void buildRoutingLayerWidth(ConditionRuleLayer* rule_layer, idb::IdbLayerRouting* idb_routing_layer);
   void buildRoutingLayerEdge(ConditionRuleLayer* rule_layer, idb::IdbLayerRouting* idb_routing_layer);
+  // cut layer
   void initCutLayerRules();
+  void buildCutLayerSpacing(ConditionRuleLayer* rule_layer, idb::IdbLayerCut* idb_routing_layer);
+  void buildCutLayerWidth(ConditionRuleLayer* rule_layer, idb::IdbLayerCut* idb_routing_layer);
+  void buildCutLayerEnclosure(ConditionRuleLayer* rule_layer, idb::IdbLayerCut* idb_routing_layer);
+  void buildCutLayerArraySpacing(ConditionRuleLayer* rule_layer, idb::IdbLayerCut* idb_routing_layer);
+  
 };
 
 }  // namespace idrc
