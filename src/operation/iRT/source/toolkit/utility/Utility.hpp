@@ -2124,21 +2124,14 @@ class Utility
       }
       addListToQueue(node_queue, next_node_list);
     }
-    bool all_connected = true;
+    bool is_connected = true;
     for (auto& [visited, coord] : visited_coord_pair_list) {
-      all_connected = visited;
-      if (all_connected == false) {
-        goto here;
+      is_connected = visited;
+      if (is_connected == false) {
+        break;
       }
     }
-    for (auto& [visited, segment] : visited_segment_pair_list) {
-      all_connected = visited;
-      if (all_connected == false) {
-        goto here;
-      }
-    }
-  here:
-    return all_connected;
+    return is_connected;
   }
 
   /**
