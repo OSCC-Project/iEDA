@@ -672,8 +672,9 @@ void ViolationRepairer::buildGraphShapeMap(VRBox& vr_box)
 
 void ViolationRepairer::routeVRBox(VRBox& vr_box)
 {
-  for (ViolationType violation_type :
-       {ViolationType::kCutShort, ViolationType::kSameLayerCutSpacing, ViolationType::kParallelRunLengthSpacing, ViolationType::kMinimumArea}) {
+  // for (ViolationType violation_type :
+  //      {ViolationType::kCutShort, ViolationType::kSameLayerCutSpacing, ViolationType::kParallelRunLengthSpacing, ViolationType::kMinimumArea}) {
+  for (ViolationType violation_type : {ViolationType::kSameLayerCutSpacing}) {
     while (true) {
       initSingleTask(vr_box, violation_type);
       if (vr_box.get_curr_net_idx() == -1) {
@@ -752,7 +753,128 @@ std::vector<VRSolution> ViolationRepairer::getVRSolutionList(VRBox& vr_box, Viol
 
 std::vector<VRSolution> ViolationRepairer::routeByCutShort(VRBox& vr_box)
 {
-  return {};
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
+
+  int32_t curr_net_idx = vr_box.get_curr_net_idx();
+  EXTLayerRect& violation_shape = vr_box.get_curr_violation().get_violation_shape();
+  int32_t violation_layer_idx = violation_shape.get_layer_idx();
+
+  ViaMaster& via_master = layer_via_master_list[violation_layer_idx].front();
+
+  std::vector<PlanarCoord> via_coord_list;
+  {
+    PlanarRect violation_real_rect = violation_shape.get_real_rect();
+    for (NetShape& net_shape : RTDM.getNetShapeList(curr_net_idx, vr_box.get_curr_routing_segment_list())) {
+      if (net_shape.get_is_routing()) {
+        continue;
+      }
+      if (net_shape.get_layer_idx() == via_master.get_cut_layer_idx() && RTUTIL.isClosedOverlap(violation_real_rect, net_shape.get_rect())) {
+        via_coord_list.push_back(net_shape.get_rect().getMidPoint());
+      }
+    }
+  }
+  if (via_coord_list.size() <= 1) {
+    return {};
+  }
+  std::vector<std::vector<Segment<LayerCoord>>> orig_routing_segment_list_list;
+  {
+    for (size_t i = 0; i < via_coord_list.size(); i++) {
+      std::vector<LayerCoord> del_coord_list;
+      for (size_t j = 0; j < via_coord_list.size(); j++) {
+        if (i == j) {
+          continue;
+        }
+        del_coord_list.emplace_back(via_coord_list[j], violation_layer_idx);
+      }
+      std::vector<Segment<LayerCoord>> orig_routing_segment_list;
+      for (Segment<LayerCoord>& routing_segment : vr_box.get_curr_routing_segment_list()) {
+        LayerCoord first_coord = routing_segment.get_first();
+        LayerCoord second_coord = routing_segment.get_second();
+        RTUTIL.swapByCMP(first_coord, second_coord, CmpLayerCoordByLayerASC());
+        if (first_coord == second_coord && RTUTIL.exist(del_coord_list, first_coord)) {
+          continue;
+        }
+        orig_routing_segment_list.push_back(routing_segment);
+      }
+      orig_routing_segment_list_list.push_back(orig_routing_segment_list);
+    }
+  }
+  std::vector<std::vector<Segment<LayerCoord>>> below_routing_segment_list_list;
+  std::vector<std::vector<Segment<LayerCoord>>> above_routing_segment_list_list;
+  {
+    int32_t via_coord_num = static_cast<int32_t>(via_coord_list.size());
+    std::vector<Segment<PlanarCoord>> all_topo_list;
+    for (int32_t i = 0; i < via_coord_num; i++) {
+      for (int32_t j = i + 1; j < via_coord_num; j++) {
+        all_topo_list.emplace_back(via_coord_list[i], via_coord_list[j]);
+      }
+    }
+    for (std::vector<Segment<PlanarCoord>>& topo_list : RTUTIL.getCombList(all_topo_list, via_coord_num - 1)) {
+      if (!RTUTIL.passCheckingConnectivity(via_coord_list, topo_list)) {
+        continue;
+      }
+      std::vector<std::vector<std::vector<Segment<PlanarCoord>>>> topo_segment_list_list_list;
+      for (Segment<PlanarCoord>& topo : topo_list) {
+        PlanarCoord& first_coord = topo.get_first();
+        PlanarCoord& second_coord = topo.get_second();
+        std::vector<std::vector<Segment<PlanarCoord>>> topo_segment_list_list;
+        if (RTUTIL.isOblique(first_coord, second_coord)) {
+          std::vector<PlanarCoord> inflection_list;
+          inflection_list.emplace_back(first_coord.get_x(), second_coord.get_y());
+          inflection_list.emplace_back(second_coord.get_x(), first_coord.get_y());
+          for (PlanarCoord& inflection_coord : inflection_list) {
+            std::vector<Segment<PlanarCoord>> topo_segment_list;
+            topo_segment_list.emplace_back(first_coord, inflection_coord);
+            topo_segment_list.emplace_back(inflection_coord, second_coord);
+            topo_segment_list_list.push_back(topo_segment_list);
+          }
+          topo_segment_list_list_list.push_back(topo_segment_list_list);
+        } else {
+          std::vector<Segment<PlanarCoord>> topo_segment_list;
+          topo_segment_list.emplace_back(first_coord, second_coord);
+          topo_segment_list_list.push_back(topo_segment_list);
+          topo_segment_list_list_list.push_back(topo_segment_list_list);
+        }
+      }
+      for (std::vector<std::vector<Segment<PlanarCoord>>>& topo_segment_list_list : RTUTIL.getCombList(topo_segment_list_list_list)) {
+        std::vector<Segment<LayerCoord>> below_routing_segment_list;
+        std::vector<Segment<LayerCoord>> above_routing_segment_list;
+        for (std::vector<Segment<PlanarCoord>>& topo_segment_list : topo_segment_list_list) {
+          for (Segment<PlanarCoord>& topo_segment : topo_segment_list) {
+            PlanarCoord& first_coord = topo_segment.get_first();
+            PlanarCoord& second_coord = topo_segment.get_second();
+            below_routing_segment_list.emplace_back(LayerCoord(first_coord, violation_layer_idx), LayerCoord(second_coord, violation_layer_idx));
+            above_routing_segment_list.emplace_back(LayerCoord(first_coord, violation_layer_idx + 1), LayerCoord(second_coord, violation_layer_idx + 1));
+          }
+        }
+        below_routing_segment_list_list.push_back(below_routing_segment_list);
+        above_routing_segment_list_list.push_back(above_routing_segment_list);
+      }
+    }
+  }
+  std::vector<VRSolution> vr_solution_list;
+  for (std::vector<Segment<LayerCoord>>& orig_routing_segment_list : orig_routing_segment_list_list) {
+    for (std::vector<Segment<LayerCoord>>& below_routing_segment_list : below_routing_segment_list_list) {
+      for (std::vector<Segment<LayerCoord>>& above_routing_segment_list : above_routing_segment_list_list) {
+        VRSolution vr_solution = getNewSolution(vr_box);
+        vr_solution.set_routing_segment_list(orig_routing_segment_list);
+
+        double env_cost = 0;
+        for (Segment<LayerCoord>& below_routing_segment : below_routing_segment_list) {
+          vr_solution.get_routing_segment_list().push_back(below_routing_segment);
+          env_cost += getEnvCost(vr_box, curr_net_idx, below_routing_segment);
+        }
+        for (Segment<LayerCoord>& above_routing_segment : above_routing_segment_list) {
+          vr_solution.get_routing_segment_list().push_back(above_routing_segment);
+          env_cost += getEnvCost(vr_box, curr_net_idx, above_routing_segment);
+        }
+        vr_solution.set_env_cost(env_cost);
+        vr_solution_list.push_back(vr_solution);
+      }
+    }
+  }
+  std::sort(vr_solution_list.begin(), vr_solution_list.end(), CmpVRSolution());
+  return vr_solution_list;
 }
 
 std::vector<VRSolution> ViolationRepairer::routeBySameLayerCutSpacing(VRBox& vr_box)
