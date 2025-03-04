@@ -51,6 +51,7 @@ unsigned CmdReportIRDrop::exec() {
 
   PowerEngine* power_engine = PowerEngine::getOrCreatePowerEngine();
   power_engine->runIRAnalysis(power_net_name);
+  power_engine->reportIRAnalysis();
 
   return 1;
 }

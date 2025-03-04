@@ -754,52 +754,50 @@ unsigned Power::initToggleSPData() {
   return 1;
 }
 
+std::optional<std::pair<std::string, std::string>> BackupPwrFiles(
+    std::string output_dir, bool is_copy) {
+  if (!is_copy) {
+    return std::nullopt;
+  }
+
+  std::string now_time = Time::getNowWallTime();
+  std::string tmp = Str::replace(now_time, ":", "_");
+  std::string copy_design_work_space =
+      Str::printf("%s_pwr_%s", output_dir.c_str(), tmp.c_str());
+
+  if (std::filesystem::exists(output_dir)) {
+    std::filesystem::create_directories(copy_design_work_space);
+  }
+
+  return std::pair{copy_design_work_space, tmp};
+};
+
+// copy file to copy directory
+void CopyFile(
+    std::optional<std::pair<std::string, std::string>> copy_design_work_space,
+    std::string output_dir, std::string file_to_be_copy) {
+  auto base_name = std::filesystem::path(file_to_be_copy).stem().string();
+  auto extension = std::filesystem::path(file_to_be_copy).extension().string();
+
+  std::string dest_file_name = Str::printf(
+      "%s/%s_%s%s", copy_design_work_space->first.c_str(), base_name.c_str(),
+      copy_design_work_space->second.c_str(), extension.c_str());
+
+  std::string src_file =
+      Str::printf("%s/%s", output_dir.c_str(), file_to_be_copy.c_str());
+  if (std::filesystem::exists(src_file)) {
+    std::filesystem::copy_file(
+        src_file, dest_file_name,
+        std::filesystem::copy_options::overwrite_existing);
+  }
+};
+
 /**
  * @brief report power
  *
  * @return unsigned
  */
 unsigned Power::reportPower(bool is_copy) {
-  // create backup working directory.
-  auto backup_pwr_files = [this, is_copy](std::string output_dir)
-      -> std::optional<std::pair<std::string, std::string>> {
-    if (!is_copy) {
-      return std::nullopt;
-    }
-
-    std::string now_time = Time::getNowWallTime();
-    std::string tmp = Str::replace(now_time, ":", "_");
-    std::string copy_design_work_space =
-        Str::printf("%s_pwr_%s", output_dir.c_str(), tmp.c_str());
-
-    if (std::filesystem::exists(output_dir)) {
-      std::filesystem::create_directories(copy_design_work_space);
-    }
-
-    return std::pair{copy_design_work_space, tmp};
-  };
-
-  // copy file to copy directory
-  auto copy_file = [](std::optional<std::pair<std::string, std::string>>
-                          copy_design_work_space,
-                      std::string output_dir, std::string file_to_be_copy) {
-    auto base_name = std::filesystem::path(file_to_be_copy).stem().string();
-    auto extension =
-        std::filesystem::path(file_to_be_copy).extension().string();
-
-    std::string dest_file_name = Str::printf(
-        "%s/%s_%s%s", copy_design_work_space->first.c_str(), base_name.c_str(),
-        copy_design_work_space->second.c_str(), extension.c_str());
-
-    std::string src_file =
-        Str::printf("%s/%s", output_dir.c_str(), file_to_be_copy.c_str());
-    if (std::filesystem::exists(src_file)) {
-      std::filesystem::copy_file(
-          src_file, dest_file_name,
-          std::filesystem::copy_options::overwrite_existing);
-    }
-  };
-
   Sta* ista = Sta::getOrCreateSta();
 
   ieda::Stats stats;
@@ -816,14 +814,14 @@ unsigned Power::reportPower(bool is_copy) {
     return 0;
   }
 
-  auto backup_work_space = backup_pwr_files(output_dir);
+  auto backup_work_space = BackupPwrFiles(output_dir, is_copy);
   std::filesystem::create_directories(output_dir);
 
   {
     std::string file_name =
         Str::printf("%s.pwr", ista->get_design_name().c_str());
     if (is_copy) {
-      copy_file(backup_work_space, output_dir, file_name);
+      CopyFile(backup_work_space, output_dir, file_name);
     }
     std::string output_path = output_dir + "/" + file_name;
     reportSummaryPower(output_path.c_str(), PwrAnalysisMode::kAveraged);
@@ -834,7 +832,7 @@ unsigned Power::reportPower(bool is_copy) {
         Str::printf("%s_%s.pwr", ista->get_design_name().c_str(), "instance");
 
     if (is_copy) {
-      copy_file(backup_work_space, output_dir, file_name);
+      CopyFile(backup_work_space, output_dir, file_name);
     }
 
     std::string output_path = output_dir + "/" + file_name;
@@ -846,13 +844,13 @@ unsigned Power::reportPower(bool is_copy) {
         Str::printf("%s_%s.csv", ista->get_design_name().c_str(), "instance");
 
     if (is_copy) {
-      copy_file(backup_work_space, output_dir, file_name);
+      CopyFile(backup_work_space, output_dir, file_name);
     }
     std::string output_path = output_dir + "/" + file_name;
     reportInstancePowerCSV(output_path.c_str());
   }
 
-  LOG_INFO << "power report end";
+  LOG_INFO << "power report end, output dir: " << output_dir;
   double memory_delta = stats.memoryDelta();
   LOG_INFO << "power report memory usage " << memory_delta << "MB";
   double time_delta = stats.elapsedRunTime();
@@ -890,6 +888,32 @@ unsigned Power::readPGSpef(const char* spef_file) {
 }
 
 /**
+ * @brief report IR Drop in csv file.
+ * 
+ * @param rpt_file_name 
+ * @return unsigned 
+ */
+unsigned Power::reportIRDropCSV(const char* rpt_file_name) {
+  std::ofstream csv_file(rpt_file_name);
+  csv_file << "Instance Name"
+           << ","
+           << "IR Drop"
+           << "\n";
+  auto data_str = [](double data) { return Str::printf("%.3e", data); };
+  auto instance_to_ir_drop = getInstanceIRDrop();
+
+  for (auto& [instance_name, ir_drop] : instance_to_ir_drop) {
+
+    csv_file << instance_name << ","
+             << data_str(ir_drop) << "\n";
+  }
+
+  csv_file.close();
+
+  return 1;
+}
+
+/**
  * @brief run ir analysis.
  * 
  * @return unsigned 
@@ -901,6 +925,30 @@ unsigned Power::runIRAnalysis(std::string power_net_name) {
 
   // calc ir drop.
   _ir_analysis.solveIRDrop(power_net_name.c_str());
+
+  return 1;
+}
+
+/**
+ * @brief report ir analysis.
+ * 
+ * @return unsigned 
+ */
+unsigned Power::reportIRAnalysis() {
+  
+  Sta* ista = Sta::getOrCreateSta();
+  std::string output_dir = get_design_work_space();
+  if (output_dir.empty()) {
+    output_dir = ista->get_design_work_space();
+  }
+
+  std::string csv_file_name =
+      Str::printf("%s/%s_%s.csv", output_dir.c_str(), ista->get_design_name().c_str(), "ir_drop");
+
+  // report in IR drop csv.
+  reportIRDropCSV(csv_file_name.c_str());
+
+  LOG_INFO << "output ir drop report: " << csv_file_name;
 
   return 1;
 }

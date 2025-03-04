@@ -94,6 +94,10 @@ class PowerEngine {
     return _ipower->getInstanceIRDrop();
   }
 
+  unsigned reportIRAnalysis() {
+    return _ipower->reportIRAnalysis();
+  }
+
 #ifdef USE_GPU
   std::vector<MacroConnection> buildMacroConnectionMapWithGPU(unsigned max_hop);
 #endif
