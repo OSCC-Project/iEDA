@@ -134,11 +134,14 @@ class Power {
 
   // for IR analysis.
   unsigned readPGSpef(const char* spef_file);
-  unsigned runIRAnalysis(std::string power_net_name);
 
   std::map<std::string, double>& getInstanceIRDrop() {
     return _ir_analysis.get_instance_to_ir_drop();
   }
+  
+  unsigned runIRAnalysis(std::string power_net_name);
+  unsigned reportIRDropCSV(const char* rpt_file_name);
+  unsigned reportIRAnalysis();
 
  private:
   std::string _design_work_space; // The power report work space.

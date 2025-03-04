@@ -124,7 +124,7 @@ install_dependencies_apt()
       g++-10 cmake ninja-build \
       tcl-dev libgflags-dev libgoogle-glog-dev libboost-all-dev libgtest-dev flex\
       libeigen3-dev libunwind-dev libmetis-dev libgmp-dev bison rustc cargo\
-      libhwloc-dev libcairo2-dev libtbb-dev
+      libhwloc-dev libcairo2-dev
     exit 0
   else
     echo -e "${red}apt-get not found, pleas make sure you were running on Debian-Based Linux distribution${clear}"
