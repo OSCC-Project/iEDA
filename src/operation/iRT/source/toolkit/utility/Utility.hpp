@@ -2080,38 +2080,65 @@ class Utility
     return is_connectivity;
   }
 
-  static bool passCheckingConnectivity(std::vector<PlanarCoord>& key_coord_list, std::vector<Segment<PlanarCoord>>& routing_segment_list)
+  template <typename T>
+  static bool passCheckingConnectivity(std::vector<T>& key_coord_list, std::vector<Segment<T>>& routing_segment_list)
   {
-    return true;
-    // std::vector<std::pair<bool, Segment<T>>> visited_value_pair_list;
-    // visited_value_pair_list.reserve(segment_list.size());
-    // for (size_t i = 0; i < segment_list.size(); i++) {
-    //   visited_value_pair_list.emplace_back(false, segment_list[i]);
-    // }
-    // TNode<T>* root = new TNode(root_value);
-    // std::queue<TNode<T>*> node_queue = initQueue(root);
-    // while (!node_queue.empty()) {
-    //   TNode<T>* node = getFrontAndPop(node_queue);
-    //   T& value = node->value();
-
-    //   std::vector<TNode<T>*> next_node_list;
-    //   for (size_t i = 0; i < visited_value_pair_list.size(); i++) {
-    //     std::pair<bool, Segment<T>>& visited_value_pair = visited_value_pair_list[i];
-    //     if (visited_value_pair.first == true) {
-    //       continue;
-    //     }
-    //     T& value1 = visited_value_pair.second.get_first();
-    //     T& value2 = visited_value_pair.second.get_second();
-    //     if (value == value1 || value == value2) {
-    //       TNode<T>* child_node = (value == value1 ? new TNode(value2) : new TNode(value1));
-    //       next_node_list.push_back(child_node);
-    //       node->addChild(child_node);
-    //       visited_value_pair.first = true;
-    //     }
-    //   }
-    //   addListToQueue(node_queue, next_node_list);
-    // }
-    // return MTree<T>(root);
+    if (key_coord_list.empty()) {
+      RTLOG.error(Loc::current(), "The key_coord_list is empty!");
+    }
+    std::vector<std::pair<bool, T>> visited_coord_pair_list;
+    std::vector<std::pair<bool, Segment<T>>> visited_segment_pair_list;
+    visited_coord_pair_list.reserve(key_coord_list.size());
+    visited_segment_pair_list.reserve(routing_segment_list.size());
+    for (size_t i = 0; i < key_coord_list.size(); i++) {
+      visited_coord_pair_list.emplace_back(false, key_coord_list[i]);
+    }
+    for (size_t i = 0; i < routing_segment_list.size(); i++) {
+      visited_segment_pair_list.emplace_back(false, routing_segment_list[i]);
+    }
+    std::queue<T> node_queue = initQueue(key_coord_list.front());
+    while (!node_queue.empty()) {
+      T node = getFrontAndPop(node_queue);
+      for (size_t i = 0; i < visited_coord_pair_list.size(); i++) {
+        std::pair<bool, T>& visited_coord_pair = visited_coord_pair_list[i];
+        if (visited_coord_pair.first == true) {
+          continue;
+        }
+        if (node == visited_coord_pair.second) {
+          visited_coord_pair.first = true;
+        }
+      }
+      std::vector<T> next_node_list;
+      for (size_t i = 0; i < visited_segment_pair_list.size(); i++) {
+        std::pair<bool, Segment<T>>& visited_segment_pair = visited_segment_pair_list[i];
+        if (visited_segment_pair.first == true) {
+          continue;
+        }
+        T& node1 = visited_segment_pair.second.get_first();
+        T& node2 = visited_segment_pair.second.get_second();
+        if (node == node1 || node == node2) {
+          T child_node = (node == node1 ? node2 : node1);
+          next_node_list.push_back(child_node);
+          visited_segment_pair.first = true;
+        }
+      }
+      addListToQueue(node_queue, next_node_list);
+    }
+    bool all_connected = true;
+    for (auto& [visited, coord] : visited_coord_pair_list) {
+      all_connected = visited;
+      if (all_connected == false) {
+        goto here;
+      }
+    }
+    for (auto& [visited, segment] : visited_segment_pair_list) {
+      all_connected = visited;
+      if (all_connected == false) {
+        goto here;
+      }
+    }
+  here:
+    return all_connected;
   }
 
   /**
@@ -2210,7 +2237,7 @@ class Utility
       max_size = std::max(max_size, static_cast<int32_t>(table.size()));
     }
     for (std::vector<std::string>& table : print_table_list) {
-      for (int32_t i = table.size(); i < max_size; i++) {
+      for (int32_t i = static_cast<int32_t>(table.size()); i < max_size; i++) {
         std::string table_str;
         table_str.append(table.front().length(), ' ');
         table.push_back(table_str);
@@ -3406,23 +3433,59 @@ class Utility
   }
 
   /**
-   * 从多个list中,每个选择一个元素并生成所有可能的组合
+   * 从多个list中,每个选择一个元素并生成所有可能的组合,非递归
    */
   template <typename T>
-  static std::vector<std::vector<T>> getCombList(std::vector<std::vector<T>>& list)
+  static std::vector<std::vector<T>> getCombList(std::vector<std::vector<T>>& list_list)
   {
-    std::vector<std::vector<T>> a;
-    return a;
+    if (list_list.empty()) {
+      return {};
+    }
+    std::vector<std::vector<T>> comb_list = {{}};
+    for (const std::vector<T>& list : list_list) {
+      std::vector<std::vector<T>> new_comb_list;
+      for (const std::vector<T>& comb : comb_list) {
+        for (const T& item : list) {
+          std::vector<T> new_comb = comb;
+          new_comb.push_back(item);
+          new_comb_list.push_back(new_comb);
+        }
+      }
+      comb_list = new_comb_list;
+    }
+    return comb_list;
   }
 
   /**
-   * 从一个list中,生成只包含n个元素所有可能的组合
+   * 从一个list中,生成只包含n个元素所有可能的组合,非递归
    */
   template <typename T>
   static std::vector<std::vector<T>> getCombList(std::vector<T>& list, int32_t n)
   {
-    std::vector<std::vector<T>> a;
-    return a;
+    int32_t list_num = static_cast<int32_t>(list.size());
+    if (n <= 0 || list_num < n) {
+      return {};
+    }
+    std::vector<std::vector<T>> comb_list;
+    for (int32_t mask = 0; mask < (1 << list_num); ++mask) {
+      int32_t count = 0;
+      for (int32_t i = 0; i < list_num; ++i) {
+        if (mask & (1 << i)) {
+          count++;
+        }
+      }
+      if (count != n) {
+        continue;
+      }
+      std::vector<T> curr_comb;
+      for (int32_t i = 0; i < list_num; ++i) {
+        if (mask & (1 << i)) {
+          curr_comb.push_back(list[i]);
+        }
+      }
+      comb_list.push_back(curr_comb);
+    }
+    return comb_list;
   }
 
 #endif
