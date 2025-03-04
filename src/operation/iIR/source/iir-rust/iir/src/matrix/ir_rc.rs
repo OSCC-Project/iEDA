@@ -132,6 +132,9 @@ impl RCData {
     pub fn get_one_net_data(&self, name: &str) -> &RCOneNetData {
         self.rc_nets_data.get(name).unwrap()
     }
+    pub fn is_contain_net_data(&self, name: &str) -> bool {
+        self.rc_nets_data.contains_key(name)
+    }
 }
 
 pub fn split_spef_index_str(index_name: &str) -> (&str, &str) {

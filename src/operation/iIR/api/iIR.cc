@@ -78,6 +78,11 @@ unsigned iIR::setInstancePowerData(std::vector<IRInstancePower> instance_power_d
  *
  */
 unsigned iIR::solveIRDrop(const char* net_name) {
+  if (!_rc_data) {
+    LOG_ERROR << "no " << net_name << " RC data to solve IR drop";
+    return 0;
+  }
+
   auto one_net_matrix_data =
       build_one_net_conductance_matrix_data(_rc_data, net_name);
 

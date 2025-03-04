@@ -235,7 +235,7 @@ class IRPGNetlistBuilder {
  private:
   bgi::rtree<BGValue, bgi::quadratic<16>> _rtree;
 
-  std::vector<IRPGNetlist> _pg_netlists; //!< The builded pg netlist.
+  std::list<IRPGNetlist> _pg_netlists; //!< The builded pg netlist.
   std::vector<const void*> _rust_pg_netlists; //!< The rust pg netlist.
   const void* _rust_rc_data = nullptr;
 };

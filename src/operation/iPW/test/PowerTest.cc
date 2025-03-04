@@ -310,7 +310,7 @@ TEST_F(PowerTest, estimateIR) {
   std::string power_net_name = "VDD";
 
   // estimate rc from topo.
-  power_engine->buildPGNetWireTopo(power_net_name);
+  power_engine->buildPGNetWireTopo();
 
   // or read pg spef to calc rc.
   // const char* pg_spef_file_path = "/home/taosimin/ir_example/aes/aes_vdd_vss.spef";

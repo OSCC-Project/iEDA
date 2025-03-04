@@ -160,7 +160,7 @@ class Power {
       _type_to_group_data;  //!< The mapping of type to group data.
 
   iIR _ir_analysis; //!< The IR Drop analysis top.
-  const void* _rust_pg_rc_data; //!< The rust power/ground rc data.
+  const void* _rust_pg_rc_data = nullptr; //!< The rust power/ground rc data.
 
   static Power* _power;
   FORBIDDEN_COPY(Power);

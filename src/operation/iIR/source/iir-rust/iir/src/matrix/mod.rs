@@ -239,6 +239,10 @@ pub extern "C" fn build_one_net_conductance_matrix_data(
     let rc_data = unsafe { &*(c_rc_data as *const RCData) };
 
     let one_net_name = c_str_to_r_str(c_net_name);
+    if !(rc_data.is_contain_net_data(&one_net_name)) {
+        panic!("The net {} is not exist.", one_net_name);
+    }
+    
     let one_net_rc_data = rc_data.get_one_net_data(&one_net_name);
 
     let conductance_matrix_triplet = ir_rc::build_conductance_matrix(one_net_rc_data);

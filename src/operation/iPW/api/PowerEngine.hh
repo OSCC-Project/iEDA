@@ -81,9 +81,13 @@ class PowerEngine {
   // api for build only macro connection.
   std::vector<MacroConnection> buildMacroConnectionMap(unsigned max_hop);
 
-  unsigned buildPGNetWireTopo(std::string power_net_name);
+  unsigned buildPGNetWireTopo();
   unsigned readPGSpef(const char* spef_file) { return _ipower->readPGSpef(spef_file); }
+  auto* getRustPGRCData() { return _ipower->get_rust_pg_rc_data(); }
   unsigned runIRAnalysis(std::string power_net_name) {
+    if (!getRustPGRCData()) {
+      buildPGNetWireTopo();
+    }
     return _ipower->runIRAnalysis(power_net_name);
   }
   std::map<std::string, double> &getInstanceIRDrop() {
