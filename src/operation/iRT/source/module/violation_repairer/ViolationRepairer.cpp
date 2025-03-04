@@ -672,9 +672,8 @@ void ViolationRepairer::buildGraphShapeMap(VRBox& vr_box)
 
 void ViolationRepairer::routeVRBox(VRBox& vr_box)
 {
-  // for (ViolationType violation_type :
-  //      {ViolationType::kCutShort, ViolationType::kSameLayerCutSpacing, ViolationType::kParallelRunLengthSpacing, ViolationType::kMinimumArea}) {
-  for (ViolationType violation_type : {ViolationType::kSameLayerCutSpacing}) {
+  for (ViolationType violation_type :
+       {ViolationType::kCutShort, ViolationType::kSameLayerCutSpacing, ViolationType::kParallelRunLengthSpacing, ViolationType::kMinimumArea}) {
     while (true) {
       initSingleTask(vr_box, violation_type);
       if (vr_box.get_curr_net_idx() == -1) {
