@@ -919,12 +919,18 @@ unsigned Power::reportIRDropCSV(const char* rpt_file_name) {
  * @return unsigned 
  */
 unsigned Power::runIRAnalysis(std::string power_net_name) {
+  CPU_PROF_START(0);
+  LOG_INFO << "run IR analysis start";
   // set power data.
   std::vector<IRInstancePower> instance_power_data =  getInstancePowerData();  
   _ir_analysis.setInstancePowerData(std::move(instance_power_data));
 
   // calc ir drop.
   _ir_analysis.solveIRDrop(power_net_name.c_str());
+
+  LOG_INFO << "run IR analysis end";
+
+  CPU_PROF_END(0, "run IR analysis");
 
   return 1;
 }
@@ -935,7 +941,7 @@ unsigned Power::runIRAnalysis(std::string power_net_name) {
  * @return unsigned 
  */
 unsigned Power::reportIRAnalysis() {
-  
+  LOG_INFO << "report IR analysis start";
   Sta* ista = Sta::getOrCreateSta();
   std::string output_dir = get_design_work_space();
   if (output_dir.empty()) {
@@ -949,7 +955,8 @@ unsigned Power::reportIRAnalysis() {
   reportIRDropCSV(csv_file_name.c_str());
 
   LOG_INFO << "output ir drop report: " << csv_file_name;
-
+  
+  LOG_INFO << "report IR analysis end";
   return 1;
 }
 
