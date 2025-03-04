@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include "IdbLayer.h"
 #include "idm.h"
 #include "tech_rule_layer.h"
 
@@ -60,6 +61,12 @@ class TechRules
     return dynamic_cast<idb::IdbLayerRouting*>(layer);
   }
 
+  idb::IdbLayerCut* findCutLayer(std::string layer_name)
+  {
+    auto layer = findLayer(layer_name);
+    return dynamic_cast<idb::IdbLayerCut*>(layer);
+  }
+
   bool isLayerRouting(std::string layer_name)
   {
     auto layer = findLayer(layer_name);
@@ -75,6 +82,8 @@ class TechRules
   std::vector<std::shared_ptr<idb::routinglayer::Lef58Area>> getLef58AreaList(std::string layer_name);
   int getMinEnclosedArea(std::string layer_name);
   int getMinSpacing(std::string layer_name, int width = 0);
+  int getCutSpacing(std::string layer_name);
+  
   std::shared_ptr<idb::routinglayer::Lef58SpacingTableJogToJog> getJogToJog(std::string layer_name);
   std::shared_ptr<idb::IdbLayerSpacingTable> getSpacingTable(std::string layer_name);
   std::vector<std::shared_ptr<idb::routinglayer::Lef58SpacingEol>> getSpacingEolList(std::string layer_name);

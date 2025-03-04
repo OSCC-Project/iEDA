@@ -75,6 +75,15 @@ int TechRules::getMinSpacing(std::string layer_name, int width)
   return idb_routing_layer->get_spacing(width);
 }
 
+int TechRules::getCutSpacing(std::string layer_name)
+{
+  auto idb_cut_layer = findCutLayer(layer_name);
+  if (!idb_cut_layer)
+    return -1;
+
+  return idb_cut_layer->get_spacings().at(0)->get_spacing();
+}
+
 std::shared_ptr<idb::routinglayer::Lef58SpacingTableJogToJog> TechRules::getJogToJog(std::string layer_name)
 {
   auto idb_routing_layer = findRoutingLayer(layer_name);
