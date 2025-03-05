@@ -29,10 +29,7 @@
 #include <boost/geometry/index/rtree.hpp>
 #include <tuple>
 #include <vector>
-<<<<<<< HEAD
-=======
 #include <list>
->>>>>>> master
 #include <ranges>
 
 #include "IdbLayer.h"
@@ -43,11 +40,8 @@
 #include "builder.h"
 #include "def_service.h"
 #include "lef_service.h"
-<<<<<<< HEAD
-=======
 #include "log/Log.hh"
 
->>>>>>> master
 
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
@@ -74,11 +68,6 @@ class IRPGNode {
   auto get_coord() const { return _coord; }
   auto get_layer_id() const { return _layer_id; }
 
-<<<<<<< HEAD
- private:
-  IRNodeCoord _coord;  //!< The coord of the node.
-  int _layer_id;       //!< The layer id of the node.
-=======
   void set_node_id(unsigned id) { _node_id = id; }
   auto get_node_id() const { return _node_id; }
   void set_is_instance_pin() { _is_instance_pin = true; }
@@ -97,7 +86,6 @@ class IRPGNode {
   bool _is_instance_pin = false; //!< The node is instance VDD/GND.
   bool _is_bump = false; //!< The node is bump VDD/GND.
   const char* _node_name = nullptr; //!< The name of the node.
->>>>>>> master
 };
 
 /**
@@ -117,8 +105,6 @@ struct IRNodeComparator {
 };
 
 /**
-<<<<<<< HEAD
-=======
  * @brief node comparator for store IR Node according to the row order for row edge connected.
  * 
  */
@@ -135,20 +121,11 @@ struct IRNodeRowComparator {
 };
 
 /**
->>>>>>> master
  * @brief PG network edge.
  *
  */
 class IRPGEdge {
  public:
-<<<<<<< HEAD
-  IRPGEdge(IRPGNode& node1, IRPGNode& node2) : _node1(node1), _node2(node2) {}
-  ~IRPGEdge() = default;
-
- private:
-  IRPGNode& _node1;  //!< The first node.
-  IRPGNode& _node2;  //!< The second node.
-=======
   IRPGEdge(IRPGNode* node1, IRPGNode* node2)
       : _node1(node1->get_node_id()), _node2(node2->get_node_id()) {}
   ~IRPGEdge() = default;
@@ -163,7 +140,6 @@ class IRPGEdge {
   int64_t _node2;  //!< The second node id.
 
   double _resistance = 0.0; //!< The edge resistance.
->>>>>>> master
 };
 
 /**
@@ -175,10 +151,6 @@ class IRPGNetlist {
   IRPGNetlist() = default;
   ~IRPGNetlist() = default;
 
-<<<<<<< HEAD
-  IRPGNode& addNode(IRNodeCoord coord, int layer_id) {
-    auto& one_node = _nodes.emplace_back(coord, layer_id);
-=======
   std::string& get_net_name() { return _net_name; }
   void set_net_name(const std::string& name) { _net_name = name; }
 
@@ -186,7 +158,6 @@ class IRPGNetlist {
     auto& one_node = _nodes.emplace_back(coord, layer_id);
     _nodes_image.push_back(&one_node);
     one_node.set_node_id(_nodes.size() - 1);
->>>>>>> master
     return one_node;
   }
   IRPGNode* findNode(IRNodeCoord coord, int layer_id) {
@@ -200,9 +171,6 @@ class IRPGNetlist {
     return nullptr;
   }
   auto& get_nodes() { return _nodes; }
-<<<<<<< HEAD
-  IRPGEdge& addEdge(IRPGNode& node1, IRPGNode& node2) {
-=======
   auto& get_nodes_image() { return _nodes_image; }
   IRPGNode* getNode(unsigned index) {
     return _nodes_image[index];
@@ -219,18 +187,12 @@ class IRPGNetlist {
 
   IRPGEdge& addEdge(IRPGNode* node1, IRPGNode* node2) {
     LOG_FATAL_IF(node1->get_node_id() == node2->get_node_id());
->>>>>>> master
     auto& one_edge = _edges.emplace_back(node1, node2);
     return one_edge;
   }
   auto& get_edges() { return _edges; }
   auto getEdgeNum() { return _edges.size(); }
 
-<<<<<<< HEAD
- private:
-  std::vector<IRPGNode> _nodes;  //!< The nodes of the netlist.
-  std::vector<IRPGEdge> _edges;  //!< The edges of the netlist.
-=======
   void addNodeIdToName(unsigned node_id, std::string name) {
     _node_id_to_name[node_id] = std::move(name);
   }
@@ -249,7 +211,6 @@ class IRPGNetlist {
   std::map<unsigned, std::string> _node_id_to_name; //!< The node id to node name.
 
   std::string _net_name;
->>>>>>> master
 };
 
 /**
@@ -261,13 +222,6 @@ class IRPGNetlistBuilder {
   IRPGNetlistBuilder() = default;
   ~IRPGNetlistBuilder() = default;
 
-<<<<<<< HEAD
-  IRPGNetlist build(idb::IdbSpecialNet* special_net);
-
- private:
-  bgi::rtree<BGValue, bgi::quadratic<16>> _rtree;
-  std::vector<IRPGNetlist> _pg_netlists;
-=======
   std::vector<BGSegment> buildBGSegments(idb::IdbSpecialNet* special_net,
                                          unsigned& line_segment_num);
 
@@ -284,7 +238,6 @@ class IRPGNetlistBuilder {
   std::list<IRPGNetlist> _pg_netlists; //!< The builded pg netlist.
   std::vector<const void*> _rust_pg_netlists; //!< The rust pg netlist.
   const void* _rust_rc_data = nullptr;
->>>>>>> master
 };
 
 }  // namespace iir

@@ -956,50 +956,6 @@ unsigned Power::runIRAnalysis(std::string power_net_name) {
 }
 
 /**
-<<<<<<< HEAD
- * @brief get the toggle and vdd data of a net.
- * 
- * @param net_name 
- * @return std::pair<double, double> 
- */
-std::pair<double, double> Power::getNetToggleAndVoltageData(const char* net_name) {
-  auto* sta_graph = _power_graph.get_sta_graph();
-  auto* nl = sta_graph->get_nl();
-  auto* the_net = nl->findNet(net_name);
-
-  auto* driver_obj = the_net->getDriver();
-  if (!driver_obj || the_net->getLoads().empty()) {
-    return {0.0, 0.0};
-  }
-
-  if (driver_obj->isPort() && ((the_net->getLoads().size() == 1) &&
-                               the_net->getLoads().front()->isPort())) {
-    return {0.0, 0.0};
-  }
-
-  auto driver_sta_vertex = sta_graph->findVertex(driver_obj);
-
-  PwrVertex* driver_pwr_vertex = nullptr;
-  if (driver_sta_vertex) {
-    driver_pwr_vertex = _power_graph.staToPwrVertex(*driver_sta_vertex);
-  } else {
-    return {0.0, 0.0};
-  }
-
-  // get VDD
-  auto driver_voltage = driver_pwr_vertex->getDriveVoltage();
-  if (!driver_voltage) {
-    LOG_FATAL << "can not get driver voltage.";
-  }
-  double vdd = driver_voltage.value();
-
-  // get Toggle
-  double toggle = driver_pwr_vertex->getToggleData(std::nullopt);
-
-  return {toggle, vdd};
-}
-
-=======
  * @brief report ir analysis.
  * 
  * @return unsigned 
@@ -1026,5 +982,4 @@ unsigned Power::reportIRAnalysis() {
 
 
 
->>>>>>> master
 }  // namespace ipower
