@@ -175,4 +175,16 @@ int32_t WirelengthAPI::findNetGRWL(std::string net_name)
   return EVAL_WIRELENGTH_INST->findGRWL(net_name);
 }
 
+void WirelengthAPI::evalNetFlute()
+{
+  EVAL_WIRELENGTH_INST->initIDB();
+  EVAL_WIRELENGTH_INST->initFlute();
+
+  EVAL_WIRELENGTH_INST->evalNetFlute();
+
+  EVAL_WIRELENGTH_INST->destroyIDB();
+  EVAL_WIRELENGTH_INST->destroyFlute();
+}
+
+
 }  // namespace ieval

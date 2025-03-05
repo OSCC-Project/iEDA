@@ -72,6 +72,7 @@ struct LmNetFeature
   std::vector<std::string> drc_type = {};
   int64_t volume = 0;
   std::vector<int> layer_ratio = {};
+  int rsmt = 0;
 };
 
 static int64_t wire_id_index = 0;

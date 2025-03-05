@@ -18,6 +18,7 @@ target_link_libraries(ilm_feature
     tool_api_idrc
     eval_congestion_api
     eval_density_api
+    eval_wirelength_api
 )
 
 set(EVALUTION_INCLUDE ${HOME_EVALUATION}/src/util)
