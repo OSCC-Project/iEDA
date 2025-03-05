@@ -15,9 +15,11 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
+// #include <boost/polygon/polygon_90_set_concept.hpp>
 #include <cstdio>
 #include <string>
 
+#include "boost_definition.h"
 #include "condition_manager.h"
 #include "engine_geometry_creator.h"
 #include "engine_layout.h"
@@ -47,16 +49,16 @@ void DrcConditionManager::checkCutSpacing(std::string layer, DrcEngineLayout* la
     int length = ieda_solver::getWireWidth(rect, direction);
     if (length <= half_min_spacing) {
       int expand_length = std::abs(half_min_spacing - length);
-      ieda_solver::bloat(rect, direction, expand_length);
+      ieda_solver::BLOAT(rect, direction, expand_length);
       return true;
     } else if (length > min_spacing) {
       /// means wire length
-      ieda_solver::shrink(rect, direction, half_min_spacing);
+      ieda_solver::SHRINK(rect, direction, half_min_spacing);
       return false;
     } else {
       /// half_min_spacing < length <= min_spacing
       int shrink_length = std::abs(half_min_spacing - length);
-      ieda_solver::shrink(rect, direction, shrink_length);
+      ieda_solver::SHRINK(rect, direction, shrink_length);
       return false;
     }
   };
@@ -65,8 +67,8 @@ void DrcConditionManager::checkCutSpacing(std::string layer, DrcEngineLayout* la
     std::vector<bool> mark_save(results.size(), true);  /// mark violation need to be saved
 
     for (int i = 0; i < (int) results.size(); i++) {
-      auto state_h = get_new_interval(ieda_solver::HORIZONTAL, results[i]);
-      auto state_v = get_new_interval(ieda_solver::VERTICAL, results[i]);
+      auto state_h = get_new_interval(ieda_solver::K_HORIZONTAL, results[i]);
+      auto state_v = get_new_interval(ieda_solver::K_VERTICAL, results[i]);
       /// if state_h and state_v are all bloat, result is a diagnal rect,
       /// if rect is a diagnal rect, check diagnal spacing >= min spacing is ok
       if (state_h && state_v) {
@@ -83,10 +85,8 @@ void DrcConditionManager::checkCutSpacing(std::string layer, DrcEngineLayout* la
   int violation_num = 0;
 
   /// check different poly
-
+  // without corner to corner
   auto violation_position_set = layout->get_layout_engine()->copyPolyset();  /// copy polyset
-  violation_position_set.clean();                                            /// eliminate overlaps
-  /// get min spacing for horizontal and vertical spacing < min spacing
   std::vector<ieda_solver::GeometryRect> results;
   ieda_solver::growAnd(violation_position_set, half_min_spacing);
   violation_position_set.get(results);
@@ -115,14 +115,14 @@ void DrcConditionManager::checkCutOverlap(std::string layer, DrcEngineLayout* la
 {
   auto shrink_rect = [](ieda_solver::GeometryRect& rect, int value) -> bool {
     ieda_solver::GeometryRect result;
-    int with = ieda_solver::getWireWidth(rect, ieda_solver::HORIZONTAL);
-    int height = ieda_solver::getWireWidth(rect, ieda_solver::HORIZONTAL);
+    int with = ieda_solver::getWireWidth(rect, ieda_solver::K_HORIZONTAL);
+    int height = ieda_solver::getWireWidth(rect, ieda_solver::K_HORIZONTAL);
     if (with < 2 * value || height < 2 * value) {
       return false;
     }
 
-    ieda_solver::shrink(rect, ieda_solver::HORIZONTAL, value);
-    ieda_solver::shrink(rect, ieda_solver::VERTICAL, value);
+    ieda_solver::SHRINK(rect, ieda_solver::K_HORIZONTAL, value);
+    ieda_solver::SHRINK(rect, ieda_solver::K_VERTICAL, value);
 
     return true;
   };

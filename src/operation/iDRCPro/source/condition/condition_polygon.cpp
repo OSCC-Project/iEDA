@@ -101,7 +101,7 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
 
   // methods
   auto get_edge_orientation = [](const ieda_solver::GeometryPoint& p1, const ieda_solver::GeometryPoint& p2) {
-    return p1.x() == p2.x() ? ieda_solver::VERTICAL : ieda_solver::HORIZONTAL;
+    return p1.x() == p2.x() ? ieda_solver::K_VERTICAL : ieda_solver::K_HORIZONTAL;
   };
 
   auto get_edge_direction = [](const ieda_solver::GeometryPoint& p1, const ieda_solver::GeometryPoint& p2) {
@@ -228,15 +228,15 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
             int rule_par_within = rule_par_edge.get_par_within();
 
             ieda_solver::GeometryRect detect_rect_left(point_current.x(), point_current.y(), point_current.x(), point_current.y());
-            ieda_solver::bloat(detect_rect_left, edge_direction, rule_par_spacing);
-            ieda_solver::bloat(detect_rect_left, edge_direction.left(), rule_par_within);
-            ieda_solver::bloat(detect_rect_left, edge_direction.right(), eol_within);
+            ieda_solver::BLOAT(detect_rect_left, edge_direction, rule_par_spacing);
+            ieda_solver::BLOAT(detect_rect_left, edge_direction.left(), rule_par_within);
+            ieda_solver::BLOAT(detect_rect_left, edge_direction.right(), eol_within);
             eol_par_space_regions_left[rule_eol] += detect_rect_left;
 
             ieda_solver::GeometryRect detect_rect_right(point_prev.x(), point_prev.y(), point_prev.x(), point_prev.y());
-            ieda_solver::bloat(detect_rect_right, edge_direction.backward(), rule_par_spacing);
-            ieda_solver::bloat(detect_rect_right, edge_direction.left(), rule_par_within);
-            ieda_solver::bloat(detect_rect_right, edge_direction.right(), eol_within);
+            ieda_solver::BLOAT(detect_rect_right, edge_direction.backward(), rule_par_spacing);
+            ieda_solver::BLOAT(detect_rect_right, edge_direction.left(), rule_par_within);
+            ieda_solver::BLOAT(detect_rect_right, edge_direction.right(), eol_within);
             eol_par_space_regions_right[rule_eol] += detect_rect_right;
           }
 
@@ -244,8 +244,8 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
 
           // eol spacing check window
           ieda_solver::GeometryRect check_rect(point_prev.x(), point_prev.y(), point_current.x(), point_current.y());
-          ieda_solver::bloat(check_rect, edge_direction.right(), eol_spacing);
-          ieda_solver::bloat(check_rect, edge_orientation, eol_within);
+          ieda_solver::BLOAT(check_rect, edge_direction.right(), eol_spacing);
+          ieda_solver::BLOAT(check_rect, edge_orientation, eol_within);
           eol_check_regions[rule_eol] += check_rect;
         }
       }
@@ -268,9 +268,9 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
                 && edge_length_history[eol_index] < rule_corner_fill_eol_width) {
               auto& corner_point = polygon_outline[corner_index];
               ieda_solver::GeometryRect check_rect(corner_point.x(), corner_point.y(), corner_point.x(), corner_point.y());
-              ieda_solver::bloat(check_rect, edge_direction_history[edge1_index].right(),
+              ieda_solver::BLOAT(check_rect, edge_direction_history[edge1_index].right(),
                                  edge_length_history[edge2_index] + rule_corner_fill_spacing);
-              ieda_solver::bloat(check_rect, edge_direction_history[edge2_index].right(),
+              ieda_solver::BLOAT(check_rect, edge_direction_history[edge2_index].right(),
                                  edge_length_history[edge1_index] + rule_corner_fill_spacing);
               corner_fill_check_regions += check_rect;
             }
@@ -298,9 +298,9 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
               // TODO: both side should be smaller than notch width
               auto rule_notch_width = rule_notch->get_concave_ends_side_of_notch_width().value();
               ieda_solver::GeometryRect detect_rect(point_current.x(), point_current.y(), point_prev.x(), point_prev.y());
-              ieda_solver::bloat(detect_rect, edge_direction.right(), 1);
+              ieda_solver::BLOAT(detect_rect, edge_direction.right(), 1);
               auto subtract_rect = detect_rect;
-              ieda_solver::bloat(detect_rect, edge_orientation, rule_notch_width + 1);
+              ieda_solver::BLOAT(detect_rect, edge_orientation, rule_notch_width + 1);
               notch_width_detect_regions += detect_rect;
               notch_width_detect_regions -= subtract_rect;
             }
@@ -310,7 +310,7 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
           if (is_violation) {
             notch_length = std::min(edge_length_history[notch_side1_idx], edge_length_history[notch_side2_idx]);
             ieda_solver::GeometryRect check_rect(point_current.x(), point_current.y(), point_prev.x(), point_prev.y());
-            ieda_solver::bloat(check_rect, edge_direction.right(), notch_length);
+            ieda_solver::BLOAT(check_rect, edge_direction.right(), notch_length);
             notch_spacing_check_regions += check_rect;
           }
         }
@@ -425,9 +425,9 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
   int last_eol_count = 0;
   auto remove_through_detect_regions = [](ieda_solver::GeometryPolygonSet& regions_to_remove, int shrink_size) {
     ieda_solver::GeometryPolygonSet par_shrink_vertical(regions_to_remove);
-    ieda_solver::shrink(par_shrink_vertical, ieda_solver::VERTICAL, shrink_size);
+    ieda_solver::SHRINK(par_shrink_vertical, ieda_solver::K_VERTICAL, shrink_size);
     ieda_solver::GeometryPolygonSet par_shrink_horizontal(regions_to_remove);
-    ieda_solver::shrink(par_shrink_horizontal, ieda_solver::HORIZONTAL, shrink_size);
+    ieda_solver::SHRINK(par_shrink_horizontal, ieda_solver::K_HORIZONTAL, shrink_size);
     ieda_solver::GeometryPolygonSet par_shrink = par_shrink_vertical | par_shrink_horizontal;
     auto par_regions_to_remove = regions_to_remove;
     ieda_solver::get_interact(par_regions_to_remove, par_shrink);

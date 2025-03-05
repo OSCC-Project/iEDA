@@ -41,16 +41,16 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
     int length = ieda_solver::getWireWidth(rect, direction);
     if (length <= half_min_spacing) {
       int expand_length = std::abs(half_min_spacing - length);
-      ieda_solver::bloat(rect, direction, expand_length);
+      ieda_solver::BLOAT(rect, direction, expand_length);
       return true;
     } else if (length > min_spacing) {
       /// means wire length
-      ieda_solver::shrink(rect, direction, half_min_spacing);
+      ieda_solver::SHRINK(rect, direction, half_min_spacing);
       return false;
     } else {
       /// half_min_spacing < length <= min_spacing
       int shrink_length = std::abs(half_min_spacing - length);
-      ieda_solver::shrink(rect, direction, shrink_length);
+      ieda_solver::SHRINK(rect, direction, shrink_length);
       return false;
     }
   };
@@ -59,8 +59,8 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
     std::vector<bool> mark_save(results.size(), true);  /// mark violation need to be saved
 
     for (int i = 0; i < (int) results.size(); i++) {
-      auto state_h = get_new_interval(ieda_solver::HORIZONTAL, results[i]);
-      auto state_v = get_new_interval(ieda_solver::VERTICAL, results[i]);
+      auto state_h = get_new_interval(ieda_solver::K_HORIZONTAL, results[i]);
+      auto state_v = get_new_interval(ieda_solver::K_VERTICAL, results[i]);
       /// if state_h and state_v are all bloat, result is a diagnal rect,
       /// if rect is a diagnal rect, check diagnal spacing >= min spacing is ok
       if (state_h && state_v) {
@@ -85,15 +85,15 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
       origin_polyset += origin_polygon;
       origin_polyset.clean();  /// eliminate overlaps
 
-      for (auto direction : {ieda_solver::HORIZONTAL, ieda_solver::VERTICAL}) {
+      for (auto direction : {ieda_solver::K_HORIZONTAL, ieda_solver::K_VERTICAL}) {
         auto polyset_copy = origin_polyset;
         std::vector<ieda_solver::GeometryRect> results;
 
         // ieda_solver::growAnd(polyset, half_min_spacing);
 
-        ieda_solver::bloat(polyset_copy, direction, half_min_spacing);
+        ieda_solver::BLOAT(polyset_copy, direction, half_min_spacing);
         polyset_copy.clean();
-        ieda_solver::shrink(polyset_copy, direction, half_min_spacing);
+        ieda_solver::SHRINK(polyset_copy, direction, half_min_spacing);
         polyset_copy.clean();
         polyset_copy -= origin_polyset;
         polyset_copy.clean();
@@ -102,9 +102,9 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
         /// save violation
         for (int i = 0; i < (int) results.size(); i++) {
           if (((ieda_solver::upRightX(results[i]) - ieda_solver::lowLeftX(results[i])) < min_spacing
-               && direction == ieda_solver::HORIZONTAL)
+               && direction == ieda_solver::K_HORIZONTAL)
               || ((ieda_solver::upRightY(results[i]) - ieda_solver::lowLeftY(results[i])) < min_spacing
-                  && direction == ieda_solver::VERTICAL)) {
+                  && direction == ieda_solver::K_VERTICAL)) {
             addViolation(results[i], layer, ViolationEnumType::kDefaultSpacing);
             violation_num++;
           }
@@ -120,11 +120,11 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
       violation_set.get(and_results);
       std::vector<ieda_solver::GeometryRect> results;
       for (auto rect : and_results) {
-        int length = ieda_solver::getWireWidth(rect, ieda_solver::HORIZONTAL);
-        int width = ieda_solver::getWireWidth(rect, ieda_solver::VERTICAL);
+        int length = ieda_solver::getWireWidth(rect, ieda_solver::K_HORIZONTAL);
+        int width = ieda_solver::getWireWidth(rect, ieda_solver::K_VERTICAL);
         if (length < min_spacing && width < min_spacing) {
-          ieda_solver::bloat(rect, ieda_solver::HORIZONTAL, min_spacing - length);
-          ieda_solver::bloat(rect, ieda_solver::VERTICAL, min_spacing - width);
+          ieda_solver::BLOAT(rect, ieda_solver::K_HORIZONTAL, min_spacing - length);
+          ieda_solver::BLOAT(rect, ieda_solver::K_VERTICAL, min_spacing - width);
           results.push_back(rect);
         }
       }
@@ -166,11 +166,11 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
     violation_set.get(and_results);
     results.clear();
     for (auto rect : and_results) {
-      int length = ieda_solver::getWireWidth(rect, ieda_solver::HORIZONTAL);
-      int width = ieda_solver::getWireWidth(rect, ieda_solver::VERTICAL);
+      int length = ieda_solver::getWireWidth(rect, ieda_solver::K_HORIZONTAL);
+      int width = ieda_solver::getWireWidth(rect, ieda_solver::K_VERTICAL);
       if (length < min_spacing && width < min_spacing) {
-        ieda_solver::bloat(rect, ieda_solver::HORIZONTAL, min_spacing - length);
-        ieda_solver::bloat(rect, ieda_solver::VERTICAL, min_spacing - width);
+        ieda_solver::BLOAT(rect, ieda_solver::K_HORIZONTAL, min_spacing - length);
+        ieda_solver::BLOAT(rect, ieda_solver::K_VERTICAL, min_spacing - width);
         results.push_back(rect);
       }
     }

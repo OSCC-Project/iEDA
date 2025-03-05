@@ -82,7 +82,7 @@ void DrcConditionManager::checkJog(std::string layer, DrcEngineLayout* layout, s
           auto check_by_direction = [&](ieda_solver::GeometryOrientation spacing_direction) {
             auto prl_direction = spacing_direction.get_perpendicular();
             auto expand_wires = jog_wires;
-            ieda_solver::bloat(expand_wires, spacing_direction, rule_within);
+            ieda_solver::BLOAT(expand_wires, spacing_direction, rule_within);
             auto wire_with_jogs = layer_polyset;
             ieda_solver::get_interact(wire_with_jogs, jog_wires);
             auto jogs_attach_to_wire = wire_with_jogs - jog_wires;
@@ -94,12 +94,12 @@ void DrcConditionManager::checkJog(std::string layer, DrcEngineLayout* layout, s
             for (auto& rect : within_region_rects) {
               int length = ieda_solver::getWireWidth(rect, spacing_direction);
               if (length < rule_within) {
-                ieda_solver::shrink(rect, prl_direction, 1);
+                ieda_solver::SHRINK(rect, prl_direction, 1);
                 split_check_rects_set += rect;
               }
             }
             ieda_solver::get_interact(split_check_rects_set, wire_with_jogs);
-            ieda_solver::bloat(split_check_rects_set, prl_direction, 1);
+            ieda_solver::BLOAT(split_check_rects_set, prl_direction, 1);
             ieda_solver::GeometryPolygonSet region_b = split_check_rects_set - jogs_attach_to_wire;
             std::vector<ieda_solver::GeometryPolygon> region_b_polygons;
             region_b.get(region_b_polygons);
@@ -141,8 +141,8 @@ void DrcConditionManager::checkJog(std::string layer, DrcEngineLayout* layout, s
             }
           };
 
-          check_by_direction(ieda_solver::HORIZONTAL);
-          check_by_direction(ieda_solver::VERTICAL);
+          check_by_direction(ieda_solver::K_HORIZONTAL);
+          check_by_direction(ieda_solver::K_VERTICAL);
 
           break;
         }

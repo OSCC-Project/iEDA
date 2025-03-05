@@ -51,7 +51,7 @@ void DrcConditionManager::checkArea(std::string layer, DrcEngineLayout* layout)
 
   // methods
   auto get_edge_orientation = [](const ieda_solver::GeometryPoint& p1, const ieda_solver::GeometryPoint& p2) {
-    return p1.x() == p2.x() ? ieda_solver::VERTICAL : ieda_solver::HORIZONTAL;
+    return p1.x() == p2.x() ? ieda_solver::K_VERTICAL : ieda_solver::K_HORIZONTAL;
   };
 
   auto get_edge_direction = [](const ieda_solver::GeometryPoint& p1, const ieda_solver::GeometryPoint& p2) {

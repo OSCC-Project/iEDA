@@ -121,14 +121,14 @@ void DrcConditionManager::checkOverlapBySelfIntersect(std::string layer, DrcEngi
 {
   auto shrink_rect = [](ieda_solver::GeometryRect& rect, int value) -> bool {
     ieda_solver::GeometryRect result;
-    int with = ieda_solver::getWireWidth(rect, ieda_solver::HORIZONTAL);
-    int height = ieda_solver::getWireWidth(rect, ieda_solver::HORIZONTAL);
+    int with = ieda_solver::getWireWidth(rect, ieda_solver::K_HORIZONTAL);
+    int height = ieda_solver::getWireWidth(rect, ieda_solver::K_HORIZONTAL);
     if (with < 2 * value || height < 2 * value) {
       return false;
     }
 
-    ieda_solver::shrink(rect, ieda_solver::HORIZONTAL, value);
-    ieda_solver::shrink(rect, ieda_solver::VERTICAL, value);
+    ieda_solver::SHRINK(rect, ieda_solver::K_HORIZONTAL, value);
+    ieda_solver::SHRINK(rect, ieda_solver::K_VERTICAL, value);
 
     return true;
   };

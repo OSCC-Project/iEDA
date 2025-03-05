@@ -156,7 +156,10 @@ void DrcEngineManager::dataPreprocess()
   for (auto& [layer, layout] : get_engine_layouts(LayoutType::kRouting)) {
     layout_list.push_back(layout);
   }
-#pragma omp parallel for num_threads(std::min((int)layout_list.size(),8))
+  for (auto& [layer, layout] : get_engine_layouts(LayoutType::kCut)) {
+    layout_list.push_back(layout);
+  }
+#pragma omp parallel for num_threads(std::min((int) layout_list.size(), 8))
   for (size_t i = 0; i < layout_list.size(); i++) {
     DrcEngineLayout* layout = layout_list[i];
     layout->combineLayout();
@@ -212,7 +215,6 @@ void DrcEngineManager::filterData()
 
     // enclosure
     _condition_manager->checkCutEnclosure(layer, layout);
-
   }
 
   DEBUGOUTPUT("Finish drc checking:\t");
