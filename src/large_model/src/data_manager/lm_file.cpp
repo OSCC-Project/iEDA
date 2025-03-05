@@ -109,6 +109,7 @@ bool LmLayoutFileIO::saveJsonNets()
           json_feature["volume"] = net_feature->volume;
           json_feature["l_ness"] = net_feature->l_ness;
           json_feature["layer_ratio"]  = net_feature->layer_ratio;
+          json_feature["rsmt"] = net_feature->rsmt;
         }
         json_net["feature"] = json_feature;
       }

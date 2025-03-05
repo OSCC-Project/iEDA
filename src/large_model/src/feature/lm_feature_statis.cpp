@@ -26,6 +26,7 @@
 #include "Log.hh"
 #include "congestion_api.h"
 #include "density_api.h"
+#include "wirelength_api.h"
 #include "idm.h"
 #include "lm_grid_info.h"
 #include "omp.h"
@@ -59,6 +60,7 @@ void LmFeatureStatis::feature_graph()
   double col_factor = static_cast<double>(gridInfoInst.urx - gridInfoInst.llx) / egr_cols;
 
   CONGESTION_API_INST->evalNetInfo();
+  WIRELENGTH_API_INST->evalNetFlute();
 
   auto& net_map = _layout->get_graph().get_net_map();
 #pragma omp parallel for schedule(dynamic)
@@ -80,6 +82,8 @@ void LmFeatureStatis::feature_graph()
     net_feature->height = CONGESTION_API_INST->findBBoxHeight(net_name);
     net_feature->area = CONGESTION_API_INST->findBBoxArea(net_name);
     net_feature->l_ness = CONGESTION_API_INST->findLness(net_name);
+    net_feature->rsmt = WIRELENGTH_API_INST->findNetFLUTE(net_name);
+    
 
     /// 初始化 layer_ratio
     int min_order = INT32_MAX; // 记录最小层
