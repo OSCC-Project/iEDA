@@ -81,7 +81,10 @@ pub fn build_instance_current_vector(
         let mut instance_power_pin_name = instance_name; // TODO(to taosimin) fix power pin name.
         instance_power_pin_name += ":";
         instance_power_pin_name += net_data.get_name();
-        let node_index = net_data.get_node_id(&instance_power_pin_name).unwrap();
+        let node_index = net_data.get_node_id(&instance_power_pin_name).unwrap_or_else(||{
+            log::error!("node {} not found in net {}", instance_power_pin_name, net_data.get_name());
+            0
+        });
         instance_current_data.insert(node_index, instance_current);
     }
 

@@ -78,6 +78,11 @@ unsigned iIR::setInstancePowerData(std::vector<IRInstancePower> instance_power_d
  *
  */
 unsigned iIR::solveIRDrop(const char* net_name) {
+  if (!_rc_data) {
+    LOG_ERROR << "no " << net_name << " RC data to solve IR drop";
+    return 0;
+  }
+
   auto one_net_matrix_data =
       build_one_net_conductance_matrix_data(_rc_data, net_name);
 
@@ -98,7 +103,7 @@ unsigned iIR::solveIRDrop(const char* net_name) {
     double ir_drop = grid_voltages[*instance_id];
     std::string instance_name = get_instance_name(_rc_data, net_name, *instance_id);
 
-    LOG_INFO << "instance name " << instance_name << " ir drop "
+    LOG_INFO << "instance: " << instance_name << " ir drop: "
              << ir_drop;
     _instance_to_ir_drop[instance_name] = ir_drop;
   }

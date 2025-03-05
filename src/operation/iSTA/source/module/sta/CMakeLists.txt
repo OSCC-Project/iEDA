@@ -21,7 +21,6 @@ target_link_libraries(sta
     report_table 
     stdc++fs 
     log
-    tbb
     yaml-cpp)
 
 if (USE_CUDA_MODE)
