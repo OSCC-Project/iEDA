@@ -94,6 +94,11 @@ class PowerEngine {
     return _ipower->getInstanceIRDrop();
   }
 
+  std::map<Instance::Coordinate, double> displayPowerMap() {
+    return _ipower->displayInstancePowerMap();
+  }
+  std::map<Instance::Coordinate, double> displayIRDropMap();
+
   unsigned reportIRAnalysis() {
     return _ipower->reportIRAnalysis();
   }

@@ -667,6 +667,8 @@ std::vector<IRInstancePower> Power::getInstancePowerData() {
  * @return std::map<Instance::Coordinate, double> 
  */
 std::map<Instance::Coordinate, double> Power::displayInstancePowerMap() {
+  LOG_INFO << "display instance power map start";
+
   std::map<Instance::Coordinate, double> instance_power_map;
 
   PwrGroupData* group_data;
@@ -678,6 +680,8 @@ std::map<Instance::Coordinate, double> Power::displayInstancePowerMap() {
     auto* inst = dynamic_cast<Instance*>(group_data->get_obj());
     instance_power_map[inst->get_coordinate().value()] = group_data->get_total_power();
   }
+
+  LOG_INFO << "display instance power map end";
 
   return instance_power_map;
 }

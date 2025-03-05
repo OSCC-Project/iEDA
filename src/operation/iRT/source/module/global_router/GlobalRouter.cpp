@@ -184,7 +184,7 @@ void GlobalRouter::iterativeGRModel(GRModel& gr_model)
   gr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 25, 15, 3, overflow_unit, 3);
   gr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 25, 20, 3, overflow_unit, 3);
   // clang-format on
-  for (size_t i = 0, iter = 1; i < gr_iter_param_list.size(); i++, iter++) {
+  for (int32_t i = 0, iter = 1; i < static_cast<int32_t>(gr_iter_param_list.size()); i++, iter++) {
     Monitor iter_monitor;
     RTLOG.info(Loc::current(), "***** Begin iteration ", iter, "/", gr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, gr_iter_param_list.size()),
                ") *****");

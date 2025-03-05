@@ -94,6 +94,28 @@ unsigned report_ir_drop(std::string power_net_name) {
   return 1;
 }
 
+/**
+ * @brief display power map.
+ * 
+ * @return std::map<Instance::Coordinate, double> 
+ */
+std::map<Instance::Coordinate, double> display_power_map() {
+  PowerEngine* power_engine = PowerEngine::getOrCreatePowerEngine();
+  auto ret_value = power_engine->displayPowerMap();
+  return ret_value;
+}
+
+/**
+ * @brief display power map.
+ * 
+ * @return std::map<Instance::Coordinate, double> 
+ */
+std::map<Instance::Coordinate, double> display_ir_drop_map() {
+  PowerEngine* power_engine = PowerEngine::getOrCreatePowerEngine();
+  auto ret_value = power_engine->displayIRDropMap();
+  return ret_value;
+}
+
 // for dataflow.
 /**
  * @brief Create a data flow.

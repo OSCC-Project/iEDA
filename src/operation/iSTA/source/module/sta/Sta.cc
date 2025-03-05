@@ -1413,6 +1413,11 @@ unsigned Sta::buildLibArcsGPU() {
     lib_gpu_arc._cap_unit =
         ((lib_cap_unit == CapacitiveUnit::kFF) ? Lib_Cap_unit::kFF
                                                : Lib_Cap_unit::kPF);
+    auto lib_time_unit = the_lib_arc->get_owner_cell()->get_owner_lib()->get_time_unit();
+    lib_gpu_arc._time_unit =
+        ((lib_time_unit == TimeUnit::kNS) ? Lib_Time_unit::kNS :
+                                          (lib_time_unit == TimeUnit::kPS) ? Lib_Time_unit::kPS : Lib_Time_unit::kFS);
+
     lib_gpu_arc._table = new Lib_Table_GPU[lib_gpu_arc._num_table];
 
     for (size_t index = 0; index < num_table; index++) {
