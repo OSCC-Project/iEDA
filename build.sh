@@ -28,7 +28,9 @@ C_COMPILER_PATH="gcc-10"
 DRY_RUN="OFF"
 RUN_IEDA="OFF"
 NO_BUILD="OFF"
+DEL_BUILD="OFF"
 INSTALL_DEP="OFF"
+NON_INTERACTIVE="OFF"
 BUILD_THREADS="$(nproc)"
 
 CMAKE_OPTIONS=(
@@ -58,7 +60,7 @@ help_msg_exit()
 echo -e "build.sh: Build iEDA executable binary"
 echo -e "Usage:"
 echo -e "  ${bold}bash build.sh${clear} [-h] [-n] [-r] [-b] [-d] [-i] [-p] "
-echo -e "                [-g] [-s] [-P] [-G] [-C] [-D]"
+echo -e "                [-g] [-s] [-P] [-G] [-C] [-D] [-y]"
 echo -e "                [-b ${underline}binary path${clear}] [-j ${underline}num${clear}] [-i apt|docker]"
 echo -e "Options:"
 echo -e "  ${bold}-h${clear} display this help and exit"
@@ -75,6 +77,7 @@ echo -e "  ${bold}-P${clear} enable performance profiling (default OFF)"
 echo -e "  ${bold}-G${clear} enable GPU acceleration (default OFF)"
 echo -e "  ${bold}-C${clear} enable compatibility mode (disable optimizations, default OFF)"
 echo -e "  ${bold}-D${clear} dry-run mode (show cmake build commands)"
+echo -e "  ${bold}-y${clear} auto confirm all actions, non-interactive mode (defaults: OFF)"
 exit "$1";
 }
 
@@ -90,7 +93,7 @@ build_ieda()
     "${CMAKE_OPTIONS[@]}"
     "$G_BUILD_GENERATOR"
   )
-  
+
   local cmake_build=(
     cmake --build "$BUILD_DIR" -j "$BUILD_THREADS" --target "$BINARY_TARGET"
   )
@@ -215,6 +218,10 @@ command_exists() {
 
 read_continue_or_exit()
 {
+  if [[ $NON_INTERACTIVE == "ON" ]]; then
+    return 0
+  fi
+
   while true; do
     read -p "Continue? (y/n) " answer
     case $answer in
@@ -296,8 +303,13 @@ opt_thread_num()
 
 opt_del_build()
 {
+  DEL_BUILD="ON"
+}
+
+perform_clean()
+{
   echo -e "${yellow}Cleaning all build artifacts...${clear}"
-  
+
   local cmake_build_dir="$BUILD_DIR"
   local rust_target_dirs=$(find "$IEDA_WORKSPACE/src" -type d -name "target" \
     -exec test -f "{}/../Cargo.toml" \; -print 2>/dev/null)
@@ -310,6 +322,12 @@ opt_del_build()
 
   if [[ ${#delete_list[@]} -eq 0 ]]; then
     echo -e "${green}No build artifacts found, nothing to clean.${clear}"
+    return 0
+  fi
+
+  if [[ $NON_INTERACTIVE == "ON" ]]; then
+    [[ -d "$cmake_build_dir" ]] && rm -rf "$cmake_build_dir"
+    [[ -n "$rust_target_dirs" ]] && xargs -I{} rm -rf {} <<< "$rust_target_dirs"
     return 0
   fi
 
@@ -340,12 +358,17 @@ opt_dry_run()
   DRY_RUN="ON"
 }
 
+opt_non_interactive()
+{
+  NON_INTERACTIVE="ON"
+}
+
 # invalid args
 if [[ $1 != "" ]] && [[ $1 != -* ]]; then
   help_msg_exit 1
 fi
 
-while getopts j:t:b:dnhi:rpgsPGCD opt; do
+while getopts j:b:t:i:rndDyp opt; do
   case "${opt}" in
     j) opt_thread_num "$OPTARG"     ;;
     b) opt_binary_dir "$OPTARG"     ;;
@@ -355,6 +378,7 @@ while getopts j:t:b:dnhi:rpgsPGCD opt; do
     n) opt_no_build               ;;
     d) opt_del_build              ;;
     D) opt_dry_run                ;;
+    y) opt_non_interactive        ;;
     p) CMAKE_OPTIONS+=("-DBUILD_PYTHON=ON") ;;
     g) CMAKE_OPTIONS+=("-DBUILD_GUI=ON")    ;;
     s) CMAKE_OPTIONS+=("-DSANITIZER=ON")    ;;
@@ -365,6 +389,10 @@ while getopts j:t:b:dnhi:rpgsPGCD opt; do
     *) help_msg_exit 1            ;;
   esac
 done
+
+if [[ $DEL_BUILD == "ON" ]]; then
+  perform_clean
+fi
 
 if [[ ${INSTALL_DEP} != "OFF" ]]; then
   install_dependencies "$INSTALL_DEP"
