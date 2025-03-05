@@ -661,6 +661,30 @@ std::vector<IRInstancePower> Power::getInstancePowerData() {
   instance_power_data.emplace_back(std::move(instance_power));
   return instance_power_data;
 }
+/**
+ * @brief get instance power map.
+ * 
+ * @return std::map<Instance::Coordinate, double> 
+ */
+std::map<Instance::Coordinate, double> Power::displayInstancePowerMap() {
+  LOG_INFO << "display instance power map start";
+
+  std::map<Instance::Coordinate, double> instance_power_map;
+
+  PwrGroupData* group_data;
+  FOREACH_PWR_GROUP_DATA(this, group_data) {
+    if (dynamic_cast<Net*>(group_data->get_obj())) {
+      continue;
+    }
+
+    auto* inst = dynamic_cast<Instance*>(group_data->get_obj());
+    instance_power_map[inst->get_coordinate().value()] = group_data->get_total_power();
+  }
+
+  LOG_INFO << "display instance power map end";
+
+  return instance_power_map;
+}
 
 /**
  * @brief init power graph data
@@ -874,6 +898,49 @@ unsigned Power::runCompleteFlow() {
   updatePower();
   reportPower();
   return 1;
+}
+
+/**
+ * @brief get the toggle and vdd data of a net.
+ * 
+ * @param net_name 
+ * @return std::pair<double, double> 
+ */
+std::pair<double, double> Power::getNetToggleAndVoltageData(const char* net_name) {
+  auto* sta_graph = _power_graph.get_sta_graph();
+  auto* nl = sta_graph->get_nl();
+  auto* the_net = nl->findNet(net_name);
+
+  auto* driver_obj = the_net->getDriver();
+  if (!driver_obj || the_net->getLoads().empty()) {
+    return {0.0, 0.0};
+  }
+
+  if (driver_obj->isPort() && ((the_net->getLoads().size() == 1) &&
+                               the_net->getLoads().front()->isPort())) {
+    return {0.0, 0.0};
+  }
+
+  auto driver_sta_vertex = sta_graph->findVertex(driver_obj);
+
+  PwrVertex* driver_pwr_vertex = nullptr;
+  if (driver_sta_vertex) {
+    driver_pwr_vertex = _power_graph.staToPwrVertex(*driver_sta_vertex);
+  } else {
+    return {0.0, 0.0};
+  }
+
+  // get VDD
+  auto driver_voltage = driver_pwr_vertex->getDriveVoltage();
+  if (!driver_voltage) {
+    LOG_FATAL << "can not get driver voltage.";
+  }
+  double vdd = driver_voltage.value();
+
+  // get Toggle
+  double toggle = driver_pwr_vertex->getToggleData(std::nullopt);
+
+  return {toggle, vdd};
 }
 
 /**

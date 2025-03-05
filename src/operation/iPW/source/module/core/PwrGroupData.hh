@@ -75,11 +75,11 @@ class PwrGroupData {
  private:
   PwrGroupType _group_type;  //!< The group type.
 
-  double _internal_power = 0.0;
-  double _switch_power = 0.0;
-  double _leakage_power = 0.0;
+  double _internal_power = 0.0; //!< unit is W.
+  double _switch_power = 0.0;  //!< unit is W.
+  double _leakage_power = 0.0;  //!< unit is W.
 
-  double _nom_voltage = 0.0;
+  double _nom_voltage = 0.0; //!< unit is V.
 
   DesignObject* _obj;
 };

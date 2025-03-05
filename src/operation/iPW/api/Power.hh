@@ -143,6 +143,10 @@ class Power {
   unsigned reportIRDropCSV(const char* rpt_file_name);
   unsigned reportIRAnalysis();
 
+  std::pair<double, double> getNetToggleAndVoltageData(const char* net_name);
+
+  std::map<Instance::Coordinate, double> displayInstancePowerMap();
+
  private:
   std::string _design_work_space; // The power report work space.
 
