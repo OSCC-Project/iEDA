@@ -583,7 +583,7 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir) {
 
   std::string path_dir = work_dir + "/large_model";
   STA_INST->set_design_work_space(path_dir.c_str());
-  STA_INST->reportWirePaths(1000);
+  STA_INST->reportWirePaths(10000);
 }
 
 void InitSTA::initPowerEngine() {
