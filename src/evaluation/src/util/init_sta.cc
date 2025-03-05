@@ -1376,7 +1376,7 @@ std::map<int, double> InitSTA::patchIRDropMap(
   // hard code std cell power net is VDD
   std::string power_net_name = "VDD";
   PW_INST->runIRAnalysis(power_net_name);
-  auto instance_to_ir_drop = PW_INST->getInstanceIRDrop();
+  auto& instance_to_ir_drop = PW_INST->getInstanceIRDrop();
 
   auto* sta_netlist = STA_INST->get_netlist();
   auto* idb_adapter = STA_INST->getIDBAdapter();
