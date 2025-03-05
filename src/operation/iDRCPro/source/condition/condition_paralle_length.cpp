@@ -133,7 +133,6 @@ void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLay
                   for (int k = idb_prl_length_list.size() - 1; k >= 0; k--) {
                     if (prl >= idb_prl_length_list[k] && dis <= idb_spacing_array[width_idx][k]) {
                       ieda_solver::GeometryRect violation_rect(rect);
-                      ieda_solver::BLOAT(violation_rect, prl_dir, idb_prl_length_list[k] - prl);
                       addViolation(violation_rect, layer, ViolationEnumType::kPRLSpacing);
                       internel_prl_count += 1;
                       break;
