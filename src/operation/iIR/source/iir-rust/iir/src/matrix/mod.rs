@@ -1,7 +1,6 @@
 pub mod ir_inst_power;
 pub mod ir_rc;
 
-use log;
 
 use sprs::TriMatI;
 use std::collections::HashMap;
@@ -256,13 +255,13 @@ pub extern "C" fn build_one_net_conductance_matrix_data(
     let ir_net_raw_ptr = Box::into_raw(one_net_conductance_data);
 
     // The C image of rust data.
-    let rust_one_net_conductance_data = RustNetConductanceData {
+    
+    RustNetConductanceData {
         net_name: c_net_name,
         node_num: conductance_matrix_triplet.shape().0,
         g_matrix_vec: rust_matrix_vec,
         ir_net_raw_ptr: ir_net_raw_ptr as *const c_void,
-    };
-    rust_one_net_conductance_data
+    }
 }
 
 /// Read instance power csv file for C.
@@ -280,11 +279,11 @@ pub extern "C" fn set_instance_power_data(c_instance_power_data: RustVec) -> *mu
     let mut records = Vec::new();
     for i in 0..c_instance_power_data.len {
         let instance_power_data_ptr = c_instance_power_data.data as *const IRInstancePower;
-        let instance_power_data = unsafe { &*instance_power_data_ptr.offset(i as isize) };
-        let instance_name = unsafe { c_str_to_r_str(instance_power_data.instance_name) };
+        let instance_power_data = unsafe { &*instance_power_data_ptr.add(i) };
+        let instance_name = c_str_to_r_str(instance_power_data.instance_name);
 
         let instance_power_record = InstancePowerRecord {
-            instance_name: instance_name,
+            instance_name,
             nominal_voltage: instance_power_data.nominal_voltage,
             internal_power: instance_power_data.internal_power,
             switch_power: instance_power_data.switch_power,
@@ -329,7 +328,7 @@ pub extern "C" fn get_bump_node_ids(c_rc_data: *const c_void, c_net_name: *const
     for node in nodes.borrow().iter() {
         if node.get_is_bump() {
             let node_name = node.get_node_name();
-            let node_id = one_net_rc_data.get_node_id(&node_name).unwrap();
+            let node_id = one_net_rc_data.get_node_id(node_name).unwrap();
             bump_node_ids.push(node_id);
         }
     }
@@ -350,7 +349,7 @@ pub extern "C" fn get_instance_node_ids(c_rc_data: *const c_void, c_net_name: *c
     for node in nodes.borrow().iter() {
         if node.get_is_inst_pin() {
             let node_name = node.get_node_name();
-            let node_id = one_net_rc_data.get_node_id(&node_name).unwrap();
+            let node_id = one_net_rc_data.get_node_id(node_name).unwrap();
             instance_node_ids.push(node_id);
         }
     }
@@ -371,8 +370,8 @@ pub extern "C" fn get_instance_name(
     let one_net_rc_data = rc_data.get_one_net_data(&one_net_name);
 
     let instance_name = one_net_rc_data.get_node_name(node_id);
-    let c_instance_name = string_to_c_char(instance_name.unwrap());
-    c_instance_name
+    
+    (string_to_c_char(instance_name.unwrap())) as _
 }
 
 /// Build RC matrix and current vector data.
@@ -420,8 +419,8 @@ pub extern "C" fn build_matrix_from_raw_data(
     }
 
     // Finaly, return data to C.
-    let net_matrix_data_vec = rust_vec_to_c_array(&net_matrix_data);
-    net_matrix_data_vec
+    
+    rust_vec_to_c_array(&net_matrix_data)
 }
 
 #[cfg(test)]
