@@ -15,12 +15,13 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #include "api/Power.hh"
+#include "api/PowerEngine.hh"
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
 #include "gtest/gtest.h"
+#include "iIR/source/module/power-netlist/PGNetlist.hh"
 #include "log/Log.hh"
 #include "usage/usage.hh"
-#include "iIR/source/module/power-netlist/PGNetlist.hh"
 
 using namespace ipower;
 using namespace ieda;
@@ -196,13 +197,13 @@ TEST_F(PowerTest, runIR) {
   Power* ipower = Power::getOrCreatePower(&(ista->get_graph()));
 
   ipower->runCompleteFlow();
-
-  ipower->runIRAnalysis();
+  
+  std::string power_net_name = "VDD";
+  ipower->runIRAnalysis(power_net_name);
 }
 
 TEST_F(PowerTest, estimateIR) {
-
-  Log::setVerboseLogLevel("Pwr*", 1);
+  // Log::setVerboseLogLevel("Pwr*", 1);
 
   auto* timing_engine = TimingEngine::getOrCreateTimingEngine();
   timing_engine->set_num_threads(48);
@@ -290,22 +291,13 @@ TEST_F(PowerTest, estimateIR) {
   std::string def_file = "/home/taosimin/ir_example/aes/aes.def";
   timing_engine->readDefDesign(def_file, lef_files);
 
-  auto* db_adapter = timing_engine->get_db_adapter();
-  auto* idb_builder = dynamic_cast<TimingIDBAdapter*>(db_adapter)->get_idb();
-  auto* special_net_list =
-      idb_builder->get_def_service()->get_design()->get_special_net_list();
-  auto* vdd_net = special_net_list->find_net("VDD");
-
-  IRPGNetlistBuilder pg_netlist_builder;
-  pg_netlist_builder.build(vdd_net);
-
   timing_engine->readSdc("/home/taosimin/ir_example/aes/aes.sdc");
 
   timing_engine->readSpef("/home/taosimin/ir_example/aes/aes.spef");
 
   timing_engine->buildGraph();
 
-  timing_engine->updateTiming();
+  timing_engine->get_ista()->updateTiming();
   timing_engine->reportTiming();
 
   Sta* ista = Sta::getOrCreateSta();
@@ -313,9 +305,18 @@ TEST_F(PowerTest, estimateIR) {
 
   ipower->runCompleteFlow();
 
-  ipower->runIRAnalysis();
+  PowerEngine* power_engine = PowerEngine::getOrCreatePowerEngine();
 
+  std::string power_net_name = "VDD";
 
+  // estimate rc from topo.
+  power_engine->buildPGNetWireTopo();
+
+  // or read pg spef to calc rc.
+  // const char* pg_spef_file_path = "/home/taosimin/ir_example/aes/aes_vdd_vss.spef";
+  // power_engine->readPGSpef(pg_spef_file_path);
+
+  power_engine->runIRAnalysis(power_net_name);
 }
 
 }  // namespace

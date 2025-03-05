@@ -1022,6 +1022,7 @@ void Sta::initSdcCmd() {
   registerTclCmd(CmdSetOperatingConditions, "set_operating_conditions");
   registerTclCmd(CmdSetWireLoadMode, "set_wire_load_mode");
   registerTclCmd(CmdSetDisableTiming, "set_disable_timing");
+  registerTclCmd(CmdSetCaseAnalysis, "set_case_analysis");
 }
 
 /**

@@ -51,6 +51,11 @@ struct IRInstancePower {
  */
 class iIR {
  public:
+  void set_rc_data(const void* rust_rc_data) { _rc_data = rust_rc_data; }
+  auto* get_rc_data() { return _rc_data; }
+
+  auto& get_instance_to_ir_drop() { return _instance_to_ir_drop; }
+
   unsigned init();
   unsigned readSpef(std::string_view spef_file_path);
   unsigned readInstancePowerDB(std::string_view instance_power_file_path);

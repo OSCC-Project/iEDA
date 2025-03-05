@@ -14,28 +14,36 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
-
-#include <map>
-#include <set>
-#include <string>
-
+/**
+ * @file CmdReadPGSpef.cc
+ * @author simin tao (taosm@pcl.ac.cn)
+ * @brief read_pg_spef command
+ * @version 0.1
+ * @date 2025-03-04
+ * 
+ */
+#include "PowerShellCmd.hh"
 #include "api/PowerEngine.hh"
 
-namespace python_interface {
-bool readRustVCD(const char* vcd_path, const char* top_instance_name);
-bool read_pg_spef(std::string pg_spef_file);
+namespace ipower {
 
-unsigned reportPower();
-unsigned report_ir_drop(std::string power_net_name);
+CmdReadPGSpef::CmdReadPGSpef(const char* cmd_name) : TclCmd(cmd_name) {
+  auto* file_name_option = new TclStringOption("file_name", 1, nullptr);
+  addOption(file_name_option);
+}
 
-// for dataflow.
-unsigned create_data_flow();
+unsigned CmdReadPGSpef::check() { return 1; }
 
-std::map<std::size_t, std::vector<ipower::ClusterConnection>>
-build_connection_map(std::vector<std::set<std::string>> clusters,
-                     std::set<std::string> src_instances, unsigned max_hop);
+unsigned CmdReadPGSpef::exec() {
+  if (!check()) {
+    return 0;
+  }
 
-std::vector<ipower::MacroConnection> build_macro_connection_map(unsigned max_hop);
+  TclOption* file_name_option = getOptionOrArg("file_name");
+  auto pg_spef_file = file_name_option->getStringVal();
 
-}  // namespace python_interface
+  PowerEngine* power_engine = PowerEngine::getOrCreatePowerEngine();
+  return power_engine->readPGSpef(pg_spef_file);
+}
+
+}  // namespace ipower
