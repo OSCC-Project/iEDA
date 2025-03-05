@@ -15,6 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
+#include <cstdio>
 #include <string>
 
 #include "condition_manager.h"
@@ -27,11 +28,13 @@ namespace idrc {
 void DrcConditionManager::checkCutSpacing(std::string layer, DrcEngineLayout* layout)
 {
   if (_check_select.find(ViolationEnumType::kCutSpacing) == _check_select.end()) {
+    printf("Error: not cut spacing!!!");
     return;
   }
   /// get min spacing for this layer
   int min_spacing = DrcTechRuleInst->getCutSpacing(layer);
   if (min_spacing <= 0) {
+    printf("Error: min cut spacing is negative!!!");
     return;
   }
   int half_min_spacing = min_spacing / 2;
@@ -96,7 +99,7 @@ void DrcConditionManager::checkCutSpacing(std::string layer, DrcEngineLayout* la
       violation_num++;
     }
   }
-  // DEBUGOUTPUT(DEBUGHIGHLIGHT("Min Spacing:\t") << violation_num << "\tresults = " << results.size()
+  DEBUGOUTPUT(DEBUGHIGHLIGHT("Cut Spacing:\t") << violation_num << "\tresults = " << results.size());
   //
 }
 
