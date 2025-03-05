@@ -368,7 +368,7 @@ if [[ $1 != "" ]] && [[ $1 != -* ]]; then
   help_msg_exit 1
 fi
 
-while getopts j:b:t:i:rndDyp opt; do
+while getopts j:b:t:i:rndDypx opt; do
   case "${opt}" in
     j) opt_thread_num "$OPTARG"     ;;
     b) opt_binary_dir "$OPTARG"     ;;
@@ -385,6 +385,7 @@ while getopts j:b:t:i:rndDyp opt; do
     P) CMAKE_OPTIONS+=("-DUSE_PROFILER=ON") ;;
     G) CMAKE_OPTIONS+=("-DUSE_GPU=ON")      ;;
     C) CMAKE_OPTIONS+=("-DCOMPATIBILITY_MODE=ON") ;;
+    x) CMAKE_OPTIONS+=("-DCCLOUD_WORKAROUND=ON") ;;
     h) help_msg_exit 0            ;;
     *) help_msg_exit 1            ;;
   esac
