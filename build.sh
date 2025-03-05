@@ -325,25 +325,24 @@ perform_clean()
     return 0
   fi
 
-  if [[ $NON_INTERACTIVE == "ON" ]]; then
-    [[ -d "$cmake_build_dir" ]] && rm -rf "$cmake_build_dir"
-    [[ -n "$rust_target_dirs" ]] && xargs -I{} rm -rf {} <<< "$rust_target_dirs"
-    return 0
-  fi
-
   echo -e "${bold}Will delete the following directories:${clear}"
   for item in "${delete_list[@]}"; do
     echo -e "  ${red}[-]${clear} $item"
   done
 
-  read -p $'\nAre you sure to delete these? [y/N] ' confirm
-  [[ $confirm == [yY] ]] || return 0
+  if [[ $NON_INTERACTIVE == "ON" ]]; then
+    [[ -d "$cmake_build_dir" ]] && rm -rf "$cmake_build_dir"
+    [[ -n "$rust_target_dirs" ]] && xargs -I{} rm -rf {} <<< "$rust_target_dirs"
+  else
+    read -p $'\nAre you sure to delete these? [y/N] ' confirm
+    [[ $confirm == [yY] ]] || return 0
 
-  echo -e "\n${yellow}Starting deletion...${clear}"
-  [[ -d "$cmake_build_dir" ]] && rm -rf "$cmake_build_dir" && echo "Deleted: $cmake_build_dir"
-  [[ -n "$rust_target_dirs" ]] && while IFS= read -r dir; do
-    rm -rf "$dir" && echo "Deleted: $dir"
-  done <<< "$rust_target_dirs"
+    echo -e "\n${yellow}Starting deletion...${clear}"
+    [[ -d "$cmake_build_dir" ]] && rm -rf "$cmake_build_dir" && echo "Deleted: $cmake_build_dir"
+    [[ -n "$rust_target_dirs" ]] && while IFS= read -r dir; do
+      rm -rf "$dir" && echo "Deleted: $dir"
+    done <<< "$rust_target_dirs"
+  fi
 
   echo -e "${green}Cleanup completed.${clear}"
 }
