@@ -31,6 +31,7 @@
 #include "include/PwrConfig.hh"
 #include "ops/read_vcd/RustVCDParserWrapper.hh"
 #include "iIR/api/iIR.hh"
+#include "iIR/source/module/power-netlist/PGNetlist.hh"
 
 using namespace iir;
 
@@ -42,7 +43,9 @@ namespace ipower {
  */
 class Power {
  public:
-  explicit Power(StaGraph* sta_graph) : _power_graph(sta_graph) {}
+  explicit Power(StaGraph* sta_graph) : _power_graph(sta_graph) {
+    _ir_analysis.init();
+  }
   ~Power() = default;
 
   static Power* getOrCreatePower(StaGraph* sta_graph);
@@ -63,6 +66,32 @@ class Power {
 
   auto& get_power_graph() { return _power_graph; }
   auto& get_power_seq_graph() { return _power_seq_graph; }
+
+  void set_rust_pg_rc_data(const void* rust_pg_rc_data) {
+    _rust_pg_rc_data = rust_pg_rc_data;
+      // set rc data.
+    _ir_analysis.set_rc_data(_rust_pg_rc_data);
+  }
+  auto* get_rust_pg_rc_data() { return _rust_pg_rc_data; }
+  
+  auto& get_leakage_powers() { return _leakage_powers; }
+  auto& get_internal_powers() { return _internal_powers; }
+  auto& get_switch_powers() { return _switch_powers; }
+  auto& get_obj_to_datas() { return _obj_to_datas; }
+  auto* getObjData(DesignObject* design_obj) {
+    return _obj_to_datas.contains(design_obj) ? _obj_to_datas[design_obj].get()
+                                              : nullptr;
+  }
+
+  auto& get_type_to_group_data() { return _type_to_group_data; }
+
+  std::optional<PwrGroupData::PwrGroupType> getInstPowerGroup(
+      Instance* the_inst);
+  void addGroupData(std::unique_ptr<PwrGroupData> group_data) {
+    _type_to_group_data[group_data->get_group_type()].emplace_back(
+        group_data.get());
+    _obj_to_datas[group_data->get_obj()] = std::move(group_data);
+  }
 
   unsigned buildGraph();
   unsigned isBuildGraph() { return _power_graph.numVertex() > 0; }
@@ -102,28 +131,21 @@ class Power {
   std::vector<IRInstancePower> getInstancePowerData();
 
   unsigned runCompleteFlow();
-  unsigned runIRAnalysis();
 
-  auto& get_leakage_powers() { return _leakage_powers; }
-  auto& get_internal_powers() { return _internal_powers; }
-  auto& get_switch_powers() { return _switch_powers; }
-  auto& get_obj_to_datas() { return _obj_to_datas; }
-  auto* getObjData(DesignObject* design_obj) {
-    return _obj_to_datas.contains(design_obj) ? _obj_to_datas[design_obj].get()
-                                              : nullptr;
+  // for IR analysis.
+  unsigned readPGSpef(const char* spef_file);
+
+  std::map<std::string, double>& getInstanceIRDrop() {
+    return _ir_analysis.get_instance_to_ir_drop();
   }
-
-  auto& get_type_to_group_data() { return _type_to_group_data; }
-
-  std::optional<PwrGroupData::PwrGroupType> getInstPowerGroup(
-      Instance* the_inst);
-  void addGroupData(std::unique_ptr<PwrGroupData> group_data) {
-    _type_to_group_data[group_data->get_group_type()].emplace_back(
-        group_data.get());
-    _obj_to_datas[group_data->get_obj()] = std::move(group_data);
-  }
+  
+  unsigned runIRAnalysis(std::string power_net_name);
+  unsigned reportIRDropCSV(const char* rpt_file_name);
+  unsigned reportIRAnalysis();
 
   std::pair<double, double> getNetToggleAndVoltageData(const char* net_name);
+
+  std::map<Instance::Coordinate, double> displayInstancePowerMap();
 
  private:
   std::string _design_work_space; // The power report work space.
@@ -143,6 +165,9 @@ class Power {
   std::map<DesignObject*, std::unique_ptr<PwrGroupData>> _obj_to_datas;
   std::map<PwrGroupData::PwrGroupType, std::vector<PwrGroupData*>>
       _type_to_group_data;  //!< The mapping of type to group data.
+
+  iIR _ir_analysis; //!< The IR Drop analysis top.
+  const void* _rust_pg_rc_data = nullptr; //!< The rust power/ground rc data.
 
   static Power* _power;
   FORBIDDEN_COPY(Power);

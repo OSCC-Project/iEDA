@@ -27,6 +27,7 @@
 #include <optional>
 
 #include "TimingDBAdapter.hh"
+#include "TimingIDBAdapter.hh"
 #include "sta/Sta.hh"
 #include "sta/StaIncremental.hh"
 
@@ -75,6 +76,7 @@ class TimingEngine {
   const char *get_design_work_space() { return _ista->get_design_work_space(); }
 
   TimingDBAdapter *get_db_adapter() { return _db_adapter.get(); }
+  auto* getIDBAdapter() { return dynamic_cast<TimingIDBAdapter*>(_db_adapter.get()); }
   void set_db_adapter(std::unique_ptr<TimingDBAdapter> db_adapter);
 
   TimingEngine &readLiberty(std::vector<std::string> &lib_files) {

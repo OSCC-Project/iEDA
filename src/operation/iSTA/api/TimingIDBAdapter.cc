@@ -123,7 +123,7 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
   vector<IdbLayer*>& routing_layers =
       idb_layout->get_layers()->get_routing_layers();
 
-  int routing_layer_1st = 0;  // dmInst->get_routing_layer_1st();
+  int routing_layer_1st = 0;
   int routing_layer_id = num_layer - 1 + routing_layer_1st;
   int routing_layer_size = routing_layers.size();
 
@@ -146,12 +146,13 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
   segment_resistance = lef_resistance * segment_length / *segment_width;
 
   return segment_resistance;
-}  // namespace ista
+}
 
 /**
  * @brief get segment capacitance.
  *
- * @param num_layer
+ * @param num_layer  layer number = target routing layer id - first routing layer
+ * id by data config
  * @param segment_length unit is um (micro meter)
  * @param segment_width unit is um (micro meter)
  * @return double cap unit is pf
@@ -729,6 +730,7 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
 
   _ista->set_design_name(_idb_design->get_design_name().c_str());
   int dbu = _idb_design->get_units()->get_micron_dbu();
+  set_dbu(dbu);
   double width = _idb_design->get_layout()->get_die()->get_width() /
                  static_cast<double>(dbu);
   double height = _idb_design->get_layout()->get_die()->get_height() /

@@ -583,7 +583,7 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir) {
 
   std::string path_dir = work_dir + "/large_model";
   STA_INST->set_design_work_space(path_dir.c_str());
-  STA_INST->reportWirePaths(1000);
+  STA_INST->reportWirePaths(10000);
 }
 
 void InitSTA::initPowerEngine() {
@@ -1282,6 +1282,139 @@ void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list,
 
 bool InitSTA::isClockNet(const std::string& net_name) const {
   return STA_INST->isClockNet(net_name.c_str());
+}
+
+/**
+ * @brief The timing map of the patch.
+ * 
+ * @param patch 
+ * @return std::map<int, double> 
+ */
+std::map<int, double> InitSTA::patchTimingMap(
+    std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch) {
+  std::map<int, double> patch_timing_map;
+
+  auto inst_timing_map =
+      STA_INST->get_ista()->displayTimingMap(ista::AnalysisMode::kMax);
+
+  auto* idb_adapter = STA_INST->getIDBAdapter();
+  auto dbu = idb_adapter->get_dbu();
+  auto to_dbu = [dbu](auto coord) { return coord * dbu; };
+
+  for (const auto& [patch_id, coord] : patch) {
+    auto [l_range, u_range] = coord;
+    const int patch_lx = l_range.first;
+    const int patch_ly = l_range.second;
+    const int patch_ux = u_range.first;
+    const int patch_uy = u_range.second;
+
+    for (auto [coord, inst_slack] : inst_timing_map) {
+      auto inst_x = to_dbu(coord.first);
+      auto inst_y = to_dbu(coord.second);
+      if (patch_lx <= inst_x && inst_x <= patch_ux && patch_ly <= inst_y && inst_y <= patch_uy) {
+        if (patch_timing_map.count(patch_id) == 0) {
+          patch_timing_map[patch_id] = inst_slack;
+        } else {
+          patch_timing_map[patch_id] = std::min(patch_timing_map[patch_id], inst_slack);
+        }
+      }
+    }
+  }
+
+  return patch_timing_map;
+}
+
+/**
+ * @brief The power map of the patch.
+ * 
+ * @param patch 
+ * @return std::map<int, double> 
+ */
+std::map<int, double> InitSTA::patchPowerMap(
+    std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch) {
+  std::map<int, double> patch_power_map;
+
+  auto inst_power_map = PW_INST->get_power()->displayInstancePowerMap();
+
+  auto* idb_adapter = STA_INST->getIDBAdapter();
+  auto dbu = idb_adapter->get_dbu();
+  auto to_dbu = [dbu](auto coord) { return coord * dbu; };
+
+  for (const auto& [patch_id, coord] : patch) {
+    auto [l_range, u_range] = coord;
+    const int patch_lx = l_range.first;
+    const int patch_ly = l_range.second;
+    const int patch_ux = u_range.first;
+    const int patch_uy = u_range.second;
+
+    for (auto [coord, inst_power] : inst_power_map) {
+      auto inst_x = to_dbu(coord.first);
+      auto inst_y = to_dbu(coord.second);
+      if (patch_lx <= inst_x && inst_x <= patch_ux && patch_ly <= inst_y && inst_y <= patch_uy) {
+        if (patch_power_map.count(patch_id) == 0) {
+          patch_power_map[patch_id] = inst_power;
+        } else {
+          patch_power_map[patch_id] += inst_power;
+        }
+      }
+    }
+  }
+
+  return patch_power_map;
+}
+
+/**
+ * @brief The ir drop map of the patch.
+ * 
+ * @param patch 
+ * @return std::map<int, double> 
+ */
+std::map<int, double> InitSTA::patchIRDropMap(
+    std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch) {
+  std::map<int, double> patch_ir_drop_map;
+
+  // hard code std cell power net is VDD
+  std::string power_net_name = "VDD";
+  PW_INST->runIRAnalysis(power_net_name);
+  auto instance_to_ir_drop = PW_INST->getInstanceIRDrop();
+
+  auto* sta_netlist = STA_INST->get_netlist();
+  auto* idb_adapter = STA_INST->getIDBAdapter();
+  auto dbu = idb_adapter->get_dbu();
+  auto to_dbu = [dbu](auto coord) { return coord * dbu; };
+
+  for (const auto& [patch_id, coord] : patch) {
+    auto [l_range, u_range] = coord;
+    const int patch_lx = l_range.first;
+    const int patch_ly = l_range.second;
+    const int patch_ux = u_range.first;
+    const int patch_uy = u_range.second;
+
+    for (auto [instance_pin_name, inst_ir_drop] : instance_to_ir_drop) {
+      auto instance_name = Str::split(instance_pin_name.c_str(), ":").front();
+
+      auto* sta_inst = sta_netlist->findInstance(instance_name.c_str());
+      if (!sta_inst) {
+        continue;
+      }
+
+      auto coord = sta_inst->get_coordinate().value();
+      auto inst_x = to_dbu(coord.first);
+      auto inst_y = to_dbu(coord.second);
+      if (patch_lx <= inst_x && inst_x <= patch_ux && patch_ly <= inst_y &&
+          inst_y <= patch_uy) {
+        if (patch_ir_drop_map.count(patch_id) == 0) {
+          patch_ir_drop_map[patch_id] = inst_ir_drop;
+        } else {
+          patch_ir_drop_map[patch_id] +=
+              std::max(patch_ir_drop_map[patch_id], inst_ir_drop);
+          ;
+        }
+      }
+    }
+  }
+
+  return patch_ir_drop_map;
 }
 
 }  // namespace ieval

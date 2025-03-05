@@ -1,3 +1,19 @@
+// ***************************************************************************************
+// Copyright (c) 2023-2025 Peng Cheng Laboratory
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+//
+// iEDA is licensed under Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
+// http://license.coscl.org.cn/MulanPSL2
+//
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+//
+// See the Mulan PSL v2 for more details.
+// ***************************************************************************************
 /**
  * @file iIR.cc
  * @author shaozheqing (707005020@qq.com)
@@ -62,6 +78,11 @@ unsigned iIR::setInstancePowerData(std::vector<IRInstancePower> instance_power_d
  *
  */
 unsigned iIR::solveIRDrop(const char* net_name) {
+  if (!_rc_data) {
+    LOG_ERROR << "no " << net_name << " RC data to solve IR drop";
+    return 0;
+  }
+
   auto one_net_matrix_data =
       build_one_net_conductance_matrix_data(_rc_data, net_name);
 
@@ -82,7 +103,7 @@ unsigned iIR::solveIRDrop(const char* net_name) {
     double ir_drop = grid_voltages[*instance_id];
     std::string instance_name = get_instance_name(_rc_data, net_name, *instance_id);
 
-    LOG_INFO << "instance name " << instance_name << " ir drop "
+    LOG_INFO << "instance: " << instance_name << " ir drop: "
              << ir_drop;
     _instance_to_ir_drop[instance_name] = ir_drop;
   }

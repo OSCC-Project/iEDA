@@ -79,6 +79,9 @@ class TimingIDBAdapter : public TimingDBAdapter {
   }
   IdbBuilder* get_idb() const { return _idb; }
 
+  void set_dbu(int dbu) { _dbu = dbu; }
+  int get_dbu() const { return _dbu; }
+
   bool isPlaced(DesignObject* pin_or_port) override;
   double dbuToMeters(int distance) const override;
 
@@ -196,6 +199,7 @@ class TimingIDBAdapter : public TimingDBAdapter {
 
   IdbBuilder* _idb = nullptr;
   IdbDesign* _idb_design = nullptr;
+  int _dbu = 2000;
   IdbDefService* _idb_def_service = nullptr;
   IdbLefService* _idb_lef_service = nullptr;
 

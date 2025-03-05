@@ -62,8 +62,11 @@ class DrcConditionManager
   void addViolation(ieda_solver::GeometryRect& rect, std::string layer, ViolationEnumType type, std::set<int> net_id = {});
   void buildMapOfJog(std::string layer, DrcEngineLayout* layout, std::map<int, ieda_solver::GeometryPolygonSet>& jog_wire_map);
   void checkJog(std::string layer, DrcEngineLayout* layout, std::map<int, ieda_solver::GeometryPolygonSet>& jog_wire_map);
-  void buildMapOfSpacingTable(std::string layer, DrcEngineLayout* layout, std::map<int, ieda_solver::GeometryPolygonSet>& prl_wire_map);
-  void checkSpacingTable(std::string layer, DrcEngineLayout* layout, std::map<int, ieda_solver::GeometryPolygonSet>& prl_wire_map);
+  void buildMapOfSpacingTable(std::string layer, DrcEngineLayout* layout,
+                              std::map<int, std::vector<ieda_solver::GeometryRect>>& prl_wire_map,
+                              std::map<int, std::vector<ieda_solver::GeometryPolygonSet>>& prl_polygon_map);
+  void checkSpacingTable(std::string layer, DrcEngineLayout* layout, std::map<int, std::vector<ieda_solver::GeometryRect>>& prl_wire_map,
+                         std::map<int, std::vector<ieda_solver::GeometryPolygonSet>>& prl_polygon_map);
 };
 
 }  // namespace idrc

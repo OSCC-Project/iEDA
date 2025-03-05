@@ -97,6 +97,11 @@ class LmPatch
   double RUDY_congestion = -1;
   double EGR_congestion = -1;
 
+  // timing, power, IR Drop map
+  double timing_map = 0.0;
+  double power_map = 0.0;
+  double ir_drop_map = 0.0;
+
  private:
   std::map<int, LmPatchLayer> _layer_map;  /// int : layer id
 };
