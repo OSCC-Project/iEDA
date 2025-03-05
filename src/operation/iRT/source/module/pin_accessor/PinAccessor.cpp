@@ -511,7 +511,7 @@ void PinAccessor::iterativePAModel(PAModel& pa_model)
   pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 10);
   // clang-format on
   initRoutingState(pa_model);
-  for (size_t i = 0, iter = 1; i < pa_iter_param_list.size(); i++, iter++) {
+  for (int32_t i = 0, iter = 1; i < static_cast<int32_t>(pa_iter_param_list.size()); i++, iter++) {
     Monitor iter_monitor;
     RTLOG.info(Loc::current(), "***** Begin iteration ", iter, "/", pa_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, pa_iter_param_list.size()),
                ") *****");
@@ -664,9 +664,9 @@ void PinAccessor::routePABoxMap(PAModel& pa_model)
         buildOrientNetMap(pa_box);
         exemptPinShape(pa_box);
         // debugCheckPABox(pa_box);
-        // debugPlotPABox(pa_box, -1, "before");
+        // debugPlotPABox(pa_box, "before");
         routePABox(pa_box);
-        // debugPlotPABox(pa_box, -1, "after");
+        // debugPlotPABox(pa_box, "after");
       }
       selectBestResult(pa_box);
       freePABox(pa_box);
@@ -2694,7 +2694,7 @@ void PinAccessor::debugCheckPABox(PABox& pa_box)
   }
 }
 
-void PinAccessor::debugPlotPABox(PABox& pa_box, int32_t curr_task_idx, std::string flag)
+void PinAccessor::debugPlotPABox(PABox& pa_box, std::string flag)
 {
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::string& pa_temp_directory_path = RTDM.getConfig().pa_temp_directory_path;
@@ -2997,15 +2997,13 @@ void PinAccessor::debugPlotPABox(PABox& pa_box, int32_t curr_task_idx, std::stri
   for (PATask* pa_task : pa_box.get_pa_task_list()) {
     GPStruct task_struct(RTUTIL.getString("task(net_", pa_task->get_net_idx(), ")"));
 
-    if (curr_task_idx == -1 || pa_task->get_net_idx() == curr_task_idx) {
-      for (PAGroup& pa_group : pa_task->get_pa_group_list()) {
-        for (LayerCoord& coord : pa_group.get_coord_list()) {
-          GPBoundary gp_boundary;
-          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kKey));
-          gp_boundary.set_rect(RTUTIL.getEnlargedRect(coord, point_size));
-          gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(coord.get_layer_idx()));
-          task_struct.push(gp_boundary);
-        }
+    for (PAGroup& pa_group : pa_task->get_pa_group_list()) {
+      for (LayerCoord& coord : pa_group.get_coord_list()) {
+        GPBoundary gp_boundary;
+        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kKey));
+        gp_boundary.set_rect(RTUTIL.getEnlargedRect(coord, point_size));
+        gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(coord.get_layer_idx()));
+        task_struct.push(gp_boundary);
       }
     }
     {
