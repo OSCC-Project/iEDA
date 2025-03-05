@@ -124,7 +124,7 @@ class TrackAssigner
 #if 1  // debug
   void debugPlotTAModel(TAModel& ta_model, std::string flag);
   void debugCheckTAPanel(TAPanel& ta_panel);
-  void debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, std::string flag);
+  void debugPlotTAPanel(TAPanel& ta_panel, std::string flag);
 #endif
 };
 

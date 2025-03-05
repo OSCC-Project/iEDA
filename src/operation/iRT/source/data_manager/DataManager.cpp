@@ -1198,10 +1198,10 @@ void DataManager::makeLayerViaMasterList()
     }
     direction_list.front() = first_direction;
   }
-  for (size_t layer_idx = 0; layer_idx < layer_via_master_list.size(); layer_idx++) {
+  for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_via_master_list.size()); layer_idx++) {
     std::vector<ViaMaster>& via_master_list = layer_via_master_list[layer_idx];
     std::sort(via_master_list.begin(), via_master_list.end(), [&direction_list](ViaMaster& a, ViaMaster& b) { return CmpViaMaster()(a, b, direction_list); });
-    for (size_t i = 0; i < via_master_list.size(); i++) {
+    for (int32_t i = 0; i < static_cast<int32_t>(via_master_list.size()); i++) {
       via_master_list[i].set_via_master_idx(layer_idx, i);
     }
   }

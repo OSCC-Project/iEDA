@@ -151,7 +151,7 @@ void EarlyRouter::generateAccessPoint(ERModel& er_model)
         for (EXTLayerRect& routing_shape : er_pin.get_routing_shape_list()) {
           PlanarRect& real_shape = routing_shape.get_real_rect();
           if (max_area < real_shape.getArea()) {
-            max_area = real_shape.getArea();
+            max_area = static_cast<int32_t>(real_shape.getArea());
             max_area_shape.set_rect(real_shape);
           }
         }

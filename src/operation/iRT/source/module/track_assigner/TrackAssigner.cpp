@@ -287,9 +287,9 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
         buildOrientNetMap(ta_panel);
         exemptPinShape(ta_panel);
         // debugCheckTAPanel(ta_panel);
-        // debugPlotTAPanel(ta_panel, -1, "before");
+        // debugPlotTAPanel(ta_panel, "before");
         routeTAPanel(ta_panel);
-        // debugPlotTAPanel(ta_panel, -1, "after");
+        // debugPlotTAPanel(ta_panel, "after");
         uploadNetResult(ta_panel);
       }
       uploadViolation(ta_panel);
@@ -1814,7 +1814,7 @@ void TrackAssigner::debugCheckTAPanel(TAPanel& ta_panel)
   }
 }
 
-void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, std::string flag)
+void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, std::string flag)
 {
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::string& ta_temp_directory_path = RTDM.getConfig().ta_temp_directory_path;
@@ -2113,15 +2113,13 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
   for (TATask* ta_task : ta_panel.get_ta_task_list()) {
     GPStruct task_struct(RTUTIL.getString("task(net_", ta_task->get_net_idx(), ")"));
 
-    if (curr_task_idx == -1 || ta_task->get_task_idx() == curr_task_idx) {
-      for (TAGroup& ta_group : ta_task->get_ta_group_list()) {
-        for (LayerCoord& coord : ta_group.get_coord_list()) {
-          GPBoundary gp_boundary;
-          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kKey));
-          gp_boundary.set_rect(RTUTIL.getEnlargedRect(coord, point_size));
-          gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(coord.get_layer_idx()));
-          task_struct.push(gp_boundary);
-        }
+    for (TAGroup& ta_group : ta_task->get_ta_group_list()) {
+      for (LayerCoord& coord : ta_group.get_coord_list()) {
+        GPBoundary gp_boundary;
+        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kKey));
+        gp_boundary.set_rect(RTUTIL.getEnlargedRect(coord, point_size));
+        gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(coord.get_layer_idx()));
+        task_struct.push(gp_boundary);
       }
     }
     {
