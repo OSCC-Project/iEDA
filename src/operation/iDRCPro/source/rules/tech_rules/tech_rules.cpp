@@ -80,8 +80,7 @@ int TechRules::getCutSpacing(std::string layer_name)
   auto idb_cut_layer = findCutLayer(layer_name);
   if (!idb_cut_layer)
     return -1;
-
-  return idb_cut_layer->get_spacings().at(0)->get_spacing();
+  return idb_cut_layer->get_spacings().empty()?-1: idb_cut_layer->get_spacings().front()->get_spacing();
 }
 
 std::shared_ptr<idb::routinglayer::Lef58SpacingTableJogToJog> TechRules::getJogToJog(std::string layer_name)
