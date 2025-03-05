@@ -1370,10 +1370,51 @@ std::map<int, double> InitSTA::patchPowerMap(
  * @return std::map<int, double> 
  */
 std::map<int, double> InitSTA::patchIRDropMap(
-  std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch) {
-std::map<int, double> patch_ir_drop_map;
+    std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch) {
+  std::map<int, double> patch_ir_drop_map;
 
-return patch_ir_drop_map;
+  // hard code std cell power net is VDD
+  std::string power_net_name = "VDD";
+  PW_INST->runIRAnalysis(power_net_name);
+  auto instance_to_ir_drop = PW_INST->getInstanceIRDrop();
+
+  auto* sta_netlist = STA_INST->get_netlist();
+  auto* idb_adapter = STA_INST->getIDBAdapter();
+  auto dbu = idb_adapter->get_dbu();
+  auto to_dbu = [dbu](auto coord) { return coord * dbu; };
+
+  for (const auto& [patch_id, coord] : patch) {
+    auto [l_range, u_range] = coord;
+    const int patch_lx = l_range.first;
+    const int patch_ly = l_range.second;
+    const int patch_ux = u_range.first;
+    const int patch_uy = u_range.second;
+
+    for (auto [instance_pin_name, inst_ir_drop] : instance_to_ir_drop) {
+      auto instance_name = Str::split(instance_pin_name.c_str(), ":").front();
+
+      auto* sta_inst = sta_netlist->findInstance(instance_name.c_str());
+      if (!sta_inst) {
+        continue;
+      }
+
+      auto coord = sta_inst->get_coordinate().value();
+      auto inst_x = to_dbu(coord.first);
+      auto inst_y = to_dbu(coord.second);
+      if (patch_lx <= inst_x && inst_x <= patch_ux && patch_ly <= inst_y &&
+          inst_y <= patch_uy) {
+        if (patch_ir_drop_map.count(patch_id) == 0) {
+          patch_ir_drop_map[patch_id] = inst_ir_drop;
+        } else {
+          patch_ir_drop_map[patch_id] +=
+              std::max(patch_ir_drop_map[patch_id], inst_ir_drop);
+          ;
+        }
+      }
+    }
+  }
+
+  return patch_ir_drop_map;
 }
 
 }  // namespace ieval
