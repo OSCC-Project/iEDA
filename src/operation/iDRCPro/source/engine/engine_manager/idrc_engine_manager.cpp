@@ -186,7 +186,7 @@ void DrcEngineManager::filterData()
 
     // jog and prl
     _condition_manager->checkParallelLengthSpacing(layer, layout);
-    _condition_manager->checkJogToJogSpacing(layer, layout);
+    // _condition_manager->checkJogToJogSpacing(layer, layout);
 
     // edge
     _condition_manager->checkPolygons(layer, layout);

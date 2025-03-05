@@ -142,6 +142,10 @@ void DrcEngineInitDef::initDataFromNets()
   auto* idb_design = dmInst->get_idb_design();
 
   for (auto* idb_net : idb_design->get_net_list()->get_net_list()) {
+    // if (idb_net->get_net_name() != "FE_OFN7003_04747"
+    //     && idb_net->get_net_name() != "u_retrosoc.u_axil_ip_wrapper.u_spi_flash.u0_spi_top.rx_107_") {
+    //   continue;
+    // }
     initDataFromNet(idb_net);
   }
 

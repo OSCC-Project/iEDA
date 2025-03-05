@@ -103,12 +103,12 @@ void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLay
                 auto distX = gtl::euclidean_distance(rect_intersect, wire_b, ieda_solver::K_HORIZONTAL);
                 auto distY = gtl::euclidean_distance(rect_intersect, wire_b, ieda_solver::K_VERTICAL);
 
-                gtl::generalized_intersect(rect_intersect, wire_b);
-                auto prlX = gtl::delta(rect_intersect, ieda_solver::K_HORIZONTAL);
-                auto prlY = gtl::delta(rect_intersect, ieda_solver::K_VERTICAL);
                 if (distX == 0 && distY == 0) {
                   continue;
                 }
+                gtl::generalized_intersect(rect_intersect, wire_b);
+                auto prlX = gtl::delta(rect_intersect, ieda_solver::K_HORIZONTAL);
+                auto prlY = gtl::delta(rect_intersect, ieda_solver::K_VERTICAL);
                 prlX = distX == 0 ? prlX : 0;
                 prlY = distY == 0 ? prlY : 0;
                 auto prl_dir = distX == 0 ? ieda_solver::K_HORIZONTAL : ieda_solver::K_VERTICAL;
@@ -121,6 +121,11 @@ void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLay
                 for (auto [rtree_rect2, idx2] : result2) {
                   tmp_set -= wire_list[idx2];
                   // self polygon
+                }
+                if ("METAL2" == layer && gtl::xl(rect_intersect) >= 154010 && gtl::xl(rect_intersect) <= 155000
+                    && gtl::yl(rect_intersect) >= 150210 && gtl::yl(rect_intersect) <= 153210) {
+                  // debug
+                  std::cout << "debug" << std::endl;
                 }
                 std::vector<ieda_solver::GeometryRect> rect_list;
                 tmp_set.get(rect_list);
@@ -219,25 +224,37 @@ void DrcConditionManager::checkSpacingTable(std::string layer, DrcEngineLayout* 
           }
         }
 
+        // std::vector<ieda_solver::GeometryViewPolygon> view_polygons_t;
+        // check_region.get(view_polygons_t);
+
         check_region.clean();
-        // std::vector<ieda_solver::GeometryViewPolygon> view_polygons1;
-        // check_region.get(view_polygons1);
+        std::vector<ieda_solver::GeometryViewPolygon> view_polygons1;
+        check_region.get(view_polygons1);
         check_region = check_region & layer_polyset;
-        // std::vector<ieda_solver::GeometryViewPolygon> view_polygons2;
-        // check_region.get(view_polygons2);
+        std::vector<ieda_solver::GeometryViewPolygon> view_polygons2;
+        check_region.get(view_polygons2);
         std::vector<ieda_solver::GeometryRect> check_region_rects;
         ieda_solver::gtl::get_rectangles(check_region_rects, check_region);
 
+        if (check_region_rects.size() == 0) {
+          return;
+        }
         if (is_corner) {
           ieda_solver::GeometryPolygonSet violation_region_set;
           for (auto& rect : check_region_rects) {
             int length = ieda_solver::getWireWidth(rect, direction);
             int prl = ieda_solver::getWireWidth(rect, direction.get_perpendicular());
-
+            ieda_solver::GeometryRect rect_x(rect);
+            ieda_solver::GeometryRect rect_y(rect);
             ieda_solver::BLOAT(rect, direction, expand_size - length);
+            ieda_solver::BLOAT(rect_x, direction, expand_size - length);
             ieda_solver::BLOAT(rect, direction.get_perpendicular(), expand_size - prl);
-
-            violation_region_set += rect;
+            ieda_solver::BLOAT(rect_y, direction.get_perpendicular(), expand_size - prl);
+            ieda_solver::GeometryPolygonSet tt_set;
+            tt_set += rect;
+            tt_set -= rect_x;
+            tt_set -= rect_y;
+            violation_region_set += tt_set;
           }
           ieda_solver::GeometryPolygonSet touch_wire_region(violation_region_set - check_region);
           ieda_solver::get_interact(touch_wire_region, wire_set);
