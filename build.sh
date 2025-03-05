@@ -24,6 +24,7 @@ BINARY_TARGET="iEDA"
 BINARY_DIR="${IEDA_WORKSPACE}/bin"
 BUILD_DIR="${IEDA_WORKSPACE}/build"
 CPP_COMPILER_PATH="g++-10"
+C_COMPILER_PATH="gcc-10"
 RUN_IEDA="OFF"
 NO_BUILD="OFF"
 DEL_BUILD="OFF"
@@ -34,6 +35,7 @@ BUILD_THREADS=""
 D_CMD_BUILD="-DCMD_BUILD=ON"
 D_SANITIZER="-DSANITIZER=OFF"
 D_CPP_COMPILER="-DCMAKE_CXX_COMPILER:FILEPATH=${CPP_COMPILER_PATH}"
+D_CPP_COMPILER="-DCMAKE_C_COMPILER:FILEPATH=${C_COMPILER_PATH}"
 D_BINARY_DIR="-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:FILEPATH=${BINARY_DIR}"
 G_BUILD_GENERATOR=""
 
@@ -59,7 +61,7 @@ echo -e "  ${bold}-d${clear} delete build directory, (default OFF)"
 echo -e "  ${bold}-r${clear} run iEDA after build (default OFF)"
 echo -e "  ${bold}-j${clear} job threads for building iEDA (default -j128)"
 echo -e "  ${bold}-b${clear} iEDA binary path (default at ${BINARY_DIR})"
-echo -e "  ${bold}-c${clear} compiler(g++ version >= 10) path (default at \"$(which ${CPP_COMPILER_PATH})\")"
+echo -e "  ${bold}-c${clear} compiler(gcc/g++ version >= 10) path (default at \"$(which ${C_COMPILER_PATH})\", \"$(which ${CPP_COMPILER_PATH})\")"
 echo -e "  ${bold}-i${clear} apt-get install (root permission) dependencies before build (default OFF)"
 exit $1;
 }
@@ -77,24 +79,51 @@ build_ieda()
 
 check_build()
 {
-  check_gcc_version ${CPP_COMPILER_PATH}
+  check_compiler_version ${C_COMPILER_PATH}
+  check_compiler_version ${CPP_COMPILER_PATH}
   check_cmake
   set_build_generator_ninja
+  export CC=/usr/bin/gcc-10
+  export CXX=/usr/bin/g++-10
 }
 
-check_gcc_version()
-{
-  if ! command_exists $1; then
-    echo -e "${red}ERROR: Compiler \"$1\" not found!
-       Please install or set g++(>=10) path 
-       by ${bold}bash build.sh -c ${underline}compiler path${clear}"
-    help_msg_exit 1
+check_compiler_version() {
+  local compiler_path=$1
+  local compiler_name=$(basename "$compiler_path")
+  local min_major=10
+  local min_minor=0  # 最低要求 GCC 10.0
+
+  # 检查编译器是否存在
+  if ! command -v "$compiler_path" &> /dev/null; then
+    echo -e "${red}ERROR: Compiler \"$compiler_path\" not found!${clear}"
+    echo -e "Please install or specify a valid compiler path using:"
+    echo -e "  ${bold}bash build.sh -c ${underline}/path/to/gcc-or-g++${clear}"
+    exit 1
   fi
 
-  CPP_COMPILER_VERSION=$($1 --version | grep g++ | awk '{print $4+0}')
-  # echo "g++ version: ${CPP_COMPILER_VERSION}"
-  if [[ ${CPP_COMPILER_VERSION} < 10.0 ]]; then
-    echo -e "${red}ERROR: minimum g++ version: 10${clear}"
+  # 提取版本号（兼容 gcc/g++ 的不同输出格式）
+  local version_str=$("$compiler_path" --version | grep -E -m1 '(gcc|g\+\+)' | head -1)
+  local version_num=$(echo "$version_str" | 
+    grep -oP '(?<= )\d+\.\d+(?=\.)?' | 
+    head -1)
+
+  # 版本号有效性检查
+  if ! [[ "$version_num" =~ ^[0-9]+\.[0-9]+$ ]]; then
+    echo -e "${red}ERROR: Failed to detect $compiler_name version from:${clear}"
+    echo "  $version_str"
+    exit 1
+  fi
+
+  # 分割主版本和次版本
+  local major=$(echo "$version_num" | cut -d. -f1)
+  local minor=$(echo "$version_num" | cut -d. -f2)
+
+  # 整数比较逻辑
+  if (( major > min_major )) || \
+     (( major == min_major && minor >= min_minor )); then
+    echo -e "${green}Validated $compiler_name version: ${version_num}${clear}"
+  else
+    echo -e "${red}ERROR: Minimum required $compiler_name version: ${min_major}.${min_minor} (found ${version_num})${clear}"
     exit 1
   fi
 }

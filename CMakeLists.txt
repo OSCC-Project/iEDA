@@ -17,9 +17,15 @@
 
 cmake_minimum_required(VERSION 3.11)
 project(iEDA)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_VERBOSE_MAKEFILE OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall -Werror=return-type")
+set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O2 -Wall -g2 -ggdb -Werror=return-type")
+# set(CMAKE_BUILD_TYPE "Release")
 
 option(BUILD_STATIC_LIB "If ON, build static lib." ON)
-
 # option(BUILD_PYTHON "If ON, build python lib." ON)
 if(BUILD_PYTHON)
     set(BUILD_STATIC_LIB OFF)
@@ -27,19 +33,25 @@ if(BUILD_PYTHON)
 endif()
 option(BUILD_GUI "If ON, build GUI." OFF)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_VERBOSE_MAKEFILE OFF)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if (BUILD_STATIC_LIB)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "Disable shared libs" FORCE)
+    set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
+    add_compile_options(-static-libstdc++ -static-libgcc)
+endif()
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(FORT_ENABLE_TESTING OFF CACHE INTERNAL "") # Disable building tests and examples in libfort project
+option(AGGRESSIVE_OPT "enable aggressive optimization." OFF)
+if(AGGRESSIVE_OPT)
+    set(CMAKE_BUILD_TYPE "Release")
+    add_compile_options(-flto=auto)
+    add_link_options(-flto=auto)
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native -mtune=native")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fdata-sections -ffunction-sections")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-Wl,--gc-sections")
 
-# set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall -Wextra -Werror=return-type")
-set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb -Werror=return-type")
-set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall -Werror=return-type")
-# set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O2 -Wall -g2 -ggdb -Werror=return-type")
-# set(CMAKE_BUILD_TYPE "Release")
-
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+    set(CMAKE_AR "gcc-ar")
+    set(CMAKE_RANLIB "gcc-ranlib")
+endif()
 
 if(NOT DEFINED CMD_BUILD)
     set(SANITIZER OFF)
