@@ -1717,7 +1717,7 @@ void TrackAssigner::debugPlotTAModel(TAModel& ta_model, std::string flag)
     for (Segment<LayerCoord>* segment : segment_set) {
       for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
         GPBoundary gp_boundary;
-        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
+        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kPath));
         gp_boundary.set_rect(net_shape.get_rect());
         if (net_shape.get_is_routing()) {
           gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(net_shape.get_layer_idx()));

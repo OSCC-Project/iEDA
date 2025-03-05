@@ -509,6 +509,9 @@ void PinAccessor::iterativePAModel(PAModel& pa_model)
   pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 10);
   pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 10);
   pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 10);
+  pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 10);
+  pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 10);
+  pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 10);
   // clang-format on
   initRoutingState(pa_model);
   for (int32_t i = 0, iter = 1; i < static_cast<int32_t>(pa_iter_param_list.size()); i++, iter++) {
@@ -723,8 +726,8 @@ void PinAccessor::initPATaskList(PAModel& pa_model, PABox& pa_box)
           pa_group_list.front().get_coord_list().push_back(pin_access_point->getRealLayerCoord());
         }
         std::set<LayerCoord, CmpLayerCoordByXASC> coord_set;
-        for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
-          int32_t curr_layer_idx = routing_shape.get_layer_idx();
+        for (AccessPoint* pin_access_point : pin_access_point_set) {
+          int32_t curr_layer_idx = pin_access_point->get_layer_idx();
           // 构建目标层
           std::vector<int32_t> point_layer_idx_list;
           if (curr_layer_idx < bottom_routing_layer_idx) {
@@ -741,7 +744,7 @@ void PinAccessor::initPATaskList(PAModel& pa_model, PABox& pa_box)
             point_layer_idx_list.push_back(curr_layer_idx - 1);
           }
           // 构建搜索形状
-          PlanarRect real_rect = RTUTIL.getEnlargedRect(routing_shape.get_real_rect(), 2 * RTDM.getOnlyPitch());
+          PlanarRect real_rect = RTUTIL.getEnlargedRect(pin_access_point->get_real_coord(), 2 * RTDM.getOnlyPitch());
           // 构建点
           std::vector<ScaleGrid>& x_track_grid_list = routing_layer_list[curr_layer_idx].getXTrackGridList();
           std::vector<ScaleGrid>& y_track_grid_list = routing_layer_list[curr_layer_idx].getYTrackGridList();
@@ -2576,7 +2579,7 @@ void PinAccessor::debugPlotPAModel(PAModel& pa_model, std::string flag)
       for (Segment<LayerCoord>* segment : segment_set) {
         for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
           GPBoundary gp_boundary;
-          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
+          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kPath));
           gp_boundary.set_rect(net_shape.get_rect());
           if (net_shape.get_is_routing()) {
             gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(net_shape.get_layer_idx()));
