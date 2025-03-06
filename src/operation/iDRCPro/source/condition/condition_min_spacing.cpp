@@ -67,7 +67,7 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
       /// if rect is a diagnal rect, check diagnal spacing >= min spacing is ok
       if (state_h && state_v) {
         if (ptEuclideanDistance(lowLeftX(results[i]), lowLeftY(results[i]), upRightX(results[i]), upRightY(results[i])) >= min_spacing) {
-          // mark_save[i] = false;  /// mark as don't save
+          mark_save[i] = false;  /// mark as don't save
         }
       }
     }
