@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.11)
 
 set (CMAKE_CXX_STANDARD 20)
-set(CMAKE_BUILD_TYPE "Debug")
+
+if(NOT DEFINED CMD_BUILD)
+    set(CMAKE_BUILD_TYPE "Debug")
+endif()
 
 aux_source_directory(./ SRC)
 add_library(sta ${SRC})
