@@ -129,34 +129,34 @@ void DrcConditionManager::checkCutOverlap(std::string layer, DrcEngineLayout* la
 
   ieda::Stats states;
 
-  ieda_solver::EngineGeometryCreator geo_creator;
-  auto* engine = dynamic_cast<ieda_solver::GeometryBoost*>(geo_creator.create());
+  ieda_solver::GeometryPolygonSet total_polyset;
 
   for (auto& [net_id, sub_layout] : layout->get_sub_layouts()) {
-    auto sub_polyset = sub_layout->get_engine()->copyPolyset();
-    sub_polyset.clean();
-    sub_polyset.bloat2(1, 1, 1, 1);
-    engine->addPolyset(sub_polyset);
+    auto& sub_polyset_overlap = sub_layout->get_engine()->get_polyset_overlap();
+
+    total_polyset += sub_polyset_overlap;
+  
   }
 
   int total_drc = 0;
-  auto overlaps = engine->getOverlap();
+  ieda_solver::gtl::self_intersect(total_polyset);
+  std::vector<ieda_solver::GeometryRect> overlaps;
+  total_polyset.get(overlaps);
+  
   for (auto& overlap : overlaps) {
     std::vector<ieda_solver::GeometryRect> results;
     ieda_solver::getDefaultRectangles(results, overlap);
 
     for (auto rect : results) {
-      if (shrink_rect(rect, 1)) {
         addViolation(rect, layer, ViolationEnumType::kCutShort);
         total_drc++;
-      }
     }
   }
 
   DEBUGOUTPUT(DEBUGHIGHLIGHT("Cut Short:\t") << total_drc << "\tlayer " << layer << "\tnets = " << layout->get_sub_layouts().size()
                                              << "\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta());
 
-  delete engine;
+                                             
 }
 
 void DrcConditionManager::checkCutWidth(std::string layer, DrcEngineLayout* layout)

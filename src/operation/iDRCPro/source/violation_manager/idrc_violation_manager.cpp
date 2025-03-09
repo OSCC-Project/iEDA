@@ -126,7 +126,7 @@ void DrcViolationManager::set_net_ids(DrcEngineManager* engine_manager)
         auto* violation_rect = static_cast<DrcViolationRect*>(violation);
         if (violation_rect->get_net_ids().size() <= 0) {
           auto layer = violation_rect->get_layer()->get_name();
-          auto* layout = engine_manager->get_layout(layer);
+          auto* layout = engine_manager->get_layout(layer, violation_rect->get_layer()->is_cut() ? LayoutType::kCut : LayoutType::kRouting);
           if (layout != nullptr) {
             /// if rect is line, enlarge line as a rect to make rtree interact
             int llx = violation_rect->get_llx();

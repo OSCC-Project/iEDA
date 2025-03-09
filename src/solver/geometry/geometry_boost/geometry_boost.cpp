@@ -35,6 +35,7 @@ void GeometryBoost::addRect(int llx, int lly, int urx, int ury)
   GtlRect rect(llx, lly, urx, ury);
 
   _polyset += rect;
+  _polyset_overlap += rect;
 
   /// update bounding box
   updateBoundingBox(llx, lly, urx, ury);
@@ -118,6 +119,8 @@ void GeometryBoost::addGeometry(EngineGeometry* geometry)
   }
   auto* boost_geometry = dynamic_cast<GeometryBoost*>(geometry);
 
+  _polyset_overlap += boost_geometry->get_polyset_overlap();
+
   boost_geometry->get_polyset().clean();
 
   // _overlap_set += boost_geometry->get_polyset() & _polyset;
@@ -127,6 +130,8 @@ void GeometryBoost::addGeometry(EngineGeometry* geometry)
 
 void GeometryBoost::addPolyset(GeometryPolygonSet& polyset)
 {
+  _polyset_overlap += polyset;
+  
   polyset.clean();
 
   _polyset += polyset;
