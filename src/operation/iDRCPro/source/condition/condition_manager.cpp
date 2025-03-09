@@ -18,6 +18,7 @@
 #include "condition_manager.h"
 
 #include "engine_layout.h"
+#include "geometry_polygon.h"
 #include "idm.h"
 
 namespace idrc {
@@ -30,6 +31,16 @@ void DrcConditionManager::addViolation(ieda_solver::GeometryRect& rect, std::str
   {
     _violation_manager->addViolation(ieda_solver::lowLeftX(rect), ieda_solver::lowLeftY(rect), ieda_solver::upRightX(rect),
                                      ieda_solver::upRightY(rect), type, net_id, layer);
+  }
+}
+
+void DrcConditionManager::addViolation(ieda_solver::GeometryPolygon& polygon, std::string layer, ViolationEnumType type, int spacing, int width)
+{
+#ifdef _PARALLEL_
+#pragma omp single
+#endif
+  {
+    _violation_manager->addViolation(polygon, type, layer, spacing, width);
   }
 }
 

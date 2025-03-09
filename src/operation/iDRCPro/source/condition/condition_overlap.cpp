@@ -86,7 +86,7 @@ void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layou
 
 //       for (auto& overlap_polygon : overlaps) {
 //         ieda_solver::GeometryRect overlap_violation_rect;
-//         ieda_solver::envelope(overlap_violation_rect, overlap_polygon);
+//         ieda_solver::ENVELOPE(overlap_violation_rect, overlap_polygon);
 
 //         // addViolation(overlap_violation_rect, layer, ViolationEnumType::kShort, net_ids);
 //         DrcShortInfo drc_info;

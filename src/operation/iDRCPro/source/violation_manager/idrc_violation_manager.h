@@ -24,6 +24,7 @@
 #include "DRCViolationType.h"
 #include "IdbLayer.h"
 #include "boost_definition.h"
+#include "geometry_polygon.h"
 #include "idm.h"
 #include "idrc_dm.h"
 #include "idrc_violation.h"
@@ -43,6 +44,7 @@ class DrcViolationManager
   std::vector<DrcViolation*>& get_violation_list(ViolationEnumType type);
 
   void addViolation(int llx, int lly, int urx, int ury, ViolationEnumType type, std::set<int> net_id, std::string layer_name);
+  void addViolation(ieda_solver::GeometryPolygon polygon, ViolationEnumType type, std::string layer_name, int spacing, int width);
 
  private:
   std::map<ViolationEnumType, std::vector<DrcViolation*>> _violation_list;
