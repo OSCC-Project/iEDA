@@ -100,6 +100,9 @@ void DRCEngine::init()
 
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
 {
+#ifdef CCLOUD_WORKAROUND
+  return {}; // 云平台暂时取消drc
+#endif
   getViolationListByInterface(de_task);
   // getViolationListBySelf(de_task);
 

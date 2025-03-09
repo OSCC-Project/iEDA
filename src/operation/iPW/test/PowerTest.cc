@@ -317,6 +317,9 @@ TEST_F(PowerTest, estimateIR) {
   // power_engine->readPGSpef(pg_spef_file_path);
 
   power_engine->runIRAnalysis(power_net_name);
+
+  power_engine->displayPowerMap();
+  power_engine->displayIRDropMap();
 }
 
 }  // namespace

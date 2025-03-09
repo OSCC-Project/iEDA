@@ -41,11 +41,17 @@ PYBIND11_MODULE(ipower_cpp, m) {
   m.def("read_spef", read_spef, ("file_name"));
   m.def("read_sdc", read_sdc, py::arg("file_name"));
   m.def("report_timing", report_timing);
+  m.def("display_timing_map", display_timing_map);
+  m.def("display_timing_tns_map", display_timing_tns_map);
+  m.def("display_slew_map", display_slew_map);
 
   m.def("read_vcd", &read_vcd, py::arg("vcd_file"), py::arg("top_instance_name"));
   m.def("read_pg_spef", &read_pg_spef, py::arg("pg_spef_file"));
   m.def("report_power", &report_power);
   m.def("report_ir_drop", &report_ir_drop, py::arg("net_name"));
+
+  m.def("display_power_map", &display_power_map);
+  m.def("display_ir_drop_map", &display_ir_drop_map);
 
   // for dataflow.
   m.def("create_data_flow", &create_data_flow);
