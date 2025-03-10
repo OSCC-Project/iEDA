@@ -56,6 +56,7 @@ class DrcConditionManager
   void checkCutEnclosure(std::string layer, DrcEngineLayout* layout);
   void checkCutOverlap(std::string layer, DrcEngineLayout* layout);
   void checkCutWidth(std::string layer, DrcEngineLayout* layout);
+  void checkLEF58CutSpacingTable(std::string layer, DrcEngineLayout* layout);
   // static function
   bool hasPRLViolated(ieda_solver::GeometryRect& rect_1, ieda_solver::GeometryRect& rect_2, bool need_corner);
 
