@@ -398,7 +398,7 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
         ieda_solver::GeometryPolygon hole_polygon;
         hole_polygon.set(hole_it->begin(), hole_it->end());
         ieda_solver::GeometryRect violation_rect;
-        ieda_solver::envelope(violation_rect, hole_polygon);
+        ieda_solver::ENVELOPE(violation_rect, hole_polygon);
         addViolation(violation_rect, layer, ViolationEnumType::kAreaEnclosed);
         ++enclosed_area_count;
       }
@@ -484,7 +484,7 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
     violation_regions.get(violation_polygons);
     for (auto& violation_polygon : violation_polygons) {
       ieda_solver::GeometryRect violation_rect;
-      ieda_solver::envelope(violation_rect, violation_polygon);
+      ieda_solver::ENVELOPE(violation_rect, violation_polygon);
       if (violation_polygon.size() <= 4
           && ieda_solver::getWireWidth(violation_rect, ieda_solver::getWireDirection(violation_rect).get_perpendicular())
                  >= rule_eol->get_eol_space()) {

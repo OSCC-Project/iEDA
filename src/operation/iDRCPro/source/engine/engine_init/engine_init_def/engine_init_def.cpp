@@ -71,7 +71,7 @@ void DrcEngineInitDef::initDataFromInstances()
       initDataFromPin(idb_pin);
     }
     for (auto* idb_obs : idb_inst->get_obs_box_list()) {
-      initDataFromShape(idb_obs, NET_ID_OBS);
+      initDataFromShape(idb_obs, NET_ID_OBS - number);
     }
 
     number++;
@@ -142,8 +142,9 @@ void DrcEngineInitDef::initDataFromNets()
   auto* idb_design = dmInst->get_idb_design();
 
   for (auto* idb_net : idb_design->get_net_list()->get_net_list()) {
-    // if (idb_net->get_net_name() != "FE_OFN7003_04747"
-    //     && idb_net->get_net_name() != "u_retrosoc.u_axil_ip_wrapper.u_spi_flash.u0_spi_top.rx_107_") {
+    // if (idb_net->get_net_name() != "_27785_" && idb_net->get_net_name() != "FE_OFN27703_n"
+    //     && idb_net->get_net_name() != "u_retrosoc.u_psram_top.r_mem_addr_8_") {  // && idb_net->get_net_name() !=
+    //   // "u_retrosoc.u_psram_top.r_mem_addr_8_"  idb_net->get_net_name() != "_07625_"
     //   continue;
     // }
     initDataFromNet(idb_net);

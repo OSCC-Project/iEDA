@@ -26,6 +26,7 @@ target_include_directories(idrc_condition_manager
 if(DEBUG_IDRC_CONDITION)
   message(STATUS "iDRC: DEBUG_IDRC_CONDITION")
   set(CMAKE_BUILD_TYPE "Debug")
+  # set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb -Wextra -Werror=return-type")
 else()
   message(STATUS "iDRC: RELEASE_IDRC_CONDITION")
   set(CMAKE_BUILD_TYPE "Release")

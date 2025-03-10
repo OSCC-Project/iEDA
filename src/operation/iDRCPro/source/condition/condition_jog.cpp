@@ -105,7 +105,7 @@ void DrcConditionManager::checkJog(std::string layer, DrcEngineLayout* layout, s
             region_b.get(region_b_polygons);
             for (auto& region_b_polygon : region_b_polygons) {
               ieda_solver::GeometryRect bbox;
-              ieda_solver::envelope(bbox, region_b_polygon);
+              ieda_solver::ENVELOPE(bbox, region_b_polygon);
               int prl = ieda_solver::getWireWidth(bbox, prl_direction);
               if (prl > rule_prl) {
                 ieda_solver::GeometryPolygonSet current_region_b_set;
