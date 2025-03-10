@@ -35,6 +35,7 @@ void GeometryBoost::addRect(int llx, int lly, int urx, int ury)
   GtlRect rect(llx, lly, urx, ury);
 
   _polyset += rect;
+   gtl::bloat(rect,1);
   _polyset_overlap += rect;
 
   /// update bounding box
