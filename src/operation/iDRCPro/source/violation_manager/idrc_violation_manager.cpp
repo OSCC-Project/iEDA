@@ -101,7 +101,7 @@ void DrcViolationManager::set_net_ids(DrcEngineManager* engine_manager)
               gtl::generalized_intersect(ge_intersect, wire_rect);
               auto distX = gtl::euclidean_distance(poly_rect, wire_rect, ieda_solver::K_HORIZONTAL);
               auto distY = gtl::euclidean_distance(poly_rect, wire_rect, ieda_solver::K_VERTICAL);
-              if (distX && distY && distX + distY < min_dis) {
+              if (distX && distY && distX * distX + distY * distY <= spacing * spacing) {
                 min_dis = distX + distY;
                 closest_intersect = ge_intersect;
                 closest_poly_rect = poly_rect;
@@ -109,7 +109,7 @@ void DrcViolationManager::set_net_ids(DrcEngineManager* engine_manager)
             }
             auto distX = gtl::euclidean_distance(closest_poly_rect, wire_rect, ieda_solver::K_HORIZONTAL);
             auto distY = gtl::euclidean_distance(closest_poly_rect, wire_rect, ieda_solver::K_VERTICAL);
-            if (distX && distY && min_dis <= 1.2 * spacing) {
+            if (distX && distY && distX * distX + distY * distY <= spacing * spacing) {
               DrcViolationRect* violation_rect = new DrcViolationRect(
                   violation_polygon->get_layer(), violation_polygon->get_violation_type(), gtl::xl(closest_intersect),
                   gtl::yl(closest_intersect), gtl::xh(closest_intersect), gtl::yh(closest_intersect));
