@@ -175,7 +175,7 @@ void DrcConditionManager::checkArea(std::string layer, DrcEngineLayout* layout)
         ieda_solver::GeometryPolygon hole_polygon;
         hole_polygon.set(hole_it->begin(), hole_it->end());
         ieda_solver::GeometryRect violation_rect;
-        ieda_solver::envelope(violation_rect, hole_polygon);
+        ieda_solver::ENVELOPE(violation_rect, hole_polygon);
         addViolation(violation_rect, layer, ViolationEnumType::kAreaEnclosed);
         ++enclosed_area_count;
       }
@@ -191,7 +191,7 @@ void DrcConditionManager::checkArea(std::string layer, DrcEngineLayout* layout)
     }
     if (polygon_area < rule_min_area) {
       ieda_solver::GeometryRect violation_rect;
-      ieda_solver::envelope(violation_rect, polygon);
+      ieda_solver::ENVELOPE(violation_rect, polygon);
       addViolation(violation_rect, layer, ViolationEnumType::kArea);
       ++area_count;
     } else if (polygon_area < max_rule_lef58_area) {
@@ -226,7 +226,7 @@ void DrcConditionManager::checkArea(std::string layer, DrcEngineLayout* layout)
 
         if (!is_ignore) {
           ieda_solver::GeometryRect violation_rect;
-          ieda_solver::envelope(violation_rect, polygon);
+          ieda_solver::ENVELOPE(violation_rect, polygon);
           addViolation(violation_rect, layer, ViolationEnumType::kArea);
           ++area_count;
         }

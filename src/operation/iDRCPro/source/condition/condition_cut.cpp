@@ -147,8 +147,10 @@ void DrcConditionManager::checkCutOverlap(std::string layer, DrcEngineLayout* la
     ieda_solver::getDefaultRectangles(results, overlap);
 
     for (auto rect : results) {
-      addViolation(rect, layer, ViolationEnumType::kCutShort);
-      total_drc++;
+      if (shrink_rect(rect, 1)) {
+        addViolation(rect, layer, ViolationEnumType::kCutShort);
+        total_drc++;
+      }
     }
   }
 

@@ -45,10 +45,10 @@ enum class ViolationEnumType
 };
 
 #define NET_ID_ENVIRONMENT -1
-#define NET_ID_OBS -2
 #define NET_ID_PDN -3
 #define NET_ID_VDD -4
 #define NET_ID_VSS -5
+#define NET_ID_OBS -6
 
 struct GetViolationTypeName
 {

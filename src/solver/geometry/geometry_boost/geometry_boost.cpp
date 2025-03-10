@@ -35,6 +35,7 @@ void GeometryBoost::addRect(int llx, int lly, int urx, int ury)
   GtlRect rect(llx, lly, urx, ury);
 
   _polyset += rect;
+   gtl::bloat(rect,1);
   _polyset_overlap += rect;
 
   /// update bounding box
@@ -151,7 +152,7 @@ void GeometryBoost::initPolygonRTree()
   //   auto& polygon_list = getLayoutPolygons();
   //   for (auto polygon : polygon_list) {
   //     ieda_solver::GeometryRect rect;
-  //     ieda_solver::envelope(rect, polygon);
+  //     ieda_solver::ENVELOPE(rect, polygon);
 
   //     ieda_solver::BgRect rtree_rect(gtl::ll(rect).x(), gtl::ll(rect).y(), gtl::ur(rect).x(), gtl::ur(rect).y());
   //     _polygon_rtree.insert(std::make_pair(rtree_rect, polygon));
