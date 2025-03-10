@@ -16,6 +16,7 @@
 // ***************************************************************************************
 
 #include <algorithm>
+#include <boost/polygon/isotropy.hpp>
 #include <cassert>
 #include <cstdio>
 
@@ -56,7 +57,57 @@ void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLay
       ieda_solver::GeometryPolygonSet polygon_set;
       polygon_set += polygon;
 
-      boost::polygon::get_max_rectangles(wire_list, polygon_set);  // layout->get_layout_engine()->getWires();
+      // get all the wire segments
+      struct FirstOnlyCompare
+      {
+        bool operator()(const std::pair<int, ieda_solver::GtlSegment>& lhs, const std::pair<int, ieda_solver::GtlSegment>& rhs) const
+        {
+          return lhs.first < rhs.first;
+        }
+      };
+      std::multiset<std::pair<int, ieda_solver::GtlSegment>, FirstOnlyCompare> vertical_seg_list;
+      std::multiset<std::pair<int, ieda_solver::GtlSegment>, FirstOnlyCompare> horizontal_seg_list;
+      auto it = polygon.begin();
+      while (it != polygon.end()) {
+        ieda_solver::GeometryPoint p1 = *it;
+        ++it;
+        if (it == polygon.end()) {
+          break;
+        }
+        ieda_solver::GeometryPoint p2 = *(it);
+        if (p1.x() == p2.x()) {
+          if (p1.y() > p2.y()) {
+            std::swap(p1, p2);  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+          }
+          vertical_seg_list.insert(std::make_pair(p1.x(), ieda_solver::GtlSegment(p1, p2)));
+        } else if (p1.y() == p2.y()) {
+          if (p1.x() > p2.x()) {
+            std::swap(p1, p2);  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+          }
+          horizontal_seg_list.insert(std::make_pair(p1.y(), ieda_solver::GtlSegment(p1, p2)));
+        }
+      }
+      auto is_in_seg = [&](ieda_solver::GtlSegment s, gtl::orientation_2d& res_dir) -> bool {
+        if (s.low().x() == s.high().x()) {
+          res_dir = gtl::VERTICAL;
+          auto res_list = vertical_seg_list.equal_range(std::make_pair(s.low().x(), s));
+          for (auto it = res_list.first; it != res_list.second; ++it) {
+            if (it->second.low().y() <= s.low().y() && s.high().y() <= it->second.high().y()) {  // 线段在线段集合中
+              return true;
+            }
+          }
+        } else if (s.low().y() == s.high().y()) {
+          res_dir = gtl::HORIZONTAL;
+          auto res_list = horizontal_seg_list.equal_range(std::make_pair(s.low().y(), s));
+          for (auto it = res_list.first; it != res_list.second; ++it) {
+            if (it->second.low().x() <= s.low().x() && s.high().x() <= it->second.high().x()) {  // 线段在线段集合中
+              return true;
+            }
+          }
+        }
+        return false;
+      };
+      boost::polygon::get_max_rectangles(wire_list, polygon_set);  // layout.get_layout_engine()->getWires();
       bg::index::rtree<std::pair<ieda_solver::BgRect, int>, bg::index::quadratic<16>> wireRTree;
 
       for (int i = 0; i < wire_list.size(); i++) {
@@ -74,10 +125,10 @@ void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLay
         int wire_width = ieda_solver::getWireWidth(wire, width_direction);
 
         // if(wire_width >= 600){
-          // printf("hhh , tesdt debug");
-          // printf("hhh , tesdt debug");
-          
-        // } 
+        // printf("hhh , tesdt debug");
+        // printf("hhh , tesdt debug");
+
+        // }
         // prl
         if (rule_spacing_table && rule_spacing_table->is_parallel()) {
           auto idb_table_prl = rule_spacing_table->get_parallel();
@@ -142,6 +193,34 @@ void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLay
                   int dis = gtl::delta(rect, dis_dir);
                   for (int k = idb_prl_length_list.size() - 1; k >= 0; k--) {
                     if (prl >= idb_prl_length_list[k] && dis <= idb_spacing_array[width_idx][k]) {
+                      if (distX && distY) {
+                        ieda_solver::GeometryPoint p1(xl(rect), yl(rect));  // 左下角
+                        ieda_solver::GeometryPoint p2(xh(rect), yl(rect));  // 右下角
+                        ieda_solver::GeometryPoint p3(xh(rect), yh(rect));  // 右上角
+                        ieda_solver::GeometryPoint p4(xl(rect), yh(rect));  // 左上角
+                        std::vector<ieda_solver::GtlSegment> segments;
+                        segments.push_back(ieda_solver::GtlSegment(p1, p2));
+                        segments.push_back(ieda_solver::GtlSegment(p2, p3));
+                        segments.push_back(ieda_solver::GtlSegment(p4, p3));
+                        segments.push_back(ieda_solver::GtlSegment(p1, p4));
+                        int in_seg_num = 0;
+                        bool is_vertical_in = false;
+                        bool is_horizontal_in = false;
+                        for (auto& seg : segments) {
+                          ieda_solver::GeometryOrientation res_dir;
+                          if (is_in_seg(seg, res_dir)) {
+                            in_seg_num++;
+                            if (res_dir == gtl::HORIZONTAL) {
+                              is_horizontal_in = true;
+                            } else {
+                              is_vertical_in = true;
+                            }
+                          }
+                        }
+                        if (in_seg_num == 2 && is_vertical_in && is_horizontal_in) {
+                          break;
+                        }
+                      }
                       ieda_solver::GeometryRect violation_rect(rect);
                       // if (distX && distY
                       //     && ptEuclideanDistance(lowLeftX(violation_rect), lowLeftY(violation_rect), upRightX(violation_rect),
@@ -247,7 +326,7 @@ void DrcConditionManager::checkSpacingTable(std::string layer, DrcEngineLayout* 
         std::vector<ieda_solver::GeometryViewPolygon> view_polygons1;
         check_region.get(view_polygons1);
         ieda_solver::GeometryPolygonSet interact_res = check_region & layer_polyset;
-        
+
         if (is_corner) {
           std::vector<ieda_solver::GeometryViewPolygon> view_polygons2;
           std::vector<ieda_solver::GeometryPolygon> check_region_polygons;
