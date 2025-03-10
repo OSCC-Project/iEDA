@@ -92,6 +92,9 @@ class TechRules
   std::shared_ptr<IdbMinStep> getMinStep(std::string layer_name);
   std::vector<std::shared_ptr<routinglayer::Lef58MinStep>> getLef58MinStep(std::string layer_name);
 
+  ///CUT LAyer
+  std::vector<std::shared_ptr<cutlayer::Lef58SpacingTable>> getLef58CutSpacing(std::string layer_name);
+
   ///
 
  private:

@@ -56,6 +56,7 @@ class DrcConditionManager
   void checkCutEnclosure(std::string layer, DrcEngineLayout* layout);
   void checkCutOverlap(std::string layer, DrcEngineLayout* layout);
   void checkCutWidth(std::string layer, DrcEngineLayout* layout);
+  void checkLEF58CutSpacingTable(std::string layer, DrcEngineLayout* layout);
  private:
   DrcViolationManager* _violation_manager;
   DrcCheckerType _check_type;

@@ -215,6 +215,9 @@ void DrcEngineManager::filterData()
 
     // enclosure
     _condition_manager->checkCutEnclosure(layer, layout);
+
+    //LEF58 Cut Spacing Table
+    _condition_manager->checkLEF58CutSpacingTable(layer, layout);
   }
 
   DEBUGOUTPUT("Finish drc checking:\t");

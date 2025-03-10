@@ -156,4 +156,13 @@ std::vector<std::shared_ptr<routinglayer::Lef58MinStep>> TechRules::getLef58MinS
   return idb_routing_layer->get_lef58_min_step();
 }
 
+std::vector<std::shared_ptr<cutlayer::Lef58SpacingTable>> TechRules::getLef58CutSpacing(std::string layer_name)
+{
+  auto idb_cut_layer = findCutLayer(layer_name);
+  if (!idb_cut_layer)
+    return {};
+
+  return idb_cut_layer->get_lef58_spacing_table();
+}
+
 }  // namespace idrc
