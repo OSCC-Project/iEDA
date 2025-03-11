@@ -705,29 +705,32 @@ void PinAccessor::initPATaskList(PAModel& pa_model, PABox& pa_box)
   std::map<int32_t, std::map<int32_t, std::set<Segment<LayerCoord>*>>>& net_pin_access_result_map = pa_box.get_net_pin_access_result_map();
   std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& net_task_access_result_map = pa_box.get_net_task_access_result_map();
 
-  std::map<int32_t, std::set<AccessPoint*>> net_access_point_map = RTDM.getNetAccessPointMap(box_rect);
-  for (auto& [net_idx, access_point_set] : net_access_point_map) {
-    PANet& pa_net = pa_net_list[net_idx];
-
-    std::map<int32_t, std::set<AccessPoint*>> pin_access_point_map;
-    for (AccessPoint* access_point : access_point_set) {
-      pin_access_point_map[access_point->get_pin_idx()].insert(access_point);
+  std::map<PANet*, std::map<PAPin*, std::set<AccessPoint*>>> net_pin_access_point_map;
+  {
+    std::map<int32_t, std::set<AccessPoint*>> net_access_point_map = RTDM.getNetAccessPointMap(box_rect);
+    for (auto& [net_idx, access_point_set] : net_access_point_map) {
+      PANet& pa_net = pa_net_list[net_idx];
+      for (AccessPoint* access_point : access_point_set) {
+        PAPin& pa_pin = pa_net.get_pa_pin_list()[access_point->get_pin_idx()];
+        net_pin_access_point_map[&pa_net][&pa_pin].insert(access_point);
+      }
     }
-    for (auto& [pin_idx, pin_access_point_set] : pin_access_point_map) {
-      PAPin& pa_pin = pa_net.get_pa_pin_list()[pin_idx];
-      if (!RTUTIL.isInside(box_rect.get_grid_rect(), pa_pin.get_key_grid_coord())) {
+  }
+  for (auto& [pa_net, pin_access_point_map] : net_pin_access_point_map) {
+    for (auto& [pa_pin, access_point_set] : pin_access_point_map) {
+      if (!RTUTIL.isInside(box_rect.get_grid_rect(), pa_pin->get_key_grid_coord())) {
         continue;
       }
       std::vector<PAGroup> pa_group_list(2);
       std::vector<LayerCoord> target_coord_list;
       {
         pa_group_list.front().set_is_target(false);
-        for (AccessPoint* pin_access_point : pin_access_point_set) {
-          pa_group_list.front().get_coord_list().push_back(pin_access_point->getRealLayerCoord());
+        for (AccessPoint* access_point : access_point_set) {
+          pa_group_list.front().get_coord_list().push_back(access_point->getRealLayerCoord());
         }
         std::set<LayerCoord, CmpLayerCoordByXASC> coord_set;
-        for (AccessPoint* pin_access_point : pin_access_point_set) {
-          int32_t curr_layer_idx = pin_access_point->get_layer_idx();
+        for (AccessPoint& access_point : pa_pin->get_access_point_list()) {
+          int32_t curr_layer_idx = access_point.get_layer_idx();
           // 构建目标层
           std::vector<int32_t> point_layer_idx_list;
           if (curr_layer_idx < bottom_routing_layer_idx) {
@@ -744,7 +747,7 @@ void PinAccessor::initPATaskList(PAModel& pa_model, PABox& pa_box)
             point_layer_idx_list.push_back(curr_layer_idx - 1);
           }
           // 构建搜索形状
-          PlanarRect real_rect = RTUTIL.getEnlargedRect(pin_access_point->get_real_coord(), 2 * RTDM.getOnlyPitch());
+          PlanarRect real_rect = RTUTIL.getEnlargedRect(access_point.get_real_coord(), 2 * RTDM.getOnlyPitch());
           // 构建点
           std::vector<ScaleGrid>& x_track_grid_list = routing_layer_list[curr_layer_idx].getXTrackGridList();
           std::vector<ScaleGrid>& y_track_grid_list = routing_layer_list[curr_layer_idx].getYTrackGridList();
@@ -762,7 +765,7 @@ void PinAccessor::initPATaskList(PAModel& pa_model, PABox& pa_box)
             continue;
           }
           bool in_shape = false;
-          for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
+          for (EXTLayerRect& routing_shape : pa_pin->get_routing_shape_list()) {
             if (routing_shape.get_layer_idx() == coord.get_layer_idx() && RTUTIL.isInside(routing_shape.get_real_rect(), coord)) {
               in_shape = true;
               break;
@@ -777,10 +780,10 @@ void PinAccessor::initPATaskList(PAModel& pa_model, PABox& pa_box)
         }
       }
       PATask* pa_task = new PATask();
-      pa_task->set_net_idx(net_idx);
+      pa_task->set_net_idx(pa_net->get_net_idx());
       pa_task->set_task_idx(static_cast<int32_t>(pa_task_list.size()));
-      pa_task->set_pa_pin(&pa_pin);
-      pa_task->set_connect_type(pa_net.get_connect_type());
+      pa_task->set_pa_pin(pa_pin);
+      pa_task->set_connect_type(pa_net->get_connect_type());
       pa_task->set_pa_group_list(pa_group_list);
       pa_task->set_target_coord_list(target_coord_list);
       {
