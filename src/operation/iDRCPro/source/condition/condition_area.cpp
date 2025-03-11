@@ -51,7 +51,7 @@ void DrcConditionManager::checkArea(std::string layer, DrcEngineLayout* layout)
 
   // methods
   auto get_edge_orientation = [](const ieda_solver::GeometryPoint& p1, const ieda_solver::GeometryPoint& p2) {
-    return p1.x() == p2.x() ? ieda_solver::VERTICAL : ieda_solver::HORIZONTAL;
+    return p1.x() == p2.x() ? ieda_solver::K_VERTICAL : ieda_solver::K_HORIZONTAL;
   };
 
   auto get_edge_direction = [](const ieda_solver::GeometryPoint& p1, const ieda_solver::GeometryPoint& p2) {
@@ -175,7 +175,7 @@ void DrcConditionManager::checkArea(std::string layer, DrcEngineLayout* layout)
         ieda_solver::GeometryPolygon hole_polygon;
         hole_polygon.set(hole_it->begin(), hole_it->end());
         ieda_solver::GeometryRect violation_rect;
-        ieda_solver::envelope(violation_rect, hole_polygon);
+        ieda_solver::ENVELOPE(violation_rect, hole_polygon);
         addViolation(violation_rect, layer, ViolationEnumType::kAreaEnclosed);
         ++enclosed_area_count;
       }
@@ -191,7 +191,7 @@ void DrcConditionManager::checkArea(std::string layer, DrcEngineLayout* layout)
     }
     if (polygon_area < rule_min_area) {
       ieda_solver::GeometryRect violation_rect;
-      ieda_solver::envelope(violation_rect, polygon);
+      ieda_solver::ENVELOPE(violation_rect, polygon);
       addViolation(violation_rect, layer, ViolationEnumType::kArea);
       ++area_count;
     } else if (polygon_area < max_rule_lef58_area) {
@@ -226,7 +226,7 @@ void DrcConditionManager::checkArea(std::string layer, DrcEngineLayout* layout)
 
         if (!is_ignore) {
           ieda_solver::GeometryRect violation_rect;
-          ieda_solver::envelope(violation_rect, polygon);
+          ieda_solver::ENVELOPE(violation_rect, polygon);
           addViolation(violation_rect, layer, ViolationEnumType::kArea);
           ++area_count;
         }
