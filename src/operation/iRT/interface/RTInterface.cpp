@@ -1433,6 +1433,8 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerSh
                                                      std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_result_map)
 {
   std::map<std::string, int32_t>& routing_layer_name_to_idx_map = RTDM.getDatabase().get_routing_layer_name_to_idx_map();
+  std::map<std::string, int32_t>& cut_layer_name_to_idx_map = RTDM.getDatabase().get_cut_layer_name_to_idx_map();
+  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
 
   idrc::DrcApi drc_api;
   drc_api.init();
@@ -1475,6 +1477,12 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerSh
         case idrc::ViolationEnumType::kCornerFill:
           violation_type = ViolationType::kCornerFillSpacing;
           break;
+        case idrc::ViolationEnumType::kCutShort:
+          violation_type = ViolationType::kCutShort;
+          break;
+        case idrc::ViolationEnumType::kCutSpacing:
+          violation_type = ViolationType::kSameLayerCutSpacing;
+          break;
         default:
           RTLOG.warn(Loc::current(), "Unknow rule!");
           violation_type = ViolationType::kNone;
@@ -1493,6 +1501,9 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerSh
         }
         if (idrc_violation->get_layer()->is_routing()) {
           ext_layer_rect.set_layer_idx(routing_layer_name_to_idx_map[idrc_violation->get_layer()->get_name()]);
+        } else if (idrc_violation->get_layer()->is_cut()) {
+          std::vector<int32_t> routing_layer_idx_list = cut_to_adjacent_routing_map[cut_layer_name_to_idx_map[idrc_violation->get_layer()->get_name()]];
+          ext_layer_rect.set_layer_idx(std::min(routing_layer_idx_list.front(), routing_layer_idx_list.back()));
         } else {
           RTLOG.error(Loc::current(), "Not supported!");
         }
