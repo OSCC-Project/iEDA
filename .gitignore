@@ -25,3 +25,4 @@ rpt*/
 target/
 *-stamp/
 tmp/
+scripts

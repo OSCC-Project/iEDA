@@ -17,7 +17,9 @@
 
 #include "rule_builder.h"
 
+#include "IdbLayer.h"
 #include "rule_condition_area.h"
+#include "rule_condition_cut.h"
 #include "rule_condition_edge.h"
 #include "rule_condition_spacing.h"
 #include "rule_condition_width.h"
@@ -281,9 +283,120 @@ void DrcRuleBuilder::buildRoutingLayerEdge(ConditionRuleLayer* rule_layer, idb::
   rule_layer->set_condition(RuleType::kEdge, static_cast<RulesConditionMap*>(rule_map));
 }
 
-//TODO: cut layer rules need tobe added
+// TODO: cut layer rules need tobe added
 void DrcRuleBuilder::initCutLayerRules()
 {
+  /// build rule map
+  auto& rule_cut_layers = DrcTechRuleInst->get_rule_cut_layers_map();
+  IdbBuilder* builder = dmInst->get_idb_builder();
+  idb::IdbLayout* layout = builder->get_lef_service()->get_layout();
+  auto& idb_layers = layout->get_layers()->get_cut_layers();
+  for (auto* idb_layer : idb_layers) {
+    idb::IdbLayerCut* idb_cut_layer = dynamic_cast<idb::IdbLayerCut*>(idb_layer);
+
+    /// create rule layer
+    ConditionRuleLayer* rule_layer = new ConditionRuleLayer();
+    rule_cut_layers[idb_cut_layer->get_name()] = rule_layer;
+
+    buildCutLayerSpacing(rule_layer, idb_cut_layer);
+    buildCutLayerEnclosure(rule_layer, idb_cut_layer);
+    buildCutLayerArraySpacing(rule_layer, idb_cut_layer);
+    buildCutLayerWidth(rule_layer, idb_cut_layer);
+  }
+}
+
+void DrcRuleBuilder::buildCutLayerSpacing(ConditionRuleLayer* rule_layer, idb::IdbLayerCut* idb_cut_layer)
+{
+  /// key words : SPACING
+  auto build_cut_spacing = [](idb::IdbLayerCut* idb_cut_layer, RulesConditionMap* rule_map) {
+    auto idb_spacing_list = idb_cut_layer->get_spacings();
+    if (idb_spacing_list.empty()) {
+      return;
+    }
+
+    for (idb::IdbLayerCutSpacing* idb_cut_spacing : idb_spacing_list) {
+      ConditionRuleCutSpacing* cut_spacing
+          = new ConditionRuleCutSpacing(RuleType::kCutSpacing, idb_cut_spacing->get_spacing(), idb_cut_spacing);
+
+      rule_map->set_condition_rule(RuleType::kCutSpacing, idb_cut_spacing->get_spacing(), static_cast<ConditionRule*>(cut_spacing));
+    }
+  };
+
+  /// build rule map
+  auto* rule_map = new RulesConditionMap(RuleType::kCutSpacing);
+
+  /// spacing range
+  build_cut_spacing(idb_cut_layer, rule_map);
+
+  /// set rule map to layer
+  rule_layer->set_condition(RuleType::kSpacing, static_cast<RulesConditionMap*>(rule_map));
+}
+
+void DrcRuleBuilder::buildCutLayerWidth(ConditionRuleLayer* rule_layer, idb::IdbLayerCut* idb_cut_layer)
+{
+  /// key words : WIDTH
+  auto build_cut_width = [](idb::IdbLayerCut* idb_cut_layer, RulesConditionMap* rule_map) {
+    int width = idb_cut_layer->get_width();
+
+    ConditionRuleCutWidth* cut_Width = new ConditionRuleCutWidth(RuleType::kCutWidth, width, width);
+
+    rule_map->set_condition_rule(RuleType::kCutWidth, width, static_cast<ConditionRule*>(cut_Width));
+  };
+
+  /// build rule map
+  auto* rule_map = new RulesConditionMap(RuleType::kCutWidth);
+
+  /// spacing range
+  build_cut_width(idb_cut_layer, rule_map);
+
+  /// set rule map to layer
+  rule_layer->set_condition(RuleType::kCutWidth, static_cast<RulesConditionMap*>(rule_map));
+}
+
+void DrcRuleBuilder::buildCutLayerEnclosure(ConditionRuleLayer* rule_layer, idb::IdbLayerCut* idb_cut_layer)
+{
+  /// key words : SPACING
+  auto build_cut_enclosure = [](idb::IdbLayerCut* idb_cut_layer, RulesConditionMap* rule_map) {
+    auto enclosure_above = idb_cut_layer->get_enclosure_above();
+    auto enclosure_below = idb_cut_layer->get_enclosure_below();
+
+    ConditionRuleCutEnclosure* cut_enclosure = new ConditionRuleCutEnclosure(RuleType::kCutEnclosure, 0, enclosure_above, enclosure_below);
+
+    rule_map->set_condition_rule(RuleType::kCutEnclosure, 0, static_cast<ConditionRule*>(cut_enclosure));
+  };
+
+  /// build rule map
+  auto* rule_map = new RulesConditionMap(RuleType::kCutEnclosure);
+
+  /// spacing range
+  build_cut_enclosure(idb_cut_layer, rule_map);
+
+  /// set rule map to layer
+  rule_layer->set_condition(RuleType::kCutEnclosure, static_cast<RulesConditionMap*>(rule_map));
+}
+
+void DrcRuleBuilder::buildCutLayerArraySpacing(ConditionRuleLayer* rule_layer, idb::IdbLayerCut* idb_cut_layer)
+{
+  /// key words : SPACING
+  auto build_cut_array_spacing = [](idb::IdbLayerCut* idb_cut_layer, RulesConditionMap* rule_map) {
+    auto cut_array_spacing = idb_cut_layer->get_array_spacing();
+    if (cut_array_spacing == nullptr) {
+      return;
+    }
+
+    ConditionRuleCutArraySpacing* cut_spacing = new ConditionRuleCutArraySpacing(RuleType::kCutArraySpacing, 0, cut_array_spacing);
+
+    rule_map->set_condition_rule(RuleType::kCutArraySpacing, 0, static_cast<ConditionRule*>(cut_spacing));
+  };
+
+  /// build rule map
+  auto* rule_map = new RulesConditionMap(RuleType::kCutArraySpacing);
+
+  /// spacing range
+  build_cut_array_spacing(idb_cut_layer, rule_map);
+
+  /// set rule map to layer
+  rule_layer->set_condition(RuleType::kCutArraySpacing, static_cast<RulesConditionMap*>(rule_map));
 }
 
 }  // namespace idrc

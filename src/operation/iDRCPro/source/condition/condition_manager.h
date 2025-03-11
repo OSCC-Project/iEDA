@@ -50,6 +50,16 @@ class DrcConditionManager
   void checkParallelLengthSpacing(std::string layer, DrcEngineLayout* layout);
   void checkJogToJogSpacing(std::string layer, DrcEngineLayout* layout);
 
+  // cut width
+  void checkCutSpacing(std::string layer, DrcEngineLayout* layout);
+  void checkCutArraySpacing(std::string layer, DrcEngineLayout* layout);
+  void checkCutEnclosure(std::string layer, DrcEngineLayout* layout);
+  void checkCutOverlap(std::string layer, DrcEngineLayout* layout);
+  void checkCutWidth(std::string layer, DrcEngineLayout* layout);
+  void checkLEF58CutSpacingTable(std::string layer, DrcEngineLayout* layout);
+  // static function
+  bool hasPRLViolated(ieda_solver::GeometryRect& rect_1, ieda_solver::GeometryRect& rect_2, bool need_corner);
+
  private:
   DrcViolationManager* _violation_manager;
   DrcCheckerType _check_type;
@@ -60,6 +70,7 @@ class DrcConditionManager
   void checkOverlapBySelfIntersect(std::string layer, DrcEngineLayout* layout);
 
   void addViolation(ieda_solver::GeometryRect& rect, std::string layer, ViolationEnumType type, std::set<int> net_id = {});
+  void addViolation(ieda_solver::GeometryPolygon& polygon, std::string layer, ViolationEnumType type, int spacing, int width);
   void buildMapOfJog(std::string layer, DrcEngineLayout* layout, std::map<int, ieda_solver::GeometryPolygonSet>& jog_wire_map);
   void checkJog(std::string layer, DrcEngineLayout* layout, std::map<int, ieda_solver::GeometryPolygonSet>& jog_wire_map);
   void buildMapOfSpacingTable(std::string layer, DrcEngineLayout* layout,

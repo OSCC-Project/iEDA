@@ -28,10 +28,3 @@ target_include_directories(idrc_pro_src
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-if(DEBUG_IDRC)
-  message(STATUS "iDRC: DEBUG_IDRC")
-  set(CMAKE_BUILD_TYPE "Debug")
-else()
-  message(STATUS "iDRC: RELEASE_IDRC")
-  set(CMAKE_BUILD_TYPE "Release")
-endif()

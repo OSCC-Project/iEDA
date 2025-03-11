@@ -75,6 +75,14 @@ int TechRules::getMinSpacing(std::string layer_name, int width)
   return idb_routing_layer->get_spacing(width);
 }
 
+int TechRules::getCutSpacing(std::string layer_name)
+{
+  auto idb_cut_layer = findCutLayer(layer_name);
+  if (!idb_cut_layer)
+    return -1;
+  return idb_cut_layer->get_spacings().empty()?-1: idb_cut_layer->get_spacings().front()->get_spacing();
+}
+
 std::shared_ptr<idb::routinglayer::Lef58SpacingTableJogToJog> TechRules::getJogToJog(std::string layer_name)
 {
   auto idb_routing_layer = findRoutingLayer(layer_name);
@@ -146,6 +154,15 @@ std::vector<std::shared_ptr<routinglayer::Lef58MinStep>> TechRules::getLef58MinS
     return {};
 
   return idb_routing_layer->get_lef58_min_step();
+}
+
+std::vector<std::shared_ptr<cutlayer::Lef58SpacingTable>> TechRules::getLef58CutSpacing(std::string layer_name)
+{
+  auto idb_cut_layer = findCutLayer(layer_name);
+  if (!idb_cut_layer)
+    return {};
+
+  return idb_cut_layer->get_lef58_spacing_table();
 }
 
 }  // namespace idrc

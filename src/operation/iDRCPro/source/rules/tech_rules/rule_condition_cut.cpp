@@ -14,36 +14,13 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
+
+#include "rule_condition_cut.h"
+
+#include <algorithm>
+
+#include "rule_basic.h"
 
 namespace idrc {
-
-// TODO: CUT RULE
-enum class RuleType
-{
-  kNone,
-  kArea,
-  kAreaMin,
-  kAreaLef58,
-  kAreaEnclosed,
-  kConnectivity,
-  kSpacing,
-  kSpacingRange,
-  kWidth,
-  kWidthPRLTable,
-  kWidthJogToJog,
-  kEdge,
-  kEdgeMinStep,
-  kEdgeMinStepLef58,
-  kEdgeNotch,
-  kEdgeEOL,
-  kMax,
-  // CUT RULE
-  kCutSpacing,
-  kCutWidth,
-  kCutArraySpacing,
-  kCutEnclosure,
-
-};
 
 }  // namespace idrc
