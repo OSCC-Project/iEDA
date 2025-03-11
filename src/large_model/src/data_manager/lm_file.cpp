@@ -108,7 +108,7 @@ bool LmLayoutFileIO::saveJsonNets()
           json_feature["area"] = net_feature->area;
           json_feature["volume"] = net_feature->volume;
           json_feature["l_ness"] = net_feature->l_ness;
-          json_feature["layer_ratio"]  = net_feature->layer_ratio;
+          json_feature["layer_ratio"] = net_feature->layer_ratio;
           json_feature["rsmt"] = net_feature->rsmt;
         }
         json_net["feature"] = json_feature;
@@ -286,9 +286,12 @@ bool LmLayoutFileIO::saveJsonPatchs()
       json_patch["macro_margin"] = patch.macro_margin;
       json_patch["RUDY_congestion"] = patch.RUDY_congestion;
       json_patch["EGR_congestion"] = patch.EGR_congestion;
+      json_patch["timing"] = patch.timing_map;
+      json_patch["power"] = patch.power_map;
+      json_patch["IR_drop"] = patch.ir_drop_map;
 
       json json_sub_nets = json::array();
-      std::unordered_map<int, json> unique_json_sub_nets; 
+      std::unordered_map<int, json> unique_json_sub_nets;
 
       json json_layers = json::array();
       for (auto& [layer_id, patch_layer] : patch.get_layer_map()) {
@@ -296,13 +299,13 @@ bool LmLayoutFileIO::saveJsonPatchs()
         json_layer["id"] = layer_id;
         // layer feature
         {
-        json json_layer_feature;
+          json json_layer_feature;
 
-        json_layer_feature["wire_width"] = patch_layer.wire_width;
-        json_layer_feature["wire_len"] = patch_layer.wire_len;
-        json_layer_feature["wire_density"] = (patch_layer.wire_width * patch_layer.wire_len) / static_cast<double>(area);
+          json_layer_feature["wire_width"] = patch_layer.wire_width;
+          json_layer_feature["wire_len"] = patch_layer.wire_len;
+          json_layer_feature["wire_density"] = (patch_layer.wire_width * patch_layer.wire_len) / static_cast<double>(area);
 
-        json_layer["feature"] = json_layer_feature;
+          json_layer["feature"] = json_layer_feature;
         }
         /// sub net in patch for each layer
         json_layer["net_num"] = patch_layer.get_sub_nets().size();
