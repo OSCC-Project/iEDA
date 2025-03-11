@@ -70,12 +70,13 @@ class NetworkSynthesis
   GridManager get_network() { return _synthesized_network; }
 
   void synthesizeNetwork();
-  void randomSys();
 
- private:
+private:
+  void manualSetTemplates();
+
   GridManager _input_grid_info;
   GridManager _synthesized_network;
-  SysnType _nework_sys_type;
+  SysnType _network_sys_type;
 };
 
 }  // namespace ipnp

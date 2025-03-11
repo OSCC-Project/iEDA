@@ -24,8 +24,13 @@
 
 #include <iostream>
 #include <string>
+#include <filesystem>
 
 #include "iPNP.hh"
+#include "api/iPNPApi.hh"
+
+using namespace ipnp;
+using namespace idb;
 
 // int registerCommands() {
 //   registerTclCmd(CmdSetDesignWorkSpace, "set_design_workspace");
@@ -45,84 +50,79 @@
 
 int main(int argc, char** argv)
 {
-  using namespace ipnp;
-  using namespace idb;
-  std::string config_file = "config file path";
-  iPNP pnp_object = iPNP(config_file);
+  std::vector<std::string> lef_files{
+    "/home/taosimin/T28/tlef/tsmcn28_9lm6X2ZUTRDL.tlef",
+    "/home/taosimin/T28/lef/PLLTS28HPMLAINT.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140opplvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140lvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140uhvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140hvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140oppuhvt.lef",
+    "/home/taosimin/T28/lef/ts5n28hpcplvta256x32m4fw_130a.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140cg.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140oppuhvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140mbhvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140ulvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140uhvt.lef",
+    "/home/taosimin/T28/lef/ts5n28hpcplvta64x100m2fw_130a.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140hvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140oppulvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140mb.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140cgcwhvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140lvt.lef",
+    "/home/taosimin/T28/lef/tpbn28v_9lm.lef",
+    "/home/taosimin/T28/lef/ts5n28hpcplvta64x128m2f_130a.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140uhvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140mblvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140cgcw.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140mbhvt.lef",
+    "/home/taosimin/T28/lef/tpbn28v.lef",
+    "/home/taosimin/T28/lef/ts5n28hpcplvta64x128m2fw_130a.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140lvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140ulvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140opphvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140cgehvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140mb.lef",
+    "/home/taosimin/T28/lef/tphn28hpcpgv18_9lm.lef",
+    "/home/taosimin/T28/lef/ts5n28hpcplvta64x88m2fw_130a.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140mb.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140cghvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140opp.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140cghvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140oppehvt.lef",
+    "/home/taosimin/T28/lef/ts1n28hpcplvtb2048x48m8sw_180a.lef",
+    "/home/taosimin/T28/lef/ts5n28hpcplvta64x92m2fw_130a.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140mblvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140cg.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140opplvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140cg.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140opphvt.lef",
+    "/home/taosimin/T28/lef/ts1n28hpcplvtb512x128m4sw_180a.lef",
+    "/home/taosimin/T28/lef/ts5n28hpcplvta64x96m2fw_130a.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140opphvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140hvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140oppuhvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140cguhvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140opp.lef",
+    "/home/taosimin/T28/lef/ts1n28hpcplvtb512x64m4sw_180a.lef",
+    "/home/taosimin/T28/lef/ts6n28hpcplvta2048x32m8sw_130a.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140opp.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140oppulvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140ehvt.lef",
+    "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140opplvt.lef",
+    "/home/taosimin/T28/lef/ts1n28hpcplvtb8192x64m8sw_180a.lef" };
 
-  pnp_object.run();
+  std::string def_path = "/home/taosimin/ir_example/aes/aes.def";
 
-  // Log::init(argv);
+  pnpApiInst->initializeiPNP("");
+  pnpApiInst->readDeftoiPNP(lef_files, def_path);
 
-  // // for debug
-  // // Log::setVerboseLogLevel("Arnoldi*", 1);
-
-  // // for (int i = 0; i < argc; ++i) {
-  // //   std::cout << "argv[" << i << "] = " << argv[i] << std::endl;
-  // // }
-
-  // std::string hello_info =
-  //     "\033[49;32m***************************\n"
-  //     "  _  _____  _____   ___  \n"
-  //     " (_)/  ___||_   _| / _ \\ \n"
-  //     "  _ \\ `--.   | |  / /_\\ \\\n"
-  //     " | | `--. \\  | |  |  _  |\n"
-  //     " | |/\\__/ /  | |  | | | |\n"
-  //     " |_|\\____/   \\_/  \\_| |_/\n"
-  //     "***************************\n"
-  //     "WELCOME TO iSTA TCL-shell interface. \e[0m";
-
-  // // get an UserShell (singleton) instance
-  // auto shell = ieda::UserShell::getShell();
-
-  // // set call back for register commands
-  // shell->set_init_func(registerCommands);
-
-  // // if no args, run interactively
-  // cxxopts::Options options("iSTA", "iSTA command line help.");
-  // options.add_options()("v,version", "Print Git Version")(
-  //     "h,help", "iSTA command usage.")("script", "Tcl script file",
-  //                                      cxxopts::value<std::string>());
-
-  // try {
-  //   options.parse_positional("script");
-
-  //   auto argv_parse_result = options.parse(argc, argv);
-
-  //   if (argv_parse_result.count("help")) {
-  //     options.custom_help("script [OPTIONS...]");
-  //     std::cout << std::endl;
-  //     std::cout << options.help() << std::endl;
-  //     return 0;
-  //   }
-
-  //   shell->displayHello(hello_info);
-
-  //   if (argv_parse_result.count("version")) {
-  //     std::cout << "\033[49;32mGit Version: " << GIT_VERSION << "\033[0m"
-  //               << std::endl;
-  //   }
-
-  //   if (argc == 1) {
-  //     shell->displayHelp();
-  //     shell->userMain(argc, argv);
-  //   } else if (argc == 2) {
-  //     shell->userMain(argv[1]);
-  //   } else {
-  //     if (argv_parse_result.count("script")) {
-  //       // discard the first arg from main()
-  //       // pass the rest of the args to Tcl interpreter
-  //       auto tcl_argc = argc - 1;
-  //       auto tcl_argv = argv + 1;
-  //       shell->userMain(tcl_argc, tcl_argv);
-  //     }
-  //   }
-  // } catch (const cxxopts::exceptions::exception& e) {
-  //   std::cerr << "Error parsing options: " << e.what() << std::endl;
-  //   return 1;
-  // }
-
-  // Log::end();
+  iPNP* ipnp = pnpApiInst->get_ipnp();
+  ipnp->set_output_def_path("output.def");
+  ipnp->run();
 
   return 0;
 }

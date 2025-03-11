@@ -37,19 +37,28 @@
 namespace ipnp {
 
 NetworkSynthesis::NetworkSynthesis(SysnType sysn_type, GridManager grid_info)
-    : _nework_sys_type(sysn_type), _input_grid_info(grid_info), _synthesized_network(grid_info)
+  : _network_sys_type(sysn_type),
+  _input_grid_info(grid_info),
+  _synthesized_network(grid_info)
 {
+  // initialize the synthesized network
+  _synthesized_network.set_power_layers(_input_grid_info.get_power_layers());
+  _synthesized_network.set_ho_region_num(_input_grid_info.get_ho_region_num());
+  _synthesized_network.set_ver_region_num(_input_grid_info.get_ver_region_num());
+  _synthesized_network.set_core_width(_input_grid_info.get_chip_width());
+  _synthesized_network.set_core_height(_input_grid_info.get_chip_height());
+  _synthesized_network.set_grid_data(_input_grid_info.get_grid_data());
 }
 
 void NetworkSynthesis::synthesizeNetwork()
 {
-  switch (_nework_sys_type) {
+  switch (_network_sys_type) {
     case SysnType::kDefault:
-      randomSys();
+      manualSetTemplates();
       break;
     case SysnType::kOptimizer:
-      _synthesized_network.set_grid_data(_input_grid_info.get_grid_data());
-      _synthesized_network.set_template_data(_input_grid_info.get_template_data());
+      // _synthesized_network.set_grid_data(_input_grid_info.get_grid_data());
+      // _synthesized_network.set_template_data(_input_grid_info.get_template_data());
       break;
     case SysnType::kBest:
       /**
@@ -66,34 +75,38 @@ void NetworkSynthesis::synthesizeNetwork()
   }
 }
 
-void NetworkSynthesis::randomSys()
+void NetworkSynthesis::manualSetTemplates()
 {
-  std::vector<std::vector<PDNRectanGridRegion>> grid_data;
-  std::vector<std::vector<int>> template_data;
-  PDNRectanGridRegion random_grid_region;
+  int layer_count = _input_grid_info.get_layer_count();
+  int ho_region_num = _input_grid_info.get_ho_region_num();
+  int ver_region_num = _input_grid_info.get_ver_region_num();
+  auto power_layers = _input_grid_info.get_power_layers();
 
-  std::srand(std::time(NULL));
-  int ho_region_num = 3 + std::rand() % (9 - 3 + 1);
-  int ver_region_num = 3 + std::rand() % (9 - 3 + 1);
-
-  /**
-   * @todo grid coordinate
-   */
-  // random_grid_region.set_width(_synthesized_network.get_chip_width() / ho_region_num);
-  // random_grid_region.set_height(_synthesized_network.get_chip_height() / ver_region_num);
-  _synthesized_network.set_ho_region_num(ho_region_num);
-  _synthesized_network.set_ver_region_num(ver_region_num);
-
-  for (int i = 0; i < _input_grid_info.get_ho_region_num(); i++) {
-    for (int j = 0; j < _input_grid_info.get_ver_region_num(); j++) {
-      grid_data[i][j] = random_grid_region;
-      std::srand(std::time(NULL));
-      template_data[i][j] = 1 + std::rand() % (_input_grid_info.get_template_libs().size() - 1);
+  auto horizontal_templates = _input_grid_info.get_horizontal_templates();
+  auto vertical_templates = _input_grid_info.get_vertical_templates();
+  
+  // distribute templates to each layer
+  for (int layer_idx = 0; layer_idx < layer_count; ++layer_idx) {
+    int power_layer = power_layers[layer_idx];
+    bool use_horizontal = (layer_idx % 2 == 0);
+    
+    std::cout << "Layer " << power_layer  << " Using "
+              << (use_horizontal ? "horizontal" : "vertical") << " templates" << std::endl;
+    
+    for (int i = 0; i < ho_region_num; ++i) {
+      for (int j = 0; j < ver_region_num; ++j) {
+        if (use_horizontal) {
+          // use horizontal template
+          _synthesized_network.set_single_template(layer_idx, i, j, horizontal_templates[0]);
+        } else {
+          // use vertical template
+          _synthesized_network.set_single_template(layer_idx, i, j, vertical_templates[0]);
+        }
+      }
     }
   }
 
-  _synthesized_network.set_grid_data(grid_data);
-  _synthesized_network.set_template_data(template_data);
+  std::cout << "Manual template setting completed with alternating horizontal and vertical templates." << std::endl;
 }
 
 }  // namespace ipnp

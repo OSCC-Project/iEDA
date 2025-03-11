@@ -17,7 +17,7 @@
 /**
  * @file GridManager.hh
  * @author Xinhao li
- * @brief
+ * @brief Grid manager for PDN
  * @version 0.1
  * @date 2024-07-15
  */
@@ -27,6 +27,9 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <utility>
+#include "SingleTemplate.hh"
+#include "TemplateLib.hh"
 
 namespace ipnp {
 
@@ -36,70 +39,17 @@ enum class GridRegionShape
   kIrregular  // caused by macro block
 };
 
-enum class PowerType
-{
-  kVDD,
-  kVSS,
-};
+// enum class PowerType
+// {
+//   kVDD,
+//   kVSS,
+// };
 
-enum class StripeDirection
-{
-  kHorizontal,
-  kVertical
-};
-
-/**
- * @brief a single layer Template in 3D Template block
- */
-class SingleLayerGrid
-{
- public:
-  SingleLayerGrid(StripeDirection direction = StripeDirection::kHorizontal, PowerType first_stripe_power_type = PowerType::kVDD,
-                  double width = 2.0, double pg_offset = 3.0, double space = 10.0, double offset = 1.0);
-  ~SingleLayerGrid() = default;
-
-  StripeDirection get_direction() { return _direction; }
-  PowerType get_first_stripe_power_type() { return _first_stripe_power_type; }
-  double get_width() { return _width; }
-  double get_pg_offset() { return _pg_offset; }
-  double get_space() { return _space; }
-  double get_offset() { return _offset; }
-
-  void set_direction(StripeDirection direction) { _direction = direction; }
-  void set_first_stripe_power_type(PowerType first_stripe_power_type) { _first_stripe_power_type = first_stripe_power_type; }
-  void set_width(double width) { _width = width; }
-  void set_pg_offset(double pg_offset) { _pg_offset = pg_offset; }
-  void set_space(double space) { _space = space; }
-  void set_offset(double offset) { _offset = offset; }
-
- private:
-  StripeDirection _direction = StripeDirection::kHorizontal;
-  PowerType _first_stripe_power_type = PowerType::kVDD;
-  /**
-   * @attention DRC: width + pg_offset < space
-   */
-  double _width = 2.0;
-  double _pg_offset = 3.0;  // offset between the first power and ground wire
-  double _space = 10.0;     // distance between edges of two VDD wire
-  double _offset = 1.0;     // if direction is horizontal, offset from bottom; if direction is vertical, offset from left.
-};
-
-/**
- * @brief 3D Template block
- */
-class PDNGridTemplate
-{
- public:
-  PDNGridTemplate();
-  ~PDNGridTemplate() = default;
-
-  auto get_layers_occupied() { return _layers_occupied; }
-  auto get_grid_per_layer() { return _grid_per_layer; }
-
- private:
-  std::vector<int> _layers_occupied;  // e.g. {1,2,6,7,8,9}
-  std::map<int, SingleLayerGrid> _grid_per_layer;
-};
+// enum class StripeDirection
+// {
+//   kHorizontal,
+//   kVertical
+// };
 
 /**
  * @brief Bass class. Have derived class representing regions of different shapes.
@@ -147,38 +97,56 @@ class PDNRectanGridRegion : public PDNGridRegion
   double _y_right_top;
 };
 
+/**
+ * @brief Manager for PDN grid
+ */
 class GridManager
 {
  public:
   GridManager();
   ~GridManager() = default;
 
-  int get_ho_region_num() { return _ho_region_num; }
-  int get_ver_region_num() { return _ver_region_num; }
-  double get_chip_width() { return _chip_width; }
-  double get_chip_height() { return _chip_height; }
-  auto get_grid_data() { return _grid_data; }
-  auto get_template_data() { return _template_data; }
-  auto get_template_libs() { return _template_libs; }
+  // Getters
+  const std::vector<int>& get_power_layers() const { return _power_layers; }
+  int get_layer_count() const { return _layer_count; }
+  int get_ho_region_num() const { return _ho_region_num; }
+  int get_ver_region_num() const { return _ver_region_num; }
+  double get_chip_width() const { return _core_width; }
+  double get_chip_height() const { return _core_height; }
+  const auto& get_grid_data() const { return _grid_data; }
+  const auto& get_template_data() const { return _template_data; }
+  const std::vector<SingleTemplate>& get_horizontal_templates() const { return _template_libs.get_horizontal_templates(); }
+  const std::vector<SingleTemplate>& get_vertical_templates() const { return _template_libs.get_vertical_templates(); }
+  const TemplateLib& get_template_libs() const { return _template_libs; }
 
+  // Setters
+  void set_power_layers(std::vector<int> power_layers){
+    _power_layers = power_layers;
+    _layer_count = power_layers.size();
+    initialize_grid_data();
+  }
+  void set_layer_count(int layer_count) { _layer_count = layer_count; }
   void set_ho_region_num(int ho_region_num) { _ho_region_num = ho_region_num; }
   void set_ver_region_num(int ver_region_num) { _ver_region_num = ver_region_num; }
-  void set_chip_width(double chip_width) { _chip_width = chip_width; }
-  void set_chip_height(double chip_height) { _chip_height = chip_height; }
-  void set_grid_data(std::vector<std::vector<PDNRectanGridRegion>> grid_data) { _grid_data = grid_data; }
-  void set_template_data(std::vector<std::vector<int>> template_data) { _template_data = template_data; }
-  void set_template_libs(std::vector<PDNGridTemplate> template_libs) { _template_libs = template_libs; }
+  void set_core_width(double chip_width) { _core_width = chip_width; }
+  void set_core_height(double chip_height) { _core_height = chip_height; }
+  void set_grid_data(std::vector<std::vector<std::vector<PDNRectanGridRegion>>> grid_data) { _grid_data = grid_data; } 
+  void set_single_template(int layer_idx, int row, int col, const SingleTemplate& single_template) { _template_data[layer_idx][row][col] = single_template; }
 
- private:
-  int _ho_region_num;
-  int _ver_region_num;
-  double _chip_width;
-  double _chip_height;
+private:
+  std::vector<int> _power_layers;   // layers that have power nets
+  int _layer_count;     // total number of layers
+  int _ho_region_num;   // number of horizontal regions
+  int _ver_region_num;  // number of vertical regions
+  double _core_width;   // width of the core
+  double _core_height;  // height of the core
 
   std::vector<std::pair<std::string, std::string>> _power_nets;  // only VDD VSS / VDD GND
-  std::vector<std::vector<PDNRectanGridRegion>> _grid_data;      // which GridRegion is on position[][].
-  std::vector<std::vector<int>> _template_data;                  // which GridTemplate is on position[][].
-  std::vector<PDNGridTemplate> _template_libs;                   // Starting from 1
+  std::vector<std::vector<std::vector<PDNRectanGridRegion>>> _grid_data;      // [layer][row][col]
+  std::vector<std::vector<std::vector<SingleTemplate>>> _template_data;       // [layer][row][col]
+  TemplateLib _template_libs;   // Template library manager
+
+  void initialize_grid_data();
 };
 
 }  // namespace ipnp

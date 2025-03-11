@@ -33,15 +33,28 @@ namespace ipnp {
 
 class PndOptimizer;
 
+iPNP::iPNP()
+{
+  // Initialize the input network
+  _input_network = GridManager();
+  _input_network.set_power_layers({ 9,8,7,5 });
+  _input_network.set_ho_region_num(5);
+  _input_network.set_ver_region_num(5);
+  _input_network.set_core_width(_input_core_width);
+  _input_network.set_core_height(_input_core_height);
+}
+
 iPNP::iPNP(const std::string& config_file)
 {
   /**
    * @todo add config
    * @brief need json module
    */
+  
   // _pnp_config = new PNPConfig;
   // JsonParser* json = JsonParser::get_json_parser();
   // json->parse(config_file, _pnp_config);
+
 }
 
 /**
@@ -53,8 +66,14 @@ void iPNP::initSynthesize()
   /**
    * @todo add template_lib infomation to _initialized_network
    */
+
+  // Create network synthesizer
   NetworkSynthesis network_synthesizer(SysnType::kDefault, _input_network);
+
+  // Generate the initial network
   network_synthesizer.synthesizeNetwork();
+
+  // Get the initial network
   _initialized_network = network_synthesizer.get_network();
 
   /**
@@ -79,31 +98,46 @@ void iPNP::readDef(std::vector<std::string> lef_files, std::string def_path)
   db_builder->buildLef(lef_files);
   db_builder->buildDef(def_path);
 
-  _idb_wrapper.set_idb_design(db_builder->get_def_service()->get_design());
+  auto* idb_design = db_builder->get_def_service()->get_design();
+
+  _idb_wrapper.set_idb_design(idb_design);
 }
 
 void iPNP::getIdbDesignInfo()
 {
-  _input_die_width = _idb_wrapper.get_input_die_width();
-  _input_die_height = _idb_wrapper.get_input_die_height();
+  _input_core_width = _idb_wrapper.get_input_core_width();
+  _input_core_height = _idb_wrapper.get_input_core_height();
 
-  for (int i = 0; i < _idb_wrapper.get_input_macro_nums(); i++) {
-    std::pair<int32_t, int32_t> l_coordinate(_idb_wrapper.get_input_macro_lx(), _idb_wrapper.get_input_macro_ly());
-    std::pair<int32_t, int32_t> h_coordinate(_idb_wrapper.get_input_macro_hx(), _idb_wrapper.get_input_macro_hy());
-    std::pair<std::pair<int32_t, int32_t>, std::pair<int32_t, int32_t>> macro_coordinate(l_coordinate, h_coordinate);
-    _input_macro_coordinate.push_back(macro_coordinate);
-  }
+  // for (int i = 0; i < _idb_wrapper.get_input_macro_nums(); i++) {
+  //   std::pair<int32_t, int32_t> l_coordinate(_idb_wrapper.get_input_macro_lx(), _idb_wrapper.get_input_macro_ly());
+  //   std::pair<int32_t, int32_t> h_coordinate(_idb_wrapper.get_input_macro_hx(), _idb_wrapper.get_input_macro_hy());
+  //   std::pair<std::pair<int32_t, int32_t>, std::pair<int32_t, int32_t>> macro_coordinate(l_coordinate, h_coordinate);
+  //   _input_macro_coordinate.push_back(macro_coordinate);
+  // }
 }
 
 void iPNP::run()
 {
+  
   if (_idb_wrapper.get_idb_design()) {
+    
+    // Get the idb design information
     getIdbDesignInfo();
+    
+    // Initialize the network
     initSynthesize();
+
+    // Optimize the network
     optimize();
+
+    // Save the network to idb
     saveToIdb();
-    // writeIdbToDef("def_path");
-  } else {
+
+    // Write the network to def
+    writeIdbToDef(_output_def_path);
+    
+  }
+  else {
     std::cout << "Warning: idb design is empty!" << std::endl;
   }
 }

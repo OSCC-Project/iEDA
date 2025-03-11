@@ -70,98 +70,132 @@ idb::IdbSpecialNet* PowerRouter::createNet(GridManager pnp_network, ipnp::PowerT
   wire->set_wire_state(idb::IdbWiringStatement::kRouted);
 
   auto grid_data = pnp_network.get_grid_data();
-  auto template_libs = pnp_network.get_template_libs();
+  // auto template_libs = pnp_network.get_template_libs();
   auto template_data = pnp_network.get_template_data();
+  auto power_layers = pnp_network.get_power_layers();
 
   // @param x_base, y_base: base_coordinates. Should be updated after traversing each region.
   // @brief global coordinates = base_coordinates + coordinates within the region.
   double x_base = 0;
   double y_base = 0;
-  for (int i = 0; i < pnp_network.get_ho_region_num(); i++) {
-    for (int j = 0; j < pnp_network.get_ver_region_num(); j++) {
-      PDNGridTemplate grid_template = template_libs[template_data[i][j]];
-      std::vector<int> layers_occupied = grid_template.get_layers_occupied();
-      auto grid_per_layer = grid_template.get_grid_per_layer();
-      for (int k = 0; k < layers_occupied.size(); k++) {
-        idb::IdbSpecialWireSegment* segment = new idb::IdbSpecialWireSegment();
-        SingleLayerGrid single_layer_grid = grid_per_layer[layers_occupied[k]];
-        double stripe_width = single_layer_grid.get_width();
-        double stripe_space = single_layer_grid.get_space();
-        double offset = single_layer_grid.get_offset();
-        double pg_offset = single_layer_grid.get_pg_offset();
-        ipnp::PowerType first_stripe_power_type = single_layer_grid.get_first_stripe_power_type();
 
-        int is_first_contrary_stripe_type;  // is True if the first stripe in the region is of the opposite type of the net_type.
+  for (int layer_idx = 0;layer_idx < pnp_network.get_layer_count();layer_idx++) {
+    for (int i = 0; i < pnp_network.get_ho_region_num(); i++) {
+      for (int j = 0; j < pnp_network.get_ver_region_num(); j++) {
+    
+        SingleTemplate& single_template = template_data[layer_idx][i][j];
+
+        idb::IdbSpecialWireSegment* segment = new idb::IdbSpecialWireSegment();
+
+        // Get the parameters of the template.
+        double stripe_width = single_template.get_width();
+        double stripe_space = single_template.get_space();
+        double offset = single_template.get_offset();
+        double pg_offset = single_template.get_pg_offset();
+        ipnp::PowerType first_stripe_power_type = single_template.get_first_stripe_power_type();
+
+        // is True if the first stripe in the region is of the opposite type of the net_type.
+        int is_first_contrary_stripe_type;
         if (net_name == "VDD") {
           is_first_contrary_stripe_type = first_stripe_power_type == PowerType::kVSS ? 1 : 0;
-        } else {  // net_name == VSS
+        }
+        else {  // net_name == VSS
           is_first_contrary_stripe_type = first_stripe_power_type == PowerType::kVDD ? 1 : 0;
         }
 
         int count = 0;
-        // @param current_segment_outermost: the outermost position that can be reached by the current segment's edge when traversing each
-        // segment.
+        /**
+         * @brief The outermost position that can be reached by the current segment's edge when traversing each segment.
+         */
         double current_segment_outermost
-            = offset + (count + 1) * stripe_width + count * stripe_space + is_first_contrary_stripe_type * (pg_offset + stripe_width);
+          = offset + (count + 1) * stripe_width + count * stripe_space
+          + is_first_contrary_stripe_type * (pg_offset + stripe_width);
+
         // Convert single_layer_grid to segment
-        if (single_layer_grid.get_direction() == StripeDirection::kHorizontal) {
+        if (single_template.get_direction() == StripeDirection::kHorizontal) {
           // Termination conditions: the (count+1)'th wire segment cannot be fully placed in the region.
-          while (current_segment_outermost < y_base + grid_data[i][j].get_height()) {
+          while (current_segment_outermost < y_base + grid_data[layer_idx][i][j].get_height()) {
+            // Create a new routing layer
             idb::IdbLayer* layer = new idb::IdbLayer();
-            layer->set_name("M" + std::to_string(layers_occupied[k]));
+
+            // Set the layer name and type  
+            layer->set_name("M" + std::to_string(power_layers[layer_idx]));
             layer->set_type(idb::IdbLayerType::kLayerRouting);
+
+            // Set the segment parameters
             segment->set_layer(layer);
-            segment->set_route_width((int) stripe_width);
+            segment->set_route_width((int)stripe_width);
             segment->set_shape_type(idb::IdbWireShapeType::kStripe);
 
+            // Set the segment coordinates
             double stripe_x1 = x_base;
             double stripe_y1 = y_base + current_segment_outermost - 0.5 * stripe_width;
-            double stripe_x2 = x_base + grid_data[i][j].get_width();
+            double stripe_x2 = x_base + grid_data[layer_idx][i][j].get_width();
             double stripe_y2 = stripe_y1;
-            segment->add_point((int) stripe_x1, (int) stripe_y1);
-            segment->add_point((int) stripe_x2, (int) stripe_y2);
 
+            // Add the segment points
+            segment->add_point((int)stripe_x1, (int)stripe_y1);
+            segment->add_point((int)stripe_x2, (int)stripe_y2);
+
+            // Add the segment to the wire
             wire->add_segment(segment);
 
+            // Calculate the outermost position of the next segment
             count++;
             current_segment_outermost
-                = offset + (count + 1) * stripe_width + count * stripe_space + is_first_contrary_stripe_type * (pg_offset + stripe_width);
+              = offset + (count + 1) * stripe_width + count * stripe_space + is_first_contrary_stripe_type * (pg_offset + stripe_width);
           }
-        } else {  // direction is vertical
+        }
+        else {  // direction is vertical
           // Termination conditions: the (count+1)'th wire segment cannot be fully placed in the region.
-          while (current_segment_outermost < x_base + grid_data[i][j].get_width()) {
+          while (current_segment_outermost < x_base + grid_data[layer_idx][i][j].get_width()) {
+            // Create a new routing layer
             idb::IdbLayer* layer = new idb::IdbLayer();
-            layer->set_name("M" + std::to_string(layers_occupied[k]));
+
+            // Set the layer name and type
+            layer->set_name("M" + std::to_string(power_layers[layer_idx]));
             layer->set_type(idb::IdbLayerType::kLayerRouting);
+
+            // Set the segment parameters
             segment->set_layer(layer);
-            segment->set_route_width((int) stripe_width);
+            segment->set_route_width((int)stripe_width);
             segment->set_shape_type(idb::IdbWireShapeType::kStripe);
 
+            // Set the segment coordinates
             double stripe_x1 = x_base + current_segment_outermost - 0.5 * stripe_width;
             double stripe_y1 = y_base;
             double stripe_x2 = stripe_x1;
-            double stripe_y2 = y_base + grid_data[i][j].get_height();
-            segment->add_point((int) stripe_x1, (int) stripe_y1);
-            segment->add_point((int) stripe_x2, (int) stripe_y2);
+            double stripe_y2 = y_base + grid_data[layer_idx][i][j].get_height();
 
+            // Add the segment points
+            segment->add_point((int)stripe_x1, (int)stripe_y1);
+            segment->add_point((int)stripe_x2, (int)stripe_y2);
+
+            // Add the segment to the wire
             wire->add_segment(segment);
 
+            // Calculate the outermost position of the next segment
             count++;
             current_segment_outermost
-                = offset + (count + 1) * stripe_width + count * stripe_space + is_first_contrary_stripe_type * (pg_offset + stripe_width);
+              = offset + (count + 1) * stripe_width + count * stripe_space + is_first_contrary_stripe_type * (pg_offset + stripe_width);
           }
         }
+
+        x_base += grid_data[layer_idx][i][j].get_width();
       }
-      x_base += grid_data[i][j].get_width();
+      x_base = 0;
+      y_base += grid_data[layer_idx][i][0].get_height();
     }
     x_base = 0;
-    y_base += grid_data[i][0].get_height();
+    y_base += grid_data[layer_idx][0][0].get_height();
   }
   // End: convert pnp_network to wire
 
+  // Add the wire to the wire list
   wire_list->add_wire(wire, idb::IdbWiringStatement::kRouted);
   // End: convert pnp_network to wire_list
 
+  // Add the wire list to the power net
   power_net->set_wire_list(wire_list);
   // End: convert pnp_network to power_net
 

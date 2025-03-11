@@ -63,25 +63,24 @@ class iPNPIdbWrapper
   iPNPIdbWrapper() = default;
   ~iPNPIdbWrapper() = default;
 
-  // get die and macro infomation from iDB
+  // get die infomation from iDB
   int32_t get_input_die_llx() { return _idb_design->get_layout()->get_die()->get_llx(); }  // The smallest x-coordinate of the die rectangle
   int32_t get_input_die_lly() { return _idb_design->get_layout()->get_die()->get_lly(); }  // The smallest y-coordinate of the die rectangle
   int32_t get_input_die_urx() { return _idb_design->get_layout()->get_die()->get_urx(); }  // The largest x-coordinate of the die rectangle
   int32_t get_input_die_ury() { return _idb_design->get_layout()->get_die()->get_ury(); }  // The largest y-coordinate of the die rectangle
-  int32_t get_input_die_width() { return std::abs(get_input_die_urx() - get_input_die_llx()); }
-  int32_t get_input_die_height() { return std::abs(get_input_die_ury() - get_input_die_lly()); }
-  uint64_t get_input_die_area() { return (uint64_t) get_input_die_width() * (uint64_t) get_input_die_height(); }
+  int32_t get_input_die_width() { return _idb_design->get_layout()->get_die()->get_width(); }
+  int32_t get_input_die_height() { return _idb_design->get_layout()->get_die()->get_height(); }
+  uint64_t get_input_die_area() { return _idb_design->get_layout()->get_die()->get_area(); }
 
-  // Question: there is only one IdbCore in IdbLayout?
-  int get_input_macro_nums() { return 1; }  // todo
-  int32_t get_input_macro_lx() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_low_x(); }
-  int32_t get_input_macro_ly() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_low_y(); }
-  int32_t get_input_macro_hx() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_high_x(); }
-  int32_t get_input_macro_hy() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_high_y(); }
-  int32_t get_input_macro_width() { return std::abs(get_input_macro_hx() - get_input_macro_lx()); }
-  int32_t get_input_macro_height() { return std::abs(get_input_macro_hy() - get_input_macro_ly()); }
-  uint64_t get_input_macro_area() { return (uint64_t) get_input_macro_width() * (uint64_t) get_input_macro_height(); }
-
+  // get core infomation from iDB
+  int32_t get_input_core_lx() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_low_x(); }
+  int32_t get_input_core_ly() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_low_y(); }
+  int32_t get_input_core_hx() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_high_x(); }
+  int32_t get_input_core_hy() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_high_y(); }
+  int32_t get_input_core_width() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_width(); }
+  int32_t get_input_core_height() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_height(); }
+  uint64_t get_input_core_area() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_area(); }
+  
   auto* get_idb_design() { return _idb_design; }
   void set_idb_design(idb::IdbDesign* idb_design) { _idb_design = idb_design; }
 

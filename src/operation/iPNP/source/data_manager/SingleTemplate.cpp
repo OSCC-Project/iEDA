@@ -15,21 +15,27 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file iPNPApi.cpp
- * @author Xinhao li
- * @brief
+ * @file SingleTemplate.cpp
+ * @author Jianrong Su
+ * @brief Implementation of SingleTemplate class
  * @version 0.1
- * @date 2024-07-15
+ * @date 2025-03-11
  */
 
-#include "iPNPApi.hh"
+#include "SingleTemplate.hh"
 
 namespace ipnp {
 
-iPNPApi* iPNPApi::_instance = nullptr;
-
-iPNPApi::iPNPApi(const std::string& config_file_path) : _config_file_path(config_file_path)
+SingleTemplate::SingleTemplate(StripeDirection direction, PowerType first_stripe_power_type, 
+                               double width, double pg_offset, double space, double offset)
+    : _direction(direction),
+      _first_stripe_power_type(first_stripe_power_type),
+      _width(width),
+      _pg_offset(pg_offset),
+      _space(space),
+      _offset(offset)
 {
+    // Constructor implementation
 }
 
-}  // namespace ipnp
+}  // namespace ipnp 

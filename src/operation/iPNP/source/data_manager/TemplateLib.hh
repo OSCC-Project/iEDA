@@ -24,34 +24,44 @@
 
 #pragma once
 
-#include "GridManager.hh"
+#include <vector>
+#include "SingleTemplate.hh"
 
 namespace ipnp {
 
+/**
+ * @brief Library for PDN templates
+ */
 class TemplateLib
 {
  public:
   TemplateLib() = default;
   ~TemplateLib() = default;
 
-  auto gen_pdn_template(double width, double space, StripeDirection direction)
-  {
-    /**
-     * @todo generate pdn template according to GenPdnTemplate.py
-     * @brief _curr_template = xxx
-     */
-  }
+  /**
+   * @brief Generate a single template
+   * 
+   * @param direction Direction of the template stripes
+   * @param width Width of the stripes
+   * @param pg_offset Offset between power and ground wires
+   * @param space Distance between edges of two VDD wires
+   * @param offset Offset from bottom (horizontal) or left (vertical)
+   * @return SingleTemplate The generated template
+   */
+  SingleTemplate gen_single_template(StripeDirection direction,
+    double width,
+    double pg_offset,
+    double space,
+    double offset);
 
-  auto gen_template_libs()
-  {
-    /**
-     * @todo _curr_template --> _template_libs
-     */
-  }
+  void gen_template_libs();
+
+  const std::vector<SingleTemplate>& get_horizontal_templates() const { return _horizontal_templates; }  
+  const std::vector<SingleTemplate>& get_vertical_templates() const { return _vertical_templates; }
 
  private:
-  PDNGridTemplate _curr_template;
-  std::vector<PDNGridTemplate> _template_libs;
+  std::vector<SingleTemplate> _horizontal_templates;  // Template library for horizontal direction
+  std::vector<SingleTemplate> _vertical_templates;    // Template library for vertical direction
 };
 
 }  // namespace ipnp

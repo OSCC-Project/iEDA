@@ -63,7 +63,7 @@ class PNPConfig;
 class iPNP
 {
  public:
-  iPNP() = default;
+  iPNP();
   iPNP(const std::string& config_file);
   ~iPNP() = default;
 
@@ -82,17 +82,22 @@ class iPNP
 
   void run();  // According to the config. e.g. which Evaluator, which opt algorithm.
 
+  // Set the output DEF file path
+  void set_output_def_path(const std::string& path) { _output_def_path = path; }
+
  private:
   PNPConfig* _pnp_config = nullptr;
   GridManager _input_network;
   GridManager _initialized_network;
   GridManager _current_opt_network;
 
-  int32_t _input_die_width;
-  int32_t _input_die_height;
+  int32_t _input_core_width;
+  int32_t _input_core_height;
+  
   std::vector<std::pair<std::pair<int32_t, int32_t>, std::pair<int32_t, int32_t>>> _input_macro_coordinate;
 
-  iPNPIdbWrapper _idb_wrapper;
+  iPNPIdbWrapper _idb_wrapper;  
+  std::string _output_def_path;  
 };
 
 }  // namespace ipnp

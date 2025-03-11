@@ -26,28 +26,6 @@
 
 namespace ipnp {
 
-SingleLayerGrid::SingleLayerGrid(StripeDirection direction, PowerType first_stripe_power_type, double width, double pg_offset, double space,
-                                 double offset)
-    : _direction(direction),
-      _first_stripe_power_type(first_stripe_power_type),
-      _width(width),
-      _pg_offset(pg_offset),
-      _space(space),
-      _offset(offset)
-{
-}
-
-/**
- * @brief Randomly initialize Templates when construct object.
- */
-PDNGridTemplate::PDNGridTemplate() : _layers_occupied({1, 2, 6, 7, 8, 9})
-{
-  for (int layer : _layers_occupied) {
-    SingleLayerGrid layer_grid = SingleLayerGrid();
-    _grid_per_layer.insert({layer, layer_grid});
-  }
-}
-
 PDNGridRegion::PDNGridRegion() : _shape(GridRegionShape::kRectangle)
 {
 }
@@ -60,18 +38,47 @@ PDNRectanGridRegion::PDNRectanGridRegion() : _x_left_bottom(10.0), _y_left_botto
  * @brief Randomly initialize the number of region.
  * @attention chip width and height should be passed in from iDB.
  */
-GridManager::GridManager() : _ho_region_num(9), _ver_region_num(9), _chip_width(100.0), _chip_height(100.0)
+GridManager::GridManager()
+  : _power_layers({ 5,7,8,9 }),
+  _layer_count(_power_layers.size()),
+  _ho_region_num(5),
+  _ver_region_num(5),
+  _core_width(100.0),
+  _core_height(100.0)
 {
-  PDNRectanGridRegion pdn_rectan_grid_region = PDNRectanGridRegion();
-  std::vector<std::vector<PDNRectanGridRegion>> grid_data(9, std::vector<PDNRectanGridRegion>(9, pdn_rectan_grid_region));
-  _grid_data = grid_data;
+  _template_libs.gen_template_libs();
+  initialize_grid_data();
+}
 
-  std::vector<std::vector<int>> template_data(9, std::vector<int>(9, 1));
-  _template_data = template_data;
+void GridManager::initialize_grid_data()
+{
+  // Initialize 3D grid data
+  _grid_data.resize(_layer_count);
+  for (int i = 0; i < _layer_count; ++i) {
+    _grid_data[i].resize(_ho_region_num);
+    for (int row = 0; row < _ho_region_num; ++row) {
+      _grid_data[i][row].resize(_ver_region_num);
+      for (int col = 0; col < _ver_region_num; ++col) {
+        PDNRectanGridRegion& region = _grid_data[i][row][col];
+        // Set default coordinates for each region
+        double x_left = col * (_core_width / _ver_region_num);
+        double y_bottom = row * (_core_height / _ho_region_num);
+        region.set_x_left_bottom(x_left);
+        region.set_y_left_bottom(y_bottom);
+        region.set_x_right_top(x_left + _core_width / _ver_region_num);
+        region.set_y_right_top(y_bottom + _core_height / _ho_region_num);
+      }
+    }
+  }
 
-  PDNGridTemplate pdn_grid_template;
-  std::vector<PDNGridTemplate> template_libs(3, pdn_grid_template);
-  _template_libs = template_libs;
+  // Initialize 3D template data
+  _template_data.resize(_layer_count);
+  for (int i = 0; i < _layer_count; ++i) {
+    _template_data[i].resize(_ho_region_num);
+    for (int row = 0; row < _ho_region_num; ++row) {
+      _template_data[i][row].resize(_ver_region_num, SingleTemplate());
+    }
+  }
 }
 
 }  // namespace ipnp

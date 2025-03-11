@@ -1,5 +1,7 @@
 add_library(data_manager
     GridManager.cpp
+    SingleTemplate.cpp
+    TemplateLib.cpp
     iPNPIdbWrapper.cpp
 )
 

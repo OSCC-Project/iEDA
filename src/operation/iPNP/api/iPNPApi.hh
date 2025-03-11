@@ -28,7 +28,7 @@
 
 #include "iPNP.hh"
 
-#define pnpApiInst ipdn::PdnApi::getInstance()
+#define pnpApiInst ipnp::iPNPApi::getInstance()
 namespace ipnp {
 
 class iPNPApi
@@ -54,15 +54,17 @@ class iPNPApi
     }
   }
 
-  void initializeiPNP(std::string config_file) { ipnp = new iPNP(config_file); }
-  void readDeftoiPNP(std::vector<std::string> lef_files, std::string def_path) { ipnp->readDef(lef_files, def_path); }
-  void setIdbtoiPNP(idb::IdbDesign* idb_design) { ipnp->setIdb(idb_design); }
+  void initializeiPNP(std::string config_file) { _ipnp = new iPNP(config_file); }
+  void readDeftoiPNP(std::vector<std::string> lef_files, std::string def_path) { _ipnp->readDef(lef_files, def_path); }
+  void setIdbtoiPNP(idb::IdbDesign* idb_design) { _ipnp->setIdb(idb_design); }
 
-  void runiPNP() { ipnp->run(); }
+  auto* get_ipnp() { return _ipnp; }
+
+  void runiPNP() { _ipnp->run(); }
 
  private:
   std::string _config_file_path;
-  iPNP* ipnp;
+  iPNP* _ipnp;
   static iPNPApi* _instance;
 };
 
