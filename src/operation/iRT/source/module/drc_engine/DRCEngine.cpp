@@ -100,6 +100,9 @@ void DRCEngine::init()
 
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
 {
+#ifdef CCLOUD_WORKAROUND
+  return {}; // 云平台暂时取消drc
+#endif
   getViolationListByInterface(de_task);
   // getViolationListBySelf(de_task);
 
@@ -393,6 +396,8 @@ void DRCEngine::readTask(DETask& de_task)
 {
   int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
   std::map<std::string, int32_t>& routing_layer_name_to_idx_map = RTDM.getDatabase().get_routing_layer_name_to_idx_map();
+  std::map<std::string, int32_t>& cut_layer_name_to_idx_map = RTDM.getDatabase().get_cut_layer_name_to_idx_map();
+  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
 
   std::string& top_name = de_task.get_top_name();
   std::string& finished_file_path = de_task.get_finished_file_path();
@@ -450,7 +455,14 @@ void DRCEngine::readTask(DETask& de_task)
                                  static_cast<int32_t>(std::round(std::stod(ll_y_string) * micron_dbu)));
       ext_layer_rect.set_real_ur(static_cast<int32_t>(std::round(std::stod(ur_x_string) * micron_dbu)),
                                  static_cast<int32_t>(std::round(std::stod(ur_y_string) * micron_dbu)));
-      ext_layer_rect.set_layer_idx(routing_layer_name_to_idx_map[layer_name]);
+      if (RTUTIL.exist(routing_layer_name_to_idx_map, layer_name)) {
+        ext_layer_rect.set_layer_idx(routing_layer_name_to_idx_map[layer_name]);
+      } else if (RTUTIL.exist(cut_layer_name_to_idx_map, layer_name)) {
+        std::vector<int32_t> routing_layer_idx_list = cut_to_adjacent_routing_map[cut_layer_name_to_idx_map[layer_name]];
+        ext_layer_rect.set_layer_idx(std::min(routing_layer_idx_list.front(), routing_layer_idx_list.back()));
+      } else {
+        RTLOG.error(Loc::current(), "Unknow layer! '", layer_name, "'");
+      }
       std::set<int32_t> violation_net_set;
       for (const std::string& net_name : net_name_set) {
         if (net_name == "net_blockage") {

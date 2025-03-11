@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use super::c_str_to_r_str;
-use super::{RustIRPGNode, RustIRPGEdge, RustIRPGNetlist};
+use super::RustIRPGNetlist;
 
 /// RC node of the spef network.
 pub struct RCNode {
@@ -132,6 +132,9 @@ impl RCData {
     pub fn get_one_net_data(&self, name: &str) -> &RCOneNetData {
         self.rc_nets_data.get(name).unwrap()
     }
+    pub fn is_contain_net_data(&self, name: &str) -> bool {
+        self.rc_nets_data.contains_key(name)
+    }
 }
 
 pub fn split_spef_index_str(index_name: &str) -> (&str, &str) {
@@ -156,7 +159,7 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
     let mut rc_data = RCData::default();
 
     let spef_index_to_string = |index_str: &str| {
-        let split_names = split_spef_index_str(&index_str);
+        let split_names = split_spef_index_str(index_str);
         let index = split_names.0.parse::<usize>().unwrap();
         let node_name = node_name_map.get(&index);
         if !split_names.1.is_empty() {
@@ -172,7 +175,7 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
     for spef_net in spef_data_nets {
         // println!("{:?}", spef_net);
         let spef_net_name = &spef_net.name;
-        let net_name_str = spef_index_to_string(&spef_net_name);
+        let net_name_str = spef_index_to_string(spef_net_name);
         log::info!("build net {} rc data", net_name_str);
         let mut one_net_data = RCOneNetData::new(net_name_str);
 
@@ -261,16 +264,29 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
     rc_data
 }
 
-/// build estimate rc data, rc node from pg node, rc edge from pg edge.
-pub fn estimate_rc_data_from_topo(pg_netlist: &RustIRPGNetlist) -> RCOneNetData {
+/// build rc data, rc node from pg node, rc edge from pg edge.
+pub fn create_rc_data_from_topo(pg_netlist: &RustIRPGNetlist) -> RCOneNetData {
     let net_name = c_str_to_r_str(pg_netlist.net_name);
     let mut one_net_data = RCOneNetData::new(net_name.clone());
 
     for pg_node in pg_netlist.nodes.iter() {
         let node_id = pg_node.node_id;
-        let node_name = format!("{}:{}", net_name, node_id);
-        let rc_node = RCNode::new(node_name);
-        one_net_data.add_node(rc_node);
+        if pg_node.is_instance_pin || pg_node.is_bump {
+            let node_name = c_str_to_r_str(pg_node.node_name);
+            let mut rc_node = RCNode::new(node_name);
+
+            if pg_node.is_bump {
+                rc_node.set_is_bump();
+            } else{
+                rc_node.set_is_inst_pin();
+            }
+            
+            one_net_data.add_node(rc_node);
+        } else {
+            let node_name = format!("{}:{}", net_name, node_id);
+            let rc_node = RCNode::new(node_name);
+            one_net_data.add_node(rc_node);
+        }
     }
 
     for pg_edge in pg_netlist.edges.iter() {
@@ -279,6 +295,7 @@ pub fn estimate_rc_data_from_topo(pg_netlist: &RustIRPGNetlist) -> RCOneNetData 
         let mut rc_resistance = RCResistance::default();
         rc_resistance.from_node_id = node1_id;
         rc_resistance.to_node_id = node2_id;
+        rc_resistance.resistance = pg_edge.resistance;
         one_net_data.add_resistance(rc_resistance);
     }
 
@@ -303,7 +320,6 @@ pub fn build_conductance_matrix(rc_one_net_data: &RCOneNetData) -> TriMatI<f64, 
         }
     }
 
-    //TODO(to taosimin) process the bump node.
     for rc_resistance in resistances {
         let node1_id = rc_resistance.from_node_id;
         let node2_id = rc_resistance.to_node_id;

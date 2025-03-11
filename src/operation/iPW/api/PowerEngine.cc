@@ -468,4 +468,82 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMapWithGPU(
 }
 #endif
 
+/**
+ * @brief build pg net wire topology.
+ * 
+ * @return unsigned 
+ */
+unsigned PowerEngine::buildPGNetWireTopo() {
+  LOG_INFO << "build pg net wire start";
+
+  auto* idb_adapter =
+      dynamic_cast<ista::TimingIDBAdapter*>(_timing_engine->get_db_adapter());
+  auto* idb_builder = idb_adapter->get_idb();
+  auto* special_net_list =
+      idb_builder->get_def_service()->get_design()->get_special_net_list();
+  // buid pg netlist
+  for (auto* power_net : special_net_list->get_net_list()) {
+    auto* idb_design = idb_builder->get_def_service()->get_design();
+    auto dbu = idb_design->get_units()->get_micron_dbu();
+    auto power_net_name = power_net->get_net_name();
+
+    std::function<double(unsigned, unsigned)> calc_resistance =
+        [idb_adapter, dbu](unsigned layer_id, unsigned distance_dbu) -> double {
+      std::optional<double> width = std::nullopt;
+      double wire_length = double(distance_dbu) / dbu;
+      return idb_adapter->getResistance(layer_id, wire_length, width);
+    };
+
+    auto* io_pins = idb_design->get_io_pin_list();
+    auto* power_io_pin = io_pins->find_pin(power_net_name);
+    if (!power_io_pin) {
+      continue;
+    }
+
+    _pg_netlist_builder.build(power_net, power_io_pin, calc_resistance);
+  }
+
+  _pg_netlist_builder.createRustPGNetlist();
+  _pg_netlist_builder.createRustRCData();
+
+  auto* rc_data = _pg_netlist_builder.get_rust_rc_data();
+
+  _ipower->set_rust_pg_rc_data(rc_data);
+
+  LOG_INFO << "build pg net wire end";
+
+  return 1;
+}
+
+/**
+ * @brief function to display ir drop map.
+ * 
+ * @return std::map<Instance::Coordinate, double> 
+ */
+std::map<Instance::Coordinate, double> PowerEngine::displayIRDropMap() {
+  LOG_INFO << "display IR Drop map start";
+
+  std::map<Instance::Coordinate, double> coord_to_ir_drop_map;
+
+  auto& instance_to_ir_drop = getInstanceIRDrop();
+  auto sta_netlist = _timing_engine->get_netlist();
+
+  for (auto& [instance_pin_name, inst_ir_drop] : instance_to_ir_drop) {
+    auto instance_name = Str::split(instance_pin_name.c_str(), ":").front();
+
+    auto* sta_inst = sta_netlist->findInstance(instance_name.c_str());
+    if (!sta_inst) {
+      continue;
+    }
+
+    auto coord = sta_inst->get_coordinate().value();
+
+    coord_to_ir_drop_map[coord] = inst_ir_drop;
+  }
+
+  LOG_INFO << "display IR Drop map end";
+
+  return coord_to_ir_drop_map;
+}
+
 }  // namespace ipower

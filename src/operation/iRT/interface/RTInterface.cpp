@@ -630,8 +630,8 @@ void RTInterface::wrapObstacleList()
   std::vector<idb::IdbSpecialNet*>& idb_special_net_list = dmInst->get_idb_def_service()->get_design()->get_special_net_list()->get_net_list();
   std::vector<idb::IdbPin*>& idb_io_pin_list = dmInst->get_idb_def_service()->get_design()->get_io_pin_list()->get_pin_list();
 
-  int32_t total_routing_obstacle_num = 0;
-  int32_t total_cut_obstacle_num = 0;
+  size_t total_routing_obstacle_num = 0;
+  size_t total_cut_obstacle_num = 0;
   {
     // instance
     for (idb::IdbInstance* instance : instance_list) {
@@ -1775,10 +1775,10 @@ std::vector<Segment<PlanarCoord>> RTInterface::getPlanarTopoList(std::vector<Pla
 {
   std::vector<Segment<PlanarCoord>> planar_topo_list;
   if (planar_coord_list.size() > 1) {
-    size_t point_num = planar_coord_list.size();
+    int32_t point_num = static_cast<int32_t>(planar_coord_list.size());
     Flute::DTYPE* x_list = (Flute::DTYPE*) malloc(sizeof(Flute::DTYPE) * (point_num));
     Flute::DTYPE* y_list = (Flute::DTYPE*) malloc(sizeof(Flute::DTYPE) * (point_num));
-    for (size_t i = 0; i < point_num; i++) {
+    for (int32_t i = 0; i < point_num; i++) {
       x_list[i] = planar_coord_list[i].get_x();
       y_list[i] = planar_coord_list[i].get_y();
     }

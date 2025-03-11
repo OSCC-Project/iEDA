@@ -32,6 +32,7 @@ typedef struct HashMapIterator {
 typedef struct RustIRPGEdge {
     int64_t node1;
     int64_t node2;
+    double resistance;
 } RustIRPGEdge;
 
 /**
@@ -80,9 +81,9 @@ const void *create_pg_edge(const void *c_pg_netlist, const struct RustIRPGEdge *
 const void *create_pg_netlist(const char *c_power_net_name);
 
 /**
- * estimate resistance capacitance data.
+ * estimate all pg netlist rc data.
  */
-const void *estimate_rc_data(const void *c_pg_netlist);
+const void *create_rc_data(const void *c_pg_netlist_ptr, uintptr_t len);
 
 struct RustNetConductanceData build_one_net_conductance_matrix_data(const void *c_rc_data,
                                                                     const char *c_net_name);
