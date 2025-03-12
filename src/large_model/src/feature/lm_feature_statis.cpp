@@ -259,10 +259,21 @@ void LmFeatureStatis::feature_patch()
     patch.RUDY_congestion = rudy_congestion_map[patch_id];
     patch.EGR_congestion = egr_congestion_map[patch_id];
 
-    // timing, power, ir drop map
-    patch.timing_map = cell_timing_map[patch_id];
-    patch.power_map = cell_power_map[patch_id];
-    patch.ir_drop_map = cell_ir_map[patch_id];
+    // // timing, power, ir drop map
+    auto cell_timing_map_find = cell_timing_map.find(patch_id);
+    if (cell_timing_map_find != cell_timing_map.end()) {
+      patch.timing_map = cell_timing_map_find->second;
+    }
+
+    auto cell_power_map_find = cell_power_map.find(patch_id);
+    if (cell_power_map_find != cell_power_map.end()) {
+      patch.power_map = cell_power_map[patch_id];
+    }
+
+    auto cell_ir_map_find = cell_ir_map.find(patch_id);
+    if (cell_ir_map_find != cell_ir_map.end()) {
+      patch.ir_drop_map = cell_ir_map[patch_id];
+    }
 
     for (auto& [layer_id, patch_layer] : patch.get_layer_map()) {
       patch_layer.wire_width = layout_layers.findLayoutLayer(layer_id)->get_wire_width();
