@@ -1944,8 +1944,8 @@ void RTInterface::routeTAPanel(TAPanel& ta_panel)
       }
       MTree<LayerCoord> coord_tree = RTUTIL.getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
       for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
-        ta_panel.get_net_task_result_map()[ta_task->get_net_idx()][task_idx].emplace_back(coord_segment.get_first()->value(),
-                                                                                          coord_segment.get_second()->value());
+        ta_panel.get_net_task_detailed_result_map()[ta_task->get_net_idx()][task_idx].emplace_back(coord_segment.get_first()->value(),
+                                                                                                   coord_segment.get_second()->value());
       }
     }
   }

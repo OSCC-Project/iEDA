@@ -1584,6 +1584,25 @@ class Utility
     }
   }
 
+  static LayerCoord getFirstEqualCoord(std::vector<LayerCoord> a_list, std::vector<LayerCoord> b_list)
+  {
+    std::sort(a_list.begin(), a_list.end(), CmpLayerCoordByXASC());
+    a_list.erase(std::unique(a_list.begin(), a_list.end()), a_list.end());
+    std::sort(b_list.begin(), b_list.end(), CmpLayerCoordByXASC());
+    b_list.erase(std::unique(b_list.begin(), b_list.end()), b_list.end());
+    for (size_t i = 0, j = 0; i < a_list.size() && j < b_list.size();) {
+      if (a_list[i] == b_list[j]) {
+        return a_list[i];
+        break;
+      } else if (CmpLayerCoordByXASC()(a_list[i], b_list[j])) {
+        i++;
+      } else {
+        j++;
+      }
+    }
+    return LayerCoord(-1, -1, -1);
+  }
+
 #endif
 
 #if 1  // irt数据结构工具函数
