@@ -135,7 +135,7 @@ class Power {
   // for IR analysis.
   unsigned readPGSpef(const char* spef_file);
 
-  std::map<std::string, double>& getInstanceIRDrop() {
+  auto& getInstanceIRDrop() {
     return _ir_analysis.get_instance_to_ir_drop();
   }
   
