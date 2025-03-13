@@ -516,6 +516,31 @@ unsigned PowerEngine::buildPGNetWireTopo() {
 }
 
 /**
+ * @brief get instance ir drop map.
+ * 
+ * @return std::map<Instance*, double> 
+ */
+std::map<Instance*, double> PowerEngine::getInstanceIRDrop() {
+  std::map<Instance*, double> instance_to_ir_drop;
+
+  auto& instance_pin_to_ir_drop = _ipower->getInstanceIRDrop();
+  auto sta_netlist = _timing_engine->get_netlist();
+
+  for (auto& [instance_pin_name, inst_ir_drop] : instance_pin_to_ir_drop) {
+    auto instance_name = Str::split(instance_pin_name.c_str(), ":").front();
+
+    auto* sta_inst = sta_netlist->findInstance(instance_name.c_str());
+    if (!sta_inst) {
+      continue;
+    }
+
+    instance_to_ir_drop[sta_inst] = inst_ir_drop;
+  }
+  
+  return instance_to_ir_drop;
+}
+
+/**
  * @brief function to display ir drop map.
  * 
  * @return std::map<Instance::Coordinate, double> 
@@ -525,16 +550,10 @@ std::map<Instance::Coordinate, double> PowerEngine::displayIRDropMap() {
 
   std::map<Instance::Coordinate, double> coord_to_ir_drop_map;
 
-  auto& instance_to_ir_drop = getInstanceIRDrop();
+  auto instance_to_ir_drop = getInstanceIRDrop();
   auto sta_netlist = _timing_engine->get_netlist();
 
-  for (auto& [instance_pin_name, inst_ir_drop] : instance_to_ir_drop) {
-    auto instance_name = Str::split(instance_pin_name.c_str(), ":").front();
-
-    auto* sta_inst = sta_netlist->findInstance(instance_name.c_str());
-    if (!sta_inst) {
-      continue;
-    }
+  for (auto& [sta_inst, inst_ir_drop] : instance_to_ir_drop) {
 
     auto coord = sta_inst->get_coordinate().value();
 
