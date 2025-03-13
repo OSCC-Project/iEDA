@@ -286,6 +286,9 @@ bool LmLayoutFileIO::saveJsonPatchs()
       json_patch["macro_margin"] = patch.macro_margin;
       json_patch["RUDY_congestion"] = patch.RUDY_congestion;
       json_patch["EGR_congestion"] = patch.EGR_congestion;
+      json_patch["timing"] = patch.timing_map;
+      json_patch["power"] = patch.power_map;
+      json_patch["IR_drop"] = patch.ir_drop_map;
 
       json json_sub_nets = json::array();
       std::unordered_map<int, json> unique_json_sub_nets; 
@@ -301,6 +304,7 @@ bool LmLayoutFileIO::saveJsonPatchs()
         json_layer_feature["wire_width"] = patch_layer.wire_width;
         json_layer_feature["wire_len"] = patch_layer.wire_len;
         json_layer_feature["wire_density"] = (patch_layer.wire_width * patch_layer.wire_len) / static_cast<double>(area);
+        json_layer_feature["congestion"] = patch_layer.congestion;
 
         json_layer["feature"] = json_layer_feature;
         }

@@ -244,7 +244,10 @@ void LmFeatureStatis::feature_patch()
   LOG_INFO << "finish rudy_congestion_map, runtime: " << stats.elapsedRunTime();
 
   std::map<int, double> egr_congestion_map = CONGESTION_API_INST->patchEGRCongestion(patch_xy_map);
-  LOG_INFO << "finish egr_congestion_map, runtime: " << stats.elapsedRunTime();  
+  LOG_INFO << "finish egr_congestion_map, runtime: " << stats.elapsedRunTime();
+
+  std::map<int, std::map<std::string, double>> layer_congestion_map = CONGESTION_API_INST->patchLayerEGRCongestion(patch_xy_map);
+  LOG_INFO << "finish layer_egr_congestion_map, runtime: " << stats.elapsedRunTime();  
 
   #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < (int) patchs.size(); ++i) {
@@ -268,6 +271,9 @@ void LmFeatureStatis::feature_patch()
 
     for (auto& [layer_id, patch_layer] : patch.get_layer_map()) {
       patch_layer.wire_width = layout_layers.findLayoutLayer(layer_id)->get_wire_width();
+      // 获取每一层对应patch的拥塞值
+      std::string layer_name = layout_layers.findLayoutLayer(layer_id)->get_layer_name();
+      patch_layer.congestion = layer_congestion_map[patch_id][layer_name];
 
       for (auto& [net_id, lm_net] : patch_layer.get_sub_nets()) {
         for (auto& wire : lm_net.get_wires()) {

@@ -60,6 +60,7 @@ class LmPatchLayer
   int wire_width = 0;
   int wire_len = 0;
   double wire_density = 0.0;
+  double congestion = 0.0;
 
  private:
   std::map<int, LmNet> _sub_nets;  /// int : net id

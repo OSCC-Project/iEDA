@@ -97,11 +97,12 @@ class CongestionEval
   std::string getDefaultOutputDir();
   void setEGRDirPath(std::string egr_dir_path);
 
-  std::map<std::string, std::vector<std::vector<int>>> getEGRMap(std::string congestion_dir);
-  std::map<std::string, std::vector<std::vector<int>>> getDemandSupplyDiffMap(std::string congestion_dir = "");
+  std::map<std::string, std::vector<std::vector<int>>> getEGRMap(bool is_run_egr = true);
+  std::map<std::string, std::vector<std::vector<int>>> getDemandSupplyDiffMap(bool is_run_egr = true);
   std::map<int, double> patchRUDYCongestion(CongestionNets nets, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
   std::map<int, double> patchEGRCongestion(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
-
+  std::map<int, std::map<std::string, double>> patchLayerEGRCongestion(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
+ 
  private:
   static CongestionEval* _congestion_eval;
 

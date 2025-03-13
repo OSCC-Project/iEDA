@@ -1045,20 +1045,19 @@ void CongestionEval::setEGRDirPath(std::string egr_dir_path)
   EVAL_INIT_EGR_INST->setEGRDirPath(egr_dir_path);
 }
 
-std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getEGRMap(std::string congestion_dir)
+std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getEGRMap(bool is_run_egr)
 {
-  if (congestion_dir == "") {
-    congestion_dir = dmInst->get_config().get_output_path() + "/rt/rt_temp_directory/early_router";
-  }
+  std::string congestion_dir = dmInst->get_config().get_output_path() + "/rt/rt_temp_directory/early_router";
+  
   printf("congestion_dir: %s\n", congestion_dir.c_str());
   // check if congestion_dir is empty
-  // if (std::filesystem::is_empty(congestion_dir)) {
-  std::filesystem::path cong_dir_path(congestion_dir);
-  std::filesystem::path parent_dir_path = cong_dir_path.parent_path();
+  // if (is_run_egr == true) {
+    std::filesystem::path cong_dir_path(congestion_dir);
+    std::filesystem::path parent_dir_path = cong_dir_path.parent_path();
 
-  setEGRDirPath(parent_dir_path.string());
-  initEGR();
-  destroyEGR();
+    setEGRDirPath(parent_dir_path.string());
+    initEGR();
+    destroyEGR();
   // }
 
   std::map<std::string, std::vector<std::vector<int>>> egr_map;
@@ -1093,16 +1092,16 @@ std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getEGRMap(s
   return egr_map;
 }
 
-std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getDemandSupplyDiffMap(std::string congestion_dir)
+std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getDemandSupplyDiffMap(bool is_run_egr)
 {
     // 如果未指定目录，使用默认路径
-    if (congestion_dir == "") {
-        congestion_dir = dmInst->get_config().get_output_path() + "/rt/rt_temp_directory";
-    }
+    std::string congestion_dir = dmInst->get_config().get_output_path() + "/rt/rt_temp_directory";
 
-    setEGRDirPath(congestion_dir);
-    initEGR();
-    destroyEGR();
+    if (is_run_egr == true){
+      setEGRDirPath(congestion_dir);
+      initEGR();
+      destroyEGR();
+    }
     
     // 构造early_router和supply_analyzer的完整路径
     std::string demand_dir = congestion_dir + "/early_router";
@@ -1349,6 +1348,68 @@ std::map<int, double> CongestionEval::patchEGRCongestion(std::map<int, std::pair
 
   return patch_egr_congestion;
 }
+
+std::map<int, std::map<std::string, double>> CongestionEval::patchLayerEGRCongestion(
+    std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+    // 返回结构: patch_id -> {layer_name -> congestion_value}
+    std::map<int, std::map<std::string, double>> patch_layer_congestion;
+    
+    // 获取各层拥塞数据
+    auto congestion_layer_map = getDemandSupplyDiffMap(false);
+    if (congestion_layer_map.empty()) {
+        return patch_layer_congestion;
+    }
+    
+    // 动态获取矩阵尺寸（取第一个有效层的尺寸）
+    const auto& first_matrix = congestion_layer_map.begin()->second;
+    const size_t matrix_rows = first_matrix.size();
+    const size_t matrix_cols = matrix_rows > 0 ? first_matrix[0].size() : 0;
+
+    if (matrix_rows == 0 || matrix_cols == 0) {
+        std::cerr << "Error: Empty congestion matrix" << std::endl;
+        return patch_layer_congestion;
+    }
+
+    // 获取物理坐标范围
+    int max_phy_x = 0, max_phy_y = 0;
+    for (const auto& [id, coords] : patch_coords) {
+        max_phy_x = std::max(max_phy_x, coords.second.first);  // 物理坐标最大值X
+        max_phy_y = std::max(max_phy_y, coords.second.second); // 物理坐标最大值Y
+    }
+
+    // 为每个patch的每一层建立映射关系
+    for (const auto& [patch_id, coords] : patch_coords) {
+        const auto& [left_bottom, right_top] = coords;
+        const auto& [phy_x1, phy_y1] = left_bottom;
+        const auto& [phy_x2, phy_y2] = right_top;
+
+        // 计算中心点坐标（物理坐标）
+        const double center_phy_x = (phy_x1 + phy_x2) / 2.0;
+        const double center_phy_y = (phy_y1 + phy_y2) / 2.0;
+
+        // 映射到矩阵行列索引
+        const int matrix_row = std::clamp(
+            static_cast<int>((center_phy_y / max_phy_y) * (matrix_rows - 1)),
+            0, static_cast<int>(matrix_rows - 1));
+            
+        const int matrix_col = std::clamp(
+            static_cast<int>((center_phy_x / max_phy_x) * (matrix_cols - 1)),
+            0, static_cast<int>(matrix_cols - 1));
+
+        // 为每一层存储拥塞值
+        std::map<std::string, double> layer_congestion;
+        for (const auto& [layer_name, congestion_matrix] : congestion_layer_map) {
+            layer_congestion[layer_name] = congestion_matrix[matrix_row][matrix_col];
+        }
+        
+        patch_layer_congestion[patch_id] = layer_congestion;
+    }
+
+    return patch_layer_congestion;
+}
+
+
 
 std::vector<NetMetadata> CongestionEval::precomputeNetData(const CongestionNets& nets)
 {
