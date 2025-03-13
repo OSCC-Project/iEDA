@@ -54,6 +54,55 @@ void DRCEngine::init()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
 
+  RTI.initIDRC();
+  buildIgnoredViolationSet();
+
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
+{
+#ifdef CCLOUD_WORKAROUND
+  return {};  // 云平台暂时取消drc
+#endif
+  getViolationListByInterface(de_task);
+  // getViolationListBySelf(de_task);
+
+  filterViolationList(de_task);
+  if (de_task.get_proc_type() == DEProcType::kGet) {
+    buildViolationList(de_task);
+  }
+  return de_task.get_violation_list();
+}
+
+void DRCEngine::addTempIgnoredViolation(std::vector<Violation>& violation_list)
+{
+  for (Violation& violation : violation_list) {
+    _temp_ignored_violation_set.insert(violation);
+  }
+}
+
+void DRCEngine::clearTempIgnoredViolationSet()
+{
+  _temp_ignored_violation_set.clear();
+}
+
+void DRCEngine::destroy()
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  RTI.destroyIDRC();
+
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+// private
+
+DRCEngine* DRCEngine::_de_instance = nullptr;
+
+void DRCEngine::buildIgnoredViolationSet()
+{
   Die& die = RTDM.getDatabase().get_die();
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
 
@@ -94,40 +143,7 @@ void DRCEngine::init()
   for (Violation violation : getViolationList(de_task)) {
     _ignored_violation_set.insert(violation);
   }
-
-  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
-
-std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
-{
-#ifdef CCLOUD_WORKAROUND
-  return {};  // 云平台暂时取消drc
-#endif
-  getViolationListByInterface(de_task);
-  // getViolationListBySelf(de_task);
-
-  filterViolationList(de_task);
-  if (de_task.get_proc_type() == DEProcType::kGet) {
-    buildViolationList(de_task);
-  }
-  return de_task.get_violation_list();
-}
-
-void DRCEngine::addTempIgnoredViolation(std::vector<Violation>& violation_list)
-{
-  for (Violation& violation : violation_list) {
-    _temp_ignored_violation_set.insert(violation);
-  }
-}
-
-void DRCEngine::clearTempIgnoredViolationSet()
-{
-  _temp_ignored_violation_set.clear();
-}
-
-// private
-
-DRCEngine* DRCEngine::_de_instance = nullptr;
 
 void DRCEngine::getViolationListBySelf(DETask& de_task)
 {

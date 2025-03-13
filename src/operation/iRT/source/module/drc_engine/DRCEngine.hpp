@@ -35,7 +35,13 @@ class DRCEngine
   // function
   void init();
   std::vector<Violation> getViolationList(DETask& de_task);
+  void addTempIgnoredViolation(std::vector<Violation>& violation_list);
+  void clearTempIgnoredViolationSet();
+  void destroy();
 
+  ///////////////////////////////
+  ///////////////////////////////
+  ////////////temp///////////////
   std::vector<Violation> getViolationListByTemp(DETask& de_task)
   {
     getViolationListBySelf(de_task);
@@ -46,9 +52,9 @@ class DRCEngine
     }
     return de_task.get_violation_list();
   }
-
-  void addTempIgnoredViolation(std::vector<Violation>& violation_list);
-  void clearTempIgnoredViolationSet();
+  ////////////temp///////////////
+  ///////////////////////////////
+  ///////////////////////////////
 
  private:
   // self
@@ -63,6 +69,7 @@ class DRCEngine
   DRCEngine& operator=(const DRCEngine& other) = delete;
   DRCEngine& operator=(DRCEngine&& other) = delete;
   // function
+  void buildIgnoredViolationSet();
   void getViolationListBySelf(DETask& de_task);
   void buildTask(DETask& de_task);
   void writeTask(DETask& de_task);

@@ -12,7 +12,7 @@ add_library(idm
     idm_design_blockage.cpp
     idm_layout.cpp
     idm_save.cpp
-    idm_pa.cpp
+    # idm_pa.cpp
     idm_transform.cpp
     config/dm_config.cpp
     config/dm_cts_config.cpp
@@ -23,7 +23,7 @@ target_link_libraries(idm
     PUBLIC
     flow 
     file_manager_cts 
-    file_manager_drc 
+    # file_manager_drc 
     file_manager_placement 
     tool_manager 
     tool_api_ista 

@@ -17,6 +17,7 @@
 #include "RTInterface.hpp"
 
 #include "DRCEngine.hpp"
+#include "DRCInterface.hpp"
 #include "DetailedRouter.hpp"
 #include "EarlyRouter.hpp"
 #include "GDSPlotter.hpp"
@@ -37,7 +38,6 @@
 #include "feature_manager.h"
 #include "flute3/flute.h"
 #include "idm.h"
-#include "idrc_api.h"
 #include "tool_api/ista_io/ista_io.h"
 
 namespace irt {
@@ -87,7 +87,6 @@ void RTInterface::initRT(std::map<std::string, std::any> config_map)
   RTDM.input(config_map);
   DRCEngine::initInst();
   GDSPlotter::initInst();
-  initFlute();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -97,6 +96,7 @@ void RTInterface::runEGR()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
 
+  initFlute();
   RTGP.init();
 
   SupplyAnalyzer::initInst();
@@ -107,6 +107,9 @@ void RTInterface::runEGR()
   RTER.route();
   EarlyRouter::destroyInst();
 
+  destroyFlute();
+  RTGP.destroy();
+
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -115,6 +118,7 @@ void RTInterface::runRT()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
 
+  initFlute();
   RTGP.init();
   RTDE.init();
 
@@ -150,6 +154,10 @@ void RTInterface::runRT()
   RTVR.repair();
   ViolationRepairer::destroyInst();
 
+  RTGP.destroy();
+  RTDE.destroy();
+  destroyFlute();
+
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -158,7 +166,6 @@ void RTInterface::destroyRT()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
 
-  destroyFlute();
   GDSPlotter::destroyInst();
   DRCEngine::destroyInst();
   RTDM.output();
@@ -1379,6 +1386,16 @@ idb::IdbRegularWireSegment* RTInterface::getIDBVia(int32_t net_idx, Segment<Laye
 
 #if 1  // iDRC
 
+void RTInterface::initIDRC()
+{
+  DRCI.initDRC();
+}
+
+void RTInterface::destroyIDRC()
+{
+  DRCI.destroyDRC();
+}
+
 std::vector<Violation> RTInterface::getViolationList(std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
                                                      std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
                                                      std::map<int32_t, std::vector<Segment<LayerCoord>*>>& net_result_map,
@@ -1436,93 +1453,26 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerSh
   std::map<std::string, int32_t>& cut_layer_name_to_idx_map = RTDM.getDatabase().get_cut_layer_name_to_idx_map();
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
 
-  idrc::DrcApi drc_api;
-  drc_api.init();
-
   std::vector<Violation> violation_list;
-  for (auto& [idrc_violation_type, idrc_violation_list] : drc_api.check(env_shape_list, net_pin_shape_map, net_result_map)) {
-    ViolationType violation_type;
-    {
-      switch (idrc_violation_type) {
-        case idrc::ViolationEnumType::kArea:
-          violation_type = ViolationType::kMinimumArea;
-          break;
-        case idrc::ViolationEnumType::kAreaEnclosed:
-          violation_type = ViolationType::kMinimumArea;
-          break;
-        case idrc::ViolationEnumType::kShort:
-          violation_type = ViolationType::kMetalShort;
-          break;
-        case idrc::ViolationEnumType::kDefaultSpacing:
-          violation_type = ViolationType::kParallelRunLengthSpacing;
-          break;
-        case idrc::ViolationEnumType::kPRLSpacing:
-          violation_type = ViolationType::kParallelRunLengthSpacing;
-          break;
-        case idrc::ViolationEnumType::kJogToJog:
-          violation_type = ViolationType::kJogToJogSpacing;
-          break;
-        case idrc::ViolationEnumType::kEOL:
-          violation_type = ViolationType::kEndOfLineSpacing;
-          break;
-        case idrc::ViolationEnumType::kWidth:
-          violation_type = ViolationType::kMinimumWidth;
-          break;
-        case idrc::ViolationEnumType::kMinStep:
-          violation_type = ViolationType::kMinStep;
-          break;
-        case idrc::ViolationEnumType::kNotch:
-          violation_type = ViolationType::kNotchSpacing;
-          break;
-        case idrc::ViolationEnumType::kCornerFill:
-          violation_type = ViolationType::kCornerFillSpacing;
-          break;
-        case idrc::ViolationEnumType::kCutShort:
-          violation_type = ViolationType::kCutShort;
-          break;
-        case idrc::ViolationEnumType::kCutSpacing:
-          violation_type = ViolationType::kSameLayerCutSpacing;
-          break;
-        default:
-          RTLOG.warn(Loc::current(), "Unknow rule!");
-          violation_type = ViolationType::kNone;
-          break;
-      }
+  for (ids::Violation ids_violation : DRCI.getViolationList(env_shape_list, net_pin_shape_map, net_result_map)) {
+    EXTLayerRect ext_layer_rect;
+    ext_layer_rect.set_real_ll(ids_violation.ll_x, ids_violation.ll_y);
+    ext_layer_rect.set_real_ur(ids_violation.ur_x, ids_violation.ur_y);
+    if (RTUTIL.exist(routing_layer_name_to_idx_map, ids_violation.layer_name)) {
+      ext_layer_rect.set_layer_idx(routing_layer_name_to_idx_map[ids_violation.layer_name]);
+    } else if (RTUTIL.exist(cut_layer_name_to_idx_map, ids_violation.layer_name)) {
+      std::vector<int32_t> routing_layer_idx_list = cut_to_adjacent_routing_map[cut_layer_name_to_idx_map[ids_violation.layer_name]];
+      ext_layer_rect.set_layer_idx(std::min(routing_layer_idx_list.front(), routing_layer_idx_list.back()));
+    } else {
+      RTLOG.error(Loc::current(), "Unknow layer! '", ids_violation.layer_name, "'");
     }
-    for (idrc::DrcViolation* idrc_violation : idrc_violation_list) {
-      EXTLayerRect ext_layer_rect;
-      {
-        if (idrc_violation->is_rect()) {
-          idrc::DrcViolationRect* idrc_violation_rect = static_cast<idrc::DrcViolationRect*>(idrc_violation);
-          ext_layer_rect.set_real_ll(idrc_violation_rect->get_llx(), idrc_violation_rect->get_lly());
-          ext_layer_rect.set_real_ur(idrc_violation_rect->get_urx(), idrc_violation_rect->get_ury());
-        } else {
-          RTLOG.error(Loc::current(), "Not supported!");
-        }
-        if (idrc_violation->get_layer()->is_routing()) {
-          ext_layer_rect.set_layer_idx(routing_layer_name_to_idx_map[idrc_violation->get_layer()->get_name()]);
-        } else if (idrc_violation->get_layer()->is_cut()) {
-          std::vector<int32_t> routing_layer_idx_list = cut_to_adjacent_routing_map[cut_layer_name_to_idx_map[idrc_violation->get_layer()->get_name()]];
-          ext_layer_rect.set_layer_idx(std::min(routing_layer_idx_list.front(), routing_layer_idx_list.back()));
-        } else {
-          RTLOG.error(Loc::current(), "Not supported!");
-        }
-      }
-      std::set<int32_t> violation_net_set;
-      {
-        violation_net_set = idrc_violation->get_net_ids();
-        if (violation_net_set.size() > 2) {
-          RTLOG.error(Loc::current(), "The violation_net_set size > 2!");
-        }
-      }
-      Violation violation;
-      violation.set_violation_type(violation_type);
-      violation.set_violation_shape(ext_layer_rect);
-      violation.set_is_routing(true);
-      violation.set_violation_net_set(violation_net_set);
-      violation.set_required_size(0);
-      violation_list.push_back(violation);
-    }
+    Violation violation;
+    violation.set_violation_type(GetViolationTypeByName()(ids_violation.violation_type));
+    violation.set_violation_shape(ext_layer_rect);
+    violation.set_is_routing(true);
+    violation.set_violation_net_set(ids_violation.violation_net_set);
+    violation.set_required_size(ids_violation.required_size);
+    violation_list.push_back(violation);
   }
   return violation_list;
 }

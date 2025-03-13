@@ -22,6 +22,8 @@
 #include <string>
 #include <vector>
 
+#include "../../../database/interaction/ids.hpp"
+
 #if 1  // 前向声明
 
 namespace idb {
@@ -51,6 +53,10 @@ class TAPanel;
 class DRBox;
 class PlanarCoord;
 }  // namespace irt
+
+namespace idrc {
+class Violation;
+}  // namespace idrc
 
 namespace ieda_feature {
 class RTSummary;
@@ -129,6 +135,8 @@ class RTInterface
 #endif
 
 #if 1  // iDRC
+  void initIDRC();
+  void destroyIDRC();
   std::vector<Violation> getViolationList(std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
                                           std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
                                           std::map<int32_t, std::vector<Segment<LayerCoord>*>>& net_result_map,
