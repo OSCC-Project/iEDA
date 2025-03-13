@@ -1319,7 +1319,7 @@ std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<
   // hard code std cell power net is VDD
   std::string power_net_name = "VDD";
   PW_INST->runIRAnalysis(power_net_name);
-  auto& instance_to_ir_drop = PW_INST->getInstanceIRDrop();
+  auto instance_to_ir_drop = PW_INST->getInstanceIRDrop();
 
   auto* sta_netlist = STA_INST->get_netlist();
   auto* idb_adapter = STA_INST->getIDBAdapter();
@@ -1333,14 +1333,7 @@ std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<
     const int patch_ux = u_range.first;
     const int patch_uy = u_range.second;
 
-    for (auto& [instance_pin_name, inst_ir_drop] : instance_to_ir_drop) {
-      auto instance_name = Str::split(instance_pin_name.c_str(), ':').front();
-
-      auto* sta_inst = sta_netlist->findInstance(instance_name.c_str());
-      if (!sta_inst) {
-        continue;
-      }
-
+    for (auto& [sta_inst, inst_ir_drop] : instance_to_ir_drop) {
       auto coord = sta_inst->get_coordinate().value();
       auto inst_x = to_dbu(coord.first);
       auto inst_y = to_dbu(coord.second);
@@ -1351,6 +1344,7 @@ std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<
           patch_ir_drop_map[patch_id] += std::max(patch_ir_drop_map[patch_id], inst_ir_drop);
           ;
         }
+        LOG_INFO_EVERY_N(1000) << "patch : " << patch_id << " ir drop " << patch_ir_drop_map[patch_id];
       }
     }
   }
