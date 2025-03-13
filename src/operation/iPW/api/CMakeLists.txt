@@ -29,5 +29,6 @@ if(USE_GPU)
 endif()
 
 target_include_directories(
-  power PUBLIC ${PROJECT_SOURCE_DIR}/src/operation/iPW/source/module
+  power PUBLIC ${PROJECT_SOURCE_DIR}/src/operation
+               ${PROJECT_SOURCE_DIR}/src/operation/iPW/source/module
                ${HOME_OPERATION}/iSTA)
