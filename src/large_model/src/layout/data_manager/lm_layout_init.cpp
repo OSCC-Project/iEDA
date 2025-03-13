@@ -645,13 +645,39 @@ void LmLayoutInit::initNets()
     _layout->add_net_map(net_id, idb_net->get_net_name());
 
     auto* lm_net = graph.addNet(net_id);
+    if (lm_net == nullptr) {
+      continue;
+    }
 
-    for (auto* idb_inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
-      if (lm_net == nullptr) {
-        continue;
-      }
+    auto* driver_pin = idb_net->get_driving_pin();
+    {
+      auto instance_name = driver_pin->is_io_pin() ? "" : driver_pin->get_instance()->get_name();
+
+      LmPin lm_pin;
+      lm_pin.pin_id = pin_id;
+      lm_pin.pin_name = driver_pin->get_pin_name();
+      lm_pin.instance_name = instance_name;
+      lm_pin.is_driver = true;
+      lm_net->addPin(pin_id, lm_pin);
+
       lm_net->addPinId(pin_id);
-      _layout->add_pin_map(pin_id, idb_inst_pin->get_instance()->get_name(), idb_inst_pin->get_pin_name());
+      _layout->add_pin_map(pin_id, instance_name, driver_pin->get_pin_name());
+
+      pin_id++;
+    }
+
+    for (auto* load_pin : idb_net->get_load_pins()) {
+      auto instance_name = load_pin->is_io_pin() ? "" : load_pin->get_instance()->get_name();
+
+      LmPin lm_pin;
+      lm_pin.pin_id = pin_id;
+      lm_pin.pin_name = load_pin->get_pin_name();
+      lm_pin.instance_name = instance_name;
+      lm_pin.is_driver = false;
+      lm_net->addPin(pin_id, lm_pin);
+
+      lm_net->addPinId(pin_id);
+      _layout->add_pin_map(pin_id, instance_name, load_pin->get_pin_name());
 
       pin_id++;
     }

@@ -113,6 +113,14 @@ class LmNetWire
   std::map<int, std::set<int>> _patchs;
 };
 
+struct LmPin
+{
+  int pin_id = -1;
+  std::string pin_name = "";
+  std::string instance_name = "";
+  bool is_driver = false;
+};
+
 class LmNet
 {
  public:
@@ -124,7 +132,7 @@ class LmNet
   std::vector<LmNetWire>& get_wires() { return _wires; }
   std::vector<int>& get_pin_ids() { return _pin_ids; }
   LmNetFeature* get_feature(bool b_create = false);
-
+  std::map<int, LmPin>& get_pin_list() { return _pin_list; }
   // setter
   void set_net_id(int net_id) { _net_id = net_id; }
 
@@ -132,12 +140,14 @@ class LmNet
   void addWire(LmNetWire wire);
   void clearWire() { _wires.clear(); }
   void addPinId(int id) { _pin_ids.push_back(id); }
+  void addPin(int id, LmPin pin) { _pin_list.insert(std::make_pair(id, pin)); }
   LmNetWire* findWire(int64_t wire_id);
 
  private:
   int _net_id = -1;
   std::vector<LmNetWire> _wires;
   std::vector<int> _pin_ids;
+  std::map<int, LmPin> _pin_list;
   LmNetFeature* _feature = nullptr;
 };
 

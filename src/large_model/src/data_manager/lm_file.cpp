@@ -117,26 +117,17 @@ bool LmLayoutFileIO::saveJsonNets()
       /// pins
       {
         json json_pins = json::array();
-        int pin_num = 0;
-        if (idb_net->has_io_pins()) {
-          for (auto io_pin : idb_net->get_io_pins()->get_pin_list()) {
-            json json_pin;
-            json_pin["id"] = _layout->findPinId("", io_pin->get_pin_name());
-            json_pin["i"] = "";
-            json_pin["p"] = io_pin->get_pin_name();
-            json_pins.push_back(json_pin);
-            pin_num++;
-          }
-        }
-        for (auto inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
+
+        for (auto& [pin_id, lm_pin] : lm_net.get_pin_list()) {
           json json_pin;
-          json_pin["id"] = _layout->findPinId(inst_pin->get_instance()->get_name(), inst_pin->get_pin_name());
-          json_pin["i"] = inst_pin->get_instance()->get_name();
-          json_pin["p"] = inst_pin->get_pin_name();
+          json_pin["id"] = pin_id;
+          json_pin["i"] = lm_pin.instance_name;
+          json_pin["p"] = lm_pin.pin_name;
+          json_pin["driver"] = lm_pin.is_driver ? 1 : 0;  /// 1 : driver, 0 : load
           json_pins.push_back(json_pin);
-          pin_num++;
         }
-        json_net["pin_num"] = pin_num;
+
+        json_net["pin_num"] = lm_net.get_pin_list().size();
         json_net["pins"] = json_pins;
       }
 
