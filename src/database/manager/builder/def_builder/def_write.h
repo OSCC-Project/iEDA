@@ -79,6 +79,8 @@ class DefWrite
 
   // writer
   int32_t write_version();
+  int32_t write_divider_char();
+  int32_t write_busbit_char();
   int32_t write_design();
   int32_t write_units();
   int32_t write_die();

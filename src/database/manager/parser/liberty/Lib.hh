@@ -819,6 +819,9 @@ class LibArc : public LibObject
   void set_owner_cell(LibCell* ower_cell) { _owner_cell = ower_cell; }
   LibCell* get_owner_cell() { return _owner_cell; }
 
+  void set_is_disable_arc() { _is_disable_arc = 1;}
+  unsigned isDisableArc() { return _is_disable_arc; }
+
   unsigned isCheckArc();
   unsigned isDelayArc();
   unsigned isMpwArc();
@@ -883,6 +886,8 @@ class LibArc : public LibObject
   std::unique_ptr<LibTableModel> _table_model;  //!< The arc timing model.
 
   static BTreeMap<std::string, TimingType> _str_to_type;
+
+  unsigned _is_disable_arc = 0; //!< Forbidden arc.
 
   FORBIDDEN_COPY(LibArc);
 };

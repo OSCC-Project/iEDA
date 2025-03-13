@@ -55,23 +55,23 @@ fn process_port_or_wire_declaration(
     match pair.as_rule() {
         Rule::input_declaration => {
             let dcl_type = verilog_data::DclType::KInput;
-            let verilog_dcls = process_inner_port_declaration(pair, dcl_type);
-            verilog_dcls
+            
+            process_inner_port_declaration(pair, dcl_type)
         }
         Rule::output_declaration => {
             let dcl_type = verilog_data::DclType::KOutput;
-            let verilog_dcls = process_inner_port_declaration(pair, dcl_type);
-            verilog_dcls
+            
+            process_inner_port_declaration(pair, dcl_type)
         }
         Rule::inout_declaration => {
             let dcl_type = verilog_data::DclType::KInout;
-            let verilog_dcls = process_inner_port_declaration(pair, dcl_type);
-            verilog_dcls
+            
+            process_inner_port_declaration(pair, dcl_type)
         }
         Rule::wire_declaration => {
             let dcl_type = verilog_data::DclType::KWire;
-            let verilog_dcls = process_inner_wire_declaration(pair, dcl_type);
-            verilog_dcls
+            
+            process_inner_wire_declaration(pair, dcl_type)
         }
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
@@ -100,7 +100,7 @@ fn process_inner_port_declaration(
             for port_pair in port_list_pair.unwrap().into_inner() {
                 let port_line_no = port_pair.line_col().0;
                 let dcl_name = port_pair.as_str().to_string();
-                let verilog_dcl = verilog_data::VerilogDcl::new(port_line_no, dcl_type.clone(), &dcl_name, range);
+                let verilog_dcl = verilog_data::VerilogDcl::new(port_line_no, dcl_type, &dcl_name, range);
                 verilog_dcl_vec.push(Box::new(verilog_dcl.clone()));
             }
             let verilog_dcls = verilog_data::VerilogDcls::new(line_no, verilog_dcl_vec);
@@ -113,7 +113,7 @@ fn process_inner_port_declaration(
             for port_pair in port_list_pair.unwrap().into_inner() {
                 let port_line_no = port_pair.line_col().0;
                 let dcl_name = port_pair.as_str().to_string();
-                let verilog_dcl = verilog_data::VerilogDcl::new(port_line_no, dcl_type.clone(), &dcl_name, range);
+                let verilog_dcl = verilog_data::VerilogDcl::new(port_line_no, dcl_type, &dcl_name, range);
                 verilog_dcl_vec.push(Box::new(verilog_dcl.clone()));
             }
             let verilog_dcls = verilog_data::VerilogDcls::new(line_no, verilog_dcl_vec);
@@ -145,7 +145,7 @@ fn process_inner_wire_declaration(
             for wire_pair in wire_list_pair.unwrap().into_inner() {
                 let wire_line_no = wire_pair.line_col().0;
                 let dcl_name = wire_pair.as_str().to_string();
-                let verilog_dcl = verilog_data::VerilogDcl::new(wire_line_no, dcl_type.clone(), &dcl_name, range);
+                let verilog_dcl = verilog_data::VerilogDcl::new(wire_line_no, dcl_type, &dcl_name, range);
                 verilog_dcl_vec.push(Box::new(verilog_dcl.clone()));
             }
             let verilog_dcls = verilog_data::VerilogDcls::new(line_no, verilog_dcl_vec);
@@ -158,7 +158,7 @@ fn process_inner_wire_declaration(
             for wire_pair in wire_list_pair.unwrap().into_inner() {
                 let wire_line_no = wire_pair.line_col().0;
                 let dcl_name = wire_pair.as_str().to_string();
-                let verilog_dcl = verilog_data::VerilogDcl::new(wire_line_no, dcl_type.clone(), &dcl_name, range);
+                let verilog_dcl = verilog_data::VerilogDcl::new(wire_line_no, dcl_type, &dcl_name, range);
                 verilog_dcl_vec.push(Box::new(verilog_dcl.clone()));
             }
             let verilog_dcls = verilog_data::VerilogDcls::new(line_no, verilog_dcl_vec);
@@ -177,12 +177,12 @@ fn process_assign_or_inst_declaration(
     let pair_clone = pair.clone();
     match pair.as_rule() {
         Rule::assign_declaration => {
-            let verilog_assign = process_assign_declaration(pair);
-            verilog_assign
+            
+            process_assign_declaration(pair)
         }
         Rule::inst_declaration => {
-            let verilog_inst = process_inst_declaration(pair);
-            verilog_inst
+            
+            process_inst_declaration(pair)
         }
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
@@ -432,8 +432,8 @@ fn process_inst_declaration(
     let pair_clone = pair.clone();
     match pair.as_rule() {
         Rule::inst_declaration => {
-            let verilog_inst = process_inner_inst_declaration(pair);
-            verilog_inst
+            
+            process_inner_inst_declaration(pair)
         }
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
@@ -551,15 +551,15 @@ fn process_port_connect(
         }
 
         // get port connected parent module net.***************
-        let port_connect_net = verilog_data::VerilogInst::get_port_connect_net(
+        
+        // println!("port connect net {}", port_connect_net.clone().unwrap().get_verilog_id().get_name());
+        verilog_data::VerilogInst::get_port_connect_net(
             inst_stmt,
             cur_module,
             parent_module,
             net_expr_id_clone,
             range,
-        );
-        // println!("port connect net {}", port_connect_net.clone().unwrap().get_verilog_id().get_name());
-        return port_connect_net;
+        )
     }
 }
 
@@ -575,24 +575,22 @@ fn process_concat_net_expr(
         if port_connect_net.is_some() {
             new_one_net_expr = port_connect_net.unwrap();
         }
-    } else {
-        if one_net_expr.is_concat_expr() {
-            let one_net_expr_concat =
-                one_net_expr.as_any().downcast_ref::<verilog_data::VerilogNetConcatExpr>().unwrap();
-            let mut new_net_expr_concat: Vec<Box<dyn verilog_data::VerilogVirtualBaseNetExpr>> = Vec::new();
-            for net_expr in one_net_expr_concat.get_verilog_id_concat() {
-                new_net_expr_concat.push(process_concat_net_expr(
-                    net_expr.clone(),
-                    cur_module,
-                    parent_module,
-                    inst_stmt,
-                ));
-            }
-            new_one_net_expr = Box::new(verilog_data::VerilogNetConcatExpr::new(
-                one_net_expr_concat.get_net_expr().get_line_no(),
-                new_net_expr_concat,
+    } else if one_net_expr.is_concat_expr() {
+        let one_net_expr_concat =
+            one_net_expr.as_any().downcast_ref::<verilog_data::VerilogNetConcatExpr>().unwrap();
+        let mut new_net_expr_concat: Vec<Box<dyn verilog_data::VerilogVirtualBaseNetExpr>> = Vec::new();
+        for net_expr in one_net_expr_concat.get_verilog_id_concat() {
+            new_net_expr_concat.push(process_concat_net_expr(
+                net_expr.clone(),
+                cur_module,
+                parent_module,
+                inst_stmt,
             ));
         }
+        new_one_net_expr = Box::new(verilog_data::VerilogNetConcatExpr::new(
+            one_net_expr_concat.get_net_expr().get_line_no(),
+            new_net_expr_concat,
+        ));
     }
 
     // let new_one_net_expr_id = new_one_net_expr.get_verilog_id();
@@ -748,23 +746,22 @@ fn flatten_the_module(
 
             let get_connect_net = |cur_module, parent_module, net_expr_id_clone, net_base_name, port_name| {
                 // println!("port name {}", port_name);
-                let mut range = None;
-                range = find_dcl_stmt_range(cur_module, net_base_name);
+                let mut range = find_dcl_stmt_range(cur_module, net_base_name);
                 if range.is_none() {
                     // for may be port_name is split.
                     range = find_dcl_stmt_range(cur_module, port_name);
                 }
 
                 // get port connected parent module net.***************
-                let port_connect_net = verilog_data::VerilogInst::get_port_connect_net(
+                
+
+                verilog_data::VerilogInst::get_port_connect_net(
                     inst_stmt,
                     cur_module,
                     parent_module,
                     net_expr_id_clone,
                     range,
-                );
-
-                port_connect_net
+                )
             };
             
             // for debug
@@ -976,7 +973,7 @@ pub extern "C" fn rust_free_verilog_file(c_verilog_file: *mut verilog_data::Veri
 #[cfg(test)]
 mod tests {
 
-    use pest::error;
+    
     use pest::iterators::Pair;
     use pest::iterators::Pairs;
 
@@ -1008,7 +1005,7 @@ mod tests {
             }
         }
 
-        assert!(!parse_result_clone.is_err());
+        assert!(parse_result_clone.is_ok());
     }
 
     fn extract_range(input: &str) -> Option<(&str, i32, i32)> {

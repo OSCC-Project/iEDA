@@ -22,22 +22,22 @@ class TGComParam
 {
  public:
   TGComParam() = default;
-  TGComParam(int32_t topo_spilt_length, double congestion_unit)
+  TGComParam(int32_t topo_spilt_length, double overflow_unit)
   {
     _topo_spilt_length = topo_spilt_length;
-    _congestion_unit = congestion_unit;
+    _overflow_unit = overflow_unit;
   }
   ~TGComParam() = default;
   // getter
   int32_t get_topo_spilt_length() const { return _topo_spilt_length; }
-  double get_congestion_unit() const { return _congestion_unit; }
+  double get_overflow_unit() const { return _overflow_unit; }
   // setter
   void set_topo_spilt_length(const int32_t topo_spilt_length) { _topo_spilt_length = topo_spilt_length; }
-  void set_congestion_unit(const double congestion_unit) { _congestion_unit = congestion_unit; }
+  void set_overflow_unit(const double overflow_unit) { _overflow_unit = overflow_unit; }
 
  private:
   int32_t _topo_spilt_length = 0;
-  double _congestion_unit = 0;
+  double _overflow_unit = 0;
 };
 
 }  // namespace irt

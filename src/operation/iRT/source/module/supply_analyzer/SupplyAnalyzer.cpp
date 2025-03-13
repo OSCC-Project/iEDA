@@ -91,8 +91,7 @@ void SupplyAnalyzer::buildSupplySchedule(SAModel& sa_model)
         std::vector<std::pair<LayerCoord, LayerCoord>> grid_pair_list;
         for (int32_t y = 0; y < die.getYSize(); y++) {
           for (int32_t x = begin_x; x < die.getXSize(); x += 2) {
-            grid_pair_list.emplace_back(LayerCoord(x - 1, y, routing_layer.get_layer_idx()),
-                                        LayerCoord(x, y, routing_layer.get_layer_idx()));
+            grid_pair_list.emplace_back(LayerCoord(x - 1, y, routing_layer.get_layer_idx()), LayerCoord(x, y, routing_layer.get_layer_idx()));
           }
         }
         sa_model.get_grid_pair_list_list().push_back(grid_pair_list);
@@ -102,8 +101,7 @@ void SupplyAnalyzer::buildSupplySchedule(SAModel& sa_model)
         std::vector<std::pair<LayerCoord, LayerCoord>> grid_pair_list;
         for (int32_t x = 0; x < die.getXSize(); x++) {
           for (int32_t y = begin_y; y < die.getYSize(); y += 2) {
-            grid_pair_list.emplace_back(LayerCoord(x, y - 1, routing_layer.get_layer_idx()),
-                                        LayerCoord(x, y, routing_layer.get_layer_idx()));
+            grid_pair_list.emplace_back(LayerCoord(x, y - 1, routing_layer.get_layer_idx()), LayerCoord(x, y, routing_layer.get_layer_idx()));
           }
         }
         sa_model.get_grid_pair_list_list().push_back(grid_pair_list);
@@ -182,8 +180,8 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
       }
     }
     analyzed_pair_num += grid_pair_list.size();
-    RTLOG.info(Loc::current(), "Analyzed ", analyzed_pair_num, "/", total_pair_num, "(",
-               RTUTIL.getPercentage(analyzed_pair_num, total_pair_num), ") grid pairs", stage_monitor.getStatsInfo());
+    RTLOG.info(Loc::current(), "Analyzed ", analyzed_pair_num, "/", total_pair_num, "(", RTUTIL.getPercentage(analyzed_pair_num, total_pair_num),
+               ") grid pairs", stage_monitor.getStatsInfo());
   }
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -197,8 +195,7 @@ EXTLayerRect SupplyAnalyzer::getSearchRect(LayerCoord& first_coord, LayerCoord& 
     RTLOG.error(Loc::current(), "The grid_pair layer_idx is not equal!");
   }
   EXTLayerRect search_rect;
-  search_rect.set_real_rect(
-      RTUTIL.getBoundingBox({RTUTIL.getRealRectByGCell(first_coord, gcell_axis), RTUTIL.getRealRectByGCell(second_coord, gcell_axis)}));
+  search_rect.set_real_rect(RTUTIL.getBoundingBox({RTUTIL.getRealRectByGCell(first_coord, gcell_axis), RTUTIL.getRealRectByGCell(second_coord, gcell_axis)}));
   search_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(search_rect.get_real_rect(), gcell_axis));
   search_rect.set_layer_idx(first_coord.get_layer_idx());
   return search_rect;
@@ -280,6 +277,7 @@ void SupplyAnalyzer::printSummary(SAModel& sa_model)
 
   fort::char_table routing_supply_map_table;
   {
+    routing_supply_map_table.set_cell_text_align(fort::text_align::right);
     routing_supply_map_table << fort::header << "routing"
                              << "supply"
                              << "prop" << fort::endr;

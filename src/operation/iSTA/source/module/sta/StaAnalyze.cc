@@ -238,7 +238,8 @@ unsigned StaAnalyze::analyzeSetupHold(StaVertex* end_vertex, StaArc* check_arc,
   AnalysisMode capture_analysis_mode = (analysis_mode == AnalysisMode::kMax)
                                            ? AnalysisMode::kMin
                                            : AnalysisMode::kMax;
-
+  
+  unsigned end_path_index = 0;
   StaData* clock_data;
   FOREACH_CLOCK_DATA(clock_vertex, clock_data) {
     if ((clock_data->get_trans_type() == clock_trans_type) &&
@@ -292,11 +293,14 @@ unsigned StaAnalyze::analyzeSetupHold(StaVertex* end_vertex, StaArc* check_arc,
 
           // add the data to path group.
           Sta* ista = getSta();
+          ++end_path_index;
           ista->insertPathData(capture_clock, end_vertex, seq_data);
         }
       }
     }
   }
+
+  LOG_INFO_EVERY_N(100) << "add path data num " << end_path_index  << " to " << end_vertex->getName();
 
   if ((!capture_clock_data)) {
     LOG_ERROR << "end vertex " << end_vertex->getName()
@@ -541,7 +545,12 @@ unsigned StaAnalyze::operator()(StaGraph* the_graph) {
   AnalysisMode analysis_mode = get_analysis_mode();
   StaVertex* end_vertex;
   unsigned is_ok = 1;
+  unsigned index = 0;
   FOREACH_END_VERTEX(the_graph, end_vertex) {
+    ++index;
+    LOG_INFO_EVERY_N(10) << "analyze timing path end vertex " << index
+                           << " total " << the_graph->get_end_vertexes().size() << " start";
+
     if (end_vertex->is_start() && end_vertex->is_end()) {
       // for clk vertex, maybe need check recovery time, skip this now.
       continue;
@@ -572,6 +581,9 @@ unsigned StaAnalyze::operator()(StaGraph* the_graph) {
         is_ok &= analyzeSetupHold(end_vertex, check_arc, AnalysisMode::kMin);
       }
     }
+
+    LOG_INFO_EVERY_N(10) << "analyze timing path end vertex " << index
+    << " total " << the_graph->get_end_vertexes().size() << " end";
   }
 
   LOG_INFO << "analyze timing path end";

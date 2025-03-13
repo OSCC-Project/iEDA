@@ -43,7 +43,7 @@ namespace idb {
 
 /**
  * @brief Constructor for DefWrite class.
- * 
+ *
  * @param def_service Pointer to IdbDefService object.
  * @param type Type of DefWrite.
  */
@@ -60,7 +60,7 @@ DefWrite::~DefWrite()
 
 /**
  * @brief Initialize the output file.
- * 
+ *
  * @param file Path to the file.
  * @return true if initialization succeeds, false otherwise.
  */
@@ -89,7 +89,7 @@ bool DefWrite::initFile(const char* file)
 
 /**
  * @brief Close the output file.
- * 
+ *
  * @return true if file closure succeeds, false otherwise.
  */
 bool DefWrite::closeFile()
@@ -112,7 +112,7 @@ bool DefWrite::closeFile()
 
 /**
  * @brief Write formatted string data to the output file.
- * 
+ *
  * @param strdata Formatted string data.
  */
 void DefWrite::writestr(const char* strdata, ...)
@@ -132,7 +132,7 @@ void DefWrite::writestr(const char* strdata, ...)
 
 /**
  * @brief Write the design to the output file.
- * 
+ *
  * @param file Path to the file.
  * @return true if writing succeeds, false otherwise.
  */
@@ -171,13 +171,15 @@ bool DefWrite::writeDb(const char* file)
 
 /**
  * @brief Write the design to the output file.
- * 
+ *
  * @param file Path to the file.
  * @return true if writing succeeds, false otherwise.
  */
 bool DefWrite::writeChip()
 {
   write_version();
+  write_divider_char();
+  write_busbit_char();
   write_design();
   write_units();
   write_die();
@@ -218,7 +220,6 @@ bool DefWrite::writeDbSynthesis()
   return true;
 }
 
-
 /**
  * @brief Writes END DESIGN marker to the DEF file.
  * @return Status code indicating success or failure.
@@ -228,7 +229,6 @@ int32_t DefWrite::write_end()
   writestr("END DESIGN\n");
   return kDbSuccess;
 }
-
 
 /**
  * @brief Writes the VERSION information to the DEF file.
@@ -245,6 +245,26 @@ int32_t DefWrite::write_version()
   return kDbSuccess;
 }
 
+int32_t DefWrite::write_divider_char()
+{
+  return kDbSuccess;
+}
+
+int32_t DefWrite::write_busbit_char()
+{
+  IdbDesign* design = this->get_service()->get_design();
+  IdbBusBitChars* bus_bit_chars = design->get_bus_bit_chars();
+
+  if (bus_bit_chars == nullptr) {
+    return kDbFail;
+  }
+
+  writestr("BUSBITCHARS \"%c%c\";\n", bus_bit_chars->getLeftDelimiter(), bus_bit_chars->getRightDelimiter());
+
+  std::cout << "Write BUSBITCHARS success..." << std::endl;
+
+  return kDbSuccess;
+}
 
 /**
  * @brief Writes the DESIGN name to the DEF file.
@@ -259,8 +279,6 @@ int32_t DefWrite::write_design()
   std::cout << "Write DESIGN name success..." << std::endl;
   return kDbSuccess;
 }
-
-
 
 int32_t DefWrite::write_units()
 {
@@ -421,6 +439,9 @@ int32_t DefWrite::write_component()
   writestr("COMPONENTS %d ;\n", instance_list->get_num());
 
   for (IdbInstance* instance : instance_list->get_instance_list()) {
+    std::string inst_name = instance->get_name();
+    std::string new_inst_name = ieda::Str::addBackslash(inst_name);
+
     string type = instance->get_type() != IdbInstanceType::kNone
                       ? "+ SOURCE " + IdbEnum::GetInstance()->get_instance_property()->get_type_str(instance->get_type())
                       : "";
@@ -428,10 +449,10 @@ int32_t DefWrite::write_component()
     string orient = IdbEnum::GetInstance()->get_site_property()->get_orient_name(instance->get_orient());
 
     if (instance->has_placed()) {
-      writestr("    - %s %s %s + %s ( %d %d ) %s \n", instance->get_name().c_str(), instance->get_cell_master()->get_name().c_str(),
-               type.c_str(), status.c_str(), instance->get_coordinate()->get_x(), instance->get_coordinate()->get_y(), orient.c_str());
+      writestr("    - %s %s %s + %s ( %d %d ) %s \n", new_inst_name.c_str(), instance->get_cell_master()->get_name().c_str(), type.c_str(),
+               status.c_str(), instance->get_coordinate()->get_x(), instance->get_coordinate()->get_y(), orient.c_str());
     } else {
-      writestr("    - %s %s %s \n", instance->get_name().c_str(), instance->get_cell_master()->get_name().c_str(), type.c_str());
+      writestr("    - %s %s %s \n", new_inst_name.c_str(), instance->get_cell_master()->get_name().c_str(), type.c_str());
     }
 
     /// halo
@@ -772,9 +793,9 @@ int32_t DefWrite::write_net()
   writestr("NETS %ld ;\n", net_list->get_num());
 
   for (IdbNet* net : net_list->get_net_list()) {
-    // std::string net_name = net->get_net_name();
-    // std::string net_name_new = ieda::Str::addBackslash(net_name);
-    writestr("- %s", net->get_net_name().c_str());
+    std::string net_name = net->get_net_name();
+    std::string net_name_new = ieda::Str::addBackslash(net_name);
+    writestr("- %s", net_name_new.c_str());
 
     auto* io_pins = net->get_io_pins();
     for (auto* io_pin : io_pins->get_pin_list()) {

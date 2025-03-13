@@ -19,7 +19,7 @@
 
 #include "engine_geometry.h"
 #include "geometry_boost.h"
-
+#include <unordered_set>
 namespace idrc {
 class DrcEngineSubLayout
 {
@@ -28,7 +28,7 @@ class DrcEngineSubLayout
   ~DrcEngineSubLayout();
 
   int get_id() { return _id; }
-  std::map<int, DrcEngineSubLayout*>& get_intersect_layouts() { return _intersect_layouts; }
+  // std::map<int, DrcEngineSubLayout*>& get_intersect_layouts() { return _intersect_layouts; }
   //   ieda_solver::EngineGeometry* get_engine() { return _engine; }
   ieda_solver::GeometryBoost* get_engine() { return (ieda_solver::GeometryBoost*) _engine; }
   bool isIntersect(int llx, int lly, int urx, int ury);
@@ -42,9 +42,9 @@ class DrcEngineSubLayout
    * _engine : a geometry ptr including all shapes in one net
    */
   int _id = -1;
-  std::set<int> _check_nets;  /// net ids in other sublayouts that has been checked with this sublayout
+  std::unordered_set<int> _check_nets;  /// net ids in other sublayouts that has been checked with this sublayout
   ieda_solver::EngineGeometry* _engine = nullptr;
-  std::map<int, DrcEngineSubLayout*> _intersect_layouts;
+  // std::map<int, DrcEngineSubLayout*> _intersect_layouts;
 };
 
 }  // namespace idrc

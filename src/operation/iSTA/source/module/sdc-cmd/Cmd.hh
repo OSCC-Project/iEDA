@@ -504,4 +504,17 @@ class CmdSetDisableTiming : public TclCmd {
   unsigned exec() override;
 };
 
+/**
+ * @brief set_case_analysis
+ * 
+ */
+class CmdSetCaseAnalysis : public TclCmd {
+  public:
+   explicit CmdSetCaseAnalysis(const char* cmd_name);
+   ~CmdSetCaseAnalysis() override = default;
+ 
+   unsigned check() override;
+   unsigned exec() override;
+ };
+
 }  // namespace ista

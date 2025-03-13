@@ -1,0 +1,40 @@
+initGRModel:初始化GRModel
+buildLayerNodeMap:构建顶层graph
+buildOrientSupply:给顶层graph添加supply
+resetDemand:重新加载demand
+iterativeGRModel:迭代GRModel
+    setGRIterParam:设置迭代参数
+    initGRBoxMap:初始化GRBox框架
+    buildBoxSchedule:构建Box布线时间表
+    splitNetResult:以Box为边界分割线网结果
+    routeGRBoxMap:
+        buildNetResult:将Gcellmap中的global结果拷贝到Box内，并在GCellmap中删除
+        initGRTaskList:初始化GRTask列表
+        buildOverflow:从顶层graph加载overflow
+        buildBoxTrackAxis:构建Box内的track_axis
+        buildLayerNodeMap:构建Box的Graph,只有节点,其他信息后续构建
+        buildGRNodeNeighbor:将所有节点连接
+        buildOrientSupply:构建graph的supply
+        buildOrientDemand:构建graph的demand
+        routeGRBox:
+            initTaskSchedule:初始化task布线调度表
+            routeGRTask:给task布线,在此函数末尾,布线结果从graph中删除,再加入新的结果
+            updateOverflow:从graph中得到overflow
+            updateBestResult:更新最优结果
+            updateTaskSchedule:得到新的布线调度表
+        selectBestResult:选择box的最优结果上传
+        freeGRBox:析构
+    uploadNetResult:将所有的box布线结果去环优化,然后删除所有GCellMap的结果再添加
+    resetDemand:重新加载demand
+    updateBestResult:更新GRModel中的最优结果
+
+
+
+
+
+
+
+
+
+
+
