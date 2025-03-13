@@ -108,7 +108,7 @@ bool LmLayoutFileIO::saveJsonNets()
           json_feature["area"] = net_feature->area;
           json_feature["volume"] = net_feature->volume;
           json_feature["l_ness"] = net_feature->l_ness;
-          json_feature["layer_ratio"]  = net_feature->layer_ratio;
+          json_feature["layer_ratio"] = net_feature->layer_ratio;
           json_feature["rsmt"] = net_feature->rsmt;
         }
         json_net["feature"] = json_feature;
@@ -117,26 +117,17 @@ bool LmLayoutFileIO::saveJsonNets()
       /// pins
       {
         json json_pins = json::array();
-        int pin_num = 0;
-        if (idb_net->has_io_pins()) {
-          for (auto io_pin : idb_net->get_io_pins()->get_pin_list()) {
-            json json_pin;
-            json_pin["id"] = _layout->findPinId("", io_pin->get_pin_name());
-            json_pin["i"] = "";
-            json_pin["p"] = io_pin->get_pin_name();
-            json_pins.push_back(json_pin);
-            pin_num++;
-          }
-        }
-        for (auto inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
+
+        for (auto& [pin_id, lm_pin] : lm_net.get_pin_list()) {
           json json_pin;
-          json_pin["id"] = _layout->findPinId(inst_pin->get_instance()->get_name(), inst_pin->get_pin_name());
-          json_pin["i"] = inst_pin->get_instance()->get_name();
-          json_pin["p"] = inst_pin->get_pin_name();
+          json_pin["id"] = pin_id;
+          json_pin["i"] = lm_pin.instance_name;
+          json_pin["p"] = lm_pin.pin_name;
+          json_pin["driver"] = lm_pin.is_driver ? 1 : 0;  /// 1 : driver, 0 : load
           json_pins.push_back(json_pin);
-          pin_num++;
         }
-        json_net["pin_num"] = pin_num;
+
+        json_net["pin_num"] = lm_net.get_pin_list().size();
         json_net["pins"] = json_pins;
       }
 
@@ -291,7 +282,7 @@ bool LmLayoutFileIO::saveJsonPatchs()
       json_patch["IR_drop"] = patch.ir_drop_map;
 
       json json_sub_nets = json::array();
-      std::unordered_map<int, json> unique_json_sub_nets; 
+      std::unordered_map<int, json> unique_json_sub_nets;
 
       json json_layers = json::array();
       for (auto& [layer_id, patch_layer] : patch.get_layer_map()) {
@@ -299,14 +290,14 @@ bool LmLayoutFileIO::saveJsonPatchs()
         json_layer["id"] = layer_id;
         // layer feature
         {
-        json json_layer_feature;
+          json json_layer_feature;
 
         json_layer_feature["wire_width"] = patch_layer.wire_width;
         json_layer_feature["wire_len"] = patch_layer.wire_len;
         json_layer_feature["wire_density"] = (patch_layer.wire_width * patch_layer.wire_len) / static_cast<double>(area);
         json_layer_feature["congestion"] = patch_layer.congestion;
 
-        json_layer["feature"] = json_layer_feature;
+          json_layer["feature"] = json_layer_feature;
         }
         /// sub net in patch for each layer
         json_layer["net_num"] = patch_layer.get_sub_nets().size();

@@ -101,7 +101,6 @@ void LargeModel::generateFeature(const std::string dir)
   feature.buildFeatureTiming();
   feature.buildFeatureDrc();
   feature.buildFeatureStatis();
-  
 }
 
 /// for run large model sta api.

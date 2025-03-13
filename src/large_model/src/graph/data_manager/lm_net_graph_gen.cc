@@ -34,8 +34,10 @@
 
 #include "IdbPins.h"
 #include "idm.h"
-#include "lm_graph_gui.hh"
 #include "log/Log.hh"
+#ifdef BUILD_LM_GUI
+#include "lm_graph_gui.hh"
+#endif
 
 namespace ilm {
 void LmNetGraphGenerator::initLayerMap()
@@ -1431,6 +1433,7 @@ void LmNetGraphGenerator::toPy(const WireGraph& graph, const std::string& path) 
 void LmNetGraphGenerator::toQt(const TopoGraph& graph, const bool& component_mode) const
 {
   // Create the Qt application if needed (assumes one is not already running)
+#ifdef BUILD_LM_GUI
   int argc = 0;
   char** argv = nullptr;
   auto app = QApplication(argc, argv);
@@ -1509,9 +1512,11 @@ void LmNetGraphGenerator::toQt(const TopoGraph& graph, const bool& component_mod
   widget->show();
 
   app.exec();
+#endif
 }
 void LmNetGraphGenerator::toQt(const WireGraph& graph) const
 {
+#ifdef BUILD_LM_GUI
   // Create the Qt application if needed (assumes one is not already running)
   int argc = 0;
   char** argv = nullptr;
@@ -1559,5 +1564,6 @@ void LmNetGraphGenerator::toQt(const WireGraph& graph) const
   widget->show();
 
   app.exec();
+#endif
 }
 }  // namespace ilm
