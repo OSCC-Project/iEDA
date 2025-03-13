@@ -86,7 +86,7 @@ void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layou
 
 //       for (auto& overlap_polygon : overlaps) {
 //         ieda_solver::GeometryRect overlap_violation_rect;
-//         ieda_solver::envelope(overlap_violation_rect, overlap_polygon);
+//         ieda_solver::ENVELOPE(overlap_violation_rect, overlap_polygon);
 
 //         // addViolation(overlap_violation_rect, layer, ViolationEnumType::kShort, net_ids);
 //         DrcShortInfo drc_info;
@@ -121,14 +121,14 @@ void DrcConditionManager::checkOverlapBySelfIntersect(std::string layer, DrcEngi
 {
   auto shrink_rect = [](ieda_solver::GeometryRect& rect, int value) -> bool {
     ieda_solver::GeometryRect result;
-    int with = ieda_solver::getWireWidth(rect, ieda_solver::HORIZONTAL);
-    int height = ieda_solver::getWireWidth(rect, ieda_solver::HORIZONTAL);
+    int with = ieda_solver::getWireWidth(rect, ieda_solver::K_HORIZONTAL);
+    int height = ieda_solver::getWireWidth(rect, ieda_solver::K_HORIZONTAL);
     if (with < 2 * value || height < 2 * value) {
       return false;
     }
 
-    ieda_solver::shrink(rect, ieda_solver::HORIZONTAL, value);
-    ieda_solver::shrink(rect, ieda_solver::VERTICAL, value);
+    ieda_solver::SHRINK(rect, ieda_solver::K_HORIZONTAL, value);
+    ieda_solver::SHRINK(rect, ieda_solver::K_VERTICAL, value);
 
     return true;
   };
@@ -153,6 +153,11 @@ void DrcConditionManager::checkOverlapBySelfIntersect(std::string layer, DrcEngi
 
     for (auto rect : results) {
       if (shrink_rect(rect, 1)) {
+        int width = ieda_solver::getWireWidth(rect, ieda_solver::K_HORIZONTAL);
+        int height = ieda_solver::getWireWidth(rect, ieda_solver::K_VERTICAL);
+        if (width == 0 || height == 0) {
+          continue;
+        }
         addViolation(rect, layer, ViolationEnumType::kShort);
         total_drc++;
       }

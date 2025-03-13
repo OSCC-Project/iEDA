@@ -156,7 +156,10 @@ void DrcEngineManager::dataPreprocess()
   for (auto& [layer, layout] : get_engine_layouts(LayoutType::kRouting)) {
     layout_list.push_back(layout);
   }
-#pragma omp parallel for num_threads(std::min((int)layout_list.size(),8))
+  for (auto& [layer, layout] : get_engine_layouts(LayoutType::kCut)) {
+    layout_list.push_back(layout);
+  }
+#pragma omp parallel for num_threads(std::min((int) layout_list.size(), 8))
   for (size_t i = 0; i < layout_list.size(); i++) {
     DrcEngineLayout* layout = layout_list[i];
     layout->combineLayout();
@@ -183,7 +186,7 @@ void DrcEngineManager::filterData()
 
     // jog and prl
     _condition_manager->checkParallelLengthSpacing(layer, layout);
-    _condition_manager->checkJogToJogSpacing(layer, layout);
+    // _condition_manager->checkJogToJogSpacing(layer, layout);
 
     // edge
     _condition_manager->checkPolygons(layer, layout);
@@ -191,6 +194,30 @@ void DrcEngineManager::filterData()
 
   for (auto& [layer, layout] : get_engine_layouts(LayoutType::kCut)) {
     // TODO: cut rule
+
+    if (false == needChecking(layer, LayoutType::kCut)) {
+      continue;
+    }
+
+    DEBUGOUTPUT("Need to check layer:\t" << layer);
+
+    /// cut array
+    _condition_manager->checkCutArraySpacing(layer, layout);
+
+    // cut overlap
+    _condition_manager->checkCutOverlap(layer, layout);
+
+    // min spacing
+    _condition_manager->checkCutSpacing(layer, layout);
+
+    // width
+    _condition_manager->checkCutWidth(layer, layout);
+
+    // enclosure
+    _condition_manager->checkCutEnclosure(layer, layout);
+
+    //LEF58 Cut Spacing Table
+    _condition_manager->checkLEF58CutSpacingTable(layer, layout);
   }
 
   DEBUGOUTPUT("Finish drc checking:\t");

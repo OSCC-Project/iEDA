@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "DRCViolationType.h"
-
+#include "geometry_polygon.h"
 namespace idb {
 class IdbLayer;
 }
@@ -101,14 +101,23 @@ class DrcViolationRect : public DrcViolation
 class DrcViolationPolygon : public DrcViolation
 {
  public:
-  DrcViolationPolygon(idb::IdbLayer* layer, ViolationEnumType vio_type) : DrcViolation(layer, vio_type, Type::kPolygon) {}
-  ~DrcViolationPolygon() { _points.clear(); }
+  DrcViolationPolygon(idb::IdbLayer* layer, ViolationEnumType vio_type, int spacing, int victim_width)
+      : DrcViolation(layer, vio_type, Type::kPolygon), _spacing(spacing), _victim_width(victim_width)
+  {
+  }
+  ~DrcViolationPolygon() {}
 
-  std::vector<std::pair<int, int>>& get_points() { return _points; }
-  void addPoints(int x, int y) { _points.emplace_back(std::make_pair(x, y)); }
+  ieda_solver::GeometryPolygon& getPolygon() { return _polygon; }
+  void setPolygon(ieda_solver::GeometryPolygon polygon) { _polygon = polygon; }
+  int getSpacing() { return _spacing; }
+  void setSpacing(int spacing) { _spacing = spacing; }
+  int getVictimWidth() { return _victim_width; }
+  void setVictimWidth(int victim_width) { _victim_width = victim_width; }
 
  private:
-  std::vector<std::pair<int, int>> _points;
+  ieda_solver::GeometryPolygon _polygon;
+  int _spacing;
+  int _victim_width;
 };
 
 }  // namespace idrc

@@ -142,7 +142,10 @@ void DrcEngineLayout::combineLayout()
 
 void DrcEngineLayout::addRTreeSubLayout(DrcEngineSubLayout* sub_layout)
 {
-  for (auto rect : sub_layout->get_engine()->getRects()) {
+  auto polygon_set = sub_layout->get_engine()->get_polyset();
+  std::vector<ieda_solver::GeometryRect> rect_list;
+  boost::polygon::get_max_rectangles(rect_list, polygon_set);
+  for (auto rect : rect_list) {
     ieda_solver::BgRect rtree_rect(ieda_solver::BgPoint(boost::polygon::xl(rect), boost::polygon::yl(rect)),
                                    ieda_solver::BgPoint(boost::polygon::xh(rect), boost::polygon::yh(rect)));
     _query_tree.insert(std::make_pair(rtree_rect, sub_layout));
