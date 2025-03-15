@@ -18,8 +18,8 @@
 
 #include "DRCHeader.hpp"
 #include "Logger.hpp"
-#include "json.hpp"
 #include "PlanarRect.hpp"
+#include "json.hpp"
 
 namespace idrc {
 
@@ -33,15 +33,33 @@ class Utility
   static void destroyInst();
   // function
 
+#if 1  // idrc数据结构工具函数
+
+  // 获得配置的值
+  template <typename T>
+  static T getConfigValue(std::map<std::string, std::any>& config_map, const std::string& config_name, const T& default_value)
+  {
+    T value;
+    if (exist(config_map, config_name)) {
+      value = std::any_cast<T>(config_map[config_name]);
+    } else {
+      DRCLOG.warn(Loc::current(), "The config '", config_name, "' uses the default value!");
+      value = default_value;
+    }
+    return value;
+  }
+
+#endif
+
 #if 1  // 形状有关计算
 
-static PlanarRect getRegularRect(PlanarRect rect, PlanarRect border)
-{
-  PlanarRect regular_rect;
-  regular_rect.set_ll(std::max(rect.get_ll_x(), border.get_ll_x()), std::max(rect.get_ll_y(), border.get_ll_y()));
-  regular_rect.set_ur(std::min(rect.get_ur_x(), border.get_ur_x()), std::min(rect.get_ur_y(), border.get_ur_y()));
-  return regular_rect;
-}
+  static PlanarRect getRegularRect(PlanarRect rect, PlanarRect border)
+  {
+    PlanarRect regular_rect;
+    regular_rect.set_ll(std::max(rect.get_ll_x(), border.get_ll_x()), std::max(rect.get_ll_y(), border.get_ll_y()));
+    regular_rect.set_ur(std::min(rect.get_ur_x(), border.get_ur_x()), std::min(rect.get_ur_y(), border.get_ur_y()));
+    return regular_rect;
+  }
 
   // 扩大矩形
   static PlanarRect getEnlargedRect(PlanarRect rect, int32_t enlarge_size)

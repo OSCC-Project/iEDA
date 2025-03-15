@@ -31,6 +31,7 @@ class RoutingLayer
   int32_t get_layer_idx() const { return _layer_idx; }
   int32_t get_layer_order() const { return _layer_order; }
   std::string& get_layer_name() { return _layer_name; }
+  int32_t get_pitch() const { return _pitch; }
   int32_t get_min_width() const { return _min_width; }
   int32_t get_min_area() const { return _min_area; }
   SpacingTable& get_prl_spacing_table() { return _prl_spacing_table; }
@@ -41,6 +42,7 @@ class RoutingLayer
   void set_layer_idx(const int32_t layer_idx) { _layer_idx = layer_idx; }
   void set_layer_order(const int32_t layer_order) { _layer_order = layer_order; }
   void set_layer_name(const std::string& layer_name) { _layer_name = layer_name; }
+  void set_pitch(const int32_t pitch) { _pitch = pitch; }
   void set_min_width(const int32_t min_width) { _min_width = min_width; }
   void set_min_area(const int32_t min_area) { _min_area = min_area; }
   void set_prl_spacing_table(const SpacingTable& prl_spacing_table) { _prl_spacing_table = prl_spacing_table; }
@@ -53,6 +55,7 @@ class RoutingLayer
   int32_t _layer_idx = -1;
   int32_t _layer_order = -1;
   std::string _layer_name;
+  int32_t _pitch = 0;
   // min width
   int32_t _min_width = 0;
   // min area

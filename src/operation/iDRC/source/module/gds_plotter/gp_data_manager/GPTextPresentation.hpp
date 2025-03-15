@@ -14,34 +14,24 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "DRCInterface.hpp"
-#include "tcl_drc.h"
-#include "tcl_util.h"
+#pragma once
 
-namespace tcl {
+namespace idrc {
 
-// public
-
-TclInitDRC::TclInitDRC(const char* cmd_name) : TclCmd(cmd_name)
+// !!! 请不要改变枚举值
+// !!! Please don’t change the enumeration value
+enum class GPTextPresentation
 {
-  // std::string temp_directory_path;       // required
-  _config_list.push_back(std::make_pair("-temp_directory_path", ValueType::kString));
-  // int32_t thread_number;                 // optional
-  _config_list.push_back(std::make_pair("-thread_number", ValueType::kInt));
+  kNone = -1,
+  kLeftTop = 0,
+  kCenterTop = 1,
+  kRightTop = 2,
+  kLeftMiddle = 4,
+  kCenterMiddle = 5,
+  kRightMiddle = 6,
+  kLeftBottom = 8,
+  kCenterBottom = 9,
+  kRightBottom = 10
+};
 
-  TclUtil::addOption(this, _config_list);
-}
-
-unsigned TclInitDRC::exec()
-{
-  if (!check()) {
-    return 0;
-  }
-  std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
-  DRCI.initDRC(config_map);
-  return 1;
-}
-
-// private
-
-}  // namespace tcl
+}  // namespace idrc

@@ -14,34 +14,31 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "DRCInterface.hpp"
-#include "tcl_drc.h"
-#include "tcl_util.h"
+#pragma once
 
-namespace tcl {
+#include "PlanarCoord.hpp"
+#include "LayerRect.hpp"
+#include "PlanarRect.hpp"
+#include "DRCHeader.hpp"
 
-// public
+namespace idrc {
 
-TclInitDRC::TclInitDRC(const char* cmd_name) : TclCmd(cmd_name)
+class GPBoundary : public LayerRect
 {
-  // std::string temp_directory_path;       // required
-  _config_list.push_back(std::make_pair("-temp_directory_path", ValueType::kString));
-  // int32_t thread_number;                 // optional
-  _config_list.push_back(std::make_pair("-thread_number", ValueType::kInt));
+ public:
+  GPBoundary() = default;
+  GPBoundary(const LayerRect& rect, const int32_t data_type) : LayerRect(rect) { _data_type = data_type; }
+  GPBoundary(const PlanarRect& rect, const int32_t layer_idx, const int32_t data_type) : LayerRect(rect, layer_idx) { _data_type = data_type; }
+  ~GPBoundary() = default;
+  // getter
+  int32_t get_data_type() const { return _data_type; }
+  // setter
+  void set_data_type(const int32_t data_type) { _data_type = data_type; }
 
-  TclUtil::addOption(this, _config_list);
-}
+  // function
 
-unsigned TclInitDRC::exec()
-{
-  if (!check()) {
-    return 0;
-  }
-  std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
-  DRCI.initDRC(config_map);
-  return 1;
-}
+ private:
+  int32_t _data_type = 0;
+};
 
-// private
-
-}  // namespace tcl
+}  // namespace idrc

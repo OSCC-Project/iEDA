@@ -47,12 +47,30 @@ class DRCInterface
 #if 1  // 外部调用DRC的API
 
 #if 1  // iDRC
-  void initDRC();
+  void initDRC(std::map<std::string, std::any> config_map);
   void checkDef();
   void destroyDRC();
   std::vector<ids::Violation> getViolationList(std::vector<ids::Shape> ids_shape_list);
   DRCModel initDRCModel(std::vector<ids::Shape>& ids_shape_list);
   std::vector<ids::Violation> getViolationList(DRCModel& drc_model);
+#endif
+
+#endif
+
+#if 1  // DRC调用外部的API
+
+#if 1  // TopData
+
+#if 1  // input
+  void input(std::map<std::string, std::any>& config_map);
+  void wrapConfig(std::map<std::string, std::any>& config_map);
+  void wrapDatabase();
+#endif
+
+#if 1  // output
+  void output();
+#endif
+
 #endif
 
 #endif

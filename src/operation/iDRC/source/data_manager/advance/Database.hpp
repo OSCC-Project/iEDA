@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
-#include "RoutingLayer.hpp"
 #include "CutLayer.hpp"
+#include "RoutingLayer.hpp"
 
 namespace idrc {
 
@@ -27,15 +27,29 @@ class Database
   Database() = default;
   ~Database() = default;
   // getter
-
+  int32_t get_manufacture_grid() const { return _manufacture_grid; }
+  std::vector<RoutingLayer>& get_routing_layer_list() { return _routing_layer_list; }
+  std::vector<CutLayer>& get_cut_layer_list() { return _cut_layer_list; }
+  std::map<int32_t, int32_t>& get_routing_idb_layer_id_to_idx_map() { return _routing_idb_layer_id_to_idx_map; }
+  std::map<int32_t, int32_t>& get_cut_idb_layer_id_to_idx_map() { return _cut_idb_layer_id_to_idx_map; }
+  std::map<std::string, int32_t>& get_routing_layer_name_to_idx_map() { return _routing_layer_name_to_idx_map; }
+  std::map<int32_t, std::vector<int32_t>>& get_routing_to_adjacent_cut_map() { return _routing_to_adjacent_cut_map; }
+  std::map<std::string, int32_t>& get_cut_layer_name_to_idx_map() { return _cut_layer_name_to_idx_map; }
+  std::map<int32_t, std::vector<int32_t>>& get_cut_to_adjacent_routing_map() { return _cut_to_adjacent_routing_map; }
   // setter
-
+  void set_manufacture_grid(const int32_t manufacture_grid) { _manufacture_grid = manufacture_grid; }
   // function
 
  private:
- int32_t _manufacture_grid = -1;
- std::vector<RoutingLayer> _routing_layer_list;
- std::vector<CutLayer> _cut_layer_list;
+  int32_t _manufacture_grid = -1;
+  std::vector<RoutingLayer> _routing_layer_list;
+  std::vector<CutLayer> _cut_layer_list;
+  std::map<int32_t, int32_t> _routing_idb_layer_id_to_idx_map;
+  std::map<int32_t, int32_t> _cut_idb_layer_id_to_idx_map;
+  std::map<std::string, int32_t> _routing_layer_name_to_idx_map;
+  std::map<int32_t, std::vector<int32_t>> _routing_to_adjacent_cut_map;
+  std::map<std::string, int32_t> _cut_layer_name_to_idx_map;
+  std::map<int32_t, std::vector<int32_t>> _cut_to_adjacent_routing_map;
 };
 
 }  // namespace idrc

@@ -16,6 +16,9 @@
 // ***************************************************************************************
 #include "DataManager.hpp"
 
+#include "Monitor.hpp"
+#include "Utility.hpp"
+
 namespace idrc {
 
 // public
@@ -45,28 +48,40 @@ void DataManager::destroyInst()
 
 // function
 
+void DataManager::input(std::map<std::string, std::any>& config_map)
+{
+  Monitor monitor;
+  DRCLOG.info(Loc::current(), "Starting...");
+  DRCI.input(config_map);
+  buildConfig();
+  buildDatabase();
+  DRCLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+void DataManager::output()
+{
+  Monitor monitor;
+  DRCLOG.info(Loc::current(), "Starting...");
+  DRCI.output();
+  DRCLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
 #if 1  // 获得唯一的pitch
 
 int32_t DataManager::getOnlyPitch()
 {
-  return 200;
-  // std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
 
-  // std::vector<int32_t> pitch_list;
-  // for (RoutingLayer& routing_layer : routing_layer_list) {
-  //   for (ScaleGrid& x_grid : routing_layer.get_track_axis().get_x_grid_list()) {
-  //     pitch_list.push_back(x_grid.get_step_length());
-  //   }
-  //   for (ScaleGrid& y_grid : routing_layer.get_track_axis().get_y_grid_list()) {
-  //     pitch_list.push_back(y_grid.get_step_length());
-  //   }
-  // }
-  // for (int32_t pitch : pitch_list) {
-  //   if (pitch_list.front() != pitch) {
-  //     RTLOG.error(Loc::current(), "The pitch is not equal!");
-  //   }
-  // }
-  // return pitch_list.front();
+  std::vector<int32_t> pitch_list;
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    pitch_list.push_back(routing_layer.get_pitch());
+  }
+  for (int32_t pitch : pitch_list) {
+    if (pitch_list.front() != pitch) {
+      DRCLOG.error(Loc::current(), "The pitch is not equal!");
+    }
+  }
+  return pitch_list.front();
 }
 
 #endif
@@ -74,5 +89,214 @@ int32_t DataManager::getOnlyPitch()
 // private
 
 DataManager* DataManager::_dm_instance = nullptr;
+
+#if 1  // build
+
+void DataManager::buildConfig()
+{
+  /////////////////////////////////////////////
+  // **********        DRC         ********** //
+  _config.temp_directory_path = std::filesystem::absolute(_config.temp_directory_path);
+  _config.temp_directory_path += "/";
+  _config.log_file_path = _config.temp_directory_path + "rt.log";
+  // **********     Module     ********** //
+  _config.mod_temp_directory_path = _config.temp_directory_path + "module/";
+  // **********     GDSPlotter     ********** //
+  _config.gp_temp_directory_path = _config.temp_directory_path + "gds_plotter/";
+  /////////////////////////////////////////////
+  // **********        DRC         ********** //
+  DRCUTIL.removeDir(_config.temp_directory_path);
+  DRCUTIL.createDir(_config.temp_directory_path);
+  DRCUTIL.createDirByFile(_config.log_file_path);
+  // **********     Module     ********** //
+  DRCUTIL.createDir(_config.mod_temp_directory_path);
+  // **********     GDSPlotter     ********** //
+  DRCUTIL.createDir(_config.gp_temp_directory_path);
+  /////////////////////////////////////////////
+  DRCLOG.openLogFileStream(_config.log_file_path);
+}
+
+void DataManager::buildDatabase()
+{
+  buildLayerList();
+  buildLayerInfo();
+}
+
+void DataManager::buildLayerList()
+{
+  transLayerList();
+  makeLayerList();
+  checkLayerList();
+}
+
+void DataManager::transLayerList()
+{
+  std::map<int32_t, int32_t>& routing_idb_layer_id_to_idx_map = _database.get_routing_idb_layer_id_to_idx_map();
+  std::map<int32_t, int32_t>& cut_idb_layer_id_to_idx_map = _database.get_cut_idb_layer_id_to_idx_map();
+
+  for (RoutingLayer& routing_layer : _database.get_routing_layer_list()) {
+    routing_layer.set_layer_idx(routing_idb_layer_id_to_idx_map[routing_layer.get_layer_idx()]);
+  }
+  for (CutLayer& cut_layer_list : _database.get_cut_layer_list()) {
+    cut_layer_list.set_layer_idx(cut_idb_layer_id_to_idx_map[cut_layer_list.get_layer_idx()]);
+  }
+}
+
+void DataManager::makeLayerList()
+{
+  makeRoutingLayerList();
+  makeCutLayerList();
+}
+
+void DataManager::makeRoutingLayerList()
+{
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+
+  auto getFrequentNum = [](const std::vector<int32_t>& num_list) {
+    if (num_list.empty()) {
+      DRCLOG.error(Loc::current(), "The num_list is empty!");
+    }
+    std::map<int32_t, int32_t> num_count_map;
+    for (int32_t num : num_list) {
+      num_count_map[num]++;
+    }
+    std::map<int32_t, std::vector<int32_t>, std::greater<int32_t>> count_num_list_map;
+    for (auto& [num, count] : num_count_map) {
+      count_num_list_map[count].push_back(num);
+    }
+    int32_t frequent_num = INT32_MAX;
+    for (int32_t num : count_num_list_map.begin()->second) {
+      frequent_num = std::min(frequent_num, num);
+    }
+    return frequent_num;
+  };
+  int32_t step_length;
+  {
+    std::vector<int32_t> pitch_list;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      pitch_list.push_back(routing_layer.get_pitch());
+    }
+    step_length = getFrequentNum(pitch_list);
+  }
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    routing_layer.set_pitch(step_length);
+  }
+}
+
+void DataManager::makeCutLayerList()
+{
+  std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
+
+  for (size_t i = 1; i < cut_layer_list.size(); i++) {
+    CutLayer& pre_cut_layer = cut_layer_list[i - 1];
+    CutLayer& curr_cut_layer = cut_layer_list[i];
+    pre_cut_layer.set_above_spacing(curr_cut_layer.get_below_spacing());
+    pre_cut_layer.set_above_prl(curr_cut_layer.get_below_prl());
+    pre_cut_layer.set_above_prl_spacing(curr_cut_layer.get_below_prl_spacing());
+  }
+  cut_layer_list.back().set_above_spacing(0);
+  cut_layer_list.back().set_above_prl(0);
+  cut_layer_list.back().set_above_prl_spacing(0);
+}
+
+void DataManager::checkLayerList()
+{
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
+
+  if (routing_layer_list.empty()) {
+    DRCLOG.error(Loc::current(), "The routing_layer_list is empty!");
+  }
+  if (cut_layer_list.empty()) {
+    DRCLOG.error(Loc::current(), "The cut_layer_list is empty!");
+  }
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    std::string& layer_name = routing_layer.get_layer_name();
+    if (routing_layer.get_pitch() <= 0) {
+      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' pitch '", routing_layer.get_pitch(), "' is wrong!");
+    }
+    SpacingTable& prl_spacing_table = routing_layer.get_prl_spacing_table();
+    if (prl_spacing_table.get_width_list().empty()) {
+      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' spacing width_list is empty!");
+    }
+    if (prl_spacing_table.get_parallel_length_list().empty()) {
+      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' spacing parallel_length_list is empty!");
+    }
+    if (routing_layer.get_eol_spacing() == -1) {
+      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' eol_spacing == -1!");
+    }
+    if (routing_layer.get_eol_within() == -1) {
+      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' eol_within == -1!");
+    }
+  }
+  for (CutLayer& cut_layer : cut_layer_list) {
+    std::string& layer_name = cut_layer.get_layer_name();
+    if (cut_layer.get_curr_spacing() == -1) {
+      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' curr_spacing == -1!");
+    }
+    if (cut_layer.get_curr_prl() == -1) {
+      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' curr_prl == -1!");
+    }
+    if (cut_layer.get_curr_prl_spacing() == -1) {
+      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' curr_prl_spacing == -1!");
+    }
+    if (cut_layer.get_curr_eol_spacing() == -1) {
+      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' curr_eol_spacing == -1!");
+    }
+    if (cut_layer.get_above_spacing() == -1) {
+      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' above_spacing == -1!");
+    }
+    if (cut_layer.get_above_prl() == -1) {
+      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' above_prl == -1!");
+    }
+    if (cut_layer.get_above_prl_spacing() == -1) {
+      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' above_prl_spacing == -1!");
+    }
+    if (cut_layer.get_below_spacing() == -1) {
+      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' below_spacing == -1!");
+    }
+    if (cut_layer.get_below_prl() == -1) {
+      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' below_prl == -1!");
+    }
+    if (cut_layer.get_below_prl_spacing() == -1) {
+      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' below_prl_spacing == -1!");
+    }
+  }
+}
+
+void DataManager::buildLayerInfo()
+{
+  std::map<int32_t, std::vector<int32_t>>& routing_to_adjacent_cut_map = _database.get_routing_to_adjacent_cut_map();
+  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = _database.get_cut_to_adjacent_routing_map();
+
+  std::vector<std::tuple<int32_t, bool, int32_t>> order_routing_layer_list;
+  for (RoutingLayer& routing_layer : _database.get_routing_layer_list()) {
+    order_routing_layer_list.emplace_back(routing_layer.get_layer_order(), true, routing_layer.get_layer_idx());
+  }
+  for (CutLayer& cut_layer : _database.get_cut_layer_list()) {
+    order_routing_layer_list.emplace_back(cut_layer.get_layer_order(), false, cut_layer.get_layer_idx());
+  }
+  std::sort(order_routing_layer_list.begin(), order_routing_layer_list.end(),
+            [](std::tuple<int32_t, bool, int32_t>& a, std::tuple<int32_t, bool, int32_t>& b) { return std::get<0>(a) < std::get<0>(b); });
+  for (int32_t i = 0; i < static_cast<int32_t>(order_routing_layer_list.size()); i++) {
+    if (std::get<1>(order_routing_layer_list[i]) == true) {
+      if (i - 1 >= 0) {
+        routing_to_adjacent_cut_map[std::get<2>(order_routing_layer_list[i])].push_back(std::get<2>(order_routing_layer_list[i - 1]));
+      }
+      if (i + 1 < static_cast<int32_t>(order_routing_layer_list.size())) {
+        routing_to_adjacent_cut_map[std::get<2>(order_routing_layer_list[i])].push_back(std::get<2>(order_routing_layer_list[i + 1]));
+      }
+    } else {
+      if (i - 1 >= 0) {
+        cut_to_adjacent_routing_map[std::get<2>(order_routing_layer_list[i])].push_back(std::get<2>(order_routing_layer_list[i - 1]));
+      }
+      if (i + 1 < static_cast<int32_t>(order_routing_layer_list.size())) {
+        cut_to_adjacent_routing_map[std::get<2>(order_routing_layer_list[i])].push_back(std::get<2>(order_routing_layer_list[i + 1]));
+      }
+    }
+  }
+}
+
+#endif
 
 }  // namespace idrc

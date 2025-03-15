@@ -17,6 +17,7 @@
 #pragma once
 
 #include "Config.hpp"
+#include "DRCInterface.hpp"
 #include "Database.hpp"
 
 namespace idrc {
@@ -30,6 +31,8 @@ class DataManager
   static DataManager& getInst();
   static void destroyInst();
   // function
+  void input(std::map<std::string, std::any>& config_map);
+  void output();
 
 #if 1  // 获得唯一的pitch
   int32_t getOnlyPitch();
@@ -50,6 +53,18 @@ class DataManager
   ~DataManager() = default;
   DataManager& operator=(const DataManager& other) = delete;
   DataManager& operator=(DataManager&& other) = delete;
+
+#if 1  // build
+  void buildConfig();
+  void buildDatabase();
+  void buildLayerList();
+  void transLayerList();
+  void makeLayerList();
+  void makeRoutingLayerList();
+  void makeCutLayerList();
+  void checkLayerList();
+  void buildLayerInfo();
+#endif
 };
 
 }  // namespace idrc

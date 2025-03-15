@@ -154,9 +154,9 @@ void RTInterface::runRT()
   RTVR.repair();
   ViolationRepairer::destroyInst();
 
+  destroyFlute();
   RTGP.destroy();
   RTDE.destroy();
-  destroyFlute();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -1363,7 +1363,13 @@ idb::IdbRegularWireSegment* RTInterface::getIDBVia(int32_t net_idx, Segment<Laye
 
 void RTInterface::initIDRC()
 {
-  DRCI.initDRC();
+  std::string temp_directory_path = RTDM.getConfig().temp_directory_path;
+  int32_t thread_number = RTDM.getConfig().thread_number;
+
+  std::map<std::string, std::any> config_map;
+  config_map.insert({"-temp_directory_path", RTUTIL.getString(temp_directory_path, "other_tools/idrc/")});
+  config_map.insert({"-thread_number", thread_number});
+  DRCI.initDRC(config_map);
 }
 
 void RTInterface::destroyIDRC()
@@ -1606,7 +1612,7 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   std::string& temp_directory_path = RTDM.getConfig().temp_directory_path;
 
-  ista::TimingEngine* timing_engine = initTimingEngine(RTUTIL.getString(temp_directory_path, "sta/"));
+  ista::TimingEngine* timing_engine = initTimingEngine(RTUTIL.getString(temp_directory_path, "other_tools/ista/"));
   ista::Netlist* sta_net_list = timing_engine->get_netlist();
 
   for (size_t net_idx = 0; net_idx < coord_real_pin_map_list.size(); net_idx++) {
@@ -1653,7 +1659,7 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
     clock_timing[clk_name]["WNS"] = setup_wns;
     clock_timing[clk_name]["Freq(MHz)"] = suggest_freq;
   });
-  ipower::PowerEngine* power_engine = initPowerEngine(RTUTIL.getString(temp_directory_path, "pwr/"));
+  ipower::PowerEngine* power_engine = initPowerEngine(RTUTIL.getString(temp_directory_path, "other_tools/ipw/"));
   power_engine->get_power()->updatePower();
   power_engine->get_power()->reportPower();
 
