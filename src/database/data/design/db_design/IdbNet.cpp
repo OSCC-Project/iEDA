@@ -110,7 +110,8 @@ IdbPin* IdbNet::get_driving_pin()
 {
   /// 1st step : check if exist instance output pin, if existed, it is driving pin
   for (IdbPin* pin : _instance_pin_list->get_pin_list()) {
-    if (pin->get_term()->get_direction() == IdbConnectDirection::kOutput) {
+    if (pin->get_term()->get_direction() == IdbConnectDirection::kOutput
+        || pin->get_term()->get_direction() == IdbConnectDirection::kOutputTriState) {
       return pin;
     }
   }

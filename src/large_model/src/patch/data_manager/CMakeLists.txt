@@ -3,7 +3,7 @@ add_library(ilm_patch_dm
     lm_patch_init.cpp
 )
 
-find_package(OpenCV REQUIRED)
+# find_package(OpenCV REQUIRED)
 
 target_link_libraries(ilm_patch_dm
     PUBLIC
@@ -16,7 +16,7 @@ target_link_libraries(ilm_patch_dm
     ilm_patch_db
     ilm_layout_db
     ilm_util
-    ${OpenCV_LIBS}
+    # ${OpenCV_LIBS}
 )
 
 target_include_directories(ilm_patch_dm
