@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkMetalShort()
+void Module::checkMetalShort(DRCBox& drc_box)
 {
 }
 

@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkDifferentLayerCutSpacing()
+void Module::checkDifferentLayerCutSpacing(DRCBox& drc_box)
 {
 }
 

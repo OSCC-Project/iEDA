@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkNonsufficientMetalOverlap()
+void Module::checkNonsufficientMetalOverlap(DRCBox& drc_box)
 {
 }
 

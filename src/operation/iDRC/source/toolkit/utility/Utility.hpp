@@ -19,6 +19,7 @@
 #include "DRCHeader.hpp"
 #include "Logger.hpp"
 #include "json.hpp"
+#include "PlanarRect.hpp"
 
 namespace idrc {
 
@@ -31,6 +32,44 @@ class Utility
   static Utility& getInst();
   static void destroyInst();
   // function
+
+#if 1  // 形状有关计算
+
+static PlanarRect getRegularRect(PlanarRect rect, PlanarRect border)
+{
+  PlanarRect regular_rect;
+  regular_rect.set_ll(std::max(rect.get_ll_x(), border.get_ll_x()), std::max(rect.get_ll_y(), border.get_ll_y()));
+  regular_rect.set_ur(std::min(rect.get_ur_x(), border.get_ur_x()), std::min(rect.get_ur_y(), border.get_ur_y()));
+  return regular_rect;
+}
+
+  // 扩大矩形
+  static PlanarRect getEnlargedRect(PlanarRect rect, int32_t enlarge_size)
+  {
+    return getEnlargedRect(rect, enlarge_size, enlarge_size, enlarge_size, enlarge_size);
+  }
+
+  // 扩大矩形
+  static PlanarRect getEnlargedRect(PlanarRect rect, int32_t ll_x_minus_offset, int32_t ll_y_minus_offset, int32_t ur_x_add_offset, int32_t ur_y_add_offset)
+  {
+    minusOffset(rect.get_ll(), ll_x_minus_offset, ll_y_minus_offset);
+    addOffset(rect.get_ur(), ur_x_add_offset, ur_y_add_offset);
+    return rect;
+  }
+
+  static void minusOffset(PlanarCoord& coord, int32_t x_offset, int32_t y_offset)
+  {
+    coord.set_x((coord.get_x() - x_offset) < 0 ? 0 : (coord.get_x() - x_offset));
+    coord.set_y((coord.get_y() - y_offset) < 0 ? 0 : (coord.get_y() - y_offset));
+  }
+
+  static void addOffset(PlanarCoord& coord, int32_t x_offset, int32_t y_offset)
+  {
+    coord.set_x(coord.get_x() + x_offset);
+    coord.set_y(coord.get_y() + y_offset);
+  }
+
+#endif
 
 #if 1  // std数据结构工具函数
 

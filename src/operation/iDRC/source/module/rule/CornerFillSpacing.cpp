@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkCornerFillSpacing()
+void Module::checkCornerFillSpacing(DRCBox& drc_box)
 {
 }
 

@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkParallelRunLengthSpacing()
+void Module::checkParallelRunLengthSpacing(DRCBox& drc_box)
 {
 }
 

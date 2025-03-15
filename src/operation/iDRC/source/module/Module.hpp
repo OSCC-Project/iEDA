@@ -16,6 +16,11 @@
 // ***************************************************************************************
 #pragma once
 
+#include "DRCBox.hpp"
+#include "DRCModel.hpp"
+#include "DataManager.hpp"
+#include "Logger.hpp"
+
 namespace idrc {
 
 #define DRCMOD (idrc::Module::getInst())
@@ -27,7 +32,7 @@ class Module
   static Module& getInst();
   static void destroyInst();
   // function
-  void check();
+  void check(DRCModel& drc_model);
 
  private:
   // self
@@ -40,30 +45,34 @@ class Module
   Module& operator=(const Module& other) = delete;
   Module& operator=(Module&& other) = delete;
   // function
-  void checkAdjacentCutSpacing();
-  void checkCornerFillSpacing();
-  void checkCutEOLSpacing();
-  void checkCutShort();
-  void checkDifferentLayerCutSpacing();
-  void checkEnclosure();
-  void checkEnclosureEdge();
-  void checkEnclosureParallel();
-  void checkEndOfLineSpacing();
-  void checkFloatingPatch();
-  void checkJogToJogSpacing();
-  void checkMaxViaStack();
-  void checkMetalShort();
-  void checkMinHole();
-  void checkMinimumArea();
-  void checkMinimumCut();
-  void checkMinimumWidth();
-  void checkMinStep();
-  void checkNonsufficientMetalOverlap();
-  void checkNotchSpacing();
-  void checkOffGridOrWrongWay();
-  void checkOutOfDie();
-  void checkParallelRunLengthSpacing();
-  void checkSameLayerCutSpacing();
+  void buildDRCModel(DRCModel& drc_model);
+  void checkDRCModel(DRCModel& drc_model);
+
+  void checkDRCBox(DRCBox& drc_box);
+  void checkAdjacentCutSpacing(DRCBox& drc_box);
+  void checkCornerFillSpacing(DRCBox& drc_box);
+  void checkCutEOLSpacing(DRCBox& drc_box);
+  void checkCutShort(DRCBox& drc_box);
+  void checkDifferentLayerCutSpacing(DRCBox& drc_box);
+  void checkEnclosure(DRCBox& drc_box);
+  void checkEnclosureEdge(DRCBox& drc_box);
+  void checkEnclosureParallel(DRCBox& drc_box);
+  void checkEndOfLineSpacing(DRCBox& drc_box);
+  void checkFloatingPatch(DRCBox& drc_box);
+  void checkJogToJogSpacing(DRCBox& drc_box);
+  void checkMaxViaStack(DRCBox& drc_box);
+  void checkMetalShort(DRCBox& drc_box);
+  void checkMinHole(DRCBox& drc_box);
+  void checkMinimumArea(DRCBox& drc_box);
+  void checkMinimumCut(DRCBox& drc_box);
+  void checkMinimumWidth(DRCBox& drc_box);
+  void checkMinStep(DRCBox& drc_box);
+  void checkNonsufficientMetalOverlap(DRCBox& drc_box);
+  void checkNotchSpacing(DRCBox& drc_box);
+  void checkOffGridOrWrongWay(DRCBox& drc_box);
+  void checkOutOfDie(DRCBox& drc_box);
+  void checkParallelRunLengthSpacing(DRCBox& drc_box);
+  void checkSameLayerCutSpacing(DRCBox& drc_box);
 };
 
 }  // namespace idrc

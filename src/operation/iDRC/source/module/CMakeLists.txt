@@ -7,6 +7,7 @@ else()
 endif()
 
 add_library(idrc_module
+    ${IDRC_MODULE}/Module.cpp
     ${IDRC_MODULE}/rule/AdjacentCutSpacing.cpp
     ${IDRC_MODULE}/rule/CornerFillSpacing.cpp
     ${IDRC_MODULE}/rule/CutEOLSpacing.cpp

@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkEnclosure()
+void Module::checkEnclosure(DRCBox& drc_box)
 {
 }
 

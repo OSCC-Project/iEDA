@@ -16,40 +16,30 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Config.hpp"
-#include "Database.hpp"
+#include "GridMap.hpp"
+#include "DRCHeader.hpp"
 
 namespace idrc {
 
-#define DRCDM (idrc::DataManager::getInst())
-
-class DataManager
+class SpacingTable
 {
  public:
-  static void initInst();
-  static DataManager& getInst();
-  static void destroyInst();
+  SpacingTable() = default;
+  ~SpacingTable() = default;
+  // getter
+  std::vector<int32_t>& get_width_list() { return _width_list; }
+  std::vector<int32_t>& get_parallel_length_list() { return _parallel_length_list; }
+  GridMap<int32_t>& get_width_parallel_length_map() { return _width_parallel_length_map; }
+  // setter
+  void set_width_list(const std::vector<int32_t>& width_list) { _width_list = width_list; }
+  void set_parallel_length_list(const std::vector<int32_t>& parallel_length_list) { _parallel_length_list = parallel_length_list; }
+  void set_width_parallel_length_map(const GridMap<int32_t>& width_parallel_length_map) { _width_parallel_length_map = width_parallel_length_map; }
   // function
 
-#if 1  // 获得唯一的pitch
-  int32_t getOnlyPitch();
-#endif
-
-  Config& getConfig() { return _config; }
-  Database& getDatabase() { return _database; }
-
  private:
-  static DataManager* _dm_instance;
-  // config & database
-  Config _config;
-  Database _database;
-
-  DataManager() = default;
-  DataManager(const DataManager& other) = delete;
-  DataManager(DataManager&& other) = delete;
-  ~DataManager() = default;
-  DataManager& operator=(const DataManager& other) = delete;
-  DataManager& operator=(DataManager&& other) = delete;
+  std::vector<int32_t> _width_list;
+  std::vector<int32_t> _parallel_length_list;
+  GridMap<int32_t> _width_parallel_length_map;
 };
 
 }  // namespace idrc

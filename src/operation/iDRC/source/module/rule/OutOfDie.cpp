@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkOutOfDie()
+void Module::checkOutOfDie(DRCBox& drc_box)
 {
 }
 

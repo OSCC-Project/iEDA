@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkMinimumCut()
+void Module::checkMinimumCut(DRCBox& drc_box)
 {
 }
 

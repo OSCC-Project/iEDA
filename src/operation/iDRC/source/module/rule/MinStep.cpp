@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkMinStep()
+void Module::checkMinStep(DRCBox& drc_box)
 {
 }
 

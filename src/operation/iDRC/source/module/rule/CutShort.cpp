@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkCutShort()
+void Module::checkCutShort(DRCBox& drc_box)
 {
 }
 

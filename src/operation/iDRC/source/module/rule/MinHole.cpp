@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkMinHole()
+void Module::checkMinHole(DRCBox& drc_box)
 {
 }
 

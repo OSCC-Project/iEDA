@@ -22,20 +22,18 @@
 
 namespace idrc {
 
-class Violation
+class Violation: public LayerRect
 {
  public:
   Violation() = default;
   ~Violation() = default;
   // getter
   ViolationType get_violation_type() const { return _violation_type; }
-  LayerRect& get_violation_shape() { return _violation_shape; }
   bool get_is_routing() const { return _is_routing; }
   std::set<int32_t>& get_violation_net_set() { return _violation_net_set; }
   int32_t get_required_size() const { return _required_size; }
   // setter
   void set_violation_type(const ViolationType& violation_type) { _violation_type = violation_type; }
-  void set_violation_shape(const LayerRect& violation_shape) { _violation_shape = violation_shape; }
   void set_is_routing(const bool is_routing) { _is_routing = is_routing; }
   void set_violation_net_set(const std::set<int32_t>& violation_net_set) { _violation_net_set = violation_net_set; }
   void set_required_size(const int32_t required_size) { _required_size = required_size; }
@@ -43,7 +41,6 @@ class Violation
 
  private:
   ViolationType _violation_type = ViolationType::kNone;
-  LayerRect _violation_shape;
   bool _is_routing = true;
   std::set<int32_t> _violation_net_set;
   int32_t _required_size = 0;

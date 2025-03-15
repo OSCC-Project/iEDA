@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkMinimumWidth()
+void Module::checkMinimumWidth(DRCBox& drc_box)
 {
 }
 

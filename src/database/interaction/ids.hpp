@@ -98,19 +98,3 @@ class TimingPin;
 class TileGrid;
 
 }  // namespace eval
-
-namespace ids {
-
-struct Violation
-{
-  std::string violation_type = "";
-  int32_t ll_x = -1;
-  int32_t ll_y = -1;
-  int32_t ur_x = -1;
-  int32_t ur_y = -1;
-  std::string layer_name = "";
-  std::set<int32_t> violation_net_set;
-  int32_t required_size = 0;
-};
-
-}  // namespace ids

@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkJogToJogSpacing()
+void Module::checkJogToJogSpacing(DRCBox& drc_box)
 {
 }
 

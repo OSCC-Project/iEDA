@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkOffGridOrWrongWay()
+void Module::checkOffGridOrWrongWay(DRCBox& drc_box)
 {
 }
 

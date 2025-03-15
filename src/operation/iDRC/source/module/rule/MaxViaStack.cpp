@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkMaxViaStack()
+void Module::checkMaxViaStack(DRCBox& drc_box)
 {
 }
 

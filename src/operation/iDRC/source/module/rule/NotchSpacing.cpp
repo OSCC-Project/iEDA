@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkNotchSpacing()
+void Module::checkNotchSpacing(DRCBox& drc_box)
 {
 }
 

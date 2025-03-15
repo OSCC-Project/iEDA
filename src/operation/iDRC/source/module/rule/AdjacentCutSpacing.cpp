@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkAdjacentCutSpacing()
+void Module::checkAdjacentCutSpacing(DRCBox& drc_box)
 {
 }
 

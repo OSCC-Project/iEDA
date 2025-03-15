@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkEnclosureEdge()
+void Module::checkEnclosureEdge(DRCBox& drc_box)
 {
 }
 

@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkEnclosureParallel()
+void Module::checkEnclosureParallel(DRCBox& drc_box)
 {
 }
 

@@ -14,12 +14,37 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "Module.hpp"
+#pragma once
 
-namespace idrc {
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
 
-void Module::checkEndOfLineSpacing(DRCBox& drc_box)
+namespace ids {
+
+struct Shape
 {
-}
+  int32_t net_idx = -1;
+  int32_t ll_x = -1;
+  int32_t ll_y = -1;
+  int32_t ur_x = -1;
+  int32_t ur_y = -1;
+  int32_t layer_idx = -1;
+  bool is_routing = true;
+};
 
-}  // namespace idrc
+struct Violation
+{
+  std::string violation_type = "";
+  int32_t ll_x = -1;
+  int32_t ll_y = -1;
+  int32_t ur_x = -1;
+  int32_t ur_y = -1;
+  int32_t layer_idx = -1;
+  bool is_routing = true;
+  std::set<int32_t> violation_net_set;
+  int32_t required_size = 0;
+};
+
+}  // namespace ids

@@ -45,6 +45,32 @@ void DataManager::destroyInst()
 
 // function
 
+#if 1  // 获得唯一的pitch
+
+int32_t DataManager::getOnlyPitch()
+{
+  return 200;
+  // std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+
+  // std::vector<int32_t> pitch_list;
+  // for (RoutingLayer& routing_layer : routing_layer_list) {
+  //   for (ScaleGrid& x_grid : routing_layer.get_track_axis().get_x_grid_list()) {
+  //     pitch_list.push_back(x_grid.get_step_length());
+  //   }
+  //   for (ScaleGrid& y_grid : routing_layer.get_track_axis().get_y_grid_list()) {
+  //     pitch_list.push_back(y_grid.get_step_length());
+  //   }
+  // }
+  // for (int32_t pitch : pitch_list) {
+  //   if (pitch_list.front() != pitch) {
+  //     RTLOG.error(Loc::current(), "The pitch is not equal!");
+  //   }
+  // }
+  // return pitch_list.front();
+}
+
+#endif
+
 // private
 
 DataManager* DataManager::_dm_instance = nullptr;

@@ -1266,32 +1266,7 @@ void RTInterface::outputSummary()
 
 #endif
 
-#if 1  // 获得IdbSegment
-
-idb::IdbLayerShape* RTInterface::getIDBLayerShapeByFixedRect(EXTLayerRect* fixed_rect, bool is_routing)
-{
-  idb::IdbLayers* idb_layer_list = dmInst->get_idb_def_service()->get_layout()->get_layers();
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
-
-  std::string layer_name;
-  if (is_routing) {
-    layer_name = routing_layer_list[fixed_rect->get_layer_idx()].get_layer_name();
-  } else {
-    layer_name = cut_layer_list[fixed_rect->get_layer_idx()].get_layer_name();
-  }
-  idb::IdbLayer* idb_layer = idb_layer_list->find_layer(layer_name);
-  if (idb_layer == nullptr) {
-    RTLOG.error(Loc::current(), "Can not find idb layer ", layer_name);
-  }
-  PlanarRect& real_rect = fixed_rect->get_real_rect();
-
-  idb::IdbLayerShape* idb_shape = new idb::IdbLayerShape();
-  idb_shape->set_type_rect();
-  idb_shape->add_rect(real_rect.get_ll_x(), real_rect.get_ll_y(), real_rect.get_ur_x(), real_rect.get_ur_y());
-  idb_shape->set_layer(idb_layer);
-  return idb_shape;
-}
+#if 1  // convert idb
 
 idb::IdbRegularWireSegment* RTInterface::getIDBSegmentByNetResult(int32_t net_idx, Segment<LayerCoord>& segment)
 {
@@ -1398,83 +1373,63 @@ void RTInterface::destroyIDRC()
 
 std::vector<Violation> RTInterface::getViolationList(std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
                                                      std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
-                                                     std::map<int32_t, std::vector<Segment<LayerCoord>*>>& net_result_map,
+                                                     std::map<int32_t, std::vector<Segment<LayerCoord>*>>& net_routing_result_map,
                                                      std::map<int32_t, std::vector<EXTLayerRect*>>& net_patch_map)
 {
-  std::vector<idb::IdbLayerShape*> idb_env_shape_list;
-  for (std::pair<EXTLayerRect*, bool>& env_shape : env_shape_list) {
-    idb_env_shape_list.push_back(getIDBLayerShapeByFixedRect(env_shape.first, env_shape.second));
-  }
-  std::map<int32_t, std::vector<idb::IdbLayerShape*>> idb_net_pin_shape_map;
-  for (auto& [net_idx, pin_shape_list] : net_pin_shape_map) {
-    for (std::pair<EXTLayerRect*, bool>& pin_shape : pin_shape_list) {
-      idb_net_pin_shape_map[net_idx].push_back(getIDBLayerShapeByFixedRect(pin_shape.first, pin_shape.second));
-    }
-  }
-  std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> idb_net_result_map;
-  for (auto& [net_idx, segment_list] : net_result_map) {
-    for (Segment<LayerCoord>* segment : segment_list) {
-      idb_net_result_map[net_idx].push_back(getIDBSegmentByNetResult(net_idx, *segment));
-    }
-  }
-  for (auto& [net_idx, patch_set] : net_patch_map) {
-    for (EXTLayerRect* patch : patch_set) {
-      idb_net_result_map[net_idx].push_back(getIDBSegmentByNetPatch(net_idx, *patch));
-    }
-  }
-  std::vector<Violation> violation_list = getViolationList(idb_env_shape_list, idb_net_pin_shape_map, idb_net_result_map);
-  // free memory
+  std::vector<ids::Shape> ids_shape_list;
   {
-    for (idb::IdbLayerShape* idb_env_shape : idb_env_shape_list) {
-      delete idb_env_shape;
-      idb_env_shape = nullptr;
+    for (std::pair<EXTLayerRect*, bool>& env_shape : env_shape_list) {
+      ids_shape_list.emplace_back(getIDSShape(-1, env_shape.first->getRealLayerRect(), env_shape.second));
     }
-    for (auto& [net_idx, pin_shape_list] : idb_net_pin_shape_map) {
-      for (idb::IdbLayerShape* pin_shape : pin_shape_list) {
-        delete pin_shape;
-        pin_shape = nullptr;
+    for (auto& [net_idx, pin_shape_list] : net_pin_shape_map) {
+      for (std::pair<EXTLayerRect*, bool>& pin_shape : pin_shape_list) {
+        ids_shape_list.emplace_back(getIDSShape(net_idx, pin_shape.first->getRealLayerRect(), pin_shape.second));
       }
     }
-    for (auto& [net_idx, segment_list] : idb_net_result_map) {
-      for (idb::IdbRegularWireSegment* segment : segment_list) {
-        delete segment;
-        segment = nullptr;
+    for (auto& [net_idx, segment_list] : net_routing_result_map) {
+      for (Segment<LayerCoord>* segment : segment_list) {
+        for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+          ids_shape_list.emplace_back(getIDSShape(net_idx, LayerRect(net_shape), net_shape.get_is_routing()));
+        }
+      }
+    }
+    for (auto& [net_idx, patch_set] : net_patch_map) {
+      for (EXTLayerRect* patch : patch_set) {
+        ids_shape_list.emplace_back(getIDSShape(net_idx, patch->getRealLayerRect(), true));
       }
     }
   }
-  return violation_list;
-}
-
-std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
-                                                     std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
-                                                     std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_result_map)
-{
-  std::map<std::string, int32_t>& routing_layer_name_to_idx_map = RTDM.getDatabase().get_routing_layer_name_to_idx_map();
-  std::map<std::string, int32_t>& cut_layer_name_to_idx_map = RTDM.getDatabase().get_cut_layer_name_to_idx_map();
-  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
-
   std::vector<Violation> violation_list;
-  for (ids::Violation ids_violation : DRCI.getViolationList(env_shape_list, net_pin_shape_map, net_result_map)) {
+  for (ids::Violation ids_violation : DRCI.getViolationList(ids_shape_list)) {
     EXTLayerRect ext_layer_rect;
     ext_layer_rect.set_real_ll(ids_violation.ll_x, ids_violation.ll_y);
     ext_layer_rect.set_real_ur(ids_violation.ur_x, ids_violation.ur_y);
-    if (RTUTIL.exist(routing_layer_name_to_idx_map, ids_violation.layer_name)) {
-      ext_layer_rect.set_layer_idx(routing_layer_name_to_idx_map[ids_violation.layer_name]);
-    } else if (RTUTIL.exist(cut_layer_name_to_idx_map, ids_violation.layer_name)) {
-      std::vector<int32_t> routing_layer_idx_list = cut_to_adjacent_routing_map[cut_layer_name_to_idx_map[ids_violation.layer_name]];
-      ext_layer_rect.set_layer_idx(std::min(routing_layer_idx_list.front(), routing_layer_idx_list.back()));
-    } else {
-      RTLOG.error(Loc::current(), "Unknow layer! '", ids_violation.layer_name, "'");
+    ext_layer_rect.set_layer_idx(ids_violation.layer_idx);
+    if (ids_violation.violation_net_set.size() > 2) {
+      RTLOG.error(Loc::current(), "The ids_violation.violation_net_set size > 2!");
     }
     Violation violation;
     violation.set_violation_type(GetViolationTypeByName()(ids_violation.violation_type));
     violation.set_violation_shape(ext_layer_rect);
-    violation.set_is_routing(true);
+    violation.set_is_routing(ids_violation.is_routing);
     violation.set_violation_net_set(ids_violation.violation_net_set);
     violation.set_required_size(ids_violation.required_size);
     violation_list.push_back(violation);
   }
   return violation_list;
+}
+
+ids::Shape RTInterface::getIDSShape(int32_t net_idx, LayerRect layer_rect, bool is_routing)
+{
+  ids::Shape ids_shape;
+  ids_shape.net_idx = net_idx;
+  ids_shape.ll_x = layer_rect.get_ll_x();
+  ids_shape.ll_y = layer_rect.get_ll_y();
+  ids_shape.ur_x = layer_rect.get_ur_x();
+  ids_shape.ur_y = layer_rect.get_ur_y();
+  ids_shape.layer_idx = layer_rect.get_layer_idx();
+  ids_shape.is_routing = is_routing;
+  return ids_shape;
 }
 
 #endif

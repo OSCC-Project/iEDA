@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkCutEOLSpacing()
+void Module::checkCutEOLSpacing(DRCBox& drc_box)
 {
 }
 

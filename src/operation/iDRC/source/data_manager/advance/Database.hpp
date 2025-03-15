@@ -16,7 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Violation.hpp"
+#include "RoutingLayer.hpp"
+#include "CutLayer.hpp"
 
 namespace idrc {
 
@@ -32,6 +33,9 @@ class Database
   // function
 
  private:
+ int32_t _manufacture_grid = -1;
+ std::vector<RoutingLayer> _routing_layer_list;
+ std::vector<CutLayer> _cut_layer_list;
 };
 
 }  // namespace idrc

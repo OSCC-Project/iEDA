@@ -19,7 +19,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 ############################ debug source module ############################
 
-# set(DEBUG_IDRC_MODULE ON)
+set(DEBUG_IDRC_MODULE ON)
 
 ############################ debug source utility ############################
 

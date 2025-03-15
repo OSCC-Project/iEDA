@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkMinimumArea()
+void Module::checkMinimumArea(DRCBox& drc_box)
 {
 }
 

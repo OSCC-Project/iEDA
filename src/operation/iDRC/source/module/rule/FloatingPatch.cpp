@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void Module::checkFloatingPatch()
+void Module::checkFloatingPatch(DRCBox& drc_box)
 {
 }
 

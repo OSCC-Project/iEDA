@@ -22,17 +22,13 @@
 #include <string>
 #include <vector>
 
-#include "../../../database/interaction/ids.hpp"
+#include "../../../database/interaction/RT_DRC/ids.hpp"
 
 #if 1  // 前向声明
 
-namespace idb {
-class IdbLayerShape;
-class IdbRegularWireSegment;
-}  // namespace idb
-
 namespace idrc {
-enum class ViolationType;
+class DRCModel;
+class DRCBox;
 class Violation;
 }  // namespace idrc
 
@@ -53,15 +49,11 @@ class DRCInterface
 #if 1  // iDRC
   void initDRC();
   void checkDef();
-  std::vector<ids::Violation> getViolationList(std::vector<idb::IdbLayerShape*>& idb_env_shape_list,
-                                               std::map<int32_t, std::vector<idb::IdbLayerShape*>>& idb_net_pin_shape_map,
-                                               std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& idb_net_result_map);
   void destroyDRC();
+  std::vector<ids::Violation> getViolationList(std::vector<ids::Shape> ids_shape_list);
+  DRCModel initDRCModel(std::vector<ids::Shape>& ids_shape_list);
+  std::vector<ids::Violation> getViolationList(DRCModel& drc_model);
 #endif
-
-#endif
-
-#if 1  // DRC调用外部的API
 
 #endif
 
