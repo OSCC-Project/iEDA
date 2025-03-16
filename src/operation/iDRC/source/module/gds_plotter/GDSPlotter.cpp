@@ -168,7 +168,7 @@ void GDSPlotter::buildGraphLypFile()
       }
     }
   }
-  writeLypFile(DRCUTIL.getString(gp_temp_directory_path, "rt.lyp"), lyp_layer_list);
+  writeLypFile(DRCUTIL.getString(gp_temp_directory_path, "drc.lyp"), lyp_layer_list);
 }
 
 void GDSPlotter::writeLypFile(std::string lyp_file_path, std::vector<GPLYPLayer>& lyp_layer_list)

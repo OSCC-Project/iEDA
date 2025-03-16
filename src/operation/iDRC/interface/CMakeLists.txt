@@ -13,6 +13,7 @@ add_library(idrc_interface
 target_link_libraries(idrc_interface
     PRIVATE
         idrc_source
+        idm
 )
 
 target_include_directories(idrc_interface

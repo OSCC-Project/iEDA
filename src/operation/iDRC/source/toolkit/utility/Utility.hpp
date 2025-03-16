@@ -33,6 +33,43 @@ class Utility
   static void destroyInst();
   // function
 
+#if 1  // 方向方位计算
+
+  // 判断线段方向
+  static Direction getDirection(PlanarCoord start_coord, PlanarCoord end_coord)
+  {
+    if (start_coord == end_coord) {
+      return Direction::kProximal;
+    }
+
+    bool is_h = (start_coord.get_y() == end_coord.get_y());
+    bool is_v = (start_coord.get_x() == end_coord.get_x());
+    return is_h ? Direction::kHorizontal : is_v ? Direction::kVertical : Direction::kOblique;
+  }
+
+  // 判断线段是否为一个点
+  static bool isProximal(const PlanarCoord& start_coord, const PlanarCoord& end_coord) { return getDirection(start_coord, end_coord) == Direction::kProximal; }
+
+  // 判断线段是否为水平线
+  static bool isHorizontal(const PlanarCoord& start_coord, const PlanarCoord& end_coord)
+  {
+    return getDirection(start_coord, end_coord) == Direction::kHorizontal;
+  }
+
+  // 判断线段是否为竖直线
+  static bool isVertical(const PlanarCoord& start_coord, const PlanarCoord& end_coord) { return getDirection(start_coord, end_coord) == Direction::kVertical; }
+
+  // 判断线段是否为斜线
+  static bool isOblique(const PlanarCoord& start_coord, const PlanarCoord& end_coord) { return getDirection(start_coord, end_coord) == Direction::kOblique; }
+
+  // 判断线段是否为直角线
+  static bool isRightAngled(const PlanarCoord& start_coord, const PlanarCoord& end_coord)
+  {
+    return isProximal(start_coord, end_coord) || isHorizontal(start_coord, end_coord) || isVertical(start_coord, end_coord);
+  }
+
+#endif
+
 #if 1  // idrc数据结构工具函数
 
   // 获得配置的值
@@ -52,6 +89,32 @@ class Utility
 #endif
 
 #if 1  // 形状有关计算
+
+  // 偏移矩形
+  static PlanarRect getOffsetRect(PlanarRect rect, PlanarCoord offset_coord)
+  {
+    int32_t offset_x = offset_coord.get_x();
+    int32_t offset_y = offset_coord.get_y();
+
+    addOffset(rect.get_ll(), offset_x, offset_y);
+    addOffset(rect.get_ur(), offset_x, offset_y);
+    return rect;
+  }
+
+  static PlanarRect getEnlargedRect(PlanarCoord start_coord, PlanarCoord end_coord, int32_t enlarge_size)
+  {
+    if (!CmpPlanarCoordByXASC()(start_coord, end_coord)) {
+      std::swap(start_coord, end_coord);
+    }
+    PlanarRect rect(start_coord, end_coord);
+
+    if (isRightAngled(start_coord, end_coord)) {
+      rect = getEnlargedRect(rect, enlarge_size);
+    } else {
+      DRCLOG.error(Loc::current(), "The segment is oblique!");
+    }
+    return rect;
+  }
 
   static PlanarRect getRegularRect(PlanarRect rect, PlanarRect border)
   {

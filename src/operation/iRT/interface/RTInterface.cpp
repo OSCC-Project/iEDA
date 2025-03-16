@@ -633,7 +633,7 @@ void RTInterface::wrapObstacleList()
 
   std::vector<Obstacle>& routing_obstacle_list = RTDM.getDatabase().get_routing_obstacle_list();
   std::vector<Obstacle>& cut_obstacle_list = RTDM.getDatabase().get_cut_obstacle_list();
-  std::vector<idb::IdbInstance*>& instance_list = dmInst->get_idb_def_service()->get_design()->get_instance_list()->get_instance_list();
+  std::vector<idb::IdbInstance*>& idb_instance_list = dmInst->get_idb_def_service()->get_design()->get_instance_list()->get_instance_list();
   std::vector<idb::IdbSpecialNet*>& idb_special_net_list = dmInst->get_idb_def_service()->get_design()->get_special_net_list()->get_net_list();
   std::vector<idb::IdbPin*>& idb_io_pin_list = dmInst->get_idb_def_service()->get_design()->get_io_pin_list()->get_pin_list();
 
@@ -641,9 +641,9 @@ void RTInterface::wrapObstacleList()
   size_t total_cut_obstacle_num = 0;
   {
     // instance
-    for (idb::IdbInstance* instance : instance_list) {
+    for (idb::IdbInstance* idb_instance : idb_instance_list) {
       // instance obs
-      for (idb::IdbLayerShape* obs_box : instance->get_obs_box_list()) {
+      for (idb::IdbLayerShape* obs_box : idb_instance->get_obs_box_list()) {
         if (obs_box->get_layer()->is_routing()) {
           total_routing_obstacle_num += obs_box->get_rect_list().size();
         } else if (obs_box->get_layer()->is_cut()) {
@@ -651,7 +651,7 @@ void RTInterface::wrapObstacleList()
         }
       }
       // instance pin without net
-      for (idb::IdbPin* idb_pin : instance->get_pin_list()->get_pin_list()) {
+      for (idb::IdbPin* idb_pin : idb_instance->get_pin_list()->get_pin_list()) {
         if (!isSkipping(idb_pin->get_net(), false)) {
           continue;
         }
@@ -700,9 +700,9 @@ void RTInterface::wrapObstacleList()
   cut_obstacle_list.reserve(total_cut_obstacle_num);
   {
     // instance
-    for (idb::IdbInstance* instance : instance_list) {
+    for (idb::IdbInstance* idb_instance : idb_instance_list) {
       // instance obs
-      for (idb::IdbLayerShape* obs_box : instance->get_obs_box_list()) {
+      for (idb::IdbLayerShape* obs_box : idb_instance->get_obs_box_list()) {
         for (idb::IdbRect* rect : obs_box->get_rect_list()) {
           Obstacle obstacle;
           obstacle.set_real_ll(rect->get_low_x(), rect->get_low_y());
@@ -716,7 +716,7 @@ void RTInterface::wrapObstacleList()
         }
       }
       // instance pin without net
-      for (idb::IdbPin* idb_pin : instance->get_pin_list()->get_pin_list()) {
+      for (idb::IdbPin* idb_pin : idb_instance->get_pin_list()->get_pin_list()) {
         if (!isSkipping(idb_pin->get_net(), false)) {
           continue;
         }
@@ -861,8 +861,8 @@ bool RTInterface::isSkipping(idb::IdbNet* idb_net, bool with_log)
     has_io_pin = true;
   }
   bool has_io_cell = false;
-  std::vector<idb::IdbInstance*>& instance_list = idb_net->get_instance_list()->get_instance_list();
-  if (instance_list.size() == 1 && instance_list.front()->get_cell_master()->is_pad()) {
+  std::vector<idb::IdbInstance*>& idb_instance_list = idb_net->get_instance_list()->get_instance_list();
+  if (idb_instance_list.size() == 1 && idb_instance_list.front()->get_cell_master()->is_pad()) {
     has_io_cell = true;
   }
   if (has_io_pin && has_io_cell) {
@@ -1382,31 +1382,30 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<std::pair<EXTLa
                                                      std::map<int32_t, std::vector<Segment<LayerCoord>*>>& net_routing_result_map,
                                                      std::map<int32_t, std::vector<EXTLayerRect*>>& net_patch_map)
 {
-  std::vector<ids::Shape> ids_shape_list;
-  {
-    for (std::pair<EXTLayerRect*, bool>& env_shape : env_shape_list) {
-      ids_shape_list.emplace_back(getIDSShape(-1, env_shape.first->getRealLayerRect(), env_shape.second));
+  std::vector<ids::Shape> ids_env_shape_list;
+  for (std::pair<EXTLayerRect*, bool>& env_shape : env_shape_list) {
+    ids_env_shape_list.emplace_back(getIDSShape(-1, env_shape.first->getRealLayerRect(), env_shape.second));
+  }
+  for (auto& [net_idx, pin_shape_list] : net_pin_shape_map) {
+    for (std::pair<EXTLayerRect*, bool>& pin_shape : pin_shape_list) {
+      ids_env_shape_list.emplace_back(getIDSShape(net_idx, pin_shape.first->getRealLayerRect(), pin_shape.second));
     }
-    for (auto& [net_idx, pin_shape_list] : net_pin_shape_map) {
-      for (std::pair<EXTLayerRect*, bool>& pin_shape : pin_shape_list) {
-        ids_shape_list.emplace_back(getIDSShape(net_idx, pin_shape.first->getRealLayerRect(), pin_shape.second));
-      }
-    }
-    for (auto& [net_idx, segment_list] : net_routing_result_map) {
-      for (Segment<LayerCoord>* segment : segment_list) {
-        for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
-          ids_shape_list.emplace_back(getIDSShape(net_idx, LayerRect(net_shape), net_shape.get_is_routing()));
-        }
-      }
-    }
-    for (auto& [net_idx, patch_set] : net_patch_map) {
-      for (EXTLayerRect* patch : patch_set) {
-        ids_shape_list.emplace_back(getIDSShape(net_idx, patch->getRealLayerRect(), true));
+  }
+  std::vector<ids::Shape> ids_result_shape_list;
+  for (auto& [net_idx, segment_list] : net_routing_result_map) {
+    for (Segment<LayerCoord>* segment : segment_list) {
+      for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+        ids_result_shape_list.emplace_back(getIDSShape(net_idx, LayerRect(net_shape), net_shape.get_is_routing()));
       }
     }
   }
+  for (auto& [net_idx, patch_set] : net_patch_map) {
+    for (EXTLayerRect* patch : patch_set) {
+      ids_result_shape_list.emplace_back(getIDSShape(net_idx, patch->getRealLayerRect(), true));
+    }
+  }
   std::vector<Violation> violation_list;
-  for (ids::Violation ids_violation : DRCI.getViolationList(ids_shape_list)) {
+  for (ids::Violation ids_violation : DRCI.getViolationList(ids_env_shape_list, ids_result_shape_list, true)) {
     EXTLayerRect ext_layer_rect;
     ext_layer_rect.set_real_ll(ids_violation.ll_x, ids_violation.ll_y);
     ext_layer_rect.set_real_ur(ids_violation.ur_x, ids_violation.ur_y);

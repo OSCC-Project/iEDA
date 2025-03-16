@@ -45,9 +45,9 @@ void RuleChecker::destroyInst()
 
 // function
 
-std::vector<Violation> RuleChecker::check(std::vector<DRCShape>& drc_shape_list)
+std::vector<Violation> RuleChecker::check(std::vector<DRCShape>& drc_env_shape_list, std::vector<DRCShape>& drc_result_shape_list)
 {
-  RCModel rc_model = initRCModel(drc_shape_list);
+  RCModel rc_model = initRCModel(drc_env_shape_list, drc_result_shape_list);
   buildRCModel(rc_model);
   checkRCModel(rc_model);
   return getViolationList(rc_model);
@@ -57,10 +57,11 @@ std::vector<Violation> RuleChecker::check(std::vector<DRCShape>& drc_shape_list)
 
 RuleChecker* RuleChecker::_rc_instance = nullptr;
 
-RCModel RuleChecker::initRCModel(std::vector<DRCShape>& drc_shape_list)
+RCModel RuleChecker::initRCModel(std::vector<DRCShape>& drc_env_shape_list, std::vector<DRCShape>& drc_result_shape_list)
 {
   RCModel rc_model;
-  rc_model.set_drc_shape_list(drc_shape_list);
+  rc_model.set_drc_env_shape_list(drc_env_shape_list);
+  rc_model.set_drc_result_shape_list(drc_result_shape_list);
   return rc_model;
 }
 
@@ -73,23 +74,38 @@ void RuleChecker::buildRCModel(RCModel& rc_model)
   int32_t grid_x_size = -1;
   int32_t grid_y_size = -1;
   {
-    for (DRCShape& drc_shape : rc_model.get_drc_shape_list()) {
-      bounding_box.set_ll_x(std::min(bounding_box.get_ll_x(), drc_shape.get_ll_x()));
-      bounding_box.set_ll_y(std::min(bounding_box.get_ll_y(), drc_shape.get_ll_y()));
-      bounding_box.set_ur_x(std::max(bounding_box.get_ur_x(), drc_shape.get_ur_x()));
-      bounding_box.set_ur_y(std::max(bounding_box.get_ur_y(), drc_shape.get_ur_y()));
+    for (DRCShape& drc_env_shape : rc_model.get_drc_env_shape_list()) {
+      bounding_box.set_ll_x(std::min(bounding_box.get_ll_x(), drc_env_shape.get_ll_x()));
+      bounding_box.set_ll_y(std::min(bounding_box.get_ll_y(), drc_env_shape.get_ll_y()));
+      bounding_box.set_ur_x(std::max(bounding_box.get_ur_x(), drc_env_shape.get_ur_x()));
+      bounding_box.set_ur_y(std::max(bounding_box.get_ur_y(), drc_env_shape.get_ur_y()));
+    }
+    for (DRCShape& drc_result_shape : rc_model.get_drc_result_shape_list()) {
+      bounding_box.set_ll_x(std::min(bounding_box.get_ll_x(), drc_result_shape.get_ll_x()));
+      bounding_box.set_ll_y(std::min(bounding_box.get_ll_y(), drc_result_shape.get_ll_y()));
+      bounding_box.set_ur_x(std::max(bounding_box.get_ur_x(), drc_result_shape.get_ur_x()));
+      bounding_box.set_ur_y(std::max(bounding_box.get_ur_y(), drc_result_shape.get_ur_y()));
     }
     PlanarRect enlarged_rect = DRCUTIL.getEnlargedRect(bounding_box, 1);
     grid_x_size = std::ceil(enlarged_rect.getXSpan() / 1.0 / box_size);
     grid_y_size = std::ceil(enlarged_rect.getYSpan() / 1.0 / box_size);
   }
   rc_model.get_rc_box_list().resize(grid_x_size * grid_y_size);
-  for (DRCShape& drc_shape : rc_model.get_drc_shape_list()) {
-    PlanarRect searched_rect = DRCUTIL.getEnlargedRect(drc_shape.get_rect(), expand_size);
+  for (DRCShape& drc_env_shape : rc_model.get_drc_env_shape_list()) {
+    PlanarRect searched_rect = DRCUTIL.getEnlargedRect(drc_env_shape.get_rect(), expand_size);
     searched_rect = DRCUTIL.getRegularRect(searched_rect, bounding_box);
     for (int32_t grid_x = (searched_rect.get_ll_x() / box_size); grid_x <= (searched_rect.get_ur_x() / box_size); grid_x++) {
       for (int32_t grid_y = (searched_rect.get_ll_y() / box_size); grid_y <= (searched_rect.get_ur_y() / box_size); grid_y++) {
-        rc_model.get_rc_box_list()[grid_x + grid_y * grid_x_size].get_drc_shape_list().push_back(&drc_shape);
+        rc_model.get_rc_box_list()[grid_x + grid_y * grid_x_size].get_drc_env_shape_list().push_back(&drc_env_shape);
+      }
+    }
+  }
+  for (DRCShape& drc_result_shape : rc_model.get_drc_result_shape_list()) {
+    PlanarRect searched_rect = DRCUTIL.getEnlargedRect(drc_result_shape.get_rect(), expand_size);
+    searched_rect = DRCUTIL.getRegularRect(searched_rect, bounding_box);
+    for (int32_t grid_x = (searched_rect.get_ll_x() / box_size); grid_x <= (searched_rect.get_ur_x() / box_size); grid_x++) {
+      for (int32_t grid_y = (searched_rect.get_ll_y() / box_size); grid_y <= (searched_rect.get_ur_y() / box_size); grid_y++) {
+        rc_model.get_rc_box_list()[grid_x + grid_y * grid_x_size].get_drc_result_shape_list().push_back(&drc_result_shape);
       }
     }
   }

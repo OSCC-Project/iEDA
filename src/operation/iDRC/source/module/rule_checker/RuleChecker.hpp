@@ -16,10 +16,10 @@
 // ***************************************************************************************
 #pragma once
 
-#include "RCBox.hpp"
-#include "RCModel.hpp"
 #include "DataManager.hpp"
 #include "Logger.hpp"
+#include "RCBox.hpp"
+#include "RCModel.hpp"
 
 namespace idrc {
 
@@ -32,7 +32,7 @@ class RuleChecker
   static RuleChecker& getInst();
   static void destroyInst();
   // function
-  std::vector<Violation> check(std::vector<DRCShape>& drc_shape_list);
+  std::vector<Violation> check(std::vector<DRCShape>& drc_env_shape_list, std::vector<DRCShape>& drc_result_shape_list);
 
  private:
   // self
@@ -45,7 +45,7 @@ class RuleChecker
   RuleChecker& operator=(const RuleChecker& other) = delete;
   RuleChecker& operator=(RuleChecker&& other) = delete;
   // function
-  RCModel initRCModel(std::vector<DRCShape>& drc_shape_list);
+  RCModel initRCModel(std::vector<DRCShape>& drc_env_shape_list, std::vector<DRCShape>& drc_result_shape_list);
   void buildRCModel(RCModel& rc_model);
   void checkRCModel(RCModel& rc_model);
   void checkRCBox(RCBox& rc_box);

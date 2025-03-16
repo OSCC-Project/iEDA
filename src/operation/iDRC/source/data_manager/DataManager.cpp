@@ -98,9 +98,9 @@ void DataManager::buildConfig()
   // **********        DRC         ********** //
   _config.temp_directory_path = std::filesystem::absolute(_config.temp_directory_path);
   _config.temp_directory_path += "/";
-  _config.log_file_path = _config.temp_directory_path + "rt.log";
-  // **********     Module     ********** //
-  _config.mod_temp_directory_path = _config.temp_directory_path + "module/";
+  _config.log_file_path = _config.temp_directory_path + "drc.log";
+  // **********     RuleChecker     ********** //
+  _config.rc_temp_directory_path = _config.temp_directory_path + "rule_checker/";
   // **********     GDSPlotter     ********** //
   _config.gp_temp_directory_path = _config.temp_directory_path + "gds_plotter/";
   /////////////////////////////////////////////
@@ -108,8 +108,8 @@ void DataManager::buildConfig()
   DRCUTIL.removeDir(_config.temp_directory_path);
   DRCUTIL.createDir(_config.temp_directory_path);
   DRCUTIL.createDirByFile(_config.log_file_path);
-  // **********     Module     ********** //
-  DRCUTIL.createDir(_config.mod_temp_directory_path);
+  // **********     RuleChecker     ********** //
+  DRCUTIL.createDir(_config.rc_temp_directory_path);
   // **********     GDSPlotter     ********** //
   DRCUTIL.createDir(_config.gp_temp_directory_path);
   /////////////////////////////////////////////

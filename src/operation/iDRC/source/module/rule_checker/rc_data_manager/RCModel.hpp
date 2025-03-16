@@ -27,15 +27,18 @@ class RCModel
   RCModel() = default;
   ~RCModel() = default;
   // getter
-  std::vector<DRCShape>& get_drc_shape_list() { return _drc_shape_list; }
+  std::vector<DRCShape>& get_drc_env_shape_list() { return _drc_env_shape_list; }
+  std::vector<DRCShape>& get_drc_result_shape_list() { return _drc_result_shape_list; }
   std::vector<RCBox>& get_rc_box_list() { return _rc_box_list; }
 
   // setter
-  void set_drc_shape_list(const std::vector<DRCShape>& drc_shape_list) { _drc_shape_list = drc_shape_list; }
+  void set_drc_env_shape_list(const std::vector<DRCShape>& drc_env_shape_list) { _drc_env_shape_list = drc_env_shape_list; }
+  void set_drc_result_shape_list(const std::vector<DRCShape>& drc_result_shape_list) { _drc_result_shape_list = drc_result_shape_list; }
   void set_rc_box_list(const std::vector<RCBox>& rc_box_list) { _rc_box_list = rc_box_list; }
 
  private:
-  std::vector<DRCShape> _drc_shape_list;
+  std::vector<DRCShape> _drc_env_shape_list;
+  std::vector<DRCShape> _drc_result_shape_list;
   std::vector<RCBox> _rc_box_list;
 };
 
