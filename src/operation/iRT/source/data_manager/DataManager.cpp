@@ -1496,8 +1496,7 @@ void DataManager::printDatabase()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "routing_layer");
   for (RoutingLayer& routing_layer : routing_layer_list) {
     RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "idx:", routing_layer.get_layer_idx(), " order:", routing_layer.get_layer_order(),
-               " name:", routing_layer.get_layer_name(), " min_width:", routing_layer.get_min_width(), " min_area:", routing_layer.get_min_area(),
-               " prefer_direction:", GetDirectionName()(routing_layer.get_prefer_direction()));
+               " name:", routing_layer.get_layer_name(), " prefer_direction:", GetDirectionName()(routing_layer.get_prefer_direction()));
 
     ScaleAxis& track_axis = routing_layer.get_track_axis();
     RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "track_axis");

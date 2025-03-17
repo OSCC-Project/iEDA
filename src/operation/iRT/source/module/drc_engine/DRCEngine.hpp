@@ -47,6 +47,7 @@ class DRCEngine
     getViolationListBySelf(de_task);
 
     filterViolationList(de_task);
+    checkViolationList(de_task);
     if (de_task.get_proc_type() == DEProcType::kGet) {
       buildViolationList(de_task);
     }
@@ -76,6 +77,7 @@ class DRCEngine
   void readTask(DETask& de_task);
   void getViolationListByInterface(DETask& de_task);
   void filterViolationList(DETask& de_task);
+  void checkViolationList(DETask& de_task);
   void buildViolationList(DETask& de_task);
 
 #if 1  // aux

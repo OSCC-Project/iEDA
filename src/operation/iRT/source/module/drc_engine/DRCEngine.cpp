@@ -69,6 +69,7 @@ std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
   // getViolationListBySelf(de_task);
 
   filterViolationList(de_task);
+  checkViolationList(de_task);
   if (de_task.get_proc_type() == DEProcType::kGet) {
     buildViolationList(de_task);
   }
@@ -555,6 +556,15 @@ void DRCEngine::filterViolationList(DETask& de_task)
     new_violation_list.push_back(violation);
   }
   de_task.set_violation_list(new_violation_list);
+}
+
+void DRCEngine::checkViolationList(DETask& de_task)
+{
+  for (Violation& violation : de_task.get_violation_list()) {
+    if (!violation.get_is_routing()) {
+      RTLOG.error(Loc::current(), "The violations in the cut layer have not been transferred to the routing layer");
+    }
+  }
 }
 
 void DRCEngine::buildViolationList(DETask& de_task)

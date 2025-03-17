@@ -1382,6 +1382,8 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<std::pair<EXTLa
                                                      std::map<int32_t, std::vector<Segment<LayerCoord>*>>& net_routing_result_map,
                                                      std::map<int32_t, std::vector<EXTLayerRect*>>& net_patch_map)
 {
+  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
+
   std::vector<ids::Shape> ids_env_shape_list;
   for (std::pair<EXTLayerRect*, bool>& env_shape : env_shape_list) {
     ids_env_shape_list.emplace_back(getIDSShape(-1, env_shape.first->getRealLayerRect(), env_shape.second));
@@ -1409,7 +1411,12 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<std::pair<EXTLa
     EXTLayerRect ext_layer_rect;
     ext_layer_rect.set_real_ll(ids_violation.ll_x, ids_violation.ll_y);
     ext_layer_rect.set_real_ur(ids_violation.ur_x, ids_violation.ur_y);
-    ext_layer_rect.set_layer_idx(ids_violation.layer_idx);
+    if (ids_violation.is_routing) {
+      ext_layer_rect.set_layer_idx(ids_violation.layer_idx);
+    } else {
+      std::vector<int32_t> routing_layer_idx_list = cut_to_adjacent_routing_map[ids_violation.layer_idx];
+      ext_layer_rect.set_layer_idx(std::min(routing_layer_idx_list.front(), routing_layer_idx_list.back()));
+    }
     if (ids_violation.violation_net_set.size() > 2) {
       RTLOG.error(Loc::current(), "The ids_violation.violation_net_set size > 2!");
     }
