@@ -17,8 +17,10 @@
 #pragma once
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
+
 namespace ieda {
 class Log;
 class Str;
@@ -96,92 +98,3 @@ class TimingPin;
 class TileGrid;
 
 }  // namespace eval
-
-namespace ids {
-
-struct Segment
-{
-  int first_x;
-  int first_y;
-  std::string first_layer_name;
-  int second_x;
-  int second_y;
-  std::string second_layer_name;
-};
-
-enum class PhysicalNodeType
-{
-  kNone = 0,
-  kWire = 1,
-  kVia = 2
-};
-
-struct Wire
-{
-  int first_x;
-  int first_y;
-  int second_x;
-  int second_y;
-  std::string layer_name;
-};
-
-struct Via
-{
-  std::string via_name;
-  int x;
-  int y;
-};
-
-struct PhysicalNode
-{
-  PhysicalNodeType type;
-  Wire wire;
-  Via via;
-};
-
-enum class AccessPointType
-{
-  kNone = 0,
-  kPrefTrackGrid = 1,
-  kCurrTrackGrid = 2,
-  kCurrTrackCenter = 3,
-  kCurrShapeCenter = 4
-};
-
-struct AccessPoint
-{
-  int x;
-  int y;
-  std::string layer_name;
-  AccessPointType type;
-  std::vector<std::string> via_name_list;
-};
-
-struct CellMaster
-{
-  std::string cell_master_name;
-  std::map<std::string, std::vector<ids::AccessPoint>> pin_name_pa_list;
-};
-
-struct DRCTask
-{
-  idrc::RegionQuery* region_query;
-  std::vector<idrc::DrcRect*> drc_rect_list;
-};
-
-struct DRCRect
-{
-  int32_t so_id = -1;  // Distinguish self and others
-
-  int32_t lb_x = -1;
-  int32_t lb_y = -1;
-
-  int32_t rt_x = -1;
-  int32_t rt_y = -1;
-
-  std::string layer_name;
-
-  bool is_artificial = false;
-};
-
-}  // namespace ids

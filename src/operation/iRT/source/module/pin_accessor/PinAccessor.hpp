@@ -109,6 +109,7 @@ class PinAccessor
   double getEstimateViaCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   void updateViolationList(PABox& pa_box);
   std::vector<Violation> getAmongNetViolationList(PABox& pa_box);
+  void updateAccessPoint(PABox& pa_box);
   void updateBestResult(PABox& pa_box);
   void updateTaskSchedule(PABox& pa_box, std::vector<PATask*>& routing_task_list);
   void selectBestResult(PABox& pa_box);
@@ -146,7 +147,7 @@ class PinAccessor
 #if 1  // debug
   void debugPlotPAModel(PAModel& pa_model, std::string flag);
   void debugCheckPABox(PABox& pa_box);
-  void debugPlotPABox(PABox& pa_box,  std::string flag);
+  void debugPlotPABox(PABox& pa_box, std::string flag);
 #endif
 };
 

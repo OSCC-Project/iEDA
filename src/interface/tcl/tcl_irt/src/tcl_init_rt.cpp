@@ -44,6 +44,9 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
 
 unsigned TclInitRT::exec()
 {
+  if (!check()) {
+    return 0;
+  }
   std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
   RTI.initRT(config_map);
   return 1;
