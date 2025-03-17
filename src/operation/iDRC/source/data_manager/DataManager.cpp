@@ -55,6 +55,8 @@ void DataManager::input(std::map<std::string, std::any>& config_map)
   DRCI.input(config_map);
   buildConfig();
   buildDatabase();
+  printConfig();
+  printDatabase();
   DRCLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -94,13 +96,13 @@ DataManager* DataManager::_dm_instance = nullptr;
 
 void DataManager::buildConfig()
 {
-  /////////////////////////////////////////////
+  //////////////////////////////////////////////
   // **********        DRC         ********** //
   _config.temp_directory_path = std::filesystem::absolute(_config.temp_directory_path);
   _config.temp_directory_path += "/";
   _config.log_file_path = _config.temp_directory_path + "drc.log";
-  // **********     RuleChecker     ********** //
-  _config.rc_temp_directory_path = _config.temp_directory_path + "rule_checker/";
+  // **********     RuleValidator  ********** //
+  _config.rv_temp_directory_path = _config.temp_directory_path + "rule_validator/";
   // **********     GDSPlotter     ********** //
   _config.gp_temp_directory_path = _config.temp_directory_path + "gds_plotter/";
   /////////////////////////////////////////////
@@ -108,11 +110,11 @@ void DataManager::buildConfig()
   DRCUTIL.removeDir(_config.temp_directory_path);
   DRCUTIL.createDir(_config.temp_directory_path);
   DRCUTIL.createDirByFile(_config.log_file_path);
-  // **********     RuleChecker     ********** //
-  DRCUTIL.createDir(_config.rc_temp_directory_path);
+  // **********   RuleValidator    ********** //
+  DRCUTIL.createDir(_config.rv_temp_directory_path);
   // **********     GDSPlotter     ********** //
   DRCUTIL.createDir(_config.gp_temp_directory_path);
-  /////////////////////////////////////////////
+  //////////////////////////////////////////////
   DRCLOG.openLogFileStream(_config.log_file_path);
 }
 
@@ -295,6 +297,59 @@ void DataManager::buildLayerInfo()
       }
     }
   }
+}
+
+void DataManager::printConfig()
+{
+  /////////////////////////////////////////////
+  // **********        DRC         ********** //
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(0), "DRC_CONFIG_INPUT");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "temp_directory_path");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _config.temp_directory_path);
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "thread_number");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _config.thread_number);
+  // **********        DRC         ********** //
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(0), "DRC_CONFIG_BUILD");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "log_file_path");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _config.log_file_path);
+  // **********     DRCEngine     ********** //
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "RuleValidator");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), "rv_temp_directory_path");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(3), _config.rv_temp_directory_path);
+  // **********     GDSPlotter     ********** //
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "GDSPlotter");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), "gp_temp_directory_path");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(3), _config.gp_temp_directory_path);
+  /////////////////////////////////////////////
+}
+
+void DataManager::printDatabase()
+{
+  ////////////////////////////////////////////////
+  // ********** DRC ********** //
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(0), "DRC_DATABASE");
+  // ********** ManufactureGrid ********** //
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "manufacture_grid");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _database.get_manufacture_grid());
+  // ********** RoutingLayer ********** //
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "routing_layer_num");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), routing_layer_list.size());
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "routing_layer");
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), "idx:", routing_layer.get_layer_idx(), " order:", routing_layer.get_layer_order(),
+                " name:", routing_layer.get_layer_name(), " pitch:", routing_layer.get_pitch());
+  }
+  // ********** CutLayer ********** //
+  std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "cut_layer_num");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), cut_layer_list.size());
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "cut_layer");
+  for (CutLayer& cut_layer : cut_layer_list) {
+    DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), "idx:", cut_layer.get_layer_idx(), " order:", cut_layer.get_layer_order(),
+                " name:", cut_layer.get_layer_name());
+  }
+  ////////////////////////////////////////////////
 }
 
 #endif

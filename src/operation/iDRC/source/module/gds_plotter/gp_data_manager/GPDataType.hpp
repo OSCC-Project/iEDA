@@ -23,18 +23,32 @@ namespace idrc {
 enum class GPDataType
 {
   kNone,
-  kOpen,
-  kClose,
-  kInfo,
-  kNeighbor,
-  kGraphShape,
-  kKey,
-  kPath,
-  kShape,
-  kAccessPoint,
-  kBestCoord,
-  kAxis,
-  kViolation
+  kEnvShape,
+  kResultShape,
+  kAdjacentCutSpacing,
+  kCornerFillSpacing,
+  kCutEOLSpacing,
+  kCutShort,
+  kDifferentLayerCutSpacing,
+  kEndOfLineSpacing,
+  kEnclosure,
+  kEnclosureEdge,
+  kEnclosureParallel,
+  kFloatingPatch,
+  kJogToJogSpacing,
+  kMaxViaStack,
+  kMetalShort,
+  kMinHole,
+  kMinimumArea,
+  kMinimumCut,
+  kMinimumWidth,
+  kMinStep,
+  kNonsufficientMetalOverlap,
+  kNotchSpacing,
+  kOffGridOrWrongWay,
+  kOutOfDie,
+  kParallelRunLengthSpacing,
+  kSameLayerCutSpacing
 };
 
 struct GetGPDataTypeName
@@ -46,38 +60,83 @@ struct GetGPDataTypeName
       case GPDataType::kNone:
         data_type_name = "none";
         break;
-      case GPDataType::kOpen:
-        data_type_name = "open";
+      case GPDataType::kEnvShape:
+        data_type_name = "env_shape";
         break;
-      case GPDataType::kClose:
-        data_type_name = "close";
+      case GPDataType::kResultShape:
+        data_type_name = "result_shape";
         break;
-      case GPDataType::kInfo:
-        data_type_name = "info";
+      case GPDataType::kAdjacentCutSpacing:
+        data_type_name = "adjacent_cut_spacing";
         break;
-      case GPDataType::kNeighbor:
-        data_type_name = "neighbor";
+      case GPDataType::kCornerFillSpacing:
+        data_type_name = "corner_fill_spacing";
         break;
-      case GPDataType::kGraphShape:
-        data_type_name = "graph_shape";
+      case GPDataType::kCutEOLSpacing:
+        data_type_name = "cut_eol_spacing";
         break;
-      case GPDataType::kKey:
-        data_type_name = "key";
+      case GPDataType::kCutShort:
+        data_type_name = "cut_short";
         break;
-      case GPDataType::kPath:
-        data_type_name = "path";
+      case GPDataType::kDifferentLayerCutSpacing:
+        data_type_name = "different_layer_cut_spacing";
         break;
-      case GPDataType::kShape:
-        data_type_name = "shape";
+      case GPDataType::kEndOfLineSpacing:
+        data_type_name = "end_of_line_spacing";
         break;
-      case GPDataType::kAccessPoint:
-        data_type_name = "access_point";
+      case GPDataType::kEnclosure:
+        data_type_name = "enclosure";
         break;
-      case GPDataType::kAxis:
-        data_type_name = "axis";
+      case GPDataType::kEnclosureEdge:
+        data_type_name = "enclosure_edge";
         break;
-      case GPDataType::kViolation:
-        data_type_name = "violation";
+      case GPDataType::kEnclosureParallel:
+        data_type_name = "enclosure_parallel";
+        break;
+      case GPDataType::kFloatingPatch:
+        data_type_name = "floating_patch";
+        break;
+      case GPDataType::kJogToJogSpacing:
+        data_type_name = "jog_to_jog_spacing";
+        break;
+      case GPDataType::kMaxViaStack:
+        data_type_name = "max_via_stack";
+        break;
+      case GPDataType::kMetalShort:
+        data_type_name = "metal_short";
+        break;
+      case GPDataType::kMinHole:
+        data_type_name = "min_hole";
+        break;
+      case GPDataType::kMinimumArea:
+        data_type_name = "minimum_area";
+        break;
+      case GPDataType::kMinimumCut:
+        data_type_name = "minimum_cut";
+        break;
+      case GPDataType::kMinimumWidth:
+        data_type_name = "minimum_width";
+        break;
+      case GPDataType::kMinStep:
+        data_type_name = "min_step";
+        break;
+      case GPDataType::kNonsufficientMetalOverlap:
+        data_type_name = "nonsufficient_metal_overlap";
+        break;
+      case GPDataType::kNotchSpacing:
+        data_type_name = "notch_spacing";
+        break;
+      case GPDataType::kOffGridOrWrongWay:
+        data_type_name = "off_grid_or_wrong_way";
+        break;
+      case GPDataType::kOutOfDie:
+        data_type_name = "out_of_die";
+        break;
+      case GPDataType::kParallelRunLengthSpacing:
+        data_type_name = "parallel_run_length_spacing";
+        break;
+      case GPDataType::kSameLayerCutSpacing:
+        data_type_name = "same_layer_cut_spacing";
         break;
       default:
         DRCLOG.error(Loc::current(), "Unrecognized type!");

@@ -134,11 +134,20 @@ void GDSPlotter::buildGraphLypFile()
          "#00ffff", "#01ff6b", "#91ff00", "#ddff00", "#ffae00", "#ff8000", "#008080", "#008050", "#008000", "#508000", "#808000", "#805000"};
   std::vector<std::string> pattern_list = {"I5", "I9"};
 
-  std::map<GPDataType, bool> routing_data_type_visible_map
-      = {{GPDataType::kNone, false},     {GPDataType::kOpen, false},        {GPDataType::kClose, false}, {GPDataType::kInfo, false},
-         {GPDataType::kNeighbor, false}, {GPDataType::kGraphShape, false},  {GPDataType::kKey, false},   {GPDataType::kPath, true},
-         {GPDataType::kShape, true},     {GPDataType::kAccessPoint, false}, {GPDataType::kAxis, false},  {GPDataType::kViolation, false}};
-  std::map<GPDataType, bool> cut_data_type_visible_map = {{GPDataType::kGraphShape, false}, {GPDataType::kPath, true}, {GPDataType::kShape, true}};
+  std::map<GPDataType, bool> routing_data_type_visible_map = {{GPDataType::kEnvShape, false},          {GPDataType::kResultShape, false},
+                                                              {GPDataType::kCornerFillSpacing, false}, {GPDataType::kEndOfLineSpacing, false},
+                                                              {GPDataType::kEnclosure, false},         {GPDataType::kEnclosureEdge, false},
+                                                              {GPDataType::kEnclosureParallel, false}, {GPDataType::kFloatingPatch, false},
+                                                              {GPDataType::kJogToJogSpacing, false},   {GPDataType::kMaxViaStack, false},
+                                                              {GPDataType::kMetalShort, false},        {GPDataType::kMinHole, false},
+                                                              {GPDataType::kMinimumArea, false},       {GPDataType::kMinimumWidth, false},
+                                                              {GPDataType::kMinStep, false},           {GPDataType::kNonsufficientMetalOverlap, false},
+                                                              {GPDataType::kNotchSpacing, false},      {GPDataType::kOffGridOrWrongWay, false},
+                                                              {GPDataType::kOutOfDie, false},          {GPDataType::kParallelRunLengthSpacing, false}};
+  std::map<GPDataType, bool> cut_data_type_visible_map
+      = {{GPDataType::kEnvShape, false},      {GPDataType::kResultShape, false},        {GPDataType::kAdjacentCutSpacing, false},
+         {GPDataType::kCutEOLSpacing, false}, {GPDataType::kCutShort, false},           {GPDataType::kDifferentLayerCutSpacing, false},
+         {GPDataType::kMinimumCut, false},    {GPDataType::kSameLayerCutSpacing, false}};
 
   // 0为base_region 最后一个为GCell 中间为cut+routing
   int32_t gds_layer_size = 2 + static_cast<int32_t>(_gds_routing_layer_map.size() + _gds_cut_layer_map.size());

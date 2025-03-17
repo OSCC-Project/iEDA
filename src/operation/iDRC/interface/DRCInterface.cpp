@@ -20,7 +20,7 @@
 #include "DataManager.hpp"
 #include "GDSPlotter.hpp"
 #include "Monitor.hpp"
-#include "RuleChecker.hpp"
+#include "RuleValidator.hpp"
 #include "idm.h"
 
 namespace idrc {
@@ -70,6 +70,7 @@ void DRCInterface::initDRC(std::map<std::string, std::any> config_map)
   DRCDM.input(config_map);
   GDSPlotter::initInst();
   DRCGP.init();
+  RuleValidator::initInst();
 
   DRCLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -88,6 +89,7 @@ void DRCInterface::destroyDRC()
   Monitor monitor;
   DRCLOG.info(Loc::current(), "Starting...");
 
+  RuleValidator::destroyInst();
   DRCGP.destroy();
   GDSPlotter::destroyInst();
   DRCDM.output();
@@ -124,9 +126,8 @@ std::vector<ids::Violation> DRCInterface::getViolationList(std::vector<ids::Shap
   for (ids::Shape& ids_result_shape : ids_result_shape_list) {
     drc_result_shape_list.push_back(convertToDRCShape(ids_result_shape));
   }
-  RuleChecker::initInst();
   std::vector<ids::Violation> ids_violation_list;
-  for (Violation& violation : DRCRC.check(drc_env_shape_list, drc_result_shape_list)) {
+  for (Violation& violation : DRCRV.verify(drc_env_shape_list, drc_result_shape_list)) {
     ids::Violation ids_violation;
     ids_violation.violation_type = GetViolationTypeName()(violation.get_violation_type());
     ids_violation.ll_x = violation.get_ll_x();
@@ -139,7 +140,6 @@ std::vector<ids::Violation> DRCInterface::getViolationList(std::vector<ids::Shap
     ids_violation.required_size = violation.get_required_size();
     ids_violation_list.push_back(ids_violation);
   }
-  RuleChecker::destroyInst();
   if (enable_quiet) {
     DRCLOG.disableQuiet();
   }

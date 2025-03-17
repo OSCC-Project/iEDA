@@ -16,27 +16,28 @@
 // ***************************************************************************************
 #pragma once
 
-#include "DRCHeader.hpp"
-
 namespace idrc {
 
-class Config
+class RVComParam
 {
  public:
-  Config() = default;
-  ~Config() = default;
-  //////////////////////////////////////////////
-  // **********        DRC         ********** //
-  std::string temp_directory_path;  // required
-  int32_t thread_number;            // optional
-  /////////////////////////////////////////////
-  // **********        DRC         ********** //
-  std::string log_file_path;  // building
-  // **********   RuleValidator    ********** //
-  std::string rv_temp_directory_path;   // building
-  // **********     GDSPlotter     ********** //
-  std::string gp_temp_directory_path;   // building
-  //////////////////////////////////////////////
+  RVComParam() = default;
+  RVComParam(int32_t box_size, int32_t expand_size)
+  {
+    _box_size = box_size;
+    _expand_size = expand_size;
+  }
+  ~RVComParam() = default;
+  // getter
+  int32_t get_box_size() const { return _box_size; }
+  int32_t get_expand_size() const { return _expand_size; }
+  // setter
+  void set_box_size(const int32_t box_size) { _box_size = box_size; }
+  void set_expand_size(const int32_t expand_size) { _expand_size = expand_size; }
+
+ private:
+  int32_t _box_size = -1;
+  int32_t _expand_size = -1;
 };
 
 }  // namespace idrc

@@ -70,6 +70,43 @@ class Utility
 
 #endif
 
+#if 1  // 位置关系计算
+
+  /**
+   *  ！在检测DRC中
+   *  如果a与b中有膨胀矩形,那么则用isOpenOverlap
+   *  如果a与b中都是真实矩形,那么用isClosedOverlap
+   *
+   *  isOpenOverlap:不考虑边的overlap
+   */
+  static bool isOpenOverlap(const PlanarRect& a, const PlanarRect& b) { return isOverlap(a, b, false); }
+
+  /**
+   *  ！在检测DRC中
+   *  如果a与b中有膨胀矩形,那么则用isOpenOverlap
+   *  如果a与b中都是真实矩形,那么用isClosedOverlap
+   *
+   *  isClosedOverlap:考虑边的overlap
+   */
+  static bool isClosedOverlap(const PlanarRect& a, const PlanarRect& b) { return isOverlap(a, b, true); }
+
+  // 判断两个矩形是否重叠
+  static bool isOverlap(const PlanarRect& a, const PlanarRect& b, bool consider_edge = true)
+  {
+    int32_t x_spacing = std::max(b.get_ll_x() - a.get_ur_x(), a.get_ll_x() - b.get_ur_x());
+    int32_t y_spacing = std::max(b.get_ll_y() - a.get_ur_y(), a.get_ll_y() - b.get_ur_y());
+
+    if (x_spacing == 0 && y_spacing <= 0) {
+      return consider_edge;
+    } else if (x_spacing <= 0 && y_spacing == 0) {
+      return consider_edge;
+    } else {
+      return (x_spacing < 0 && y_spacing < 0);
+    }
+  }
+
+  #endif
+
 #if 1  // idrc数据结构工具函数
 
   // 获得配置的值

@@ -64,6 +64,8 @@ class DataManager
   void makeCutLayerList();
   void checkLayerList();
   void buildLayerInfo();
+  void printConfig();
+  void printDatabase();
 #endif
 };
 

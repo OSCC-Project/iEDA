@@ -19,7 +19,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 ############################ debug source module ############################
 
-# set(DEBUG_IDRC_RULE_CHECKER ON)
+# set(DEBUG_IDRC_RULE_VALIDATOR ON)
 # set(DEBUG_IDRC_GDS_PLOTTER ON)
 
 ############################ debug source utility ############################
