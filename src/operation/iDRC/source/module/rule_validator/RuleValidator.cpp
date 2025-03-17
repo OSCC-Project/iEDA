@@ -50,12 +50,13 @@ void RuleValidator::destroyInst()
 std::vector<Violation> RuleValidator::verify(std::vector<DRCShape>& drc_env_shape_list, std::vector<DRCShape>& drc_result_shape_list)
 {
   RVModel rv_model = initRVModel(drc_env_shape_list, drc_result_shape_list);
+  // debugPlotRVModel(rv_model, "before");
   setRVComParam(rv_model);
   buildRVModel(rv_model);
-  // debugPlotRVModel(rv_model, "before");
   verifyRVModel(rv_model);
+  buildViolationList(rv_model);
   // debugPlotRVModel(rv_model, "after");
-  return getViolationList(rv_model);
+  return rv_model.get_violation_list();
 }
 
 // private
@@ -206,15 +207,13 @@ void RuleValidator::processRVBox(RVBox& rv_box)
   rv_box.set_violation_list(new_violation_list);
 }
 
-std::vector<Violation> RuleValidator::getViolationList(RVModel& rv_model)
+void RuleValidator::buildViolationList(RVModel& rv_model)
 {
-  std::vector<Violation> violation_list;
   for (RVBox& rv_box : rv_model.get_rv_box_list()) {
     for (Violation& violation : rv_box.get_violation_list()) {
-      violation_list.push_back(violation);
+      rv_model.get_violation_list().push_back(violation);
     }
   }
-  return violation_list;
 }
 
 #if 1  // debug
