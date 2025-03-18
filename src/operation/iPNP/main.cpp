@@ -121,7 +121,7 @@ int main(int argc, char** argv)
   pnpApiInst->readDeftoiPNP(lef_files, def_path);
 
   iPNP* ipnp = pnpApiInst->get_ipnp();
-  ipnp->set_output_def_path("output.def");
+  ipnp->set_output_def_path("/home/sujianrong/iEDA/src/operation/iPNP/data/test/output.def");
   ipnp->run();
 
   return 0;
