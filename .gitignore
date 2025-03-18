@@ -26,3 +26,5 @@ target/
 *-stamp/
 tmp/
 scripts
+*.patch
+CMakePresets.json
