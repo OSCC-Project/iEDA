@@ -707,9 +707,9 @@ checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
 
 [[package]]
 name = "spef-parser"
-version = "0.2.4"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48abdd7cd05b43217e7ae8265b0c88107f282edd93abeaf7264f6a6fca52a579"
+checksum = "a3cdeb2bb95a11430078d214647d2c0117b53142bd8febc92032c9f133923b15"
 dependencies = [
  "anyhow",
  "cbindgen",

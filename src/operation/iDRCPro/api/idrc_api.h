@@ -45,9 +45,11 @@ class DrcApi
                                                                 std::map<int, std::vector<idb::IdbLayerShape*>>& pin_data,
                                                                 std::map<int, std::vector<idb::IdbRegularWireSegment*>>& routing_data,
                                                                 std::set<ViolationEnumType> check_select = {});
-
+  std::map<ViolationEnumType, std::vector<DrcViolation*>> checkByBox(std::vector<idb::IdbLayerShape*>& env_shape_list,
+                                                                     std::map<int, std::vector<idb::IdbLayerShape*>>& pin_data,
+                                                                     std::map<int, std::vector<idb::IdbRegularWireSegment*>>& routing_data,
+                                                                     std::set<ViolationEnumType> check_select = {});
   std::map<ViolationEnumType, std::vector<DrcViolation*>> checkDef();
-  void diagnosis(std::string third_json_file, std::string idrc_json_file, std::string output_dir);
 
  private:
 };

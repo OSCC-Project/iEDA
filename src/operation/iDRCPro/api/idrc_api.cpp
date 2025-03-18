@@ -23,6 +23,9 @@
 #include "idrc_data.h"
 #include "idrc_dm.h"
 #include "tech_rules.h"
+#ifdef USE_PROFILER
+#include <gperftools/profiler.h>
+#endif
 
 namespace idrc {
 
@@ -39,11 +42,285 @@ void DrcApi::exit()
   DrcTechRuleInst->destroyInst();
 }
 
+struct DRCBox
+{
+  // input
+  std::vector<idb::IdbLayerShape*> env_shape_list;
+  std::map<int, std::vector<idb::IdbLayerShape*>> pin_data;
+  std::map<int, std::vector<idb::IdbRegularWireSegment*>> routing_data;
+  // data
+  int32_t real_ll_x;
+  int32_t real_ll_y;
+  int32_t real_ur_x;
+  int32_t real_ur_y;
+  // output
+  std::map<ViolationEnumType, std::vector<DrcViolation*>> type_violation_list_map;
+};
+
 std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                                                       std::map<int, std::vector<idb::IdbLayerShape*>>& pin_data,
                                                                       std::map<int, std::vector<idb::IdbRegularWireSegment*>>& routing_data,
                                                                       std::set<ViolationEnumType> check_select)
 {
+  int32_t shape_num = 0;
+  shape_num += env_shape_list.size();
+  for (auto& [net_idx, pin_shape_list] : pin_data) {
+    shape_num += pin_shape_list.size();
+  }
+  for (auto& [net_idx, routing_segment_list] : routing_data) {
+    shape_num += routing_segment_list.size();
+  }
+  if (shape_num > 20000) {
+    int32_t box_size = 10000;
+    int32_t expand_size = 500;
+
+    // 初始化 设计边界 grid个数 box列表
+    int32_t design_ll_x = INT32_MAX;
+    int32_t design_ll_y = INT32_MAX;
+    int32_t design_ur_x = INT32_MIN;
+    int32_t design_ur_y = INT32_MIN;
+    int32_t design_x_size = -1;
+    int32_t design_y_size = -1;
+    std::vector<DRCBox> drc_box_list;
+    {
+      for (idb::IdbLayerShape* env_shape : env_shape_list) {
+        for (idb::IdbRect* rect : env_shape->get_rect_list()) {
+          design_ll_x = std::min(design_ll_x, rect->get_low_x());
+          design_ll_y = std::min(design_ll_y, rect->get_low_y());
+          design_ur_x = std::max(design_ur_x, rect->get_high_x());
+          design_ur_y = std::max(design_ur_y, rect->get_high_y());
+        }
+      }
+      for (auto& [net_idx, pin_shape_list] : pin_data) {
+        for (idb::IdbLayerShape* pin_shape : pin_shape_list) {
+          for (idb::IdbRect* rect : pin_shape->get_rect_list()) {
+            design_ll_x = std::min(design_ll_x, rect->get_low_x());
+            design_ll_y = std::min(design_ll_y, rect->get_low_y());
+            design_ur_x = std::max(design_ur_x, rect->get_high_x());
+            design_ur_y = std::max(design_ur_y, rect->get_high_y());
+          }
+        }
+      }
+      for (auto& [net_idx, routing_segment_list] : routing_data) {
+        for (idb::IdbRegularWireSegment* routing_segment : routing_segment_list) {
+          if (routing_segment->is_wire()) {
+            if (routing_segment->get_point_number() != 2) {
+              std::cout << "idrc : Unknown wire!" << std::endl;
+            }
+            int32_t low_x = routing_segment->get_point_start()->get_x();
+            int32_t low_y = routing_segment->get_point_start()->get_y();
+            int32_t high_x = routing_segment->get_point_end()->get_x();
+            int32_t high_y = routing_segment->get_point_end()->get_y();
+            if (high_x < low_x) {
+              std::swap(low_x, high_x);
+            }
+            if (high_y < low_y) {
+              std::swap(low_y, high_y);
+            }
+            design_ll_x = std::min(design_ll_x, low_x);
+            design_ll_y = std::min(design_ll_y, low_y);
+            design_ur_x = std::max(design_ur_x, high_x);
+            design_ur_y = std::max(design_ur_y, high_y);
+          } else if (routing_segment->is_via()) {
+            int32_t point_x = routing_segment->get_point_start()->get_x();
+            int32_t point_y = routing_segment->get_point_start()->get_y();
+            design_ll_x = std::min(design_ll_x, point_x);
+            design_ll_y = std::min(design_ll_y, point_y);
+            design_ur_x = std::max(design_ur_x, point_x);
+            design_ur_y = std::max(design_ur_y, point_y);
+          } else if (routing_segment->is_rect()) {
+            int32_t point_x = routing_segment->get_point_start()->get_x();
+            int32_t point_y = routing_segment->get_point_start()->get_y();
+            idb::IdbRect* rect = routing_segment->get_delta_rect();
+            design_ll_x = std::min(design_ll_x, rect->get_low_x() + point_x);
+            design_ll_y = std::min(design_ll_y, rect->get_low_y() + point_y);
+            design_ur_x = std::max(design_ur_x, rect->get_high_x() + point_x);
+            design_ur_y = std::max(design_ur_y, rect->get_high_y() + point_y);
+          } else {
+            std::cout << "idrc : Unknown type!" << std::endl;
+          }
+        }
+      }
+      // 粗暴的防止越界
+      design_ll_x--;
+      design_ll_y--;
+      design_ur_x++;
+      design_ur_y++;
+      design_x_size = std::ceil((design_ur_x - design_ll_x) / 1.0 / box_size);
+      design_y_size = std::ceil((design_ur_y - design_ll_y) / 1.0 / box_size);
+      drc_box_list.resize(design_x_size * design_y_size);
+    }
+    // 向Box内部添加数据
+    {
+      for (idb::IdbLayerShape* env_shape : env_shape_list) {
+        for (idb::IdbRect* rect : env_shape->get_rect_list()) {
+          int32_t ll_x = std::max(design_ll_x, rect->get_low_x() - design_ll_x - expand_size);
+          int32_t ll_y = std::max(design_ll_y, rect->get_low_y() - design_ll_y - expand_size);
+          int32_t ur_x = std::min(design_ur_x, rect->get_high_x() - design_ll_x + expand_size);
+          int32_t ur_y = std::min(design_ur_y, rect->get_high_y() - design_ll_y + expand_size);
+          for (int32_t grid_x = (ll_x / box_size); grid_x <= (ur_x / box_size); grid_x++) {
+            for (int32_t grid_y = (ll_y / box_size); grid_y <= (ur_y / box_size); grid_y++) {
+              drc_box_list[grid_x + grid_y * design_x_size].env_shape_list.push_back(env_shape);
+            }
+          }
+        }
+      }
+      for (auto& [net_idx, pin_shape_list] : pin_data) {
+        for (idb::IdbLayerShape* pin_shape : pin_shape_list) {
+          for (idb::IdbRect* rect : pin_shape->get_rect_list()) {
+            int32_t ll_x = std::max(design_ll_x, rect->get_low_x() - design_ll_x - expand_size);
+            int32_t ll_y = std::max(design_ll_y, rect->get_low_y() - design_ll_y - expand_size);
+            int32_t ur_x = std::min(design_ur_x, rect->get_high_x() - design_ll_x + expand_size);
+            int32_t ur_y = std::min(design_ur_y, rect->get_high_y() - design_ll_y + expand_size);
+            for (int32_t grid_x = (ll_x / box_size); grid_x <= (ur_x / box_size); grid_x++) {
+              for (int32_t grid_y = (ll_y / box_size); grid_y <= (ur_y / box_size); grid_y++) {
+                drc_box_list[grid_x + grid_y * design_x_size].pin_data[net_idx].push_back(pin_shape);
+              }
+            }
+          }
+        }
+      }
+      for (auto& [net_idx, routing_segment_list] : routing_data) {
+        for (idb::IdbRegularWireSegment* routing_segment : routing_segment_list) {
+          if (routing_segment->is_wire()) {
+            if (routing_segment->get_point_number() != 2) {
+              std::cout << "idrc : Unknown wire!" << std::endl;
+            }
+            int32_t low_x = routing_segment->get_point_start()->get_x();
+            int32_t low_y = routing_segment->get_point_start()->get_y();
+            int32_t high_x = routing_segment->get_point_end()->get_x();
+            int32_t high_y = routing_segment->get_point_end()->get_y();
+            if (high_x < low_x) {
+              std::swap(low_x, high_x);
+            }
+            if (high_y < low_y) {
+              std::swap(low_y, high_y);
+            }
+            int32_t ll_x = std::max(design_ll_x, low_x - design_ll_x - expand_size);
+            int32_t ll_y = std::max(design_ll_y, low_y - design_ll_y - expand_size);
+            int32_t ur_x = std::min(design_ur_x, high_x - design_ll_x + expand_size);
+            int32_t ur_y = std::min(design_ur_y, high_y - design_ll_y + expand_size);
+            for (int32_t grid_x = (ll_x / box_size); grid_x <= (ur_x / box_size); grid_x++) {
+              for (int32_t grid_y = (ll_y / box_size); grid_y <= (ur_y / box_size); grid_y++) {
+                drc_box_list[grid_x + grid_y * design_x_size].routing_data[net_idx].push_back(routing_segment);
+              }
+            }
+          } else if (routing_segment->is_via()) {
+            int32_t point_x = routing_segment->get_point_start()->get_x();
+            int32_t point_y = routing_segment->get_point_start()->get_y();
+            int32_t ll_x = std::max(design_ll_x, point_x - design_ll_x - expand_size);
+            int32_t ll_y = std::max(design_ll_y, point_y - design_ll_y - expand_size);
+            int32_t ur_x = std::min(design_ur_x, point_x - design_ll_x + expand_size);
+            int32_t ur_y = std::min(design_ur_y, point_y - design_ll_y + expand_size);
+            for (int32_t grid_x = (ll_x / box_size); grid_x <= (ur_x / box_size); grid_x++) {
+              for (int32_t grid_y = (ll_y / box_size); grid_y <= (ur_y / box_size); grid_y++) {
+                drc_box_list[grid_x + grid_y * design_x_size].routing_data[net_idx].push_back(routing_segment);
+              }
+            }
+          } else if (routing_segment->is_rect()) {
+            int32_t point_x = routing_segment->get_point_start()->get_x();
+            int32_t point_y = routing_segment->get_point_start()->get_y();
+            idb::IdbRect* rect = routing_segment->get_delta_rect();
+            int32_t ll_x = std::max(design_ll_x, rect->get_low_x() + point_x - design_ll_x - expand_size);
+            int32_t ll_y = std::max(design_ll_y, rect->get_low_y() + point_y - design_ll_y - expand_size);
+            int32_t ur_x = std::min(design_ur_x, rect->get_high_x() + point_x - design_ll_x + expand_size);
+            int32_t ur_y = std::min(design_ur_y, rect->get_high_y() + point_y - design_ll_y + expand_size);
+            for (int32_t grid_x = (ll_x / box_size); grid_x <= (ur_x / box_size); grid_x++) {
+              for (int32_t grid_y = (ll_y / box_size); grid_y <= (ur_y / box_size); grid_y++) {
+                drc_box_list[grid_x + grid_y * design_x_size].routing_data[net_idx].push_back(routing_segment);
+              }
+            }
+          } else {
+            std::cout << "idrc : Unknown type!" << std::endl;
+          }
+        }
+      }
+    }
+    // 处理Box数据
+    {
+#pragma omp parallel for
+      for (size_t drc_box_idx = 0; drc_box_idx < drc_box_list.size(); drc_box_idx++) {
+        DRCBox& drc_box = drc_box_list[drc_box_idx];
+        std::vector<idb::IdbLayerShape*>& box_env_shape_list = drc_box.env_shape_list;
+        std::map<int, std::vector<idb::IdbLayerShape*>>& box_pin_data = drc_box.pin_data;
+        std::map<int, std::vector<idb::IdbRegularWireSegment*>>& box_routing_data = drc_box.routing_data;
+        std::map<idrc::ViolationEnumType, std::vector<idrc::DrcViolation*>>& box_type_violation_list_map = drc_box.type_violation_list_map;
+        // 去除冗余数据
+        {
+          std::sort(box_env_shape_list.begin(), box_env_shape_list.end());
+          box_env_shape_list.erase(std::unique(box_env_shape_list.begin(), box_env_shape_list.end()), box_env_shape_list.end());
+          for (auto& [net_idx, pin_shape_list] : box_pin_data) {
+            std::sort(pin_shape_list.begin(), pin_shape_list.end());
+            pin_shape_list.erase(std::unique(pin_shape_list.begin(), pin_shape_list.end()), pin_shape_list.end());
+          }
+          for (auto& [net_idx, routing_segment_list] : box_routing_data) {
+            std::sort(routing_segment_list.begin(), routing_segment_list.end());
+            routing_segment_list.erase(std::unique(routing_segment_list.begin(), routing_segment_list.end()), routing_segment_list.end());
+          }
+        }
+        // 计算设计违例
+        {
+          box_type_violation_list_map = checkByBox(box_env_shape_list, box_pin_data, box_routing_data);
+        }
+        // 清除额外违例
+        {
+          int32_t grid_ll_x = drc_box_idx % design_x_size;
+          int32_t grid_ll_y = drc_box_idx / design_x_size;
+
+          int32_t box_ll_x = grid_ll_x * box_size + design_ll_x;
+          int32_t box_ll_y = grid_ll_y * box_size + design_ll_y;
+          int32_t box_ur_x = (grid_ll_x + 1) * box_size + design_ll_x;
+          int32_t box_ur_y = (grid_ll_y + 1) * box_size + design_ll_y;
+
+          for (auto& [type, violation_list] : box_type_violation_list_map) {
+            std::vector<idrc::DrcViolation*> new_violation_list;
+            for (idrc::DrcViolation* violation : violation_list) {
+              idrc::DrcViolationRect* violation_rect = static_cast<idrc::DrcViolationRect*>(violation);
+              int32_t x_spacing = std::max(violation_rect->get_llx() - box_ur_x, box_ll_x - violation_rect->get_urx());
+              int32_t y_spacing = std::max(violation_rect->get_lly() - box_ur_y, box_ll_y - violation_rect->get_ury());
+              if (x_spacing < 0 && y_spacing < 0) {
+                new_violation_list.push_back(violation);
+              }
+            }
+            violation_list = new_violation_list;
+          }
+        }
+      }
+    }
+    // 得到最后结果
+    std::map<ViolationEnumType, std::vector<DrcViolation*>> type_violation_list_map;
+    {
+      for (DRCBox& drc_box : drc_box_list) {
+        for (auto& [type, violation_list] : drc_box.type_violation_list_map) {
+          for (DrcViolation* violation : violation_list) {
+            type_violation_list_map[type].push_back(violation);
+          }
+        }
+      }
+    }
+    return type_violation_list_map;
+  } else {
+    return checkByBox(env_shape_list, pin_data, routing_data);
+  }
+}
+
+std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::checkByBox(
+    std::vector<idb::IdbLayerShape*>& env_shape_list, std::map<int, std::vector<idb::IdbLayerShape*>>& pin_data,
+    std::map<int, std::vector<idb::IdbRegularWireSegment*>>& routing_data, std::set<ViolationEnumType> check_select)
+{
+  // 有bug,对于没有任何形状传入时,需要耗费大量时间
+  int32_t shape_num = 0;
+  shape_num += env_shape_list.size();
+  for (auto& [net_idx, pin_shape_list] : pin_data) {
+    shape_num += pin_shape_list.size();
+  }
+  for (auto& [net_idx, routing_segment_list] : routing_data) {
+    shape_num += routing_segment_list.size();
+  }
+  if (shape_num == 0) {
+    return {};
+  }
+
   DrcManager drc_manager;
 
   auto* data_manager = drc_manager.get_data_manager();
@@ -91,6 +368,85 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
   drc_manager.dataOperate();
 #ifdef DEBUG_IDRC_API
   if (DrcCheckerType::kDef == check_type) {
+    std::cout << "idrc : dataOperate"
+              << " runtime = " << stats_build_condition.elapsedRunTime() << " memory = " << stats_build_condition.memoryDelta()
+              << std::endl;
+  }
+#endif
+
+#ifdef DEBUG_IDRC_API
+  ieda::Stats stats_check;
+#endif
+  drc_manager.dataCheck();
+
+#ifdef DEBUG_IDRC_API
+  if (DrcCheckerType::kDef == check_type) {
+    std::cout << "idrc : dataCheck"
+              << " runtime = " << stats_check.elapsedRunTime() << " memory = " << stats_check.memoryDelta() << std::endl;
+  }
+#endif
+
+  return violation_manager->get_violation_map(drc_manager.get_engine()->get_engine_manager());
+}
+/**
+ * check DRC violation for DEF file
+ * initialize data from idb
+ */
+std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::checkDef()
+{
+  std::vector<idb::IdbLayerShape*> env_shape_list;
+  std::map<int, std::vector<idb::IdbLayerShape*>> pin_data;
+  std::map<int, std::vector<idb::IdbRegularWireSegment*>> routing_data;
+  std::set<ViolationEnumType> check_select;
+
+  DrcManager drc_manager;
+
+  auto* data_manager = drc_manager.get_data_manager();
+  // auto* rule_manager = drc_manager.get_rule_manager();
+  auto* condition_manager = drc_manager.get_condition_manager();
+  auto* violation_manager = drc_manager.get_violation_manager();
+  if (data_manager == nullptr /*|| rule_manager == nullptr */ || condition_manager == nullptr || violation_manager == nullptr) {
+    return {};
+  }
+
+  condition_manager->set_check_select(check_select);
+
+  /// set drc rule stratagy by rt paramter
+  /// tbd
+  // rule_manager->get_stratagy()->set_stratagy_type(DrcStratagyType::kCheckFast);
+
+  data_manager->set_env_shapes(&env_shape_list);
+  data_manager->set_pin_data(&pin_data);
+  data_manager->set_routing_data(&routing_data);
+
+  // auto check_type = (env_shape_list.size() + pin_data.size() + routing_data.size()) > 0 ? DrcCheckerType::kRT : DrcCheckerType::kDef;
+  auto check_type = DrcCheckerType::kDef;
+
+  condition_manager->set_check_type(check_type);
+
+#ifdef DEBUG_IDRC_API
+  if (DrcCheckerType::kDef == check_type) {
+    std::cout << "idrc : check def" << std::endl;
+  }
+#endif
+
+#ifdef DEBUG_IDRC_API
+  ieda::Stats stats_engine;
+#endif
+  drc_manager.dataInit(check_type);
+#ifdef DEBUG_IDRC_API
+  if (DrcCheckerType::kDef == check_type) {
+    std::cout << "idrc : engine start"
+              << " runtime = " << stats_engine.elapsedRunTime() << " memory = " << stats_engine.memoryDelta() << std::endl;
+  }
+#endif
+
+#ifdef DEBUG_IDRC_API
+  ieda::Stats stats_build_condition;
+#endif
+  drc_manager.dataOperate();
+#ifdef DEBUG_IDRC_API
+  if (DrcCheckerType::kDef == check_type) {
     std::cout << "idrc : build condition"
               << " runtime = " << stats_build_condition.elapsedRunTime() << " memory = " << stats_build_condition.memoryDelta()
               << std::endl;
@@ -110,183 +466,6 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
 #endif
 
   return violation_manager->get_violation_map(drc_manager.get_engine()->get_engine_manager());
-}
-/**
- * check DRC violation for DEF file
- * initialize data from idb
- */
-std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::checkDef()
-{
-  std::vector<idb::IdbLayerShape*> env_shape_list;
-  std::map<int, std::vector<idb::IdbLayerShape*>> pin_data;
-  std::map<int, std::vector<idb::IdbRegularWireSegment*>> routing_data;
-  return check(env_shape_list, pin_data, routing_data);
-}
-
-void plotGDS(std::string gds_file, std::map<int32_t, std::map<int32_t, std::vector<ieda_solver::GeometryRect>>>& layer_type_rect_list_map)
-{
-  std::ofstream gds_stream(gds_file);
-  if (gds_stream.is_open()) {
-    gds_stream << "HEADER 600" << std::endl;
-    gds_stream << "BGNLIB" << std::endl;
-    gds_stream << "LIBNAME GDSLib" << std::endl;
-    gds_stream << "UNITS 0.001 1e-9" << std::endl;
-    gds_stream << "BGNSTR" << std::endl;
-    gds_stream << "STRNAME top" << std::endl;
-
-    for (auto& [layer_idx, type_rect_list_map] : layer_type_rect_list_map) {
-      for (auto& [type, rect_list] : type_rect_list_map) {
-        for (auto& rect : rect_list) {
-          int32_t lb_x = ieda_solver::lowLeftX(rect);
-          int32_t rt_x = ieda_solver::upRightX(rect);
-          int32_t lb_y = ieda_solver::lowLeftY(rect);
-          int32_t rt_y = ieda_solver::upRightY(rect);
-
-          gds_stream << "BOUNDARY" << std::endl;
-          gds_stream << "LAYER " << layer_idx << std::endl;
-          gds_stream << "DATATYPE " << int32_t(type) << std::endl;
-          gds_stream << "XY" << std::endl;
-          gds_stream << lb_x << " : " << lb_y << std::endl;
-          gds_stream << rt_x << " : " << lb_y << std::endl;
-          gds_stream << rt_x << " : " << rt_y << std::endl;
-          gds_stream << lb_x << " : " << rt_y << std::endl;
-          gds_stream << lb_x << " : " << lb_y << std::endl;
-          gds_stream << "ENDEL" << std::endl;
-        }
-      }
-    }
-    gds_stream << "ENDSTR" << std::endl;
-    gds_stream << "ENDLIB" << std::endl;
-    gds_stream.close();
-    std::cout << "[Info] Result has been written to '" << gds_file << "'!" << std::endl;
-  } else {
-    std::cout << "[Error] Failed to open gds file '" << gds_file << "'!" << std::endl;
-  }
-}
-
-void DrcApi::diagnosis(std::string third_json_file, std::string idrc_json_file, std::string output_dir)
-{
-  std::map<std::string, ViolationEnumType> third_name_to_type_map{{"SHORT", ViolationEnumType::kShort},
-                                                                  {"SPACING", ViolationEnumType::kPRLSpacing},
-                                                                  {"MINSTEP", ViolationEnumType::kMinStep},
-                                                                  {"EndOfLine", ViolationEnumType::kEOL},
-                                                                  {"MINHOLE", ViolationEnumType::kAreaEnclosed}};
-  std::map<std::string, ViolationEnumType> idrc_name_to_type_map{{"Corner Fill Spacing", ViolationEnumType::kCornerFill},
-                                                                 {"Default Spacing", ViolationEnumType::kDefaultSpacing},
-                                                                 {"Enclosed Area", ViolationEnumType::kAreaEnclosed},
-                                                                 {"JogToJog Spacing", ViolationEnumType::kJogToJog},
-                                                                 {"EndOfLine Spacing", ViolationEnumType::kEOL},
-                                                                 {"Notch Spacing", ViolationEnumType::kNotch},
-                                                                 {"ParallelRunLength Spacing", ViolationEnumType::kPRLSpacing},
-                                                                 {"Metal Short", ViolationEnumType::kShort},
-                                                                 {"MinStep", ViolationEnumType::kMinStep},
-                                                                 {"Minimum Area", ViolationEnumType::kArea}};
-  std::map<std::string, int32_t> layer_name_to_id_map{{"M1", 1}, {"M2", 2}, {"M3", 3}, {"M4", 4}, {"M5", 5},
-                                                      {"M6", 6}, {"M7", 7}, {"M8", 8}, {"M9", 9}};
-
-  std::string json_entry_key = "type_sorted_tech_DRCs_list";
-  std::string json_drc_list_key = "tech_DRCs_list";
-
-  auto parse_json = [&](std::string& file_path, std::map<int32_t, std::map<int32_t, std::vector<ieda_solver::GeometryRect>>>& result,
-                        std::map<std::string, ViolationEnumType>& name_to_type_map, int32_t scale) {
-    std::cout << "idrc : parse json: " << file_path << std::endl;
-    std::ifstream json_stream(file_path);
-    json json_data;
-    json_stream >> json_data;
-
-    for (auto& entry : json_data[json_entry_key]) {
-      auto type = name_to_type_map[entry["type"]];
-      for (auto& violation_item : entry[json_drc_list_key]) {
-        auto& violation = violation_item["tech_DRCs"];
-        auto layer = layer_name_to_id_map[violation["layer"]];
-        double origin_llx = violation["llx"];
-        double origin_lly = violation["lly"];
-        double origin_urx = violation["urx"];
-        double origin_ury = violation["ury"];
-        int32_t llx = static_cast<int32_t>(origin_llx * scale);
-        int32_t lly = static_cast<int32_t>(origin_lly * scale);
-        int32_t urx = static_cast<int32_t>(origin_urx * scale);
-        int32_t ury = static_cast<int32_t>(origin_ury * scale);
-        result[layer][(int32_t) type].emplace_back(llx, lly, urx, ury);
-      }
-    }
-  };
-
-  std::map<int32_t, std::map<int32_t, std::vector<ieda_solver::GeometryRect>>> third_layer_type_rect_list_map;
-  std::map<int32_t, std::map<int32_t, std::vector<ieda_solver::GeometryRect>>> idrc_layer_type_rect_list_map;
-
-  parse_json(third_json_file, third_layer_type_rect_list_map, third_name_to_type_map, 2000);
-  parse_json(idrc_json_file, idrc_layer_type_rect_list_map, idrc_name_to_type_map, 1);
-
-  std::map<int32_t, std::map<int32_t, std::vector<ieda_solver::GeometryRect>>> third_diff_idrc_layer_type_rect_list_map;
-  std::map<int32_t, std::map<int32_t, std::vector<ieda_solver::GeometryRect>>> idrc_diff_third_layer_type_rect_list_map;
-  {
-    auto create_set = [](std::map<int32_t, std::map<int32_t, std::vector<ieda_solver::GeometryRect>>>& input,
-                         std::map<int32_t, std::map<int32_t, ieda_solver::GeometryPolygonSet>>& result) {
-      std::cout << "idrc : create polygon set" << std::endl;
-      for (auto& [layer, violation_map] : input) {
-        for (auto& [type, violation_list] : violation_map) {
-          for (auto& rect : violation_list) {
-            result[layer][type] += rect;
-          }
-        }
-      }
-    };
-
-    auto diff_two_map = [](std::map<int32_t, std::map<int32_t, ieda_solver::GeometryPolygonSet>>& map1,
-                           std::map<int32_t, std::map<int32_t, ieda_solver::GeometryPolygonSet>>& map2,
-                           std::map<int32_t, std::map<int32_t, std::vector<ieda_solver::GeometryRect>>>& result) {
-      std::cout << "idrc : boolean operations" << std::endl;
-      for (auto& [layer, violation_map] : map1) {
-        for (auto& [type, polyset] : violation_map) {
-          auto& other_polyset = map2[layer][type];
-          auto diff_set = polyset - other_polyset;
-          ieda_solver::getDefaultRectangles(result[layer][type], diff_set);
-        }
-      }
-    };
-
-    std::map<int32_t, std::map<int32_t, ieda_solver::GeometryPolygonSet>> third_layer_type_polyset_map;
-    std::map<int32_t, std::map<int32_t, ieda_solver::GeometryPolygonSet>> idrc_layer_type_polyset_map;
-
-    create_set(third_layer_type_rect_list_map, third_layer_type_polyset_map);
-    create_set(idrc_layer_type_rect_list_map, idrc_layer_type_polyset_map);
-
-    diff_two_map(third_layer_type_polyset_map, idrc_layer_type_polyset_map, third_diff_idrc_layer_type_rect_list_map);
-    diff_two_map(idrc_layer_type_polyset_map, third_layer_type_polyset_map, idrc_diff_third_layer_type_rect_list_map);
-  }
-
-  std::cout << "idrc : output GDS file" << std::endl;
-
-  std::string third_gds_file = output_dir + "/third.gds";
-  std::string idrc_gds_file = output_dir + "/idrc.gds";
-  std::string third_diff_idrc_gds_file = output_dir + "/third_diff_idrc.gds";
-  std::string idrc_diff_third_gds_file = output_dir + "/idrc_diff_third.gds";
-
-  plotGDS(third_gds_file, third_layer_type_rect_list_map);
-  plotGDS(idrc_gds_file, idrc_layer_type_rect_list_map);
-  plotGDS(third_diff_idrc_gds_file, third_diff_idrc_layer_type_rect_list_map);
-  plotGDS(idrc_diff_third_gds_file, idrc_diff_third_layer_type_rect_list_map);
-
-  std::cout << "idrc : combine two drc data" << std::endl;
-
-  std::string combined_gds_file = output_dir + "/combined.gds";
-  std::map<int32_t, std::map<int32_t, std::vector<ieda_solver::GeometryRect>>> combined_layer_type_rect_list_map;
-  for (auto& [layer, violation_map] : idrc_layer_type_rect_list_map) {
-    for (auto& [type, violation_list] : violation_map) {
-      int new_type = type * 10 + 1;
-      combined_layer_type_rect_list_map[layer][new_type].insert(combined_layer_type_rect_list_map[layer][new_type].end(),
-                                                                violation_list.begin(), violation_list.end());
-    }
-  }
-  for (auto& [layer, violation_map] : third_layer_type_rect_list_map) {
-    for (auto& [type, violation_list] : violation_map) {
-      int new_type = type * 10 + 2;
-      combined_layer_type_rect_list_map[layer][new_type].insert(combined_layer_type_rect_list_map[layer][new_type].end(),
-                                                                violation_list.begin(), violation_list.end());
-    }
-  }
-  plotGDS(combined_gds_file, combined_layer_type_rect_list_map);
 }
 
 }  // namespace idrc

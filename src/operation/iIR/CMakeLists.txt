@@ -1,9 +1,11 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.11)
 
 set (CMAKE_CXX_STANDARD 20)
-set (CMAKE_BUILD_TYPE "Debug")
 
-set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -DNDEBUG")
+if(NOT DEFINED CMD_BUILD)
+    set (CMAKE_BUILD_TYPE "Debug")
+    set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -DNDEBUG")
+endif()
 
 include_directories(${HOME_OPERATION}/iIR)
 include_directories(${HOME_OPERATION}/iIR/source)
@@ -13,6 +15,7 @@ add_subdirectory(api)
 add_subdirectory(source/iir-rust)
 add_subdirectory(source/ir-solver)
 add_subdirectory(source/module/matrix)
+add_subdirectory(source/module/power-netlist)
 add_subdirectory(test)
 
 aux_source_directory(./ SRC)

@@ -15,9 +15,11 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #include "idrc_engine_manager.h"
+#include <vector>
 
 #include "condition_manager.h"
 #include "engine_geometry_creator.h"
+#include "engine_layout.h"
 #include "engine_scanline.h"
 #include "geometry_boost.h"
 #include "idm.h"
@@ -150,8 +152,14 @@ bool DrcEngineManager::addRect(int llx, int lly, int urx, int ury, std::string l
 
 void DrcEngineManager::dataPreprocess()
 {
-  for (auto& [layer, layout] : get_engine_layouts()) {
-    layout->combineLayout(_data_manager);
+  std::vector<DrcEngineLayout*> layout_list;
+  for (auto& [layer, layout] : get_engine_layouts(LayoutType::kRouting)) {
+    layout_list.push_back(layout);
+  }
+#pragma omp parallel for num_threads(std::min((int)layout_list.size(),8))
+  for (size_t i = 0; i < layout_list.size(); i++) {
+    DrcEngineLayout* layout = layout_list[i];
+    layout->combineLayout();
   }
 }
 

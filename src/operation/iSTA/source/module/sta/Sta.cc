@@ -333,7 +333,8 @@ unsigned Sta::linkLibertys() {
   }
 
   auto link_lib = [this](auto &lib_rust_reader) {
-    lib_rust_reader.set_build_cells(get_link_cells());
+    // master should load all lib.
+    // lib_rust_reader.set_build_cells(get_link_cells());
     lib_rust_reader.linkLib();
     auto lib = lib_rust_reader.get_library_builder()->takeLib();
 
@@ -1021,6 +1022,7 @@ void Sta::initSdcCmd() {
   registerTclCmd(CmdSetOperatingConditions, "set_operating_conditions");
   registerTclCmd(CmdSetWireLoadMode, "set_wire_load_mode");
   registerTclCmd(CmdSetDisableTiming, "set_disable_timing");
+  registerTclCmd(CmdSetCaseAnalysis, "set_case_analysis");
 }
 
 /**
@@ -1412,6 +1414,11 @@ unsigned Sta::buildLibArcsGPU() {
     lib_gpu_arc._cap_unit =
         ((lib_cap_unit == CapacitiveUnit::kFF) ? Lib_Cap_unit::kFF
                                                : Lib_Cap_unit::kPF);
+    auto lib_time_unit = the_lib_arc->get_owner_cell()->get_owner_lib()->get_time_unit();
+    lib_gpu_arc._time_unit =
+        ((lib_time_unit == TimeUnit::kNS) ? Lib_Time_unit::kNS :
+                                          (lib_time_unit == TimeUnit::kPS) ? Lib_Time_unit::kPS : Lib_Time_unit::kFS);
+
     lib_gpu_arc._table = new Lib_Table_GPU[lib_gpu_arc._num_table];
 
     for (size_t index = 0; index < num_table; index++) {

@@ -7,17 +7,18 @@ assignTAPanelMap:
     buildFixedRect:将GCellmap中的fix_rect(与此Panel覆盖)以指针的方式拷贝到Panel内,不需要对GCellmap删除或添加
     buildAccessResult:将GCellmap中的access_result(与此Panel覆盖)以指针的方式拷贝到Panel内,不需要对GCellmap删除或添加
     buildNetResult:将GCellMap中的net_result(与此Panel覆盖)以指针的方式拷贝到Panel内,不需要对GCellmap删除或添加
-    buildViolation:将GCellMap中的violation以实体的方式拷贝到Panel的violation_list,对于完全在Panel内的,在GCellMap中删除
     initTATaskList:构建task任务
+    buildViolation:将GCellMap中的violation以实体的方式拷贝到Panel的violation_list,对于完全在Panel内的,在GCellMap中删除
     buildPanelTrackAxis:构建Panel内的track_axis
     buildTANodeMap:构建Panel的Graph,只有节点,其他信息后续构建
     buildTANodeNeighbor:将所有节点连接
     buildOrientNetMap:构建Graph的cost,fix_rect从Panel中得到,在ta阶段net_pin_access_result为fix结果
+    exemptPinShape:排除掉pin_shape上的障碍cost
     routeTAPanel:
         initTaskSchedule:初始化task布线调度表
-            routeTATask:给task布线,在此函数末尾,布线结果从graph中删除,再加入新的结果
+        routeTATask:给task布线,在此函数末尾,布线结果从graph中删除,再加入新的结果
         updateViolationList:首先得到Violation存到Panel下面,然后Violation结果从graph中删除,再加入新的结果
-        getTaskScheduleByViolation:通过Violation得到新的布线调度
+        updateTaskSchedule:通过Violation得到新的布线调度
     uploadNetResult:将布线结果加入GCellMap
     uploadViolation:将violation加入GCellMap
     freeTAPanel:析构task_list和node_map

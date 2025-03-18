@@ -55,7 +55,7 @@ class ERNode : public LayerCoord
     }
     return neighbor_node;
   }
-  double getCongestionCost(Orientation orientation)
+  double getOverflowCost(Orientation orientation, double overflow_cost)
   {
     double cost = 0;
     if (orientation != Orientation::kAbove && orientation != Orientation::kBelow) {
@@ -67,7 +67,7 @@ class ERNode : public LayerCoord
       if (RTUTIL.exist(_orient_supply_map, orientation)) {
         node_supply = _orient_supply_map[orientation];
       }
-      cost += calcCost(node_demand + 1, node_supply);
+      cost += (calcCost(node_demand + 1, node_supply) * overflow_cost);
     }
     return cost;
   }

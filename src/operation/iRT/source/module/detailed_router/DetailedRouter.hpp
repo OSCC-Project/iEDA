@@ -102,16 +102,16 @@ class DetailedRouter
   double getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   void updateViolationList(DRBox& dr_box);
-  std::vector<Violation> getCostViolationList(DRBox& dr_box);
+  std::vector<Violation> getAmongNetViolationList(DRBox& dr_box);
   void updateBestResult(DRBox& dr_box);
   void updateTaskSchedule(DRBox& dr_box, std::vector<DRTask*>& routing_task_list);
   void selectBestResult(DRBox& dr_box);
   void uploadBestResult(DRBox& dr_box);
   void freeDRBox(DRBox& dr_box);
-  int32_t getViolationNum();
+  int32_t getViolationNum(DRModel& dr_model);
   void uploadNetResult(DRModel& dr_model);
   void uploadViolation(DRModel& dr_model);
-  std::vector<Violation> getCostViolationList(DRModel& dr_model);
+  std::vector<Violation> getAmongNetViolationList(DRModel& dr_model);
   void updateBestResult(DRModel& dr_model);
   bool stopIteration(DRModel& dr_model);
   void selectBestResult(DRModel& dr_model);
@@ -123,9 +123,9 @@ class DetailedRouter
   void updateRoutedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
   void addViolationToGraph(DRBox& dr_box, Violation& violation);
   void addViolationToGraph(DRBox& dr_box, LayerRect& searched_rect, std::vector<Segment<LayerCoord>>& overlap_segment_list);
-  std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, NetShape& net_shape, bool need_enlarged);
-  std::map<DRNode*, std::set<Orientation>> getRoutingNodeOrientationMap(DRBox& dr_box, NetShape& net_shape, bool need_enlarged);
-  std::map<DRNode*, std::set<Orientation>> getCutNodeOrientationMap(DRBox& dr_box, NetShape& net_shape, bool need_enlarged);
+  std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
+  std::map<DRNode*, std::set<Orientation>> getRoutingNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
+  std::map<DRNode*, std::set<Orientation>> getCutNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
 #endif
 
 #if 1  // exhibit
@@ -138,7 +138,7 @@ class DetailedRouter
 #if 1  // debug
   void debugPlotDRModel(DRModel& dr_model, std::string flag);
   void debugCheckDRBox(DRBox& dr_box);
-  void debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag);
+  void debugPlotDRBox(DRBox& dr_box, std::string flag);
 #endif
 };
 
