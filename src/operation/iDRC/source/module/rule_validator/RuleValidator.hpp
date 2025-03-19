@@ -63,6 +63,7 @@ class RuleValidator
   void verifyEndOfLineSpacing(RVBox& rv_box);
   void verifyFloatingPatch(RVBox& rv_box);
   void verifyJogToJogSpacing(RVBox& rv_box);
+  void verifyMaximumWidth(RVBox& rv_box);
   void verifyMaxViaStack(RVBox& rv_box);
   void verifyMetalShort(RVBox& rv_box);
   void verifyMinHole(RVBox& rv_box);
@@ -82,7 +83,10 @@ class RuleValidator
 #if 1  // debug
   void debugPlotRVModel(RVModel& rv_model, std::string flag);
   void debugPlotRVBox(RVBox& rv_box, std::string flag);
-  GPDataType convertGPDataType(ViolationType violation_type);
+  void debugByGolden(RVBox& rv_box);
+  void debugVerifyRVModelByGolden(RVModel& rv_model);
+  void debugVerifyRVBoxByGolden(RVBox& rv_box);
+  void debugOutputViolationByGolden(RVBox& rv_box);
 #endif
 };
 

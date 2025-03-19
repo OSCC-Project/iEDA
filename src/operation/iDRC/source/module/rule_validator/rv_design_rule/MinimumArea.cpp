@@ -43,35 +43,35 @@ void RuleValidator::verifyMinimumArea(RVBox& rv_box)
 
   for (auto& [layer_idx, net_poly_set] : layer_net_poly_set) {
     for (auto& [net_idx, poly_set] : net_poly_set) {
-        std::vector<GTLPolyInt> poly_list;
-        poly_set.get_polygons(poly_list);
-        int32_t min_area = routing_layer_list[layer_idx].get_min_area();
-        for(GTLPolyInt poly : poly_list){
-            if(gtl::area(poly) < min_area){
-              GTLRectInt violation_rect;
-              gtl::extents(violation_rect,poly);//可以用max_rect代替
-              int llx = gtl::xl(violation_rect);
-              int lly = gtl::yl(violation_rect);
-              int urx = gtl::xh(violation_rect);
-              int ury = gtl::yh(violation_rect);
+      std::vector<GTLPolyInt> poly_list;
+      poly_set.get_polygons(poly_list);
+      int32_t min_area = routing_layer_list[layer_idx].get_min_area();
+      for (GTLPolyInt poly : poly_list) {
+        if (gtl::area(poly) < min_area) {
+          GTLRectInt violation_rect;
+          gtl::extents(violation_rect, poly);  // 可以用max_rect代替
+          int llx = gtl::xl(violation_rect);
+          int lly = gtl::yl(violation_rect);
+          int urx = gtl::xh(violation_rect);
+          int ury = gtl::yh(violation_rect);
 
-              std::set<int32_t> net_set;
-              net_set.insert(net_idx);
+          std::set<int32_t> net_set;
+          net_set.insert(net_idx);
 
-              Violation violation;
-              violation.set_violation_type(ViolationType::kMinimumArea);
-              violation.set_is_routing(true);
-              violation.set_violation_net_set(net_set);
-              violation.set_required_size(min_area);
-              violation.set_layer_idx(layer_idx);
-              violation.set_rect(PlanarRect(llx,lly,urx,ury));
+          Violation violation;
+          violation.set_violation_type(ViolationType::kMinimumArea);
+          violation.set_is_routing(true);
+          violation.set_violation_net_set(net_set);
+          violation.set_required_size(min_area);
+          violation.set_layer_idx(layer_idx);
+          violation.set_rect(PlanarRect(llx, lly, urx, ury));
 
-              violation_list.push_back(violation);
-            }
+          violation_list.push_back(violation);
         }
+      }
     }
   }
-//   DRCLOG.info(Loc::current(),"min area num: ",violation_list.size());
+  //   DRCLOG.info(Loc::current(),"min area num: ",violation_list.size());
 }
 
 }  // namespace idrc

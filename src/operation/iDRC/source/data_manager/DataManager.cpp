@@ -120,8 +120,31 @@ void DataManager::buildConfig()
 
 void DataManager::buildDatabase()
 {
+  buildDie();
   buildLayerList();
   buildLayerInfo();
+}
+
+void DataManager::buildDie()
+{
+  makeDie();
+  checkDie();
+}
+
+void DataManager::makeDie()
+{
+}
+
+void DataManager::checkDie()
+{
+  Die& die = _database.get_die();
+
+  if (die.get_ll_x() < 0 || die.get_ll_y() < 0 || die.get_ur_x() < 0 || die.get_ur_y() < 0) {
+    DRCLOG.error(Loc::current(), "The die '(", die.get_ll_x(), " , ", die.get_ll_y(), ") - (", die.get_ur_x(), " , ", die.get_ur_y(), ")' is wrong!");
+  }
+  if ((die.get_ur_x() <= die.get_ll_x()) || (die.get_ur_y() <= die.get_ll_y())) {
+    DRCLOG.error(Loc::current(), "The die '(", die.get_ll_x(), " , ", die.get_ll_y(), ") - (", die.get_ur_x(), " , ", die.get_ur_y(), ")' is wrong!");
+  }
 }
 
 void DataManager::buildLayerList()
@@ -328,9 +351,16 @@ void DataManager::printDatabase()
   ////////////////////////////////////////////////
   // ********** DRC ********** //
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(0), "DRC_DATABASE");
+  // **********     MicronDBU     ********** //
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "micron_dbu");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _database.get_micron_dbu());
   // ********** ManufactureGrid ********** //
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "manufacture_grid");
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _database.get_manufacture_grid());
+  // **********        Die        ********** //
+  Die& die = _database.get_die();
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "die");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), "(", die.get_ll_x(), ",", die.get_ll_y(), ")-(", die.get_ur_x(), ",", die.get_ur_y(), ")");
   // ********** RoutingLayer ********** //
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "routing_layer_num");

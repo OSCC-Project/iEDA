@@ -1487,8 +1487,10 @@ void DataManager::printDatabase()
   // **********        Die        ********** //
   Die& die = _database.get_die();
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "die");
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "(", die.get_real_ll_x(), ",", die.get_real_ll_y(), ")-(", die.get_real_ur_x(), ",",
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "real:(", die.get_real_ll_x(), ",", die.get_real_ll_y(), ")-(", die.get_real_ur_x(), ",",
              die.get_real_ur_y(), ")");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "grid:(", die.get_grid_ll_x(), ",", die.get_grid_ll_y(), ")-(", die.get_grid_ur_x(), ",",
+             die.get_grid_ur_y(), ")");
   // **********    RoutingLayer   ********** //
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "routing_layer_num");

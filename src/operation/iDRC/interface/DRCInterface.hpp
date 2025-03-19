@@ -69,7 +69,9 @@ class DRCInterface
   void input(std::map<std::string, std::any>& config_map);
   void wrapConfig(std::map<std::string, std::any>& config_map);
   void wrapDatabase();
+  void wrapMicronDBU();
   void wrapManufactureGrid();
+  void wrapDie();
   void wrapLayerList();
   void wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
   void wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);

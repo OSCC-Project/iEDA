@@ -16,27 +16,14 @@
 // ***************************************************************************************
 #pragma once
 
-#include "DRCHeader.hpp"
-
 namespace idrc {
 
-class Config
+enum class SortStatus
 {
- public:
-  Config() = default;
-  ~Config() = default;
-  //////////////////////////////////////////////
-  // **********        DRC         ********** //
-  std::string temp_directory_path;  // required
-  int32_t thread_number;            // optional
-  /////////////////////////////////////////////
-  // **********        DRC         ********** //
-  std::string log_file_path;  // building
-  // **********   RuleValidator    ********** //
-  std::string rv_temp_directory_path;  // building
-  // **********     GDSPlotter     ********** //
-  std::string gp_temp_directory_path;  // building
-  //////////////////////////////////////////////
+  kNone = 0,
+  kTrue = 1,
+  kEqual = 2,
+  kFalse = 3
 };
 
 }  // namespace idrc

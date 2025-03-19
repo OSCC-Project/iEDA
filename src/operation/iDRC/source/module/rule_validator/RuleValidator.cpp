@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #include "RuleValidator.hpp"
 
+#include "DRCHeader.hpp"
 #include "GDSPlotter.hpp"
 
 namespace idrc {
@@ -74,7 +75,7 @@ RVModel RuleValidator::initRVModel(std::vector<DRCShape>& drc_env_shape_list, st
 void RuleValidator::setRVComParam(RVModel& rv_model)
 {
   int32_t only_pitch = DRCDM.getOnlyPitch();
-  int32_t box_size = 200 * only_pitch;
+  int32_t box_size = 500 * only_pitch;
   int32_t expand_size = 2 * only_pitch;
   /**
    * box_size, expand_size
@@ -109,8 +110,8 @@ void RuleValidator::buildRVModel(RVModel& rv_model)
       bounding_box.set_ur_y(std::max(bounding_box.get_ur_y(), drc_result_shape.get_ur_y()));
     }
     PlanarRect enlarged_rect = DRCUTIL.getEnlargedRect(bounding_box, 1);
-    grid_x_size = std::ceil(enlarged_rect.getXSpan() / 1.0 / box_size);
-    grid_y_size = std::ceil(enlarged_rect.getYSpan() / 1.0 / box_size);
+    grid_x_size = static_cast<int32_t>(std::ceil(enlarged_rect.getXSpan() / 1.0 / box_size));
+    grid_y_size = static_cast<int32_t>(std::ceil(enlarged_rect.getYSpan() / 1.0 / box_size));
   }
   rv_model.get_rv_box_list().resize(grid_x_size * grid_y_size);
   for (int32_t grid_x = 0; grid_x < grid_x_size; grid_x++) {
@@ -151,6 +152,7 @@ void RuleValidator::verifyRVModel(RVModel& rv_model)
       // debugPlotRVBox(rv_box, "middle");
       processRVBox(rv_box);
       // debugPlotRVBox(rv_box, "after");
+      // debugByGolden(rv_box);
     }
   }
 }
@@ -181,6 +183,7 @@ void RuleValidator::verifyRVBox(RVBox& rv_box)
   verifyEndOfLineSpacing(rv_box);
   verifyFloatingPatch(rv_box);
   verifyJogToJogSpacing(rv_box);
+  verifyMaximumWidth(rv_box);
   verifyMaxViaStack(rv_box);
   verifyMetalShort(rv_box);
   verifyMinHole(rv_box);
@@ -204,6 +207,8 @@ void RuleValidator::processRVBox(RVBox& rv_box)
       new_violation_list.push_back(violation);
     }
   }
+  std::sort(new_violation_list.begin(), new_violation_list.end(), CmpViolation());
+  new_violation_list.erase(std::unique(new_violation_list.begin(), new_violation_list.end()), new_violation_list.end());
   rv_box.set_violation_list(new_violation_list);
 }
 
@@ -259,7 +264,7 @@ void RuleValidator::debugPlotRVModel(RVModel& rv_model, std::string flag)
     }
     GPStruct violation_struct(DRCUTIL.getString("violation(", net_idx_name, ")"));
     GPBoundary gp_boundary;
-    gp_boundary.set_data_type(static_cast<int32_t>(convertGPDataType(violation.get_violation_type())));
+    gp_boundary.set_data_type(static_cast<int32_t>(DRCGP.convertGPDataType(violation.get_violation_type())));
     gp_boundary.set_rect(violation.get_rect());
     if (violation.get_is_routing()) {
       gp_boundary.set_layer_idx(DRCGP.getGDSIdxByRouting(violation.get_layer_idx()));
@@ -323,7 +328,7 @@ void RuleValidator::debugPlotRVBox(RVBox& rv_box, std::string flag)
     }
     GPStruct violation_struct(DRCUTIL.getString("violation(", net_idx_name, ")"));
     GPBoundary gp_boundary;
-    gp_boundary.set_data_type(static_cast<int32_t>(convertGPDataType(violation.get_violation_type())));
+    gp_boundary.set_data_type(static_cast<int32_t>(DRCGP.convertGPDataType(violation.get_violation_type())));
     gp_boundary.set_rect(violation.get_rect());
     if (violation.get_is_routing()) {
       gp_boundary.set_layer_idx(DRCGP.getGDSIdxByRouting(violation.get_layer_idx()));
@@ -339,87 +344,429 @@ void RuleValidator::debugPlotRVBox(RVBox& rv_box, std::string flag)
   DRCGP.plot(gp_gds, gds_file_path);
 }
 
-GPDataType RuleValidator::convertGPDataType(ViolationType violation_type)
+void RuleValidator::debugByGolden(RVBox& rv_box)
 {
-  GPDataType gp_data_type;
-  switch (violation_type) {
-    case ViolationType::kAdjacentCutSpacing:
-      gp_data_type = GPDataType::kAdjacentCutSpacing;
-      break;
-    case ViolationType::kCornerFillSpacing:
-      gp_data_type = GPDataType::kCornerFillSpacing;
-      break;
-    case ViolationType::kCutEOLSpacing:
-      gp_data_type = GPDataType::kCutEOLSpacing;
-      break;
-    case ViolationType::kCutShort:
-      gp_data_type = GPDataType::kCutShort;
-      break;
-    case ViolationType::kDifferentLayerCutSpacing:
-      gp_data_type = GPDataType::kDifferentLayerCutSpacing;
-      break;
-    case ViolationType::kEndOfLineSpacing:
-      gp_data_type = GPDataType::kEndOfLineSpacing;
-      break;
-    case ViolationType::kEnclosure:
-      gp_data_type = GPDataType::kEnclosure;
-      break;
-    case ViolationType::kEnclosureEdge:
-      gp_data_type = GPDataType::kEnclosureEdge;
-      break;
-    case ViolationType::kEnclosureParallel:
-      gp_data_type = GPDataType::kEnclosureParallel;
-      break;
-    case ViolationType::kFloatingPatch:
-      gp_data_type = GPDataType::kFloatingPatch;
-      break;
-    case ViolationType::kJogToJogSpacing:
-      gp_data_type = GPDataType::kJogToJogSpacing;
-      break;
-    case ViolationType::kMaxViaStack:
-      gp_data_type = GPDataType::kMaxViaStack;
-      break;
-    case ViolationType::kMetalShort:
-      gp_data_type = GPDataType::kMetalShort;
-      break;
-    case ViolationType::kMinHole:
-      gp_data_type = GPDataType::kMinHole;
-      break;
-    case ViolationType::kMinimumArea:
-      gp_data_type = GPDataType::kMinimumArea;
-      break;
-    case ViolationType::kMinimumCut:
-      gp_data_type = GPDataType::kMinimumCut;
-      break;
-    case ViolationType::kMinimumWidth:
-      gp_data_type = GPDataType::kMinimumWidth;
-      break;
-    case ViolationType::kMinStep:
-      gp_data_type = GPDataType::kMinStep;
-      break;
-    case ViolationType::kNonsufficientMetalOverlap:
-      gp_data_type = GPDataType::kNonsufficientMetalOverlap;
-      break;
-    case ViolationType::kNotchSpacing:
-      gp_data_type = GPDataType::kNotchSpacing;
-      break;
-    case ViolationType::kOffGridOrWrongWay:
-      gp_data_type = GPDataType::kOffGridOrWrongWay;
-      break;
-    case ViolationType::kOutOfDie:
-      gp_data_type = GPDataType::kOutOfDie;
-      break;
-    case ViolationType::kParallelRunLengthSpacing:
-      gp_data_type = GPDataType::kParallelRunLengthSpacing;
-      break;
-    case ViolationType::kSameLayerCutSpacing:
-      gp_data_type = GPDataType::kSameLayerCutSpacing;
-      break;
-    default:
-      DRCLOG.error(Loc::current(), "The violation_type not support!");
-      break;
+  std::string& rv_temp_directory_path = DRCDM.getConfig().rv_temp_directory_path;
+
+  // 自己检测的违例
+  std::map<ViolationType, std::set<Violation, CmpViolation>> type_violation_map;
+  for (Violation& violation : rv_box.get_violation_list()) {
+    type_violation_map[violation.get_violation_type()].insert(violation);
   }
-  return gp_data_type;
+  // golden的违例
+  std::map<ViolationType, std::set<Violation, CmpViolation>> type_golden_violation_map;
+  {
+    std::string box_golden_txt_path = DRCUTIL.getString(rv_temp_directory_path, "golden_rv_box_", rv_box.get_box_idx(), ".txt");
+    if (DRCUTIL.existFile(box_golden_txt_path)) {
+      std::ifstream* box_golden_txt_file = DRCUTIL.getInputFileStream(box_golden_txt_path);
+      std::string new_line;
+      while (std::getline(*box_golden_txt_file, new_line)) {
+        if (new_line.empty()) {
+          continue;
+        }
+        std::set<std::string> net_idx_string_set;
+        std::string required_size_string;
+        std::string violation_type_name;
+        std::string ll_x_string;
+        std::string ll_y_string;
+        std::string ur_x_string;
+        std::string ur_y_string;
+        std::string layer_idx_string;
+        // 读取
+        std::istringstream net_idx_set_stream(new_line);
+        std::string net_name;
+        while (std::getline(net_idx_set_stream, net_name, ',')) {
+          if (!net_name.empty()) {
+            net_idx_string_set.insert(net_name);
+          }
+        }
+        std::getline(*box_golden_txt_file, new_line);
+        std::istringstream drc_info_stream(new_line);
+        drc_info_stream >> required_size_string >> violation_type_name;
+        std::getline(*box_golden_txt_file, new_line);
+        std::istringstream shape_stream(new_line);
+        shape_stream >> ll_x_string >> ll_y_string >> ur_x_string >> ur_y_string >> layer_idx_string;
+        // 解析
+        std::set<int32_t> violation_net_set;
+        for (const std::string& net_idx_string : net_idx_string_set) {
+          violation_net_set.insert(std::stoi(DRCUTIL.splitString(net_idx_string, '_').back()));
+        }
+        int32_t required_size = std::stoi(required_size_string);
+        ViolationType violation_type = GetViolationTypeByName()(violation_type_name);
+        LayerRect layer_rect;
+        layer_rect.set_ll(std::stoi(ll_x_string), std::stoi(ll_y_string));
+        layer_rect.set_ur(std::stoi(ur_x_string), std::stoi(ur_y_string));
+        layer_rect.set_layer_idx(std::stoi(layer_idx_string));
+
+        Violation violation;
+        violation.set_violation_type(violation_type);
+        violation.set_rect(layer_rect);
+        violation.set_layer_idx(layer_rect.get_layer_idx());
+        violation.set_is_routing(true);
+        violation.set_violation_net_set(violation_net_set);
+        violation.set_required_size(required_size);
+        type_golden_violation_map[violation.get_violation_type()].insert(violation);
+      }
+      DRCUTIL.closeFileStream(box_golden_txt_file);
+    } else {
+      DRCLOG.warn(Loc::current(), "The ", box_golden_txt_path, " is not exist!");
+    }
+  }
+  // 统计违例对比情况
+  std::map<ViolationType, std::pair<int32_t, int32_t>> type_statistics_map;
+  int32_t total_incorrect_num = 0;
+  int32_t total_missed_num = 0;
+  {
+    for (auto& [type, violation_set] : type_violation_map) {
+      int32_t incorrect_num = 0;
+      for (const Violation& violation : violation_set) {
+        if (!DRCUTIL.exist(type_golden_violation_map[type], violation)) {
+          incorrect_num++;
+        }
+      }
+      type_statistics_map[type].first = incorrect_num;
+      total_incorrect_num += incorrect_num;
+    }
+    for (auto& [type, golden_violation_set] : type_golden_violation_map) {
+      int32_t missed_num = 0;
+      for (const Violation& golden_violation : golden_violation_set) {
+        if (!DRCUTIL.exist(type_violation_map[type], golden_violation)) {
+          missed_num++;
+        }
+      }
+      type_statistics_map[type].second = missed_num;
+      total_missed_num += missed_num;
+    }
+  }
+  fort::char_table type_statistics_map_table;
+  {
+    type_statistics_map_table.set_cell_text_align(fort::text_align::right);
+    type_statistics_map_table << fort::header << "violation_type"
+                              << "incorrect_num"
+                              << "missed_num" << fort::endr;
+    for (auto& [type, statistics] : type_statistics_map) {
+      type_statistics_map_table << GetViolationTypeName()(type) << statistics.first << statistics.second << fort::endr;
+    }
+    type_statistics_map_table << fort::header << "Total" << total_incorrect_num << total_missed_num << fort::endr;
+  }
+  DRCUTIL.printTableList({type_statistics_map_table});
+}
+
+void RuleValidator::debugVerifyRVModelByGolden(RVModel& rv_model)
+{
+#pragma omp parallel for
+  for (RVBox& rv_box : rv_model.get_rv_box_list()) {
+    if (needVerifying(rv_box)) {
+      debugVerifyRVBoxByGolden(rv_box);
+      processRVBox(rv_box);
+      debugOutputViolationByGolden(rv_box);
+      debugPlotRVBox(rv_box, "golden");
+    }
+  }
+}
+
+void RuleValidator::debugVerifyRVBoxByGolden(RVBox& rv_box)
+{
+  int32_t micron_dbu = DRCDM.getDatabase().get_micron_dbu();
+  int32_t manufacture_grid = DRCDM.getDatabase().get_manufacture_grid();
+  Die& die = DRCDM.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = DRCDM.getDatabase().get_cut_layer_list();
+  std::map<std::string, int32_t>& routing_layer_name_to_idx_map = DRCDM.getDatabase().get_routing_layer_name_to_idx_map();
+  std::map<std::string, int32_t>& cut_layer_name_to_idx_map = DRCDM.getDatabase().get_cut_layer_name_to_idx_map();
+  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = DRCDM.getDatabase().get_cut_to_adjacent_routing_map();
+
+  std::string& rv_temp_directory_path = DRCDM.getConfig().rv_temp_directory_path;
+  std::string top_name = DRCUTIL.getString("rv_box_", rv_box.get_box_idx());
+  std::string top_dir_path = DRCUTIL.getString(rv_temp_directory_path, top_name);
+  std::string def_file_path = DRCUTIL.getString(top_dir_path, "/clean.def");
+  std::string netlist_file_path = DRCUTIL.getString(top_dir_path, "/clean.v");
+  std::string prepared_file_path = DRCUTIL.getString(top_dir_path, "/prepared");
+  std::string finished_file_path = DRCUTIL.getString(top_dir_path, "/finished");
+  std::string violation_file_path = DRCUTIL.getString(top_dir_path, "/drc.irt");
+
+  auto getViolationList = [&](const std::vector<idrc::DRCShape*>& drc_env_shape_list, const std::vector<idrc::DRCShape*>& drc_result_shape_list) {
+    std::vector<Violation> violation_list;
+    // build
+    {
+      // 删除再构建top文件夹
+      DRCUTIL.removeDir(top_dir_path);
+      DRCUTIL.createDir(top_dir_path);
+      // 修改文件夹权限
+      std::filesystem::perms permissions = std::filesystem::perms::owner_all | std::filesystem::perms::group_all | std::filesystem::perms::others_all;
+      DRCUTIL.changePermissions(top_dir_path, permissions);
+    }
+    // write
+    {
+      std::set<int32_t> net_idx_set;
+      // 获取所有net
+      {
+        for (idrc::DRCShape* drc_env_shape : drc_env_shape_list) {
+          net_idx_set.insert(drc_env_shape->get_net_idx());
+        }
+        for (idrc::DRCShape* drc_result_shape : drc_result_shape_list) {
+          net_idx_set.insert(drc_result_shape->get_net_idx());
+        }
+      }
+      // 构建def
+      {
+        std::ofstream* def_file = DRCUTIL.getOutputFileStream(def_file_path);
+        // 构建header
+        DRCUTIL.pushStream(def_file, "VERSION 5.8 ;", "\n");
+        DRCUTIL.pushStream(def_file, "DESIGN ", top_name, " ;", "\n");
+        DRCUTIL.pushStream(def_file, "UNITS DISTANCE MICRONS ", micron_dbu, " ;", "\n");
+        DRCUTIL.pushStream(def_file, "DIEAREA ( ", die.get_ll_x(), " ", die.get_ll_y(), " ) ( ", die.get_ur_x(), " ", die.get_ur_y(), " ) ;", "\n");
+        DRCUTIL.pushStream(def_file, "\n");
+        // 构建via
+        std::map<LayerRect, std::string, CmpLayerRectByXASC> cut_shape_via_map;
+        for (idrc::DRCShape* drc_env_shape : drc_env_shape_list) {
+          if (!drc_env_shape->get_is_routing()) {
+            PlanarRect& real_rect = drc_env_shape->get_rect();
+            int32_t layer_idx = drc_env_shape->get_layer_idx();
+            PlanarCoord mid_point = real_rect.getMidPoint();
+            if (cut_to_adjacent_routing_map[layer_idx].size() < 2) {
+              continue;
+            }
+            LayerRect cut_shape(real_rect.get_ll_x() - mid_point.get_x(), real_rect.get_ll_y() - mid_point.get_y(), real_rect.get_ur_x() - mid_point.get_x(),
+                                real_rect.get_ur_y() - mid_point.get_y(), layer_idx);
+            cut_shape_via_map[cut_shape] = "";
+          }
+        }
+        for (idrc::DRCShape* drc_result_shape : drc_result_shape_list) {
+          if (!drc_result_shape->get_is_routing()) {
+            PlanarRect& real_rect = drc_result_shape->get_rect();
+            int32_t layer_idx = drc_result_shape->get_layer_idx();
+            PlanarCoord mid_point = real_rect.getMidPoint();
+            if (cut_to_adjacent_routing_map[layer_idx].size() < 2) {
+              continue;
+            }
+            LayerRect cut_shape(real_rect.get_ll_x() - mid_point.get_x(), real_rect.get_ll_y() - mid_point.get_y(), real_rect.get_ur_x() - mid_point.get_x(),
+                                real_rect.get_ur_y() - mid_point.get_y(), layer_idx);
+            cut_shape_via_map[cut_shape] = "";
+          }
+        }
+        DRCUTIL.pushStream(def_file, "VIAS ", cut_shape_via_map.size(), " ;", "\n");
+        for (auto& [cut_shape, via_name] : cut_shape_via_map) {
+          PlanarCoord mid_point = cut_shape.getMidPoint();
+          via_name = DRCUTIL.getString("VIA_CUT_", cut_shape.get_layer_idx(), "_", cut_shape.get_ll_x(), "_", cut_shape.get_ll_y(), "_", cut_shape.get_ur_x(),
+                                       "_", cut_shape.get_ur_y());
+          DRCUTIL.pushStream(def_file, "- ", via_name, "\n");
+          for (int32_t routing_layer_idx : cut_to_adjacent_routing_map[cut_shape.get_layer_idx()]) {
+            DRCUTIL.pushStream(def_file, " + RECT ", routing_layer_list[routing_layer_idx].get_layer_name(), " ( ", mid_point.get_x() - manufacture_grid, " ",
+                               mid_point.get_y() - manufacture_grid, " ) ( ", mid_point.get_x() + manufacture_grid, " ", mid_point.get_y() + manufacture_grid,
+                               " )", "\n");
+          }
+          DRCUTIL.pushStream(def_file, " + RECT ", cut_layer_list[cut_shape.get_layer_idx()].get_layer_name(), " ( ", cut_shape.get_ll_x(), " ",
+                             cut_shape.get_ll_y(), " ) ( ", cut_shape.get_ur_x(), " ", cut_shape.get_ur_y(), " )", "\n");
+          DRCUTIL.pushStream(def_file, " ;", "\n");
+        }
+        DRCUTIL.pushStream(def_file, "END VIAS", "\n");
+        DRCUTIL.pushStream(def_file, "\n");
+        // 构建net
+        std::map<int32_t, std::vector<idrc::DRCShape*>> net_shape_map;
+        for (idrc::DRCShape* drc_env_shape : drc_env_shape_list) {
+          net_shape_map[drc_env_shape->get_net_idx()].push_back(drc_env_shape);
+        }
+        for (idrc::DRCShape* drc_result_shape : drc_result_shape_list) {
+          net_shape_map[drc_result_shape->get_net_idx()].push_back(drc_result_shape);
+        }
+        DRCUTIL.pushStream(def_file, "NETS ", net_idx_set.size(), " ;", "\n");
+
+        for (auto& [net_idx, shape_list] : net_shape_map) {
+          std::string flag = "  + ROUTED";
+
+          if (net_idx == -1) {
+            DRCUTIL.pushStream(def_file, "- net_blockage\n");
+          } else {
+            DRCUTIL.pushStream(def_file, "- net_", net_idx, "\n");
+          }
+          for (DRCShape* shape : shape_list) {
+            PlanarRect& real_rect = shape->get_rect();
+            int32_t layer_idx = shape->get_layer_idx();
+            PlanarCoord mid_point = real_rect.getMidPoint();
+            if (shape->get_is_routing()) {
+              DRCUTIL.pushStream(def_file, flag, " ", routing_layer_list[layer_idx].get_layer_name(), " ( ", mid_point.get_x(), " ", mid_point.get_y(),
+                                 " ) RECT ( ", real_rect.get_ll_x() - mid_point.get_x(), " ", real_rect.get_ll_y() - mid_point.get_y(), " ",
+                                 real_rect.get_ur_x() - mid_point.get_x(), " ", real_rect.get_ur_y() - mid_point.get_y(), " )", "\n");
+              flag = "    NEW";
+            } else {
+              LayerRect cut_shape(real_rect.get_ll_x() - mid_point.get_x(), real_rect.get_ll_y() - mid_point.get_y(), real_rect.get_ur_x() - mid_point.get_x(),
+                                  real_rect.get_ur_y() - mid_point.get_y(), layer_idx);
+              if (DRCUTIL.exist(cut_shape_via_map, cut_shape)) {
+                std::vector<int32_t>& routing_layer_idx_list = cut_to_adjacent_routing_map[layer_idx];
+                int32_t routing_layer_idx = *std::min_element(routing_layer_idx_list.begin(), routing_layer_idx_list.end());
+                DRCUTIL.pushStream(def_file, flag, " ", routing_layer_list[routing_layer_idx].get_layer_name(), " ( ", mid_point.get_x(), " ",
+                                   mid_point.get_y(), " ) ", cut_shape_via_map[cut_shape], "\n");
+                flag = "    NEW";
+              }
+            }
+          }
+          DRCUTIL.pushStream(def_file, " ;\n");
+        }
+        DRCUTIL.pushStream(def_file, "END NETS", "\n");
+        DRCUTIL.pushStream(def_file, "\n");
+        // 构建footer
+        DRCUTIL.pushStream(def_file, "END DESIGN", "\n");
+        DRCUTIL.pushStream(def_file, "\n");
+        DRCUTIL.closeFileStream(def_file);
+      }
+      // 构建netlist
+      {
+        std::ofstream* netlist_file = DRCUTIL.getOutputFileStream(netlist_file_path);
+        // 构建header
+        DRCUTIL.pushStream(netlist_file, "module ", top_name, " ();", "\n");
+        DRCUTIL.pushStream(netlist_file, "\n");
+        // 构建net
+        for (int32_t net_idx : net_idx_set) {
+          if (net_idx == -1) {
+            DRCUTIL.pushStream(netlist_file, "wire net_blockage ;", "\n");
+          } else {
+            DRCUTIL.pushStream(netlist_file, "wire net_", net_idx, " ;", "\n");
+          }
+        }
+        DRCUTIL.pushStream(netlist_file, "\n");
+        // 构建footer
+        DRCUTIL.pushStream(netlist_file, "endmodule", "\n");
+        DRCUTIL.pushStream(netlist_file, "\n");
+        DRCUTIL.closeFileStream(netlist_file);
+      }
+      // 构建任务状态文件
+      {
+        std::ofstream* prepared_file = DRCUTIL.getOutputFileStream(prepared_file_path);
+        DRCUTIL.pushStream(prepared_file, " ");
+        DRCUTIL.closeFileStream(prepared_file);
+      }
+    }
+    // read
+    {
+      // 等待直到任务结束
+      int32_t waiting_time = 0;
+      while (!DRCUTIL.existFile(finished_file_path)) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        waiting_time++;
+        if (waiting_time % 500 == 0) {
+          DRCLOG.warn(Loc::current(), "The task ", top_name, " waited for ", waiting_time, " seconds");
+        }
+      }
+      // 从中得到违例信息
+      if (DRCUTIL.existFile(violation_file_path)) {
+        std::ifstream* violation_file = DRCUTIL.getInputFileStream(violation_file_path);
+
+        std::string new_line;
+        while (std::getline(*violation_file, new_line)) {
+          if (new_line.empty()) {
+            continue;
+          }
+          std::set<std::string> net_name_set;
+          std::string required;
+          std::string drc_rule_name;
+          std::string layer_name;
+          std::string ll_x_string;
+          std::string ll_y_string;
+          std::string ur_x_string;
+          std::string ur_y_string;
+          // 读取
+          std::istringstream net_name_set_stream(new_line);
+          std::string net_name;
+          while (std::getline(net_name_set_stream, net_name, ',')) {
+            if (!net_name.empty()) {
+              net_name_set.insert(net_name);
+            }
+          }
+          std::getline(*violation_file, new_line);
+          std::istringstream drc_info_stream(new_line);
+          drc_info_stream >> required >> drc_rule_name;
+          std::getline(*violation_file, new_line);
+          std::istringstream shape_stream(new_line);
+          shape_stream >> layer_name >> ll_x_string >> ll_y_string >> ur_x_string >> ur_y_string;
+          // 解析
+          ViolationType violation_type = GetViolationTypeByName()(drc_rule_name);
+          if (violation_type == ViolationType::kNone) {
+            DRCLOG.warn(Loc::current(), "Unknow rule! '", drc_rule_name, "'");
+          }
+          LayerRect layer_rect;
+          layer_rect.set_ll(static_cast<int32_t>(std::round(std::stod(ll_x_string) * micron_dbu)),
+                            static_cast<int32_t>(std::round(std::stod(ll_y_string) * micron_dbu)));
+          layer_rect.set_ur(static_cast<int32_t>(std::round(std::stod(ur_x_string) * micron_dbu)),
+                            static_cast<int32_t>(std::round(std::stod(ur_y_string) * micron_dbu)));
+          if (DRCUTIL.exist(routing_layer_name_to_idx_map, layer_name)) {
+            layer_rect.set_layer_idx(routing_layer_name_to_idx_map[layer_name]);
+          } else if (DRCUTIL.exist(cut_layer_name_to_idx_map, layer_name)) {
+            std::vector<int32_t> routing_layer_idx_list = cut_to_adjacent_routing_map[cut_layer_name_to_idx_map[layer_name]];
+            layer_rect.set_layer_idx(std::min(routing_layer_idx_list.front(), routing_layer_idx_list.back()));
+          } else {
+            DRCLOG.error(Loc::current(), "Unknow layer! '", layer_name, "'");
+          }
+          std::set<int32_t> violation_net_set;
+          for (const std::string& net_name : net_name_set) {
+            if (net_name == "net_blockage") {
+              violation_net_set.insert(-1);
+            } else {
+              violation_net_set.insert(std::stoi(DRCUTIL.splitString(net_name, '_').back()));
+            }
+          }
+          if (violation_net_set.size() > 2) {
+            DRCLOG.error(Loc::current(), "The violation_net_set size > 2!");
+          }
+          int32_t required_size;
+          if (required == "null") {
+            required_size = 0;
+          } else {
+            required_size = static_cast<int32_t>(std::round(std::stod(required) * micron_dbu));
+          }
+          // 筛选
+          if (violation_type == ViolationType::kFloatingPatch) {
+            continue;
+          }
+          if (violation_net_set.size() == 1 && (*violation_net_set.begin()) == -1) {
+            continue;
+          }
+          Violation violation;
+          violation.set_violation_type(violation_type);
+          violation.set_rect(layer_rect);
+          violation.set_layer_idx(layer_rect.get_layer_idx());
+          violation.set_is_routing(true);
+          violation.set_violation_net_set(violation_net_set);
+          violation.set_required_size(required_size);
+          violation_list.push_back(violation);
+        }
+        DRCUTIL.closeFileStream(violation_file);
+      } else {
+        DRCLOG.warn(Loc::current(), "The task ", top_name, " violation_file_path is not exist!");
+      }
+      // 删除文件夹
+      DRCUTIL.removeDir(top_dir_path);
+      return violation_list;
+    }
+  };
+
+  std::set<Violation, CmpViolation> ignore_violation_set;
+  for (Violation& violation : getViolationList(rv_box.get_drc_env_shape_list(), {})) {
+    ignore_violation_set.insert(violation);
+  }
+  for (Violation& violation : getViolationList(rv_box.get_drc_env_shape_list(), rv_box.get_drc_result_shape_list())) {
+    if (DRCUTIL.exist(ignore_violation_set, violation)) {
+      continue;
+    }
+    rv_box.get_violation_list().push_back(violation);
+  }
+}
+
+void RuleValidator::debugOutputViolationByGolden(RVBox& rv_box)
+{
+  std::string& rv_temp_directory_path = DRCDM.getConfig().rv_temp_directory_path;
+
+  std::ofstream* box_golden_txt_file = DRCUTIL.getOutputFileStream(DRCUTIL.getString(rv_temp_directory_path, "golden_rv_box_", rv_box.get_box_idx(), ".txt"));
+  for (Violation& violation : rv_box.get_violation_list()) {
+    for (int32_t net_idx : violation.get_violation_net_set()) {
+      DRCUTIL.pushStream(box_golden_txt_file, net_idx, ",");
+    }
+    DRCUTIL.pushStream(box_golden_txt_file, "\n");
+    DRCUTIL.pushStream(box_golden_txt_file, violation.get_required_size(), " ", GetViolationTypeName()(violation.get_violation_type()), "\n");
+    DRCUTIL.pushStream(box_golden_txt_file, violation.get_ll_x(), " ", violation.get_ll_y(), " ", violation.get_ur_x(), " ", violation.get_ur_y(), " ",
+                       violation.get_layer_idx(), "\n");
+  }
+  DRCUTIL.closeFileStream(box_golden_txt_file);
 }
 
 #endif

@@ -105,7 +105,7 @@ class Utility
     }
   }
 
-  #endif
+#endif
 
 #if 1  // idrc数据结构工具函数
 
@@ -121,6 +121,37 @@ class Utility
       value = default_value;
     }
     return value;
+  }
+
+  static void printTableList(const std::vector<fort::char_table>& table_list)
+  {
+    std::vector<std::vector<std::string>> print_table_list;
+    for (const fort::char_table& table : table_list) {
+      if (!table.is_empty()) {
+        print_table_list.push_back(splitString(table.to_string(), '\n'));
+      }
+    }
+
+    int32_t max_size = INT_MIN;
+    for (std::vector<std::string>& table : print_table_list) {
+      max_size = std::max(max_size, static_cast<int32_t>(table.size()));
+    }
+    for (std::vector<std::string>& table : print_table_list) {
+      for (int32_t i = static_cast<int32_t>(table.size()); i < max_size; i++) {
+        std::string table_str;
+        table_str.append(table.front().length(), ' ');
+        table.push_back(table_str);
+      }
+    }
+
+    for (int32_t i = 0; i < max_size; i++) {
+      std::string table_str;
+      for (std::vector<std::string>& table : print_table_list) {
+        table_str += table[i];
+        table_str += " ";
+      }
+      DRCLOG.info(Loc::current(), table_str);
+    }
   }
 
 #endif

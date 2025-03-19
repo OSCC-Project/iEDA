@@ -36,6 +36,7 @@ enum class GPDataType
   kEnclosureParallel,
   kFloatingPatch,
   kJogToJogSpacing,
+  kMaximumWidth,
   kMaxViaStack,
   kMetalShort,
   kMinHole,
@@ -98,6 +99,9 @@ struct GetGPDataTypeName
         break;
       case GPDataType::kJogToJogSpacing:
         data_type_name = "jog_to_jog_spacing";
+        break;
+      case GPDataType::kMaximumWidth:
+        data_type_name = "maximum_width";
         break;
       case GPDataType::kMaxViaStack:
         data_type_name = "max_via_stack";

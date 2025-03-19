@@ -20,6 +20,7 @@ add_library(idrc_rule_validator
     ${IDRC_MODULE}/rule_validator/rv_design_rule/EndOfLineSpacing.cpp
     ${IDRC_MODULE}/rule_validator/rv_design_rule/FloatingPatch.cpp
     ${IDRC_MODULE}/rule_validator/rv_design_rule/JogToJogSpacing.cpp
+    ${IDRC_MODULE}/rule_validator/rv_design_rule/MaximumWidth.cpp
     ${IDRC_MODULE}/rule_validator/rv_design_rule/MaxViaStack.cpp
     ${IDRC_MODULE}/rule_validator/rv_design_rule/MetalShort.cpp
     ${IDRC_MODULE}/rule_validator/rv_design_rule/MinHole.cpp

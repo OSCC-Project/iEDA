@@ -173,14 +173,30 @@ void DRCInterface::wrapConfig(std::map<std::string, std::any>& config_map)
 
 void DRCInterface::wrapDatabase()
 {
+  wrapMicronDBU();
   wrapManufactureGrid();
+  wrapDie();
   wrapLayerList();
   wrapLayerInfo();
+}
+
+void DRCInterface::wrapMicronDBU()
+{
+  DRCDM.getDatabase().set_micron_dbu(dmInst->get_idb_def_service()->get_design()->get_units()->get_micron_dbu());
 }
 
 void DRCInterface::wrapManufactureGrid()
 {
   DRCDM.getDatabase().set_manufacture_grid(dmInst->get_idb_lef_service()->get_layout()->get_munufacture_grid());
+}
+
+void DRCInterface::wrapDie()
+{
+  idb::IdbDie* idb_die = dmInst->get_idb_lef_service()->get_layout()->get_die();
+
+  Die& die = DRCDM.getDatabase().get_die();
+  die.set_ll(idb_die->get_llx(), idb_die->get_lly());
+  die.set_ur(idb_die->get_urx(), idb_die->get_ury());
 }
 
 void DRCInterface::wrapLayerList()
@@ -468,7 +484,7 @@ void DRCInterface::buildEnvShapeList(std::vector<ids::Shape>& env_shape_list)
       for (idb::IdbPin* idb_pin : idb_instance->get_pin_list()->get_pin_list()) {
         int32_t net_idx = -1;
         if (!isSkipping(idb_pin->get_net())) {
-          net_idx = idb_pin->get_net()->get_id();
+          net_idx = static_cast<int32_t>(idb_pin->get_net()->get_id());
         }
         for (idb::IdbLayerShape* port_box : idb_pin->get_port_box_list()) {
           for (idb::IdbRect* rect : port_box->get_rect_list()) {
@@ -576,7 +592,7 @@ void DRCInterface::buildEnvShapeList(std::vector<ids::Shape>& env_shape_list)
     for (idb::IdbPin* idb_io_pin : idb_io_pin_list) {
       int32_t net_idx = -1;
       if (!isSkipping(idb_io_pin->get_net())) {
-        net_idx = idb_io_pin->get_net()->get_id();
+        net_idx = static_cast<int32_t>(idb_io_pin->get_net()->get_id());
       }
       for (idb::IdbLayerShape* port_box : idb_io_pin->get_port_box_list()) {
         for (idb::IdbRect* rect : port_box->get_rect_list()) {
@@ -673,7 +689,7 @@ void DRCInterface::buildResultShapeList(std::vector<ids::Shape>& result_shape_li
           int32_t half_width = dynamic_cast<IdbLayerRouting*>(idb_segment->get_layer())->get_width() / 2;
           PlanarRect rect = DRCUTIL.getEnlargedRect(first_coord, second_coord, half_width);
           ids::Shape ids_shape;
-          ids_shape.net_idx = idb_net->get_id();
+          ids_shape.net_idx = static_cast<int32_t>(idb_net->get_id());
           ids_shape.ll_x = rect.get_ll_x();
           ids_shape.ll_y = rect.get_ll_y();
           ids_shape.ur_x = rect.get_ur_x();
@@ -687,7 +703,7 @@ void DRCInterface::buildResultShapeList(std::vector<ids::Shape>& result_shape_li
             for (idb::IdbLayerShape layer_shape : {idb_via->get_top_layer_shape(), idb_via->get_bottom_layer_shape()}) {
               for (idb::IdbRect* rect : layer_shape.get_rect_list()) {
                 ids::Shape ids_shape;
-                ids_shape.net_idx = idb_net->get_id();
+                ids_shape.net_idx = static_cast<int32_t>(idb_net->get_id());
                 ids_shape.ll_x = rect->get_low_x();
                 ids_shape.ll_y = rect->get_low_y();
                 ids_shape.ur_x = rect->get_high_x();
@@ -700,7 +716,7 @@ void DRCInterface::buildResultShapeList(std::vector<ids::Shape>& result_shape_li
             idb::IdbLayerShape cut_layer_shape = idb_via->get_cut_layer_shape();
             for (idb::IdbRect* rect : cut_layer_shape.get_rect_list()) {
               ids::Shape ids_shape;
-              ids_shape.net_idx = idb_net->get_id();
+              ids_shape.net_idx = static_cast<int32_t>(idb_net->get_id());
               ids_shape.ll_x = rect->get_low_x();
               ids_shape.ll_y = rect->get_low_y();
               ids_shape.ur_x = rect->get_high_x();
@@ -717,7 +733,7 @@ void DRCInterface::buildResultShapeList(std::vector<ids::Shape>& result_shape_li
                                 idb_segment->get_delta_rect()->get_high_x(), idb_segment->get_delta_rect()->get_high_y());
           PlanarRect rect = DRCUTIL.getOffsetRect(delta_rect, offset_coord);
           ids::Shape ids_shape;
-          ids_shape.net_idx = idb_net->get_id();
+          ids_shape.net_idx = static_cast<int32_t>(idb_net->get_id());
           ids_shape.ll_x = rect.get_ll_x();
           ids_shape.ll_y = rect.get_ll_y();
           ids_shape.ur_x = rect.get_ur_x();

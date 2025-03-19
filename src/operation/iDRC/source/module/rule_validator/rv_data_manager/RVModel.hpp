@@ -39,6 +39,7 @@ class RVModel
   void set_rv_com_param(const RVComParam& rv_com_param) { _rv_com_param = rv_com_param; }
   void set_rv_box_list(const std::vector<RVBox>& rv_box_list) { _rv_box_list = rv_box_list; }
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
+
  private:
   std::vector<DRCShape> _drc_env_shape_list;
   std::vector<DRCShape> _drc_result_shape_list;

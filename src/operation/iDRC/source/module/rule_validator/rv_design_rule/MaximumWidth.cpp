@@ -14,29 +14,12 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
-
-#include "DRCHeader.hpp"
+#include "RuleValidator.hpp"
 
 namespace idrc {
 
-class Config
+void RuleValidator::verifyMaximumWidth(RVBox& rv_box)
 {
- public:
-  Config() = default;
-  ~Config() = default;
-  //////////////////////////////////////////////
-  // **********        DRC         ********** //
-  std::string temp_directory_path;  // required
-  int32_t thread_number;            // optional
-  /////////////////////////////////////////////
-  // **********        DRC         ********** //
-  std::string log_file_path;  // building
-  // **********   RuleValidator    ********** //
-  std::string rv_temp_directory_path;  // building
-  // **********     GDSPlotter     ********** //
-  std::string gp_temp_directory_path;  // building
-  //////////////////////////////////////////////
-};
+}
 
 }  // namespace idrc
