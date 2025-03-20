@@ -26,6 +26,10 @@ namespace tcl {
 
 TclCheckDef::TclCheckDef(const char* cmd_name) : TclCmd(cmd_name)
 {
+  // std::string golden_directory_path;     // optional
+  _config_list.push_back(std::make_pair("-golden_directory_path", ValueType::kString));
+
+  TclUtil::addOption(this, _config_list);
 }
 
 unsigned TclCheckDef::exec()
@@ -33,7 +37,8 @@ unsigned TclCheckDef::exec()
   if (!check()) {
     return 0;
   }
-  DRCI.checkDef();
+  std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
+  DRCI.checkDef(config_map);
   return 1;
 }
 

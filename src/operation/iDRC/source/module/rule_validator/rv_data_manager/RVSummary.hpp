@@ -20,24 +20,16 @@
 
 namespace idrc {
 
-class Config
+class RVSummary
 {
  public:
-  Config() = default;
-  ~Config() = default;
-  //////////////////////////////////////////////
-  // **********        DRC         ********** //
-  std::string temp_directory_path;  // required
-  int32_t thread_number;            // optional
-  /////////////////////////////////////////////
-  // **********        DRC         ********** //
-  std::string log_file_path;  // building
-  // **********   RuleValidator    ********** //
-  std::string golden_directory_path;   // optional
-  std::string rv_temp_directory_path;  // building
-  // **********     GDSPlotter     ********** //
-  std::string gp_temp_directory_path;  // building
-  //////////////////////////////////////////////
+  RVSummary() = default;
+  ~RVSummary() = default;
+  std::map<std::string, std::map<std::string, int32_t>> type_statistics_map;
+  int32_t total_correct_num = 0;
+  int32_t total_incorrect_num = 0;
+  int32_t total_missed_num = 0;
+  int32_t total_statistics_num = 0;
 };
 
 }  // namespace idrc

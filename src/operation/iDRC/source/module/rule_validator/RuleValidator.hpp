@@ -78,12 +78,15 @@ class RuleValidator
   void verifyParallelRunLengthSpacing(RVBox& rv_box);
   void verifySameLayerCutSpacing(RVBox& rv_box);
   void processRVBox(RVBox& rv_box);
+  void updateSummary(RVBox& rv_box);
   void buildViolationList(RVModel& rv_model);
+  void updateSummary(RVModel& rv_model);
+  void printSummary(RVModel& rv_model);
 
 #if 1  // debug
   void debugPlotRVModel(RVModel& rv_model, std::string flag);
   void debugPlotRVBox(RVBox& rv_box, std::string flag);
-  void debugByGolden(RVBox& rv_box);
+  void debugViolationByType(RVBox& rv_box, ViolationType violation_type);
   void debugVerifyRVModelByGolden(RVModel& rv_model);
   void debugVerifyRVBoxByGolden(RVBox& rv_box);
   void debugOutputViolationByGolden(RVBox& rv_box);

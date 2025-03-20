@@ -75,12 +75,15 @@ void DRCInterface::initDRC(std::map<std::string, std::any> config_map)
   DRCLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void DRCInterface::checkDef()
+void DRCInterface::checkDef(std::map<std::string, std::any> config_map)
 {
-  std::vector<ids::Shape> ids_env_shape_list;
-  std::vector<ids::Shape> ids_result_shape_list;
-  buildEnvShapeList(ids_env_shape_list);
-  buildResultShapeList(ids_result_shape_list);
+  DRCDM.getConfig().golden_directory_path = DRCUTIL.getConfigValue<std::string>(config_map, "-golden_directory_path", "null");
+  DRCDM.getConfig().golden_directory_path += "/";
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "golden_directory_path");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), DRCDM.getConfig().golden_directory_path);
+
+  std::vector<ids::Shape> ids_env_shape_list = buildEnvShapeList();
+  std::vector<ids::Shape> ids_result_shape_list = buildResultShapeList();
   getViolationList(ids_env_shape_list, ids_result_shape_list, false);
 }
 
@@ -165,7 +168,7 @@ void DRCInterface::input(std::map<std::string, std::any>& config_map)
 void DRCInterface::wrapConfig(std::map<std::string, std::any>& config_map)
 {
   /////////////////////////////////////////////
-  DRCDM.getConfig().temp_directory_path = DRCUTIL.getConfigValue<std::string>(config_map, "-temp_directory_path", "./rt_temp_directory");
+  DRCDM.getConfig().temp_directory_path = DRCUTIL.getConfigValue<std::string>(config_map, "-temp_directory_path", "./drc_temp_directory");
   DRCDM.getConfig().thread_number = DRCUTIL.getConfigValue<int32_t>(config_map, "-thread_number", 128);
   omp_set_num_threads(std::max(DRCDM.getConfig().thread_number, 1));
   /////////////////////////////////////////////
@@ -413,8 +416,9 @@ void DRCInterface::output()
 
 #if 1  // form def
 
-void DRCInterface::buildEnvShapeList(std::vector<ids::Shape>& env_shape_list)
+std::vector<ids::Shape> DRCInterface::buildEnvShapeList()
 {
+  std::vector<ids::Shape> env_shape_list;
   Monitor monitor;
   DRCLOG.info(Loc::current(), "Starting...");
 
@@ -610,6 +614,7 @@ void DRCInterface::buildEnvShapeList(std::vector<ids::Shape>& env_shape_list)
     }
   }
   DRCLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  return env_shape_list;
 }
 
 bool DRCInterface::isSkipping(idb::IdbNet* idb_net)
@@ -649,8 +654,9 @@ bool DRCInterface::isSkipping(idb::IdbNet* idb_net)
   return false;
 }
 
-void DRCInterface::buildResultShapeList(std::vector<ids::Shape>& result_shape_list)
+std::vector<ids::Shape> DRCInterface::buildResultShapeList()
 {
+  std::vector<ids::Shape> result_shape_list;
   Monitor monitor;
   DRCLOG.info(Loc::current(), "Starting...");
 
@@ -746,6 +752,7 @@ void DRCInterface::buildResultShapeList(std::vector<ids::Shape>& result_shape_li
     }
   }
   DRCLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  return result_shape_list;
 }
 
 #endif

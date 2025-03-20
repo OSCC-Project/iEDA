@@ -54,7 +54,7 @@ class DRCInterface
 
 #if 1  // iDRC
   void initDRC(std::map<std::string, std::any> config_map);
-  void checkDef();
+  void checkDef(std::map<std::string, std::any> config_map);
   void destroyDRC();
   std::vector<ids::Violation> getViolationList(std::vector<ids::Shape>& ids_env_shape_list, std::vector<ids::Shape>& ids_result_shape_list, bool enable_quiet);
 #endif
@@ -86,9 +86,9 @@ class DRCInterface
 #endif
 
 #if 1  // form def
-  void buildEnvShapeList(std::vector<ids::Shape>& env_shape_list);
+  std::vector<ids::Shape> buildEnvShapeList();
   bool isSkipping(idb::IdbNet* idb_net);
-  void buildResultShapeList(std::vector<ids::Shape>& result_shape_list);
+  std::vector<ids::Shape> buildResultShapeList();
 #endif
 
 #if 1  // form tool
