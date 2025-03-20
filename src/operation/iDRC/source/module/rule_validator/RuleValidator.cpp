@@ -144,7 +144,7 @@ void RuleValidator::buildRVModel(RVModel& rv_model)
 
 void RuleValidator::verifyRVModel(RVModel& rv_model)
 {
-#pragma omp parallel for
+  // #pragma omp parallel for
   for (RVBox& rv_box : rv_model.get_rv_box_list()) {
     if (needVerifying(rv_box)) {
       // debugPlotRVBox(rv_box, "before");
@@ -152,7 +152,7 @@ void RuleValidator::verifyRVModel(RVModel& rv_model)
       // debugPlotRVBox(rv_box, "middle");
       processRVBox(rv_box);
       // debugPlotRVBox(rv_box, "after");
-      // debugByGolden(rv_box);
+      debugByGolden(rv_box);
     }
   }
 }
@@ -413,18 +413,24 @@ void RuleValidator::debugByGolden(RVBox& rv_box)
     }
   }
   // 统计违例对比情况
-  std::map<ViolationType, std::pair<int32_t, int32_t>> type_statistics_map;
+  std::map<ViolationType, std::tuple<int32_t, int32_t, int32_t>> type_statistics_map;
+  int32_t total_correct_num = 0;
   int32_t total_incorrect_num = 0;
   int32_t total_missed_num = 0;
   {
     for (auto& [type, violation_set] : type_violation_map) {
+      int32_t correct_num = 0;
       int32_t incorrect_num = 0;
       for (const Violation& violation : violation_set) {
-        if (!DRCUTIL.exist(type_golden_violation_map[type], violation)) {
+        if (DRCUTIL.exist(type_golden_violation_map[type], violation)) {
+          correct_num++;
+        } else {
           incorrect_num++;
         }
       }
-      type_statistics_map[type].first = incorrect_num;
+      std::get<0>(type_statistics_map[type]) = correct_num;
+      std::get<1>(type_statistics_map[type]) = incorrect_num;
+      total_correct_num += correct_num;
       total_incorrect_num += incorrect_num;
     }
     for (auto& [type, golden_violation_set] : type_golden_violation_map) {
@@ -434,7 +440,7 @@ void RuleValidator::debugByGolden(RVBox& rv_box)
           missed_num++;
         }
       }
-      type_statistics_map[type].second = missed_num;
+      std::get<2>(type_statistics_map[type]) = missed_num;
       total_missed_num += missed_num;
     }
   }
@@ -442,12 +448,13 @@ void RuleValidator::debugByGolden(RVBox& rv_box)
   {
     type_statistics_map_table.set_cell_text_align(fort::text_align::right);
     type_statistics_map_table << fort::header << "violation_type"
+                              << "correct_num"
                               << "incorrect_num"
                               << "missed_num" << fort::endr;
     for (auto& [type, statistics] : type_statistics_map) {
-      type_statistics_map_table << GetViolationTypeName()(type) << statistics.first << statistics.second << fort::endr;
+      type_statistics_map_table << GetViolationTypeName()(type) << std::get<0>(statistics) << std::get<1>(statistics) << std::get<2>(statistics) << fort::endr;
     }
-    type_statistics_map_table << fort::header << "Total" << total_incorrect_num << total_missed_num << fort::endr;
+    type_statistics_map_table << fort::header << "Total" << total_correct_num << total_incorrect_num << total_missed_num << fort::endr;
   }
   DRCUTIL.printTableList({type_statistics_map_table});
 }
