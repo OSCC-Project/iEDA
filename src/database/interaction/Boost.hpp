@@ -31,6 +31,7 @@ namespace bgi = boost::geometry::index;
 using GTLPointInt = gtl::point_data<int32_t>;
 using GTLRectInt = gtl::rectangle_data<int32_t>;
 using GTLPolyInt = gtl::polygon_90_data<int32_t>;
+using GTLHolePolyInt = gtl::polygon_90_with_holes_data<int32_t>; 
 using GTLPolySetInt = gtl::polygon_90_set_data<int32_t>;
 
 using BGPointInt = bg::model::d2::point_xy<int32_t>;
