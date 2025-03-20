@@ -151,7 +151,7 @@ void RuleValidator::verifyRVModel(RVModel& rv_model)
       verifyRVBox(rv_box);
       processRVBox(rv_box);
       updateSummary(rv_box);
-      debugViolationByType(rv_box, ViolationType::kNone);
+      // debugViolationByType(rv_box, ViolationType::kNone);
     }
   }
 }

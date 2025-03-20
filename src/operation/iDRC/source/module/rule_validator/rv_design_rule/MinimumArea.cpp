@@ -23,7 +23,7 @@ void RuleValidator::verifyMinimumArea(RVBox& rv_box)
   std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
   std::vector<Violation>& violation_list = rv_box.get_violation_list();
 
-  std::map<int32_t, std::map<int32_t, GTLPolySetInt>> layer_net_poly_set;
+  std::map<int32_t, std::map<int32_t, GTLPolySetInt>> layer_net_gtl_poly_set;
   for (DRCShape* rect : rv_box.get_drc_env_shape_list()) {
     if (!rect->get_is_routing()) {
       continue;
@@ -31,45 +31,40 @@ void RuleValidator::verifyMinimumArea(RVBox& rv_box)
     if (rect->get_net_idx() == -1) {
       continue;
     }
-    layer_net_poly_set[rect->get_layer_idx()][rect->get_net_idx()] += GTLRectInt(rect->get_ll_x(), rect->get_ll_y(), rect->get_ur_x(), rect->get_ur_y());
+    layer_net_gtl_poly_set[rect->get_layer_idx()][rect->get_net_idx()] += GTLRectInt(rect->get_ll_x(), rect->get_ll_y(), rect->get_ur_x(), rect->get_ur_y());
   }
   for (DRCShape* rect : rv_box.get_drc_result_shape_list()) {
     if (!rect->get_is_routing()) {
       continue;
     }
-    layer_net_poly_set[rect->get_layer_idx()][rect->get_net_idx()] += GTLRectInt(rect->get_ll_x(), rect->get_ll_y(), rect->get_ur_x(), rect->get_ur_y());
+    layer_net_gtl_poly_set[rect->get_layer_idx()][rect->get_net_idx()] += GTLRectInt(rect->get_ll_x(), rect->get_ll_y(), rect->get_ur_x(), rect->get_ur_y());
   }
-  for (auto& [layer_idx, net_poly_set] : layer_net_poly_set) {
+  for (auto& [layer_idx, net_gtl_poly_set] : layer_net_gtl_poly_set) {
     int32_t min_area = routing_layer_list[layer_idx].get_min_area();
-    for (auto& [net_idx, poly_set] : net_poly_set) {
-      std::vector<GTLPolyInt> poly_list;
-      poly_set.get_polygons(poly_list);
-      for (GTLPolyInt poly : poly_list) {
-        if (gtl::area(poly) < min_area) {
+    for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set) {
+      std::vector<GTLPolyInt> gtl_poly_list;
+      gtl_poly_set.get_polygons(gtl_poly_list);
+      for (GTLPolyInt& gtl_poly : gtl_poly_list) {
+        if (gtl::area(gtl_poly) < min_area) {
           std::vector<GTLRectInt> gtl_rect_list;
-          gtl::get_rectangles(gtl_rect_list, poly, gtl::HORIZONTAL);
+          gtl::get_rectangles(gtl_rect_list, gtl_poly, gtl::HORIZONTAL);
 
-          int max_area = 0;
-          GTLRectInt violation_rect;
+          GTLRectInt best_gtl_rect;
+          int32_t max_area = 0;
           for (GTLRectInt& gtl_rect : gtl_rect_list) {
-            int curr_area = gtl::area(gtl_rect);
+            int32_t curr_area = static_cast<int32_t>(gtl::area(gtl_rect));
             if (curr_area > max_area) {
               max_area = curr_area;
-              violation_rect = gtl_rect;
+              best_gtl_rect = gtl_rect;
             }
           }
-          int llx = gtl::xl(violation_rect);
-          int lly = gtl::yl(violation_rect);
-          int urx = gtl::xh(violation_rect);
-          int ury = gtl::yh(violation_rect);
-
           Violation violation;
           violation.set_violation_type(ViolationType::kMinimumArea);
           violation.set_is_routing(true);
           violation.set_violation_net_set({net_idx});
           violation.set_required_size(min_area);
           violation.set_layer_idx(layer_idx);
-          violation.set_rect(PlanarRect(llx, lly, urx, ury));
+          violation.set_rect(PlanarRect(gtl::xl(best_gtl_rect), gtl::yl(best_gtl_rect), gtl::xh(best_gtl_rect), gtl::yh(best_gtl_rect)));
           violation_list.push_back(violation);
         }
       }
