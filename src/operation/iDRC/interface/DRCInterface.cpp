@@ -77,10 +77,13 @@ void DRCInterface::initDRC(std::map<std::string, std::any> config_map)
 
 void DRCInterface::checkDef(std::map<std::string, std::any> config_map)
 {
-  DRCDM.getConfig().golden_directory_path = DRCUTIL.getConfigValue<std::string>(config_map, "-golden_directory_path", "null");
-  DRCDM.getConfig().golden_directory_path += "/";
+  std::string& golden_directory_path = DRCDM.getConfig().golden_directory_path;
+  golden_directory_path = DRCUTIL.getConfigValue<std::string>(config_map, "-golden_directory_path", "null");
+  if (golden_directory_path != "null") {
+    golden_directory_path += "/";
+  }
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "golden_directory_path");
-  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), DRCDM.getConfig().golden_directory_path);
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), golden_directory_path);
 
   std::vector<ids::Shape> ids_env_shape_list = buildEnvShapeList();
   std::vector<ids::Shape> ids_result_shape_list = buildResultShapeList();
@@ -215,8 +218,6 @@ void DRCInterface::wrapLayerList()
       routing_layer.set_layer_idx(idb_routing_layer->get_id());
       routing_layer.set_layer_order(idb_routing_layer->get_order());
       routing_layer.set_layer_name(idb_routing_layer->get_name());
-      routing_layer.set_min_width(idb_routing_layer->get_min_width());
-      routing_layer.set_min_area(idb_routing_layer->get_area());
       wrapTrackAxis(routing_layer, idb_routing_layer);
       wrapRoutingDesignRule(routing_layer, idb_routing_layer);
       routing_layer_list.push_back(std::move(routing_layer));
@@ -241,6 +242,23 @@ void DRCInterface::wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouti
 
 void DRCInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer)
 {
+  // min width
+  {
+    routing_layer.set_min_width(idb_layer->get_min_width());
+  }
+  // min area
+  {
+    routing_layer.set_min_area(idb_layer->get_area());
+  }
+  // min hole
+  {
+    vector<IdbMinEncloseArea>& min_area_list = idb_layer->get_min_enclose_area_list()->get_min_area_list();
+    if (!min_area_list.empty()) {
+      routing_layer.set_min_hole(min_area_list.front()._area);
+    } else {
+      routing_layer.set_min_hole(0);
+    }
+  }
   // prl
   {
     std::shared_ptr<idb::IdbParallelSpacingTable> idb_spacing_table;

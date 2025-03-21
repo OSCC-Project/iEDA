@@ -374,8 +374,6 @@ void RTInterface::wrapLayerList()
       routing_layer.set_layer_idx(idb_routing_layer->get_id());
       routing_layer.set_layer_order(idb_routing_layer->get_order());
       routing_layer.set_layer_name(idb_routing_layer->get_name());
-      routing_layer.set_min_width(idb_routing_layer->get_min_width());
-      routing_layer.set_min_area(idb_routing_layer->get_area());
       routing_layer.set_prefer_direction(getRTDirectionByDB(idb_routing_layer->get_direction()));
       wrapTrackAxis(routing_layer, idb_routing_layer);
       wrapRoutingDesignRule(routing_layer, idb_routing_layer);
@@ -414,6 +412,14 @@ void RTInterface::wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRoutin
 
 void RTInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer)
 {
+  // min width
+  {
+    routing_layer.set_min_width(idb_layer->get_min_width());
+  }
+  // min area
+  {
+    routing_layer.set_min_area(idb_layer->get_area());
+  }
   // prl
   {
     std::shared_ptr<idb::IdbParallelSpacingTable> idb_spacing_table;
