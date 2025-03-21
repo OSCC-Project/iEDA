@@ -526,7 +526,7 @@ void RuleValidator::debugViolationByType(RVBox& rv_box, ViolationType violation_
   if (golden_directory_path == "null") {
     return;
   }
-  // debugPlotRVBox(rv_box, "best");
+  debugPlotRVBox(rv_box, "best");
   for (auto& [type, violation_set] : rv_box.get_type_violation_map()) {
     if (violation_type != type) {
       continue;
