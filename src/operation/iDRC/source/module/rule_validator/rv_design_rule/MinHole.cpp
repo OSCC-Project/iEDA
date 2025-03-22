@@ -21,72 +21,46 @@ namespace idrc {
 void RuleValidator::verifyMinHole(RVBox& rv_box)
 {
   std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
-  std::vector<Violation>& violation_list = rv_box.get_violation_list();
 
-  std::map<int32_t, std::map<int32_t, GTLPolySetInt>> layer_net_poly_set;
-  int32_t min_hole_drc = 0;
-
-  for (DRCShape* rect : rv_box.get_drc_env_shape_list()) {
-    if (!rect->get_is_routing() || rect->get_net_idx() == -1) {  // 不是routing layer或者net_idx为-1的跳过该检测
+  std::map<int32_t, std::map<int32_t, GTLPolySetInt>> routing_net_gtl_poly_set_map;
+  for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+    if (!drc_shape->get_is_routing() || drc_shape->get_net_idx() == -1) {
       continue;
     }
-    int32_t net_idx = rect->get_net_idx();
-    int32_t layer_idx = rect->get_layer_idx();
-    layer_net_poly_set[layer_idx][net_idx] += GTLRectInt(rect->get_ll_x(), rect->get_ll_y(), rect->get_ur_x(), rect->get_ur_y());
+    routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
   }
-  for (DRCShape* rect : rv_box.get_drc_result_shape_list()) {
-    if (!rect->get_is_routing() || rect->get_net_idx() == -1) {  // 不是routing layer或者net_idx为-1的跳过该检测
+  for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+    if (!drc_shape->get_is_routing()) {
       continue;
     }
-    int32_t net_idx = rect->get_net_idx();
-    int32_t layer_idx = rect->get_layer_idx();
-    layer_net_poly_set[layer_idx][net_idx] += GTLRectInt(rect->get_ll_x(), rect->get_ll_y(), rect->get_ur_x(), rect->get_ur_y());
+    routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
   }
-  for (auto& [layer_idx, net_poly_set] : layer_net_poly_set) {
-    for (auto& [net_idx, poly_set] : net_poly_set) {
-      // check min hole
-      int32_t min_enclosed_area = routing_layer_list[layer_idx].get_min_hole();  // not sure if this is the right function
-      // 假设poly_set已经包含了所有的shape,vio的过滤应该从结果中过滤
-      std::vector<GTLHolePolyInt> hole_poly_list;
-      poly_set.get(hole_poly_list);  // get会自动识别要变成的类型
-
-      for (GTLHolePolyInt hole_poly : hole_poly_list) {
-        // check holes for hole_poly
-        GTLHolePolyInt::iterator_holes_type hole_iter = hole_poly.begin_holes();
-        while (hole_iter != hole_poly.end_holes()) {
-          GTLPolyInt hole = *hole_iter;  // 用普通的poly来代表hole
-          int32_t hole_area = gtl::area(hole);
-          if (hole_area >= min_enclosed_area) {
-            hole_iter++;
+  for (auto& [routing_layer_idx, net_gtl_poly_set_map] : routing_net_gtl_poly_set_map) {
+    int32_t min_hole = routing_layer_list[routing_layer_idx].get_min_hole();
+    for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set_map) {
+      std::vector<GTLHolePolyInt> gtl_hole_poly_list;
+      gtl_poly_set.get(gtl_hole_poly_list);
+      for (GTLHolePolyInt& gtl_hole_poly : gtl_hole_poly_list) {
+        for (GTLHolePolyInt::iterator_holes_type gtl_hole_poly_iter = gtl_hole_poly.begin_holes(); gtl_hole_poly_iter != gtl_hole_poly.end_holes();
+             gtl_hole_poly_iter++) {
+          GTLPolyInt gtl_poly = *gtl_hole_poly_iter;
+          if (gtl::area(gtl_poly) >= min_hole) {
             continue;
           }
-
-          GTLRectInt hole_rect;
-          gtl::extents(hole_rect,hole);
-          int llx = gtl::xl(hole_rect);
-          int lly = gtl::yl(hole_rect);
-          int urx = gtl::xh(hole_rect);
-          int ury = gtl::yh(hole_rect);
-
-          std::set<int32_t> net_set;
-          net_set.insert(net_idx);
-
+          GTLRectInt best_gtl_rect;
+          gtl::extents(best_gtl_rect, gtl_poly);
           Violation violation;
           violation.set_violation_type(ViolationType::kMinHole);
           violation.set_is_routing(true);
-          violation.set_violation_net_set(net_set);
-          violation.set_required_size(min_enclosed_area);
-          violation.set_layer_idx(layer_idx);
-          violation.set_rect(llx, lly, urx, ury);
-          violation_list.push_back(violation);
-          min_hole_drc += 1;
-          // DRCLOG.info(Loc::current(), "min hole violation :", violation.get_layer_idx(), " ", llx, " ", lly, " ", urx, " ", ury);
-
-          hole_iter++;  // 这里不要忘了
+          violation.set_violation_net_set({net_idx});
+          violation.set_required_size(min_hole);
+          violation.set_layer_idx(routing_layer_idx);
+          violation.set_rect(DRCUTIL.convertToPlanarRect(best_gtl_rect));
+          rv_box.get_violation_list().push_back(violation);
         }
       }
     }
   }
-  //   DRCLOG.info(Loc::current(), "min hole num: ", min_hole_drc);
 }
+
 }  // namespace idrc
