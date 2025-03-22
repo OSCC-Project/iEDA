@@ -20,50 +20,45 @@ namespace idrc {
 
 void RuleValidator::verifyOutOfDie(RVBox& rv_box)
 {
-    std::vector<Violation>& violation_list = rv_box.get_violation_list();
+  Die& die = DRCDM.getDatabase().get_die();
+  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = DRCDM.getDatabase().get_cut_to_adjacent_routing_map();
 
-    auto& die=DRCDM.getDatabase().get_die();
-    GTLPolySetInt die_poly_set;
-    die_poly_set+=GTLRectInt(die.get_ll_x(),die.get_ll_y(),die.get_ur_x(),die.get_ur_y());
-
-    int outofdie_count=0;
-    std::map<int32_t, std::map<int32_t, GTLPolySetInt>> layer_net_poly_set;
-    for (DRCShape* rect : rv_box.get_drc_result_shape_list()) {
-        if (rect->get_net_idx() == -1) {  //net_idx为-1 代表环境的shape
-            continue; 
-        }
-        int32_t net_idx = rect->get_net_idx();
-        int32_t layer_idx = rect->get_layer_idx();
-        //FIXME：when the vio at the corner, does't have any design case to confirm the correctness of getting rect_vio.
-        if(rect->get_ll_x()<die.get_ll_x()||rect->get_ll_y()<die.get_ll_y()||rect->get_ur_x()>die.get_ur_x()||rect->get_ur_y()>die.get_ur_y()){
-            outofdie_count++;
-
-            std::set<int32_t> net_set;
-            net_set.insert(net_idx);
-
-            GTLPolySetInt rect_poly_set;
-            rect_poly_set+=GTLRectInt(rect->get_ll_x(),rect->get_ll_y(),rect->get_ur_x(),rect->get_ur_y());
-
-            rect_poly_set-=die_poly_set;
-
-            GTLRectInt rect_vio;
-            gtl::extents(rect_vio,rect_poly_set);
-
-            Violation violation;
-            violation.set_violation_type(ViolationType::kOutOfDie);
-            violation.set_is_routing(true);
-            violation.set_violation_net_set(net_set);
-            // violation.set_required_size();
-            violation.set_layer_idx(layer_idx);
-            violation.set_rect(PlanarRect(gtl::xl(rect_vio),gtl::yl(rect_vio),gtl::xh(rect_vio),gtl::yh(rect_vio)));
-            violation_list.push_back(violation);
-
-            // DRCLOG.info(Loc::current(),rect->get_ll_x()," ",rect->get_ll_y()," ",rect->get_ur_x()," ",rect->get_ur_y());
-            // DRCLOG.info(Loc::current(),die.get_ll_x()," ",die.get_ll_y()," ",die.get_ur_x()," ",die.get_ur_y());
-            // DRCLOG.info(Loc::current(),"vio position: ",gtl::xl(rect_vio)," ",gtl::yl(rect_vio)," ",gtl::xh(rect_vio)," ",gtl::yh(rect_vio));
-        }
+  std::map<int32_t, std::map<int32_t, GTLPolySetInt>> routing_net_gtl_poly_set_map;
+  for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+    if (DRCUTIL.isInside(die, drc_shape->get_rect())) {
+      continue;
     }
-    // DRCLOG.info(Loc::current(),"OutOfDie number:= ",outofdie_count);
+    if (!DRCUTIL.isOpenOverlap(die, drc_shape->get_rect())) {
+      continue;
+    }
+    int32_t routing_layer_idx = -1;
+    if (!drc_shape->get_is_routing()) {
+      std::vector<int32_t>& routing_layer_idx_list = cut_to_adjacent_routing_map[drc_shape->get_layer_idx()];
+      routing_layer_idx = *std::min_element(routing_layer_idx_list.begin(), routing_layer_idx_list.end());
+    } else {
+      routing_layer_idx = drc_shape->get_layer_idx();
+    }
+    GTLPolySetInt rect_poly_set;
+    rect_poly_set += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
+    rect_poly_set -= DRCUTIL.convertToGTLRectInt(die);
+    routing_net_gtl_poly_set_map[routing_layer_idx][drc_shape->get_net_idx()] += rect_poly_set;
+  }
+  for (auto& [routing_layer_idx, net_gtl_poly_set_map] : routing_net_gtl_poly_set_map) {
+    for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set_map) {
+      std::vector<GTLRectInt> gtl_rect_list;
+      gtl::get_max_rectangles(gtl_rect_list, gtl_poly_set);
+      for (GTLRectInt& gtl_rect : gtl_rect_list) {
+        Violation violation;
+        violation.set_violation_type(ViolationType::kOutOfDie);
+        violation.set_is_routing(true);
+        violation.set_violation_net_set({net_idx});
+        violation.set_required_size(0);
+        violation.set_layer_idx(routing_layer_idx);
+        violation.set_rect(DRCUTIL.convertToPlanarRect(gtl_rect));
+        rv_box.get_violation_list().push_back(violation);
+      }
+    }
+  }
 }
 
 }  // namespace idrc
