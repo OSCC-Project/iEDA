@@ -23,7 +23,6 @@ void RuleValidator::verifyNonsufficientMetalOverlap(RVBox& rv_box)
   //存在少量少检,没想好怎么做,与innovus报的形状不一样,可能是检测方法造成的
   std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
   std::vector<Violation>& violation_list = rv_box.get_violation_list();
-  PlanarRect debug_rect(234990, 59015, 235280, 59215);
   int32_t non_sufficient_metal_overlap_drc = 0;
   std::map<int32_t, std::map<int32_t, GTLPolySetInt>> layer_net_poly_set;
   std::map<int32_t, std::map<int32_t, GTLPolySetInt>> layer_net_over_lap_poly_set;
@@ -107,7 +106,7 @@ void RuleValidator::verifyNonsufficientMetalOverlap(RVBox& rv_box)
       std::vector<GTLRectInt> max_rect_list;
       gtl::get_max_rectangles(max_rect_list, over_lap_poly_set);
       int32_t min_width = routing_layer_list[layer_idx].get_min_width();
-
+      int32_t wire_length = routing_layer_list[layer_idx].get_min_width();
       for (GTLRectInt max_rect : max_rect_list) {
         int32_t llx = gtl::xl(max_rect);
         int32_t lly = gtl::yl(max_rect);
@@ -115,6 +114,9 @@ void RuleValidator::verifyNonsufficientMetalOverlap(RVBox& rv_box)
         int32_t ury = gtl::yh(max_rect);
         int32_t diag_length = static_cast<int32_t>(std::sqrt((urx - llx) * (urx - llx) + (ury - lly) * (ury - lly)));
         if (diag_length < min_width) {
+          PlanarRect vio_rect(llx, lly, urx, ury);
+          int32_t enlarge_size = min_width/2 - (urx - llx);
+          enlarge_size = enlarge_size > 0 ? enlarge_size : 0;
           std::set<int32_t> net_set;
           net_set.insert(net_idx);
 
@@ -124,11 +126,11 @@ void RuleValidator::verifyNonsufficientMetalOverlap(RVBox& rv_box)
           violation.set_violation_net_set(net_set);
           violation.set_required_size(min_width);
           violation.set_layer_idx(layer_idx);
-          violation.set_rect(PlanarRect(llx, lly, urx, ury));
+          violation.set_rect(DRCUTIL.getEnlargedRect(vio_rect, enlarge_size,0, enlarge_size, 0));
 
           violation_list.push_back(violation);
           non_sufficient_metal_overlap_drc += 1;
-          DRCLOG.info(Loc::current(), "NonsufficientMetalOverlap violation :", violation.get_layer_idx(), " ", llx, " ", lly, " ", urx, " ", ury);
+          // DRCLOG.info(Loc::current(), "NonsufficientMetalOverlap violation :", violation.get_layer_idx(), " ", llx, " ", lly, " ", urx, " ", ury);
         }
       }
     }
