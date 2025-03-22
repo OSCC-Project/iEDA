@@ -60,78 +60,105 @@ namespace idrc {
 void RuleValidator::verifyCutShort(RVBox& rv_box)
 {
   LayerRTreeMap layer_query_tree;
-  std::map<int32_t, GTLPolySetInt> total_layer_poly_set;
+  std::map<int32_t, GTLPolySetInt> layer_gtl_poly_set_map;
 
   std::vector<DRCShape*>& drc_env_shape_list = rv_box.get_drc_env_shape_list();
   std::vector<DRCShape*>& drc_result_shape_list = rv_box.get_drc_result_shape_list();
   std::vector<Violation>& violation_list = rv_box.get_violation_list();
 
-  for (DRCShape* shape : drc_result_shape_list) {
-    if (shape->get_is_routing() == true) {
+  for (DRCShape* drc_shape : drc_result_shape_list) {
+    if (drc_shape->get_is_routing() == true) {
       continue;
     }
-    int32_t layer_idx = shape->get_layer_idx();
-    int32_t net_idx = shape->get_net_idx();
+    int32_t layer_idx = drc_shape->get_layer_idx();
+    int32_t net_idx = drc_shape->get_net_idx();
     if (net_idx == -1) {
       continue;
     }
-    int32_t llx = shape->get_ll_x();
-    int32_t lly = shape->get_ll_y();
-    int32_t urx = shape->get_ur_x();
-    int32_t ury = shape->get_ur_y();
+    int32_t llx = drc_shape->get_ll_x();
+    int32_t lly = drc_shape->get_ll_y();
+    int32_t urx = drc_shape->get_ur_x();
+    int32_t ury = drc_shape->get_ur_y();
     // expand rect by 1 unit,used to check interaction 
     GTLRectInt rect(llx - 1, lly - 1, urx + 1, ury + 1);
-    total_layer_poly_set[layer_idx] += rect;
+    layer_gtl_poly_set_map[layer_idx] += rect;
     addRectToRtree(layer_query_tree, GTLRectInt(llx, lly, urx, ury), layer_idx, net_idx);
   }
 
-  for(DRCShape* shape : drc_env_shape_list) {
-    if(shape->get_is_routing() == true) {
+  for(DRCShape* drc_shape : drc_env_shape_list) {
+    if(drc_shape->get_is_routing() == true) {
       continue;
     }
-    int32_t layer_idx = shape->get_layer_idx();
-    int32_t net_idx = shape->get_net_idx();
-    // if(net_idx == -1) {
-    //   continue;
-    // }
-    int32_t llx = shape->get_ll_x();
-    int32_t lly = shape->get_ll_y();
-    int32_t urx = shape->get_ur_x();
-    int32_t ury = shape->get_ur_y();
+
+
+    int32_t layer_idx = drc_shape->get_layer_idx();
+    int32_t net_idx = drc_shape->get_net_idx();
+
+    int32_t llx = drc_shape->get_ll_x();
+    int32_t lly = drc_shape->get_ll_y();
+    int32_t urx = drc_shape->get_ur_x();
+    int32_t ury = drc_shape->get_ur_y();
     // expand rect by 1 unit,used to check interaction 
     GTLRectInt rect(llx - 1, lly - 1, urx + 1, ury + 1);
-    total_layer_poly_set[layer_idx] += rect;
+    layer_gtl_poly_set_map[layer_idx] += rect;
     addRectToRtree(layer_query_tree, GTLRectInt(llx, lly, urx, ury), layer_idx, net_idx);
   }
 
-  for (auto& [layer_idx, poly_set] : total_layer_poly_set) {
+  for (auto& [layer_idx, gtl_poly_set] : layer_gtl_poly_set_map) {
     std::vector<gtl::polygon_90_with_holes_data<int32_t>> overlap_list;
-    poly_set.self_intersect();
-    poly_set.get(overlap_list);
-    for (auto& overlap : overlap_list) {
-      std::vector<GTLRectInt> results;
-      gtl::get_max_rectangles(results, overlap);
-      for (auto rect : results) {
-        if (!shrink_rect(rect, 1)) {
+    gtl_poly_set.self_intersect();
+    gtl_poly_set.get(overlap_list);
+    for (auto& overlap_poly : overlap_list) {
+      std::vector<GTLRectInt> rect_results;
+      gtl::get_max_rectangles(rect_results, overlap_poly);
+      for (auto gtl_rect : rect_results) {
+        if (!shrink_rect(gtl_rect, 1)) {
           continue;
         }
-        int llx = gtl::xl(rect);
-        int lly = gtl::yl(rect);
-        int urx = gtl::xh(rect);
-        int ury = gtl::yh(rect);
-
+        int llx = gtl::xl(gtl_rect);
+        int lly = gtl::yl(gtl_rect);
+        int urx = gtl::xh(gtl_rect);
+        int ury = gtl::yh(gtl_rect);
+        
         std::set<int32_t> net_set = queryNetIdbyRtree(layer_query_tree, layer_idx, llx, lly, urx, ury);
 
-        // set cut short violation
-        Violation violation;
-        violation.set_violation_type(ViolationType::kCutShort);
-        violation.set_required_size(0);
-        violation.set_is_routing(true);
-        violation.set_violation_net_set(net_set);
-        violation.set_layer_idx(layer_idx-1);
-        violation.set_rect(PlanarRect(llx, lly, urx, ury));
+        if(net_set.empty()||net_set.size()==net_set.count(-1)) {
+          continue;
+        }
 
-        violation_list.push_back(violation);
+        // Create violations for each pair if more than two nets
+        if (net_set.size() > 2) {
+          std::vector<int32_t> net_vec(net_set.begin(), net_set.end());
+          
+          for (size_t i = 0; i < net_vec.size(); ++i) {
+            for (size_t j = i + 1; j < net_vec.size(); ++j) {
+              std::set<int32_t> pair_net_set;
+              pair_net_set.insert(net_vec[i]);
+              pair_net_set.insert(net_vec[j]);
+              
+              Violation violation;
+              violation.set_violation_type(ViolationType::kCutShort);
+              violation.set_required_size(0);
+              violation.set_is_routing(true);
+              violation.set_violation_net_set(pair_net_set);
+              violation.set_layer_idx(layer_idx-1);
+              violation.set_rect(PlanarRect(llx, lly, urx, ury));
+              
+              violation_list.push_back(violation);
+            }
+          }
+        } else {
+          // For 1 or 2 nets, keep the original behavior
+          Violation violation;
+          violation.set_violation_type(ViolationType::kCutShort);
+          violation.set_required_size(0);
+          violation.set_is_routing(true);
+          violation.set_violation_net_set(net_set);
+          violation.set_layer_idx(layer_idx-1);
+          violation.set_rect(PlanarRect(llx, lly, urx, ury));
+          
+          violation_list.push_back(violation);
+        }
       }
     }
   }
