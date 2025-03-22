@@ -73,6 +73,29 @@ class Utility
 #if 1  // 位置关系计算
 
   /**
+   * 矩形在矩形内
+   *          ________________
+   *         |   Master       |
+   *         |  ——————————    |
+   *         |  |  rect   |   |
+   *         |  ——————————    |
+   *         |________________|
+   */
+  static bool isInside(const PlanarRect& master, const PlanarRect& rect) { return (isInside(master, rect.get_ll()) && isInside(master, rect.get_ur())); }
+
+  // 判断coord是否在rect内,可以选择是否包含边界
+  static bool isInside(const PlanarRect& rect, const PlanarCoord& coord, bool boundary = true)
+  {
+    int32_t coord_x = coord.get_x(), coord_y = coord.get_y();
+    int32_t rect_ll_x = rect.get_ll_x(), rect_ll_y = rect.get_ll_y();
+    int32_t rect_ur_x = rect.get_ur_x(), rect_ur_y = rect.get_ur_y();
+    if (boundary) {
+      return (rect_ll_x <= coord_x && coord_x <= rect_ur_x) && (rect_ll_y <= coord_y && coord_y <= rect_ur_y);
+    }
+    return (rect_ll_x < coord_x && coord_x < rect_ur_x) && (rect_ll_y < coord_y && coord_y < rect_ur_y);
+  }
+
+  /**
    *  ！在检测DRC中
    *  如果a与b中有膨胀矩形,那么则用isOpenOverlap
    *  如果a与b中都是真实矩形,那么用isClosedOverlap
@@ -106,6 +129,124 @@ class Utility
   }
 
 #endif
+
+#if 1  // boost数据结构工具函数
+
+#if 1  // int类型
+
+  static PlanarRect convertToPlanarRect(GTLRectInt& gtl_rect) { return PlanarRect(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect)); }
+
+  static PlanarRect convertToPlanarRect(BGRectInt& boost_box)
+  {
+    return PlanarRect(boost_box.min_corner().x(), boost_box.min_corner().y(), boost_box.max_corner().x(), boost_box.max_corner().y());
+  }
+
+  static BGRectInt convertToBGRectInt(const PlanarRect& rect)
+  {
+    return BGRectInt(BGPointInt(rect.get_ll_x(), rect.get_ll_y()), BGPointInt(rect.get_ur_x(), rect.get_ur_y()));
+  }
+
+  static BGRectInt convertToBGRectInt(GTLRectInt& gtl_rect)
+  {
+    return BGRectInt(BGPointInt(gtl::xl(gtl_rect), gtl::yl(gtl_rect)), BGPointInt(gtl::xh(gtl_rect), gtl::yh(gtl_rect)));
+  }
+
+  static GTLRectInt convertToGTLRectInt(const PlanarRect& rect) { return GTLRectInt(rect.get_ll_x(), rect.get_ll_y(), rect.get_ur_x(), rect.get_ur_y()); }
+
+  static GTLRectInt convertToGTLRectInt(BGRectInt& boost_box)
+  {
+    return GTLRectInt(boost_box.min_corner().x(), boost_box.min_corner().y(), boost_box.max_corner().x(), boost_box.max_corner().y());
+  }
+
+  static int32_t getLength(BGRectInt& a) { return std::abs(a.max_corner().x() - a.min_corner().x()); }
+
+  static int32_t getWidth(BGRectInt& a) { return std::abs(a.max_corner().y() - a.min_corner().y()); }
+
+  static PlanarCoord getCenter(BGRectInt& a)
+  {
+    int32_t center_x = std::abs(a.max_corner().x() + a.min_corner().x()) / 2;
+    int32_t center_y = std::abs(a.max_corner().y() + a.min_corner().y()) / 2;
+    return PlanarCoord(center_x, center_y);
+  }
+
+  static BGRectInt enlargeBGRectInt(BGRectInt& a, int32_t enlarge_size)
+  {
+    return BGRectInt(BGPointInt(a.min_corner().x() - enlarge_size, a.min_corner().y() - enlarge_size),
+                     BGPointInt(a.max_corner().x() + enlarge_size, a.max_corner().y() + enlarge_size));
+  }
+
+  static void offsetBGRectInt(BGRectInt& boost_box, PlanarCoord& coord)
+  {
+    boost_box.min_corner().set<0>(boost_box.min_corner().x() + coord.get_x());
+    boost_box.min_corner().set<1>(boost_box.min_corner().y() + coord.get_y());
+
+    boost_box.max_corner().set<0>(boost_box.max_corner().x() + coord.get_x());
+    boost_box.max_corner().set<1>(boost_box.max_corner().y() + coord.get_y());
+  }
+
+  static bool isOverlap(BGRectInt& a, BGRectInt& b, bool consider_edge = true)
+  {
+    int32_t a_ll_x = a.min_corner().x(), a_ll_y = a.min_corner().y();
+    int32_t a_ur_x = a.max_corner().x(), a_ur_y = a.max_corner().y();
+
+    int32_t b_ll_x = b.min_corner().x(), b_ll_y = b.min_corner().y();
+    int32_t b_ur_x = b.max_corner().x(), b_ur_y = b.max_corner().y();
+
+    int32_t x_spacing = std::max(b_ll_x - a_ur_x, a_ll_x - b_ur_x);
+    int32_t y_spacing = std::max(b_ll_y - a_ur_y, a_ll_y - b_ur_y);
+
+    if (x_spacing == 0 || y_spacing == 0) {
+      return consider_edge;
+    } else {
+      return (x_spacing < 0 && y_spacing < 0);
+    }
+  }
+
+  static BGRectInt getOverlap(BGRectInt& a, BGRectInt& b)
+  {
+    int32_t overlap_ll_x = std::max(a.min_corner().x(), b.min_corner().x());
+    int32_t overlap_ll_y = std::max(a.min_corner().y(), b.min_corner().y());
+    int32_t overlap_ur_x = std::min(a.max_corner().x(), b.max_corner().x());
+    int32_t overlap_ur_y = std::min(a.max_corner().y(), b.max_corner().y());
+
+    if (overlap_ll_x > overlap_ur_x || overlap_ll_y > overlap_ur_y) {
+      return BGRectInt(BGPointInt(0, 0), BGPointInt(0, 0));
+    } else {
+      return BGRectInt(BGPointInt(overlap_ll_x, overlap_ll_y), BGPointInt(overlap_ur_x, overlap_ur_y));
+    }
+  }
+
+  static bool isHorizontal(BGRectInt a) { return (a.max_corner().x() - a.min_corner().x()) >= (a.max_corner().y() - a.min_corner().y()); }
+
+  static int32_t getDiagonalLength(BGRectInt& a)
+  {
+    int32_t length = getLength(a);
+    int32_t width = getWidth(a);
+    return (int32_t) std::sqrt((length * length + width * width));
+  }
+
+  static int32_t getEuclideanDistance(BGRectInt& a, BGRectInt& b)
+  {
+    int32_t a_ll_x = a.min_corner().x(), a_ll_y = a.min_corner().y();
+    int32_t a_ur_x = a.max_corner().x(), a_ur_y = a.max_corner().y();
+
+    int32_t b_ll_x = b.min_corner().x(), b_ll_y = b.min_corner().y();
+    int32_t b_ur_x = b.max_corner().x(), b_ur_y = b.max_corner().y();
+
+    int32_t x_spacing = std::max(b_ll_x - a_ur_x, a_ll_x - b_ur_x);
+    int32_t y_spacing = std::max(b_ll_y - a_ur_y, a_ll_y - b_ur_y);
+
+    if (x_spacing > 0 && y_spacing > 0) {
+      return (int32_t) std::sqrt((x_spacing * x_spacing + y_spacing * y_spacing));
+    } else {
+      return std::max(std::max(x_spacing, y_spacing), 0);
+    }
+  }
+
+#endif
+
+#endif
+
 
 #if 1  // idrc数据结构工具函数
 
