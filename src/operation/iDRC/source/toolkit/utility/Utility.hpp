@@ -373,6 +373,54 @@ class Utility
     }
   }
 
+  static bool hasShrinkedRect(PlanarRect rect, int32_t shrinked_size)
+  {
+    addOffset(rect.get_ll(), shrinked_size, shrinked_size);
+    minusOffset(rect.get_ur(), shrinked_size, shrinked_size);
+
+    return rect.get_ll_x() <= rect.get_ur_x() && rect.get_ll_y() <= rect.get_ur_y();
+  }
+
+  static PlanarRect getShrinkedRect(PlanarRect rect, int32_t shrinked_size)
+  {
+    addOffset(rect.get_ll(), shrinked_size, shrinked_size);
+    minusOffset(rect.get_ur(), shrinked_size, shrinked_size);
+    return rect;
+  }
+
+  static PlanarRect getBoundingBox(const std::vector<PlanarRect>& rect_list)
+  {
+    int32_t ll_x = INT32_MAX;
+    int32_t ll_y = INT32_MAX;
+    int32_t ur_x = INT32_MIN;
+    int32_t ur_y = INT32_MIN;
+
+    for (size_t i = 0; i < rect_list.size(); i++) {
+      ll_x = std::min(ll_x, rect_list[i].get_ll_x());
+      ll_y = std::min(ll_y, rect_list[i].get_ll_y());
+      ur_x = std::max(ur_x, rect_list[i].get_ur_x());
+      ur_y = std::max(ur_y, rect_list[i].get_ur_y());
+    }
+    return PlanarRect(ll_x, ll_y, ur_x, ur_y);
+  }
+
+  // 获得两个矩形的overlap矩形
+  static std::vector<PlanarRect> getOverlap(std::vector<PlanarRect> a_rect_list, std::vector<PlanarRect> b_rect_list)
+  {
+    std::vector<PlanarRect> overlap_rect_list;
+    for (const PlanarRect& a_rect : a_rect_list) {
+      for (const PlanarRect& b_rect : b_rect_list) {
+        if (isClosedOverlap(a_rect, b_rect)) {
+          overlap_rect_list.push_back(getOverlap(a_rect, b_rect));
+        }
+      }
+    }
+    // rect去重
+    std::sort(overlap_rect_list.begin(), overlap_rect_list.end(), CmpPlanarRectByXASC());
+    overlap_rect_list.erase(std::unique(overlap_rect_list.begin(), overlap_rect_list.end()), overlap_rect_list.end());
+    return overlap_rect_list;
+  }
+
 #endif
 
 #if 1  // std数据结构工具函数

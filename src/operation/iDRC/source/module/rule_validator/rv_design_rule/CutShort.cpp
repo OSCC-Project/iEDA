@@ -16,126 +16,90 @@
 // ***************************************************************************************
 #include "RuleValidator.hpp"
 
-// anonymous namespace
-namespace {
-// using Rtree for query net id in violation rect
-using BgBoxInt = boost::geometry::model::box<BGPointInt>;
-using RTree = bgi::rtree<std::pair<BgBoxInt, int32_t>, bgi::quadratic<16>>;
-using LayerRTreeMap = std::map<int32_t, RTree>;
-
-void addRectToRtree(LayerRTreeMap& _query_tree, GTLRectInt rect, int32_t layer_idx, int32_t net_idx)
-{
-  BgBoxInt rtree_rect(BGPointInt(xl(rect), yl(rect)), BGPointInt(xh(rect), yh(rect)));
-  _query_tree[layer_idx].insert(std::make_pair(rtree_rect, net_idx));
-}
-
-std::set<int32_t> queryNetIdbyRtree(LayerRTreeMap& _query_tree, int32_t layer_idx, int32_t llx, int32_t lly, int32_t urx, int32_t ury)
-{
-  std::set<int32_t> net_ids;
-  std::vector<std::pair<BgBoxInt, int32_t>> result;
-  BgBoxInt rect(BGPointInt(llx, lly), BGPointInt(urx, ury));
-  _query_tree[layer_idx].query(bgi::intersects(rect), std::back_inserter(result));
-  for (auto& pair : result) {
-    net_ids.insert(pair.second);
-  }
-  return net_ids;
-}
-
-auto shrink_rect = [](GTLRectInt& rect, int value) -> bool {
-  int width = gtl::delta(rect, gtl::HORIZONTAL);
-  int height = gtl::delta(rect, gtl::VERTICAL);
-  if (width < 2 * value || height < 2 * value) {
-    return false;
-  }
-
-  gtl::shrink(rect, gtl::HORIZONTAL, value);
-  gtl::shrink(rect, gtl::VERTICAL, value);
-
-  return true;
-};
-}  // namespace
-
 namespace idrc {
 
 void RuleValidator::verifyCutShort(RVBox& rv_box)
 {
-  LayerRTreeMap layer_query_tree;
-  std::map<int32_t, GTLPolySetInt> total_layer_poly_set;
+  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = DRCDM.getDatabase().get_cut_to_adjacent_routing_map();
 
-  std::vector<DRCShape*>& drc_env_shape_list = rv_box.get_drc_env_shape_list();
-  std::vector<DRCShape*>& drc_result_shape_list = rv_box.get_drc_result_shape_list();
-  std::vector<Violation>& violation_list = rv_box.get_violation_list();
+  std::map<int32_t, GTLPolySetInt> cut_gtl_poly_set_map;
+  std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> cut_bg_rtree_map;
 
-  for (DRCShape* shape : drc_result_shape_list) {
-    if (shape->get_is_routing() == true) {
+  for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+    if (drc_shape->get_is_routing()) {
       continue;
     }
-    int32_t layer_idx = shape->get_layer_idx();
-    int32_t net_idx = shape->get_net_idx();
-    if (net_idx == -1) {
-      continue;
-    }
-    int32_t llx = shape->get_ll_x();
-    int32_t lly = shape->get_ll_y();
-    int32_t urx = shape->get_ur_x();
-    int32_t ury = shape->get_ur_y();
-    // expand rect by 1 unit,used to check interaction
-    GTLRectInt rect(llx - 1, lly - 1, urx + 1, ury + 1);
-    total_layer_poly_set[layer_idx] += rect;
-    addRectToRtree(layer_query_tree, GTLRectInt(llx, lly, urx, ury), layer_idx, net_idx);
+    cut_gtl_poly_set_map[drc_shape->get_layer_idx()] += DRCUTIL.convertToGTLRectInt(DRCUTIL.getEnlargedRect(drc_shape->get_rect(), 1));
+    cut_bg_rtree_map[drc_shape->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(drc_shape->get_rect()), drc_shape->get_net_idx()));
   }
 
-  for (DRCShape* shape : drc_env_shape_list) {
-    if (shape->get_is_routing() == true) {
+  for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+    if (drc_shape->get_is_routing()) {
       continue;
     }
-    int32_t layer_idx = shape->get_layer_idx();
-    int32_t net_idx = shape->get_net_idx();
-    // if(net_idx == -1) {
-    //   continue;
-    // }
-    int32_t llx = shape->get_ll_x();
-    int32_t lly = shape->get_ll_y();
-    int32_t urx = shape->get_ur_x();
-    int32_t ury = shape->get_ur_y();
-    // expand rect by 1 unit,used to check interaction
-    GTLRectInt rect(llx - 1, lly - 1, urx + 1, ury + 1);
-    total_layer_poly_set[layer_idx] += rect;
-    addRectToRtree(layer_query_tree, GTLRectInt(llx, lly, urx, ury), layer_idx, net_idx);
+    cut_gtl_poly_set_map[drc_shape->get_layer_idx()] += DRCUTIL.convertToGTLRectInt(DRCUTIL.getEnlargedRect(drc_shape->get_rect(), 1));
+    cut_bg_rtree_map[drc_shape->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(drc_shape->get_rect()), drc_shape->get_net_idx()));
   }
-
-  for (auto& [layer_idx, poly_set] : total_layer_poly_set) {
-    std::vector<gtl::polygon_90_with_holes_data<int32_t>> overlap_list;
-    poly_set.self_intersect();
-    poly_set.get(overlap_list);
-    for (auto& overlap : overlap_list) {
-      std::vector<GTLRectInt> results;
-      gtl::get_max_rectangles(results, overlap);
-      for (auto rect : results) {
-        if (!shrink_rect(rect, 1)) {
-          continue;
+  for (auto& [cut_layer_idx, gtl_poly_set] : cut_gtl_poly_set_map) {
+    int32_t routing_layer_idx = -1;
+    {
+      std::vector<int32_t>& routing_layer_idx_list = cut_to_adjacent_routing_map[cut_layer_idx];
+      routing_layer_idx = *std::min_element(routing_layer_idx_list.begin(), routing_layer_idx_list.end());
+    }
+    std::vector<PlanarRect> violation_rect_list;
+    {
+      std::vector<GTLHolePolyInt> gtl_hole_poly_list;
+      gtl_poly_set.self_intersect();
+      gtl_poly_set.get(gtl_hole_poly_list);
+      for (GTLHolePolyInt& gtl_hole_poly : gtl_hole_poly_list) {
+        std::vector<GTLRectInt> gtl_rect_list;
+        gtl::get_max_rectangles(gtl_rect_list, gtl_hole_poly);
+        for (GTLRectInt& gtl_rect : gtl_rect_list) {
+          PlanarRect violation_rect = DRCUTIL.convertToPlanarRect(gtl_rect);
+          if (!DRCUTIL.hasShrinkedRect(violation_rect, 1)) {
+            continue;
+          }
+          violation_rect_list.push_back(DRCUTIL.getShrinkedRect(violation_rect, 1));
         }
-        int llx = gtl::xl(rect);
-        int lly = gtl::yl(rect);
-        int urx = gtl::xh(rect);
-        int ury = gtl::yh(rect);
-
-        std::set<int32_t> net_set = queryNetIdbyRtree(layer_query_tree, layer_idx, llx, lly, urx, ury);
-
-        // set cut short violation
+      }
+    }
+    for (PlanarRect& violation_rect : violation_rect_list) {
+      std::set<int32_t> env_net_idx_set;
+      {
+        std::vector<std::pair<BGRectInt, int32_t>> bg_rect_net_pair_list;
+        cut_bg_rtree_map[cut_layer_idx].query(bgi::intersects(DRCUTIL.convertToBGRectInt(violation_rect)), std::back_inserter(bg_rect_net_pair_list));
+        for (auto& [bg_rect, net_idx] : bg_rect_net_pair_list) {
+          env_net_idx_set.insert(net_idx);
+        }
+      }
+      if (env_net_idx_set.empty() || (env_net_idx_set.size() == 1 && *env_net_idx_set.begin() == -1)) {
+        continue;
+      }
+      std::vector<std::set<int32_t>> net_idx_set_list;
+      {
+        if (env_net_idx_set.size() <= 2) {
+          net_idx_set_list.push_back(env_net_idx_set);
+        } else {
+          std::vector<int32_t> net_idx_list(env_net_idx_set.begin(), env_net_idx_set.end());
+          for (size_t i = 0; i < net_idx_list.size(); ++i) {
+            for (size_t j = i + 1; j < net_idx_list.size(); ++j) {
+              net_idx_set_list.emplace_back(std::set<int32_t>{net_idx_list[i], net_idx_list[j]});
+            }
+          }
+        }
+      }
+      for (std::set<int32_t>& net_idx_set : net_idx_set_list) {
         Violation violation;
         violation.set_violation_type(ViolationType::kCutShort);
         violation.set_required_size(0);
         violation.set_is_routing(true);
-        violation.set_violation_net_set(net_set);
-        violation.set_layer_idx(layer_idx - 1);
-        violation.set_rect(PlanarRect(llx, lly, urx, ury));
-
-        violation_list.push_back(violation);
+        violation.set_violation_net_set(net_idx_set);
+        violation.set_layer_idx(routing_layer_idx);
+        violation.set_rect(violation_rect);
+        rv_box.get_violation_list().push_back(violation);
       }
     }
   }
-  // DRCLOG.info(Loc::current(), "cut short num: ", violation_list.size());
 }
 
 }  // namespace idrc

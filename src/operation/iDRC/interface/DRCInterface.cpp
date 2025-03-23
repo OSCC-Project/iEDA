@@ -251,13 +251,13 @@ void DRCInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLa
   {
     routing_layer.set_min_area(idb_layer->get_area());
   }
-  // min hole
+  // min hole area
   {
     vector<IdbMinEncloseArea>& min_area_list = idb_layer->get_min_enclose_area_list()->get_min_area_list();
     if (!min_area_list.empty()) {
-      routing_layer.set_min_hole(min_area_list.front()._area);
+      routing_layer.set_min_hole_area(min_area_list.front()._area);
     } else {
-      routing_layer.set_min_hole(0);
+      routing_layer.set_min_hole_area(0);
     }
   }
   // prl

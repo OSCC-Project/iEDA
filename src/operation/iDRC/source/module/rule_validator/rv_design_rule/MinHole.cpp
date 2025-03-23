@@ -36,7 +36,7 @@ void RuleValidator::verifyMinHole(RVBox& rv_box)
     routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
   }
   for (auto& [routing_layer_idx, net_gtl_poly_set_map] : routing_net_gtl_poly_set_map) {
-    int32_t min_hole = routing_layer_list[routing_layer_idx].get_min_hole();
+    int32_t min_hole_area = routing_layer_list[routing_layer_idx].get_min_hole_area();
     for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set_map) {
       std::vector<GTLHolePolyInt> gtl_hole_poly_list;
       gtl_poly_set.get(gtl_hole_poly_list);
@@ -44,7 +44,7 @@ void RuleValidator::verifyMinHole(RVBox& rv_box)
         for (GTLHolePolyInt::iterator_holes_type gtl_hole_poly_iter = gtl_hole_poly.begin_holes(); gtl_hole_poly_iter != gtl_hole_poly.end_holes();
              gtl_hole_poly_iter++) {
           GTLPolyInt gtl_poly = *gtl_hole_poly_iter;
-          if (gtl::area(gtl_poly) >= min_hole) {
+          if (gtl::area(gtl_poly) >= min_hole_area) {
             continue;
           }
           GTLRectInt best_gtl_rect;
@@ -53,7 +53,7 @@ void RuleValidator::verifyMinHole(RVBox& rv_box)
           violation.set_violation_type(ViolationType::kMinHole);
           violation.set_is_routing(true);
           violation.set_violation_net_set({net_idx});
-          violation.set_required_size(min_hole);
+          violation.set_required_size(min_hole_area);
           violation.set_layer_idx(routing_layer_idx);
           violation.set_rect(DRCUTIL.convertToPlanarRect(best_gtl_rect));
           rv_box.get_violation_list().push_back(violation);

@@ -35,7 +35,7 @@ class RoutingLayer
   int32_t get_pitch() const { return _pitch; }
   int32_t get_min_width() const { return _min_width; }
   int32_t get_min_area() const { return _min_area; }
-  int32_t get_min_hole() const { return _min_hole; }
+  int32_t get_min_hole_area() const { return _min_hole_area; }
   SpacingTable& get_prl_spacing_table() { return _prl_spacing_table; }
   int32_t get_eol_spacing() const { return _eol_spacing; }
   int32_t get_eol_ete() const { return _eol_ete; }
@@ -48,7 +48,7 @@ class RoutingLayer
   void set_pitch(const int32_t pitch) { _pitch = pitch; }
   void set_min_width(const int32_t min_width) { _min_width = min_width; }
   void set_min_area(const int32_t min_area) { _min_area = min_area; }
-  void set_min_hole(const int32_t min_hole) { _min_hole = min_hole; }
+  void set_min_hole_area(const int32_t min_hole_area) { _min_hole_area = min_hole_area; }
   void set_prl_spacing_table(const SpacingTable& prl_spacing_table) { _prl_spacing_table = prl_spacing_table; }
   void set_eol_spacing(const int32_t eol_spacing) { _eol_spacing = eol_spacing; }
   void set_eol_ete(const int32_t eol_ete) { _eol_ete = eol_ete; }
@@ -67,7 +67,7 @@ class RoutingLayer
   // min area
   int32_t _min_area = 0;
   // min hole
-  int32_t _min_hole = 0;
+  int32_t _min_hole_area = 0;
   // prl
   SpacingTable _prl_spacing_table;
   // eol
