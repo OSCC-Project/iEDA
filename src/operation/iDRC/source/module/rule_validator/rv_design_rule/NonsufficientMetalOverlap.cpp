@@ -20,124 +20,74 @@ namespace idrc {
 
 void RuleValidator::verifyNonsufficientMetalOverlap(RVBox& rv_box)
 {
-  //存在少量少检,没想好怎么做,与innovus报的形状不一样,可能是检测方法造成的
   std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
-  std::vector<Violation>& violation_list = rv_box.get_violation_list();
-  int32_t non_sufficient_metal_overlap_drc = 0;
-  std::map<int32_t, std::map<int32_t, GTLPolySetInt>> layer_net_poly_set;
-  std::map<int32_t, std::map<int32_t, GTLPolySetInt>> layer_net_over_lap_poly_set;
-  std::map<int32_t, std::map<int32_t, std::vector<GTLRectInt>>> layer_net_rect_list_set;
-  // 拿到所有的图形
-  for (DRCShape* rect : rv_box.get_drc_env_shape_list()) {
-    if (!rect->get_is_routing() || rect->get_net_idx() == -1) {  // 不是routing layer或者net_idx为-1的跳过该检测
+
+  std::map<int32_t, std::map<int32_t, std::vector<DRCShape*>>> routing_net_drc_shape_map;
+  for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+    if (!drc_shape->get_is_routing() || drc_shape->get_net_idx() == -1) {
       continue;
     }
-    int32_t net_idx = rect->get_net_idx();
-    int32_t layer_idx = rect->get_layer_idx();
-
-    GTLPolyInt poly;
-
-    GTLRectInt rect_gtl(rect->get_ll_x(), rect->get_ll_y(), rect->get_ur_x(), rect->get_ur_y());
-
-    layer_net_poly_set[layer_idx][net_idx] += rect_gtl;
-    layer_net_rect_list_set[layer_idx][net_idx].push_back(rect_gtl);
+    routing_net_drc_shape_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()].push_back(drc_shape);
   }
-
-  for (DRCShape* rect : rv_box.get_drc_result_shape_list()) {
-    if (!rect->get_is_routing() || rect->get_net_idx() == -1) {  // 不是routing layer或者net_idx为-1的跳过该检测
+  for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+    if (!drc_shape->get_is_routing()) {
       continue;
     }
-    int32_t net_idx = rect->get_net_idx();
-    int32_t layer_idx = rect->get_layer_idx();
-
-    GTLPolyInt poly;
-
-    GTLRectInt rect_gtl(rect->get_ll_x(), rect->get_ll_y(), rect->get_ur_x(), rect->get_ur_y());
-
-    layer_net_poly_set[layer_idx][net_idx] += rect_gtl;
-    layer_net_rect_list_set[layer_idx][net_idx].push_back(rect_gtl);
+    routing_net_drc_shape_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()].push_back(drc_shape);
   }
-
-  // function :merge rect list and del overlap rect
-  // 合并所有矩形，拿到最小矩形子集，该函数可能还有点问题
-  auto merge_rect_list_func = [](std::vector<GTLRectInt> rect_list) {
-    std::vector<GTLRectInt> merged_rect_list;
-    std::vector<bool> is_covered(rect_list.size(), false);
-    for (int i = 0; i < rect_list.size(); i++) {
-      if (is_covered[i]) {
-        continue;
-      }
-      for (int j = 0; j < rect_list.size() && j != i; j++) {
-        // chcek is i and j can merge into one rect
-        GTLPolySetInt merge_rect = rect_list[i] + rect_list[j];
-        std::vector<GTLRectInt> rects;
-        merge_rect.get(rects);
-        if (rects.size() == 1) {
-          // 只有一个矩形，说明合并后的图形仍然是矩形
-          rect_list[i] = rects[0];
-          is_covered[j] = true;
+  for (auto& [routing_layer_idx, net_drc_shape_map] : routing_net_drc_shape_map) {
+    RoutingLayer& routing_layer = routing_layer_list[routing_layer_idx];
+    int32_t min_width = routing_layer.get_min_width();
+    int32_t half_width = min_width / 2;
+    for (auto& [net_idx, drc_shape_list] : net_drc_shape_map) {
+      std::map<int32_t, GTLPolySetInt> scale_gtl_poly_set_map;
+      for (DRCShape* drc_shape : drc_shape_list) {
+        PlanarCoord mid_coord = drc_shape->getMidPoint();
+        if (routing_layer.isPreferH()) {
+          scale_gtl_poly_set_map[mid_coord.get_y()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
+        } else {
+          scale_gtl_poly_set_map[mid_coord.get_x()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
         }
       }
-    }
-    for (int i = 0; i < rect_list.size(); i++) {
-      if (!is_covered[i]) {
-        merged_rect_list.push_back(rect_list[i]);
+      std::vector<GTLPolySetInt> gtl_poly_set_list;
+      for (auto& [scale, gtl_poly_set] : scale_gtl_poly_set_map) {
+        gtl_poly_set_list.push_back(gtl_poly_set);
       }
-    }
-    return merged_rect_list;
-  };
-  // 从最小子集中拿到重叠部分
-  for (auto [layer_idx, net_rect_list] : layer_net_rect_list_set) {
-    for (auto [net_idx, rect_list] : net_rect_list) {
-      // merge rect list
-      std::vector<GTLRectInt> merged_rect_list = merge_rect_list_func(rect_list);
-      GTLPolySetInt temp_poly_set;
-
-      for (GTLRectInt rect : merged_rect_list) {
-        layer_net_over_lap_poly_set[layer_idx][net_idx] += rect & temp_poly_set;
-        temp_poly_set += rect;
-      }
-    }
-  }
-
-  // 重叠部分合并切分得到max rect,从max rect中找到不满足的部分
-  for (auto [layer_idx, net_over_lap_poly_set] : layer_net_over_lap_poly_set) {
-    for (auto [net_idx, over_lap_poly_set] : net_over_lap_poly_set) {
-      std::vector<GTLRectInt> max_rect_list;
-      gtl::get_max_rectangles(max_rect_list, over_lap_poly_set);
-      int32_t min_width = routing_layer_list[layer_idx].get_min_width();
-      int32_t wire_length = routing_layer_list[layer_idx].get_min_width();
-      for (GTLRectInt max_rect : max_rect_list) {
-        int32_t llx = gtl::xl(max_rect);
-        int32_t lly = gtl::yl(max_rect);
-        int32_t urx = gtl::xh(max_rect);
-        int32_t ury = gtl::yh(max_rect);
-        int32_t diag_length = static_cast<int32_t>(std::sqrt((urx - llx) * (urx - llx) + (ury - lly) * (ury - lly)));
-        if (diag_length < min_width) {
-          PlanarRect vio_rect(llx, lly, urx, ury);
-          int32_t enlarge_size = min_width/2 - (urx - llx);
-          enlarge_size = enlarge_size > 0 ? enlarge_size : 0;
-          std::set<int32_t> net_set;
-          net_set.insert(net_idx);
-
-          Violation violation;
-          violation.set_violation_type(ViolationType::kNonsufficientMetalOverlap);
-          violation.set_is_routing(true);
-          violation.set_violation_net_set(net_set);
-          violation.set_required_size(min_width);
-          violation.set_layer_idx(layer_idx);
-          violation.set_rect(DRCUTIL.getEnlargedRect(vio_rect, enlarge_size,0, enlarge_size, 0));
-
-          violation_list.push_back(violation);
-          non_sufficient_metal_overlap_drc += 1;
-          // DRCLOG.info(Loc::current(), "NonsufficientMetalOverlap violation :", violation.get_layer_idx(), " ", llx, " ", lly, " ", urx, " ", ury);
+      GTLPolySetInt overlap_gtl_poly_set;
+      for (size_t i = 0; i < gtl_poly_set_list.size(); i++) {
+        for (size_t j = i + 1; j < gtl_poly_set_list.size(); j++) {
+          overlap_gtl_poly_set += (gtl_poly_set_list[i] & gtl_poly_set_list[j]);
         }
       }
+      std::vector<GTLRectInt> overlap_gtl_rect_list;
+      gtl::get_max_rectangles(overlap_gtl_rect_list, overlap_gtl_poly_set);
+      for (GTLRectInt& overlap_gtl_rect : overlap_gtl_rect_list) {
+        PlanarRect overlap_rect = DRCUTIL.convertToPlanarRect(overlap_gtl_rect);
+        double diag_length = std::sqrt(std::pow(overlap_rect.getXSpan(), 2) + std::pow(overlap_rect.getYSpan(), 2));
+        if (diag_length > min_width) {
+          continue;
+        }
+        int32_t x_enlarge_size = 0;
+        if (overlap_rect.getXSpan() < half_width) {
+          x_enlarge_size = half_width - overlap_rect.getXSpan();
+        }
+        int32_t y_enlarge_size = 0;
+        if (overlap_rect.getYSpan() < half_width) {
+          y_enlarge_size = half_width - overlap_rect.getYSpan();
+        }
+        PlanarRect violation_rect = DRCUTIL.getEnlargedRect(overlap_rect, x_enlarge_size, y_enlarge_size, x_enlarge_size, y_enlarge_size);
+
+        Violation violation;
+        violation.set_violation_type(ViolationType::kNonsufficientMetalOverlap);
+        violation.set_is_routing(true);
+        violation.set_violation_net_set({net_idx});
+        violation.set_required_size(0);
+        violation.set_layer_idx(routing_layer_idx);
+        violation.set_rect(violation_rect);
+        rv_box.get_violation_list().push_back(violation);
+      }
     }
   }
-  // if (non_sufficient_metal_overlap_drc > 0) {
-  //   DRCLOG.info(Loc::current(), "NonsufficientMetalOverlap num :", non_sufficient_metal_overlap_drc);
-  // }
 }
 
 }  // namespace idrc

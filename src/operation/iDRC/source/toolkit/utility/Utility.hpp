@@ -247,7 +247,6 @@ class Utility
 
 #endif
 
-
 #if 1  // idrc数据结构工具函数
 
   // 获得配置的值
@@ -357,6 +356,21 @@ class Utility
   {
     coord.set_x(coord.get_x() + x_offset);
     coord.set_y(coord.get_y() + y_offset);
+  }
+
+  // 获得两个矩形的overlap矩形
+  static PlanarRect getOverlap(PlanarRect a, PlanarRect b)
+  {
+    int32_t overlap_ll_x = std::max(a.get_ll_x(), b.get_ll_x());
+    int32_t overlap_ur_x = std::min(a.get_ur_x(), b.get_ur_x());
+    int32_t overlap_ll_y = std::max(a.get_ll_y(), b.get_ll_y());
+    int32_t overlap_ur_y = std::min(a.get_ur_y(), b.get_ur_y());
+
+    if (overlap_ll_x > overlap_ur_x || overlap_ll_y > overlap_ur_y) {
+      return PlanarRect(0, 0, 0, 0);
+    } else {
+      return PlanarRect(overlap_ll_x, overlap_ll_y, overlap_ur_x, overlap_ur_y);
+    }
   }
 
 #endif

@@ -30,12 +30,14 @@ namespace idb {
 class IdbNet;
 class IdbLayerRouting;
 class IdbLayerCut;
+enum class IdbLayerDirection : uint8_t;
 }  // namespace idb
 
 namespace idrc {
 class RoutingLayer;
 class CutLayer;
 class DRCShape;
+enum class Direction;
 }  // namespace idrc
 
 #endif
@@ -77,6 +79,7 @@ class DRCInterface
   void wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
   void wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_layer);
   void wrapLayerInfo();
+  Direction getDRCDirectionByDB(idb::IdbLayerDirection idb_direction);
 #endif
 
 #if 1  // output

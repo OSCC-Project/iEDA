@@ -237,6 +237,9 @@ void DataManager::checkLayerList()
   }
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::string& layer_name = routing_layer.get_layer_name();
+    if (routing_layer.get_prefer_direction() == Direction::kNone) {
+      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' prefer_direction is none!");
+    }
     if (routing_layer.get_pitch() <= 0) {
       DRCLOG.error(Loc::current(), "The layer '", layer_name, "' pitch '", routing_layer.get_pitch(), "' is wrong!");
     }
@@ -368,7 +371,8 @@ void DataManager::printDatabase()
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "routing_layer");
   for (RoutingLayer& routing_layer : routing_layer_list) {
     DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), "idx:", routing_layer.get_layer_idx(), " order:", routing_layer.get_layer_order(),
-                " name:", routing_layer.get_layer_name(), " pitch:", routing_layer.get_pitch());
+                " name:", routing_layer.get_layer_name(), " prefer_direction:", GetDirectionName()(routing_layer.get_prefer_direction()),
+                " pitch:", routing_layer.get_pitch());
   }
   // ********** CutLayer ********** //
   std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();

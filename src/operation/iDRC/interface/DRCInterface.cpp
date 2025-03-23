@@ -218,6 +218,7 @@ void DRCInterface::wrapLayerList()
       routing_layer.set_layer_idx(idb_routing_layer->get_id());
       routing_layer.set_layer_order(idb_routing_layer->get_order());
       routing_layer.set_layer_name(idb_routing_layer->get_name());
+      routing_layer.set_prefer_direction(getDRCDirectionByDB(idb_routing_layer->get_direction()));
       wrapTrackAxis(routing_layer, idb_routing_layer);
       wrapRoutingDesignRule(routing_layer, idb_routing_layer);
       routing_layer_list.push_back(std::move(routing_layer));
@@ -417,6 +418,17 @@ void DRCInterface::wrapLayerInfo()
   for (size_t i = 0; i < cut_layer_list.size(); i++) {
     cut_idb_layer_id_to_idx_map[cut_layer_list[i].get_layer_idx()] = static_cast<int32_t>(i);
     cut_layer_name_to_idx_map[cut_layer_list[i].get_layer_name()] = static_cast<int32_t>(i);
+  }
+}
+
+Direction DRCInterface::getDRCDirectionByDB(idb::IdbLayerDirection idb_direction)
+{
+  if (idb_direction == idb::IdbLayerDirection::kHorizontal) {
+    return Direction::kHorizontal;
+  } else if (idb_direction == idb::IdbLayerDirection::kVertical) {
+    return Direction::kVertical;
+  } else {
+    return Direction::kOblique;
   }
 }
 

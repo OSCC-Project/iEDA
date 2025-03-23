@@ -53,7 +53,7 @@ auto shrink_rect = [](GTLRectInt& rect, int value) -> bool {
 
   return true;
 };
-} 
+}  // namespace
 
 namespace idrc {
 
@@ -79,14 +79,14 @@ void RuleValidator::verifyCutShort(RVBox& rv_box)
     int32_t lly = shape->get_ll_y();
     int32_t urx = shape->get_ur_x();
     int32_t ury = shape->get_ur_y();
-    // expand rect by 1 unit,used to check interaction 
+    // expand rect by 1 unit,used to check interaction
     GTLRectInt rect(llx - 1, lly - 1, urx + 1, ury + 1);
     total_layer_poly_set[layer_idx] += rect;
     addRectToRtree(layer_query_tree, GTLRectInt(llx, lly, urx, ury), layer_idx, net_idx);
   }
 
-  for(DRCShape* shape : drc_env_shape_list) {
-    if(shape->get_is_routing() == true) {
+  for (DRCShape* shape : drc_env_shape_list) {
+    if (shape->get_is_routing() == true) {
       continue;
     }
     int32_t layer_idx = shape->get_layer_idx();
@@ -98,7 +98,7 @@ void RuleValidator::verifyCutShort(RVBox& rv_box)
     int32_t lly = shape->get_ll_y();
     int32_t urx = shape->get_ur_x();
     int32_t ury = shape->get_ur_y();
-    // expand rect by 1 unit,used to check interaction 
+    // expand rect by 1 unit,used to check interaction
     GTLRectInt rect(llx - 1, lly - 1, urx + 1, ury + 1);
     total_layer_poly_set[layer_idx] += rect;
     addRectToRtree(layer_query_tree, GTLRectInt(llx, lly, urx, ury), layer_idx, net_idx);
@@ -128,14 +128,14 @@ void RuleValidator::verifyCutShort(RVBox& rv_box)
         violation.set_required_size(0);
         violation.set_is_routing(true);
         violation.set_violation_net_set(net_set);
-        violation.set_layer_idx(layer_idx-1);
+        violation.set_layer_idx(layer_idx - 1);
         violation.set_rect(PlanarRect(llx, lly, urx, ury));
 
         violation_list.push_back(violation);
       }
     }
   }
-  //DRCLOG.info(Loc::current(), "cut short num: ", violation_list.size());
+  // DRCLOG.info(Loc::current(), "cut short num: ", violation_list.size());
 }
 
 }  // namespace idrc

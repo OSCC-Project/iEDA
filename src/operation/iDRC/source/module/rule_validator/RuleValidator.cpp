@@ -532,6 +532,7 @@ void RuleValidator::debugViolationByType(RVBox& rv_box, ViolationType violation_
   if (golden_directory_path == "null") {
     return;
   }
+  DRCLOG.warn(Loc::current(), "");
   DRCLOG.warn(Loc::current(), "***** Begin Box ", rv_box.get_box_idx(), " *****");
   DRCLOG.warn(Loc::current(), DRCUTIL.getSpaceByTabNum(1), GetViolationTypeName()(violation_type));
   DRCLOG.warn(Loc::current(), DRCUTIL.getSpaceByTabNum(2), "incorrect");
@@ -564,7 +565,8 @@ void RuleValidator::debugViolationByType(RVBox& rv_box, ViolationType violation_
   if (enable_plot) {
     debugPlotRVBox(rv_box, "best");
   }
-  DRCLOG.warn(Loc::current(), "***** End Box ", rv_box.get_box_idx(), " *****", "\n");
+  DRCLOG.warn(Loc::current(), "***** End Box ", rv_box.get_box_idx(), " *****");
+  DRCLOG.warn(Loc::current(), "");
 }
 
 void RuleValidator::debugVerifyRVModelByGolden(RVModel& rv_model)
