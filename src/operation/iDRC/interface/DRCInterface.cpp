@@ -247,6 +247,10 @@ void DRCInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLa
   {
     routing_layer.set_min_width(idb_layer->get_min_width());
   }
+  // max width
+  {
+    routing_layer.set_max_width(idb_layer->get_max_width());
+  }
   // min area
   {
     routing_layer.set_min_area(idb_layer->get_area());

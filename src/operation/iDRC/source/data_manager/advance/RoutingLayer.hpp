@@ -34,6 +34,7 @@ class RoutingLayer
   Direction& get_prefer_direction() { return _prefer_direction; }
   int32_t get_pitch() const { return _pitch; }
   int32_t get_min_width() const { return _min_width; }
+  int32_t get_max_width() const { return _max_width; }
   int32_t get_min_area() const { return _min_area; }
   int32_t get_min_hole_area() const { return _min_hole_area; }
   SpacingTable& get_prl_spacing_table() { return _prl_spacing_table; }
@@ -47,6 +48,7 @@ class RoutingLayer
   void set_prefer_direction(const Direction& prefer_direction) { _prefer_direction = prefer_direction; }
   void set_pitch(const int32_t pitch) { _pitch = pitch; }
   void set_min_width(const int32_t min_width) { _min_width = min_width; }
+  void set_max_width(const int32_t max_width) { _max_width = max_width; }
   void set_min_area(const int32_t min_area) { _min_area = min_area; }
   void set_min_hole_area(const int32_t min_hole_area) { _min_hole_area = min_hole_area; }
   void set_prl_spacing_table(const SpacingTable& prl_spacing_table) { _prl_spacing_table = prl_spacing_table; }
@@ -64,6 +66,8 @@ class RoutingLayer
   int32_t _pitch = 0;
   // min width
   int32_t _min_width = 0;
+  // max width
+  int32_t _max_width = 0;
   // min area
   int32_t _min_area = 0;
   // min hole
