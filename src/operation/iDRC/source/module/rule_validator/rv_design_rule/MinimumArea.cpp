@@ -48,11 +48,11 @@ void RuleValidator::verifyMinimumArea(RVBox& rv_box)
         gtl::get_rectangles(gtl_rect_list, gtl_poly, gtl::HORIZONTAL);
 
         GTLRectInt best_gtl_rect;
-        int32_t max_area = 0;
+        int32_t max_x_span = 0;
         for (GTLRectInt& gtl_rect : gtl_rect_list) {
-          int32_t curr_area = static_cast<int32_t>(gtl::area(gtl_rect));
-          if (curr_area > max_area) {
-            max_area = curr_area;
+          int32_t curr_x_span = std::abs(gtl::xl(gtl_rect) - gtl::xh(gtl_rect));
+          if (max_x_span <= curr_x_span) {
+            max_x_span = curr_x_span;
             best_gtl_rect = gtl_rect;
           }
         }
