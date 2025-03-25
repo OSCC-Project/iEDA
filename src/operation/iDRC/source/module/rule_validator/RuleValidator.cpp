@@ -580,8 +580,8 @@ void RuleValidator::debugViolationByType(RVBox& rv_box, ViolationType violation_
     for (const Violation& violation : violation_set) {
       if (!DRCUTIL.exist(rv_box.get_type_golden_violation_map()[type], violation)) {
         enable_plot = true;
-        DRCLOG.warn(Loc::current(), DRCUTIL.getSpaceByTabNum(3), violation.get_ll_x(), " ", violation.get_ll_y(), " ", violation.get_ur_x(), " ",
-                    violation.get_ur_y(), " ", routing_layer_list[violation.get_layer_idx()].get_layer_name());
+        DRCLOG.warn(Loc::current(), DRCUTIL.getSpaceByTabNum(3), violation.get_ll_x() / 1000.0, ",", violation.get_ll_y() / 1000.0, "   ",
+                    violation.get_ur_x() / 1000.0, ",", violation.get_ur_y() / 1000.0, "   ", routing_layer_list[violation.get_layer_idx()].get_layer_name());
       }
     }
   }
@@ -593,8 +593,9 @@ void RuleValidator::debugViolationByType(RVBox& rv_box, ViolationType violation_
     for (const Violation& golden_violation : golden_violation_set) {
       if (!DRCUTIL.exist(rv_box.get_type_violation_map()[type], golden_violation)) {
         enable_plot = true;
-        DRCLOG.warn(Loc::current(), DRCUTIL.getSpaceByTabNum(3), golden_violation.get_ll_x(), " ", golden_violation.get_ll_y(), " ",
-                    golden_violation.get_ur_x(), " ", golden_violation.get_ur_y(), " ", routing_layer_list[golden_violation.get_layer_idx()].get_layer_name());
+        DRCLOG.warn(Loc::current(), DRCUTIL.getSpaceByTabNum(3), golden_violation.get_ll_x() / 1000.0, ",", golden_violation.get_ll_y() / 1000.0, "   ",
+                    golden_violation.get_ur_x() / 1000.0, ",", golden_violation.get_ur_y() / 1000.0, "   ",
+                    routing_layer_list[golden_violation.get_layer_idx()].get_layer_name());
       }
     }
   }
