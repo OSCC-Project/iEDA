@@ -54,6 +54,7 @@ std::vector<Violation> RuleValidator::verify(std::vector<DRCShape>& drc_env_shap
   setRVComParam(rv_model);
   buildRVModel(rv_model);
   verifyRVModel(rv_model);
+  // debugVerifyRVModelByGolden(rv_model);
   buildViolationList(rv_model);
   // debugPlotRVModel(rv_model, "best");
   updateSummary(rv_model);
@@ -95,6 +96,8 @@ void RuleValidator::buildRVModel(RVModel& rv_model)
   int32_t expand_size = rv_model.get_rv_com_param().get_expand_size();
 
   PlanarRect bounding_box(INT32_MAX, INT32_MAX, INT32_MIN, INT32_MIN);
+  int32_t offset_x = -1;
+  int32_t offset_y = -1;
   int32_t grid_x_size = -1;
   int32_t grid_y_size = -1;
   {
@@ -110,6 +113,8 @@ void RuleValidator::buildRVModel(RVModel& rv_model)
       bounding_box.set_ur_x(std::max(bounding_box.get_ur_x(), drc_result_shape.get_ur_x()));
       bounding_box.set_ur_y(std::max(bounding_box.get_ur_y(), drc_result_shape.get_ur_y()));
     }
+    offset_x = bounding_box.get_ll_x();
+    offset_y = bounding_box.get_ll_y();
     PlanarRect enlarged_rect = DRCUTIL.getEnlargedRect(bounding_box, 1);
     grid_x_size = static_cast<int32_t>(std::ceil(enlarged_rect.getXSpan() / 1.0 / box_size));
     grid_y_size = static_cast<int32_t>(std::ceil(enlarged_rect.getYSpan() / 1.0 / box_size));
@@ -119,15 +124,19 @@ void RuleValidator::buildRVModel(RVModel& rv_model)
     for (int32_t grid_y = 0; grid_y < grid_y_size; grid_y++) {
       RVBox& rv_box = rv_model.get_rv_box_list()[grid_x + grid_y * grid_x_size];
       rv_box.set_box_idx(grid_x + grid_y * grid_x_size);
-      rv_box.get_box_rect().set_ll(grid_x * box_size, grid_y * box_size);
-      rv_box.get_box_rect().set_ur((grid_x + 1) * box_size, (grid_y + 1) * box_size);
+      rv_box.get_box_rect().set_ll(grid_x * box_size + offset_x, grid_y * box_size + offset_y);
+      rv_box.get_box_rect().set_ur((grid_x + 1) * box_size + offset_x, (grid_y + 1) * box_size + offset_y);
     }
   }
   for (DRCShape& drc_env_shape : rv_model.get_drc_env_shape_list()) {
     PlanarRect searched_rect = DRCUTIL.getEnlargedRect(drc_env_shape.get_rect(), expand_size);
     searched_rect = DRCUTIL.getRegularRect(searched_rect, bounding_box);
-    for (int32_t grid_x = (searched_rect.get_ll_x() / box_size); grid_x <= (searched_rect.get_ur_x() / box_size); grid_x++) {
-      for (int32_t grid_y = (searched_rect.get_ll_y() / box_size); grid_y <= (searched_rect.get_ur_y() / box_size); grid_y++) {
+    int32_t grid_ll_x = (searched_rect.get_ll_x() - offset_x) / box_size;
+    int32_t grid_ll_y = (searched_rect.get_ll_y() - offset_y) / box_size;
+    int32_t grid_ur_x = (searched_rect.get_ur_x() - offset_x) / box_size;
+    int32_t grid_ur_y = (searched_rect.get_ur_y() - offset_y) / box_size;
+    for (int32_t grid_x = grid_ll_x; grid_x <= grid_ur_x; grid_x++) {
+      for (int32_t grid_y = grid_ll_y; grid_y <= grid_ur_y; grid_y++) {
         rv_model.get_rv_box_list()[grid_x + grid_y * grid_x_size].get_drc_env_shape_list().push_back(&drc_env_shape);
       }
     }
@@ -135,8 +144,12 @@ void RuleValidator::buildRVModel(RVModel& rv_model)
   for (DRCShape& drc_result_shape : rv_model.get_drc_result_shape_list()) {
     PlanarRect searched_rect = DRCUTIL.getEnlargedRect(drc_result_shape.get_rect(), expand_size);
     searched_rect = DRCUTIL.getRegularRect(searched_rect, bounding_box);
-    for (int32_t grid_x = (searched_rect.get_ll_x() / box_size); grid_x <= (searched_rect.get_ur_x() / box_size); grid_x++) {
-      for (int32_t grid_y = (searched_rect.get_ll_y() / box_size); grid_y <= (searched_rect.get_ur_y() / box_size); grid_y++) {
+    int32_t grid_ll_x = (searched_rect.get_ll_x() - offset_x) / box_size;
+    int32_t grid_ll_y = (searched_rect.get_ll_y() - offset_y) / box_size;
+    int32_t grid_ur_x = (searched_rect.get_ur_x() - offset_x) / box_size;
+    int32_t grid_ur_y = (searched_rect.get_ur_y() - offset_y) / box_size;
+    for (int32_t grid_x = grid_ll_x; grid_x <= grid_ur_x; grid_x++) {
+      for (int32_t grid_y = grid_ll_y; grid_y <= grid_ur_y; grid_y++) {
         rv_model.get_rv_box_list()[grid_x + grid_y * grid_x_size].get_drc_result_shape_list().push_back(&drc_result_shape);
       }
     }

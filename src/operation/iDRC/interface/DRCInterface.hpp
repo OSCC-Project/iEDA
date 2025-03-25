@@ -55,10 +55,10 @@ class DRCInterface
 #if 1  // 外部调用DRC的API
 
 #if 1  // iDRC
-  void initDRC(std::map<std::string, std::any> config_map);
-  void checkDef(std::map<std::string, std::any> config_map);
+  void initDRC(std::map<std::string, std::any> config_map, bool enable_quiet);
+  void checkDef();
   void destroyDRC();
-  std::vector<ids::Violation> getViolationList(std::vector<ids::Shape>& ids_env_shape_list, std::vector<ids::Shape>& ids_result_shape_list, bool enable_quiet);
+  std::vector<ids::Violation> getViolationList(std::vector<ids::Shape>& ids_env_shape_list, std::vector<ids::Shape>& ids_result_shape_list);
 #endif
 
 #endif

@@ -1375,7 +1375,7 @@ void RTInterface::initIDRC()
   std::map<std::string, std::any> config_map;
   config_map.insert({"-temp_directory_path", RTUTIL.getString(temp_directory_path, "other_tools/idrc/")});
   config_map.insert({"-thread_number", thread_number});
-  DRCI.initDRC(config_map);
+  DRCI.initDRC(config_map, true);
 }
 
 void RTInterface::destroyIDRC()
@@ -1411,7 +1411,7 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<std::pair<EXTLa
     }
   }
   std::vector<Violation> violation_list;
-  for (ids::Violation ids_violation : DRCI.getViolationList(ids_env_shape_list, ids_result_shape_list, true)) {
+  for (ids::Violation ids_violation : DRCI.getViolationList(ids_env_shape_list, ids_result_shape_list)) {
     EXTLayerRect ext_layer_rect;
     ext_layer_rect.set_real_ll(ids_violation.ll_x, ids_violation.ll_y);
     ext_layer_rect.set_real_ur(ids_violation.ur_x, ids_violation.ur_y);

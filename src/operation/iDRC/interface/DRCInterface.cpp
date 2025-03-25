@@ -47,9 +47,12 @@ void DRCInterface::destroyInst()
 
 #if 1  // iDRC
 
-void DRCInterface::initDRC(std::map<std::string, std::any> config_map)
+void DRCInterface::initDRC(std::map<std::string, std::any> config_map, bool enable_quiet)
 {
   Logger::initInst();
+  if (enable_quiet) {
+    DRCLOG.enableQuiet();
+  }
   // clang-format off
   DRCLOG.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
   DRCLOG.info(Loc::current(), "______________________________   _____________________________________   ");
@@ -75,19 +78,11 @@ void DRCInterface::initDRC(std::map<std::string, std::any> config_map)
   DRCLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void DRCInterface::checkDef(std::map<std::string, std::any> config_map)
+void DRCInterface::checkDef()
 {
-  std::string& golden_directory_path = DRCDM.getConfig().golden_directory_path;
-  golden_directory_path = DRCUTIL.getConfigValue<std::string>(config_map, "-golden_directory_path", "null");
-  if (golden_directory_path != "null") {
-    golden_directory_path += "/";
-  }
-  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "golden_directory_path");
-  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), golden_directory_path);
-
   std::vector<ids::Shape> ids_env_shape_list = buildEnvShapeList();
   std::vector<ids::Shape> ids_result_shape_list = buildResultShapeList();
-  getViolationList(ids_env_shape_list, ids_result_shape_list, false);
+  getViolationList(ids_env_shape_list, ids_result_shape_list);
 }
 
 void DRCInterface::destroyDRC()
@@ -116,12 +111,8 @@ void DRCInterface::destroyDRC()
   Logger::destroyInst();
 }
 
-std::vector<ids::Violation> DRCInterface::getViolationList(std::vector<ids::Shape>& ids_env_shape_list, std::vector<ids::Shape>& ids_result_shape_list,
-                                                           bool enable_quiet)
+std::vector<ids::Violation> DRCInterface::getViolationList(std::vector<ids::Shape>& ids_env_shape_list, std::vector<ids::Shape>& ids_result_shape_list)
 {
-  if (enable_quiet) {
-    DRCLOG.enableQuiet();
-  }
   std::vector<DRCShape> drc_env_shape_list;
   drc_env_shape_list.reserve(ids_env_shape_list.size());
   for (ids::Shape& ids_env_shape : ids_env_shape_list) {
@@ -145,9 +136,6 @@ std::vector<ids::Violation> DRCInterface::getViolationList(std::vector<ids::Shap
     ids_violation.violation_net_set = violation.get_violation_net_set();
     ids_violation.required_size = violation.get_required_size();
     ids_violation_list.push_back(ids_violation);
-  }
-  if (enable_quiet) {
-    DRCLOG.disableQuiet();
   }
   return ids_violation_list;
 }
@@ -173,6 +161,7 @@ void DRCInterface::wrapConfig(std::map<std::string, std::any>& config_map)
   /////////////////////////////////////////////
   DRCDM.getConfig().temp_directory_path = DRCUTIL.getConfigValue<std::string>(config_map, "-temp_directory_path", "./drc_temp_directory");
   DRCDM.getConfig().thread_number = DRCUTIL.getConfigValue<int32_t>(config_map, "-thread_number", 128);
+  DRCDM.getConfig().golden_directory_path = DRCUTIL.getConfigValue<std::string>(config_map, "-golden_directory_path", "null");
   omp_set_num_threads(std::max(DRCDM.getConfig().thread_number, 1));
   /////////////////////////////////////////////
 }
