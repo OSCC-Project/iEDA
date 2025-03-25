@@ -166,8 +166,8 @@ void RuleValidator::verifyRVModel(RVModel& rv_model)
 #pragma omp parallel for
   for (RVBox& rv_box : rv_model.get_rv_box_list()) {
     if (needVerifying(rv_box)) {
-      verifyRVBox(rv_box);
-      processRVBox(rv_box);
+      buildViolationSet(rv_box);
+      buildViolationList(rv_box);
       updateSummary(rv_box);
       // debugViolationByType(rv_box, ViolationType::kNone);
     }
@@ -185,6 +185,19 @@ bool RuleValidator::needVerifying(RVBox& rv_box)
     }
   }
   return false;
+}
+
+void RuleValidator::buildViolationSet(RVBox& rv_box)
+{
+  std::vector<DRCShape*> temp = rv_box.get_drc_result_shape_list();
+  rv_box.get_drc_result_shape_list().clear();
+  verifyRVBox(rv_box);
+  processRVBox(rv_box);
+  for (Violation& violation : rv_box.get_violation_list()) {
+    rv_box.get_env_violation_set().insert(violation);
+  }
+  rv_box.set_drc_result_shape_list(temp);
+  rv_box.get_violation_list().clear();
 }
 
 void RuleValidator::verifyRVBox(RVBox& rv_box)
@@ -220,13 +233,23 @@ void RuleValidator::processRVBox(RVBox& rv_box)
 {
   std::vector<Violation> new_violation_list;
   for (Violation& violation : rv_box.get_violation_list()) {
-    if (DRCUTIL.isOpenOverlap(rv_box.get_box_rect(), violation.get_rect())) {
-      new_violation_list.push_back(violation);
+    if (DRCUTIL.exist(rv_box.get_env_violation_set(), violation)) {
+      continue;
     }
+    if (!DRCUTIL.isOpenOverlap(rv_box.get_box_rect(), violation.get_rect())) {
+      continue;
+    }
+    new_violation_list.push_back(violation);
   }
   std::sort(new_violation_list.begin(), new_violation_list.end(), CmpViolation());
   new_violation_list.erase(std::unique(new_violation_list.begin(), new_violation_list.end()), new_violation_list.end());
   rv_box.set_violation_list(new_violation_list);
+}
+
+void RuleValidator::buildViolationList(RVBox& rv_box)
+{
+  verifyRVBox(rv_box);
+  processRVBox(rv_box);
 }
 
 void RuleValidator::updateSummary(RVBox& rv_box)

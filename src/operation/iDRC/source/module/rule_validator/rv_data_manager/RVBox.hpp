@@ -35,6 +35,7 @@ class RVBox
   PlanarRect& get_box_rect() { return _box_rect; }
   std::vector<DRCShape*>& get_drc_env_shape_list() { return _drc_env_shape_list; }
   std::vector<DRCShape*>& get_drc_result_shape_list() { return _drc_result_shape_list; }
+  std::set<Violation, CmpViolation>& get_env_violation_set() { return _env_violation_set; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   std::map<ViolationType, std::set<Violation, CmpViolation>>& get_type_violation_map() { return _type_violation_map; }
   std::map<ViolationType, std::set<Violation, CmpViolation>>& get_type_golden_violation_map() { return _type_golden_violation_map; }
@@ -44,6 +45,7 @@ class RVBox
   void set_box_rect(const PlanarRect& box_rect) { _box_rect = box_rect; }
   void set_drc_env_shape_list(const std::vector<DRCShape*>& drc_env_shape_list) { _drc_env_shape_list = drc_env_shape_list; }
   void set_drc_result_shape_list(const std::vector<DRCShape*>& drc_result_shape_list) { _drc_result_shape_list = drc_result_shape_list; }
+  void set_env_violation_set(const std::set<Violation, CmpViolation>& env_violation_set) { _env_violation_set = env_violation_set; }
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
   void set_type_violation_map(const std::map<ViolationType, std::set<Violation, CmpViolation>>& type_violation_map)
   {
@@ -61,6 +63,7 @@ class RVBox
   PlanarRect _box_rect;
   std::vector<DRCShape*> _drc_env_shape_list;
   std::vector<DRCShape*> _drc_result_shape_list;
+  std::set<Violation, CmpViolation> _env_violation_set;
   std::vector<Violation> _violation_list;
   std::map<ViolationType, std::set<Violation, CmpViolation>> _type_violation_map;
   std::map<ViolationType, std::set<Violation, CmpViolation>> _type_golden_violation_map;

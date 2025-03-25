@@ -51,6 +51,7 @@ class RuleValidator
   void buildRVModel(RVModel& rv_model);
   void verifyRVModel(RVModel& rv_model);
   bool needVerifying(RVBox& rv_box);
+  void buildViolationSet(RVBox& rv_box);
   void verifyRVBox(RVBox& rv_box);
   void verifyAdjacentCutSpacing(RVBox& rv_box);
   void verifyCornerFillSpacing(RVBox& rv_box);
@@ -78,6 +79,7 @@ class RuleValidator
   void verifyParallelRunLengthSpacing(RVBox& rv_box);
   void verifySameLayerCutSpacing(RVBox& rv_box);
   void processRVBox(RVBox& rv_box);
+  void buildViolationList(RVBox& rv_box);
   void updateSummary(RVBox& rv_box);
   void buildViolationList(RVModel& rv_model);
   void updateSummary(RVModel& rv_model);
