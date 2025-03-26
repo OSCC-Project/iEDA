@@ -86,6 +86,10 @@ int32_t GDSPlotter::getGDSIdxByCut(int32_t cut_layer_idx)
   return gds_layer_idx;
 }
 
+void GDSPlotter::destroy()
+{
+}
+
 // private
 
 GDSPlotter* GDSPlotter::_gp_instance = nullptr;

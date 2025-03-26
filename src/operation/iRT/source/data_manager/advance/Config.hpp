@@ -41,7 +41,7 @@ class Config
   int32_t top_routing_layer_idx;     // building
   // **********     DRCEngine     ********** //
   std::string de_temp_directory_path;  // building
-  // **********     GDSPlotter     ********** //
+  // **********     GDSPlotter    ********** //
   std::string gp_temp_directory_path;  // building
   // **********   PinAccessor     ********** //
   std::string pa_temp_directory_path;  // building
@@ -57,9 +57,9 @@ class Config
   std::string ta_temp_directory_path;  // building
   // **********   DetailedRouter  ********** //
   std::string dr_temp_directory_path;  // building
-  // **********  ViolationRepairer  ********** //
+  // ********** ViolationRepairer ********** //
   std::string vr_temp_directory_path;  // building
-  // **********   EarlyRouter    ********** //
+  // **********    EarlyRouter    ********** //
   std::string er_temp_directory_path;  // building
   /////////////////////////////////////////////
 };

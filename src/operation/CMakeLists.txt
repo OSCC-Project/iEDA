@@ -1,5 +1,4 @@
-# add_subdirectory(iDRC)
-add_subdirectory(iDRCPro)
+add_subdirectory(iDRC)
 add_subdirectory(iECO)
 add_subdirectory(iFP)
 add_subdirectory(iIR)

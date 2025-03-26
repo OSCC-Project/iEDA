@@ -571,7 +571,7 @@ void DataManager::buildConfig()
   }
   // **********     DRCEngine     ********** //
   _config.de_temp_directory_path = _config.temp_directory_path + "drc_engine/";
-  // **********     GDSPlotter     ********** //
+  // **********     GDSPlotter    ********** //
   _config.gp_temp_directory_path = _config.temp_directory_path + "gds_plotter/";
   // **********   PinAccessor     ********** //
   _config.pa_temp_directory_path = _config.temp_directory_path + "pin_accessor/";
@@ -579,7 +579,7 @@ void DataManager::buildConfig()
   _config.sa_temp_directory_path = _config.temp_directory_path + "supply_analyzer/";
   // ********   TopologyGenerator   ******** //
   _config.tg_temp_directory_path = _config.temp_directory_path + "topology_generator/";
-  // **********   LayerAssigner    ********** //
+  // **********   LayerAssigner   ********** //
   _config.la_temp_directory_path = _config.temp_directory_path + "layer_assigner/";
   // **********   GlobalRouter    ********** //
   _config.gr_temp_directory_path = _config.temp_directory_path + "global_router/";
@@ -587,9 +587,9 @@ void DataManager::buildConfig()
   _config.ta_temp_directory_path = _config.temp_directory_path + "track_assigner/";
   // **********  DetailedRouter   ********** //
   _config.dr_temp_directory_path = _config.temp_directory_path + "detailed_router/";
-  // **********  ViolationRepairer  ********** //
+  // ********** ViolationRepairer ********** //
   _config.vr_temp_directory_path = _config.temp_directory_path + "violation_repairer/";
-  // **********   EarlyRouter    ********** //
+  // **********    EarlyRouter    ********** //
   _config.er_temp_directory_path = _config.temp_directory_path + "early_router/";
   /////////////////////////////////////////////
   // **********        RT         ********** //
@@ -598,15 +598,15 @@ void DataManager::buildConfig()
   RTUTIL.createDirByFile(_config.log_file_path);
   // **********     DRCEngine     ********** //
   RTUTIL.createDir(_config.de_temp_directory_path);
-  // **********     GDSPlotter     ********** //
+  // **********    GDSPlotter     ********** //
   RTUTIL.createDir(_config.gp_temp_directory_path);
   // **********   PinAccessor     ********** //
   RTUTIL.createDir(_config.pa_temp_directory_path);
-  // **********   SupplyAnalyzer     ********** //
+  // **********  SupplyAnalyzer   ********** //
   RTUTIL.createDir(_config.sa_temp_directory_path);
   // *********  TopologyGenerator  ********* //
   RTUTIL.createDir(_config.tg_temp_directory_path);
-  // **********   LayerAssigner    ********** //
+  // **********   LayerAssigner   ********** //
   RTUTIL.createDir(_config.la_temp_directory_path);
   // **********   GlobalRouter    ********** //
   RTUTIL.createDir(_config.gr_temp_directory_path);
@@ -614,9 +614,9 @@ void DataManager::buildConfig()
   RTUTIL.createDir(_config.ta_temp_directory_path);
   // **********  DetailedRouter   ********** //
   RTUTIL.createDir(_config.dr_temp_directory_path);
-  // **********  ViolationRepairer  ********** //
+  // ********** ViolationRepairer ********** //
   RTUTIL.createDir(_config.vr_temp_directory_path);
-  // **********   EarlyRouter    ********** //
+  // **********    EarlyRouter    ********** //
   RTUTIL.createDir(_config.er_temp_directory_path);
   /////////////////////////////////////////////
   RTLOG.openLogFileStream(_config.log_file_path);
@@ -1407,7 +1407,7 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "DRCEngine");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "de_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.de_temp_directory_path);
-  // **********     GDSPlotter     ********** //
+  // **********    GDSPlotter     ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "GDSPlotter");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "gp_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.gp_temp_directory_path);
@@ -1415,15 +1415,15 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "PinAccessor");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "pa_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.pa_temp_directory_path);
-  // **********   SupplyAnalyzer   ********** //
+  // **********  SupplyAnalyzer   ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "SupplyAnalyzer");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "sa_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.sa_temp_directory_path);
-  // **********  TopologyGenerator  ********* //
+  // ********** TopologyGenerator  ********* //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "TopologyGenerator");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "tg_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.tg_temp_directory_path);
-  // **********   LayerAssigner    ********** //
+  // **********   LayerAssigner   ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "LayerAssigner");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "la_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.la_temp_directory_path);
@@ -1439,11 +1439,11 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "DetailedRouter");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "dr_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.dr_temp_directory_path);
-  // **********  ViolationRepairer  ********** //
+  // ********** ViolationRepairer ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "ViolationRepairer");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "vr_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.vr_temp_directory_path);
-  // **********   EarlyRouter    ********** //
+  // **********    EarlyRouter    ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "EarlyRouter");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "er_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.er_temp_directory_path);
@@ -1452,8 +1452,8 @@ void DataManager::printConfig()
 
 void DataManager::printDatabase()
 {
-  ////////////////////////////////////////////////
-  // ********** RT ********** //
+  /////////////////////////////////////////////
+  // **********        RT         ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(0), "RT_DATABASE");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "design_name");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _database.get_design_name());
@@ -1463,13 +1463,13 @@ void DataManager::printDatabase()
   }
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "def_file_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _database.get_def_file_path());
-  // ********** MicronDBU ********** //
+  // **********     MicronDBU     ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "micron_dbu");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _database.get_micron_dbu());
-  // ********** ManufactureGrid ********** //
+  // **********  ManufactureGrid  ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "manufacture_grid");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _database.get_manufacture_grid());
-  // ********** GCellAxis ********** //
+  // **********     GCellAxis     ********** //
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "gcell_axis");
   std::vector<ScaleGrid>& x_grid_list = gcell_axis.get_x_grid_list();
@@ -1484,20 +1484,19 @@ void DataManager::printDatabase()
     RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), "start:", y_grid.get_start_line(), " step_length:", y_grid.get_step_length(),
                " step_num:", y_grid.get_step_num(), " end:", y_grid.get_end_line());
   }
-  // ********** Die ********** //
+  // **********        Die        ********** //
   Die& die = _database.get_die();
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "die");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "(", die.get_real_ll_x(), ",", die.get_real_ll_y(), ")-(", die.get_real_ur_x(), ",",
              die.get_real_ur_y(), ")");
-  // ********** RoutingLayer ********** //
+  // **********    RoutingLayer   ********** //
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "routing_layer_num");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), routing_layer_list.size());
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "routing_layer");
   for (RoutingLayer& routing_layer : routing_layer_list) {
     RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "idx:", routing_layer.get_layer_idx(), " order:", routing_layer.get_layer_order(),
-               " name:", routing_layer.get_layer_name(), " min_width:", routing_layer.get_min_width(), " min_area:", routing_layer.get_min_area(),
-               " prefer_direction:", GetDirectionName()(routing_layer.get_prefer_direction()));
+               " name:", routing_layer.get_layer_name(), " prefer_direction:", GetDirectionName()(routing_layer.get_prefer_direction()));
 
     ScaleAxis& track_axis = routing_layer.get_track_axis();
     RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "track_axis");
@@ -1514,7 +1513,7 @@ void DataManager::printDatabase()
                  " step_num:", y_grid.get_step_num(), " end:", y_grid.get_end_line());
     }
   }
-  // ********** CutLayer ********** //
+  // **********      CutLayer     ********** //
   std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "cut_layer_num");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), cut_layer_list.size());
@@ -1523,7 +1522,7 @@ void DataManager::printDatabase()
     RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "idx:", cut_layer.get_layer_idx(), " order:", cut_layer.get_layer_order(),
                " name:", cut_layer.get_layer_name());
   }
-  // ********** ViaMaster ********** //
+  // **********      ViaMaster    ********** //
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "layer_via_master_list");
   for (size_t below_layer_idx = 0; below_layer_idx < layer_via_master_list.size(); below_layer_idx++) {
@@ -1533,12 +1532,12 @@ void DataManager::printDatabase()
     }
     RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), via_master_name_string);
   }
-  // ********** Obstacle ********** //
+  // **********      Obstacle     ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "routing_obstacle_num");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _database.get_routing_obstacle_list().size());
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "cut_obstacle_num");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _database.get_cut_obstacle_list().size());
-  // ********** Net ********** //
+  // **********        Net        ********** //
   std::vector<Net>& net_list = _database.get_net_list();
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "net_num");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), net_list.size());
@@ -1562,7 +1561,7 @@ void DataManager::printDatabase()
     }
     RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), head_info, pin_num, " pins: ", net_num, "(", RTUTIL.getPercentage(net_num, net_list.size()), ")");
   }
-  ////////////////////////////////////////////////
+  /////////////////////////////////////////////
 }
 
 void DataManager::writePYScript()
