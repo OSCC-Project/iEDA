@@ -18,6 +18,7 @@
 
 #include "DRCHeader.hpp"
 #include "GDSPlotter.hpp"
+#include "Monitor.hpp"
 
 namespace idrc {
 
@@ -50,6 +51,8 @@ void RuleValidator::destroyInst()
 
 std::vector<Violation> RuleValidator::verify(std::vector<DRCShape>& drc_env_shape_list, std::vector<DRCShape>& drc_result_shape_list)
 {
+  Monitor monitor;
+  DRCLOG.info(Loc::current(), "Starting...");
   RVModel rv_model = initRVModel(drc_env_shape_list, drc_result_shape_list);
   setRVComParam(rv_model);
   buildRVModel(rv_model);
@@ -59,6 +62,7 @@ std::vector<Violation> RuleValidator::verify(std::vector<DRCShape>& drc_env_shap
   // debugPlotRVModel(rv_model, "best");
   updateSummary(rv_model);
   printSummary(rv_model);
+  DRCLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
   return rv_model.get_violation_list();
 }
 
@@ -163,6 +167,8 @@ void RuleValidator::buildRVModel(RVModel& rv_model)
 
 void RuleValidator::verifyRVModel(RVModel& rv_model)
 {
+  Monitor monitor;
+  DRCLOG.info(Loc::current(), "Starting...");
 #pragma omp parallel for
   for (RVBox& rv_box : rv_model.get_rv_box_list()) {
     if (needVerifying(rv_box)) {
@@ -172,6 +178,7 @@ void RuleValidator::verifyRVModel(RVModel& rv_model)
       // debugViolationByType(rv_box, ViolationType::kNone);
     }
   }
+  DRCLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 bool RuleValidator::needVerifying(RVBox& rv_box)

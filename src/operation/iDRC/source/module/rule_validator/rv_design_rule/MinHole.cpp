@@ -47,15 +47,15 @@ void RuleValidator::verifyMinHole(RVBox& rv_box)
           if (gtl::area(gtl_poly) >= min_hole_area) {
             continue;
           }
-          GTLRectInt best_gtl_rect;
-          gtl::extents(best_gtl_rect, gtl_poly);
+          GTLRectInt gtl_rect;
+          gtl::extents(gtl_rect, gtl_poly);
           Violation violation;
           violation.set_violation_type(ViolationType::kMinHole);
           violation.set_is_routing(true);
           violation.set_violation_net_set({net_idx});
           violation.set_required_size(min_hole_area);
           violation.set_layer_idx(routing_layer_idx);
-          violation.set_rect(DRCUTIL.convertToPlanarRect(best_gtl_rect));
+          violation.set_rect(DRCUTIL.convertToPlanarRect(gtl_rect));
           rv_box.get_violation_list().push_back(violation);
         }
       }
