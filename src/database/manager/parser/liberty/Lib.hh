@@ -485,7 +485,7 @@ class LibPowerTableModel final : public LibTableModel
  * @brief class for internal power information
  *
  */
-class LibInternalPowerInfo
+class LibInternalPowerInfo : public LibObject
 {
  public:
   void set_related_pg_port(const char* related_pg_port) { _related_pg_port = related_pg_port; }
