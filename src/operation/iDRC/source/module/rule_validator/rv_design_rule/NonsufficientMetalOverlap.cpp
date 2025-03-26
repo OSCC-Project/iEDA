@@ -80,6 +80,9 @@ void RuleValidator::verifyNonsufficientMetalOverlap(RVBox& rv_box)
             continue;
           }
           overlap_rect = DRCUTIL.getShrinkedRect(overlap_rect, 1);
+          if (rect_list[rect_idx].getArea() <= overlap_rect.getArea()) {
+            continue;
+          }
           double diag_length = std::hypot(overlap_rect.getXSpan(), overlap_rect.getYSpan());
           if (diag_length >= min_width) {
             continue;
