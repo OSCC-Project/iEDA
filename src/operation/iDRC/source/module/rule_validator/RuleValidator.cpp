@@ -209,31 +209,83 @@ void RuleValidator::buildViolationSet(RVBox& rv_box)
 
 void RuleValidator::verifyRVBox(RVBox& rv_box)
 {
-  verifyAdjacentCutSpacing(rv_box);
-  verifyCornerFillSpacing(rv_box);
-  verifyCutEOLSpacing(rv_box);
-  verifyCutShort(rv_box);
-  verifyDifferentLayerCutSpacing(rv_box);
-  verifyEnclosure(rv_box);
-  verifyEnclosureEdge(rv_box);
-  verifyEnclosureParallel(rv_box);
-  verifyEndOfLineSpacing(rv_box);
-  verifyFloatingPatch(rv_box);
-  verifyJogToJogSpacing(rv_box);
-  verifyMaximumWidth(rv_box);
-  verifyMaxViaStack(rv_box);
-  verifyMetalShort(rv_box);
-  verifyMinHole(rv_box);
-  verifyMinimumArea(rv_box);
-  verifyMinimumCut(rv_box);
-  verifyMinimumWidth(rv_box);
-  verifyMinStep(rv_box);
-  verifyNonsufficientMetalOverlap(rv_box);
-  verifyNotchSpacing(rv_box);
-  verifyOffGridOrWrongWay(rv_box);
-  verifyOutOfDie(rv_box);
-  verifyParallelRunLengthSpacing(rv_box);
-  verifySameLayerCutSpacing(rv_box);
+  std::set<ViolationType>& exist_rule_set = DRCDM.getDatabase().get_exist_rule_set();
+
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kAdjacentCutSpacing)) {
+    verifyAdjacentCutSpacing(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kCornerFillSpacing)) {
+    verifyCornerFillSpacing(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kCutEOLSpacing)) {
+    verifyCutEOLSpacing(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kCutShort)) {
+    verifyCutShort(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kDifferentLayerCutSpacing)) {
+    verifyDifferentLayerCutSpacing(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kEnclosure)) {
+    verifyEnclosure(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kEnclosureEdge)) {
+    verifyEnclosureEdge(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kEnclosureParallel)) {
+    verifyEnclosureParallel(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kEndOfLineSpacing)) {
+    verifyEndOfLineSpacing(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kFloatingPatch)) {
+    verifyFloatingPatch(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kJogToJogSpacing)) {
+    verifyJogToJogSpacing(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kMaximumWidth)) {
+    verifyMaximumWidth(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kMaxViaStack)) {
+    verifyMaxViaStack(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kMetalShort)) {
+    verifyMetalShort(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kMinHole)) {
+    verifyMinHole(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kMinimumArea)) {
+    verifyMinimumArea(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kMinimumCut)) {
+    verifyMinimumCut(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kMinimumWidth)) {
+    verifyMinimumWidth(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kMinStep)) {
+    verifyMinStep(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kNonsufficientMetalOverlap)) {
+    verifyNonsufficientMetalOverlap(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kNotchSpacing)) {
+    verifyNotchSpacing(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kOffGridOrWrongWay)) {
+    verifyOffGridOrWrongWay(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kOutOfDie)) {
+    verifyOutOfDie(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kParallelRunLengthSpacing)) {
+    verifyParallelRunLengthSpacing(rv_box);
+  }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kSameLayerCutSpacing)) {
+    verifySameLayerCutSpacing(rv_box);
+  }
 }
 
 void RuleValidator::processRVBox(RVBox& rv_box)

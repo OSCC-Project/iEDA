@@ -19,6 +19,7 @@
 #include "CutLayer.hpp"
 #include "Die.hpp"
 #include "RoutingLayer.hpp"
+#include "ViolationType.hpp"
 
 namespace idrc {
 
@@ -33,6 +34,7 @@ class Database
   Die& get_die() { return _die; }
   std::vector<RoutingLayer>& get_routing_layer_list() { return _routing_layer_list; }
   std::vector<CutLayer>& get_cut_layer_list() { return _cut_layer_list; }
+  std::set<ViolationType>& get_exist_rule_set() { return _exist_rule_set; }
   std::map<int32_t, int32_t>& get_routing_idb_layer_id_to_idx_map() { return _routing_idb_layer_id_to_idx_map; }
   std::map<int32_t, int32_t>& get_cut_idb_layer_id_to_idx_map() { return _cut_idb_layer_id_to_idx_map; }
   std::map<std::string, int32_t>& get_routing_layer_name_to_idx_map() { return _routing_layer_name_to_idx_map; }
@@ -50,6 +52,7 @@ class Database
   Die _die;
   std::vector<RoutingLayer> _routing_layer_list;
   std::vector<CutLayer> _cut_layer_list;
+  std::set<ViolationType> _exist_rule_set;
   std::map<int32_t, int32_t> _routing_idb_layer_id_to_idx_map;
   std::map<int32_t, int32_t> _cut_idb_layer_id_to_idx_map;
   std::map<std::string, int32_t> _routing_layer_name_to_idx_map;
