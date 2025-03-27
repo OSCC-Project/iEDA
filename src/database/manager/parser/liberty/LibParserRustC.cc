@@ -1016,6 +1016,8 @@ unsigned RustLibertyReader::visitInternalPower(RustLibertyGroupStmt* group) {
   lib_power_arc->set_owner_cell(lib_cell);
 
   auto internal_power_info = std::make_unique<LibInternalPowerInfo>();
+  internal_power_info->set_file_name(group->file_name);
+  internal_power_info->set_line_no(group->line_no);
   lib_power_arc->set_internal_power_info(std::move(internal_power_info));
 
   unsigned is_ok = 1;

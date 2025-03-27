@@ -196,11 +196,11 @@ class DataManager
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // pa data
-  bool buildPA(const std::map<std::string, std::map<std::string, std::vector<ids::AccessPoint>>>& master_access_point_map);
-  std::vector<ids::AccessPoint> getMasterPaPointList(std::string master_name, std::string pin_name);
-  std::vector<ids::AccessPoint> getInstancePaPointList(std::string instance_name, std::string pin_name);
-  std::vector<ids::AccessPoint> getInstancePaPointList(std::string cell_master_name, std::string pin_name, int32_t inst_x, int32_t inst_y,
-                                                       idb::IdbOrient idb_orient);
+  // bool buildPA(const std::map<std::string, std::map<std::string, std::vector<ids::AccessPoint>>>& master_access_point_map);
+  // std::vector<ids::AccessPoint> getMasterPaPointList(std::string master_name, std::string pin_name);
+  // std::vector<ids::AccessPoint> getInstancePaPointList(std::string instance_name, std::string pin_name);
+  // std::vector<ids::AccessPoint> getInstancePaPointList(std::string cell_master_name, std::string pin_name, int32_t inst_x, int32_t inst_y,
+  //                                                      idb::IdbOrient idb_orient);
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -223,7 +223,7 @@ class DataManager
   IdbDesign* _design = nullptr;
   IdbLayout* _layout = nullptr;
   // pa
-  std::map<std::string, std::map<std::string, std::vector<ids::AccessPoint>>> _master_access_point_map;
+  // std::map<std::string, std::map<std::string, std::vector<ids::AccessPoint>>> _master_access_point_map;
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
