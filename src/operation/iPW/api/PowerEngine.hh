@@ -83,6 +83,8 @@ class PowerEngine {
 
   unsigned buildPGNetWireTopo();
   unsigned readPGSpef(const char* spef_file) { return _ipower->readPGSpef(spef_file); }
+
+  void resetIRAnalysisData();
   auto* getRustPGRCData() { return _ipower->get_rust_pg_rc_data(); }
   unsigned runIRAnalysis(std::string power_net_name) {
     if (!getRustPGRCData()) {

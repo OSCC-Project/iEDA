@@ -134,6 +134,11 @@ class Power {
 
   // for IR analysis.
   unsigned readPGSpef(const char* spef_file);
+  void resetIRAnalysisData() {
+    iIR ir_analysis;
+    _ir_analysis = std::move(ir_analysis);
+    _rust_pg_rc_data = nullptr;
+  }
 
   auto& getInstanceIRDrop() {
     return _ir_analysis.get_instance_to_ir_drop();

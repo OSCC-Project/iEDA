@@ -516,6 +516,17 @@ unsigned PowerEngine::buildPGNetWireTopo() {
 }
 
 /**
+ * @brief reset ir data for rerun ir analysis.
+ * 
+ */
+void PowerEngine::resetIRAnalysisData() {
+  IRPGNetlistBuilder pg_netlist_builder;
+  _pg_netlist_builder = std::move(pg_netlist_builder);
+
+  _ipower->resetIRAnalysisData();
+}
+
+/**
  * @brief get instance ir drop map.
  * 
  * @return std::map<Instance*, double> 
@@ -551,7 +562,6 @@ std::map<Instance::Coordinate, double> PowerEngine::displayIRDropMap() {
   std::map<Instance::Coordinate, double> coord_to_ir_drop_map;
 
   auto instance_to_ir_drop = getInstanceIRDrop();
-  auto sta_netlist = _timing_engine->get_netlist();
 
   for (auto& [sta_inst, inst_ir_drop] : instance_to_ir_drop) {
 
