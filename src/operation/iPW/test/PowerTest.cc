@@ -319,6 +319,13 @@ TEST_F(PowerTest, estimateIR) {
 
   power_engine->runIRAnalysis(power_net_name);
 
+  LOG_INFO << "rerun IR analysis";
+
+  // rerun IR test.
+  power_engine->resetIRAnalysisData();
+  power_engine->buildPGNetWireTopo();
+  power_engine->runIRAnalysis(power_net_name);
+
   power_engine->displayPowerMap();
   power_engine->displayIRDropMap();
 }
