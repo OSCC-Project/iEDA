@@ -37,11 +37,13 @@ iPNP::iPNP()
 {
   // Initialize the input network
   _input_network = GridManager();
-  _input_network.set_power_layers({ 9,8,7,5 });
-  _input_network.set_ho_region_num(5);
-  _input_network.set_ver_region_num(5);
+  _input_network.set_power_layers({ 9,8,7,6 });
+  _input_network.set_layer_count(_input_network.get_power_layers().size());
+  _input_network.set_ho_region_num(3);
+  _input_network.set_ver_region_num(3);
   _input_network.set_core_width(_input_core_width);
   _input_network.set_core_height(_input_core_height);
+  _input_network.update_GridManager_data();
 }
 
 iPNP::iPNP(const std::string& config_file)
@@ -101,6 +103,7 @@ void iPNP::readDef(std::vector<std::string> lef_files, std::string def_path)
   auto* idb_design = db_builder->get_def_service()->get_design();
 
   _idb_wrapper.set_idb_design(idb_design);
+  _idb_wrapper.set_idb_builder(db_builder);
 }
 
 void iPNP::getIdbDesignInfo()

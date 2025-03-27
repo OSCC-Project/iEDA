@@ -84,11 +84,15 @@ class iPNPIdbWrapper
   auto* get_idb_design() { return _idb_design; }
   void set_idb_design(idb::IdbDesign* idb_design) { _idb_design = idb_design; }
 
+  auto* get_idb_builder() { return _idb_builder; }
+  void set_idb_builder(idb::IdbBuilder* idb_builder) { _idb_builder = idb_builder; }
+
   void saveToIdb(GridManager pnp_network);
   void writeIdbToDef(std::string def_file_path);
 
  private:
-  idb::IdbDesign* _idb_design = nullptr;
+   idb::IdbDesign* _idb_design = nullptr;
+   idb::IdbBuilder* _idb_builder = nullptr;
 };
 
 }  // namespace ipnp

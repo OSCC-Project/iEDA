@@ -70,7 +70,6 @@ idb::IdbSpecialNet* PowerRouter::createNet(GridManager pnp_network, ipnp::PowerT
   wire->set_wire_state(idb::IdbWiringStatement::kRouted);
 
   auto grid_data = pnp_network.get_grid_data();
-  // auto template_libs = pnp_network.get_template_libs();
   auto template_data = pnp_network.get_template_data();
   auto power_layers = pnp_network.get_power_layers();
 

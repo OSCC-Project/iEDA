@@ -74,12 +74,12 @@ class PDNRectanGridRegion : public PDNGridRegion
 
   double get_height() { return _y_right_top - _y_left_bottom; }
   double get_width() { return _x_right_top - _x_left_bottom; }
-  std::pair<double, double> get_left_bottom_coordinate()
+  std::pair<double, double> get_left_bottom_coordinate() const
   {
     std::pair<double, double> left_bottom_coordinate(_x_left_bottom, _y_left_bottom);
     return left_bottom_coordinate;
   }
-  std::pair<double, double> get_right_top_coordinate()
+  std::pair<double, double> get_right_top_coordinate() const
   {
     std::pair<double, double> right_top_coordinate(_x_right_top, _y_right_top);
     return right_top_coordinate;
@@ -132,7 +132,8 @@ class GridManager
   void set_core_height(double chip_height) { _core_height = chip_height; }
   void set_grid_data(std::vector<std::vector<std::vector<PDNRectanGridRegion>>> grid_data) { _grid_data = grid_data; } 
   void set_single_template(int layer_idx, int row, int col, const SingleTemplate& single_template) { _template_data[layer_idx][row][col] = single_template; }
-
+  void update_GridManager_data() { initialize_grid_data(); }
+  
 private:
   std::vector<int> _power_layers;   // layers that have power nets
   int _layer_count;     // total number of layers

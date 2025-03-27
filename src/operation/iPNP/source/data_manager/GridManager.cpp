@@ -39,10 +39,10 @@ PDNRectanGridRegion::PDNRectanGridRegion() : _x_left_bottom(10.0), _y_left_botto
  * @attention chip width and height should be passed in from iDB.
  */
 GridManager::GridManager()
-  : _power_layers({ 5,7,8,9 }),
+  : _power_layers({ 9,8,7,6 }),
   _layer_count(_power_layers.size()),
-  _ho_region_num(5),
-  _ver_region_num(5),
+  _ho_region_num(3),
+  _ver_region_num(3),
   _core_width(100.0),
   _core_height(100.0)
 {
