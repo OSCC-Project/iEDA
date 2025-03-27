@@ -232,54 +232,87 @@ void DRCInterface::wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouti
 
 void DRCInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer)
 {
+  std::set<ViolationType>& exist_rule_set = DRCDM.getDatabase().get_exist_rule_set();
+
+  // default
+  {
+    exist_rule_set.insert(ViolationType::kMetalShort);
+  }
   // min width
   {
     routing_layer.set_min_width(idb_layer->get_min_width());
+    exist_rule_set.insert(ViolationType::kMinimumWidth);
+    exist_rule_set.insert(ViolationType::kNonsufficientMetalOverlap);
   }
   // max width
   {
     routing_layer.set_max_width(idb_layer->get_max_width());
+    exist_rule_set.insert(ViolationType::kMaximumWidth);
   }
   // min area
   {
     routing_layer.set_min_area(idb_layer->get_area());
+    exist_rule_set.insert(ViolationType::kMinimumArea);
   }
   // min hole area
   {
-    vector<IdbMinEncloseArea>& min_area_list = idb_layer->get_min_enclose_area_list()->get_min_area_list();
+    std::vector<IdbMinEncloseArea>& min_area_list = idb_layer->get_min_enclose_area_list()->get_min_area_list();
     if (!min_area_list.empty()) {
       routing_layer.set_min_hole_area(min_area_list.front()._area);
-    } else {
-      routing_layer.set_min_hole_area(0);
+      exist_rule_set.insert(ViolationType::kMinHole);
+    }
+  }
+  // min step
+  {
+    idb::IdbMinStep* idb_min_step = idb_layer->get_min_step().get();
+    if (idb_min_step != nullptr) {
+      routing_layer.set_min_step(idb_min_step->get_min_step_length());
+      routing_layer.set_max_edges(idb_min_step->get_max_edges());
+      exist_rule_set.insert(ViolationType::kMinStep);
+    }
+    for (std::shared_ptr<idb::routinglayer::Lef58MinStep>& idb_lef58_min_step : idb_layer->get_lef58_min_step()) {
+      routing_layer.set_lef58_min_step(idb_lef58_min_step.get()->get_min_step_length());
+      routing_layer.set_lef58_min_adjacent_length(idb_lef58_min_step.get()->get_min_adjacent_length().value().get_min_adj_length());
+      exist_rule_set.insert(ViolationType::kMinStep);
+      break;
+    }
+  }
+  // notch
+  {
+    idb::routinglayer::Lef58SpacingNotchlength* idb_notch = idb_layer->get_lef58_spacing_notchlength().get();
+    if (idb_notch != nullptr) {
+      routing_layer.set_notch_spacing(idb_notch->get_min_spacing());
+      routing_layer.set_notch_length(idb_notch->get_min_notch_length());
+      routing_layer.set_concave_ends(idb_notch->get_concave_ends_side_of_notch_width());
+      exist_rule_set.insert(ViolationType::kNotchSpacing);
     }
   }
   // prl
   {
     std::shared_ptr<idb::IdbParallelSpacingTable> idb_spacing_table;
+    bool exist_spacing_table = false;
     if (idb_layer->get_spacing_table().get()->get_parallel().get() != nullptr && idb_layer->get_spacing_table().get()->is_parallel()) {
       idb_spacing_table = idb_layer->get_spacing_table()->get_parallel();
+      exist_spacing_table = true;
     } else if (idb_layer->get_spacing_list() != nullptr && !idb_layer->get_spacing_table().get()->is_parallel()) {
       idb_spacing_table = idb_layer->get_spacing_table_from_spacing_list()->get_parallel();
-    } else {
-      DRCLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " spacing table is empty!");
-      idb_spacing_table = std::make_shared<idb::IdbParallelSpacingTable>(1, 1);
-      idb_spacing_table.get()->set_parallel_length(0, 0);
-      idb_spacing_table.get()->set_width(0, 0);
-      idb_spacing_table.get()->set_spacing(0, 0, 0);
+      exist_spacing_table = true;
     }
+    if (exist_spacing_table) {
+      SpacingTable& prl_spacing_table = routing_layer.get_prl_spacing_table();
+      std::vector<int32_t>& width_list = prl_spacing_table.get_width_list();
+      std::vector<int32_t>& parallel_length_list = prl_spacing_table.get_parallel_length_list();
+      GridMap<int32_t>& width_parallel_length_map = prl_spacing_table.get_width_parallel_length_map();
 
-    SpacingTable& prl_spacing_table = routing_layer.get_prl_spacing_table();
-    std::vector<int32_t>& width_list = prl_spacing_table.get_width_list();
-    std::vector<int32_t>& parallel_length_list = prl_spacing_table.get_parallel_length_list();
-    GridMap<int32_t>& width_parallel_length_map = prl_spacing_table.get_width_parallel_length_map();
-
-    width_list = idb_spacing_table->get_width_list();
-    parallel_length_list = idb_spacing_table->get_parallel_length_list();
-    width_parallel_length_map.init(width_list.size(), parallel_length_list.size());
-    for (int32_t x = 0; x < width_parallel_length_map.get_x_size(); x++) {
-      for (int32_t y = 0; y < width_parallel_length_map.get_y_size(); y++) {
-        width_parallel_length_map[x][y] = idb_spacing_table->get_spacing_table()[x][y];
+      width_list = idb_spacing_table->get_width_list();
+      parallel_length_list = idb_spacing_table->get_parallel_length_list();
+      width_parallel_length_map.init(width_list.size(), parallel_length_list.size());
+      for (int32_t x = 0; x < width_parallel_length_map.get_x_size(); x++) {
+        for (int32_t y = 0; y < width_parallel_length_map.get_y_size(); y++) {
+          width_parallel_length_map[x][y] = idb_spacing_table->get_spacing_table()[x][y];
+        }
       }
+      exist_rule_set.insert(ViolationType::kParallelRunLengthSpacing);
     }
   }
   // eol
@@ -296,24 +329,26 @@ void DRCInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLa
       routing_layer.set_eol_spacing(eol_spacing);
       routing_layer.set_eol_ete(eol_ete);
       routing_layer.set_eol_within(eol_within);
-    } else {
-      DRCLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " eol_spacing is empty!");
-      routing_layer.set_eol_spacing(0);
-      routing_layer.set_eol_ete(0);
-      routing_layer.set_eol_within(0);
+      exist_rule_set.insert(ViolationType::kEndOfLineSpacing);
     }
   }
 }
 
 void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_layer)
 {
-  // curr layer
+  std::set<ViolationType>& exist_rule_set = DRCDM.getDatabase().get_exist_rule_set();
+
+  // default
   {
-    // prl
+    exist_rule_set.insert(ViolationType::kCutShort);
+  }
+  // prl
+  {
     if (!idb_layer->get_spacings().empty()) {
       cut_layer.set_curr_spacing(idb_layer->get_spacings().front()->get_spacing());
       cut_layer.set_curr_prl(0);
       cut_layer.set_curr_prl_spacing(idb_layer->get_spacings().front()->get_spacing());
+      exist_rule_set.insert(ViolationType::kSameLayerCutSpacing);
     } else if (!idb_layer->get_lef58_spacing_table().empty()) {
       idb::cutlayer::Lef58SpacingTable* spacing_table = nullptr;
       for (std::shared_ptr<idb::cutlayer::Lef58SpacingTable>& spacing_table_ptr : idb_layer->get_lef58_spacing_table()) {
@@ -331,19 +366,12 @@ void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_
         cut_layer.set_curr_spacing(curr_spacing);
         cut_layer.set_curr_prl(curr_prl);
         cut_layer.set_curr_prl_spacing(curr_prl_spacing);
-      } else {
-        DRCLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " curr layer spacing is empty!");
-        cut_layer.set_curr_spacing(0);
-        cut_layer.set_curr_prl(0);
-        cut_layer.set_curr_prl_spacing(0);
+        exist_rule_set.insert(ViolationType::kSameLayerCutSpacing);
       }
-    } else {
-      DRCLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " curr layer spacing is empty!");
-      cut_layer.set_curr_spacing(0);
-      cut_layer.set_curr_prl(0);
-      cut_layer.set_curr_prl_spacing(0);
     }
-    // eol
+  }
+  // eol
+  {
     if (idb_layer->get_lef58_eol_spacing().get() != nullptr) {
       idb::cutlayer::Lef58EolSpacing* idb_eol_spacing = idb_layer->get_lef58_eol_spacing().get();
 
@@ -353,16 +381,11 @@ void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_
       cut_layer.set_curr_eol_spacing(curr_eol_spacing);
       cut_layer.set_curr_eol_prl(curr_eol_prl);
       cut_layer.set_curr_eol_prl_spacing(curr_eol_prl_spacing);
-    } else {
-      DRCLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " eol_spacing is empty!");
-      cut_layer.set_curr_eol_spacing(0);
-      cut_layer.set_curr_eol_prl(0);
-      cut_layer.set_curr_eol_prl_spacing(0);
+      exist_rule_set.insert(ViolationType::kCutEOLSpacing);
     }
   }
-  // below layer
+  // diff layer spacing
   {
-    // prl
     if (!idb_layer->get_lef58_spacing_table().empty()) {
       idb::cutlayer::Lef58SpacingTable* spacing_table = nullptr;
       for (std::shared_ptr<idb::cutlayer::Lef58SpacingTable>& spacing_table_ptr : idb_layer->get_lef58_spacing_table()) {
@@ -380,17 +403,8 @@ void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_
         cut_layer.set_below_spacing(below_spacing);
         cut_layer.set_below_prl(below_prl);
         cut_layer.set_below_prl_spacing(below_prl_spacing);
-      } else {
-        cut_layer.set_below_spacing(0);
-        cut_layer.set_below_prl(0);
-        cut_layer.set_below_prl_spacing(0);
-        DRCLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " below layer spacing is empty!");
+        exist_rule_set.insert(ViolationType::kDifferentLayerCutSpacing);
       }
-    } else {
-      cut_layer.set_below_spacing(0);
-      cut_layer.set_below_prl(0);
-      cut_layer.set_below_prl_spacing(0);
-      DRCLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " below layer spacing is empty!");
     }
   }
 }

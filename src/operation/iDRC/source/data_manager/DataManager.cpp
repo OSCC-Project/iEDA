@@ -247,52 +247,6 @@ void DataManager::checkLayerList()
     if (routing_layer.get_pitch() <= 0) {
       DRCLOG.error(Loc::current(), "The layer '", layer_name, "' pitch '", routing_layer.get_pitch(), "' is wrong!");
     }
-    SpacingTable& prl_spacing_table = routing_layer.get_prl_spacing_table();
-    if (prl_spacing_table.get_width_list().empty()) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' spacing width_list is empty!");
-    }
-    if (prl_spacing_table.get_parallel_length_list().empty()) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' spacing parallel_length_list is empty!");
-    }
-    if (routing_layer.get_eol_spacing() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' eol_spacing == -1!");
-    }
-    if (routing_layer.get_eol_within() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' eol_within == -1!");
-    }
-  }
-  for (CutLayer& cut_layer : cut_layer_list) {
-    std::string& layer_name = cut_layer.get_layer_name();
-    if (cut_layer.get_curr_spacing() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' curr_spacing == -1!");
-    }
-    if (cut_layer.get_curr_prl() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' curr_prl == -1!");
-    }
-    if (cut_layer.get_curr_prl_spacing() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' curr_prl_spacing == -1!");
-    }
-    if (cut_layer.get_curr_eol_spacing() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' curr_eol_spacing == -1!");
-    }
-    if (cut_layer.get_above_spacing() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' above_spacing == -1!");
-    }
-    if (cut_layer.get_above_prl() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' above_prl == -1!");
-    }
-    if (cut_layer.get_above_prl_spacing() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' above_prl_spacing == -1!");
-    }
-    if (cut_layer.get_below_spacing() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' below_spacing == -1!");
-    }
-    if (cut_layer.get_below_prl() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' below_prl == -1!");
-    }
-    if (cut_layer.get_below_prl_spacing() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' below_prl_spacing == -1!");
-    }
   }
 }
 
