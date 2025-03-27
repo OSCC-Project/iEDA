@@ -25,7 +25,7 @@ void RuleValidator::verifyOutOfDie(RVBox& rv_box)
 
   std::map<int32_t, std::map<int32_t, GTLPolySetInt>> routing_net_gtl_poly_set_map;
   for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
-    if (DRCUTIL.isInside(die, drc_shape->get_rect()) || !DRCUTIL.isOpenOverlap(die, drc_shape->get_rect())) {
+    if (DRCUTIL.isInside(die, drc_shape->get_rect())) {
       continue;
     }
     int32_t routing_layer_idx = -1;
