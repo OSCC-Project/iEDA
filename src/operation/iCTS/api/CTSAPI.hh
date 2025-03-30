@@ -28,6 +28,7 @@
 #include <string_view>
 #include <type_traits>
 #include <vector>
+#include <optional>
 
 #include "../../../database/interaction/ids.hpp"
 
