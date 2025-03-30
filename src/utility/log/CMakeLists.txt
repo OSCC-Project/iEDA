@@ -8,22 +8,7 @@ SET(LINK_gflags "gflags")
 SET(LINK_unwind "unwind")
 
 if(BUILD_STATIC_LIB)
-  ADD_LIBRARY(log ${SRC})
-  SET(LINK_glog   "libglog.a")
-  SET(LINK_gflags "libgflags.a")
-  find_library(UNWIND_STATIC_LIB 
-    NAMES libunwind.a
-    PATHS /usr/lib/x86_64-linux-gnu
-    NO_DEFAULT_PATH
-  )
-  find_library(LZMA_STATIC_LIB
-    NAMES liblzma.a
-    PATHS /usr/lib/x86_64-linux-gnu
-    NO_DEFAULT_PATH
-  )
-  if(UNWIND_STATIC_LIB)
-    SET(LINK_unwind ${UNWIND_STATIC_LIB} ${LZMA_STATIC_LIB} pthread)
-  endif()
+  ADD_LIBRARY(log STATIC ${SRC})
 else()
   ADD_LIBRARY(log SHARED ${SRC})
 endif()

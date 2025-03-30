@@ -786,7 +786,7 @@ int32_t RustVerilogRead::build_components()
               }
             }
 
-            std::string bus_name = ieda::Str::printf("%s/%s", inst_name, cell_port_name);
+            std::string bus_name = ieda::Str::printf("%s/%s", inst_name.c_str(), cell_port_name);
             for (int i = 0; auto* idb_bus_pin : bus_pins) {
               if (i == 0) {
                 create_or_found_bus(bus_name, idb_bus_pin, max_bus_bit - 1, true);
@@ -827,7 +827,7 @@ int32_t RustVerilogRead::build_components()
           std::vector<void*> verilog_id_concat_vec;
           flatten_concat_net_expr(net_concat_expr, verilog_id_concat_vec);
 
-          std::string bus_name = ieda::Str::printf("%s/%s", inst_name, cell_port_name);
+          std::string bus_name = ieda::Str::printf("%s/%s", inst_name.c_str(), cell_port_name);
 
           // found pin bus size.
           std::vector<IdbPin*> bus_pin_vec;

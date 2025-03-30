@@ -78,6 +78,60 @@ class Utility
     return isProximal(start_coord, end_coord) || isHorizontal(start_coord, end_coord) || isVertical(start_coord, end_coord);
   }
 
+  // 三个坐标是否共线
+  static bool isCollinear(PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
+  {
+    return getDirection(first_coord, second_coord) == getDirection(second_coord, third_coord);
+  }
+
+  // 坐标集合是否共线
+  static bool isCollinear(std::vector<PlanarCoord>& coord_list)
+  {
+    if (coord_list.empty()) {
+      RTLOG.error(Loc::current(), "The coord list is empty!");
+    } else if (coord_list.size() <= 2) {
+      return true;
+    } else {
+      Direction pre_direction = getDirection(coord_list[0], coord_list[1]);
+      for (size_t i = 2; i < coord_list.size(); i++) {
+        Direction curr_direction = getDirection(coord_list[i - 1], coord_list[i]);
+        if (pre_direction != curr_direction) {
+          return false;
+        }
+        pre_direction = curr_direction;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  // 叉乘
+  static int32_t crossProduct(PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
+  {
+    return (second_coord.get_x() - first_coord.get_x()) * (third_coord.get_y() - first_coord.get_y())
+           - (second_coord.get_y() - first_coord.get_y()) * (third_coord.get_x() - first_coord.get_x());
+  }
+
+  // 是否是凸角
+  static bool isConvexCorner(PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
+  {
+    if (isCollinear(first_coord, second_coord, third_coord)) {
+      return false;
+    }
+
+    return crossProduct(first_coord, second_coord, third_coord) < 0;
+  }
+
+  // 是否是凹角
+  static bool isConcaveCorner(PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
+  {
+    if (isCollinear(first_coord, second_coord, third_coord)) {
+      return false;
+    }
+
+    return crossProduct(first_coord, second_coord, third_coord) > 0;
+  }
+
   static std::vector<Orientation> getOrientationList(const PlanarCoord& start_coord, const PlanarCoord& end_coord,
                                                      Orientation point_orientation = Orientation::kNone)
   {
