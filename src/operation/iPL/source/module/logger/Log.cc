@@ -26,6 +26,7 @@
 
 #include "Log.hh"
 
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <functional>

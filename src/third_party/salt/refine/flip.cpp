@@ -3,6 +3,7 @@
 #include "salt/base/eval.h"
 
 #include <algorithm>
+#include <array>
 
 namespace salt {
 

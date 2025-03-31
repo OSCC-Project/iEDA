@@ -315,9 +315,9 @@ bool Graph::checkLoop()
 
 void Graph::DijkstraMinLength(int v0)
 {
-  int path[numVer] = {0};
-  int visited[numVer] = {0};
-  Node dist[numVer];
+  Vector<int> path(numVer, 0);
+  Vector<int> visited(numVer, 0);
+  Vector<Node> dist(numVer);
   std::priority_queue<Node> q;
   // 初始化
 
@@ -359,8 +359,8 @@ void Graph::DijkstraMinLength(int v0)
 
 void Graph::DijkstraMaxLength(int v0)
 {
-  int path[numVer] = {0};
-  int visited[numVer] = {0};
+  Vector<int> path(numVer, 0);
+  Vector<int> visited(numVer, 0);
 
   Node1 dist[numVer];
   std::priority_queue<Node1> q;

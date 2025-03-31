@@ -36,7 +36,7 @@ namespace idb {
 
 //***** TreeNode implementation *****///
 
-TreeNode::TreeNode(int type = 0, TreeNode* Parent = 0)
+TreeNode::TreeNode(int type, TreeNode* Parent)
 {
   _data = type;
   _parent = Parent;
