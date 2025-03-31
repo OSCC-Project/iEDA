@@ -638,8 +638,9 @@ void LmLayoutInit::initNets()
   for (int net_id = 0; net_id < (int) idb_nets->get_net_list().size(); ++net_id) {
     /// init net id map
     auto* idb_net = idb_nets->get_net_list()[net_id];
-    /// ignore net if pin number < 2
-    if (idb_net->get_pin_number() < 2) {
+    auto* driver_pin = idb_net->get_driving_pin();
+    /// ignore net if pin number < 2 and no driver pin
+    if (idb_net->get_pin_number() < 2 || driver_pin == nullptr ) {
       continue;
     }
     _layout->add_net_map(net_id, idb_net->get_net_name());
@@ -649,7 +650,6 @@ void LmLayoutInit::initNets()
       continue;
     }
 
-    auto* driver_pin = idb_net->get_driving_pin();
     {
       auto instance_name = driver_pin->is_io_pin() ? "" : driver_pin->get_instance()->get_name();
 

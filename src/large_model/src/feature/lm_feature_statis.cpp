@@ -86,8 +86,8 @@ void LmFeatureStatis::feature_graph()
     net_feature->rsmt = WIRELENGTH_API_INST->findNetFLUTE(net_name);
 
     /// 初始化 layer_ratio
-    int min_order = INT32_MAX;  // 记录最小层
-    int max_order = INT32_MIN;  // 记录最大层
+    int8_t min_order = INT8_MAX;  // 记录最小层
+    int8_t max_order = INT8_MIN;  // 记录最大层
     int layer_order_top = layout_layers.get_layer_order_top();
     int layer_order_bottom = layout_layers.get_layer_order_bottom();
     int num_layers = layer_order_top - layer_order_bottom + 1;  // 总布线层数

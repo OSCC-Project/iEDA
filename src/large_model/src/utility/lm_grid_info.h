@@ -63,8 +63,8 @@ class LmGridInfo
   std::pair<int, int> findNodeID(int x, int y);
   int findNodeID(int value, bool b_row_id);
 
-  int calculate_x(int col);
-  int calculate_y(int row);
+  int64_t calculate_x(int64_t col);
+  int64_t calculate_y(int64_t row);
 
  public:
   int layer_order;
@@ -120,9 +120,9 @@ class LmPatchInfo
 
  public:
   int patch_row_start = 0;
-  int patch_row_step = 9 * 2;  /// default 9T
+  int patch_row_step = 9 * 2 * 10;  /// default 9T
   int patch_col_start = 0;
-  int patch_col_step = 9 * 2;    /// default 9T
+  int patch_col_step = 9 * 2 * 10;    /// default 9T
   int patch_num_vertical = 0;    /// indicate how many patchs in vertical direciton
   int patch_num_horizontal = 0;  /// indicate how many patchs in horizontal direciton
 
