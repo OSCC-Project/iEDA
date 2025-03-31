@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
-#include "GridMap.hpp"
 #include "DRCHeader.hpp"
+#include "GridMap.hpp"
 
 namespace idrc {
 

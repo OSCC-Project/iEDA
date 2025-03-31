@@ -27,15 +27,16 @@ class Config
   ~Config() = default;
   //////////////////////////////////////////////
   // **********        DRC         ********** //
-  std::string temp_directory_path;  // required
-  int32_t thread_number;            // optional
+  std::string temp_directory_path;     // required
+  int32_t thread_number;               // optional
+  std::string golden_directory_path;   // optional
   /////////////////////////////////////////////
   // **********        DRC         ********** //
-  std::string log_file_path;  // building
+  std::string log_file_path;            // building
   // **********   RuleValidator    ********** //
-  std::string rv_temp_directory_path;   // building
+  std::string rv_temp_directory_path;  // building
   // **********     GDSPlotter     ********** //
-  std::string gp_temp_directory_path;   // building
+  std::string gp_temp_directory_path;  // building
   //////////////////////////////////////////////
 };
 

@@ -100,6 +100,10 @@ void DataManager::buildConfig()
   // **********        DRC         ********** //
   _config.temp_directory_path = std::filesystem::absolute(_config.temp_directory_path);
   _config.temp_directory_path += "/";
+  if (_config.golden_directory_path != "null") {
+    _config.golden_directory_path = std::filesystem::absolute(_config.golden_directory_path);
+    _config.golden_directory_path += "/";
+  }
   _config.log_file_path = _config.temp_directory_path + "drc.log";
   // **********     RuleValidator  ********** //
   _config.rv_temp_directory_path = _config.temp_directory_path + "rule_validator/";
@@ -120,8 +124,31 @@ void DataManager::buildConfig()
 
 void DataManager::buildDatabase()
 {
+  buildDie();
   buildLayerList();
   buildLayerInfo();
+}
+
+void DataManager::buildDie()
+{
+  makeDie();
+  checkDie();
+}
+
+void DataManager::makeDie()
+{
+}
+
+void DataManager::checkDie()
+{
+  Die& die = _database.get_die();
+
+  if (die.get_ll_x() < 0 || die.get_ll_y() < 0 || die.get_ur_x() < 0 || die.get_ur_y() < 0) {
+    DRCLOG.error(Loc::current(), "The die '(", die.get_ll_x(), " , ", die.get_ll_y(), ") - (", die.get_ur_x(), " , ", die.get_ur_y(), ")' is wrong!");
+  }
+  if ((die.get_ur_x() <= die.get_ll_x()) || (die.get_ur_y() <= die.get_ll_y())) {
+    DRCLOG.error(Loc::current(), "The die '(", die.get_ll_x(), " , ", die.get_ll_y(), ") - (", die.get_ur_x(), " , ", die.get_ur_y(), ")' is wrong!");
+  }
 }
 
 void DataManager::buildLayerList()
@@ -214,54 +241,11 @@ void DataManager::checkLayerList()
   }
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::string& layer_name = routing_layer.get_layer_name();
+    if (routing_layer.get_prefer_direction() == Direction::kNone) {
+      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' prefer_direction is none!");
+    }
     if (routing_layer.get_pitch() <= 0) {
       DRCLOG.error(Loc::current(), "The layer '", layer_name, "' pitch '", routing_layer.get_pitch(), "' is wrong!");
-    }
-    SpacingTable& prl_spacing_table = routing_layer.get_prl_spacing_table();
-    if (prl_spacing_table.get_width_list().empty()) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' spacing width_list is empty!");
-    }
-    if (prl_spacing_table.get_parallel_length_list().empty()) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' spacing parallel_length_list is empty!");
-    }
-    if (routing_layer.get_eol_spacing() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' eol_spacing == -1!");
-    }
-    if (routing_layer.get_eol_within() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' eol_within == -1!");
-    }
-  }
-  for (CutLayer& cut_layer : cut_layer_list) {
-    std::string& layer_name = cut_layer.get_layer_name();
-    if (cut_layer.get_curr_spacing() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' curr_spacing == -1!");
-    }
-    if (cut_layer.get_curr_prl() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' curr_prl == -1!");
-    }
-    if (cut_layer.get_curr_prl_spacing() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' curr_prl_spacing == -1!");
-    }
-    if (cut_layer.get_curr_eol_spacing() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' curr_eol_spacing == -1!");
-    }
-    if (cut_layer.get_above_spacing() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' above_spacing == -1!");
-    }
-    if (cut_layer.get_above_prl() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' above_prl == -1!");
-    }
-    if (cut_layer.get_above_prl_spacing() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' above_prl_spacing == -1!");
-    }
-    if (cut_layer.get_below_spacing() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' below_spacing == -1!");
-    }
-    if (cut_layer.get_below_prl() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' below_prl == -1!");
-    }
-    if (cut_layer.get_below_prl_spacing() == -1) {
-      DRCLOG.error(Loc::current(), "The layer '", layer_name, "' below_prl_spacing == -1!");
     }
   }
 }
@@ -308,6 +292,8 @@ void DataManager::printConfig()
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _config.temp_directory_path);
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "thread_number");
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _config.thread_number);
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "golden_directory_path");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _config.golden_directory_path);
   // **********        DRC         ********** //
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(0), "DRC_CONFIG_BUILD");
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "log_file_path");
@@ -328,9 +314,16 @@ void DataManager::printDatabase()
   ////////////////////////////////////////////////
   // ********** DRC ********** //
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(0), "DRC_DATABASE");
+  // **********     MicronDBU     ********** //
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "micron_dbu");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _database.get_micron_dbu());
   // ********** ManufactureGrid ********** //
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "manufacture_grid");
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _database.get_manufacture_grid());
+  // **********        Die        ********** //
+  Die& die = _database.get_die();
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "die");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), "(", die.get_ll_x(), ",", die.get_ll_y(), ")-(", die.get_ur_x(), ",", die.get_ur_y(), ")");
   // ********** RoutingLayer ********** //
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "routing_layer_num");
@@ -338,7 +331,8 @@ void DataManager::printDatabase()
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "routing_layer");
   for (RoutingLayer& routing_layer : routing_layer_list) {
     DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), "idx:", routing_layer.get_layer_idx(), " order:", routing_layer.get_layer_order(),
-                " name:", routing_layer.get_layer_name(), " pitch:", routing_layer.get_pitch());
+                " name:", routing_layer.get_layer_name(), " prefer_direction:", GetDirectionName()(routing_layer.get_prefer_direction()),
+                " pitch:", routing_layer.get_pitch());
   }
   // ********** CutLayer ********** //
   std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();

@@ -57,6 +57,9 @@ class DataManager
 #if 1  // build
   void buildConfig();
   void buildDatabase();
+  void buildDie();
+  void makeDie();
+  void checkDie();
   void buildLayerList();
   void transLayerList();
   void makeLayerList();

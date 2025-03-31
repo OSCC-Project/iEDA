@@ -14,12 +14,40 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "RuleValidator.hpp"
+#pragma once
+
+#include "Logger.hpp"
 
 namespace idrc {
 
-void RuleValidator::verifyOutOfDie(RVBox& rv_box)
+enum class Rotation
 {
-}
+  kNone,
+  kClockwise,
+  kCounterclockwise
+};
+
+struct GetRotationName
+{
+  std::string operator()(const Rotation& rotation) const
+  {
+    std::string rotation_name;
+    switch (rotation) {
+      case Rotation::kNone:
+        rotation_name = "none";
+        break;
+      case Rotation::kClockwise:
+        rotation_name = "clock_wise";
+        break;
+      case Rotation::kCounterclockwise:
+        rotation_name = "counter_clock_wise";
+        break;
+      default:
+        DRCLOG.error(Loc::current(), "Unrecognized type!");
+        break;
+    }
+    return rotation_name;
+  }
+};
 
 }  // namespace idrc

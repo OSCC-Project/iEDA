@@ -47,9 +47,12 @@ void DRCInterface::destroyInst()
 
 #if 1  // iDRC
 
-void DRCInterface::initDRC(std::map<std::string, std::any> config_map)
+void DRCInterface::initDRC(std::map<std::string, std::any> config_map, bool enable_quiet)
 {
   Logger::initInst();
+  if (enable_quiet) {
+    DRCLOG.enableQuiet();
+  }
   // clang-format off
   DRCLOG.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
   DRCLOG.info(Loc::current(), "______________________________   _____________________________________   ");
@@ -77,11 +80,9 @@ void DRCInterface::initDRC(std::map<std::string, std::any> config_map)
 
 void DRCInterface::checkDef()
 {
-  std::vector<ids::Shape> ids_env_shape_list;
-  std::vector<ids::Shape> ids_result_shape_list;
-  buildEnvShapeList(ids_env_shape_list);
-  buildResultShapeList(ids_result_shape_list);
-  getViolationList(ids_env_shape_list, ids_result_shape_list, false);
+  std::vector<ids::Shape> ids_env_shape_list = buildEnvShapeList();
+  std::vector<ids::Shape> ids_result_shape_list = buildResultShapeList();
+  getViolationList(ids_env_shape_list, ids_result_shape_list);
 }
 
 void DRCInterface::destroyDRC()
@@ -110,12 +111,8 @@ void DRCInterface::destroyDRC()
   Logger::destroyInst();
 }
 
-std::vector<ids::Violation> DRCInterface::getViolationList(std::vector<ids::Shape>& ids_env_shape_list, std::vector<ids::Shape>& ids_result_shape_list,
-                                                           bool enable_quiet)
+std::vector<ids::Violation> DRCInterface::getViolationList(std::vector<ids::Shape>& ids_env_shape_list, std::vector<ids::Shape>& ids_result_shape_list)
 {
-  if (enable_quiet) {
-    DRCLOG.enableQuiet();
-  }
   std::vector<DRCShape> drc_env_shape_list;
   drc_env_shape_list.reserve(ids_env_shape_list.size());
   for (ids::Shape& ids_env_shape : ids_env_shape_list) {
@@ -140,9 +137,6 @@ std::vector<ids::Violation> DRCInterface::getViolationList(std::vector<ids::Shap
     ids_violation.required_size = violation.get_required_size();
     ids_violation_list.push_back(ids_violation);
   }
-  if (enable_quiet) {
-    DRCLOG.disableQuiet();
-  }
   return ids_violation_list;
 }
 
@@ -165,22 +159,39 @@ void DRCInterface::input(std::map<std::string, std::any>& config_map)
 void DRCInterface::wrapConfig(std::map<std::string, std::any>& config_map)
 {
   /////////////////////////////////////////////
-  DRCDM.getConfig().temp_directory_path = DRCUTIL.getConfigValue<std::string>(config_map, "-temp_directory_path", "./rt_temp_directory");
+  DRCDM.getConfig().temp_directory_path = DRCUTIL.getConfigValue<std::string>(config_map, "-temp_directory_path", "./drc_temp_directory");
   DRCDM.getConfig().thread_number = DRCUTIL.getConfigValue<int32_t>(config_map, "-thread_number", 128);
+  DRCDM.getConfig().golden_directory_path = DRCUTIL.getConfigValue<std::string>(config_map, "-golden_directory_path", "null");
   omp_set_num_threads(std::max(DRCDM.getConfig().thread_number, 1));
   /////////////////////////////////////////////
 }
 
 void DRCInterface::wrapDatabase()
 {
+  wrapMicronDBU();
   wrapManufactureGrid();
+  wrapDie();
   wrapLayerList();
   wrapLayerInfo();
+}
+
+void DRCInterface::wrapMicronDBU()
+{
+  DRCDM.getDatabase().set_micron_dbu(dmInst->get_idb_def_service()->get_design()->get_units()->get_micron_dbu());
 }
 
 void DRCInterface::wrapManufactureGrid()
 {
   DRCDM.getDatabase().set_manufacture_grid(dmInst->get_idb_lef_service()->get_layout()->get_munufacture_grid());
+}
+
+void DRCInterface::wrapDie()
+{
+  idb::IdbDie* idb_die = dmInst->get_idb_lef_service()->get_layout()->get_die();
+
+  Die& die = DRCDM.getDatabase().get_die();
+  die.set_ll(idb_die->get_llx(), idb_die->get_lly());
+  die.set_ur(idb_die->get_urx(), idb_die->get_ury());
 }
 
 void DRCInterface::wrapLayerList()
@@ -196,8 +207,7 @@ void DRCInterface::wrapLayerList()
       routing_layer.set_layer_idx(idb_routing_layer->get_id());
       routing_layer.set_layer_order(idb_routing_layer->get_order());
       routing_layer.set_layer_name(idb_routing_layer->get_name());
-      routing_layer.set_min_width(idb_routing_layer->get_min_width());
-      routing_layer.set_min_area(idb_routing_layer->get_area());
+      routing_layer.set_prefer_direction(getDRCDirectionByDB(idb_routing_layer->get_direction()));
       wrapTrackAxis(routing_layer, idb_routing_layer);
       wrapRoutingDesignRule(routing_layer, idb_routing_layer);
       routing_layer_list.push_back(std::move(routing_layer));
@@ -222,33 +232,87 @@ void DRCInterface::wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouti
 
 void DRCInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer)
 {
+  std::set<ViolationType>& exist_rule_set = DRCDM.getDatabase().get_exist_rule_set();
+
+  // default
+  {
+    exist_rule_set.insert(ViolationType::kMetalShort);
+  }
+  // min width
+  {
+    routing_layer.set_min_width(idb_layer->get_min_width());
+    exist_rule_set.insert(ViolationType::kMinimumWidth);
+    exist_rule_set.insert(ViolationType::kNonsufficientMetalOverlap);
+  }
+  // max width
+  {
+    routing_layer.set_max_width(idb_layer->get_max_width());
+    exist_rule_set.insert(ViolationType::kMaximumWidth);
+  }
+  // min area
+  {
+    routing_layer.set_min_area(idb_layer->get_area());
+    exist_rule_set.insert(ViolationType::kMinimumArea);
+  }
+  // min hole area
+  {
+    std::vector<IdbMinEncloseArea>& min_area_list = idb_layer->get_min_enclose_area_list()->get_min_area_list();
+    if (!min_area_list.empty()) {
+      routing_layer.set_min_hole_area(min_area_list.front()._area);
+      exist_rule_set.insert(ViolationType::kMinHole);
+    }
+  }
+  // min step
+  {
+    idb::IdbMinStep* idb_min_step = idb_layer->get_min_step().get();
+    std::vector<std::shared_ptr<idb::routinglayer::Lef58MinStep>>& idb_lef58_min_step_list = idb_layer->get_lef58_min_step();
+    if (idb_min_step != nullptr && !idb_lef58_min_step_list.empty()) {
+      routing_layer.set_min_step(idb_min_step->get_min_step_length());
+      routing_layer.set_max_edges(idb_min_step->get_max_edges());
+      for (std::shared_ptr<idb::routinglayer::Lef58MinStep>& idb_lef58_min_step : idb_layer->get_lef58_min_step()) {
+        routing_layer.set_lef58_min_step(idb_lef58_min_step.get()->get_min_step_length());
+        routing_layer.set_lef58_min_adjacent_length(idb_lef58_min_step.get()->get_min_adjacent_length().value().get_min_adj_length());
+        break;
+      }
+      exist_rule_set.insert(ViolationType::kMinStep);
+    }
+  }
+  // notch
+  {
+    idb::routinglayer::Lef58SpacingNotchlength* idb_notch = idb_layer->get_lef58_spacing_notchlength().get();
+    if (idb_notch != nullptr) {
+      routing_layer.set_notch_spacing(idb_notch->get_min_spacing());
+      routing_layer.set_notch_length(idb_notch->get_min_notch_length());
+      routing_layer.set_concave_ends(idb_notch->get_concave_ends_side_of_notch_width());
+      exist_rule_set.insert(ViolationType::kNotchSpacing);
+    }
+  }
   // prl
   {
     std::shared_ptr<idb::IdbParallelSpacingTable> idb_spacing_table;
+    bool exist_spacing_table = false;
     if (idb_layer->get_spacing_table().get()->get_parallel().get() != nullptr && idb_layer->get_spacing_table().get()->is_parallel()) {
       idb_spacing_table = idb_layer->get_spacing_table()->get_parallel();
+      exist_spacing_table = true;
     } else if (idb_layer->get_spacing_list() != nullptr && !idb_layer->get_spacing_table().get()->is_parallel()) {
       idb_spacing_table = idb_layer->get_spacing_table_from_spacing_list()->get_parallel();
-    } else {
-      DRCLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " spacing table is empty!");
-      idb_spacing_table = std::make_shared<idb::IdbParallelSpacingTable>(1, 1);
-      idb_spacing_table.get()->set_parallel_length(0, 0);
-      idb_spacing_table.get()->set_width(0, 0);
-      idb_spacing_table.get()->set_spacing(0, 0, 0);
+      exist_spacing_table = true;
     }
+    if (exist_spacing_table) {
+      SpacingTable& prl_spacing_table = routing_layer.get_prl_spacing_table();
+      std::vector<int32_t>& width_list = prl_spacing_table.get_width_list();
+      std::vector<int32_t>& parallel_length_list = prl_spacing_table.get_parallel_length_list();
+      GridMap<int32_t>& width_parallel_length_map = prl_spacing_table.get_width_parallel_length_map();
 
-    SpacingTable& prl_spacing_table = routing_layer.get_prl_spacing_table();
-    std::vector<int32_t>& width_list = prl_spacing_table.get_width_list();
-    std::vector<int32_t>& parallel_length_list = prl_spacing_table.get_parallel_length_list();
-    GridMap<int32_t>& width_parallel_length_map = prl_spacing_table.get_width_parallel_length_map();
-
-    width_list = idb_spacing_table->get_width_list();
-    parallel_length_list = idb_spacing_table->get_parallel_length_list();
-    width_parallel_length_map.init(width_list.size(), parallel_length_list.size());
-    for (int32_t x = 0; x < width_parallel_length_map.get_x_size(); x++) {
-      for (int32_t y = 0; y < width_parallel_length_map.get_y_size(); y++) {
-        width_parallel_length_map[x][y] = idb_spacing_table->get_spacing_table()[x][y];
+      width_list = idb_spacing_table->get_width_list();
+      parallel_length_list = idb_spacing_table->get_parallel_length_list();
+      width_parallel_length_map.init(width_list.size(), parallel_length_list.size());
+      for (int32_t x = 0; x < width_parallel_length_map.get_x_size(); x++) {
+        for (int32_t y = 0; y < width_parallel_length_map.get_y_size(); y++) {
+          width_parallel_length_map[x][y] = idb_spacing_table->get_spacing_table()[x][y];
+        }
       }
+      exist_rule_set.insert(ViolationType::kParallelRunLengthSpacing);
     }
   }
   // eol
@@ -265,24 +329,26 @@ void DRCInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLa
       routing_layer.set_eol_spacing(eol_spacing);
       routing_layer.set_eol_ete(eol_ete);
       routing_layer.set_eol_within(eol_within);
-    } else {
-      DRCLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " eol_spacing is empty!");
-      routing_layer.set_eol_spacing(0);
-      routing_layer.set_eol_ete(0);
-      routing_layer.set_eol_within(0);
+      exist_rule_set.insert(ViolationType::kEndOfLineSpacing);
     }
   }
 }
 
 void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_layer)
 {
-  // curr layer
+  std::set<ViolationType>& exist_rule_set = DRCDM.getDatabase().get_exist_rule_set();
+
+  // default
   {
-    // prl
+    exist_rule_set.insert(ViolationType::kCutShort);
+  }
+  // prl
+  {
     if (!idb_layer->get_spacings().empty()) {
       cut_layer.set_curr_spacing(idb_layer->get_spacings().front()->get_spacing());
       cut_layer.set_curr_prl(0);
       cut_layer.set_curr_prl_spacing(idb_layer->get_spacings().front()->get_spacing());
+      exist_rule_set.insert(ViolationType::kSameLayerCutSpacing);
     } else if (!idb_layer->get_lef58_spacing_table().empty()) {
       idb::cutlayer::Lef58SpacingTable* spacing_table = nullptr;
       for (std::shared_ptr<idb::cutlayer::Lef58SpacingTable>& spacing_table_ptr : idb_layer->get_lef58_spacing_table()) {
@@ -300,19 +366,12 @@ void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_
         cut_layer.set_curr_spacing(curr_spacing);
         cut_layer.set_curr_prl(curr_prl);
         cut_layer.set_curr_prl_spacing(curr_prl_spacing);
-      } else {
-        DRCLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " curr layer spacing is empty!");
-        cut_layer.set_curr_spacing(0);
-        cut_layer.set_curr_prl(0);
-        cut_layer.set_curr_prl_spacing(0);
+        exist_rule_set.insert(ViolationType::kSameLayerCutSpacing);
       }
-    } else {
-      DRCLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " curr layer spacing is empty!");
-      cut_layer.set_curr_spacing(0);
-      cut_layer.set_curr_prl(0);
-      cut_layer.set_curr_prl_spacing(0);
     }
-    // eol
+  }
+  // eol
+  {
     if (idb_layer->get_lef58_eol_spacing().get() != nullptr) {
       idb::cutlayer::Lef58EolSpacing* idb_eol_spacing = idb_layer->get_lef58_eol_spacing().get();
 
@@ -322,16 +381,11 @@ void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_
       cut_layer.set_curr_eol_spacing(curr_eol_spacing);
       cut_layer.set_curr_eol_prl(curr_eol_prl);
       cut_layer.set_curr_eol_prl_spacing(curr_eol_prl_spacing);
-    } else {
-      DRCLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " eol_spacing is empty!");
-      cut_layer.set_curr_eol_spacing(0);
-      cut_layer.set_curr_eol_prl(0);
-      cut_layer.set_curr_eol_prl_spacing(0);
+      exist_rule_set.insert(ViolationType::kCutEOLSpacing);
     }
   }
-  // below layer
+  // diff layer spacing
   {
-    // prl
     if (!idb_layer->get_lef58_spacing_table().empty()) {
       idb::cutlayer::Lef58SpacingTable* spacing_table = nullptr;
       for (std::shared_ptr<idb::cutlayer::Lef58SpacingTable>& spacing_table_ptr : idb_layer->get_lef58_spacing_table()) {
@@ -349,17 +403,8 @@ void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_
         cut_layer.set_below_spacing(below_spacing);
         cut_layer.set_below_prl(below_prl);
         cut_layer.set_below_prl_spacing(below_prl_spacing);
-      } else {
-        cut_layer.set_below_spacing(0);
-        cut_layer.set_below_prl(0);
-        cut_layer.set_below_prl_spacing(0);
-        DRCLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " below layer spacing is empty!");
+        exist_rule_set.insert(ViolationType::kDifferentLayerCutSpacing);
       }
-    } else {
-      cut_layer.set_below_spacing(0);
-      cut_layer.set_below_prl(0);
-      cut_layer.set_below_prl_spacing(0);
-      DRCLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " below layer spacing is empty!");
     }
   }
 }
@@ -383,6 +428,17 @@ void DRCInterface::wrapLayerInfo()
   }
 }
 
+Direction DRCInterface::getDRCDirectionByDB(idb::IdbLayerDirection idb_direction)
+{
+  if (idb_direction == idb::IdbLayerDirection::kHorizontal) {
+    return Direction::kHorizontal;
+  } else if (idb_direction == idb::IdbLayerDirection::kVertical) {
+    return Direction::kVertical;
+  } else {
+    return Direction::kOblique;
+  }
+}
+
 #endif
 
 #if 1  // output
@@ -397,8 +453,9 @@ void DRCInterface::output()
 
 #if 1  // form def
 
-void DRCInterface::buildEnvShapeList(std::vector<ids::Shape>& env_shape_list)
+std::vector<ids::Shape> DRCInterface::buildEnvShapeList()
 {
+  std::vector<ids::Shape> env_shape_list;
   Monitor monitor;
   DRCLOG.info(Loc::current(), "Starting...");
 
@@ -468,7 +525,7 @@ void DRCInterface::buildEnvShapeList(std::vector<ids::Shape>& env_shape_list)
       for (idb::IdbPin* idb_pin : idb_instance->get_pin_list()->get_pin_list()) {
         int32_t net_idx = -1;
         if (!isSkipping(idb_pin->get_net())) {
-          net_idx = idb_pin->get_net()->get_id();
+          net_idx = static_cast<int32_t>(idb_pin->get_net()->get_id());
         }
         for (idb::IdbLayerShape* port_box : idb_pin->get_port_box_list()) {
           for (idb::IdbRect* rect : port_box->get_rect_list()) {
@@ -576,7 +633,7 @@ void DRCInterface::buildEnvShapeList(std::vector<ids::Shape>& env_shape_list)
     for (idb::IdbPin* idb_io_pin : idb_io_pin_list) {
       int32_t net_idx = -1;
       if (!isSkipping(idb_io_pin->get_net())) {
-        net_idx = idb_io_pin->get_net()->get_id();
+        net_idx = static_cast<int32_t>(idb_io_pin->get_net()->get_id());
       }
       for (idb::IdbLayerShape* port_box : idb_io_pin->get_port_box_list()) {
         for (idb::IdbRect* rect : port_box->get_rect_list()) {
@@ -594,6 +651,7 @@ void DRCInterface::buildEnvShapeList(std::vector<ids::Shape>& env_shape_list)
     }
   }
   DRCLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  return env_shape_list;
 }
 
 bool DRCInterface::isSkipping(idb::IdbNet* idb_net)
@@ -633,8 +691,9 @@ bool DRCInterface::isSkipping(idb::IdbNet* idb_net)
   return false;
 }
 
-void DRCInterface::buildResultShapeList(std::vector<ids::Shape>& result_shape_list)
+std::vector<ids::Shape> DRCInterface::buildResultShapeList()
 {
+  std::vector<ids::Shape> result_shape_list;
   Monitor monitor;
   DRCLOG.info(Loc::current(), "Starting...");
 
@@ -673,7 +732,7 @@ void DRCInterface::buildResultShapeList(std::vector<ids::Shape>& result_shape_li
           int32_t half_width = dynamic_cast<IdbLayerRouting*>(idb_segment->get_layer())->get_width() / 2;
           PlanarRect rect = DRCUTIL.getEnlargedRect(first_coord, second_coord, half_width);
           ids::Shape ids_shape;
-          ids_shape.net_idx = idb_net->get_id();
+          ids_shape.net_idx = static_cast<int32_t>(idb_net->get_id());
           ids_shape.ll_x = rect.get_ll_x();
           ids_shape.ll_y = rect.get_ll_y();
           ids_shape.ur_x = rect.get_ur_x();
@@ -687,7 +746,7 @@ void DRCInterface::buildResultShapeList(std::vector<ids::Shape>& result_shape_li
             for (idb::IdbLayerShape layer_shape : {idb_via->get_top_layer_shape(), idb_via->get_bottom_layer_shape()}) {
               for (idb::IdbRect* rect : layer_shape.get_rect_list()) {
                 ids::Shape ids_shape;
-                ids_shape.net_idx = idb_net->get_id();
+                ids_shape.net_idx = static_cast<int32_t>(idb_net->get_id());
                 ids_shape.ll_x = rect->get_low_x();
                 ids_shape.ll_y = rect->get_low_y();
                 ids_shape.ur_x = rect->get_high_x();
@@ -700,7 +759,7 @@ void DRCInterface::buildResultShapeList(std::vector<ids::Shape>& result_shape_li
             idb::IdbLayerShape cut_layer_shape = idb_via->get_cut_layer_shape();
             for (idb::IdbRect* rect : cut_layer_shape.get_rect_list()) {
               ids::Shape ids_shape;
-              ids_shape.net_idx = idb_net->get_id();
+              ids_shape.net_idx = static_cast<int32_t>(idb_net->get_id());
               ids_shape.ll_x = rect->get_low_x();
               ids_shape.ll_y = rect->get_low_y();
               ids_shape.ur_x = rect->get_high_x();
@@ -717,7 +776,7 @@ void DRCInterface::buildResultShapeList(std::vector<ids::Shape>& result_shape_li
                                 idb_segment->get_delta_rect()->get_high_x(), idb_segment->get_delta_rect()->get_high_y());
           PlanarRect rect = DRCUTIL.getOffsetRect(delta_rect, offset_coord);
           ids::Shape ids_shape;
-          ids_shape.net_idx = idb_net->get_id();
+          ids_shape.net_idx = static_cast<int32_t>(idb_net->get_id());
           ids_shape.ll_x = rect.get_ll_x();
           ids_shape.ll_y = rect.get_ll_y();
           ids_shape.ur_x = rect.get_ur_x();
@@ -730,6 +789,7 @@ void DRCInterface::buildResultShapeList(std::vector<ids::Shape>& result_shape_li
     }
   }
   DRCLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  return result_shape_list;
 }
 
 #endif

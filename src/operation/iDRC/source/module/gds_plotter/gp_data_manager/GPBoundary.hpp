@@ -16,10 +16,10 @@
 // ***************************************************************************************
 #pragma once
 
-#include "PlanarCoord.hpp"
-#include "LayerRect.hpp"
-#include "PlanarRect.hpp"
 #include "DRCHeader.hpp"
+#include "LayerRect.hpp"
+#include "PlanarCoord.hpp"
+#include "PlanarRect.hpp"
 
 namespace idrc {
 

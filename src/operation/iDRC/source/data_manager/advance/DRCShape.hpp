@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
-#include "LayerRect.hpp"
 #include "DRCHeader.hpp"
+#include "LayerRect.hpp"
 #include "Utility.hpp"
 
 namespace idrc {

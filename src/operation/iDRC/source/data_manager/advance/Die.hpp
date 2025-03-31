@@ -14,12 +14,24 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "RuleValidator.hpp"
+#pragma once
+
+#include "PlanarRect.hpp"
 
 namespace idrc {
 
-void RuleValidator::verifyMinHole(RVBox& rv_box)
+class Die : public PlanarRect
 {
-}
+ public:
+  Die() = default;
+  ~Die() = default;
+  // getter
+
+  // setter
+
+  // function
+
+ private:
+};
 
 }  // namespace idrc
