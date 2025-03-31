@@ -383,8 +383,13 @@ class Utility
 
   static PlanarRect getShrinkedRect(PlanarRect rect, int32_t shrinked_size)
   {
-    addOffset(rect.get_ll(), shrinked_size, shrinked_size);
-    minusOffset(rect.get_ur(), shrinked_size, shrinked_size);
+    return getShrinkedRect(rect,shrinked_size,shrinked_size,shrinked_size,shrinked_size);
+  }
+
+  static PlanarRect getShrinkedRect(PlanarRect rect, int32_t ll_x_minus_offset, int32_t ll_y_minus_offset, int32_t ur_x_add_offset, int32_t ur_y_add_offset)
+  {
+    addOffset(rect.get_ll(), ll_x_minus_offset, ll_y_minus_offset);
+    minusOffset(rect.get_ur(), ur_x_add_offset, ur_y_add_offset);
     return rect;
   }
 
