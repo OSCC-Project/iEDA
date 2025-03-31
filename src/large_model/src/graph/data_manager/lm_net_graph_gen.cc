@@ -88,7 +88,7 @@ bool LmNetGraphGenerator::isCornerCase(idb::IdbNet* idb_net) const
     return true;
   }
 
-  auto* driver_pin = idb_net->get_driver_pin();
+  auto* driver_pin = idb_net->get_driving_pin();
   if (!driver_pin) {
     return true;
   }
