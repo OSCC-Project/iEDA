@@ -19,6 +19,7 @@
 #include "DRCHeader.hpp"
 #include "Logger.hpp"
 #include "PlanarRect.hpp"
+#include "Rotation.hpp"
 #include "json.hpp"
 
 namespace idrc {
@@ -32,6 +33,16 @@ class Utility
   static Utility& getInst();
   static void destroyInst();
   // function
+
+#if 1  // 距离线长计算
+
+  // 获得两坐标的曼哈顿距离
+  static int32_t getManhattanDistance(PlanarCoord start_coord, PlanarCoord end_coord)
+  {
+    return std::abs(start_coord.get_x() - end_coord.get_x()) + std::abs(start_coord.get_y() - end_coord.get_y());
+  }
+
+#endif
 
 #if 1  // 方向方位计算
 
@@ -71,6 +82,32 @@ class Utility
 #endif
 
 #if 1  // 位置关系计算
+
+  // 三个坐标是否共线
+  static bool isCollinear(PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
+  {
+    return getDirection(first_coord, second_coord) == getDirection(second_coord, third_coord);
+  }
+
+  // 是否是凸角位置
+  static bool isConvexCorner(Rotation rotation, PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
+  {
+    if (isCollinear(first_coord, second_coord, third_coord)) {
+      return false;
+    }
+
+    return crossProduct(rotation, first_coord, second_coord, third_coord) < 0;
+  }
+
+  // 是否是凹角位置
+  static bool isConcaveCorner(Rotation rotation, PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
+  {
+    if (isCollinear(first_coord, second_coord, third_coord)) {
+      return false;
+    }
+
+    return crossProduct(rotation, first_coord, second_coord, third_coord) > 0;
+  }
 
   /**
    * 矩形在矩形内
@@ -133,6 +170,32 @@ class Utility
 #if 1  // boost数据结构工具函数
 
 #if 1  // int类型
+
+  static Rotation getRotation(GTLPolyInt& gtl_poly)
+  {
+    gtl::direction_1d gtl_rotation = gtl::winding(gtl_poly);
+    if (gtl::direction_1d_enum::CLOCKWISE == gtl_rotation) {
+      return Rotation::kClockwise;
+    } else if (gtl::direction_1d_enum::COUNTERCLOCKWISE == gtl_rotation) {
+      return Rotation::kCounterclockwise;
+    } else {
+      return Rotation::kNone;
+    }
+  }
+
+  static Rotation getRotation(GTLHolePolyInt& gtl_holy_poly)
+  {
+    gtl::direction_1d gtl_rotation = gtl::winding(gtl_holy_poly);
+    if (gtl::direction_1d_enum::CLOCKWISE == gtl_rotation) {
+      return Rotation::kClockwise;
+    } else if (gtl::direction_1d_enum::COUNTERCLOCKWISE == gtl_rotation) {
+      return Rotation::kCounterclockwise;
+    } else {
+      return Rotation::kNone;
+    }
+  }
+
+  static PlanarCoord convertToPlanarCoord(GTLPointInt gtl_point) { return PlanarCoord(gtl_point.x(), gtl_point.y()); }
 
   static PlanarRect convertToPlanarRect(GTLRectInt& gtl_rect) { return PlanarRect(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect)); }
 
@@ -297,6 +360,32 @@ class Utility
 #endif
 
 #if 1  // 形状有关计算
+
+  static PlanarRect getRect(PlanarCoord start_coord, PlanarCoord end_coord)
+  {
+    PlanarRect rect;
+    rect.set_ll_x(std::min(start_coord.get_x(), end_coord.get_x()));
+    rect.set_ll_y(std::min(start_coord.get_y(), end_coord.get_y()));
+    rect.set_ur_x(std::max(start_coord.get_x(), end_coord.get_x()));
+    rect.set_ur_y(std::max(start_coord.get_y(), end_coord.get_y()));
+    return rect;
+  }
+
+  // 三个点的叉乘
+  static int32_t crossProduct(Rotation rotation, PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
+  {
+    int32_t cross_product = 0;
+    if (rotation == Rotation::kClockwise) {
+      cross_product = ((second_coord.get_x() - first_coord.get_x()) * (third_coord.get_y() - first_coord.get_y())
+                       - (second_coord.get_y() - first_coord.get_y()) * (third_coord.get_x() - first_coord.get_x()));
+    } else if (rotation == Rotation::kCounterclockwise) {
+      cross_product = ((second_coord.get_x() - third_coord.get_x()) * (first_coord.get_y() - third_coord.get_y())
+                       - (second_coord.get_y() - third_coord.get_y()) * (first_coord.get_x() - third_coord.get_x()));
+    } else {
+      DRCLOG.error(Loc::current(), "The rotation is error!");
+    }
+    return cross_product;
+  }
 
   // 偏移矩形
   static PlanarRect getOffsetRect(PlanarRect rect, PlanarCoord offset_coord)

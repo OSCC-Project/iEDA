@@ -265,16 +265,16 @@ void DRCInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLa
   // min step
   {
     idb::IdbMinStep* idb_min_step = idb_layer->get_min_step().get();
-    if (idb_min_step != nullptr) {
+    std::vector<std::shared_ptr<idb::routinglayer::Lef58MinStep>>& idb_lef58_min_step_list = idb_layer->get_lef58_min_step();
+    if (idb_min_step != nullptr && !idb_lef58_min_step_list.empty()) {
       routing_layer.set_min_step(idb_min_step->get_min_step_length());
       routing_layer.set_max_edges(idb_min_step->get_max_edges());
+      for (std::shared_ptr<idb::routinglayer::Lef58MinStep>& idb_lef58_min_step : idb_layer->get_lef58_min_step()) {
+        routing_layer.set_lef58_min_step(idb_lef58_min_step.get()->get_min_step_length());
+        routing_layer.set_lef58_min_adjacent_length(idb_lef58_min_step.get()->get_min_adjacent_length().value().get_min_adj_length());
+        break;
+      }
       exist_rule_set.insert(ViolationType::kMinStep);
-    }
-    for (std::shared_ptr<idb::routinglayer::Lef58MinStep>& idb_lef58_min_step : idb_layer->get_lef58_min_step()) {
-      routing_layer.set_lef58_min_step(idb_lef58_min_step.get()->get_min_step_length());
-      routing_layer.set_lef58_min_adjacent_length(idb_lef58_min_step.get()->get_min_adjacent_length().value().get_min_adj_length());
-      exist_rule_set.insert(ViolationType::kMinStep);
-      break;
     }
   }
   // notch

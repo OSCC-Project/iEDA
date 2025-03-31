@@ -64,8 +64,8 @@ void RuleValidator::verifyNonsufficientMetalOverlap(RVBox& rv_box)
             continue;
           }
           GTLRectInt gtl_rect = DRCUTIL.convertToGTLRectInt(DRCUTIL.getEnlargedRect(DRCUTIL.getOverlap(rect_list[i], rect_list[j]), 1));
-          rect_overlap_gtl_poly_set_map[i] += gtl_rect;
-          rect_overlap_gtl_poly_set_map[j] += gtl_rect;
+          rect_overlap_gtl_poly_set_map[static_cast<int32_t>(i)] += gtl_rect;
+          rect_overlap_gtl_poly_set_map[static_cast<int32_t>(j)] += gtl_rect;
         }
       }
       std::vector<PlanarRect> overlap_rect_list;

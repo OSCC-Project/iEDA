@@ -46,7 +46,7 @@ void RuleValidator::verifyOffGridOrWrongWay(RVBox& rv_box)
         }
         coord_list.push_back(coord_list.front());
         for (size_t i = 1; i < coord_list.size(); i++) {
-          PlanarRect rect = DRCUTIL.getEnlargedRect(coord_list[i - 1], coord_list[i], 0);
+          PlanarRect rect = DRCUTIL.getRect(coord_list[i - 1], coord_list[i]);
           if (rect.get_ll_x() % manufacture_grid == 0 && rect.get_ll_y() % manufacture_grid == 0 && rect.get_ur_x() % manufacture_grid == 0
               && rect.get_ur_y() % manufacture_grid == 0) {
             continue;
