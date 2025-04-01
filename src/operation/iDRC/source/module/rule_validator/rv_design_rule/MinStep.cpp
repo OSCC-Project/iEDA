@@ -57,11 +57,20 @@ void RuleValidator::verifyMinStep(RVBox& rv_box)
     int32_t lef58_min_adjacent_length = routing_layer.get_lef58_min_adjacent_length();
     for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set_map) {
       std::vector<GTLHolePolyInt> gtl_hole_poly_list;
-      gtl_poly_set.get_polygons(gtl_hole_poly_list);
+      gtl_poly_set.get(gtl_hole_poly_list);
       for (GTLHolePolyInt& gtl_hole_poly : gtl_hole_poly_list) {
         int32_t coord_size = static_cast<int32_t>(gtl_hole_poly.size());
         if (coord_size < 4) {
           continue;
+        }
+        std::set<PlanarRect, CmpPlanarRectByXASC> hole_rect_set;
+        for (auto iter = gtl_hole_poly.begin_holes(); iter != gtl_hole_poly.end_holes(); iter++) {
+          GTLPolyInt gtl_poly = *iter;
+          GTLRectInt gtl_rect;
+          gtl::extents(gtl_rect, gtl_poly);
+          if (gtl::area(gtl_poly) == gtl::area(gtl_rect)) {
+            hole_rect_set.insert(DRCUTIL.convertToPlanarRect(gtl_rect));
+          }
         }
         std::vector<PlanarCoord> coord_list;
         for (auto iter = gtl_hole_poly.begin(); iter != gtl_hole_poly.end(); iter++) {
@@ -96,7 +105,7 @@ void RuleValidator::verifyMinStep(RVBox& rv_box)
                 violation_rect.set_ur_x(std::max(violation_rect.get_ur_x(), coord_list[j].get_x()));
                 violation_rect.set_ur_y(std::max(violation_rect.get_ur_y(), coord_list[j].get_y()));
               }
-              if (addRect(rtree, DRCUTIL.convertToBGRectInt(violation_rect))) {
+              if (!DRCUTIL.exist(hole_rect_set, violation_rect) && addRect(rtree, DRCUTIL.convertToBGRectInt(violation_rect))) {
                 Violation violation;
                 violation.set_violation_type(ViolationType::kMinStep);
                 violation.set_required_size(min_step);
@@ -115,7 +124,7 @@ void RuleValidator::verifyMinStep(RVBox& rv_box)
             if ((edge_length_list[i] < lef58_min_step && edge_length_list[post_i] < lef58_min_adjacent_length)
                 || (edge_length_list[i] < lef58_min_adjacent_length && edge_length_list[post_i] < lef58_min_step)) {
               PlanarRect violation_rect = DRCUTIL.getRect(coord_list[pre_i], coord_list[post_i]);
-              if (addRect(rtree, DRCUTIL.convertToBGRectInt(violation_rect))) {
+              if (!DRCUTIL.exist(hole_rect_set, violation_rect) && addRect(rtree, DRCUTIL.convertToBGRectInt(violation_rect))) {
                 Violation violation;
                 violation.set_violation_type(ViolationType::kMinStep);
                 violation.set_required_size(lef58_min_step);
