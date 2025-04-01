@@ -334,17 +334,17 @@ unsigned StaDumpWireYaml::operator()(StaArc* the_arc) {
     auto* the_net = the_net_arc->get_net();
 
     auto* rc_net = getSta()->getRcNet(the_net);
-    if (rc_net == nullptr) {
+    if ((rc_net == nullptr) || (rc_net->rct() == nullptr)) {
       return 0;
     }
     auto* snk_node = the_arc->get_snk();
     auto snk_node_name = snk_node->get_design_obj()->getFullName();
 
     auto wire_topo = rc_net->getWireTopo(snk_node_name.c_str());
-    auto all_nodes_slew =
-        rc_net->getAllNodeSlew(*vertex_slew, analysis_mode, trans_type);
+    auto& all_nodes_slew =
+    rc_net->getAllNodeSlew(*vertex_slew, analysis_mode, trans_type);
     for (int edge_index = 0;
-         auto* wire_edge : wire_topo | std::ranges::views::reverse) {
+        auto* wire_edge : wire_topo | std::ranges::views::reverse) {
       std::string edge_index_name = Str::printf("edge_%d", edge_index++);
       YAML::Node edge_node;
       arc_node[edge_index_name] = edge_node;

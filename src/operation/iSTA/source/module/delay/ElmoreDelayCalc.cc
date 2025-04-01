@@ -1311,10 +1311,6 @@ std::map<std::string, double>& RcNet::getAllNodeSlew(double driver_slew,
   if (_all_node_slews) {
     return *_all_node_slews;
   }
-  
-  if (_rct.index() == 0) {
-    return *_all_node_slews;
-  }
 
   std::map<std::string, double> all_node_slews;
 
