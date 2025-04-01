@@ -80,9 +80,9 @@ class RoutingLayer
   Direction _prefer_direction = Direction::kNone;
   ScaleAxis _track_axis;
   // min width
-  int32_t _min_width = 0;
+  int32_t _min_width = -1;
   // min area
-  int32_t _min_area = 0;
+  int32_t _min_area = -1;
   // prl
   SpacingTable _prl_spacing_table;
   // eol

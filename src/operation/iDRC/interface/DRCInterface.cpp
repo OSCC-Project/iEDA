@@ -332,6 +332,17 @@ void DRCInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLa
       exist_rule_set.insert(ViolationType::kEndOfLineSpacing);
     }
   }
+  // corner fill
+  {
+    idb::routinglayer::Lef58CornerFillSpacing* idb_corner_fill = idb_layer->get_lef58_corner_fill_spacing().get();
+    if (idb_corner_fill != nullptr) {
+      routing_layer.set_has_corner_fill(true);
+      routing_layer.set_corner_fill_spacing(idb_corner_fill->get_spacing());
+      routing_layer.set_edge_length_pair({idb_corner_fill->get_edge_length1(), idb_corner_fill->get_edge_length2()});
+      routing_layer.set_adjacent_eol(idb_corner_fill->get_eol_width());
+      exist_rule_set.insert(ViolationType::kCornerFillSpacing);
+    }
+  }
 }
 
 void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_layer)
