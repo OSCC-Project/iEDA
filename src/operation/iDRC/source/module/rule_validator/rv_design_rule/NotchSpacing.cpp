@@ -15,322 +15,40 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #include "RuleValidator.hpp"
-// anonymous namespace
-namespace {
-// using Rtree for query net id in violation rect
-using BgBoxInt = boost::geometry::model::box<BGPointInt>;
-using RTree = bgi::rtree<std::pair<BgBoxInt, int32_t>, bgi::quadratic<16>>;
-using LayerRTreeMap = std::map<int32_t, RTree>;
-
-void addRectToRtree(LayerRTreeMap& _query_tree, GTLRectInt rect, int32_t layer_idx, int32_t net_idx)
-{
-  BgBoxInt rtree_rect(BGPointInt(xl(rect), yl(rect)), BGPointInt(xh(rect), yh(rect)));
-  _query_tree[layer_idx].insert(std::make_pair(rtree_rect, net_idx));
-}
-
-std::set<int32_t> queryNetIdbyRtree(LayerRTreeMap& _query_tree, int32_t layer_idx, int32_t llx, int32_t lly, int32_t urx, int32_t ury)
-{
-  std::set<int32_t> net_ids;
-  std::vector<std::pair<BgBoxInt, int32_t>> result;
-  BgBoxInt rect(BGPointInt(llx, lly), BGPointInt(urx, ury));
-  _query_tree[layer_idx].query(bgi::intersects(rect), std::back_inserter(result));
-  for (auto& pair : result) {
-    net_ids.insert(pair.second);
-  }
-  return net_ids;
-}
-}  // namespace
 namespace idrc {
-
 using GTLSegment = gtl::segment_data<int32_t>;
-// 记录notch spacing的信息
-struct NotchSpaingRule
-{
-  int32_t notch_spacing;
-  int32_t notch_length;
-  int32_t concave_ends;
-  bool has_concave_ends;
-};
-
-std::map<int32_t, NotchSpaingRule> layer_notch_spacing_rule = {
-    {0, {70 * 2, 155 * 2, 55 * 2, true}},  // M1
-    {1, {70 * 2, 155 * 2, 55 * 2, true}},  // M2
-    {2, {70 * 2, 155 * 2, 0, false}},      // M3
-    {3, {70 * 2, 155 * 2, 0, false}},      // M4
-    {4, {70 * 2, 155 * 2, 0, false}},      // M5
-    {5, {70 * 2, 155 * 2, 0, false}},      // M6
-    {6, {70 * 2, 155 * 2, 0, false}}       // M7
-};
-
-// 记录point的信息
-struct StepPoint
-{
-  GTLPointInt point;
-  bool is_convex = true;
-};
-
-int32_t get_cross_func(const GTLPointInt& left, const GTLPointInt& middle, const GTLPointInt& right)
-{
-  int32_t x1 = gtl::x(left) - gtl::x(middle);
-  int32_t y1 = gtl::y(left) - gtl::y(middle);
-  int32_t x2 = gtl::x(right) - gtl::x(middle);
-  int32_t y2 = gtl::y(right) - gtl::y(middle);
-  return x1 * y2 - x2 * y1;
-}
-
-void get_point_and_egde_by_hole_poly(GTLHolePolyInt& hole_poly, std::vector<StepPoint>& step_points, std::vector<GTLSegment>& step_edges)
-{
-  // 得到所有点
-  for (GTLPointInt point : hole_poly) {
-    StepPoint temp_point;
-    temp_point.point = point;
-    step_points.push_back(temp_point);
-  }
-  // 得到所有的点的凹凸性并得到所有的边
-  for (int32_t i = 0; i < step_points.size(); i++) {
-    StepPoint& middle = step_points[i];
-    StepPoint& left = step_points[(i - 1 + step_points.size()) % step_points.size()];
-    StepPoint& right = step_points[(i + 1) % step_points.size()];
-    int32_t cross_product = get_cross_func(left.point, middle.point, right.point);
-    // boost采用逆时针存储的点，叉积大于0为凹点
-    if (cross_product < 0) {
-      middle.is_convex = true;
-    } else if (cross_product > 0) {
-      middle.is_convex = false;
-    } else {
-      DRCLOG.error(Loc::current(), "NotchSpacing: three points are in a line!");
-    }
-    // 得到所有的边
-    step_edges.push_back(GTLSegment(left.point, middle.point));
-  }
-}
-void get_point_and_egde_by_hole(GTLPolyInt& hole, std::vector<StepPoint>& step_points, std::vector<GTLSegment>& step_edges)
-{
-  // 得到所有点
-  for (GTLPointInt point : hole) {
-    StepPoint temp_point;
-    temp_point.point = point;
-    step_points.push_back(temp_point);
-  }
-  // 得到所有的点的凹凸性并得到所有的边
-  for (int32_t i = 0; i < step_points.size(); i++) {
-    StepPoint& middle = step_points[i];
-    StepPoint& left = step_points[(i - 1 + step_points.size()) % step_points.size()];
-    StepPoint& right = step_points[(i + 1) % step_points.size()];
-    int32_t cross_product = get_cross_func(left.point, middle.point, right.point);
-    // boost采用逆时针存储的点，叉积大于0为凹点,因为是hole，所以要反过来,但是遍历顺序不一样，所以不用反
-    if (cross_product < 0) {
-      middle.is_convex = true;
-    } else if (cross_product > 0) {
-      middle.is_convex = false;
-    } else {
-      DRCLOG.error(Loc::current(), "NotchSpacing: three points are in a line!");
-    }
-    // 得到所有的边
-    step_edges.push_back(GTLSegment(left.point, middle.point));
-  }
-}
-
-void convex_notch_check(GTLSegment& concave_edge, GTLSegment& spacing_edge, GTLSegment& side_edge, GTLHolePolyInt& polygon, int32_t layer_idx,
-                        std::map<int32_t, GTLPolySetInt>& layer_violation_poly_set)
-{
-  int32_t notch_spacing = layer_notch_spacing_rule[layer_idx].notch_spacing;
-  int32_t notch_length = layer_notch_spacing_rule[layer_idx].notch_length;
-  int32_t concave_ends = layer_notch_spacing_rule[layer_idx].concave_ends;
-
-  int32_t concave_edge_length = gtl::length(concave_edge);
-  int32_t side_edge_length = gtl::length(side_edge);
-  int32_t spacing_edge_length = gtl::length(spacing_edge);
-  if (concave_edge_length < notch_length && side_edge_length >= notch_length
-      && spacing_edge_length < notch_spacing) {  // 满足这三个条件，然后判断两边的矩形是否满足条件
-    gtl::orientation_2d_enum slice_dir = gtl::x(spacing_edge.low()) == gtl::x(spacing_edge.high()) ? gtl::HORIZONTAL : gtl::VERTICAL;  // 水平竖切，竖直横切
-    // 找到两条边对应的两个矩形，对于竖直凹槽，左边为矩形右边，右边为矩形左边，对于水平凹槽，上边为矩形下边，下边为矩形上边
-    std::vector<GTLRectInt> slice_rect_list;
-    // gtl::get_rectangles(slice_rect_list, polygon, slice_dir);
-    gtl::get_max_rectangles(slice_rect_list, polygon);
-    if (slice_dir == gtl::HORIZONTAL) {
-      GTLSegment& low_edge = gtl::y(concave_edge.low()) < gtl::y(side_edge.low()) ? concave_edge : side_edge;
-      GTLSegment& high_edge = gtl::y(concave_edge.low()) > gtl::y(side_edge.low()) ? concave_edge : side_edge;
-      bool find_low = false;
-      bool find_high = false;
-
-      for (GTLRectInt& slice_rect : slice_rect_list) {
-        if (find_low && find_high) {
-          break;
-        }
-        GTLSegment slice_rect_low_edge
-            = GTLSegment(GTLPointInt(gtl::xl(slice_rect), gtl::yl(slice_rect)), GTLPointInt(gtl::xh(slice_rect), gtl::yl(slice_rect)));
-        GTLSegment slice_rect_high_edge
-            = GTLSegment(GTLPointInt(gtl::xl(slice_rect), gtl::yh(slice_rect)), GTLPointInt(gtl::xh(slice_rect), gtl::yh(slice_rect)));
-        if (gtl::contains(slice_rect_low_edge, high_edge)) {
-          int32_t rect_width = gtl::yh(slice_rect) - gtl::yl(slice_rect);
-          if (rect_width > concave_ends) {
-            find_high = false;
-            break;
-          } else {
-            find_high = true;
-          }
-        }
-        if (gtl::contains(slice_rect_high_edge, low_edge)) {
-          int32_t rect_width = gtl::yh(slice_rect) - gtl::yl(slice_rect);
-          if (rect_width > concave_ends) {
-            find_low = false;
-            break;
-          } else {
-            find_low = true;
-          }
-        }
-      }
-      if (find_low && find_high) {
-        // 画出违例区域
-        GTLSegment& violation_rect_first = spacing_edge;
-        GTLSegment& violation_rect_second = gtl::length(concave_edge) < gtl::length(side_edge) ? concave_edge : side_edge;
-        GTLPointInt point1 = violation_rect_first.low();
-        GTLPointInt point2 = violation_rect_first.high();
-        GTLPointInt point3 = violation_rect_second.low();
-        GTLPointInt point4 = violation_rect_second.high();
-        int32_t llx = std::min(std::min(gtl::x(point1), gtl::x(point2)), std::min(gtl::x(point3), gtl::x(point4)));
-        int32_t lly = std::min(std::min(gtl::y(point1), gtl::y(point2)), std::min(gtl::y(point3), gtl::y(point4)));
-        int32_t urx = std::max(std::max(gtl::x(point1), gtl::x(point2)), std::max(gtl::x(point3), gtl::x(point4)));
-        int32_t ury = std::max(std::max(gtl::y(point1), gtl::y(point2)), std::max(gtl::y(point3), gtl::y(point4)));
-
-        layer_violation_poly_set[layer_idx] += (GTLRectInt(llx, lly, urx, ury));
-      }
-    } else {
-      GTLSegment& low_edge = gtl::x(concave_edge.low()) < gtl::x(side_edge.low()) ? concave_edge : side_edge;
-      GTLSegment& high_edge = gtl::x(concave_edge.low()) > gtl::x(side_edge.low()) ? concave_edge : side_edge;
-      bool find_low = false;
-      bool find_high = false;
-      for (GTLRectInt& slice_rect : slice_rect_list) {
-        if (find_low && find_high) {
-          break;
-        }
-        GTLSegment slice_rect_low_edge
-            = GTLSegment(GTLPointInt(gtl::xl(slice_rect), gtl::yl(slice_rect)), GTLPointInt(gtl::xl(slice_rect), gtl::yh(slice_rect)));
-        GTLSegment slice_rect_high_edge
-            = GTLSegment(GTLPointInt(gtl::xh(slice_rect), gtl::yl(slice_rect)), GTLPointInt(gtl::xh(slice_rect), gtl::yh(slice_rect)));
-        if (gtl::contains(slice_rect_low_edge, high_edge)) {
-          int32_t rect_width = gtl::xh(slice_rect) - gtl::xl(slice_rect);
-          if (rect_width > concave_ends) {
-            find_high = false;
-            break;
-          } else {
-            find_high = true;
-          }
-        }
-        if (gtl::contains(slice_rect_high_edge, low_edge)) {
-          int32_t rect_width = gtl::xh(slice_rect) - gtl::xl(slice_rect);
-          if (rect_width > concave_ends) {
-            find_low = false;
-            break;
-          } else {
-            find_low = true;
-          }
-        }
-      }
-      if (find_low && find_high) {
-        // 画出违例区域
-        GTLSegment& violation_rect_first = spacing_edge;
-        GTLSegment& violation_rect_second = gtl::length(concave_edge) < gtl::length(side_edge) ? concave_edge : side_edge;
-        GTLPointInt point1 = violation_rect_first.low();
-        GTLPointInt point2 = violation_rect_first.high();
-        GTLPointInt point3 = violation_rect_second.low();
-        GTLPointInt point4 = violation_rect_second.high();
-        int32_t llx = std::min(std::min(gtl::x(point1), gtl::x(point2)), std::min(gtl::x(point3), gtl::x(point4)));
-        int32_t lly = std::min(std::min(gtl::y(point1), gtl::y(point2)), std::min(gtl::y(point3), gtl::y(point4)));
-        int32_t urx = std::max(std::max(gtl::x(point1), gtl::x(point2)), std::max(gtl::x(point3), gtl::x(point4)));
-        int32_t ury = std::max(std::max(gtl::y(point1), gtl::y(point2)), std::max(gtl::y(point3), gtl::y(point4)));
-
-        layer_violation_poly_set[layer_idx] += (GTLRectInt(llx, lly, urx, ury));
-      }
-    }
-    // 水平凹槽
-  }
-}
-void check_by_point_and_edge(std::vector<StepPoint>& step_points, std::vector<GTLSegment>& step_edges, GTLHolePolyInt& hole_poly, int32_t layer_idx,
-                             std::map<int32_t, GTLPolySetInt>& layer_violation_poly_set)
-{
-  int32_t notch_spacing = layer_notch_spacing_rule[layer_idx].notch_spacing;
-  int32_t notch_length = layer_notch_spacing_rule[layer_idx].notch_length;
-  int32_t concave_ends = layer_notch_spacing_rule[layer_idx].concave_ends;
-  bool has_concave_ends = layer_notch_spacing_rule[layer_idx].has_concave_ends;
-  for (int32_t i = 0; i < step_points.size(); i++) {
-    //DEBUG
-    // if(step_points[i].point == GTLPointInt(38450,685450)){
-    //   int debug = 0;
-    // }
-    if (step_points[i].is_convex) {
-      continue;  // 非凹点，跳过
-    }
-    int32_t before_index = (i - 1 + step_points.size()) % step_points.size();
-    int32_t second_index = (i + 1) % step_points.size();
-    int32_t third_index = (i + 2) % step_points.size();
-    int32_t fourth_index = (i + 3) % step_points.size();
-    if (has_concave_ends == false) {  // 只检查两个凹角
-      if (step_points[second_index].is_convex) {
-        continue;
-      }
-      GTLSegment& side_edge_a = step_edges[i];
-      GTLSegment& spacing_edge = step_edges[second_index];
-      GTLSegment& side_edge_b = step_edges[third_index];
-
-      // 第一条边或第三条边应该小于notch_length,第二条边的长度应该小于notch_spacing
-      int32_t length_a = gtl::length(side_edge_a);
-      int32_t length_b = gtl::length(side_edge_b);
-      int32_t length_spacing = gtl::length(spacing_edge);
-      if ((length_a < notch_length || length_b < notch_length) && (length_spacing < notch_spacing)) {
-        // 用第二条边和短的那条边构成违例区域
-        GTLSegment violation_rect_first = spacing_edge;
-        GTLSegment violation_rect_second = length_a < length_b ? side_edge_a : side_edge_b;
-
-        GTLPointInt point1 = violation_rect_first.low();
-        GTLPointInt point2 = violation_rect_first.high();
-        GTLPointInt point3 = violation_rect_second.low();
-        GTLPointInt point4 = violation_rect_second.high();
-        int32_t llx = std::min(std::min(gtl::x(point1), gtl::x(point2)), std::min(gtl::x(point3), gtl::x(point4)));
-        int32_t lly = std::min(std::min(gtl::y(point1), gtl::y(point2)), std::min(gtl::y(point3), gtl::y(point4)));
-        int32_t urx = std::max(std::max(gtl::x(point1), gtl::x(point2)), std::max(gtl::x(point3), gtl::x(point4)));
-        int32_t ury = std::max(std::max(gtl::y(point1), gtl::y(point2)), std::max(gtl::y(point3), gtl::y(point4)));
-
-        layer_violation_poly_set[layer_idx] += GTLRectInt(llx, lly, urx, ury);
-      }
-    } else {  // 多个凹角的情况 // 检查三凹角三个连续的凹角，根据lef的示意图，四凹角的先不管？
-      if (step_points[second_index].is_convex || step_points[third_index].is_convex) {
-        continue;
-      }
-      // 这时是四凹角，先不用管这种情况
-      if (!step_points[fourth_index].is_convex || !step_points[before_index].is_convex) {
-        continue;
-      }
-      // 三凹角会有四条边，对应两种情况：1 2作为底边，2 3作为底边
-      /*
-     1-----
-     |
-     |          |
-     2----------3
-      */
-      GTLSegment& first_edge = step_edges[i];
-      GTLSegment& second_edge = step_edges[second_index];
-      GTLSegment& third_edge = step_edges[third_index];
-      GTLSegment& fourth_edge = step_edges[fourth_index];
-      convex_notch_check(third_edge, second_edge, first_edge, hole_poly, layer_idx, layer_violation_poly_set);
-      convex_notch_check(second_edge, third_edge, fourth_edge, hole_poly, layer_idx, layer_violation_poly_set);
-    }
-  }
-}
 void RuleValidator::verifyNotchSpacing(RVBox& rv_box)
 {
-  // return;
-  /*
-    t28中的notch spacing(110 没有该规则,110下直接跳过该规则的检查):
-    PROPERTY LEF58_SPACING "
-    SPACING 0.07 NOTCHLENGTH 0.155 CONCAVEENDS 0.055 ; " ;
-   */
+/*
+  t28中的notch spacing(110 没有该规则,110下直接跳过该规则的检查):
+  PROPERTY LEF58_SPACING "
+  SPACING 0.07 NOTCHLENGTH 0.155 CONCAVEENDS 0.055 ; " ;
+ */
+#if 1  // 函数定义
+  auto getIdx = [](int32_t idx, int32_t coord_size) { return (idx + coord_size) % coord_size; };
+  auto addRectToRtree
+      = [](std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>>& _query_tree, GTLRectInt rect, int32_t layer_idx, int32_t net_idx) {
+          BGRectInt rtree_rect(BGPointInt(xl(rect), yl(rect)), BGPointInt(xh(rect), yh(rect)));
+          _query_tree[layer_idx].insert(std::make_pair(rtree_rect, net_idx));
+        };
+  auto queryNetIdbyRtree = [](std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>>& _query_tree, int32_t layer_idx, int32_t llx,
+                              int32_t lly, int32_t urx, int32_t ury) {
+    std::set<int32_t> net_ids;
+    std::vector<std::pair<BGRectInt, int32_t>> result;
+    BGRectInt rect(BGPointInt(llx, lly), BGPointInt(urx, ury));
+    _query_tree[layer_idx].query(bgi::intersects(rect), std::back_inserter(result));
+    for (auto& pair : result) {
+      net_ids.insert(pair.second);
+    }
+    return net_ids;
+  };
+#endif
+  std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
   std::vector<Violation>& violation_list = rv_box.get_violation_list();
   /*R-tree新写的逻辑*/
-  LayerRTreeMap layer_query_tree;
-  std::map<int32_t, std::map<int32_t, GTLPolySetInt>> layer_net_poly_set;
-  std::map<int32_t, GTLPolySetInt> layer_violation_poly_set;
+  std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> layer_query_tree;
+  std::map<int32_t, std::map<int32_t, GTLPolySetInt>> layer_net_gtl_poly_set;
+  std::map<int32_t, GTLPolySetInt> layer_violation_gtl_poly_set;
   for (DRCShape* rect : rv_box.get_drc_result_shape_list()) {
     if (!rect->get_is_routing() && rect->get_net_idx() == -1) {  // 不是routing layer或者net_idx为-1的跳过该检测
       continue;
@@ -338,7 +56,7 @@ void RuleValidator::verifyNotchSpacing(RVBox& rv_box)
     int32_t layer_idx = rect->get_layer_idx();
     int32_t net_idx = rect->get_net_idx();
     addRectToRtree(layer_query_tree, GTLRectInt(rect->get_ll_x(), rect->get_ll_y(), rect->get_ur_x(), rect->get_ur_y()), layer_idx, net_idx);
-    layer_net_poly_set[layer_idx][net_idx] += GTLRectInt(rect->get_ll_x(), rect->get_ll_y(), rect->get_ur_x(), rect->get_ur_y());
+    layer_net_gtl_poly_set[layer_idx][net_idx] += GTLRectInt(rect->get_ll_x(), rect->get_ll_y(), rect->get_ur_x(), rect->get_ur_y());
   }
   for (DRCShape* rect : rv_box.get_drc_env_shape_list()) {
     if (!rect->get_is_routing() && rect->get_net_idx() == -1) {  // 不是routing layer或者net_idx为-1的跳过该检测
@@ -347,38 +65,213 @@ void RuleValidator::verifyNotchSpacing(RVBox& rv_box)
     int32_t layer_idx = rect->get_layer_idx();
     int32_t net_idx = rect->get_net_idx();
     addRectToRtree(layer_query_tree, GTLRectInt(rect->get_ll_x(), rect->get_ll_y(), rect->get_ur_x(), rect->get_ur_y()), layer_idx, net_idx);
-    layer_net_poly_set[layer_idx][net_idx] += GTLRectInt(rect->get_ll_x(), rect->get_ll_y(), rect->get_ur_x(), rect->get_ur_y());
+    layer_net_gtl_poly_set[layer_idx][net_idx] += GTLRectInt(rect->get_ll_x(), rect->get_ll_y(), rect->get_ur_x(), rect->get_ur_y());
   }
 
-  for (auto& [layer_idx, net_poly_set] : layer_net_poly_set) {
-    for (auto& [net_idx, poly_set] : net_poly_set) {
-      std::vector<GTLHolePolyInt> hole_poly_list;
-      poly_set.get(hole_poly_list);  // get会自动识别要变成的类型,用带hole能够避免识别到hole导致edge不对
-      for (GTLHolePolyInt& hole_poly : hole_poly_list) {
-        std::vector<StepPoint> step_points;
-        std::vector<GTLSegment> step_edges;
-        get_point_and_egde_by_hole_poly(hole_poly, step_points, step_edges);
-        check_by_point_and_edge(step_points, step_edges, hole_poly, layer_idx, layer_violation_poly_set);
-        // hole也要判断
-        GTLHolePolyInt::iterator_holes_type hole_iter = hole_poly.begin_holes();
-        while (hole_iter != hole_poly.end_holes()) {
-          GTLPolyInt hole = *hole_iter;
-          std::vector<StepPoint> step_points;
-          std::vector<GTLSegment> step_edges;
-          get_point_and_egde_by_hole(hole, step_points, step_edges);
-          // 找到连续的凹点，进而判断notch spacing
-          check_by_point_and_edge(step_points, step_edges, hole_poly, layer_idx, layer_violation_poly_set);
+  for (auto& [routing_layer_idx, net_gtl_poly_set] : layer_net_gtl_poly_set) {
+    int32_t notch_spacing = routing_layer_list[routing_layer_idx].get_notch_spacing();
+    int32_t notch_length = routing_layer_list[routing_layer_idx].get_notch_length();
+    std::optional<int32_t> concave_ends = routing_layer_list[routing_layer_idx].get_concave_ends();
+    //主要检测函数
+    auto check_notch_func = [&](GTLHolePolyInt gtl_hole_poly, GTLPolyInt hole, bool is_hole = false) {//hole需要的是凸角
+      GTLHolePolyInt check_poly;
+      if (is_hole) {
+        check_poly.set(hole.begin(), hole.end());
+      } else {
+        check_poly = gtl_hole_poly;
+      }
+      int32_t coord_size = static_cast<int32_t>(check_poly.size());
+      if (coord_size < 4) {
+        return;
+      }
+      std::vector<PlanarCoord> coord_list;
+      for (auto iter = check_poly.begin(); iter != check_poly.end(); iter++) {
+        coord_list.push_back(DRCUTIL.convertToPlanarCoord(*iter));
+      }
+      std::vector<int32_t> edge_length_list;
+      std::vector<bool> convex_corner_list;
+      Rotation rotation = DRCUTIL.getRotation(check_poly);
+      for (int32_t i = 0; i < coord_size; i++) {
+        PlanarCoord& pre_coord = coord_list[getIdx(i - 1, coord_size)];
+        PlanarCoord& curr_coord = coord_list[i];
+        PlanarCoord& post_coord = coord_list[getIdx(i + 1, coord_size)];
+        edge_length_list.push_back(DRCUTIL.getManhattanDistance(pre_coord, curr_coord));
+        if (is_hole) {
+          convex_corner_list.push_back(!DRCUTIL.isConvexCorner(rotation, pre_coord, curr_coord, post_coord));
+        } else {
+          convex_corner_list.push_back(DRCUTIL.isConvexCorner(rotation, pre_coord, curr_coord, post_coord));
+        }
+      }
+      for (int32_t i = 0; i < coord_size; i++) {
+        int32_t pre_idx = getIdx(i - 1, coord_size);
+        int32_t curr_idx = i;
+        int32_t post_idx = getIdx(i + 1, coord_size);
+        int32_t post_post_idx = getIdx(i + 2, coord_size);
+        int32_t post_post_post_idx = getIdx(i + 3, coord_size);
+        if (convex_corner_list[curr_idx]) {
+          continue;  // 凸角不需要检查
+        }
+        if (concave_ends.has_value() == false) {
+          if (convex_corner_list[post_idx]) {
+            continue;  // 只检查连续两个凹角即可
+          }
+          int32_t side_edge_length_a = edge_length_list[curr_idx];
+          int32_t side_edge_length_b = edge_length_list[post_post_idx];  // 两个侧边
+          int32_t spacing_edge_length = edge_length_list[post_idx];      // 底边
+          if ((side_edge_length_a < notch_length || side_edge_length_b < notch_length) && (spacing_edge_length < notch_spacing)) {
+            // 用第二条边和短的那条边构成违例区域
+            PlanarCoord& violation_rect_point_a = side_edge_length_a < side_edge_length_b ? coord_list[post_idx] : coord_list[curr_idx];
+            PlanarCoord& violation_rect_point_b = side_edge_length_a < side_edge_length_b ? coord_list[pre_idx] : coord_list[post_post_idx];
 
+            layer_violation_gtl_poly_set[routing_layer_idx] += GTLRectInt(std::min(violation_rect_point_a.get_x(), violation_rect_point_b.get_x()),
+                                                                          std::min(violation_rect_point_a.get_y(), violation_rect_point_b.get_y()),
+                                                                          std::max(violation_rect_point_a.get_x(), violation_rect_point_b.get_x()),
+                                                                          std::max(violation_rect_point_a.get_y(), violation_rect_point_b.get_y()));
+          }
+        } else {  // cocave_ends的情况
+          // 只检查连续的三个凹角
+          if (convex_corner_list[post_idx] || convex_corner_list[post_post_idx]) {
+            continue;  // 只检查连续两个凹角即可
+          }
+          // 四个连续凹角的情况跳过，lef中跳过
+          if (convex_corner_list[post_post_post_idx] == false || convex_corner_list[pre_idx] == false) {
+            continue;
+          }
+          // 三凹角会有四条边，对应两种情况：1 2作为底边，2 3作为底边
+          /*
+         1-----
+         |
+         |          |
+         2----------3 太废代码了，先空着
+          */
+          // case1:12作为底边
+          // case2:23作为底边
+          std::vector<std::array<int32_t, 3>> cases = {{post_post_idx, post_idx, curr_idx}, {post_idx, post_post_idx, post_post_post_idx}};
+          for (auto [concave_edge_idx, spacing_edge_idx, side_edge_idx] : cases) {
+            int32_t concave_edge_length = edge_length_list[concave_edge_idx];
+            int32_t side_edge_length = edge_length_list[side_edge_idx];
+            int32_t spacing_edge_length = edge_length_list[spacing_edge_idx];
+            if (concave_edge_length < notch_length && side_edge_length >= notch_length && spacing_edge_length < notch_spacing) {
+              // 检查两边的rect是否满足条件,拿到底边对应的两条边
+              GTLSegment concave_edge = GTLSegment(
+                  GTLPointInt(coord_list[concave_edge_idx].get_x(), coord_list[concave_edge_idx].get_y()),
+                  GTLPointInt(coord_list[getIdx(concave_edge_idx - 1, coord_size)].get_x(), coord_list[getIdx(concave_edge_idx - 1, coord_size)].get_y()));
+              GTLSegment side_edge = GTLSegment(
+                  GTLPointInt(coord_list[side_edge_idx].get_x(), coord_list[side_edge_idx].get_y()),
+                  GTLPointInt(coord_list[getIdx(side_edge_idx - 1, coord_size)].get_x(), coord_list[getIdx(side_edge_idx - 1, coord_size)].get_y()));
+              GTLSegment spacing_edge = GTLSegment(
+                  GTLPointInt(coord_list[spacing_edge_idx].get_x(), coord_list[spacing_edge_idx].get_y()),
+                  GTLPointInt(coord_list[getIdx(spacing_edge_idx - 1, coord_size)].get_x(), coord_list[getIdx(spacing_edge_idx - 1, coord_size)].get_y()));
+              gtl::orientation_2d_enum slice_dir
+                  = gtl::x(spacing_edge.low()) == gtl::x(spacing_edge.high()) ? gtl::HORIZONTAL : gtl::VERTICAL;  // 水平竖切，竖直横切
+              // 找到两条边对应的两个矩形，对于竖直凹槽，左边为矩形右边，右边为矩形左边，对于水平凹槽，上边为矩形下边，下边为矩形上边
+              std::vector<GTLRectInt> slice_rect_list;
+              gtl::get_max_rectangles(slice_rect_list, gtl_hole_poly);
+              bool find_low = false;
+              bool find_high = false;
+              if (slice_dir == gtl::HORIZONTAL) {
+                GTLSegment& low_edge = gtl::y(concave_edge.low()) < gtl::y(side_edge.low()) ? concave_edge : side_edge;
+                GTLSegment& high_edge = gtl::y(concave_edge.low()) > gtl::y(side_edge.low()) ? concave_edge : side_edge;
+
+                for (GTLRectInt& slice_rect : slice_rect_list) {
+                  if (find_low && find_high) {
+                    break;
+                  }
+                  GTLSegment slice_rect_low_edge
+                      = GTLSegment(GTLPointInt(gtl::xl(slice_rect), gtl::yl(slice_rect)), GTLPointInt(gtl::xh(slice_rect), gtl::yl(slice_rect)));
+                  GTLSegment slice_rect_high_edge
+                      = GTLSegment(GTLPointInt(gtl::xl(slice_rect), gtl::yh(slice_rect)), GTLPointInt(gtl::xh(slice_rect), gtl::yh(slice_rect)));
+                  if (gtl::contains(slice_rect_low_edge, high_edge)) {
+                    int32_t rect_width = gtl::yh(slice_rect) - gtl::yl(slice_rect);
+                    if (rect_width > concave_ends) {
+                      find_high = false;  // 有满足宽度的矩形直接退出
+                      break;
+                    } else {
+                      find_high = true;
+                    }
+                  }
+                  if (gtl::contains(slice_rect_high_edge, low_edge)) {
+                    int32_t rect_width = gtl::yh(slice_rect) - gtl::yl(slice_rect);
+                    if (rect_width > concave_ends) {
+                      find_low = false;  // 有满足宽度的矩形直接退出
+                      break;
+                    } else {
+                      find_low = true;
+                    }
+                  }
+                }
+              } else {
+                GTLSegment& low_edge = gtl::x(concave_edge.low()) < gtl::x(side_edge.low()) ? concave_edge : side_edge;
+                GTLSegment& high_edge = gtl::x(concave_edge.low()) > gtl::x(side_edge.low()) ? concave_edge : side_edge;
+                for (GTLRectInt& slice_rect : slice_rect_list) {
+                  if (find_low && find_high) {
+                    break;
+                  }
+                  GTLSegment slice_rect_low_edge
+                      = GTLSegment(GTLPointInt(gtl::xl(slice_rect), gtl::yl(slice_rect)), GTLPointInt(gtl::xl(slice_rect), gtl::yh(slice_rect)));
+                  GTLSegment slice_rect_high_edge
+                      = GTLSegment(GTLPointInt(gtl::xh(slice_rect), gtl::yl(slice_rect)), GTLPointInt(gtl::xh(slice_rect), gtl::yh(slice_rect)));
+                  if (gtl::contains(slice_rect_low_edge, high_edge)) {
+                    int32_t rect_width = gtl::xh(slice_rect) - gtl::xl(slice_rect);
+                    if (rect_width > concave_ends) {
+                      find_high = false;  // 有满足宽度的矩形直接退出
+                      break;
+                    } else {
+                      find_high = true;
+                    }
+                  }
+                  if (gtl::contains(slice_rect_high_edge, low_edge)) {
+                    int32_t rect_width = gtl::xh(slice_rect) - gtl::xl(slice_rect);
+                    if (rect_width > concave_ends) {
+                      find_low = false;  // 有满足宽度的矩形直接退出
+                      break;
+                    } else {
+                      find_low = true;
+                    }
+                  }
+                }
+              }
+              if (!find_low || !find_high) {
+                continue;  // 两条边都满足条件,否则跳过
+              }
+              // 用第二条边和短的那条边构成违例区域，这里是通过底边来判断的
+              int32_t prev_prev_spacing_idx = getIdx(spacing_edge_idx - 2, coord_size);
+              int32_t prev_spacing_idx = getIdx(spacing_edge_idx - 1, coord_size);
+              int32_t post_spacing_idx = getIdx(spacing_edge_idx + 1, coord_size);
+              PlanarCoord& violation_rect_point_a
+                  = edge_length_list[prev_spacing_idx] < edge_length_list[post_spacing_idx] ? coord_list[spacing_edge_idx] : coord_list[prev_spacing_idx];
+              PlanarCoord& violation_rect_point_b
+                  = edge_length_list[prev_spacing_idx] < edge_length_list[post_spacing_idx] ? coord_list[prev_prev_spacing_idx] : coord_list[post_spacing_idx];
+
+              layer_violation_gtl_poly_set[routing_layer_idx] += GTLRectInt(std::min(violation_rect_point_a.get_x(), violation_rect_point_b.get_x()),
+                                                                            std::min(violation_rect_point_a.get_y(), violation_rect_point_b.get_y()),
+                                                                            std::max(violation_rect_point_a.get_x(), violation_rect_point_b.get_x()),
+                                                                            std::max(violation_rect_point_a.get_y(), violation_rect_point_b.get_y()));
+            }
+          }
+        }
+      }
+    };
+    for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set) {
+      std::vector<GTLHolePolyInt> gtl_hole_poly_list;
+      gtl_poly_set.get(gtl_hole_poly_list);  // get会自动识别要变成的类型,用带hole能够避免识别到hole导致edge不对
+      for (GTLHolePolyInt& gtl_hole_poly : gtl_hole_poly_list) {
+        check_notch_func(gtl_hole_poly, GTLPolyInt(), false);
+        // hole单独处理，hole的凸角对应polygon的凹角，除此之外处理逻辑完全一样
+        GTLHolePolyInt::iterator_holes_type hole_iter = gtl_hole_poly.begin_holes();
+        while (hole_iter != gtl_hole_poly.end_holes()) {
+          GTLPolyInt hole = *hole_iter;
+          check_notch_func(gtl_hole_poly, hole, true);
           hole_iter++;
         }
       }
     }
   }
 
-  for (auto& [layer_idx, violation_poly_set] : layer_violation_poly_set) {
+  for (auto& [layer_idx, violation_poly_set] : layer_violation_gtl_poly_set) {
     std::vector<GTLRectInt> violation_rect_list;
     gtl::get_max_rectangles(violation_rect_list, violation_poly_set);
-    int32_t required_size = layer_notch_spacing_rule[layer_idx].notch_spacing;
+    int32_t required_size = 140;
     for (GTLRectInt& violation_rect : violation_rect_list) {
       int32_t llx = gtl::xl(violation_rect);
       int32_t lly = gtl::yl(violation_rect);
