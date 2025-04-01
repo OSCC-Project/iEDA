@@ -783,7 +783,11 @@ std::map<std::string, double> InitSTA::getAllNodesSlew(const std::string& net_na
     driver_slew = STA_INST->getSlew(driver->getFullName().c_str(), ista::AnalysisMode::kMax, ista::TransType::kRise);
   }
 
-  auto all_node_slews = rc_net->getAllNodeSlew(driver_slew, ista::AnalysisMode::kMax, ista::TransType::kRise);
+  std::map<std::string, double> all_node_slews;
+
+  if (rc_net->rct()) {
+    all_node_slews = rc_net->getAllNodeSlew(driver_slew, ista::AnalysisMode::kMax, ista::TransType::kRise);
+  }
 
   return all_node_slews;
 }
@@ -1321,7 +1325,6 @@ std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<
   PW_INST->runIRAnalysis(power_net_name);
   auto instance_to_ir_drop = PW_INST->getInstanceIRDrop();
 
-  auto* sta_netlist = STA_INST->get_netlist();
   auto* idb_adapter = STA_INST->getIDBAdapter();
   auto dbu = idb_adapter->get_dbu();
   auto to_dbu = [dbu](auto coord) { return coord * dbu; };
