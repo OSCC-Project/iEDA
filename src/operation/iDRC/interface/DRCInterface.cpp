@@ -279,11 +279,16 @@ void DRCInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLa
   }
   // notch
   {
-    idb::routinglayer::Lef58SpacingNotchlength* idb_notch = idb_layer->get_lef58_spacing_notchlength().get();
-    if (idb_notch != nullptr) {
-      routing_layer.set_notch_spacing(idb_notch->get_min_spacing());
-      routing_layer.set_notch_length(idb_notch->get_min_notch_length());
-      routing_layer.set_concave_ends(idb_notch->get_concave_ends_side_of_notch_width());
+    IdbLayerSpacingNotchLength& idb_notch = idb_layer->get_spacing_notchlength();
+    idb::routinglayer::Lef58SpacingNotchlength* idb_lef58_notch = idb_layer->get_lef58_spacing_notchlength().get();
+    if (idb_notch.exist()) {
+      routing_layer.set_notch_spacing(idb_notch.get_min_spacing());
+      routing_layer.set_notch_length(idb_notch.get_notch_length());
+      exist_rule_set.insert(ViolationType::kNotchSpacing);
+    } else if (idb_lef58_notch != nullptr) {
+      routing_layer.set_notch_spacing(idb_lef58_notch->get_min_spacing());
+      routing_layer.set_notch_length(idb_lef58_notch->get_min_notch_length());
+      routing_layer.set_concave_ends(idb_lef58_notch->get_concave_ends_side_of_notch_width());
       exist_rule_set.insert(ViolationType::kNotchSpacing);
     }
   }
