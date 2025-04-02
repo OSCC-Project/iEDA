@@ -3,4 +3,4 @@ add_library(evaluator
     IREval.cpp
 )
 
-
+target_link_libraries(evaluator PUBLIC power ista-engine)

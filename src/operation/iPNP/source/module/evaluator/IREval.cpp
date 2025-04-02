@@ -54,7 +54,7 @@ unsigned IREval::runIRAnalysis(const std::string& power_net_name) {
     // 转换坐标格式
     std::map<std::pair<double, double>, double> coordinate_ir_map;
     for (const auto& [coord, ir_drop] : ir_drop_map) {
-      coordinate_ir_map[{coord.x, coord.y}] = ir_drop;
+      coordinate_ir_map[{coord.first, coord.second}] = ir_drop;
     }
     
     // 处理IR分析结果
