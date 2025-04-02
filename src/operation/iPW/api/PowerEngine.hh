@@ -92,12 +92,12 @@ class PowerEngine {
     }
     return _ipower->runIRAnalysis(power_net_name);
   }
-  std::map<Instance*, double> getInstanceIRDrop();
+  std::map<ista::Instance*, double> getInstanceIRDrop();
 
-  std::map<Instance::Coordinate, double> displayPowerMap() {
+  std::map<ista::Instance::Coordinate, double> displayPowerMap() {
     return _ipower->displayInstancePowerMap();
   }
-  std::map<Instance::Coordinate, double> displayIRDropMap();
+  std::map<ista::Instance::Coordinate, double> displayIRDropMap();
 
   unsigned reportIRAnalysis() {
     return _ipower->reportIRAnalysis();
