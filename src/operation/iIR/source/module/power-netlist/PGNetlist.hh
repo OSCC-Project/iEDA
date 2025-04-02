@@ -222,13 +222,15 @@ class IRPGNetlistBuilder {
   IRPGNetlistBuilder() = default;
   ~IRPGNetlistBuilder() = default;
 
+  auto& get_rust_pg_netlists() { return _rust_pg_netlists; }
+
   std::vector<BGSegment> buildBGSegments(idb::IdbSpecialNet* special_net,
                                          unsigned& line_segment_num);
 
   void build(idb::IdbSpecialNet* special_net, idb::IdbPin* io_pin,
              std::function<double(unsigned, unsigned)> calc_resistance);
   void createRustPGNetlist();
-  void createRustRCData();
+  unsigned createRustRCData();
 
   auto* get_rust_rc_data() const { return _rust_rc_data; }
 
