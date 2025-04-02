@@ -28,6 +28,8 @@ TclInitDRC::TclInitDRC(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-temp_directory_path", ValueType::kString));
   // int32_t thread_number;                 // optional
   _config_list.push_back(std::make_pair("-thread_number", ValueType::kInt));
+  // std::string golden_directory_path;     // optional
+  _config_list.push_back(std::make_pair("-golden_directory_path", ValueType::kString));
 
   TclUtil::addOption(this, _config_list);
 }
@@ -38,7 +40,7 @@ unsigned TclInitDRC::exec()
     return 0;
   }
   std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
-  DRCI.initDRC(config_map);
+  DRCI.initDRC(config_map, false);
   return 1;
 }
 

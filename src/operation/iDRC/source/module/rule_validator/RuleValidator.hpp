@@ -51,6 +51,7 @@ class RuleValidator
   void buildRVModel(RVModel& rv_model);
   void verifyRVModel(RVModel& rv_model);
   bool needVerifying(RVBox& rv_box);
+  void buildViolationSet(RVBox& rv_box);
   void verifyRVBox(RVBox& rv_box);
   void verifyAdjacentCutSpacing(RVBox& rv_box);
   void verifyCornerFillSpacing(RVBox& rv_box);
@@ -63,6 +64,7 @@ class RuleValidator
   void verifyEndOfLineSpacing(RVBox& rv_box);
   void verifyFloatingPatch(RVBox& rv_box);
   void verifyJogToJogSpacing(RVBox& rv_box);
+  void verifyMaximumWidth(RVBox& rv_box);
   void verifyMaxViaStack(RVBox& rv_box);
   void verifyMetalShort(RVBox& rv_box);
   void verifyMinHole(RVBox& rv_box);
@@ -77,12 +79,19 @@ class RuleValidator
   void verifyParallelRunLengthSpacing(RVBox& rv_box);
   void verifySameLayerCutSpacing(RVBox& rv_box);
   void processRVBox(RVBox& rv_box);
-  std::vector<Violation> getViolationList(RVModel& rv_model);
+  void buildViolationList(RVBox& rv_box);
+  void updateSummary(RVBox& rv_box);
+  void buildViolationList(RVModel& rv_model);
+  void updateSummary(RVModel& rv_model);
+  void printSummary(RVModel& rv_model);
 
 #if 1  // debug
   void debugPlotRVModel(RVModel& rv_model, std::string flag);
   void debugPlotRVBox(RVBox& rv_box, std::string flag);
-  GPDataType convertGPDataType(ViolationType violation_type);
+  void debugViolationByType(RVBox& rv_box, ViolationType violation_type);
+  void debugVerifyRVModelByGolden(RVModel& rv_model);
+  void debugVerifyRVBoxByGolden(RVBox& rv_box);
+  void debugOutputViolationByGolden(RVBox& rv_box);
 #endif
 };
 

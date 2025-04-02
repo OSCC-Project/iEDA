@@ -16,9 +16,9 @@
 // ***************************************************************************************
 #pragma once
 
+#include "DRCHeader.hpp"
 #include "GPTextPresentation.hpp"
 #include "PlanarCoord.hpp"
-#include "DRCHeader.hpp"
 
 namespace idrc {
 

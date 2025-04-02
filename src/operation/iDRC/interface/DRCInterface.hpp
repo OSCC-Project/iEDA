@@ -30,12 +30,14 @@ namespace idb {
 class IdbNet;
 class IdbLayerRouting;
 class IdbLayerCut;
+enum class IdbLayerDirection : uint8_t;
 }  // namespace idb
 
 namespace idrc {
 class RoutingLayer;
 class CutLayer;
 class DRCShape;
+enum class Direction;
 }  // namespace idrc
 
 #endif
@@ -53,10 +55,10 @@ class DRCInterface
 #if 1  // 外部调用DRC的API
 
 #if 1  // iDRC
-  void initDRC(std::map<std::string, std::any> config_map);
+  void initDRC(std::map<std::string, std::any> config_map, bool enable_quiet);
   void checkDef();
   void destroyDRC();
-  std::vector<ids::Violation> getViolationList(std::vector<ids::Shape>& ids_env_shape_list, std::vector<ids::Shape>& ids_result_shape_list, bool enable_quiet);
+  std::vector<ids::Violation> getViolationList(std::vector<ids::Shape>& ids_env_shape_list, std::vector<ids::Shape>& ids_result_shape_list);
 #endif
 
 #endif
@@ -69,12 +71,15 @@ class DRCInterface
   void input(std::map<std::string, std::any>& config_map);
   void wrapConfig(std::map<std::string, std::any>& config_map);
   void wrapDatabase();
+  void wrapMicronDBU();
   void wrapManufactureGrid();
+  void wrapDie();
   void wrapLayerList();
   void wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
   void wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
   void wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_layer);
   void wrapLayerInfo();
+  Direction getDRCDirectionByDB(idb::IdbLayerDirection idb_direction);
 #endif
 
 #if 1  // output
@@ -84,9 +89,9 @@ class DRCInterface
 #endif
 
 #if 1  // form def
-  void buildEnvShapeList(std::vector<ids::Shape>& env_shape_list);
+  std::vector<ids::Shape> buildEnvShapeList();
   bool isSkipping(idb::IdbNet* idb_net);
-  void buildResultShapeList(std::vector<ids::Shape>& result_shape_list);
+  std::vector<ids::Shape> buildResultShapeList();
 #endif
 
 #if 1  // form tool

@@ -39,24 +39,6 @@ class DRCEngine
   void clearTempIgnoredViolationSet();
   void destroy();
 
-  ///////////////////////////////
-  ///////////////////////////////
-  ////////////temp///////////////
-  std::vector<Violation> getViolationListByTemp(DETask& de_task)
-  {
-    getViolationListBySelf(de_task);
-
-    filterViolationList(de_task);
-    checkViolationList(de_task);
-    if (de_task.get_proc_type() == DEProcType::kGet) {
-      buildViolationList(de_task);
-    }
-    return de_task.get_violation_list();
-  }
-  ////////////temp///////////////
-  ///////////////////////////////
-  ///////////////////////////////
-
  private:
   // self
   static DRCEngine* _de_instance;
@@ -71,10 +53,6 @@ class DRCEngine
   DRCEngine& operator=(DRCEngine&& other) = delete;
   // function
   void buildIgnoredViolationSet();
-  void getViolationListBySelf(DETask& de_task);
-  void buildTask(DETask& de_task);
-  void writeTask(DETask& de_task);
-  void readTask(DETask& de_task);
   void getViolationListByInterface(DETask& de_task);
   void filterViolationList(DETask& de_task);
   void checkViolationList(DETask& de_task);

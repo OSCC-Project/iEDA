@@ -17,7 +17,9 @@
 #pragma once
 
 #include "CutLayer.hpp"
+#include "Die.hpp"
 #include "RoutingLayer.hpp"
+#include "ViolationType.hpp"
 
 namespace idrc {
 
@@ -27,9 +29,12 @@ class Database
   Database() = default;
   ~Database() = default;
   // getter
+  int32_t get_micron_dbu() const { return _micron_dbu; }
   int32_t get_manufacture_grid() const { return _manufacture_grid; }
+  Die& get_die() { return _die; }
   std::vector<RoutingLayer>& get_routing_layer_list() { return _routing_layer_list; }
   std::vector<CutLayer>& get_cut_layer_list() { return _cut_layer_list; }
+  std::set<ViolationType>& get_exist_rule_set() { return _exist_rule_set; }
   std::map<int32_t, int32_t>& get_routing_idb_layer_id_to_idx_map() { return _routing_idb_layer_id_to_idx_map; }
   std::map<int32_t, int32_t>& get_cut_idb_layer_id_to_idx_map() { return _cut_idb_layer_id_to_idx_map; }
   std::map<std::string, int32_t>& get_routing_layer_name_to_idx_map() { return _routing_layer_name_to_idx_map; }
@@ -37,13 +42,17 @@ class Database
   std::map<std::string, int32_t>& get_cut_layer_name_to_idx_map() { return _cut_layer_name_to_idx_map; }
   std::map<int32_t, std::vector<int32_t>>& get_cut_to_adjacent_routing_map() { return _cut_to_adjacent_routing_map; }
   // setter
+  void set_micron_dbu(const int32_t micron_dbu) { _micron_dbu = micron_dbu; }
   void set_manufacture_grid(const int32_t manufacture_grid) { _manufacture_grid = manufacture_grid; }
   // function
 
  private:
+  int32_t _micron_dbu = -1;
   int32_t _manufacture_grid = -1;
+  Die _die;
   std::vector<RoutingLayer> _routing_layer_list;
   std::vector<CutLayer> _cut_layer_list;
+  std::set<ViolationType> _exist_rule_set;
   std::map<int32_t, int32_t> _routing_idb_layer_id_to_idx_map;
   std::map<int32_t, int32_t> _cut_idb_layer_id_to_idx_map;
   std::map<std::string, int32_t> _routing_layer_name_to_idx_map;

@@ -14,12 +14,16 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "RuleValidator.hpp"
+#pragma once
 
 namespace idrc {
 
-void RuleValidator::verifyMetalShort(RVBox& rv_box)
+enum class SortStatus
 {
-}
+  kNone = 0,
+  kTrue = 1,
+  kEqual = 2,
+  kFalse = 3
+};
 
 }  // namespace idrc
