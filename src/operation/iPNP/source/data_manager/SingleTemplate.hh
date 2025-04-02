@@ -50,18 +50,8 @@ enum class PowerType
 class SingleTemplate
 {
  public:
-  /**
-   * @brief Construct a new Single Template object
-   * 
-   * @param direction Direction of the template stripes
-   * @param first_stripe_power_type Power type of the first stripe
-   * @param width Width of the stripes
-   * @param pg_offset Offset between power and ground wires
-   * @param space Distance between edges of two VDD wires
-   * @param offset Offset from bottom (horizontal) or left (vertical)
-   */
   SingleTemplate(StripeDirection direction = StripeDirection::kHorizontal,
-    PowerType first_stripe_power_type = PowerType::kVDD,
+    PowerType first_stripe_power_type = PowerType::kVSS,
     double width = -1.0, 
     double pg_offset = -1.0, 
     double space = -1.0, 
@@ -71,7 +61,6 @@ class SingleTemplate
 
   // Getters
   StripeDirection get_direction() const { return _direction; }
-  PowerType get_first_stripe_power_type() const { return _first_stripe_power_type; }
   double get_width() const { return _width; }
   double get_pg_offset() const { return _pg_offset; }
   double get_space() const { return _space; }
@@ -79,7 +68,6 @@ class SingleTemplate
 
   // Setters
   void set_direction(StripeDirection direction) { _direction = direction; }
-  void set_first_stripe_power_type(PowerType first_stripe_power_type) { _first_stripe_power_type = first_stripe_power_type; }
   void set_width(double width) { _width = width; }
   void set_pg_offset(double pg_offset) { _pg_offset = pg_offset; }
   void set_space(double space) { _space = space; }
@@ -87,7 +75,6 @@ class SingleTemplate
 
  private:
   StripeDirection _direction;
-  PowerType _first_stripe_power_type;
   double _width;
   double _pg_offset;  // offset between the first power and ground wire
   double _space;      // distance between edges of two VDD wire

@@ -26,8 +26,15 @@
 
 #include <iostream>
 #include <vector>
+#include <map>
+#include <string>
 
 #include "iPNPCommon.hh"
+
+// 前向声明
+namespace ipower {
+class Instance;
+}
 
 namespace ipnp {
 class IREval
@@ -38,10 +45,16 @@ class IREval
 
   double get_ir_value() { return ir_value; }
   std::vector<std::vector<double>> get_ir_map() { return ir_map; }
+  
+  // 运行IR分析
+  unsigned runIRAnalysis(const std::string& power_net_name = "VDD");
 
  private:
+  // 处理IR分析结果
+  void processIRResults(const std::map<std::pair<double, double>, double>& ir_drop_map);
+
   std::vector<std::vector<double>> ir_map;
-  double ir_value;
+  double ir_value{0.0};
 };
 
 }  // namespace ipnp

@@ -33,18 +33,7 @@ namespace ipnp {
 
 class PndOptimizer;
 
-iPNP::iPNP()
-{
-  // Initialize the input network
-  _input_network = GridManager();
-  _input_network.set_power_layers({ 9,8,7,6 });
-  _input_network.set_layer_count(_input_network.get_power_layers().size());
-  _input_network.set_ho_region_num(3);
-  _input_network.set_ver_region_num(3);
-  _input_network.set_core_width(_input_core_width);
-  _input_network.set_core_height(_input_core_height);
-  _input_network.update_GridManager_data();
-}
+iPNP::iPNP(){}
 
 iPNP::iPNP(const std::string& config_file)
 {
@@ -69,13 +58,10 @@ void iPNP::initSynthesize()
    * @todo add template_lib infomation to _initialized_network
    */
 
-  // Create network synthesizer
   NetworkSynthesis network_synthesizer(SysnType::kDefault, _input_network);
 
-  // Generate the initial network
   network_synthesizer.synthesizeNetwork();
 
-  // Get the initial network
   _initialized_network = network_synthesizer.get_network();
 
   /**
@@ -108,15 +94,20 @@ void iPNP::readDef(std::vector<std::string> lef_files, std::string def_path)
 
 void iPNP::getIdbDesignInfo()
 {
-  _input_core_width = _idb_wrapper.get_input_core_width();
-  _input_core_height = _idb_wrapper.get_input_core_height();
-
-  // for (int i = 0; i < _idb_wrapper.get_input_macro_nums(); i++) {
-  //   std::pair<int32_t, int32_t> l_coordinate(_idb_wrapper.get_input_macro_lx(), _idb_wrapper.get_input_macro_ly());
-  //   std::pair<int32_t, int32_t> h_coordinate(_idb_wrapper.get_input_macro_hx(), _idb_wrapper.get_input_macro_hy());
-  //   std::pair<std::pair<int32_t, int32_t>, std::pair<int32_t, int32_t>> macro_coordinate(l_coordinate, h_coordinate);
-  //   _input_macro_coordinate.push_back(macro_coordinate);
-  // }
+  // Initialize the input network
+  _input_network = GridManager();
+  _input_network.set_power_layers({ 9,8,7 });
+  _input_network.set_layer_count(_input_network.get_power_layers().size());
+  _input_network.set_ho_region_num(3);
+  _input_network.set_ver_region_num(3);
+  _input_network.set_core_width(_idb_wrapper.get_input_core_width());
+  _input_network.set_core_height(_idb_wrapper.get_input_core_height());
+  _input_network.set_core_llx(_idb_wrapper.get_input_core_lx());
+  _input_network.set_core_lly(_idb_wrapper.get_input_core_ly());
+  _input_network.set_core_urx(_idb_wrapper.get_input_core_hx());
+  _input_network.set_core_ury(_idb_wrapper.get_input_core_hy());
+  _input_network.update_GridManager_data();
+  
 }
 
 void iPNP::run()
@@ -124,19 +115,14 @@ void iPNP::run()
   
   if (_idb_wrapper.get_idb_design()) {
     
-    // Get the idb design information
     getIdbDesignInfo();
     
-    // Initialize the network
     initSynthesize();
 
-    // Optimize the network
     optimize();
 
-    // Save the network to idb
     saveToIdb();
 
-    // Write the network to def
     writeIdbToDef(_output_def_path);
     
   }

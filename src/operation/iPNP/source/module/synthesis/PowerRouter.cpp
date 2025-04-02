@@ -16,10 +16,10 @@
 // ***************************************************************************************
 /**
  * @file PowerRouter.cpp
- * @author Xinhao li
+ * @author Jianrong Su
  * @brief
  * @version 0.1
- * @date 2024-07-15
+ * @date 2025-03-28
  */
 
 #include "PowerRouter.hh"
@@ -31,108 +31,81 @@
 
 namespace ipnp {
 
-/**
- * @brief Convert pnp_network of type GridManager to iDB type.
- * @param net_type: Specify whether to write VDD or VSS to IdbSpecialNet.
- * @todo Add feature: power routing while avoiding Macro blocks.
- */
-idb::IdbSpecialNet* PowerRouter::createNet(GridManager pnp_network, ipnp::PowerType net_type)
+void PowerRouter::addPowerStripes(idb::IdbSpecialNet* power_net, GridManager pnp_network)
 {
-  std::string net_name = "VDD";
-  bool is_power = true;  // is VDD or VSS
-  if (net_type == ipnp::PowerType::kVDD) {
+  
+  // 判断 power_net 的类型
+  std::string net_name;
+  if (power_net->is_vdd()) {
     net_name = "VDD";
-    is_power = true;
-  } else if (net_type == ipnp::PowerType::kVSS) {
-    net_name = "VSS";
-    is_power = false;
-  } else {
-    net_name = "OTHER";
-    is_power = false;
   }
-  std::cout << "[iPNP info]: add" << net_name << "net." << std::endl;
+  else {
+    net_name = "VSS";
+  }
 
-  idb::IdbSpecialNet* power_net = new idb::IdbSpecialNet();
-
-  // Begin: convert pnp_network to power_net
-  power_net->set_net_name(net_name);
-  idb::IdbConnectType power_type = is_power ? idb::IdbConnectType::kPower : idb::IdbConnectType::kGround;
-  power_net->set_connect_type(power_type);
-  idb::IdbPin* io_pin = new idb::IdbPin();
-  io_pin->set_pin_name(net_name);
-  power_net->add_io_pin(io_pin);
-
-  // Begin: convert pnp_network to wire_list
-  idb::IdbSpecialWireList* wire_list = new idb::IdbSpecialWireList();
-
-  // Begin: convert pnp_network to wire
-  idb::IdbSpecialWire* wire = new idb::IdbSpecialWire();
-  wire->set_wire_state(idb::IdbWiringStatement::kRouted);
+  // 获取 power_net 的 wire_list
+  idb::IdbSpecialWireList* wire_list = power_net->get_wire_list();
 
   auto grid_data = pnp_network.get_grid_data();
   auto template_data = pnp_network.get_template_data();
   auto power_layers = pnp_network.get_power_layers();
 
-  // @param x_base, y_base: base_coordinates. Should be updated after traversing each region.
-  // @brief global coordinates = base_coordinates + coordinates within the region.
-  double x_base = 0;
-  double y_base = 0;
-
   for (int layer_idx = 0;layer_idx < pnp_network.get_layer_count();layer_idx++) {
+
+    // Get the base coordinates of the core
+    double x_base = pnp_network.get_core_llx();
+    double y_base = pnp_network.get_core_lly();
+
+    // Create a new routing layer
+    idb::IdbLayer* layer = new idb::IdbLayer();
+    layer->set_name("M" + std::to_string(power_layers[layer_idx]));
+    layer->set_type(idb::IdbLayerType::kLayerRouting);
+
+    // Begin: convert pnp_network to wire
+    idb::IdbSpecialWire* wire = new idb::IdbSpecialWire();
+    wire->set_wire_state(idb::IdbWiringStatement::kRouted);
+
     for (int i = 0; i < pnp_network.get_ho_region_num(); i++) {
       for (int j = 0; j < pnp_network.get_ver_region_num(); j++) {
-    
+
         SingleTemplate& single_template = template_data[layer_idx][i][j];
-
-        idb::IdbSpecialWireSegment* segment = new idb::IdbSpecialWireSegment();
-
-        // Get the parameters of the template.
-        double stripe_width = single_template.get_width();
-        double stripe_space = single_template.get_space();
+        double width = single_template.get_width();
+        double space = single_template.get_space();
         double offset = single_template.get_offset();
         double pg_offset = single_template.get_pg_offset();
-        ipnp::PowerType first_stripe_power_type = single_template.get_first_stripe_power_type();
 
-        // is True if the first stripe in the region is of the opposite type of the net_type.
-        int is_first_contrary_stripe_type;
-        if (net_name == "VDD") {
-          is_first_contrary_stripe_type = first_stripe_power_type == PowerType::kVSS ? 1 : 0;
-        }
-        else {  // net_name == VSS
-          is_first_contrary_stripe_type = first_stripe_power_type == PowerType::kVDD ? 1 : 0;
-        }
-
-        int count = 0;
         /**
-         * @brief The outermost position that can be reached by the current segment's edge when traversing each segment.
+         * @brief current_segment_outermost: the location of the outermost edge of the current segment.
          */
-        double current_segment_outermost
-          = offset + (count + 1) * stripe_width + count * stripe_space
-          + is_first_contrary_stripe_type * (pg_offset + stripe_width);
+        double current_segment_outermost;
+        if (net_name == "VSS") {
+          current_segment_outermost = offset + width;
+        }
+        else {  // net_name == VDD
+          current_segment_outermost = offset + width + pg_offset + width;
+        }
 
-        // Convert single_layer_grid to segment
+        int segment_count = 0;
+
+        // Convert single_template to segment
         if (single_template.get_direction() == StripeDirection::kHorizontal) {
-          // Termination conditions: the (count+1)'th wire segment cannot be fully placed in the region.
-          while (current_segment_outermost < y_base + grid_data[layer_idx][i][j].get_height()) {
-            // Create a new routing layer
-            idb::IdbLayer* layer = new idb::IdbLayer();
-
-            // Set the layer name and type  
-            layer->set_name("M" + std::to_string(power_layers[layer_idx]));
-            layer->set_type(idb::IdbLayerType::kLayerRouting);
-
-            // Set the segment parameters
+          // Calculate the maximum number of segments that can be placed in the region
+          int max_segment_count = (grid_data[layer_idx][i][j].get_height() - offset) / space;
+          if (grid_data[layer_idx][i][j].get_height() - offset - max_segment_count * space > 2 * width + pg_offset) {
+            max_segment_count++;
+          }
+          while (segment_count < max_segment_count) {
+            // Create a new segment
+            idb::IdbSpecialWireSegment* segment = new idb::IdbSpecialWireSegment();
             segment->set_layer(layer);
-            segment->set_route_width((int)stripe_width);
+            segment->set_route_width((int)width);
             segment->set_shape_type(idb::IdbWireShapeType::kStripe);
 
             // Set the segment coordinates
             double stripe_x1 = x_base;
-            double stripe_y1 = y_base + current_segment_outermost - 0.5 * stripe_width;
+            double stripe_y1 = y_base + current_segment_outermost - 0.5 * width;
             double stripe_x2 = x_base + grid_data[layer_idx][i][j].get_width();
             double stripe_y2 = stripe_y1;
-
-            // Add the segment points
             segment->add_point((int)stripe_x1, (int)stripe_y1);
             segment->add_point((int)stripe_x2, (int)stripe_y2);
 
@@ -140,33 +113,27 @@ idb::IdbSpecialNet* PowerRouter::createNet(GridManager pnp_network, ipnp::PowerT
             wire->add_segment(segment);
 
             // Calculate the outermost position of the next segment
-            count++;
-            current_segment_outermost
-              = offset + (count + 1) * stripe_width + count * stripe_space + is_first_contrary_stripe_type * (pg_offset + stripe_width);
+            current_segment_outermost += space;
+            segment_count++;
           }
         }
         else {  // direction is vertical
-          // Termination conditions: the (count+1)'th wire segment cannot be fully placed in the region.
-          while (current_segment_outermost < x_base + grid_data[layer_idx][i][j].get_width()) {
-            // Create a new routing layer
-            idb::IdbLayer* layer = new idb::IdbLayer();
-
-            // Set the layer name and type
-            layer->set_name("M" + std::to_string(power_layers[layer_idx]));
-            layer->set_type(idb::IdbLayerType::kLayerRouting);
-
-            // Set the segment parameters
+          int max_segment_count = (grid_data[layer_idx][i][j].get_width() - offset) / space;
+          if (grid_data[layer_idx][i][j].get_width() - offset - max_segment_count * space > 2 * width + pg_offset) {
+            max_segment_count++;
+          }
+          while (segment_count < max_segment_count) {
+            // Create a new segment
+            idb::IdbSpecialWireSegment* segment = new idb::IdbSpecialWireSegment();
             segment->set_layer(layer);
-            segment->set_route_width((int)stripe_width);
+            segment->set_route_width((int)width);
             segment->set_shape_type(idb::IdbWireShapeType::kStripe);
 
             // Set the segment coordinates
-            double stripe_x1 = x_base + current_segment_outermost - 0.5 * stripe_width;
+            double stripe_x1 = x_base + current_segment_outermost - 0.5 * width;
             double stripe_y1 = y_base;
             double stripe_x2 = stripe_x1;
             double stripe_y2 = y_base + grid_data[layer_idx][i][j].get_height();
-
-            // Add the segment points
             segment->add_point((int)stripe_x1, (int)stripe_y1);
             segment->add_point((int)stripe_x2, (int)stripe_y2);
 
@@ -174,31 +141,154 @@ idb::IdbSpecialNet* PowerRouter::createNet(GridManager pnp_network, ipnp::PowerT
             wire->add_segment(segment);
 
             // Calculate the outermost position of the next segment
-            count++;
-            current_segment_outermost
-              = offset + (count + 1) * stripe_width + count * stripe_space + is_first_contrary_stripe_type * (pg_offset + stripe_width);
+            current_segment_outermost += space;
+            segment_count++;
           }
         }
 
         x_base += grid_data[layer_idx][i][j].get_width();
       }
-      x_base = 0;
+      x_base = pnp_network.get_core_llx();
       y_base += grid_data[layer_idx][i][0].get_height();
     }
-    x_base = 0;
-    y_base += grid_data[layer_idx][0][0].get_height();
+
+    // 将 wire 添加到 wire_list 中
+    wire_list->add_wire(wire, idb::IdbWiringStatement::kRouted);
+
   }
-  // End: convert pnp_network to wire
+}
 
-  // Add the wire to the wire list
-  wire_list->add_wire(wire, idb::IdbWiringStatement::kRouted);
-  // End: convert pnp_network to wire_list
+void PowerRouter::addPowerFollowPin(idb::IdbDesign* idb_design, idb::IdbSpecialNet* power_net)
+{
+  auto rows = idb_design->get_layout()->get_rows();
+  auto wire_list = power_net->get_wire_list();
+  auto row_list = rows->get_row_list();
 
-  // Add the wire list to the power net
-  power_net->set_wire_list(wire_list);
-  // End: convert pnp_network to power_net
+  for (int layer_idx = 2; layer_idx > 0; layer_idx--) {
+    // Create a new routing layer
+    idb::IdbLayer* layer = new idb::IdbLayer();
+    layer->set_name("M" + std::to_string(layer_idx));
+    layer->set_type(idb::IdbLayerType::kLayerRouting);
 
-  return power_net;
+    // Create a new wire
+    idb::IdbSpecialWire* wire = new idb::IdbSpecialWire();
+    wire->set_wire_state(idb::IdbWiringStatement::kRouted);
+
+    int segment_idx;
+    int row_num = rows->get_row_num();
+
+    if (power_net->is_vdd()) {
+      segment_idx = 0;
+    }
+    else {
+      segment_idx = 1;
+    }
+
+    while(segment_idx < row_num) {
+      // Create a new follow pin segment
+      idb::IdbSpecialWireSegment* segment = new idb::IdbSpecialWireSegment();
+      segment->set_layer(layer);
+      segment->set_route_width(300.0);
+      segment->set_shape_type(idb::IdbWireShapeType::kFollowPin);
+
+      // Set the segment coordinates
+      double stripe_x1 = row_list[segment_idx]->get_original_coordinate()->get_x();
+      double stripe_y1 = row_list[segment_idx]->get_original_coordinate()->get_y();
+      double stripe_x2 = stripe_x1 + idb_design->get_layout()->get_core()->get_bounding_box()->get_width();
+      double stripe_y2 = stripe_y1;
+      segment->add_point((int)stripe_x1, (int)stripe_y1);
+      segment->add_point((int)stripe_x2, (int)stripe_y2);
+
+      // Add the segment to the wire
+      wire->add_segment(segment);
+
+      segment_idx += 2;
+    }
+
+    if (row_num % 2 == 0 && power_net->is_vdd()) {
+      // Create a new follow pin segment
+      idb::IdbSpecialWireSegment* segment = new idb::IdbSpecialWireSegment();
+      segment->set_layer(layer);
+      segment->set_route_width(300.0);
+      segment->set_shape_type(idb::IdbWireShapeType::kFollowPin);
+
+      // Set the segment coordinates
+      double stripe_x1 = row_list[row_num - 1]->get_bounding_box()->get_low_x();
+      double stripe_y1 = row_list[row_num - 1]->get_bounding_box()->get_high_y();
+      double stripe_x2 = stripe_x1 + idb_design->get_layout()->get_core()->get_bounding_box()->get_width();
+      double stripe_y2 = stripe_y1;
+      segment->add_point((int)stripe_x1, (int)stripe_y1);
+      segment->add_point((int)stripe_x2, (int)stripe_y2);
+
+      // Add the segment to the wire
+      wire->add_segment(segment);
+    }
+
+    // Add the wire to the wire list
+    wire_list->add_wire(wire, idb::IdbWiringStatement::kRouted);
+  }
+}
+
+void PowerRouter::addVSSNet(idb::IdbDesign* idb_design, GridManager pnp_network)
+{
+  idb::IdbSpecialNet* vss_net = idb_design->get_special_net_list()->find_net("VSS");
+
+  if (vss_net == nullptr) {
+    // 创建 VSS 网络
+    idb::IdbSpecialNet* power_net = new idb::IdbSpecialNet();
+    power_net->set_net_name("VSS");
+    power_net->set_connect_type(idb::IdbConnectType::kGround);
+    idb::IdbPin* io_pin = new idb::IdbPin();
+    io_pin->set_pin_name("VSS");
+    power_net->add_io_pin(io_pin);
+
+    idb_design->get_special_net_list()->add_net(power_net);
+    vss_net = power_net;
+  }
+
+  addPowerStripes(vss_net, pnp_network);
+  std::cout << "[iPNP info]: Add VSS Power Stripes success." << std::endl;
+
+  addPowerFollowPin(idb_design, vss_net);
+  std::cout << "[iPNP info]: Add VSS Power Follow Pin success." << std::endl;
+}
+
+void PowerRouter::addVDDNet(idb::IdbDesign* idb_design, GridManager pnp_network)
+{
+  idb::IdbSpecialNet* vdd_net = idb_design->get_special_net_list()->find_net("VDD");
+
+  if (vdd_net == nullptr) {
+    // 创建 VDD 网络
+    idb::IdbSpecialNet* power_net = new idb::IdbSpecialNet();
+    power_net->set_net_name("VDD");
+    power_net->set_connect_type(idb::IdbConnectType::kPower);
+    idb::IdbPin* io_pin = new idb::IdbPin();
+    io_pin->set_pin_name("VDD");
+    power_net->add_io_pin(io_pin);
+
+    idb_design->get_special_net_list()->add_net(power_net);
+    vdd_net = power_net;
+  }
+
+  addPowerStripes(vdd_net, pnp_network);
+  std::cout << "[iPNP info]: Add VDD Power Stripes success." << std::endl;
+
+  addPowerFollowPin(idb_design, vdd_net);
+  std::cout << "[iPNP info]: Add VDD Power Follow Pin success." << std::endl;
+}
+
+void PowerRouter::addPowerNets(idb::IdbDesign* idb_design, GridManager pnp_network)
+{
+  if (!idb_design) {
+    std::cerr << "[iPNP error]: Invalid IDB design object." << std::endl;
+    return;
+  }
+
+  addVSSNet(idb_design, pnp_network);
+  std::cout << "[iPNP info]: Add VSS Power Nets success." << std::endl;
+
+  addVDDNet(idb_design, pnp_network);
+  std::cout << "[iPNP info]: Add VDD Power Nets success." << std::endl;
 }
 
 }  // namespace ipnp

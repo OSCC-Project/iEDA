@@ -72,6 +72,7 @@ class PDNRectanGridRegion : public PDNGridRegion
   PDNRectanGridRegion();
   ~PDNRectanGridRegion() = default;
 
+  // Getters
   double get_height() { return _y_right_top - _y_left_bottom; }
   double get_width() { return _x_right_top - _x_left_bottom; }
   std::pair<double, double> get_left_bottom_coordinate() const
@@ -85,6 +86,7 @@ class PDNRectanGridRegion : public PDNGridRegion
     return right_top_coordinate;
   }
 
+  // Setters
   void set_x_left_bottom(double x) { _x_left_bottom = x; }
   void set_y_left_bottom(double y) { _y_left_bottom = y; }
   void set_x_right_top(double x) { _x_right_top = x; }
@@ -111,8 +113,12 @@ class GridManager
   int get_layer_count() const { return _layer_count; }
   int get_ho_region_num() const { return _ho_region_num; }
   int get_ver_region_num() const { return _ver_region_num; }
-  double get_chip_width() const { return _core_width; }
-  double get_chip_height() const { return _core_height; }
+  int32_t get_core_llx() const { return _core_llx; }
+  int32_t get_core_lly() const { return _core_lly; }
+  int32_t get_core_urx() const { return _core_urx; }
+  int32_t get_core_ury() const { return _core_ury; }
+  double get_core_width() const { return _core_width; }
+  double get_core_height() const { return _core_height; }
   const auto& get_grid_data() const { return _grid_data; }
   const auto& get_template_data() const { return _template_data; }
   const std::vector<SingleTemplate>& get_horizontal_templates() const { return _template_libs.get_horizontal_templates(); }
@@ -132,6 +138,10 @@ class GridManager
   void set_core_height(double chip_height) { _core_height = chip_height; }
   void set_grid_data(std::vector<std::vector<std::vector<PDNRectanGridRegion>>> grid_data) { _grid_data = grid_data; } 
   void set_single_template(int layer_idx, int row, int col, const SingleTemplate& single_template) { _template_data[layer_idx][row][col] = single_template; }
+  void set_core_llx(int32_t core_llx) { _core_llx = core_llx; } 
+  void set_core_lly(int32_t core_lly) { _core_lly = core_lly; }
+  void set_core_urx(int32_t core_urx) { _core_urx = core_urx; }
+  void set_core_ury(int32_t core_ury) { _core_ury = core_ury; }
   void update_GridManager_data() { initialize_grid_data(); }
   
 private:
@@ -139,8 +149,13 @@ private:
   int _layer_count;     // total number of layers
   int _ho_region_num;   // number of horizontal regions
   int _ver_region_num;  // number of vertical regions
-  double _core_width;   // width of the core
-  double _core_height;  // height of the core
+
+  int32_t _core_width;   // width of the core
+  int32_t _core_height;  // height of the core
+  int32_t _core_llx;    // left bottom x coordinate of the core 
+  int32_t _core_lly;    // left bottom y coordinate of the core
+  int32_t _core_urx;    // right top x coordinate of the core
+  int32_t _core_ury;    // right top y coordinate of the core
 
   std::vector<std::pair<std::string, std::string>> _power_nets;  // only VDD VSS / VDD GND
   std::vector<std::vector<std::vector<PDNRectanGridRegion>>> _grid_data;      // [layer][row][col]

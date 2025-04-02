@@ -29,7 +29,7 @@ namespace ipnp {
 SingleTemplate::SingleTemplate(StripeDirection direction, PowerType first_stripe_power_type, 
                                double width, double pg_offset, double space, double offset)
     : _direction(direction),
-      _first_stripe_power_type(first_stripe_power_type),
+      // _first_stripe_power_type(first_stripe_power_type),
       _width(width),
       _pg_offset(pg_offset),
       _space(space),

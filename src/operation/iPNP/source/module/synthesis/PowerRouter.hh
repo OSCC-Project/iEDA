@@ -16,10 +16,10 @@
 // ***************************************************************************************
 /**
  * @file PowerRouter.hh
- * @author Xinhao li
+ * @author Jianrong Su
  * @brief
  * @version 0.1
- * @date 2024-07-15
+ * @date 2025-03-28
  */
 
 #pragma once
@@ -57,11 +57,19 @@ namespace ipnp {
 
 class PowerRouter
 {
- public:
+public:
   PowerRouter() = default;
   ~PowerRouter() = default;
 
-  idb::IdbSpecialNet* createNet(GridManager pnp_network, ipnp::PowerType net_type);
+  void addPowerNets(idb::IdbDesign* idb_design, GridManager pnp_network);
+
+private:
+
+  void addPowerStripes(idb::IdbSpecialNet* power_net, GridManager pnp_network);
+  void addPowerFollowPin(idb::IdbDesign* idb_design, idb::IdbSpecialNet* power_net);
+
+  void addVSSNet(idb::IdbDesign* idb_design, GridManager pnp_network);  
+  void addVDDNet(idb::IdbDesign* idb_design, GridManager pnp_network);
 };
 
 }  // namespace ipnp

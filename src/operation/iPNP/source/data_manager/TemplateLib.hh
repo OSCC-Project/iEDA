@@ -38,16 +38,6 @@ class TemplateLib
   TemplateLib() = default;
   ~TemplateLib() = default;
 
-  /**
-   * @brief Generate a single template
-   * 
-   * @param direction Direction of the template stripes
-   * @param width Width of the stripes
-   * @param pg_offset Offset between power and ground wires
-   * @param space Distance between edges of two VDD wires
-   * @param offset Offset from bottom (horizontal) or left (vertical)
-   * @return SingleTemplate The generated template
-   */
   SingleTemplate gen_single_template(StripeDirection direction,
     double width,
     double pg_offset,

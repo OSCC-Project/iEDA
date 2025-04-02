@@ -32,28 +32,20 @@
 #include <unistd.h>
 
 #include "PowerVia.hh"
+#include "PowerRouter.hh"
 
 namespace ipnp {
 
   void iPNPIdbWrapper::saveToIdb(GridManager pnp_network)
   {
-    // PowerRouter* power_router = new PowerRouter();
-    // _idb_design->get_special_net_list()->add_net(power_router->createNet(pnp_network, ipnp::PowerType::kVDD));
-    // _idb_design->get_special_net_list()->add_net(power_router->createNet(pnp_network, ipnp::PowerType::kVSS));
+    PowerRouter* power_router = new PowerRouter();
+    power_router->addPowerNets(_idb_design, pnp_network);
 
-    // PowerVia power_via;
+    PowerVia* power_via = new PowerVia();
+    _idb_design = power_via->connectAllPowerLayers(pnp_network, _idb_design);
     
-    // idb::IdbDesign* updated_design = power_via.connectAllPowerLayers(pnp_network, _idb_design);
-    // if (!updated_design) {
-    //   std::cerr << "[iPNP error]: Failed to connect power layers." << std::endl;
-    // }
-    // else {
-    //   // 更新设计对象
-    //   _idb_design = updated_design;
-    //   std::cout << "[iPNP info]: Successfully connected all power layers." << std::endl;
-    // }
-    
-    // delete power_router;
+    delete power_router;
+    delete power_via;
 
     std::cout << "[iPNP info]: Added iPNP net." << std::endl;
   }

@@ -45,8 +45,8 @@ NetworkSynthesis::NetworkSynthesis(SysnType sysn_type, GridManager grid_info)
   _synthesized_network.set_power_layers(_input_grid_info.get_power_layers());
   _synthesized_network.set_ho_region_num(_input_grid_info.get_ho_region_num());
   _synthesized_network.set_ver_region_num(_input_grid_info.get_ver_region_num());
-  _synthesized_network.set_core_width(_input_grid_info.get_chip_width());
-  _synthesized_network.set_core_height(_input_grid_info.get_chip_height());
+  _synthesized_network.set_core_width(_input_grid_info.get_core_width());
+  _synthesized_network.set_core_height(_input_grid_info.get_core_height());
   _synthesized_network.set_grid_data(_input_grid_info.get_grid_data());
 }
 
@@ -88,7 +88,7 @@ void NetworkSynthesis::manualSetTemplates()
   // distribute templates to each layer
   for (int layer_idx = 0; layer_idx < layer_count; ++layer_idx) {
     int power_layer = power_layers[layer_idx];
-    bool use_horizontal = (layer_idx % 2 == 0);
+    bool use_horizontal = (layer_idx % 2 == 1);
     
     std::cout << "Layer " << power_layer  << " Using "
               << (use_horizontal ? "horizontal" : "vertical") << " templates" << std::endl;
@@ -98,9 +98,13 @@ void NetworkSynthesis::manualSetTemplates()
         if (use_horizontal) {
           // use horizontal template
           _synthesized_network.set_single_template(layer_idx, i, j, horizontal_templates[0]);
-        } else {
+        }
+        else {
           // use vertical template
           _synthesized_network.set_single_template(layer_idx, i, j, vertical_templates[0]);
+          if (layer_idx == 2) {
+            _synthesized_network.set_single_template(layer_idx, i, j, vertical_templates[1]);
+          }
         }
       }
     }

@@ -32,26 +32,21 @@ SingleTemplate TemplateLib::gen_single_template(StripeDirection direction,
                                            double space,
                                            double offset)
 {
-  SingleTemplate single_template(direction, PowerType::kVDD, width, pg_offset, space, offset);
-  
-  // Set the first line type based on direction
-  if (direction == StripeDirection::kHorizontal) {
-    single_template.set_first_stripe_power_type(PowerType::kVDD);
-  } else {
-    single_template.set_first_stripe_power_type(PowerType::kVSS);
-  }
-  
+  SingleTemplate single_template(direction, PowerType::kVSS, width, pg_offset, space, offset);
   return single_template;
 }
 
 void TemplateLib::gen_template_libs()
 {
   // Horizontal direction templates
-  _horizontal_templates.push_back(gen_single_template(StripeDirection::kHorizontal, 35.0, 15.0, 100.0, 22.4));
+  // _horizontal_templates.push_back(gen_single_template(StripeDirection::kHorizontal, 35.0, 15.0, 100.0, 22.4));
+  _horizontal_templates.push_back(gen_single_template(StripeDirection::kHorizontal, 8000.0, 1600.0, 19200.0, 8000.0));
   _horizontal_templates.push_back(gen_single_template(StripeDirection::kHorizontal, 4.0, 0.8, 9.6, 4.0));
   _horizontal_templates.push_back(gen_single_template(StripeDirection::kHorizontal, 0.5, 3.5, 8.0, 0.9));
 
   // Vertical direction templates
+  _vertical_templates.push_back(gen_single_template(StripeDirection::kVertical, 8000.0, 1600.0, 19200.0, 8000.0));
+  _vertical_templates.push_back(gen_single_template(StripeDirection::kVertical, 900.0, 1600.0, 19200.0, 8000.0));
   _vertical_templates.push_back(gen_single_template(StripeDirection::kVertical, 4.0, 0.8, 9.6, 4.0));
   _vertical_templates.push_back(gen_single_template(StripeDirection::kVertical, 4.65, 15.0, 10.0, 2.925));
   _vertical_templates.push_back(gen_single_template(StripeDirection::kVertical, 0.5, 2.5, 6.0, 0.84));
