@@ -80,6 +80,7 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
   std::map<int32_t, std::map<int32_t, std::vector<GTLRectInt>>> layer_net_gtl_env_maxrect_list;
   std::map<int32_t, std::map<int32_t, std::vector<GTLRectInt>>> layer_net_gtl_res_maxrect_list;
 
+  std::map<int32_t, std::map<int32_t, std::map<std::set<int32_t>, GTLPolySetInt>>> layer_rs_net_gtl_vio_poly_set;
   for (DRCShape* rect : rv_box.get_drc_env_shape_list()) {
     if (rect->get_is_routing() == false) {
       continue;
@@ -223,20 +224,84 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
               for (auto& [bgrect, _] : vio_inter_rect_result) {
                 vio_inter_poly_set += DRCUTIL.convertToGTLRectInt(bgrect);
               }
-
-              vio_inter_poly_set = DRCUTIL.convertToGTLRectInt(violation_rect) - vio_inter_poly_set;
-              if (gtl::area(vio_inter_poly_set) == 0 && violation_rect.getArea() != 0) {
+              if (is_env) {
+                std::vector<std::pair<BGRectInt, int32_t>> vio_inter_rect_result
+                    = queryRectbyRtree(layer_res_query_tree, routing_layer_idx, violation_rect.get_ll_x(), violation_rect.get_ll_y(), violation_rect.get_ur_x(),
+                                       violation_rect.get_ur_y());  // 从原图形中查找对应的rect,不要贴边的
+                for (auto& [bgrect, _] : vio_inter_rect_result) {
+                  vio_inter_poly_set += DRCUTIL.convertToGTLRectInt(bgrect);
+                }
+              } else {
+                std::vector<std::pair<BGRectInt, int32_t>> vio_inter_rect_result
+                    = queryRectbyRtree(layer_env_query_tree, routing_layer_idx, violation_rect.get_ll_x(), violation_rect.get_ll_y(), violation_rect.get_ur_x(),
+                                       violation_rect.get_ur_y());  // 从原图形中查找对应的rect,不要贴边的
+                for (auto& [bgrect, _] : vio_inter_rect_result) {
+                  vio_inter_poly_set += DRCUTIL.convertToGTLRectInt(bgrect);
+                }
+              }
+              GTLPolySetInt left_vio_inter_poly_set = DRCUTIL.convertToGTLRectInt(violation_rect) - vio_inter_poly_set;
+              if (violation_rect.getArea() == 0) {
+                std::vector<GTLRectInt> rect_list;
+                gtl::get_max_rectangles(rect_list, vio_inter_poly_set);
+                bool is_inside = false;
+                for (GTLRectInt& rect : rect_list) {
+                  if (gtl::contains(rect, GTLPointInt(violation_rect.get_ll_x(), violation_rect.get_ll_y()))
+                      && gtl::contains(rect, GTLPointInt(violation_rect.get_ur_x(), violation_rect.get_ur_y()))) {
+                        is_inside = true;
+                        break;
+                  }
+                }
+                if(is_inside){
+                  continue;  // 同一个polygon的忽略
+                }
+              }
+              if (gtl::area(left_vio_inter_poly_set) == 0 && violation_rect.getArea() != 0) {
                 continue;  // 同一个polygon的忽略
               }
               std::vector<GTLRectInt> vio_inter_rect_list;
-              gtl::get_max_rectangles(vio_inter_rect_list, vio_inter_poly_set);
+              gtl::get_max_rectangles(vio_inter_rect_list, left_vio_inter_poly_set);
               if (vio_inter_rect_list.size() == 1) {
                 violation_rect = DRCUTIL.convertToPlanarRect(vio_inter_rect_list[0]);
               }
               if (net_idx == -1 && q_net_idx == -1) {
                 continue;  // -1忽略
               }
+              if (is_env) {  // 过滤掉由env产生的违例rect
+                std::vector<std::pair<BGRectInt, int32_t>> vio_inter_rect_result
+                    = queryRectbyRtree(layer_res_query_tree, routing_layer_idx, violation_rect.get_ll_x(), violation_rect.get_ll_y(), violation_rect.get_ur_x(),
+                                       violation_rect.get_ur_y());  // 从原图形中查找对应的rect,不要贴边的
+                if (vio_inter_rect_result.size() == 0) {
+                  continue;
+                }
+              }
+              // 贴两边的情况也要去除
+              std::vector<PlanarRect> corner_rect_list;  // 东南西北生成四个宽度为一的矩形
+              corner_rect_list.push_back(
+                  PlanarRect(violation_rect.get_ur_x(), violation_rect.get_ll_y(), violation_rect.get_ur_x() + 1, violation_rect.get_ur_y()));  // 东
+              corner_rect_list.push_back(
+                  PlanarRect(violation_rect.get_ll_x(), violation_rect.get_ll_y() - 1, violation_rect.get_ur_x(), violation_rect.get_ll_y()));  // 南
+              corner_rect_list.push_back(
+                  PlanarRect(violation_rect.get_ll_x() - 1, violation_rect.get_ll_y(), violation_rect.get_ll_x(), violation_rect.get_ur_y()));  // 西
+              corner_rect_list.push_back(
+                  PlanarRect(violation_rect.get_ll_x(), violation_rect.get_ur_y(), violation_rect.get_ur_x(), violation_rect.get_ur_y() + 1));  // 北
 
+              std::vector<bool> corner_flag_list(4, false);
+              for (int32_t i = 0; i < corner_rect_list.size(); i++) {
+                if (gtl::area(DRCUTIL.convertToGTLRectInt(corner_rect_list[i]) & vio_inter_poly_set) == corner_rect_list[i].getArea()) {
+                  corner_flag_list[i] = true;
+                }
+              }
+              // 东南 南西 西北 北东四个中只有一个满足时不行
+              int32_t corner_count = 0;
+              for (int32_t i = 0; i < corner_flag_list.size(); i++) {
+                if (corner_flag_list[i] && corner_flag_list[(i + 1) % 4]) {
+                  corner_count++;
+                }
+              }
+              if (corner_count == 1) {
+                continue;
+              }
+              // layer_rs_net_gtl_vio_poly_set[routing_layer_idx][need_spacing][{net_idx, q_net_idx}] += DRCUTIL.convertToGTLRectInt(violation_rect);
               Violation violation;
               violation.set_violation_type(ViolationType::kParallelRunLengthSpacing);
               violation.set_is_routing(true);
@@ -253,5 +318,25 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
       }
     }
   }
+
+  // for (auto& [routing_layer_idx, rs_net_gtl_vio_poly_set] : layer_rs_net_gtl_vio_poly_set) {
+  //   for (auto& [rs, net_gtl_vio_poly_set] : rs_net_gtl_vio_poly_set) {
+  //     for (auto& [net_set, gtl_vio_poly_set] : net_gtl_vio_poly_set) {
+  //       std::vector<GTLRectInt> rect_list;
+  //       gtl::get_max_rectangles(rect_list, gtl_vio_poly_set);
+  //       for (GTLRectInt& rect : rect_list) {
+  //         PlanarRect violation_rect = DRCUTIL.convertToPlanarRect(rect);
+  //         Violation violation;
+  //         violation.set_violation_type(ViolationType::kParallelRunLengthSpacing);
+  //         violation.set_is_routing(true);
+  //         violation.set_violation_net_set(net_set);
+  //         violation.set_layer_idx(routing_layer_idx);
+  //         violation.set_rect(violation_rect);
+  //         violation.set_required_size(rs);
+  //         violation_list.push_back(violation);
+  //       }
+  //     }
+  //   }
+  // }
 }
 }  // namespace idrc
