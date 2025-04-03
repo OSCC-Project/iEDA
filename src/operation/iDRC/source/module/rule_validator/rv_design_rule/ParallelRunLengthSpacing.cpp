@@ -69,7 +69,9 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
 #endif
   // 得到基础数据
   std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
-  std::vector<Violation>& violation_list = rv_box.get_violation_list();
+  std::vector<Violation> violation_list;
+  // std::vector<Violation>& violation_list = rv_box.get_violation_list();
+  std::vector<Violation>& final_violation_list = rv_box.get_violation_list();
   // 使用R树查询检测
   std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> layer_env_query_tree;
   std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> layer_res_query_tree;
@@ -247,11 +249,11 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
                 for (GTLRectInt& rect : rect_list) {
                   if (gtl::contains(rect, GTLPointInt(violation_rect.get_ll_x(), violation_rect.get_ll_y()))
                       && gtl::contains(rect, GTLPointInt(violation_rect.get_ur_x(), violation_rect.get_ur_y()))) {
-                        is_inside = true;
-                        break;
+                    is_inside = true;
+                    break;
                   }
                 }
-                if(is_inside){
+                if (is_inside) {
                   continue;  // 同一个polygon的忽略
                 }
               }
@@ -301,7 +303,18 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
               if (corner_count == 1) {
                 continue;
               }
-              // layer_rs_net_gtl_vio_poly_set[routing_layer_idx][need_spacing][{net_idx, q_net_idx}] += DRCUTIL.convertToGTLRectInt(violation_rect);
+              if (violation_rect.getArea() == 0) {
+                Violation violation;
+                violation.set_violation_type(ViolationType::kParallelRunLengthSpacing);
+                violation.set_is_routing(true);
+                violation.set_violation_net_set({net_idx, q_net_idx});
+                violation.set_layer_idx(routing_layer_idx);
+                violation.set_rect(violation_rect);
+                violation.set_required_size(need_spacing);
+                violation_list.push_back(violation);
+              } else {
+                // layer_rs_net_gtl_vio_poly_set[routing_layer_idx][need_spacing][{net_idx, q_net_idx}] += DRCUTIL.convertToGTLRectInt(violation_rect);
+              }
               Violation violation;
               violation.set_violation_type(ViolationType::kParallelRunLengthSpacing);
               violation.set_is_routing(true);
@@ -318,25 +331,22 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
       }
     }
   }
-
-  // for (auto& [routing_layer_idx, rs_net_gtl_vio_poly_set] : layer_rs_net_gtl_vio_poly_set) {
-  //   for (auto& [rs, net_gtl_vio_poly_set] : rs_net_gtl_vio_poly_set) {
-  //     for (auto& [net_set, gtl_vio_poly_set] : net_gtl_vio_poly_set) {
-  //       std::vector<GTLRectInt> rect_list;
-  //       gtl::get_max_rectangles(rect_list, gtl_vio_poly_set);
-  //       for (GTLRectInt& rect : rect_list) {
-  //         PlanarRect violation_rect = DRCUTIL.convertToPlanarRect(rect);
-  //         Violation violation;
-  //         violation.set_violation_type(ViolationType::kParallelRunLengthSpacing);
-  //         violation.set_is_routing(true);
-  //         violation.set_violation_net_set(net_set);
-  //         violation.set_layer_idx(routing_layer_idx);
-  //         violation.set_rect(violation_rect);
-  //         violation.set_required_size(rs);
-  //         violation_list.push_back(violation);
-  //       }
-  //     }
-  //   }
-  // }
+  // 检测被包裹的
+  for (Violation& violation : violation_list) {
+    bool is_inside = false;
+    for (Violation& check_violation : violation_list) {
+      if (check_violation.get_violation_type() == violation.get_violation_type() && check_violation.get_layer_idx() == violation.get_layer_idx()
+          && check_violation.get_required_size() == violation.get_required_size()
+          && check_violation.get_violation_net_set() == violation.get_violation_net_set() && check_violation.get_layer_idx() == violation.get_layer_idx()) {
+        if (DRCUTIL.isInside(check_violation.get_rect(), violation.get_rect()) && check_violation.get_rect() != violation.get_rect()) {
+          is_inside = true;
+          break;
+        }
+      }
+    }
+    if (is_inside == false) {
+      final_violation_list.push_back(violation);
+    }
+  }
 }
 }  // namespace idrc
