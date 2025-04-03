@@ -35,13 +35,13 @@ namespace ipower {
  */
 class PwrCell {
  public:
-  explicit PwrCell(Instance* design_inst) : _design_inst(design_inst) {}
+  explicit PwrCell(ista::Instance* design_inst) : _design_inst(design_inst) {}
   ~PwrCell() = default;
 
   auto* get_design_inst() { return _design_inst; }
 
  private:
-  Instance* _design_inst;
+  ista::Instance* _design_inst;
 };
 
 }  // namespace ipower
