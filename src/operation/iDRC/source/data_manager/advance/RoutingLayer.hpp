@@ -50,7 +50,8 @@ class RoutingLayer
   int32_t get_eol_within() const { return _eol_within; }
   bool get_has_corner_fill() const { return _has_corner_fill; }
   int32_t get_corner_fill_spacing() const { return _corner_fill_spacing; }
-  std::pair<int32_t, int32_t>& get_edge_length_pair() { return _edge_length_pair; }
+  int32_t get_edge_length_1() const { return _edge_length_1; }
+  int32_t get_edge_length_2() const { return _edge_length_2; }
   int32_t get_adjacent_eol() const { return _adjacent_eol; }
   // setter
   void set_layer_idx(const int32_t layer_idx) { _layer_idx = layer_idx; }
@@ -75,7 +76,8 @@ class RoutingLayer
   void set_eol_within(const int32_t eol_within) { _eol_within = eol_within; }
   void set_has_corner_fill(const bool has_corner_fill) { _has_corner_fill = has_corner_fill; }
   void set_corner_fill_spacing(const int32_t corner_fill_spacing) { _corner_fill_spacing = corner_fill_spacing; }
-  void set_edge_length_pair(const std::pair<int32_t, int32_t>& edge_length_pair) { _edge_length_pair = edge_length_pair; }
+  void set_edge_length_1(const int32_t edge_length_1) { _edge_length_1 = edge_length_1; }
+  void set_edge_length_2(const int32_t edge_length_2) { _edge_length_2 = edge_length_2; }
   void set_adjacent_eol(const int32_t adjacent_eol) { _adjacent_eol = adjacent_eol; }
   // function
   bool isPreferH() const { return _prefer_direction == Direction::kHorizontal; }
@@ -112,7 +114,8 @@ class RoutingLayer
   // corner fill
   bool _has_corner_fill = false;
   int32_t _corner_fill_spacing = -1;
-  std::pair<int32_t, int32_t> _edge_length_pair;
+  int32_t _edge_length_1 = -1;
+  int32_t _edge_length_2 = -1;
   int32_t _adjacent_eol = -1;
 };
 

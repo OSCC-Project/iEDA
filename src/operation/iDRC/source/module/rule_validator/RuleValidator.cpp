@@ -497,6 +497,15 @@ void RuleValidator::printSummary(RVModel& rv_model)
   DRCUTIL.printTableList({type_statistics_map_table});
 }
 
+#if 1  // aux
+
+int32_t RuleValidator::getIdx(int32_t idx, int32_t coord_size)
+{
+  return (idx + coord_size) % coord_size;
+}
+
+#endif
+
 #if 1  // debug
 
 void RuleValidator::debugPlotRVModel(RVModel& rv_model, std::string flag)
@@ -627,69 +636,72 @@ void RuleValidator::debugViolationByType(RVBox& rv_box, ViolationType violation_
   if (golden_directory_path == "null") {
     return;
   }
-  DRCLOG.warn(Loc::current(), "");
-  DRCLOG.warn(Loc::current(), "***** Begin Box ", rv_box.get_box_idx(), " *****");
-  DRCLOG.warn(Loc::current(), DRCUTIL.getSpaceByTabNum(1), GetViolationTypeName()(violation_type));
-  DRCLOG.warn(Loc::current(), DRCUTIL.getSpaceByTabNum(2), "incorrect");
-  int32_t incorrect_number = 0;
-  for (auto& [type, violation_set] : rv_box.get_type_violation_map()) {
-    if (violation_type != type) {
-      continue;
-    }
-    for (const Violation& violation : violation_set) {
-      if (!DRCUTIL.exist(rv_box.get_type_golden_violation_map()[type], violation)) {
-        std::string violation_info = "";
-        violation_info = DRCUTIL.getString(violation_info, DRCUTIL.getSpaceByTabNum(3));
-        violation_info = DRCUTIL.getString(violation_info, violation.get_ll_x() / 1000.0, ",", violation.get_ll_y() / 1000.0, "  ");
-        violation_info = DRCUTIL.getString(violation_info, violation.get_ur_x() / 1000.0, ",", violation.get_ur_y() / 1000.0, "  ");
-        violation_info = DRCUTIL.getString(violation_info, routing_layer_list[violation.get_layer_idx()].get_layer_name(), "  ");
-        violation_info = DRCUTIL.getString(violation_info, "{ ");
-        for (int32_t violation_net_idx : violation.get_violation_net_set()) {
-          violation_info = DRCUTIL.getString(violation_info, violation_net_idx, " ");
+#pragma omp critical
+  {
+    DRCLOG.warn(Loc::current(), "");
+    DRCLOG.warn(Loc::current(), "***** Begin Box ", rv_box.get_box_idx(), " *****");
+    DRCLOG.warn(Loc::current(), DRCUTIL.getSpaceByTabNum(1), GetViolationTypeName()(violation_type));
+    DRCLOG.warn(Loc::current(), DRCUTIL.getSpaceByTabNum(2), "incorrect");
+    int32_t incorrect_number = 0;
+    for (auto& [type, violation_set] : rv_box.get_type_violation_map()) {
+      if (violation_type != type) {
+        continue;
+      }
+      for (const Violation& violation : violation_set) {
+        if (!DRCUTIL.exist(rv_box.get_type_golden_violation_map()[type], violation)) {
+          std::string violation_info = "";
+          violation_info = DRCUTIL.getString(violation_info, DRCUTIL.getSpaceByTabNum(3));
+          violation_info = DRCUTIL.getString(violation_info, violation.get_ll_x() / 1000.0, ",", violation.get_ll_y() / 1000.0, "  ");
+          violation_info = DRCUTIL.getString(violation_info, violation.get_ur_x() / 1000.0, ",", violation.get_ur_y() / 1000.0, "  ");
+          violation_info = DRCUTIL.getString(violation_info, routing_layer_list[violation.get_layer_idx()].get_layer_name(), "  ");
+          violation_info = DRCUTIL.getString(violation_info, "{ ");
+          for (int32_t violation_net_idx : violation.get_violation_net_set()) {
+            violation_info = DRCUTIL.getString(violation_info, violation_net_idx, " ");
+          }
+          violation_info = DRCUTIL.getString(violation_info, "}", "  ");
+          violation_info = DRCUTIL.getString(violation_info, violation.get_required_size(), "  ");
+          violation_info = DRCUTIL.getString(violation_info, violation.get_is_routing() ? "true" : "false");
+          DRCLOG.warn(Loc::current(), violation_info);
+          incorrect_number++;
         }
-        violation_info = DRCUTIL.getString(violation_info, "}", "  ");
-        violation_info = DRCUTIL.getString(violation_info, violation.get_required_size(), "  ");
-        violation_info = DRCUTIL.getString(violation_info, violation.get_is_routing() ? "true" : "false");
-        DRCLOG.warn(Loc::current(), violation_info);
-        incorrect_number++;
       }
     }
-  }
-  if (incorrect_number > 0) {
-    DRCLOG.warn(Loc::current(), DRCUTIL.getSpaceByTabNum(3), "incorrect_number: ", incorrect_number);
-  }
-  DRCLOG.warn(Loc::current(), DRCUTIL.getSpaceByTabNum(2), "missed");
-  int32_t missed_number = 0;
-  for (auto& [type, golden_violation_set] : rv_box.get_type_golden_violation_map()) {
-    if (violation_type != type) {
-      continue;
+    if (incorrect_number > 0) {
+      DRCLOG.warn(Loc::current(), DRCUTIL.getSpaceByTabNum(3), "incorrect_number: ", incorrect_number);
     }
-    for (const Violation& golden_violation : golden_violation_set) {
-      if (!DRCUTIL.exist(rv_box.get_type_violation_map()[type], golden_violation)) {
-        std::string violation_info = "";
-        violation_info = DRCUTIL.getString(violation_info, DRCUTIL.getSpaceByTabNum(3));
-        violation_info = DRCUTIL.getString(violation_info, golden_violation.get_ll_x() / 1000.0, ",", golden_violation.get_ll_y() / 1000.0, "  ");
-        violation_info = DRCUTIL.getString(violation_info, golden_violation.get_ur_x() / 1000.0, ",", golden_violation.get_ur_y() / 1000.0, "  ");
-        violation_info = DRCUTIL.getString(violation_info, routing_layer_list[golden_violation.get_layer_idx()].get_layer_name(), "  ");
-        violation_info = DRCUTIL.getString(violation_info, "{ ");
-        for (int32_t violation_net_idx : golden_violation.get_violation_net_set()) {
-          violation_info = DRCUTIL.getString(violation_info, violation_net_idx, " ");
+    DRCLOG.warn(Loc::current(), DRCUTIL.getSpaceByTabNum(2), "missed");
+    int32_t missed_number = 0;
+    for (auto& [type, golden_violation_set] : rv_box.get_type_golden_violation_map()) {
+      if (violation_type != type) {
+        continue;
+      }
+      for (const Violation& golden_violation : golden_violation_set) {
+        if (!DRCUTIL.exist(rv_box.get_type_violation_map()[type], golden_violation)) {
+          std::string violation_info = "";
+          violation_info = DRCUTIL.getString(violation_info, DRCUTIL.getSpaceByTabNum(3));
+          violation_info = DRCUTIL.getString(violation_info, golden_violation.get_ll_x() / 1000.0, ",", golden_violation.get_ll_y() / 1000.0, "  ");
+          violation_info = DRCUTIL.getString(violation_info, golden_violation.get_ur_x() / 1000.0, ",", golden_violation.get_ur_y() / 1000.0, "  ");
+          violation_info = DRCUTIL.getString(violation_info, routing_layer_list[golden_violation.get_layer_idx()].get_layer_name(), "  ");
+          violation_info = DRCUTIL.getString(violation_info, "{ ");
+          for (int32_t violation_net_idx : golden_violation.get_violation_net_set()) {
+            violation_info = DRCUTIL.getString(violation_info, violation_net_idx, " ");
+          }
+          violation_info = DRCUTIL.getString(violation_info, "}", "  ");
+          violation_info = DRCUTIL.getString(violation_info, golden_violation.get_required_size(), "  ");
+          violation_info = DRCUTIL.getString(violation_info, golden_violation.get_is_routing() ? "true" : "false");
+          DRCLOG.warn(Loc::current(), violation_info);
+          missed_number++;
         }
-        violation_info = DRCUTIL.getString(violation_info, "}", "  ");
-        violation_info = DRCUTIL.getString(violation_info, golden_violation.get_required_size(), "  ");
-        violation_info = DRCUTIL.getString(violation_info, golden_violation.get_is_routing() ? "true" : "false");
-        DRCLOG.warn(Loc::current(), violation_info);
-        missed_number++;
       }
     }
-  }
-  if (missed_number > 0) {
-    DRCLOG.warn(Loc::current(), DRCUTIL.getSpaceByTabNum(3), "missed_number: ", missed_number);
-  }
-  DRCLOG.warn(Loc::current(), "***** End Box ", rv_box.get_box_idx(), " *****");
-  DRCLOG.warn(Loc::current(), "");
-  if (incorrect_number + missed_number > 0) {
-    debugPlotRVBox(rv_box, "best");
+    if (missed_number > 0) {
+      DRCLOG.warn(Loc::current(), DRCUTIL.getSpaceByTabNum(3), "missed_number: ", missed_number);
+    }
+    DRCLOG.warn(Loc::current(), "***** End Box ", rv_box.get_box_idx(), " *****");
+    DRCLOG.warn(Loc::current(), "");
+    if (incorrect_number + missed_number > 0) {
+      debugPlotRVBox(rv_box, "best");
+    }
   }
 }
 

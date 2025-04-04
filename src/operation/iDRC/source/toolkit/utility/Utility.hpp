@@ -18,6 +18,7 @@
 
 #include "DRCHeader.hpp"
 #include "Logger.hpp"
+#include "Orientation.hpp"
 #include "PlanarRect.hpp"
 #include "Rotation.hpp"
 #include "json.hpp"
@@ -42,9 +43,57 @@ class Utility
     return std::abs(start_coord.get_x() - end_coord.get_x()) + std::abs(start_coord.get_y() - end_coord.get_y());
   }
 
+  // 获得两个矩形的欧式距离
+  static double getEuclideanDistance(PlanarRect& a, PlanarRect& b)
+  {
+    int32_t x_spacing = std::max(b.get_ll_x() - a.get_ur_x(), a.get_ll_x() - b.get_ur_x());
+    int32_t y_spacing = std::max(b.get_ll_y() - a.get_ur_y(), a.get_ll_y() - b.get_ur_y());
+
+    if (x_spacing > 0 && y_spacing > 0) {
+      return std::sqrt((double) (x_spacing * x_spacing + y_spacing * y_spacing));
+    } else {
+      return std::max(std::max(x_spacing, y_spacing), 0);
+    }
+  }
+
 #endif
 
 #if 1  // 方向方位计算
+
+  static std::vector<Orientation> getOrientationList(const PlanarCoord& start_coord, const PlanarCoord& end_coord,
+                                                     Orientation point_orientation = Orientation::kNone)
+  {
+    std::set<Orientation> orientation_set;
+    orientation_set.insert(getOrientation(start_coord, PlanarCoord(start_coord.get_x(), end_coord.get_y()), point_orientation));
+    orientation_set.insert(getOrientation(start_coord, PlanarCoord(end_coord.get_x(), start_coord.get_y()), point_orientation));
+    orientation_set.erase(Orientation::kNone);
+    return std::vector<Orientation>(orientation_set.begin(), orientation_set.end());
+  }
+
+  // 判断线段方向 从start到end
+  static Orientation getOrientation(const LayerCoord& start_coord, const LayerCoord& end_coord, Orientation point_orientation = Orientation::kNone)
+  {
+    Orientation orientation;
+
+    if (start_coord.get_layer_idx() == end_coord.get_layer_idx()) {
+      if (isProximal(start_coord, end_coord)) {
+        orientation = point_orientation;
+      } else if (isHorizontal(start_coord, end_coord)) {
+        orientation = (start_coord.get_x() - end_coord.get_x()) > 0 ? Orientation::kWest : Orientation::kEast;
+      } else if (isVertical(start_coord, end_coord)) {
+        orientation = (start_coord.get_y() - end_coord.get_y()) > 0 ? Orientation::kSouth : Orientation::kNorth;
+      } else {
+        orientation = Orientation::kOblique;
+      }
+    } else {
+      if (isProximal(start_coord, end_coord)) {
+        orientation = (start_coord.get_layer_idx() - end_coord.get_layer_idx()) > 0 ? Orientation::kBelow : Orientation::kAbove;
+      } else {
+        orientation = Orientation::kOblique;
+      }
+    }
+    return orientation;
+  }
 
   // 判断线段方向
   static Direction getDirection(PlanarCoord start_coord, PlanarCoord end_coord)

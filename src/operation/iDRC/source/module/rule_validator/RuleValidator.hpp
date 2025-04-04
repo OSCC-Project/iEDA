@@ -85,6 +85,10 @@ class RuleValidator
   void updateSummary(RVModel& rv_model);
   void printSummary(RVModel& rv_model);
 
+#if 1  // aux
+  int32_t getIdx(int32_t idx, int32_t coord_size);
+#endif
+
 #if 1  // debug
   void debugPlotRVModel(RVModel& rv_model, std::string flag);
   void debugPlotRVBox(RVBox& rv_box, std::string flag);

@@ -21,7 +21,6 @@ namespace idrc {
 void RuleValidator::verifyMinStep(RVBox& rv_box)
 {
 #if 1  // 函数定义
-  auto getIdx = [](int32_t idx, int32_t coord_size) { return (idx + coord_size) % coord_size; };
   auto addRect = [](bgi::rtree<BGRectInt, bgi::quadratic<16>>& rtree, const BGRectInt& bg_rect) {
     std::vector<BGRectInt> result_rect_list;
     rtree.query(bgi::intersects(bg_rect), std::back_inserter(result_rect_list));
@@ -78,13 +77,12 @@ void RuleValidator::verifyMinStep(RVBox& rv_box)
         }
         std::vector<int32_t> edge_length_list;
         std::vector<bool> convex_corner_list;
-        Rotation rotation = DRCUTIL.getRotation(gtl_hole_poly);
         for (int32_t i = 0; i < coord_size; i++) {
           PlanarCoord& pre_coord = coord_list[getIdx(i - 1, coord_size)];
           PlanarCoord& curr_coord = coord_list[i];
           PlanarCoord& post_coord = coord_list[getIdx(i + 1, coord_size)];
           edge_length_list.push_back(DRCUTIL.getManhattanDistance(pre_coord, curr_coord));
-          convex_corner_list.push_back(DRCUTIL.isConvexCorner(rotation, pre_coord, curr_coord, post_coord));
+          convex_corner_list.push_back(DRCUTIL.isConvexCorner(DRCUTIL.getRotation(gtl_hole_poly), pre_coord, curr_coord, post_coord));
         }
         bgi::rtree<BGRectInt, bgi::quadratic<16>> rtree;
         for (int32_t i = 0; i < coord_size; i++) {

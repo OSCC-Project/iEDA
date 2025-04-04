@@ -237,6 +237,7 @@ void DRCInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLa
   // default
   {
     exist_rule_set.insert(ViolationType::kMetalShort);
+    exist_rule_set.insert(ViolationType::kOffGridOrWrongWay);
   }
   // min width
   {
@@ -343,7 +344,8 @@ void DRCInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLa
     if (idb_corner_fill != nullptr) {
       routing_layer.set_has_corner_fill(true);
       routing_layer.set_corner_fill_spacing(idb_corner_fill->get_spacing());
-      routing_layer.set_edge_length_pair({idb_corner_fill->get_edge_length1(), idb_corner_fill->get_edge_length2()});
+      routing_layer.set_edge_length_1(idb_corner_fill->get_edge_length1());
+      routing_layer.set_edge_length_2(idb_corner_fill->get_edge_length2());
       routing_layer.set_adjacent_eol(idb_corner_fill->get_eol_width());
       exist_rule_set.insert(ViolationType::kCornerFillSpacing);
     }
@@ -357,6 +359,7 @@ void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_
   // default
   {
     exist_rule_set.insert(ViolationType::kCutShort);
+    exist_rule_set.insert(ViolationType::kOffGridOrWrongWay);
   }
   // prl
   {

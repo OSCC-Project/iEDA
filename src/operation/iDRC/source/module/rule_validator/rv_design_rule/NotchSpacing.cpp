@@ -25,7 +25,6 @@ void RuleValidator::verifyNotchSpacing(RVBox& rv_box)
   SPACING 0.07 NOTCHLENGTH 0.155 CONCAVEENDS 0.055 ; " ;
  */
 #if 1  // 函数定义
-  auto getIdx = [](int32_t idx, int32_t coord_size) { return (idx + coord_size) % coord_size; };
   auto addRectToRtree
       = [](std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>>& _query_tree, GTLRectInt rect, int32_t layer_idx, int32_t net_idx) {
           BGRectInt rtree_rect(BGPointInt(xl(rect), yl(rect)), BGPointInt(xh(rect), yh(rect)));
@@ -90,16 +89,15 @@ void RuleValidator::verifyNotchSpacing(RVBox& rv_box)
       }
       std::vector<int32_t> edge_length_list;
       std::vector<bool> convex_corner_list;
-      Rotation rotation = DRCUTIL.getRotation(check_poly);
       for (int32_t i = 0; i < coord_size; i++) {
         PlanarCoord& pre_coord = coord_list[getIdx(i - 1, coord_size)];
         PlanarCoord& curr_coord = coord_list[i];
         PlanarCoord& post_coord = coord_list[getIdx(i + 1, coord_size)];
         edge_length_list.push_back(DRCUTIL.getManhattanDistance(pre_coord, curr_coord));
         if (is_hole) {
-          convex_corner_list.push_back(!DRCUTIL.isConvexCorner(rotation, pre_coord, curr_coord, post_coord));
+          convex_corner_list.push_back(!DRCUTIL.isConvexCorner(DRCUTIL.getRotation(check_poly), pre_coord, curr_coord, post_coord));
         } else {
-          convex_corner_list.push_back(DRCUTIL.isConvexCorner(rotation, pre_coord, curr_coord, post_coord));
+          convex_corner_list.push_back(DRCUTIL.isConvexCorner(DRCUTIL.getRotation(check_poly), pre_coord, curr_coord, post_coord));
         }
       }
       for (int32_t i = 0; i < coord_size; i++) {
