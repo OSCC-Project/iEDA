@@ -132,10 +132,10 @@ void RuleValidator::verifyCornerFillSpacing(RVBox& rv_box)
             if (gtl::area(gtl_hole_poly & DRCUTIL.convertToGTLRectInt(env_rect)) == env_rect.getArea()) {
               continue;
             }
-            PlanarRect overlap_rect = DRCUTIL.getOverlap(env_rect, check_rect);
-            if (overlap_rect.getXSpan() == 0 || overlap_rect.getYSpan() == 0) {
+            if (!DRCUTIL.isOpenOverlap(env_rect, check_rect)) {
               continue;
             }
+            PlanarRect overlap_rect = DRCUTIL.getOverlap(env_rect, check_rect);
             if (DRCUTIL.getEuclideanDistance(corner_fill_rect, overlap_rect) >= corner_fill_spacing) {
               continue;
             }

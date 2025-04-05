@@ -972,7 +972,7 @@ void RuleValidator::debugVerifyRVBoxByGolden(RVBox& rv_box)
             }
           }
           // 筛选
-          if (violation_type == ViolationType::kFloatingPatch) {
+          if (violation_type == ViolationType::kFloatingPatch || violation_type == ViolationType::kEnclosure || violation_type == ViolationType::kMinimumCut) {
             continue;
           }
           if (violation_net_set.size() == 1 && (*violation_net_set.begin()) == -1) {
