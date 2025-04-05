@@ -2790,6 +2790,8 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
   printFlattenData();
 #endif
 
+  // dumpGraphData("/home/taosimin/ysyx_test25/2025-04-05/graph.yaml");
+
   LOG_INFO << "The timing engine run success.";
 
   return 1;
