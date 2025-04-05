@@ -749,7 +749,6 @@ std::string Str::concateBackSlashStr(std::string original_str) {
   auto it = std::remove_if(original_str.begin(), original_str.end(),  
   [&original_str](char ch) {  
       if (ch == '\\') {
-          auto next = std::next(&ch);
           return true;   
       }  
       return false;  
