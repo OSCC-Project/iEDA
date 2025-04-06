@@ -59,7 +59,7 @@ class PinAccessor
   void setPAComParam(PAModel& pa_model);
   void initAccessPointList(PAModel& pa_model);
   std::vector<LayerRect> getLegalShapeList(PAModel& pa_model, int32_t net_idx, PAPin* pa_pin);
-  std::vector<PlanarRect> getPlanarLegalRectList(PAModel& pa_model, int32_t curr_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
+  std::vector<PlanarRect> getPlanarLegalRectList(PAModel& pa_model, int32_t curr_net_idx, PAPin* pa_pin, std::vector<EXTLayerRect>& pin_shape_list);
   std::vector<AccessPoint> getAccessPointList(PAModel& pa_model, int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
   void uniformSampleCoordList(PAModel& pa_model, std::vector<LayerCoord>& layer_coord_list);
   void uploadAccessPointList(PAModel& pa_model);

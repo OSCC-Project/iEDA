@@ -628,10 +628,11 @@ void DataManager::buildDatabase()
   buildLayerInfo();
   buildGCellAxis();
   buildDie();
-  buildObstacleList();
-  buildNetList();
   buildLayerViaMasterList();
   buildLayerViaMasterInfo();
+  buildObstacleList();
+  buildNetInfo();
+  buildNetList();
   buildDetectionDistance();
   buildGCellMap();
 }
@@ -951,170 +952,6 @@ void DataManager::checkDie()
   }
 }
 
-void DataManager::buildObstacleList()
-{
-  transObstacleList();
-  makeObstacleList();
-  checkObstacleList();
-}
-
-void DataManager::transObstacleList()
-{
-  std::map<int32_t, int32_t>& routing_idb_layer_id_to_idx_map = _database.get_routing_idb_layer_id_to_idx_map();
-  std::map<int32_t, int32_t>& cut_idb_layer_id_to_idx_map = _database.get_cut_idb_layer_id_to_idx_map();
-  std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
-  std::vector<Obstacle>& cut_obstacle_list = _database.get_cut_obstacle_list();
-
-#pragma omp parallel for
-  for (Obstacle& obstacle : routing_obstacle_list) {
-    obstacle.set_layer_idx(routing_idb_layer_id_to_idx_map[obstacle.get_layer_idx()]);
-  }
-#pragma omp parallel for
-  for (Obstacle& obstacle : cut_obstacle_list) {
-    obstacle.set_layer_idx(cut_idb_layer_id_to_idx_map[obstacle.get_layer_idx()]);
-  }
-}
-
-void DataManager::makeObstacleList()
-{
-  ScaleAxis& gcell_axis = _database.get_gcell_axis();
-  Die& die = _database.get_die();
-  std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
-  std::vector<Obstacle>& cut_obstacle_list = _database.get_cut_obstacle_list();
-
-#pragma omp parallel for
-  for (Obstacle& routing_obstacle : routing_obstacle_list) {
-    if (!RTUTIL.hasRegularRect(routing_obstacle.get_real_rect(), die.get_real_rect())) {
-      RTLOG.error(Loc::current(), "This shape is outside the die!");
-    }
-    routing_obstacle.set_real_rect(RTUTIL.getRegularRect(routing_obstacle.get_real_rect(), die.get_real_rect()));
-    routing_obstacle.set_grid_rect(RTUTIL.getClosedGCellGridRect(routing_obstacle.get_real_rect(), gcell_axis));
-  }
-#pragma omp parallel for
-  for (Obstacle& cut_obstacle : cut_obstacle_list) {
-    if (!RTUTIL.hasRegularRect(cut_obstacle.get_real_rect(), die.get_real_rect())) {
-      RTLOG.error(Loc::current(), "This shape is outside the die!");
-    }
-    cut_obstacle.set_real_rect(RTUTIL.getRegularRect(cut_obstacle.get_real_rect(), die.get_real_rect()));
-    cut_obstacle.set_grid_rect(RTUTIL.getClosedGCellGridRect(cut_obstacle.get_real_rect(), gcell_axis));
-  }
-}
-
-void DataManager::checkObstacleList()
-{
-  Die& die = _database.get_die();
-  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-  std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
-  std::vector<Obstacle>& cut_obstacle_list = _database.get_cut_obstacle_list();
-
-#pragma omp parallel for
-  for (Obstacle& obstacle : routing_obstacle_list) {
-    if (obstacle.get_real_ll_x() < die.get_real_ll_x() || obstacle.get_real_ll_y() < die.get_real_ll_y() || die.get_real_ur_x() < obstacle.get_real_ur_x()
-        || die.get_real_ur_y() < obstacle.get_real_ur_y()) {
-      // log
-      RTLOG.error(Loc::current(), "The obstacle '(", obstacle.get_real_ll_x(), " , ", obstacle.get_real_ll_y(), ") - (", obstacle.get_real_ur_x(), " , ",
-                  obstacle.get_real_ur_y(), ") ", routing_layer_list[obstacle.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(),
-                  " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
-    }
-  }
-#pragma omp parallel for
-  for (Obstacle& obstacle : cut_obstacle_list) {
-    if (obstacle.get_real_ll_x() < die.get_real_ll_x() || obstacle.get_real_ll_y() < die.get_real_ll_y() || die.get_real_ur_x() < obstacle.get_real_ur_x()
-        || die.get_real_ur_y() < obstacle.get_real_ur_y()) {
-      // log
-      RTLOG.error(Loc::current(), "The obstacle '(", obstacle.get_real_ll_x(), " , ", obstacle.get_real_ll_y(), ") - (", obstacle.get_real_ur_x(), " , ",
-                  obstacle.get_real_ur_y(), ") ", routing_layer_list[obstacle.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(),
-                  " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
-    }
-  }
-}
-
-void DataManager::buildNetList()
-{
-  std::vector<Net>& net_list = _database.get_net_list();
-#pragma omp parallel for
-  for (size_t net_idx = 0; net_idx < net_list.size(); net_idx++) {
-    Net& net = net_list[net_idx];
-    net.set_net_idx(static_cast<int32_t>(net_idx));
-    buildPinList(net);
-  }
-}
-
-void DataManager::buildPinList(Net& net)
-{
-  transPinList(net);
-  makePinList(net);
-  checkPinList(net);
-}
-
-void DataManager::transPinList(Net& net)
-{
-  std::map<int32_t, int32_t>& routing_idb_layer_id_to_idx_map = _database.get_routing_idb_layer_id_to_idx_map();
-  std::map<int32_t, int32_t>& cut_idb_layer_id_to_idx_map = _database.get_cut_idb_layer_id_to_idx_map();
-
-  for (Pin& pin : net.get_pin_list()) {
-    for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
-      routing_shape.set_layer_idx(routing_idb_layer_id_to_idx_map[routing_shape.get_layer_idx()]);
-    }
-    for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
-      cut_shape.set_layer_idx(cut_idb_layer_id_to_idx_map[cut_shape.get_layer_idx()]);
-    }
-  }
-}
-
-void DataManager::makePinList(Net& net)
-{
-  Die& die = _database.get_die();
-  ScaleAxis& gcell_axis = _database.get_gcell_axis();
-  std::vector<Pin>& pin_list = net.get_pin_list();
-
-  for (size_t pin_idx = 0; pin_idx < pin_list.size(); pin_idx++) {
-    Pin& pin = pin_list[pin_idx];
-    pin.set_pin_idx(static_cast<int32_t>(pin_idx));
-    for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
-      if (!RTUTIL.hasRegularRect(routing_shape.get_real_rect(), die.get_real_rect())) {
-        RTLOG.error(Loc::current(), "This shape is outside the die!");
-      }
-      routing_shape.set_real_rect(RTUTIL.getRegularRect(routing_shape.get_real_rect(), die.get_real_rect()));
-      routing_shape.set_grid_rect(RTUTIL.getClosedGCellGridRect(routing_shape.get_real_rect(), gcell_axis));
-    }
-    for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
-      if (!RTUTIL.hasRegularRect(cut_shape.get_real_rect(), die.get_real_rect())) {
-        RTLOG.error(Loc::current(), "This shape is outside the die!");
-      }
-      cut_shape.set_real_rect(RTUTIL.getRegularRect(cut_shape.get_real_rect(), die.get_real_rect()));
-      cut_shape.set_grid_rect(RTUTIL.getClosedGCellGridRect(cut_shape.get_real_rect(), gcell_axis));
-    }
-  }
-}
-
-void DataManager::checkPinList(Net& net)
-{
-  Die& die = _database.get_die();
-  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
-
-  for (Pin& pin : net.get_pin_list()) {
-    for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
-      if (routing_shape.get_real_ll_x() < die.get_real_ll_x() || routing_shape.get_real_ll_y() < die.get_real_ll_y()
-          || die.get_real_ur_x() < routing_shape.get_real_ur_x() || die.get_real_ur_y() < routing_shape.get_real_ur_y()) {
-        RTLOG.error(Loc::current(), "The pin_shape '(", routing_shape.get_real_ll_x(), " , ", routing_shape.get_real_ll_y(), ") - (",
-                    routing_shape.get_real_ur_x(), " , ", routing_shape.get_real_ur_y(), ") ",
-                    routing_layer_list[routing_shape.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ", die.get_real_ll_y(),
-                    ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
-      }
-    }
-    for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
-      if (cut_shape.get_real_ll_x() < die.get_real_ll_x() || cut_shape.get_real_ll_y() < die.get_real_ll_y() || die.get_real_ur_x() < cut_shape.get_real_ur_x()
-          || die.get_real_ur_y() < cut_shape.get_real_ur_y()) {
-        RTLOG.error(Loc::current(), "The pin_shape '(", cut_shape.get_real_ll_x(), " , ", cut_shape.get_real_ll_y(), ") - (", cut_shape.get_real_ur_x(), " , ",
-                    cut_shape.get_real_ur_y(), ") ", cut_layer_list[cut_shape.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(),
-                    " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
-      }
-    }
-  }
-}
-
 void DataManager::buildLayerViaMasterList()
 {
   transLayerViaMasterList();
@@ -1232,9 +1069,200 @@ void DataManager::buildLayerViaMasterInfo()
   }
 }
 
+void DataManager::buildObstacleList()
+{
+  transObstacleList();
+  makeObstacleList();
+  checkObstacleList();
+}
+
+void DataManager::transObstacleList()
+{
+  std::map<int32_t, int32_t>& routing_idb_layer_id_to_idx_map = _database.get_routing_idb_layer_id_to_idx_map();
+  std::map<int32_t, int32_t>& cut_idb_layer_id_to_idx_map = _database.get_cut_idb_layer_id_to_idx_map();
+  std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
+  std::vector<Obstacle>& cut_obstacle_list = _database.get_cut_obstacle_list();
+
+#pragma omp parallel for
+  for (Obstacle& obstacle : routing_obstacle_list) {
+    obstacle.set_layer_idx(routing_idb_layer_id_to_idx_map[obstacle.get_layer_idx()]);
+  }
+#pragma omp parallel for
+  for (Obstacle& obstacle : cut_obstacle_list) {
+    obstacle.set_layer_idx(cut_idb_layer_id_to_idx_map[obstacle.get_layer_idx()]);
+  }
+}
+
+void DataManager::makeObstacleList()
+{
+  ScaleAxis& gcell_axis = _database.get_gcell_axis();
+  Die& die = _database.get_die();
+  std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
+  std::vector<Obstacle>& cut_obstacle_list = _database.get_cut_obstacle_list();
+
+#pragma omp parallel for
+  for (Obstacle& routing_obstacle : routing_obstacle_list) {
+    if (!RTUTIL.hasRegularRect(routing_obstacle.get_real_rect(), die.get_real_rect())) {
+      RTLOG.error(Loc::current(), "This shape is outside the die!");
+    }
+    routing_obstacle.set_real_rect(RTUTIL.getRegularRect(routing_obstacle.get_real_rect(), die.get_real_rect()));
+    routing_obstacle.set_grid_rect(RTUTIL.getClosedGCellGridRect(routing_obstacle.get_real_rect(), gcell_axis));
+  }
+#pragma omp parallel for
+  for (Obstacle& cut_obstacle : cut_obstacle_list) {
+    if (!RTUTIL.hasRegularRect(cut_obstacle.get_real_rect(), die.get_real_rect())) {
+      RTLOG.error(Loc::current(), "This shape is outside the die!");
+    }
+    cut_obstacle.set_real_rect(RTUTIL.getRegularRect(cut_obstacle.get_real_rect(), die.get_real_rect()));
+    cut_obstacle.set_grid_rect(RTUTIL.getClosedGCellGridRect(cut_obstacle.get_real_rect(), gcell_axis));
+  }
+}
+
+void DataManager::checkObstacleList()
+{
+  Die& die = _database.get_die();
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
+  std::vector<Obstacle>& cut_obstacle_list = _database.get_cut_obstacle_list();
+
+#pragma omp parallel for
+  for (Obstacle& obstacle : routing_obstacle_list) {
+    if (obstacle.get_real_ll_x() < die.get_real_ll_x() || obstacle.get_real_ll_y() < die.get_real_ll_y() || die.get_real_ur_x() < obstacle.get_real_ur_x()
+        || die.get_real_ur_y() < obstacle.get_real_ur_y()) {
+      // log
+      RTLOG.error(Loc::current(), "The obstacle '(", obstacle.get_real_ll_x(), " , ", obstacle.get_real_ll_y(), ") - (", obstacle.get_real_ur_x(), " , ",
+                  obstacle.get_real_ur_y(), ") ", routing_layer_list[obstacle.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(),
+                  " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
+    }
+  }
+#pragma omp parallel for
+  for (Obstacle& obstacle : cut_obstacle_list) {
+    if (obstacle.get_real_ll_x() < die.get_real_ll_x() || obstacle.get_real_ll_y() < die.get_real_ll_y() || die.get_real_ur_x() < obstacle.get_real_ur_x()
+        || die.get_real_ur_y() < obstacle.get_real_ur_y()) {
+      // log
+      RTLOG.error(Loc::current(), "The obstacle '(", obstacle.get_real_ll_x(), " , ", obstacle.get_real_ll_y(), ") - (", obstacle.get_real_ur_x(), " , ",
+                  obstacle.get_real_ur_y(), ") ", routing_layer_list[obstacle.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(),
+                  " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
+    }
+  }
+}
+
+void DataManager::buildNetInfo()
+{
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  std::map<int32_t, PlanarRect>& layer_enclosure_map = _database.get_layer_enclosure_map();
+  std::map<std::string, std::map<int32_t, PlanarRect>>& block_layer_trim_rect_map = _database.get_block_layer_trim_rect_map();
+
+  for (auto& [block_name, layer_trim_rect_map] : block_layer_trim_rect_map) {
+    PlanarRect origin_rect = layer_trim_rect_map[0];
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      block_layer_trim_rect_map[block_name][routing_layer.get_layer_idx()] = origin_rect;
+    }
+  }
+  for (auto& [block_name, layer_trim_rect_map] : block_layer_trim_rect_map) {
+    for (auto& [routing_layer_idx, enclosure] : layer_enclosure_map) {
+      int32_t min_width = routing_layer_list[routing_layer_idx].get_min_width();
+      int32_t shrinked_x_size = std::max(min_width, enclosure.getXSpan());
+      int32_t shrinked_y_size = std::max(min_width, enclosure.getYSpan());
+
+      PlanarRect shrink_shape = layer_trim_rect_map[routing_layer_idx];
+      if (RTUTIL.hasShrinkedRect(shrink_shape, shrinked_x_size, shrinked_y_size)) {
+        shrink_shape = RTUTIL.getShrinkedRect(shrink_shape, shrinked_x_size, shrinked_y_size);
+      }
+      block_layer_trim_rect_map[block_name][routing_layer_idx] = shrink_shape;
+    }
+  }
+}
+
+void DataManager::buildNetList()
+{
+  std::vector<Net>& net_list = _database.get_net_list();
+#pragma omp parallel for
+  for (size_t net_idx = 0; net_idx < net_list.size(); net_idx++) {
+    Net& net = net_list[net_idx];
+    net.set_net_idx(static_cast<int32_t>(net_idx));
+    buildPinList(net);
+  }
+}
+
+void DataManager::buildPinList(Net& net)
+{
+  transPinList(net);
+  makePinList(net);
+  checkPinList(net);
+}
+
+void DataManager::transPinList(Net& net)
+{
+  std::map<int32_t, int32_t>& routing_idb_layer_id_to_idx_map = _database.get_routing_idb_layer_id_to_idx_map();
+  std::map<int32_t, int32_t>& cut_idb_layer_id_to_idx_map = _database.get_cut_idb_layer_id_to_idx_map();
+
+  for (Pin& pin : net.get_pin_list()) {
+    for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
+      routing_shape.set_layer_idx(routing_idb_layer_id_to_idx_map[routing_shape.get_layer_idx()]);
+    }
+    for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
+      cut_shape.set_layer_idx(cut_idb_layer_id_to_idx_map[cut_shape.get_layer_idx()]);
+    }
+  }
+}
+
+void DataManager::makePinList(Net& net)
+{
+  Die& die = _database.get_die();
+  ScaleAxis& gcell_axis = _database.get_gcell_axis();
+  std::vector<Pin>& pin_list = net.get_pin_list();
+
+  for (size_t pin_idx = 0; pin_idx < pin_list.size(); pin_idx++) {
+    Pin& pin = pin_list[pin_idx];
+    pin.set_pin_idx(static_cast<int32_t>(pin_idx));
+    for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
+      if (!RTUTIL.hasRegularRect(routing_shape.get_real_rect(), die.get_real_rect())) {
+        RTLOG.error(Loc::current(), "This shape is outside the die!");
+      }
+      routing_shape.set_real_rect(RTUTIL.getRegularRect(routing_shape.get_real_rect(), die.get_real_rect()));
+      routing_shape.set_grid_rect(RTUTIL.getClosedGCellGridRect(routing_shape.get_real_rect(), gcell_axis));
+    }
+    for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
+      if (!RTUTIL.hasRegularRect(cut_shape.get_real_rect(), die.get_real_rect())) {
+        RTLOG.error(Loc::current(), "This shape is outside the die!");
+      }
+      cut_shape.set_real_rect(RTUTIL.getRegularRect(cut_shape.get_real_rect(), die.get_real_rect()));
+      cut_shape.set_grid_rect(RTUTIL.getClosedGCellGridRect(cut_shape.get_real_rect(), gcell_axis));
+    }
+  }
+}
+
+void DataManager::checkPinList(Net& net)
+{
+  Die& die = _database.get_die();
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
+
+  for (Pin& pin : net.get_pin_list()) {
+    for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
+      if (routing_shape.get_real_ll_x() < die.get_real_ll_x() || routing_shape.get_real_ll_y() < die.get_real_ll_y()
+          || die.get_real_ur_x() < routing_shape.get_real_ur_x() || die.get_real_ur_y() < routing_shape.get_real_ur_y()) {
+        RTLOG.error(Loc::current(), "The pin_shape '(", routing_shape.get_real_ll_x(), " , ", routing_shape.get_real_ll_y(), ") - (",
+                    routing_shape.get_real_ur_x(), " , ", routing_shape.get_real_ur_y(), ") ",
+                    routing_layer_list[routing_shape.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ", die.get_real_ll_y(),
+                    ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
+      }
+    }
+    for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
+      if (cut_shape.get_real_ll_x() < die.get_real_ll_x() || cut_shape.get_real_ll_y() < die.get_real_ll_y() || die.get_real_ur_x() < cut_shape.get_real_ur_x()
+          || die.get_real_ur_y() < cut_shape.get_real_ur_y()) {
+        RTLOG.error(Loc::current(), "The pin_shape '(", cut_shape.get_real_ll_x(), " , ", cut_shape.get_real_ll_y(), ") - (", cut_shape.get_real_ur_x(), " , ",
+                    cut_shape.get_real_ur_y(), ") ", cut_layer_list[cut_shape.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(),
+                    " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
+      }
+    }
+  }
+}
+
 void DataManager::buildDetectionDistance()
 {
-  _database.set_detection_distance(2 * getOnlyPitch());
+  _database.set_detection_distance(3 * getOnlyPitch());
 }
 
 void DataManager::buildGCellMap()

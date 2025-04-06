@@ -318,6 +318,7 @@ void RTInterface::wrapDatabase()
   wrapLayerInfo();
   wrapLayerViaMasterList();
   wrapObstacleList();
+  wrapNetInfo();
   wrapNetList();
 }
 
@@ -824,6 +825,23 @@ void RTInterface::wrapObstacleList()
     }
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+void RTInterface::wrapNetInfo()
+{
+  std::map<std::string, std::map<int32_t, PlanarRect>>& block_layer_trim_rect_map = RTDM.getDatabase().get_block_layer_trim_rect_map();
+  std::vector<idb::IdbInstance*>& idb_instance_list = dmInst->get_idb_def_service()->get_design()->get_instance_list()->get_instance_list();
+
+  for (idb::IdbInstance* idb_instance : idb_instance_list) {
+    if (idb_instance->get_cell_master()->is_core()) {
+      continue;
+    }
+    if (idb_instance->get_connected_pin_number() == 0) {
+      continue;
+    }
+    idb::IdbRect* idb_shape = idb_instance->get_bounding_box();
+    block_layer_trim_rect_map[idb_instance->get_name()][0] = {idb_shape->get_low_x(), idb_shape->get_low_y(), idb_shape->get_high_x(), idb_shape->get_high_y()};
+  }
 }
 
 void RTInterface::wrapNetList()
