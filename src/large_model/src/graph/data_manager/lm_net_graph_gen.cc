@@ -77,6 +77,10 @@ std::vector<WireGraph> LmNetGraphGenerator::buildGraphs() const
 }
 bool LmNetGraphGenerator::isCornerCase(idb::IdbNet* idb_net) const
 {
+  auto* driver_pin = idb_net->get_driving_pin();
+  if (!driver_pin) {
+    return true;
+  }
   auto io_pins = idb_net->get_io_pins()->get_pin_list();
   if (io_pins.size() != 1) {
     return false;
@@ -88,10 +92,6 @@ bool LmNetGraphGenerator::isCornerCase(idb::IdbNet* idb_net) const
     return true;
   }
 
-  auto* driver_pin = idb_net->get_driving_pin();
-  if (!driver_pin) {
-    return true;
-  }
 
   return false;
 }

@@ -34,6 +34,11 @@ namespace ilm {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+LmLayerGrid::LmLayerGrid() : _map_mutex(std::make_unique<std::shared_mutex>()) 
+{
+}
+
 LmLayerGrid::~LmLayerGrid()
 {
   //   for (int row_id = 0; row_id < gridInfoInst.node_row_num; ++row_id) {
@@ -51,23 +56,51 @@ std::pair<int, int> LmLayerGrid::buildNodeMatrix(int order)
   gridInfoInst.node_x_start = gridInfoInst.x_start % gridInfoInst.x_step;
   gridInfoInst.node_y_start = gridInfoInst.y_start % gridInfoInst.y_step;
 
-  int row_num = (gridInfoInst.ury - gridInfoInst.node_y_start) / gridInfoInst.y_step;
-  int col_num = (gridInfoInst.urx - gridInfoInst.node_x_start) / gridInfoInst.x_step;
+  _row_num = (gridInfoInst.ury - gridInfoInst.node_y_start) / gridInfoInst.y_step;
+  _col_num = (gridInfoInst.urx - gridInfoInst.node_x_start) / gridInfoInst.x_step;
 
-  _node_matrix = std::vector<std::vector<LmNode*>>(row_num, std::vector<LmNode*>(col_num, nullptr));
+  gridInfoInst.node_row_num = _row_num;
+  gridInfoInst.node_col_num = _col_num;
 
-  gridInfoInst.node_row_num = _node_matrix.size();
-  gridInfoInst.node_col_num = _node_matrix[0].size();
-
-  return std::make_pair(gridInfoInst.node_row_num, gridInfoInst.node_col_num);
+  return std::make_pair(_row_num, _col_num);
 }
 
 LmNode* LmLayerGrid::get_node(int row_id, int col_id, bool b_create)
 {
-  if (_node_matrix[row_id][col_id] == nullptr && b_create) {
-    _node_matrix[row_id][col_id] = new LmNode();
+  // 检查坐标是否合法
+  if (row_id < 0 || row_id >= _row_num || col_id < 0 || col_id >= _col_num) {
+      return nullptr;
   }
-  return _node_matrix[row_id][col_id];
+  
+  // 使用坐标对作为键
+  std::pair<int, int> key = {row_id, col_id};
+  
+  if (b_create) {
+      // 写操作需要独占锁
+      std::unique_lock<std::shared_mutex> lock(*_map_mutex); 
+      
+      // 查找键
+      auto it = _node_map.find(key);
+      if (it == _node_map.end()) {
+          // 键不存在，创建新节点并插入
+          LmNode* new_node = new LmNode();
+          _node_map[key] = new_node;
+          return new_node;
+      }
+      
+      return it->second;
+  } else {
+      // 读操作只需要共享锁
+      std::shared_lock<std::shared_mutex> lock(*_map_mutex); 
+      
+      // 查找键
+      auto it = _node_map.find(key);
+      if (it != _node_map.end()) {
+          return it->second;
+      }
+      
+      return nullptr;
+  }
 }
 
 LmNode* LmLayerGrid::findNode(int x, int y)
@@ -76,5 +109,21 @@ LmNode* LmLayerGrid::findNode(int x, int y)
 
   return get_node(row_id, col_id);
 }
+
+std::vector<LmNode*> LmLayerGrid::get_all_nodes() 
+{
+    std::vector<LmNode*> nodes;
+    
+    // 使用共享锁保护读取操作
+    std::shared_lock<std::shared_mutex> lock(*_map_mutex); 
+    
+    nodes.reserve(_node_map.size()); 
+    for (const auto& [key, node] : _node_map) {
+        nodes.push_back(node);
+    }
+    
+    return nodes;
+}
+
 
 }  // namespace ilm

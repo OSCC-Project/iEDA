@@ -18,6 +18,7 @@
 #include "large_model.h"
 
 #include "Log.hh"
+#include "MemoryMonitor.hh"
 #include "idm.h"
 #include "init_sta.hh"
 #include "lm_feature.h"
@@ -71,15 +72,23 @@ std::map<int, LmNet> LargeModel::getGraph(std::string path)
 
 void LargeModel::buildFeature(const std::string dir)
 {
-  /// build layout data
-  _data_manager.buildLayoutData();
+  {
+    /// build layout data
+    MemoryMonitor monitor("buildLayoutData", "/home/yhqiu/net_level_collect/benchmark/memory_usage.log");
+    _data_manager.buildLayoutData();
+  }
 
-  /// build graph
-  _data_manager.buildGraphData();
+  {
+    /// build graph
+    MemoryMonitor monitor("buildGraphData", "/home/yhqiu/net_level_collect/benchmark/memory_usage.log");
+    _data_manager.buildGraphData();
+  }
 
+  {
   /// build patch data
-  buildPatchData(dir);
-
+    MemoryMonitor monitor("buildPatchData", "/home/yhqiu/net_level_collect/benchmark/memory_usage.log");
+    buildPatchData(dir);
+  }
   // build pattern
   // _data_manager.buildPatternData();
 

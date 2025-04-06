@@ -236,21 +236,22 @@ void LmFeatureDrc::markNets()
   auto& layer_map = layout_layers.get_layout_layer_map();
   for (int layer_id = 0; layer_id < (int) layer_map.size(); ++layer_id) {
     auto& grid = layout_layers.findLayoutLayer(layer_id)->get_grid();
-    auto& node_matrix = grid.get_node_matrix();
+    // 这里改用get_all_nodes()替代原来的get_node_matrix()
+    auto nodes = grid.get_all_nodes();
+    
 #pragma omp parallel for schedule(dynamic)
-    for (int row = 0; row < gridInfoInst.node_row_num; ++row) {
-      for (int col = 0; col < gridInfoInst.node_col_num; ++col) {
-        if (node_matrix[row][col] != nullptr && node_matrix[row][col]->get_node_data() != nullptr) {
-          omp_set_lock(&lck);
-          net_drc_map[node_matrix[row][col]->get_node_data()->get_net_id()].insert(
-              node_matrix[row][col]->get_node_data()->get_feature().drc_ids.begin(),
-              node_matrix[row][col]->get_node_data()->get_feature().drc_ids.end());
-          omp_unset_lock(&lck);
-        }
+    for (int i = 0; i < (int)nodes.size(); i++) {
+      LmNode* node = nodes[i];
+      if (node != nullptr && node->get_node_data() != nullptr) {
+        omp_set_lock(&lck);
+        net_drc_map[node->get_node_data()->get_net_id()].insert(
+            node->get_node_data()->get_feature().drc_ids.begin(),
+            node->get_node_data()->get_feature().drc_ids.end());
+        omp_unset_lock(&lck);
       }
     }
   }
-
+  
   int test_num = 0;
   for (auto& [net_id, drc_ids] : net_drc_map) {
     test_num += drc_ids.size();

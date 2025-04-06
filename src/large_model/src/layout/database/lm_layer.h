@@ -40,6 +40,47 @@ class LmLayoutLayer
  public:
   LmLayoutLayer() {}
   ~LmLayoutLayer() {}
+    // 添加移动构造函数
+  LmLayoutLayer(LmLayoutLayer&& other) noexcept
+      : _layer_name(std::move(other._layer_name)),
+        _wire_width(other._wire_width),
+        _b_routing(other._b_routing),
+        _b_horizontal(other._b_horizontal),
+        _layer_order(other._layer_order),
+        _llx(other._llx),
+        _lly(other._lly),
+        _urx(other._urx),
+        _ury(other._ury),
+        _row_num(other._row_num),
+        _row_space(other._row_space),
+        _col_num(other._col_num),
+        _col_space(other._col_space),
+        _grid(std::move(other._grid)),
+        _net_map(std::move(other._net_map))
+  {
+  }
+
+  // 添加移动赋值运算符
+  LmLayoutLayer& operator=(LmLayoutLayer&& other) noexcept {
+      if (this != &other) {
+          _layer_name = std::move(other._layer_name);
+          _wire_width = other._wire_width;
+          _b_routing = other._b_routing;
+          _b_horizontal = other._b_horizontal;
+          _layer_order = other._layer_order;
+          _llx = other._llx;
+          _lly = other._lly;
+          _urx = other._urx;
+          _ury = other._ury;
+          _row_num = other._row_num;
+          _row_space = other._row_space;
+          _col_num = other._col_num;
+          _col_space = other._col_space;
+          _grid = std::move(other._grid);
+          _net_map = std::move(other._net_map);
+      }
+      return *this;
+  }
 
   // getter
   std::string& get_layer_name() { return _layer_name; }

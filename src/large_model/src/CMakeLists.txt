@@ -15,6 +15,7 @@ target_link_libraries(large_model
     idm
     ilm_dm
     ilm_feature
+    memory
 )
 
 target_include_directories(large_model

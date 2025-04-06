@@ -116,7 +116,9 @@ void LmLayoutInit::initLayers()
       auto& grid = layout_layer.get_grid();
       grid.layer_order = index;
 
-      layout_layer_map.insert(std::make_pair(index, layout_layer));
+      // layout_layer_map.insert(std::make_pair(index, layout_layer));
+      layout_layer_map.emplace(index, std::move(layout_layer));
+
 
       index++;
 
@@ -695,8 +697,9 @@ void LmLayoutInit::initNets()
 #pragma omp parallel for schedule(dynamic)
   for (int net_id = 0; net_id < (int) idb_nets->get_net_list().size(); ++net_id) {
     auto* idb_net = idb_nets->get_net_list()[net_id];
-    /// ignore net if pin number < 2
-    if (idb_net->get_pin_number() < 2) {
+    auto* driver_pin = idb_net->get_driving_pin();
+    /// ignore net if pin number < 2 and no driver pin
+    if (idb_net->get_pin_number() < 2 || driver_pin == nullptr ) {
       continue;
     }
 
