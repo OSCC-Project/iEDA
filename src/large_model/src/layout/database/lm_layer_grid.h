@@ -31,6 +31,7 @@
 #include <vector>
 #include <unordered_map>
 #include <shared_mutex>
+#include <tbb/concurrent_unordered_map.h>
 
 #include "lm_node.h"
 
@@ -54,13 +55,12 @@ struct PairEqual {
 class LmLayerGrid
 {
  public:
-  LmLayerGrid();
+  LmLayerGrid(){}
   ~LmLayerGrid();
     // 添加移动构造函数
   LmLayerGrid(LmLayerGrid&& other) noexcept
       : layer_order(other.layer_order),
         _node_map(std::move(other._node_map)),
-        _map_mutex(std::move(other._map_mutex)),
         _row_num(other._row_num),
         _col_num(other._col_num)
   {
@@ -69,16 +69,19 @@ class LmLayerGrid
   // 添加移动赋值运算符
   LmLayerGrid& operator=(LmLayerGrid&& other) noexcept {
       if (this != &other) {
+        // 释放当前资源
+          for (auto& pair : _node_map) {
+            delete pair.second;
+          }
           layer_order = other.layer_order;
           _node_map = std::move(other._node_map);
-          _map_mutex = std::move(other._map_mutex);
           _row_num = other._row_num;
           _col_num = other._col_num;
       }
       return *this;
   }
 
-  // getter
+  // getter 无锁版
   LmNode* get_node(int row_id, int col_id, bool b_create = false);
   std::vector<LmNode*> get_all_nodes();
   // setter
@@ -91,9 +94,8 @@ class LmLayerGrid
   int layer_order;
 
  private:
-  // 使用普通的 unordered_map 配合 shared_mutex
-  std::unordered_map<std::pair<int, int>, LmNode*, PairHash, PairEqual> _node_map;
-  std::unique_ptr<std::shared_mutex> _map_mutex; // 使用指针而不是直接成员
+    // 使用 TBB 的并发哈希表
+  tbb::concurrent_unordered_map<std::pair<int, int>, LmNode*, PairHash, PairEqual> _node_map;
   int _row_num;
   int _col_num;
 };

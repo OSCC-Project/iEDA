@@ -439,7 +439,6 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, LmNodeTYpe type, i
     if (layer_shape->is_via()) {
       for (IdbRect* rect : layer_shape->get_rect_list()) {
         /// build grid
-        auto& grid = layout_layer->get_grid();
         auto [row_id, col_id] = gridInfoInst.findNodeID(rect->get_middle_point_x(), rect->get_middle_point_y());
         auto* node = grid.get_node(row_id, col_id, true);
         node->set_col_id(col_id);

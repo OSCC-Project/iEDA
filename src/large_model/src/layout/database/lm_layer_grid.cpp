@@ -35,10 +35,6 @@ namespace ilm {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-LmLayerGrid::LmLayerGrid() : _map_mutex(std::make_unique<std::shared_mutex>()) 
-{
-}
-
 LmLayerGrid::~LmLayerGrid()
 {
   //   for (int row_id = 0; row_id < gridInfoInst.node_row_num; ++row_id) {
@@ -49,6 +45,10 @@ LmLayerGrid::~LmLayerGrid()
   //       }
   //     }
   //   }
+    // 释放所有节点
+  for (auto& pair : _node_map) {
+      delete pair.second;
+  }
 }
 
 std::pair<int, int> LmLayerGrid::buildNodeMatrix(int order)
@@ -66,41 +66,35 @@ std::pair<int, int> LmLayerGrid::buildNodeMatrix(int order)
 }
 
 LmNode* LmLayerGrid::get_node(int row_id, int col_id, bool b_create)
-{
-  // 检查坐标是否合法
-  if (row_id < 0 || row_id >= _row_num || col_id < 0 || col_id >= _col_num) {
-      return nullptr;
-  }
-  
-  // 使用坐标对作为键
+{  
   std::pair<int, int> key = {row_id, col_id};
   
-  if (b_create) {
-      // 写操作需要独占锁
-      std::unique_lock<std::shared_mutex> lock(*_map_mutex); 
-      
-      // 查找键
-      auto it = _node_map.find(key);
-      if (it == _node_map.end()) {
-          // 键不存在，创建新节点并插入
-          LmNode* new_node = new LmNode();
-          _node_map[key] = new_node;
-          return new_node;
-      }
-      
+  // 尝试查找节点
+  auto it = _node_map.find(key);
+  if (it != _node_map.end()) {
       return it->second;
-  } else {
-      // 读操作只需要共享锁
-      std::shared_lock<std::shared_mutex> lock(*_map_mutex); 
-      
-      // 查找键
-      auto it = _node_map.find(key);
-      if (it != _node_map.end()) {
-          return it->second;
-      }
-      
+  }
+  
+  // 如果不存在且不需要创建，返回nullptr
+  if (!b_create) {
       return nullptr;
   }
+  
+  // 创建新节点
+  LmNode* new_node = new LmNode();
+  
+  // 使用原子操作尝试插入
+  // insert_or_assign 不适用于 TBB，使用 insert 代替
+  auto result = _node_map.insert({key, new_node});
+  
+  if (!result.second) {
+      // 插入失败，说明其他线程已经创建了节点
+      delete new_node;
+      return result.first->second;
+  }
+  
+  // 插入成功，返回新节点
+  return new_node;
 }
 
 LmNode* LmLayerGrid::findNode(int x, int y)
@@ -112,17 +106,14 @@ LmNode* LmLayerGrid::findNode(int x, int y)
 
 std::vector<LmNode*> LmLayerGrid::get_all_nodes() 
 {
-    std::vector<LmNode*> nodes;
-    
-    // 使用共享锁保护读取操作
-    std::shared_lock<std::shared_mutex> lock(*_map_mutex); 
-    
-    nodes.reserve(_node_map.size()); 
-    for (const auto& [key, node] : _node_map) {
-        nodes.push_back(node);
-    }
-    
-    return nodes;
+  std::vector<LmNode*> nodes;
+  nodes.reserve(_node_map.size());
+  
+  for (const auto& pair : _node_map) {
+      nodes.push_back(pair.second);
+  }
+  
+  return nodes;
 }
 
 
