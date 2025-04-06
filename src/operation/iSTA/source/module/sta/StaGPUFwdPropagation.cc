@@ -555,7 +555,7 @@ unsigned StaGPUFwdPropagation::prepareGPUData(StaGraph* the_graph) {
   for (auto& [level, the_arcs] : _level_to_arcs) {
     std::vector<unsigned> arc_indexes;
     for (auto* the_arc : the_arcs) {
-      arc_indexes.emplace_back(arc_to_index[the_arc]);
+      arc_indexes.emplace_back(arc_to_index.at(the_arc));
     }
     level_to_arc_index[level] = std::move(arc_indexes);
   }

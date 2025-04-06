@@ -21,13 +21,37 @@ pub struct LibertyParser;
 /// process float data.
 fn process_float(pair: Pair<Rule>) -> Result<liberty_data::LibertyParserData, pest::error::Error<Rule>> {
     let pair_span = pair.as_span();
-    match pair.as_str().parse::<f64>() {
-        Ok(value) => Ok(liberty_data::LibertyParserData::Float(liberty_data::LibertyFloatValue { value })),
-        Err(_) => Err(pest::error::Error::new_from_span(
-            pest::error::ErrorVariant::CustomError { message: "Failed to parse float".into() },
-            pair_span,
-        )),
+    let pair_str = pair.as_str();
+
+    let is_contain_underline = pair_str.contains('_');
+    if is_contain_underline {
+        let value_str = pair_str.replace('_', ".");
+        let is_contain_k = value_str.contains('k');
+        if is_contain_k {
+            let mut float_value = value_str.trim_end_matches('k').parse::<f64>().unwrap();
+            float_value *= 1000.0;
+            return Ok(liberty_data::LibertyParserData::Float(liberty_data::LibertyFloatValue { value: float_value }));
+        } else {
+            return Ok(liberty_data::LibertyParserData::Float(liberty_data::LibertyFloatValue { value: value_str.parse::<f64>().unwrap() }))
+        }
     }
+
+    let is_contain_k = pair_str.contains('k');
+    if is_contain_k {
+        let mut float_value = pair_str.trim_end_matches('k').parse::<f64>().unwrap();
+        float_value *= 1000.0;
+        return Ok(liberty_data::LibertyParserData::Float(liberty_data::LibertyFloatValue { value: float_value }));
+    } else {
+        match pair.as_str().parse::<f64>() {
+            Ok(value) => Ok(liberty_data::LibertyParserData::Float(liberty_data::LibertyFloatValue { value })),
+            Err(_) => Err(pest::error::Error::new_from_span(
+                pest::error::ErrorVariant::CustomError { message: "Failed to parse float".into() },
+                pair_span,
+            )),
+        }
+    }
+
+
 }
 
 /// process string text data not include quote.
@@ -77,7 +101,7 @@ fn process_string(pair: Pair<Rule>) -> Result<liberty_data::LibertyParserData, p
             value: value.trim_matches('"').trim().to_string(),
         })),
         Err(_) => Err(pest::error::Error::new_from_span(
-            pest::error::ErrorVariant::CustomError { message: "Failed to parse float".into() },
+            pest::error::ErrorVariant::CustomError { message: "Failed to parse string".into() },
             pair_span,
         )),
     }

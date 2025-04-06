@@ -29,9 +29,9 @@
 #include <mutex>
 #include <optional>
 #include <set>
+#include <shared_mutex>
 #include <string>
 #include <utility>
-#include <shared_mutex>
 
 #include "FlatMap.hh"
 #include "StaClock.hh"
@@ -266,7 +266,7 @@ class Sta {
 
   void removeRcNet(Net* the_net) { _net_to_rc_net.erase(the_net); }
   RcNet* getRcNet(Net* the_net) {
-    std::shared_lock<std::shared_mutex> lock(_rw_mutex);;
+    std::shared_lock<std::shared_mutex> lock(_rw_mutex);
     RcNet* rc_net = _net_to_rc_net.contains(the_net)
                         ? _net_to_rc_net[the_net].get()
                         : nullptr;
@@ -276,7 +276,7 @@ class Sta {
   std::vector<RcNet*> getAllRcNet() {
     std::vector<RcNet*> rc_nets;
     for (auto& [net, rc_net] : _net_to_rc_net) {
-      if (!rc_net->rct()) {
+      if (!rc_net->rct() || !rc_net->rct()->get_root()) {
         continue;
       }
       rc_nets.push_back(rc_net.get());
@@ -394,7 +394,9 @@ class Sta {
 
 #if CUDA_PROPAGATION
   unsigned buildLibArcsGPU();
-  void set_gpu_lib_data(Lib_Data_GPU&& lib_data_gpu) { _gpu_lib_data = std::move(lib_data_gpu); }
+  void set_gpu_lib_data(Lib_Data_GPU&& lib_data_gpu) {
+    _gpu_lib_data = std::move(lib_data_gpu);
+  }
   auto& get_gpu_lib_data() { return _gpu_lib_data; }
 
   void set_lib_gpu_arcs(std::vector<Lib_Arc_GPU>&& lib_gpu_arcs) {
@@ -402,25 +404,39 @@ class Sta {
   }
   auto& get_lib_gpu_arcs() { return _lib_gpu_arcs; }
 
-  void set_gpu_graph(GPU_Graph&& the_gpu_graph) { _gpu_graph = std::move(the_gpu_graph); }
+  void set_gpu_graph(GPU_Graph&& the_gpu_graph) {
+    _gpu_graph = std::move(the_gpu_graph);
+  }
   auto& get_gpu_graph() { return _gpu_graph; }
 
-  void set_arc_to_index(std::map<StaArc*, unsigned>&& arc_to_index) { _arc_to_index = std::move(arc_to_index); }
+  void set_arc_to_index(std::map<StaArc*, unsigned>&& arc_to_index) {
+    _arc_to_index = std::move(arc_to_index);
+  }
   auto& get_arc_to_index() { return _arc_to_index; }
 
-  void set_index_to_at(std::map<unsigned, StaPathDelayData*>&& index_to_at) { _index_to_at = std::move(index_to_at);}
+  void set_index_to_at(std::map<unsigned, StaPathDelayData*>&& index_to_at) {
+    _index_to_at = std::move(index_to_at);
+  }
   auto& get_index_to_at() { return _index_to_at; }
 
-  void set_at_to_index(std::map<StaPathDelayData*, unsigned>&& at_to_index) { _at_to_index = std::move(at_to_index); }
+  void set_at_to_index(std::map<StaPathDelayData*, unsigned>&& at_to_index) {
+    _at_to_index = std::move(at_to_index);
+  }
   auto& get_at_to_index() { return _at_to_index; }
 
-  void set_gpu_vertices(std::vector<GPU_Vertex>&& gpu_vertices) { _gpu_vertices = std::move(gpu_vertices); }
+  void set_gpu_vertices(std::vector<GPU_Vertex>&& gpu_vertices) {
+    _gpu_vertices = std::move(gpu_vertices);
+  }
   auto& get_gpu_vertices() { return _gpu_vertices; }
 
-  void set_gpu_arcs(std::vector<GPU_Arc>&& gpu_arcs) { _gpu_arcs = std::move(gpu_arcs); }
+  void set_gpu_arcs(std::vector<GPU_Arc>&& gpu_arcs) {
+    _gpu_arcs = std::move(gpu_arcs);
+  }
   auto& get_gpu_arcs() { return _gpu_arcs; }
 
-  void set_flatten_data(GPU_Flatten_Data&& flatten_data) { _flatten_data = std::move(flatten_data); }
+  void set_flatten_data(GPU_Flatten_Data&& flatten_data) {
+    _flatten_data = std::move(flatten_data);
+  }
   auto& get_flatten_data() { return _flatten_data; }
 
   void printFlattenData();
@@ -640,7 +656,7 @@ class Sta {
 
   unsigned _significant_digits =
       3;  //!< The significant digits for report, default is 3.
-  
+
   TimeUnit _time_unit = TimeUnit::kNS;
   CapacitiveUnit _cap_unit = CapacitiveUnit::kPF;
 
@@ -666,20 +682,22 @@ class Sta {
       _clock_trees;  //!< The sta clock tree for GUI.
 
   std::mutex _mt;
-  std::shared_mutex _rw_mutex; //!< For rc net.
+  std::shared_mutex _rw_mutex;  //!< For rc net.
   // Singleton sta.
   static Sta* _sta;
 
 #if CUDA_PROPAGATION
-  std::vector<GPU_Vertex> _gpu_vertices; //!< gpu flatten vertex, arc data.
+  std::vector<GPU_Vertex> _gpu_vertices;  //!< gpu flatten vertex, arc data.
   std::vector<GPU_Arc> _gpu_arcs;
   GPU_Flatten_Data _flatten_data;
-  GPU_Graph _gpu_graph; //!< The gpu graph mapped to sta graph.
-  Lib_Data_GPU _gpu_lib_data; //!< The gpu lib arc data.
-  std::vector<ista::Lib_Arc_GPU> _lib_gpu_arcs; //!< The gpu lib arc data.
-  std::map<StaArc*, unsigned> _arc_to_index; //!< The arc map to gpu index.
-  std::map<StaPathDelayData*, unsigned> _at_to_index; //!< The at map to gpu index.
-  std::map<unsigned, StaPathDelayData*> _index_to_at; //!< The gpu index to at map.
+  GPU_Graph _gpu_graph;        //!< The gpu graph mapped to sta graph.
+  Lib_Data_GPU _gpu_lib_data;  //!< The gpu lib arc data.
+  std::vector<ista::Lib_Arc_GPU> _lib_gpu_arcs;  //!< The gpu lib arc data.
+  std::map<StaArc*, unsigned> _arc_to_index;     //!< The arc map to gpu index.
+  std::map<StaPathDelayData*, unsigned>
+      _at_to_index;  //!< The at map to gpu index.
+  std::map<unsigned, StaPathDelayData*>
+      _index_to_at;  //!< The gpu index to at map.
 #endif
 
   FORBIDDEN_COPY(Sta);
