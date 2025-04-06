@@ -91,9 +91,14 @@ unsigned StaFwdPropagationBFS::operator()(StaVertex* the_vertex) {
   if (the_vertex->is_end()) {
     // calc check arc at the end vertex.
     FOREACH_SNK_ARC(the_vertex, snk_arc) {
+      if (!snk_arc->isCheckArc()) {
+        continue;
+      }
+      
 #if CUDA_PROPAGATION
       // collect different level arcs.
       addLevelArcs(the_vertex->get_level(), snk_arc);
+
       snk_arc->exec(*this);
 #else
       snk_arc->exec(*this);
@@ -108,6 +113,10 @@ unsigned StaFwdPropagationBFS::operator()(StaVertex* the_vertex) {
 
   FOREACH_SRC_ARC(the_vertex, src_arc) {
     if (!src_arc->isDelayArc()) {
+      continue;
+    }
+
+    if (src_arc->isMpwArc()) {
       continue;
     }
 
