@@ -173,16 +173,12 @@ void GlobalRouter::iterativeGRModel(GRModel& gr_model)
    */
   std::vector<GRIterParam> gr_iter_param_list;
   // clang-format off
-  gr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 25, 0, 3, overflow_unit, 3);
-  gr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 25, 5, 3, overflow_unit, 3);
-  gr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 25, 10, 3, overflow_unit, 3);
-  gr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 25, 15, 3, overflow_unit, 3);
-  gr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 25, 20, 3, overflow_unit, 3);
-  gr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 25, 0, 3, overflow_unit, 3);
-  gr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 25, 5, 3, overflow_unit, 3);
-  gr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 25, 10, 3, overflow_unit, 3);
-  gr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 25, 15, 3, overflow_unit, 3);
-  gr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 25, 20, 3, overflow_unit, 3);
+  gr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 0, 3, overflow_unit, 3);
+  gr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 30, 3, overflow_unit, 3);
+  gr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 60, 3, overflow_unit, 3);
+  gr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 0, 3, overflow_unit, 3);
+  gr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 30, 3, overflow_unit, 3);
+  gr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 60, 3, overflow_unit, 3);
   // clang-format on
   for (int32_t i = 0, iter = 1; i < static_cast<int32_t>(gr_iter_param_list.size()); i++, iter++) {
     Monitor iter_monitor;
