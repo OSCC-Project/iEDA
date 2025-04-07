@@ -86,12 +86,15 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
   // 使用R树查询检测
   std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> layer_env_query_tree;
   std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> layer_res_query_tree;
+  std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> layer_all_query_tree;
 
   std::map<int32_t, std::map<int32_t, GTLPolySetInt>> layer_net_gtl_env_poly_set;
   std::map<int32_t, std::map<int32_t, GTLPolySetInt>> layer_net_gtl_res_poly_set;
+  std::map<int32_t, std::map<int32_t, GTLPolySetInt>> layer_net_gtl_all_poly_set;
 
   std::map<int32_t, std::map<int32_t, std::vector<GTLRectInt>>> layer_net_gtl_env_maxrect_list;
   std::map<int32_t, std::map<int32_t, std::vector<GTLRectInt>>> layer_net_gtl_res_maxrect_list;
+  std::map<int32_t, std::map<int32_t, std::vector<GTLRectInt>>> layer_net_gtl_all_maxrect_list;
 
   std::map<int32_t, std::map<int32_t, std::map<std::set<int32_t>, GTLPolySetInt>>> layer_rs_net_gtl_vio_poly_set;
   for (DRCShape* rect : rv_box.get_drc_env_shape_list()) {
@@ -101,6 +104,7 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
     int32_t layer_idx = rect->get_layer_idx();
     int32_t net_idx = rect->get_net_idx();
     layer_net_gtl_env_poly_set[layer_idx][net_idx] += DRCUTIL.convertToGTLRectInt(rect->get_rect());
+    layer_net_gtl_all_poly_set[layer_idx][net_idx] += DRCUTIL.convertToGTLRectInt(rect->get_rect());
   }
   for (DRCShape* rect : rv_box.get_drc_result_shape_list()) {
     if (rect->get_is_routing() == false) {
@@ -109,6 +113,7 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
     int32_t layer_idx = rect->get_layer_idx();
     int32_t net_idx = rect->get_net_idx();
     layer_net_gtl_res_poly_set[layer_idx][net_idx] += DRCUTIL.convertToGTLRectInt(rect->get_rect());
+    layer_net_gtl_all_poly_set[layer_idx][net_idx] += DRCUTIL.convertToGTLRectInt(rect->get_rect());
   }
 
   // 用max rect作为被查找的
@@ -135,13 +140,25 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
     }
   }
 
+  // 用max rect作为被查找的
+  for (auto& [routing_layer_idx, net_all_gtl_poly_set] : layer_net_gtl_all_poly_set) {
+    for (auto& [net_idx, res_all_poly_set] : net_all_gtl_poly_set) {
+      std::vector<GTLRectInt> rect_list;
+      gtl::get_max_rectangles(rect_list, res_all_poly_set);
+      for (GTLRectInt& rect : rect_list) {
+        layer_net_gtl_all_maxrect_list[routing_layer_idx][net_idx].push_back(rect);
+        addRectToRtree(layer_all_query_tree, rect, routing_layer_idx, net_idx);
+      }
+    }
+  }
   // result & result检测
-  for (auto& [routing_layer_idx, net_gtl_res_maxrect_list] : layer_net_gtl_res_maxrect_list) {
+  for (auto& [routing_layer_idx, net_gtl_res_maxrect_list] : layer_net_gtl_all_maxrect_list) {
     SpacingTable& spacing_table = routing_layer_list[routing_layer_idx].get_prl_spacing_table();
     std::vector<int32_t>& parallel_length_list = spacing_table.get_parallel_length_list();
     GridMap<int32_t>& width_parallel_length_map = spacing_table.get_width_parallel_length_map();
     std::vector<int32_t>& width_list = spacing_table.get_width_list();
     int32_t max_spacing = width_parallel_length_map.back().back();
+    int32_t min_width = routing_layer_list[routing_layer_idx].get_min_width();
 
     for (auto& [net_idx, gtl_res_maxrect_list] : net_gtl_res_maxrect_list) {
       for (GTLRectInt& gtl_res_maxrect : gtl_res_maxrect_list) {
@@ -152,7 +169,9 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
         GTLRectInt bloat_res_gtl_maxrect = gtl_res_maxrect;
         gtl::bloat(bloat_res_gtl_maxrect, max_spacing);  // bloat会改变原来的值
         auto check_prl_func = [&](bool is_env) {
-          std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>>& check_rtree = is_env ? layer_env_query_tree : layer_res_query_tree;
+          // std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>>& check_rtree = is_env ? layer_env_query_tree :
+          // layer_res_query_tree;
+          std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>>& check_rtree = layer_all_query_tree;
           // 找到有交集的max rect
           std::vector<std::pair<BGRectInt, int32_t>> overlap_rect_result = queryRectbyRtree(
               check_rtree, routing_layer_idx, gtl::xl(bloat_res_gtl_maxrect) + 1, gtl::yl(bloat_res_gtl_maxrect) + 1, gtl::xh(bloat_res_gtl_maxrect) - 1,
@@ -167,6 +186,9 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
             GTLRectInt gtl_spacing_rect = DRCUTIL.convertToGTLRectInt(bgrect);
 
             PlanarRect res_maxrect = DRCUTIL.convertToPlanarRect(gtl_res_maxrect);
+            if (res_maxrect.getWidth() < min_width || spacing_rect.getWidth() < min_width) {
+              continue;  // 过滤掉小矩形
+            }
             // 先check两个rect是否重叠
             if (DRCUTIL.isClosedOverlap(spacing_rect, res_maxrect)) {
               continue;  // 同一个polygon的忽略
@@ -236,13 +258,7 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
               // 从viorect中得到重叠的rect
               std::vector<std::pair<BGRectInt, int32_t>> vio_inter_rect_result;
               GTLPolySetInt vio_inter_poly_set;
-              vio_inter_rect_result = queryRectbyRtree(layer_res_query_tree, routing_layer_idx, violation_rect.get_ll_x(), violation_rect.get_ll_y(),
-                                                       violation_rect.get_ur_x(), violation_rect.get_ur_y());
-              for (auto& [bgrect, _] : vio_inter_rect_result) {
-                vio_inter_poly_set += DRCUTIL.convertToGTLRectInt(bgrect);
-              }
-
-              vio_inter_rect_result = queryRectbyRtree(layer_env_query_tree, routing_layer_idx, violation_rect.get_ll_x(), violation_rect.get_ll_y(),
+              vio_inter_rect_result = queryRectbyRtree(layer_all_query_tree, routing_layer_idx, violation_rect.get_ll_x(), violation_rect.get_ll_y(),
                                                        violation_rect.get_ur_x(), violation_rect.get_ur_y());
               for (auto& [bgrect, _] : vio_inter_rect_result) {
                 vio_inter_poly_set += DRCUTIL.convertToGTLRectInt(bgrect);
@@ -263,13 +279,12 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
                 gtl::extents(gtl_violation_rect, left_vio_inter_poly_set);
                 violation_rect = DRCUTIL.convertToPlanarRect(gtl_violation_rect);
 
-                if (is_env) {  // 过滤掉由env产生的违例rect
-                  std::vector<std::pair<BGRectInt, int32_t>> vio_inter_rect_result = queryRectbyRtree(
-                      layer_res_query_tree, routing_layer_idx, violation_rect.get_ll_x(), violation_rect.get_ll_y(), violation_rect.get_ur_x(),
-                      violation_rect.get_ur_y());  // 从原图形中查找对应的rect,不要贴边的
-                  if (vio_inter_rect_result.size() == 0) {
-                    continue;
-                  }
+                 // 过滤掉由env产生的违例rect
+                std::vector<std::pair<BGRectInt, int32_t>> vio_inter_rect_result
+                    = queryRectbyRtree(layer_res_query_tree, routing_layer_idx, violation_rect.get_ll_x(), violation_rect.get_ll_y(), violation_rect.get_ur_x(),
+                                       violation_rect.get_ur_y());  // 从原图形中查找对应的rect,不要贴边的
+                if (vio_inter_rect_result.size() == 0) {
+                  continue;
                 }
                 // 贴两边的情况也要去除
                 std::vector<PlanarRect> corner_rect_list;  // 东南西北生成四个宽度为一的矩形
@@ -311,8 +326,7 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
             }
           }
         };
-        check_prl_func(false);  // 检测env
-        check_prl_func(true);   // 检测res
+        check_prl_func(false);  
       }
     }
   }
