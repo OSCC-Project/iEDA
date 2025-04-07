@@ -829,7 +829,7 @@ void RTInterface::wrapObstacleList()
 
 void RTInterface::wrapNetInfo()
 {
-  std::map<std::string, std::map<int32_t, PlanarRect>>& block_layer_trim_rect_map = RTDM.getDatabase().get_block_layer_trim_rect_map();
+  std::map<std::string, PlanarRect>& block_shape_map = RTDM.getDatabase().get_block_shape_map();
   std::vector<idb::IdbInstance*>& idb_instance_list = dmInst->get_idb_def_service()->get_design()->get_instance_list()->get_instance_list();
 
   for (idb::IdbInstance* idb_instance : idb_instance_list) {
@@ -840,7 +840,7 @@ void RTInterface::wrapNetInfo()
       continue;
     }
     idb::IdbRect* idb_shape = idb_instance->get_bounding_box();
-    block_layer_trim_rect_map[idb_instance->get_name()][0] = {idb_shape->get_low_x(), idb_shape->get_low_y(), idb_shape->get_high_x(), idb_shape->get_high_y()};
+    block_shape_map[idb_instance->get_name()] = {idb_shape->get_low_x(), idb_shape->get_low_y(), idb_shape->get_high_x(), idb_shape->get_high_y()};
   }
 }
 

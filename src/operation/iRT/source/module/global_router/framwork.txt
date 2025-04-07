@@ -1,7 +1,7 @@
 initGRModel:初始化GRModel
 buildLayerNodeMap:构建顶层graph
 buildOrientSupply:给顶层graph添加supply
-resetDemand:重新加载demand
+reviseNodeDemand:重新加载demand
 iterativeGRModel:迭代GRModel
     setGRIterParam:设置迭代参数
     initGRBoxMap:初始化GRBox框架
@@ -25,7 +25,7 @@ iterativeGRModel:迭代GRModel
         selectBestResult:选择box的最优结果上传
         freeGRBox:析构
     uploadNetResult:将所有的box布线结果去环优化,然后删除所有GCellMap的结果再添加
-    resetDemand:重新加载demand
+    reviseNodeDemand:重新加载demand
     updateBestResult:更新GRModel中的最优结果
 
 

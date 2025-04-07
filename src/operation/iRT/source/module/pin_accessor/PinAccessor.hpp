@@ -57,6 +57,7 @@ class PinAccessor
   std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);
   PANet convertToPANet(Net& net);
   void setPAComParam(PAModel& pa_model);
+  void buildBlockTrimRectMap(PAModel& pa_model);
   void initAccessPointList(PAModel& pa_model);
   std::vector<LayerRect> getLegalShapeList(PAModel& pa_model, int32_t net_idx, PAPin* pa_pin);
   std::vector<PlanarRect> getPlanarLegalRectList(PAModel& pa_model, int32_t curr_net_idx, PAPin* pa_pin, std::vector<EXTLayerRect>& pin_shape_list);
@@ -138,8 +139,6 @@ class PinAccessor
 #if 1  // exhibit
   void updateSummary(PAModel& pa_model);
   void printSummary(PAModel& pa_model);
-  void outputPlanarPinCSV(PAModel& pa_model);
-  void outputLayerPinCSV(PAModel& pa_model);
   void outputNetCSV(PAModel& pa_model);
   void outputViolationCSV(PAModel& pa_model);
 #endif

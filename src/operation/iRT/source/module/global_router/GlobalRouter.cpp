@@ -56,7 +56,7 @@ void GlobalRouter::route()
   GRModel gr_model = initGRModel();
   buildLayerNodeMap(gr_model);
   buildOrientSupply(gr_model);
-  resetDemand(gr_model);
+  reviseNodeDemand(gr_model);
   iterativeGRModel(gr_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -142,7 +142,7 @@ void GlobalRouter::buildOrientSupply(GRModel& gr_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void GlobalRouter::resetDemand(GRModel& gr_model)
+void GlobalRouter::reviseNodeDemand(GRModel& gr_model)
 {
   Die& die = RTDM.getDatabase().get_die();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
@@ -194,7 +194,7 @@ void GlobalRouter::iterativeGRModel(GRModel& gr_model)
     splitNetResult(gr_model);
     routeGRBoxMap(gr_model);
     uploadNetResult(gr_model);
-    resetDemand(gr_model);
+    reviseNodeDemand(gr_model);
     updateBestResult(gr_model);
     updateSummary(gr_model);
     printSummary(gr_model);
@@ -1352,7 +1352,7 @@ void GlobalRouter::selectBestResult(GRModel& gr_model)
 
   gr_model.set_iter(gr_model.get_iter() + 1);
   uploadBestResult(gr_model);
-  resetDemand(gr_model);
+  reviseNodeDemand(gr_model);
   updateSummary(gr_model);
   printSummary(gr_model);
   outputGuide(gr_model);

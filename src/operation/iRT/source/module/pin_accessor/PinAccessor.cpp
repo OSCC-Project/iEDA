@@ -63,6 +63,7 @@ void PinAccessor::access()
   RTLOG.info(Loc::current(), "Starting...");
   PAModel pa_model = initPAModel();
   setPAComParam(pa_model);
+  buildBlockTrimRectMap(pa_model);
   initAccessPointList(pa_model);
   uploadAccessPointList(pa_model);
   iterativePAModel(pa_model);
@@ -116,6 +117,29 @@ void PinAccessor::setPAComParam(PAModel& pa_model)
   // clang-format on
   RTLOG.info(Loc::current(), "max_candidate_point_num: ", pa_com_param.get_max_candidate_point_num());
   pa_model.set_pa_com_param(pa_com_param);
+}
+
+void PinAccessor::buildBlockTrimRectMap(PAModel& pa_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::map<int32_t, PlanarRect>& layer_enclosure_map = RTDM.getDatabase().get_layer_enclosure_map();
+  std::map<std::string, PlanarRect>& block_shape_map = RTDM.getDatabase().get_block_shape_map();
+
+  std::map<std::string, std::map<int32_t, PlanarRect>>& block_layer_trim_rect_map = pa_model.get_block_layer_trim_rect_map();
+
+  for (auto& [block_name, shape] : block_shape_map) {
+    for (auto& [routing_layer_idx, enclosure] : layer_enclosure_map) {
+      int32_t min_width = routing_layer_list[routing_layer_idx].get_min_width();
+      int32_t shrinked_x_size = std::max(min_width, enclosure.getXSpan());
+      int32_t shrinked_y_size = std::max(min_width, enclosure.getYSpan());
+
+      PlanarRect shrink_shape = shape;
+      if (RTUTIL.hasShrinkedRect(shrink_shape, shrinked_x_size, shrinked_y_size)) {
+        shrink_shape = RTUTIL.getShrinkedRect(shrink_shape, shrinked_x_size, shrinked_y_size);
+      }
+      block_layer_trim_rect_map[block_name][routing_layer_idx] = shrink_shape;
+    }
+  }
 }
 
 void PinAccessor::initAccessPointList(PAModel& pa_model)
@@ -202,7 +226,8 @@ std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(PAModel& pa_model, i
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::map<int32_t, PlanarRect>& layer_enclosure_map = RTDM.getDatabase().get_layer_enclosure_map();
-  std::map<std::string, std::map<int32_t, PlanarRect>>& block_layer_trim_rect_map = RTDM.getDatabase().get_block_layer_trim_rect_map();
+
+  std::map<std::string, std::map<int32_t, PlanarRect>>& block_layer_trim_rect_map = pa_model.get_block_layer_trim_rect_map();
 
   int32_t curr_layer_idx;
   {
@@ -542,8 +567,6 @@ void PinAccessor::iterativePAModel(PAModel& pa_model)
     // debugPlotPAModel(pa_model, "after");
     updateSummary(pa_model);
     printSummary(pa_model);
-    outputPlanarPinCSV(pa_model);
-    outputLayerPinCSV(pa_model);
     outputNetCSV(pa_model);
     outputViolationCSV(pa_model);
     RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", pa_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, pa_iter_param_list.size()), ")",
@@ -1832,8 +1855,6 @@ void PinAccessor::selectBestResult(PAModel& pa_model)
   uploadBestResult(pa_model);
   updateSummary(pa_model);
   printSummary(pa_model);
-  outputPlanarPinCSV(pa_model);
-  outputLayerPinCSV(pa_model);
   outputNetCSV(pa_model);
   outputViolationCSV(pa_model);
 
@@ -2386,66 +2407,6 @@ void PinAccessor::printSummary(PAModel& pa_model)
                                               << RTUTIL.getPercentage(among_net_total_violation_num, among_net_total_violation_num) << fort::endr;
   }
   RTUTIL.printTableList({routing_access_point_num_map_table, routing_wire_length_map_table, cut_via_num_map_table, among_net_routing_violation_num_map_table});
-}
-
-void PinAccessor::outputPlanarPinCSV(PAModel& pa_model)
-{
-  Die& die = RTDM.getDatabase().get_die();
-  std::string& pa_temp_directory_path = RTDM.getConfig().pa_temp_directory_path;
-  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
-  if (!output_inter_result) {
-    return;
-  }
-  GridMap<int32_t> planar_pin_map;
-  planar_pin_map.init(die.getXSize(), die.getYSize());
-  for (PANet& pa_net : pa_model.get_pa_net_list()) {
-    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      AccessPoint& extend_access_point = pa_pin.get_extend_access_point();
-      planar_pin_map[extend_access_point.get_grid_x()][extend_access_point.get_grid_y()]++;
-    }
-  }
-  std::ofstream* pin_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(pa_temp_directory_path, "pin_map_planar_", pa_model.get_iter(), ".csv"));
-  for (int32_t y = planar_pin_map.get_y_size() - 1; y >= 0; y--) {
-    for (int32_t x = 0; x < planar_pin_map.get_x_size(); x++) {
-      RTUTIL.pushStream(pin_csv_file, planar_pin_map[x][y], ",");
-    }
-    RTUTIL.pushStream(pin_csv_file, "\n");
-  }
-  RTUTIL.closeFileStream(pin_csv_file);
-}
-
-void PinAccessor::outputLayerPinCSV(PAModel& pa_model)
-{
-  Die& die = RTDM.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::string& pa_temp_directory_path = RTDM.getConfig().pa_temp_directory_path;
-  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
-  if (!output_inter_result) {
-    return;
-  }
-  std::vector<GridMap<int32_t>> layer_pin_map;
-  layer_pin_map.resize(routing_layer_list.size());
-  for (GridMap<int32_t>& pin_map : layer_pin_map) {
-    pin_map.init(die.getXSize(), die.getYSize());
-  }
-  for (PANet& pa_net : pa_model.get_pa_net_list()) {
-    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      AccessPoint& extend_access_point = pa_pin.get_extend_access_point();
-      layer_pin_map[extend_access_point.get_layer_idx()][extend_access_point.get_grid_x()][extend_access_point.get_grid_y()]++;
-    }
-  }
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    std::ofstream* pin_csv_file
-        = RTUTIL.getOutputFileStream(RTUTIL.getString(pa_temp_directory_path, "pin_map_", routing_layer.get_layer_name(), "_", pa_model.get_iter(), ".csv"));
-    GridMap<int32_t>& pin_map = layer_pin_map[routing_layer.get_layer_idx()];
-    for (int32_t y = pin_map.get_y_size() - 1; y >= 0; y--) {
-      for (int32_t x = 0; x < pin_map.get_x_size(); x++) {
-        RTUTIL.pushStream(pin_csv_file, pin_map[x][y], ",");
-      }
-      RTUTIL.pushStream(pin_csv_file, "\n");
-    }
-    RTUTIL.closeFileStream(pin_csv_file);
-  }
 }
 
 void PinAccessor::outputNetCSV(PAModel& pa_model)

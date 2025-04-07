@@ -1149,28 +1149,14 @@ void DataManager::checkObstacleList()
 
 void DataManager::buildNetInfo()
 {
-  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-  std::map<int32_t, PlanarRect>& layer_enclosure_map = _database.get_layer_enclosure_map();
-  std::map<std::string, std::map<int32_t, PlanarRect>>& block_layer_trim_rect_map = _database.get_block_layer_trim_rect_map();
+  Die& die = _database.get_die();
+  std::map<std::string, PlanarRect>& block_shape_map = _database.get_block_shape_map();
 
-  for (auto& [block_name, layer_trim_rect_map] : block_layer_trim_rect_map) {
-    PlanarRect origin_rect = layer_trim_rect_map[0];
-    for (RoutingLayer& routing_layer : routing_layer_list) {
-      block_layer_trim_rect_map[block_name][routing_layer.get_layer_idx()] = origin_rect;
+  for (auto& [block_name, shape] : block_shape_map) {
+    if (!RTUTIL.hasRegularRect(shape, die.get_real_rect())) {
+      RTLOG.error(Loc::current(), "This shape is outside the die!");
     }
-  }
-  for (auto& [block_name, layer_trim_rect_map] : block_layer_trim_rect_map) {
-    for (auto& [routing_layer_idx, enclosure] : layer_enclosure_map) {
-      int32_t min_width = routing_layer_list[routing_layer_idx].get_min_width();
-      int32_t shrinked_x_size = std::max(min_width, enclosure.getXSpan());
-      int32_t shrinked_y_size = std::max(min_width, enclosure.getYSpan());
-
-      PlanarRect shrink_shape = layer_trim_rect_map[routing_layer_idx];
-      if (RTUTIL.hasShrinkedRect(shrink_shape, shrinked_x_size, shrinked_y_size)) {
-        shrink_shape = RTUTIL.getShrinkedRect(shrink_shape, shrinked_x_size, shrinked_y_size);
-      }
-      block_layer_trim_rect_map[block_name][routing_layer_idx] = shrink_shape;
-    }
+    shape = RTUTIL.getRegularRect(shape, die.get_real_rect());
   }
 }
 
