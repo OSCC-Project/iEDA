@@ -64,7 +64,6 @@ void TopologyGenerator::generate()
   updateSummary(tg_model);
   printSummary(tg_model);
   outputGuide(tg_model);
-  outputPlanarSupplyCSV(tg_model);
   outputPlanarDemandCSV(tg_model);
   outputPlanarOverflowCSV(tg_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -676,28 +675,6 @@ void TopologyGenerator::outputGuide(TGModel& tg_model)
     }
   }
   RTUTIL.closeFileStream(guide_file_stream);
-}
-
-void TopologyGenerator::outputPlanarSupplyCSV(TGModel& tg_model)
-{
-  std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
-  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
-  if (!output_inter_result) {
-    return;
-  }
-  std::ofstream* supply_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(tg_temp_directory_path, "supply_map_planar.csv"));
-  GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
-  for (int32_t y = tg_node_map.get_y_size() - 1; y >= 0; y--) {
-    for (int32_t x = 0; x < tg_node_map.get_x_size(); x++) {
-      std::map<Orientation, int32_t>& orient_supply_map = tg_node_map[x][y].get_orient_supply_map();
-      int32_t total_supply = 0;
-      total_supply = (orient_supply_map[Orientation::kEast] + orient_supply_map[Orientation::kWest] + orient_supply_map[Orientation::kSouth]
-                      + orient_supply_map[Orientation::kNorth]);
-      RTUTIL.pushStream(supply_csv_file, total_supply, ",");
-    }
-    RTUTIL.pushStream(supply_csv_file, "\n");
-  }
-  RTUTIL.closeFileStream(supply_csv_file);
 }
 
 void TopologyGenerator::outputPlanarDemandCSV(TGModel& tg_model)

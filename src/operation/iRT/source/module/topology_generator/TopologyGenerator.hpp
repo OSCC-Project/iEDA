@@ -72,7 +72,6 @@ class TopologyGenerator
   void updateSummary(TGModel& tg_model);
   void printSummary(TGModel& tg_model);
   void outputGuide(TGModel& tg_model);
-  void outputPlanarSupplyCSV(TGModel& tg_model);
   void outputPlanarDemandCSV(TGModel& tg_model);
   void outputPlanarOverflowCSV(TGModel& tg_model);
 #endif
