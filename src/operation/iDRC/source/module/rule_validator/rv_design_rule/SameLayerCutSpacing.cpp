@@ -83,14 +83,9 @@ void RuleValidator::verifySameLayerCutSpacing(RVBox& rv_box)
     return violation_rect;
   };
 #endif
-  // 规则定义
-  // int32_t cut_spacing_a = 80 * 2;
-  // int32_t cut_spacing_b = 90 * 2;
-  int32_t cut_spacing_a = 70 * 2;
-  int32_t cut_spacing_b = 80 * 2;
-  int32_t prl = -1 * 40 * 2;
 
-  std::vector<Violation>& violation_list = rv_box.get_violation_list();
+  std::vector<Violation>& final_violation_list = rv_box.get_violation_list();
+  std::vector<Violation> violation_list;
 
   std::vector<int32_t> cut_eol_spacing_layers = {1, 2, 3, 4, 5, 6};
   std::map<int32_t, GTLPolySetInt> layer_cut_gtl_poly_set;  // cut idx为对应的上层layer的idx,cut idx -1 是cut的下层
@@ -121,8 +116,19 @@ void RuleValidator::verifySameLayerCutSpacing(RVBox& rv_box)
           GTLRectInt(rect->get_ll_x(), rect->get_ll_y(), rect->get_ur_x(), rect->get_ur_y()));
     }
   }
-
+  auto& cut_layer_list = DRCDM.getDatabase().get_cut_layer_list();
+  auto& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
   for (auto& [cuting_layer_idx, net_gtl_res_maxrect_list] : layer_net_gtl_res_maxrect_list) {
+    // 规则定义
+    // int32_t cut_spacing_a = 70 * 2;
+    // int32_t cut_spacing_b = 80 * 2;
+    // int32_t prl = -1 * 40 * 2;
+
+    // FIX:get_curr_prl() need to return negative number(-80)
+    int32_t cut_spacing_a = cut_layer_list[cuting_layer_idx].get_curr_spacing();
+    int32_t cut_spacing_b = cut_layer_list[cuting_layer_idx].get_curr_prl_spacing();
+    int32_t prl = -1 * cut_layer_list[cuting_layer_idx].get_curr_prl();
+
     for (auto& [net_idx, gtl_res_maxrect_list] : net_gtl_res_maxrect_list) {
       for (auto& gtl_res_maxrect : gtl_res_maxrect_list) {
         // 膨胀到cut spacing b进行查询
@@ -191,6 +197,23 @@ void RuleValidator::verifySameLayerCutSpacing(RVBox& rv_box)
           }
         }
       }
+    }
+  }
+  for (Violation& violation : violation_list) {
+    bool is_inside = false;
+    for (Violation& check_violation : violation_list) {
+      if (check_violation.get_violation_type() == violation.get_violation_type() && check_violation.get_layer_idx() == violation.get_layer_idx()
+          && check_violation.get_required_size() == violation.get_required_size()
+          && check_violation.get_violation_net_set() == violation.get_violation_net_set() 
+          && check_violation.get_layer_idx() == violation.get_layer_idx()) {
+        if (DRCUTIL.isInside(check_violation.get_rect(), violation.get_rect()) && check_violation.get_rect() != violation.get_rect()) {
+          is_inside = true;
+          break;
+        }
+      }
+    }
+    if (is_inside == false) {
+      final_violation_list.push_back(violation);
     }
   }
 }
