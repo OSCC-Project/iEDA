@@ -1071,9 +1071,12 @@ void DataManager::buildLayerViaMasterInfo()
 
 void DataManager::buildObstacleList()
 {
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
   transObstacleList();
   makeObstacleList();
   checkObstacleList();
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void DataManager::transObstacleList()
@@ -1100,13 +1103,23 @@ void DataManager::makeObstacleList()
   std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
   std::vector<Obstacle>& cut_obstacle_list = _database.get_cut_obstacle_list();
 
-#pragma omp parallel for
+  std::map<int32_t, std::vector<PlanarRect>> routing_rect_list_map;
   for (Obstacle& routing_obstacle : routing_obstacle_list) {
     if (!RTUTIL.hasRegularRect(routing_obstacle.get_real_rect(), die.get_real_rect())) {
       RTLOG.error(Loc::current(), "This shape is outside the die!");
     }
-    routing_obstacle.set_real_rect(RTUTIL.getRegularRect(routing_obstacle.get_real_rect(), die.get_real_rect()));
-    routing_obstacle.set_grid_rect(RTUTIL.getClosedGCellGridRect(routing_obstacle.get_real_rect(), gcell_axis));
+    PlanarRect regular_rect = RTUTIL.getRegularRect(routing_obstacle.get_real_rect(), die.get_real_rect());
+    routing_rect_list_map[routing_obstacle.get_layer_idx()].push_back(regular_rect);
+  }
+  routing_obstacle_list.clear();
+  for (auto& [routing_layer_idx, rect_list] : routing_rect_list_map) {
+    for (PlanarRect& real_rect : RTUTIL.getMaxRectList(rect_list)) {
+      Obstacle routing_obstacle;
+      routing_obstacle.set_real_rect(real_rect);
+      routing_obstacle.set_grid_rect(RTUTIL.getClosedGCellGridRect(routing_obstacle.get_real_rect(), gcell_axis));
+      routing_obstacle.set_layer_idx(routing_layer_idx);
+      routing_obstacle_list.push_back(routing_obstacle);
+    }
   }
 #pragma omp parallel for
   for (Obstacle& cut_obstacle : cut_obstacle_list) {
@@ -1162,6 +1175,8 @@ void DataManager::buildNetInfo()
 
 void DataManager::buildNetList()
 {
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
   std::vector<Net>& net_list = _database.get_net_list();
 #pragma omp parallel for
   for (size_t net_idx = 0; net_idx < net_list.size(); net_idx++) {
@@ -1169,6 +1184,7 @@ void DataManager::buildNetList()
     net.set_net_idx(static_cast<int32_t>(net_idx));
     buildPinList(net);
   }
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void DataManager::buildPinList(Net& net)
@@ -1253,8 +1269,11 @@ void DataManager::buildDetectionDistance()
 
 void DataManager::buildGCellMap()
 {
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
   initGCellMap();
   updateGCellMap();
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void DataManager::initGCellMap()
@@ -1277,9 +1296,6 @@ void DataManager::initGCellMap()
 
 void DataManager::updateGCellMap()
 {
-  Monitor monitor;
-  RTLOG.info(Loc::current(), "Starting...");
-
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
   Die& die = _database.get_die();
   std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
@@ -1374,7 +1390,6 @@ void DataManager::updateGCellMap()
     }
     updateFixedRectToGCellMap(ChangeType::kAdd, aux_shape.net_idx, aux_shape.rect, aux_shape.is_routing);
   }
-  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 int32_t DataManager::getBucketIdx(int32_t scale_start, int32_t scale_end, int32_t bucket_start, int32_t bucket_end, int32_t bucket_length)

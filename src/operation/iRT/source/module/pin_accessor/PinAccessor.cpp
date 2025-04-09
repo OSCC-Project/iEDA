@@ -1159,20 +1159,16 @@ void PinAccessor::initSingleTask(PABox& pa_box, PATask* pa_task)
     std::vector<std::vector<PANode*>> node_list_list;
     std::vector<PAGroup>& pa_group_list = pa_task->get_pa_group_list();
     for (PAGroup& pa_group : pa_group_list) {
-      std::map<int32_t, std::vector<PANode*>> violation_num_node_map;
+      std::vector<PANode*> node_list;
       for (LayerCoord& coord : pa_group.get_coord_list()) {
         if (!RTUTIL.existTrackGrid(coord, box_track_axis)) {
           RTLOG.error(Loc::current(), "The coord can not find grid!");
         }
         PlanarCoord grid_coord = RTUTIL.getTrackGrid(coord, box_track_axis);
         PANode& pa_node = layer_node_map[coord.get_layer_idx()][grid_coord.get_x()][grid_coord.get_y()];
-        int32_t total_violation_num = 0;
-        for (auto& [orient, violation_num] : pa_node.get_orient_violation_number_map()) {
-          total_violation_num += violation_num;
-        }
-        violation_num_node_map[total_violation_num].push_back(&pa_node);
+        node_list.push_back(&pa_node);
       }
-      node_list_list.push_back((*violation_num_node_map.begin()).second);
+      node_list_list.push_back(node_list);
     }
     for (size_t i = 0; i < node_list_list.size(); i++) {
       if (i == 0) {
