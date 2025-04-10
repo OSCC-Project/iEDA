@@ -74,19 +74,19 @@ void LargeModel::buildFeature(const std::string dir)
 {
   {
     /// build layout data
-    MemoryMonitor monitor("buildLayoutData", "/home/yhqiu/net_level_collect/benchmark/memory_usage.log");
+    MemoryMonitor monitor("buildLayoutData", "./memory_usage.log");
     _data_manager.buildLayoutData();
   }
 
   {
     /// build graph
-    MemoryMonitor monitor("buildGraphData", "/home/yhqiu/net_level_collect/benchmark/memory_usage.log");
+    MemoryMonitor monitor("buildGraphData", "./memory_usage.log");
     _data_manager.buildGraphData();
   }
 
   {
   /// build patch data
-    MemoryMonitor monitor("buildPatchData", "/home/yhqiu/net_level_collect/benchmark/memory_usage.log");
+    MemoryMonitor monitor("buildPatchData", "./memory_usage.log");
     buildPatchData(dir);
   }
   // build pattern
@@ -106,10 +106,18 @@ void LargeModel::generateFeature(const std::string dir)
 {
   auto* patch_grid = _data_manager.patch_dm == nullptr ? nullptr : &_data_manager.patch_dm->get_patch_grid();
   LmFeature feature(&_data_manager.layout_dm.get_layout(), patch_grid, dir);
-
-  feature.buildFeatureTiming();
-  feature.buildFeatureDrc();
-  feature.buildFeatureStatis();
+  {
+    MemoryMonitor monitor("buildFeatureTiming", "./memory_usage.log");
+    feature.buildFeatureTiming();
+  }
+  {
+    MemoryMonitor monitor("buildFeatureDrc", "./memory_usage.log");
+    feature.buildFeatureDrc();
+  }
+  {
+    MemoryMonitor monitor("buildFeatureStatis", "./memory_usage.log");
+    feature.buildFeatureStatis();
+  }
 }
 
 /// for run large model sta api.
