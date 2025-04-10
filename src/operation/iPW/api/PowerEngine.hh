@@ -85,9 +85,15 @@ class PowerEngine {
   unsigned readPGSpef(const char* spef_file) { return _ipower->readPGSpef(spef_file); }
   auto* getRustPGRCData() { return _ipower->get_rust_pg_rc_data(); }
   unsigned runIRAnalysis(std::string power_net_name) {
+    bool is_ok = false;
     if (!getRustPGRCData()) {
-      buildPGNetWireTopo();
+      is_ok = buildPGNetWireTopo();
     }
+
+    if (!is_ok) {
+      return 0;
+    }
+
     return _ipower->runIRAnalysis(power_net_name);
   }
   std::map<Instance*, double> getInstanceIRDrop();

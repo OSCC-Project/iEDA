@@ -388,10 +388,14 @@ void IRPGNetlistBuilder::createRustPGNetlist() {
  * @brief estimate rc for the pg netlist.
  * 
  */
-void IRPGNetlistBuilder::createRustRCData() {
+unsigned IRPGNetlistBuilder::createRustRCData() {
   auto* rust_pg_netlist_vec_ptr = _rust_pg_netlists.data();
   auto len =  _rust_pg_netlists.size();
+  if (!rust_pg_netlist_vec_ptr || len == 0) {
+    return 0;
+  }
   _rust_rc_data = create_rc_data(rust_pg_netlist_vec_ptr, len);
+  return 1;
 }
 
 
