@@ -279,7 +279,7 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
                 gtl::extents(gtl_violation_rect, left_vio_inter_poly_set);
                 violation_rect = DRCUTIL.convertToPlanarRect(gtl_violation_rect);
 
-                 // 过滤掉由env产生的违例rect
+                // 过滤掉由env产生的违例rect
                 std::vector<std::pair<BGRectInt, int32_t>> vio_inter_rect_result
                     = queryRectbyRtree(layer_res_query_tree, routing_layer_idx, violation_rect.get_ll_x(), violation_rect.get_ll_y(), violation_rect.get_ur_x(),
                                        violation_rect.get_ur_y());  // 从原图形中查找对应的rect,不要贴边的
@@ -326,7 +326,7 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
             }
           }
         };
-        check_prl_func(false);  
+        check_prl_func(false);
       }
     }
   }

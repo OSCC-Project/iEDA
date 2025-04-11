@@ -380,7 +380,7 @@ void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_
         idb::cutlayer::Lef58SpacingTable::CutSpacing cut_spacing = spacing_table->get_cutclass().get_cut_spacing(0, 0);
 
         int32_t curr_spacing = cut_spacing.get_cut_spacing1().value();
-        int32_t curr_prl = -1 * spacing_table->get_prl().value().get_prl();
+        int32_t curr_prl = spacing_table->get_prl().value().get_prl();
         int32_t curr_prl_spacing = cut_spacing.get_cut_spacing2().value();
         cut_layer.set_curr_spacing(curr_spacing);
         cut_layer.set_curr_prl(curr_prl);
@@ -395,7 +395,7 @@ void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_
       idb::cutlayer::Lef58EolSpacing* idb_eol_spacing = idb_layer->get_lef58_eol_spacing().get();
 
       int32_t curr_eol_spacing = idb_eol_spacing->get_cut_spacing1();
-      int32_t curr_eol_prl = -1 * idb_eol_spacing->get_prl();
+      int32_t curr_eol_prl = idb_eol_spacing->get_prl();
       int32_t curr_eol_prl_spacing = idb_eol_spacing->get_cut_spacing2();
       cut_layer.set_curr_eol_spacing(curr_eol_spacing);
       cut_layer.set_curr_eol_prl(curr_eol_prl);
@@ -417,7 +417,7 @@ void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_
         idb::cutlayer::Lef58SpacingTable::CutSpacing cut_spacing = spacing_table->get_cutclass().get_cut_spacing(0, 0);
 
         int32_t below_spacing = cut_spacing.get_cut_spacing1().value();
-        int32_t below_prl = -1 * spacing_table->get_prl().value().get_prl();
+        int32_t below_prl = spacing_table->get_prl().value().get_prl();
         int32_t below_prl_spacing = cut_spacing.get_cut_spacing2().value();
         cut_layer.set_below_spacing(below_spacing);
         cut_layer.set_below_prl(below_prl);

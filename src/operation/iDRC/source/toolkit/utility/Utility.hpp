@@ -483,6 +483,12 @@ class Utility
   }
 
   // 扩大矩形
+  static PlanarRect getEnlargedRect(PlanarRect rect, int32_t x_enlarge_size, int32_t y_enlarge_size)
+  {
+    return getEnlargedRect(rect, x_enlarge_size, y_enlarge_size, x_enlarge_size, y_enlarge_size);
+  }
+
+  // 扩大矩形
   static PlanarRect getEnlargedRect(PlanarRect rect, int32_t ll_x_minus_offset, int32_t ll_y_minus_offset, int32_t ur_x_add_offset, int32_t ur_y_add_offset)
   {
     minusOffset(rect.get_ll(), ll_x_minus_offset, ll_y_minus_offset);
@@ -500,6 +506,36 @@ class Utility
   {
     coord.set_x(coord.get_x() + x_offset);
     coord.set_y(coord.get_y() + y_offset);
+  }
+
+  static PlanarRect getSpacingRect(PlanarRect a, PlanarRect b)
+  {
+    int32_t x_spacing = std::max(0, std::max(a.get_ll_x() - b.get_ur_x(), b.get_ll_x() - a.get_ur_x()));
+    int32_t y_spacing = std::max(0, std::max(a.get_ll_y() - b.get_ur_y(), b.get_ll_y() - a.get_ur_y()));
+    PlanarRect spacing_rect;
+    if (x_spacing > 0 && y_spacing > 0) {
+      if (a.get_ur_x() < b.get_ll_x()) {
+        spacing_rect.set_ll_x(a.get_ur_x());
+        spacing_rect.set_ur_x(b.get_ll_x());
+      } else {
+        spacing_rect.set_ll_x(b.get_ur_x());
+        spacing_rect.set_ur_x(a.get_ll_x());
+      }
+      if (a.get_ur_y() < b.get_ll_y()) {
+        spacing_rect.set_ll_y(a.get_ur_y());
+        spacing_rect.set_ur_y(b.get_ll_y());
+      } else {
+        spacing_rect.set_ll_y(b.get_ur_y());
+        spacing_rect.set_ur_y(a.get_ll_y());
+      }
+    } else {
+      if (x_spacing == 0) {
+        spacing_rect = getOverlap(getEnlargedRect(a, 0, y_spacing), getEnlargedRect(b, 0, y_spacing));
+      } else if (y_spacing == 0) {
+        spacing_rect = getOverlap(getEnlargedRect(a, x_spacing, 0), getEnlargedRect(b, x_spacing, 0));
+      }
+    }
+    return spacing_rect;
   }
 
   // 获得两个矩形的overlap矩形
