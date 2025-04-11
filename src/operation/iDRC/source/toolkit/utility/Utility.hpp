@@ -181,6 +181,12 @@ class Utility
     return (rect_ll_x < coord_x && coord_x < rect_ur_x) && (rect_ll_y < coord_y && coord_y < rect_ur_y);
   }
 
+  // 线段在矩形内
+  static bool isInside(const PlanarRect& master, const Segment<PlanarCoord>& seg)
+  {
+    return isInside(master, seg.get_first()) && isInside(master, seg.get_second());
+  }
+
   /**
    *  ！在检测DRC中
    *  如果a与b中有膨胀矩形,那么则用isOpenOverlap
@@ -545,6 +551,31 @@ class Utility
       ur_y = std::max(ur_y, rect_list[i].get_ur_y());
     }
     return PlanarRect(ll_x, ll_y, ur_x, ur_y);
+  }
+
+  // 获得坐标集合的外接矩形
+  static PlanarRect getBoundingBox(const std::vector<PlanarCoord>& coord_list)
+  {
+    PlanarRect bounding_box;
+    if (coord_list.empty()) {
+      DRCLOG.warn(Loc::current(), "The coord list size is empty!");
+    } else {
+      int32_t ll_x = INT32_MAX;
+      int32_t ll_y = INT32_MAX;
+      int32_t ur_x = INT32_MIN;
+      int32_t ur_y = INT32_MIN;
+      for (size_t i = 0; i < coord_list.size(); i++) {
+        const PlanarCoord& coord = coord_list[i];
+
+        ll_x = std::min(ll_x, coord.get_x());
+        ll_y = std::min(ll_y, coord.get_y());
+        ur_x = std::max(ur_x, coord.get_x());
+        ur_y = std::max(ur_y, coord.get_y());
+      }
+      bounding_box.set_ll(ll_x, ll_y);
+      bounding_box.set_ur(ur_x, ur_y);
+    }
+    return bounding_box;
   }
 
   // 获得两个矩形的overlap矩形
