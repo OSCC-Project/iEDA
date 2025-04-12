@@ -1919,10 +1919,13 @@ double Sta::getWNS(const char *clock_name, AnalysisMode mode) {
       StaPathData *path_data;
       FOREACH_PATH_GROUP_END(seq_path_group.get(), path_end)
       FOREACH_PATH_END_DATA(path_end, mode, path_data) {
-        seq_data_queue.push(path_data);
+        seq_data_queue.push(path_data);  
       }
-      auto *worst_seq_data = seq_data_queue.top();
-      WNS = FS_TO_NS(worst_seq_data->getSlack());
+      // 添加队列非空检查
+      if (!seq_data_queue.empty()) {
+        auto *worst_seq_data = seq_data_queue.top();
+        WNS = FS_TO_NS(worst_seq_data->getSlack());
+      }
       break;
     }
   }
