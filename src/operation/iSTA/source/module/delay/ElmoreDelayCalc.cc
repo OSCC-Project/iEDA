@@ -998,7 +998,7 @@ void RcNet::updateRcTreeInfo() {
   auto pin_ports = _net->get_pin_ports();
 
   // fix for net is only driver
-  if (pin_ports.size() < 2) {
+  if (pin_ports.size() < 2 || driver == nullptr) {
     return;
   }
 
@@ -1312,34 +1312,41 @@ std::map<std::string, double>& RcNet::getAllNodeSlew(double driver_slew,
     return *_all_node_slews;
   }
 
+  _all_node_slews = std::map<std::string, double>{};
+  auto* rc_tree = rct();
+  if (!rc_tree) {
+    return _all_node_slews.value();
+  }
+
+  auto* rc_root = rc_tree->_root;
+  if (!rc_root) {
+    return _all_node_slews.value();
+  }
+
+  _all_node_slews.value()[rc_root->get_name()] = driver_slew;
+  
   std::map<std::string, double> all_node_slews;
 
   std::function<void(RctNode*, RctNode*)> get_snk_slew =
-      [&get_snk_slew, this, mode, trans_type, driver_slew, &all_node_slews](
-          RctNode* parent_node, RctNode* src_node) {
+      [&get_snk_slew, this, mode, trans_type, driver_slew](
+          RctNode* parent_node, RctNode* src_node) {        
         auto& fanout_edges = src_node->get_fanout();
-        for (auto* fanout_edge : fanout_edges) {
+        for (auto* fanout_edge : fanout_edges) {          
           auto& snk_node = fanout_edge->_to;
           if (fanout_edge->isBreak() || &snk_node == parent_node) {
             continue;
           }
 
           auto snk_slew = snk_node.slew(mode, trans_type, NS_TO_PS(driver_slew));
-          all_node_slews[snk_node.get_name()] = PS_TO_NS(snk_slew);
+          _all_node_slews.value()[snk_node.get_name()] = PS_TO_NS(snk_slew);
 
           get_snk_slew(src_node, &snk_node);
         }
       };
 
-  auto* rc_tree = rct();
-  auto* rc_root = rc_tree->_root;
-  all_node_slews[rc_root->get_name()] = driver_slew;
-
   get_snk_slew(nullptr, rc_root);
 
-  _all_node_slews = std::move(all_node_slews);
-
-  return *_all_node_slews;
+  return _all_node_slews.value();
 }
 
 /**

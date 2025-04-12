@@ -723,7 +723,7 @@ double InitSTA::getNetResistance(const std::string& net_name) const
   ista::Net* ista_net = netlist->findNet(net_name.c_str());
   auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
 
-  if (rc_net) {
+  if (rc_net && ista_net->getDriver()) {
     double resistance = rc_net->getNetResistance();
     return resistance;
   }
@@ -736,7 +736,7 @@ double InitSTA::getNetCapacitance(const std::string& net_name) const
   ista::Net* ista_net = netlist->findNet(net_name.c_str());
   auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
 
-  if (rc_net) {
+  if (rc_net && ista_net->getDriver()) {
     double load = rc_net->load();
     return load;
   }
@@ -749,6 +749,10 @@ double InitSTA::getNetSlew(const std::string& net_name) const
   auto netlist = STA_INST->get_netlist();
   ista::Net* ista_net = netlist->findNet(net_name.c_str());
   auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  if (!ista_net->getDriver()){
+    return 0.0;
+  }
 
   if (!rc_net) {
     return 0.0;
