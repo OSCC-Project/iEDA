@@ -265,21 +265,14 @@ std::vector<Violation> ViolationRepairer::getHybridNetViolationList(VRModel& vr_
 
 void ViolationRepairer::iterativeVRModel(VRModel& vr_model)
 {
-  int32_t cost_unit = RTDM.getOnlyPitch();
-  double prefer_wire_unit = 1;
-  double non_prefer_wire_unit = 2.5 * prefer_wire_unit;
-  double via_unit = cost_unit;
-  double fixed_rect_unit = 4 * non_prefer_wire_unit * cost_unit;
-  double routed_rect_unit = 2 * via_unit;
-  double violation_unit = 4 * non_prefer_wire_unit * cost_unit;
   /**
-   * size, offset, schedule_interval, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times
+   * size, offset, schedule_interval
    */
   std::vector<VRIterParam> vr_iter_param_list;
   // clang-format off
-  vr_iter_param_list.emplace_back(3, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 10);
-  vr_iter_param_list.emplace_back(3, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 10);
-  vr_iter_param_list.emplace_back(3, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 10);
+  vr_iter_param_list.emplace_back(3, 0, 3);
+  vr_iter_param_list.emplace_back(3, 1, 3);
+  vr_iter_param_list.emplace_back(3, 2, 3);
   // clang-format on
   for (int32_t i = 0, iter = 1; i < static_cast<int32_t>(vr_iter_param_list.size()); i++, iter++) {
     Monitor iter_monitor;
@@ -314,10 +307,6 @@ void ViolationRepairer::setVRIterParam(VRModel& vr_model, int32_t iter, VRIterPa
   RTLOG.info(Loc::current(), "size: ", vr_iter_param.get_size());
   RTLOG.info(Loc::current(), "offset: ", vr_iter_param.get_offset());
   RTLOG.info(Loc::current(), "schedule_interval: ", vr_iter_param.get_schedule_interval());
-  RTLOG.info(Loc::current(), "fixed_rect_unit: ", vr_iter_param.get_fixed_rect_unit());
-  RTLOG.info(Loc::current(), "routed_rect_unit: ", vr_iter_param.get_routed_rect_unit());
-  RTLOG.info(Loc::current(), "violation_unit: ", vr_iter_param.get_violation_unit());
-  RTLOG.info(Loc::current(), "max_routed_times: ", vr_iter_param.get_max_routed_times());
   vr_model.set_vr_iter_param(vr_iter_param);
 }
 
