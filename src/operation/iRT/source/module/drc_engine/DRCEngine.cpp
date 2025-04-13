@@ -243,7 +243,7 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
         layer_routing_list = expandUpOneLayer(violation);
         break;
       case ViolationType::kCutShort:
-        new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
+        new_real_rect = keepRect(new_real_rect);
         layer_routing_list = expandUpOneLayer(violation);
         break;
       case ViolationType::kDifferentLayerCutSpacing:
@@ -271,7 +271,7 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
       case ViolationType::kMaxViaStack:
         break;
       case ViolationType::kMetalShort:
-        new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
+        new_real_rect = keepRect(new_real_rect);
         layer_routing_list = expandAdjacentOneLayer(violation);
         break;
       case ViolationType::kMinHole:
@@ -313,7 +313,7 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
       case ViolationType::kCutEOLSpacing:
         break;
       case ViolationType::kCutShort:
-        new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
+        new_real_rect = keepRect(new_real_rect);
         layer_routing_list = expandUpOneLayer(violation);
         break;
       case ViolationType::kDifferentLayerCutSpacing:
@@ -335,6 +335,8 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
       case ViolationType::kMaxViaStack:
         break;
       case ViolationType::kMetalShort:
+        new_real_rect = keepRect(new_real_rect);
+        layer_routing_list = expandAdjacentOneLayer(violation);
         break;
       case ViolationType::kMinHole:
         break;
