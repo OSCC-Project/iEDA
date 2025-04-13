@@ -7,6 +7,7 @@ add_subdirectory(${IRT_MODULE}/layer_assigner)
 add_subdirectory(${IRT_MODULE}/global_router)
 add_subdirectory(${IRT_MODULE}/track_assigner)
 add_subdirectory(${IRT_MODULE}/detailed_router)
+add_subdirectory(${IRT_MODULE}/hybrid_router)
 add_subdirectory(${IRT_MODULE}/violation_repairer)
 add_subdirectory(${IRT_MODULE}/early_router)
 
@@ -23,6 +24,7 @@ target_link_libraries(irt_module
         irt_global_router
         irt_track_assigner
         irt_detailed_router
+        irt_hybrid_router
         irt_violation_repairer
         irt_early_router
 )

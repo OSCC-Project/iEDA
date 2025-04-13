@@ -49,12 +49,8 @@ class ViolationRepairer
   VRModel initVRModel();
   std::vector<VRNet> convertToVRNetList(std::vector<Net>& net_list);
   VRNet convertToVRNet(Net& net);
-  void updateAccessPoint(VRModel& vr_model);
-  void initNetFinalResultMap(VRModel& vr_model);
-  void buildNetFinalResultMap(VRModel& vr_model);
-  void clearIgnoredViolation(VRModel& vr_model);
   void uploadViolation(VRModel& vr_model);
-  std::vector<Violation> getHybridNetViolationList(VRModel& vr_model);
+  std::vector<Violation> getViolationList(VRModel& vr_model);
   void iterativeVRModel(VRModel& vr_model);
   void setVRIterParam(VRModel& vr_model, int32_t iter, VRIterParam& vr_iter_param);
   void initVRBoxMap(VRModel& vr_model);
@@ -79,7 +75,7 @@ class ViolationRepairer
   VRSolution getNewSolution(VRBox& vr_box);
   void updateCurrResultList(VRBox& vr_box, VRSolution& vr_solution);
   void updateCurrViolationList(VRBox& vr_box);
-  std::vector<Violation> getHybridNetViolationList(VRBox& vr_box);
+  std::vector<Violation> getViolationList(VRBox& vr_box);
   void updateCurrSolvedStatus(VRBox& vr_box);
   void updateTaskResult(VRBox& vr_box);
   void updateTaskPatch(VRBox& vr_box);

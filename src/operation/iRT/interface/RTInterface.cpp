@@ -19,6 +19,7 @@
 #include "DRCEngine.hpp"
 #include "DRCInterface.hpp"
 #include "DetailedRouter.hpp"
+#include "HybridRouter.hpp"
 #include "EarlyRouter.hpp"
 #include "GDSPlotter.hpp"
 #include "GlobalRouter.hpp"
@@ -149,6 +150,10 @@ void RTInterface::runRT()
   DetailedRouter::initInst();
   RTDR.route();
   DetailedRouter::destroyInst();
+
+  HybridRouter::initInst();
+  RTHR.route();
+  HybridRouter::destroyInst();
 
   ViolationRepairer::initInst();
   RTVR.repair();

@@ -102,7 +102,7 @@ class DetailedRouter
   double getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   void updateViolationList(DRBox& dr_box);
-  std::vector<Violation> getAmongNetViolationList(DRBox& dr_box);
+  std::vector<Violation> getViolationList(DRBox& dr_box);
   void updateBestResult(DRBox& dr_box);
   void updateTaskSchedule(DRBox& dr_box, std::vector<DRTask*>& routing_task_list);
   void selectBestResult(DRBox& dr_box);
@@ -111,7 +111,7 @@ class DetailedRouter
   int32_t getViolationNum(DRModel& dr_model);
   void uploadNetResult(DRModel& dr_model);
   void uploadViolation(DRModel& dr_model);
-  std::vector<Violation> getAmongNetViolationList(DRModel& dr_model);
+  std::vector<Violation> getViolationList(DRModel& dr_model);
   void updateBestResult(DRModel& dr_model);
   bool stopIteration(DRModel& dr_model);
   void selectBestResult(DRModel& dr_model);

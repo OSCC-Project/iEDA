@@ -16,42 +16,24 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Logger.hpp"
+#include "Direction.hpp"
+#include "LayerCoord.hpp"
 
 namespace irt {
 
-enum class DENetType
+class HRGroup
 {
-  kNone,
-  kRouteAmong,
-  kRouteHybrid,
-  kPatchHybrid
-};
+ public:
+  HRGroup() = default;
+  ~HRGroup() = default;
+  // getter
+  std::vector<LayerCoord>& get_coord_list() { return _coord_list; }
+  // setter
+  void set_coord_list(const std::vector<LayerCoord>& coord_list) { _coord_list = coord_list; }
+  // function
 
-struct GetDENetTypeName
-{
-  std::string operator()(const DENetType& net_type) const
-  {
-    std::string net_type_name;
-    switch (net_type) {
-      case DENetType::kNone:
-        net_type_name = "none";
-        break;
-      case DENetType::kRouteAmong:
-        net_type_name = "route_among";
-        break;
-      case DENetType::kRouteHybrid:
-        net_type_name = "route_hybrid";
-        break;
-      case DENetType::kPatchHybrid:
-        net_type_name = "patch_hybrid";
-        break;
-      default:
-        RTLOG.error(Loc::current(), "Unrecognized type!");
-        break;
-    }
-    return net_type_name;
-  }
+ private:
+  std::vector<LayerCoord> _coord_list;
 };
 
 }  // namespace irt

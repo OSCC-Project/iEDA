@@ -109,7 +109,7 @@ class PinAccessor
   double getEstimateWireCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   double getEstimateViaCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   void updateViolationList(PABox& pa_box);
-  std::vector<Violation> getAmongNetViolationList(PABox& pa_box);
+  std::vector<Violation> getViolationList(PABox& pa_box);
   void updateAccessPoint(PABox& pa_box);
   void updateBestResult(PABox& pa_box);
   void updateTaskSchedule(PABox& pa_box, std::vector<PATask*>& routing_task_list);
@@ -118,7 +118,7 @@ class PinAccessor
   void freePABox(PABox& pa_box);
   int32_t getViolationNum(PAModel& pa_model);
   void uploadViolation(PAModel& pa_model);
-  std::vector<Violation> getAmongNetViolationList(PAModel& pa_model);
+  std::vector<Violation> getViolationList(PAModel& pa_model);
   void updateBestResult(PAModel& pa_model);
   bool stopIteration(PAModel& pa_model);
   void selectBestResult(PAModel& pa_model);

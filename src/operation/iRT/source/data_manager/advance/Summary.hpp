@@ -31,8 +31,8 @@ class PASummary
   double total_wire_length = 0;
   std::map<int32_t, int32_t> cut_via_num_map;
   int32_t total_via_num = 0;
-  std::map<int32_t, int32_t> among_net_routing_violation_num_map;
-  int32_t among_net_total_violation_num = 0;
+  std::map<int32_t, int32_t> routing_violation_num_map;
+  int32_t total_violation_num = 0;
 };
 
 class SASummary
@@ -97,8 +97,8 @@ class TASummary
   ~TASummary() = default;
   std::map<int32_t, double> routing_wire_length_map;
   double total_wire_length = 0;
-  std::map<int32_t, int32_t> among_net_routing_violation_num_map;
-  int32_t among_net_total_violation_num = 0;
+  std::map<int32_t, int32_t> routing_violation_num_map;
+  int32_t total_violation_num = 0;
 };
 
 class DRSummary
@@ -110,8 +110,23 @@ class DRSummary
   double total_wire_length = 0;
   std::map<int32_t, int32_t> cut_via_num_map;
   int32_t total_via_num = 0;
-  std::map<int32_t, int32_t> among_net_routing_violation_num_map;
-  int32_t among_net_total_violation_num = 0;
+  std::map<int32_t, int32_t> routing_violation_num_map;
+  int32_t total_violation_num = 0;
+  std::map<std::string, std::map<std::string, double>> clock_timing;
+  std::map<std::string, double> power_map;
+};
+
+class HRSummary
+{
+ public:
+  HRSummary() = default;
+  ~HRSummary() = default;
+  std::map<int32_t, double> routing_wire_length_map;
+  double total_wire_length = 0;
+  std::map<int32_t, int32_t> cut_via_num_map;
+  int32_t total_via_num = 0;
+  std::map<int32_t, int32_t> routing_violation_num_map;
+  int32_t total_violation_num = 0;
   std::map<std::string, std::map<std::string, double>> clock_timing;
   std::map<std::string, double> power_map;
 };
@@ -168,6 +183,7 @@ class Summary
   std::map<int32_t, GRSummary> iter_gr_summary_map;
   TASummary ta_summary;
   std::map<int32_t, DRSummary> iter_dr_summary_map;
+  std::map<int32_t, HRSummary> iter_hr_summary_map;
   std::map<int32_t, VRSummary> iter_vr_summary_map;
   ERSummary er_summary;
 };

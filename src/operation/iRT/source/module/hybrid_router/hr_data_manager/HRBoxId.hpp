@@ -16,41 +16,44 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Logger.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
-enum class DENetType
+class HRBoxId
 {
-  kNone,
-  kRouteAmong,
-  kRouteHybrid,
-  kPatchHybrid
+ public:
+  HRBoxId() = default;
+  HRBoxId(const int32_t x, const int32_t y)
+  {
+    _x = x;
+    _y = y;
+  }
+  ~HRBoxId() = default;
+  bool operator==(const HRBoxId& other) { return this->_x == other._x && this->_y == other._y; }
+  bool operator!=(const HRBoxId& other) { return !((*this) == other); }
+  // getter
+  int32_t get_x() const { return _x; }
+  int32_t get_y() const { return _y; }
+  // setter
+  void set_x(const int32_t x) { _x = x; }
+  void set_y(const int32_t y) { _y = y; }
+  // function
+
+ private:
+  int32_t _x = -1;
+  int32_t _y = -1;
 };
 
-struct GetDENetTypeName
+struct CmpHRBoxId
 {
-  std::string operator()(const DENetType& net_type) const
+  bool operator()(const HRBoxId& a, const HRBoxId& b) const
   {
-    std::string net_type_name;
-    switch (net_type) {
-      case DENetType::kNone:
-        net_type_name = "none";
-        break;
-      case DENetType::kRouteAmong:
-        net_type_name = "route_among";
-        break;
-      case DENetType::kRouteHybrid:
-        net_type_name = "route_hybrid";
-        break;
-      case DENetType::kPatchHybrid:
-        net_type_name = "patch_hybrid";
-        break;
-      default:
-        RTLOG.error(Loc::current(), "Unrecognized type!");
-        break;
+    if (a.get_x() != b.get_x()) {
+      return a.get_x() < b.get_x();
+    } else {
+      return a.get_y() < b.get_y();
     }
-    return net_type_name;
   }
 };
 

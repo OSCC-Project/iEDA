@@ -16,42 +16,18 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Logger.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
-enum class DENetType
+class HRComParam
 {
-  kNone,
-  kRouteAmong,
-  kRouteHybrid,
-  kPatchHybrid
-};
-
-struct GetDENetTypeName
-{
-  std::string operator()(const DENetType& net_type) const
-  {
-    std::string net_type_name;
-    switch (net_type) {
-      case DENetType::kNone:
-        net_type_name = "none";
-        break;
-      case DENetType::kRouteAmong:
-        net_type_name = "route_among";
-        break;
-      case DENetType::kRouteHybrid:
-        net_type_name = "route_hybrid";
-        break;
-      case DENetType::kPatchHybrid:
-        net_type_name = "patch_hybrid";
-        break;
-      default:
-        RTLOG.error(Loc::current(), "Unrecognized type!");
-        break;
-    }
-    return net_type_name;
-  }
+ public:
+  HRComParam() = default;
+  ~HRComParam() = default;
+  // getter
+  // setter
+ private:
 };
 
 }  // namespace irt
