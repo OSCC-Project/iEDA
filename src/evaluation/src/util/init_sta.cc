@@ -1245,12 +1245,42 @@ bool InitSTA::isClockNet(const std::string& net_name) const
 std::map<int, double> InitSTA::patchTimingMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch)
 {
   std::map<int, double> patch_timing_map;
-
   auto inst_timing_map = STA_INST->get_ista()->displayTimingMap(ista::AnalysisMode::kMax);
-
   auto* idb_adapter = STA_INST->getIDBAdapter();
   auto dbu = idb_adapter->get_dbu();
-  auto to_dbu = [dbu](auto coord) { return coord * dbu; };
+
+  // 网格索引，减小搜索空间
+  int min_x = INT_MAX;
+  int max_x = INT_MIN;
+  int min_y = INT_MAX;
+  int max_y = INT_MIN;
+  for (const auto& [coord, _] : inst_timing_map) {
+    int x = coord.first * dbu;
+    int y = coord.second * dbu;
+    min_x = std::min(min_x, x);
+    max_x = std::max(max_x, x);
+    min_y = std::min(min_y, y);
+    max_y = std::max(max_y, y);
+  }
+
+  // 启发式确定网格大小 
+  int grid_size_x = (max_x - min_x) / 100;
+  int grid_size_y = (max_y - min_y) / 100;
+
+  // 创建网格: 二维网格，每个网格内存有对应的insts
+  std::vector<std::vector<std::vector<std::pair<std::pair<int, int>, double>>>> grid;
+  int grid_width = (max_x - min_x) / grid_size_x + 1;
+  int grid_height = (max_y - min_y) / grid_size_y + 1;
+  grid.resize(grid_width, std::vector<std::vector<std::pair<std::pair<int, int>, double>>>(grid_height));
+  
+  // 填充网格
+  for (const auto& [coord, slack] : inst_timing_map) {
+    int x = coord.first * dbu;
+    int y = coord.second * dbu;
+    int grid_x = (x - min_x) / grid_size_x;
+    int grid_y = (y - min_y) / grid_size_y;
+    grid[grid_x][grid_y].push_back({{x, y}, slack});
+  }
 
   for (const auto& [patch_id, coord] : patch) {
     auto [l_range, u_range] = coord;
@@ -1259,19 +1289,31 @@ std::map<int, double> InitSTA::patchTimingMap(std::map<int, std::pair<std::pair<
     const int patch_ux = u_range.first;
     const int patch_uy = u_range.second;
 
-    for (auto [coord, inst_slack] : inst_timing_map) {
-      auto inst_x = to_dbu(coord.first);
-      auto inst_y = to_dbu(coord.second);
-      if (patch_lx <= inst_x && inst_x <= patch_ux && patch_ly <= inst_y && inst_y <= patch_uy) {
-        if (patch_timing_map.count(patch_id) == 0) {
-          patch_timing_map[patch_id] = inst_slack;
-        } else {
-          patch_timing_map[patch_id] = std::min(patch_timing_map[patch_id], inst_slack);
+    // 计算覆盖的网格范围
+    int start_grid_x = std::max(0, (patch_lx - min_x) / grid_size_x);
+    int end_grid_x = std::min(grid_width - 1, (patch_ux - min_x) / grid_size_x);
+    int start_grid_y = std::max(0, (patch_ly - min_y) / grid_size_y);
+    int end_grid_y = std::min(grid_height - 1, (patch_uy - min_y) / grid_size_y);
+
+    double min_slack = std::numeric_limits<double>::max();
+
+    // 只检查覆盖的网格
+    for (int gx = start_grid_x; gx <= end_grid_x; ++gx) {
+      for (int gy = start_grid_y; gy <= end_grid_y; ++gy) {
+        for (const auto& [inst_coord, inst_slack] : grid[gx][gy]) {
+          int inst_x = inst_coord.first;
+          int inst_y = inst_coord.second;
+          if (patch_lx <= inst_x && inst_x <= patch_ux && patch_ly <= inst_y && inst_y <= patch_uy) {
+            min_slack = std::min(min_slack, inst_slack);
+          }
         }
       }
     }
+    
+    patch_timing_map[patch_id] = min_slack;
+    
   }
-
+  
   return patch_timing_map;
 }
 
@@ -1284,33 +1326,74 @@ std::map<int, double> InitSTA::patchTimingMap(std::map<int, std::pair<std::pair<
 std::map<int, double> InitSTA::patchPowerMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch)
 {
   std::map<int, double> patch_power_map;
-
   auto inst_power_map = PW_INST->get_power()->displayInstancePowerMap();
-
   auto* idb_adapter = STA_INST->getIDBAdapter();
   auto dbu = idb_adapter->get_dbu();
-  auto to_dbu = [dbu](auto coord) { return coord * dbu; };
-
+  
+  // 网格索引，减小搜索空间
+  int min_x = INT_MAX;
+  int max_x = INT_MIN;
+  int min_y = INT_MAX;
+  int max_y = INT_MIN;
+  for (const auto& [coord, _] : inst_power_map) {
+    int x = coord.first * dbu;
+    int y = coord.second * dbu;
+    min_x = std::min(min_x, x);
+    max_x = std::max(max_x, x);
+    min_y = std::min(min_y, y);
+    max_y = std::max(max_y, y);
+  }
+  
+  // 启发式确定网格大小 
+  int grid_size_x = (max_x - min_x) / 100;
+  int grid_size_y = (max_y - min_y) / 100;
+  
+  // 创建网格: 二维网格，每个网格内存有对应的insts
+  std::vector<std::vector<std::vector<std::pair<std::pair<int, int>, double>>>> grid;
+  int grid_width = (max_x - min_x) / grid_size_x + 1;
+  int grid_height = (max_y - min_y) / grid_size_y + 1;
+  grid.resize(grid_width, std::vector<std::vector<std::pair<std::pair<int, int>, double>>>(grid_height));
+  
+  // 填充网格
+  for (const auto& [coord, power] : inst_power_map) {
+    int x = coord.first * dbu;
+    int y = coord.second * dbu;
+    int grid_x = (x - min_x) / grid_size_x;
+    int grid_y = (y - min_y) / grid_size_y;
+    grid[grid_x][grid_y].push_back({{x, y}, power});
+  }
+  
   for (const auto& [patch_id, coord] : patch) {
     auto [l_range, u_range] = coord;
     const int patch_lx = l_range.first;
     const int patch_ly = l_range.second;
     const int patch_ux = u_range.first;
     const int patch_uy = u_range.second;
-
-    for (auto [coord, inst_power] : inst_power_map) {
-      auto inst_x = to_dbu(coord.first);
-      auto inst_y = to_dbu(coord.second);
-      if (patch_lx <= inst_x && inst_x <= patch_ux && patch_ly <= inst_y && inst_y <= patch_uy) {
-        if (patch_power_map.count(patch_id) == 0) {
-          patch_power_map[patch_id] = inst_power;
-        } else {
-          patch_power_map[patch_id] += inst_power;
+    
+    // 计算覆盖的网格范围
+    int start_grid_x = std::max(0, (patch_lx - min_x) / grid_size_x);
+    int end_grid_x = std::min(grid_width - 1, (patch_ux - min_x) / grid_size_x);
+    int start_grid_y = std::max(0, (patch_ly - min_y) / grid_size_y);
+    int end_grid_y = std::min(grid_height - 1, (patch_uy - min_y) / grid_size_y);
+    
+    double total_power = 0.0;
+    
+    // 只检查覆盖的网格
+    for (int gx = start_grid_x; gx <= end_grid_x; ++gx) {
+      for (int gy = start_grid_y; gy <= end_grid_y; ++gy) {
+        for (const auto& [inst_coord, inst_power] : grid[gx][gy]) {
+          int inst_x = inst_coord.first;
+          int inst_y = inst_coord.second;
+          if (patch_lx <= inst_x && inst_x <= patch_ux && patch_ly <= inst_y && inst_y <= patch_uy) {
+            total_power += inst_power;
+          }
         }
       }
     }
+    
+    patch_power_map[patch_id] = total_power;
   }
-
+  
   return patch_power_map;
 }
 
@@ -1331,31 +1414,80 @@ std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<
 
   auto* idb_adapter = STA_INST->getIDBAdapter();
   auto dbu = idb_adapter->get_dbu();
-  auto to_dbu = [dbu](auto coord) { return coord * dbu; };
 
+  // 网格索引，减小搜索空间
+  int min_x = INT_MAX;
+  int max_x = INT_MIN;
+  int min_y = INT_MAX;
+  int max_y = INT_MIN;
+  std::vector<std::tuple<int, int, double>> instances;
+  instances.reserve(instance_to_ir_drop.size());
+  
+  for (auto& [sta_inst, ir_drop] : instance_to_ir_drop) {
+    auto coord = sta_inst->get_coordinate().value();
+    int x = coord.first * dbu;
+    int y = coord.second * dbu;
+    instances.emplace_back(x, y, ir_drop);
+    min_x = std::min(min_x, x);
+    max_x = std::max(max_x, x);
+    min_y = std::min(min_y, y);
+    max_y = std::max(max_y, y);
+  }
+  // 启发式确定网格大小 
+  int grid_size_x = (max_x - min_x) / 100;
+  int grid_size_y = (max_y - min_y) / 100;
+
+  // 创建网格
+  std::vector<std::vector<std::vector<std::pair<std::pair<int, int>, double>>>> grid;
+  int grid_width = (max_x - min_x) / grid_size_x + 1;
+  int grid_height = (max_y - min_y) / grid_size_y + 1;
+  grid.resize(grid_width, std::vector<std::vector<std::pair<std::pair<int, int>, double>>>(grid_height));
+  
+  // 填充网格
+  for (const auto& [x, y, ir_drop] : instances) {
+    int grid_x = (x - min_x) / grid_size_x;
+    int grid_y = (y - min_y) / grid_size_y;
+    grid[grid_x][grid_y].push_back({{x, y}, ir_drop});
+  }
+
+  int processed_count = 0;
   for (const auto& [patch_id, coord] : patch) {
     auto [l_range, u_range] = coord;
     const int patch_lx = l_range.first;
     const int patch_ly = l_range.second;
     const int patch_ux = u_range.first;
     const int patch_uy = u_range.second;
-
-    for (auto& [sta_inst, inst_ir_drop] : instance_to_ir_drop) {
-      auto coord = sta_inst->get_coordinate().value();
-      auto inst_x = to_dbu(coord.first);
-      auto inst_y = to_dbu(coord.second);
-      if (patch_lx <= inst_x && inst_x <= patch_ux && patch_ly <= inst_y && inst_y <= patch_uy) {
-        if (patch_ir_drop_map.count(patch_id) == 0) {
-          patch_ir_drop_map[patch_id] = inst_ir_drop;
-        } else {
-          patch_ir_drop_map[patch_id] += std::max(patch_ir_drop_map[patch_id], inst_ir_drop);
-          ;
+    
+    // 计算覆盖的网格范围
+    int start_grid_x = std::max(0, (patch_lx - min_x) / grid_size_x);
+    int end_grid_x = std::min(grid_width - 1, (patch_ux - min_x) / grid_size_x);
+    int start_grid_y = std::max(0, (patch_ly - min_y) / grid_size_y);
+    int end_grid_y = std::min(grid_height - 1, (patch_uy - min_y) / grid_size_y);
+    
+    double max_ir_drop = 0.0;
+    
+    // 只检查覆盖的网格
+    for (int gx = start_grid_x; gx <= end_grid_x; ++gx) {
+      for (int gy = start_grid_y; gy <= end_grid_y; ++gy) {
+        for (const auto& [inst_coord, inst_ir_drop] : grid[gx][gy]) {
+          int inst_x = inst_coord.first;
+          int inst_y = inst_coord.second;
+          if (patch_lx <= inst_x && inst_x <= patch_ux && patch_ly <= inst_y && inst_y <= patch_uy) {
+            max_ir_drop = std::max(max_ir_drop, inst_ir_drop);
+          }
         }
-        LOG_INFO_EVERY_N(1000) << "patch : " << patch_id << " ir drop " << patch_ir_drop_map[patch_id];
       }
     }
+    
+    patch_ir_drop_map[patch_id] = max_ir_drop;
+  
+    // 每处理5000个patch输出一次日志
+    processed_count++;
+    if (processed_count % 5000 == 0) {
+      LOG_INFO << "Processed " << processed_count << " patches out of " << patch.size();
+    }
   }
-
+  
   return patch_ir_drop_map;
 }
 
