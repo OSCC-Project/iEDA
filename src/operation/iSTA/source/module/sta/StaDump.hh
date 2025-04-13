@@ -82,6 +82,9 @@ class StaDumpDelayYaml : public StaDumpYaml {
  */
 class StaDumpWireYaml : public StaDumpDelayYaml {
  public:
+  StaDumpWireYaml(std::ofstream& file) : _file(file) {}
+  ~StaDumpWireYaml() override = default;
+  
   void set_analysis_mode(AnalysisMode analysis_mode) {
     _analysis_mode = analysis_mode;
   }
@@ -90,7 +93,11 @@ class StaDumpWireYaml : public StaDumpDelayYaml {
   void set_trans_type(TransType trans_type) { _trans_type = trans_type; }
   auto get_trans_type() { return _trans_type; }
 
+  unsigned operator()(StaVertex* the_vertex) override;
   unsigned operator()(StaArc* the_arc) override;
+
+  private:
+  std::ofstream& _file;
 };
 
 /**
