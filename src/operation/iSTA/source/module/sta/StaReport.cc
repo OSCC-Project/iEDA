@@ -870,6 +870,8 @@ unsigned StaReportWirePathYaml::operator()(StaSeqPathData* seq_path_data) {
 
   file.close();
 
+  LOG_INFO << "output yaml file path: " << text_file_name;
+
   // CPU_PROF_END(0, "dump one timing path wire yaml");
 
   return 1;
