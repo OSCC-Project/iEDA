@@ -813,7 +813,7 @@ void PinAccessor::initPATaskList(PAModel& pa_model, PABox& pa_box)
           }
           bool within_shape = false;
           if (!within_shape) {
-            for (EXTLayerRect*& obs_rect : routing_obs_rect_map[coord.get_layer_idx()]) {
+            for (EXTLayerRect* obs_rect : routing_obs_rect_map[coord.get_layer_idx()]) {
               if (RTUTIL.isInside(obs_rect->get_real_rect(), coord)) {
                 within_shape = true;
                 break;
@@ -835,6 +835,9 @@ void PinAccessor::initPATaskList(PAModel& pa_model, PABox& pa_box)
         for (const LayerCoord& coord : coord_set) {
           target_coord_list.push_back(coord);
         }
+      }
+      if (pa_group_list.front().get_coord_list().empty() || pa_group_list.back().get_coord_list().empty()) {
+        continue;
       }
       PATask* pa_task = new PATask();
       pa_task->set_net_idx(pa_net->get_net_idx());
