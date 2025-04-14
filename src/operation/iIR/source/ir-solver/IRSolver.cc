@@ -46,13 +46,28 @@ void PrintMatrix(Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
   std::ofstream out("/home/taosimin/iEDA24/iEDA/bin/matrix.txt", std::ios::trunc);
   for (Eigen::Index i = base_index; i < base_index + G_matrix.rows(); ++i) {
     for (Eigen::Index j = base_index; j < base_index + G_matrix.cols(); ++j) {
-      // LOG_INFO << "Element at (" << i << ", " << j
+      // LOG_INFO << "matrix element at (" << i << ", " << j
       //          << "): " << G_matrix.coeff(i, j);
       out << std::fixed << std::setprecision(6) << G_matrix.coeff(i, j) << " ";
     }
     out << "\n";
   }
 
+  out.close();
+}
+
+/**
+ * @brief print vector data for debug.
+ * 
+ * @param v_vector 
+ */
+void PrintVector(Eigen::VectorXd& v_vector) {
+  std::ofstream out("/home/taosimin/iEDA24/iEDA/bin/vector.txt",
+                    std::ios::trunc);
+  for (Eigen::Index i = 0; i < v_vector.size(); ++i) {
+    // LOG_INFO << "vector element at (" << i << "): " << v_vector(i);
+    out << std::scientific << v_vector(i) << "\n";
+  }
   out.close();
 }
 
@@ -80,6 +95,10 @@ std::vector<double> IRSolver::operator()(
     PrintMatrix(G_matrix, 0);
     LOG_FATAL << "LU solver error " << ret_value;
   }
+
+    // for debug
+  // PrintVector(J_vector);
+  // PrintMatrix(G_matrix, 0);
 
   Eigen::VectorXd v_vector = solver.solve(J_vector);
 
