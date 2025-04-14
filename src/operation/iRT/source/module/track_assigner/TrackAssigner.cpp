@@ -815,8 +815,6 @@ void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
     }
   }
   if (start_node_list_list.size() == 1) {
-    // 初始化时,要把start_node_list_list的pin只留一个ap点
-    // 后续只要将end_node_list_list的pin保留一个ap点
     start_node_list_list.front().clear();
     start_node_list_list.front().push_back(path_node);
   }
