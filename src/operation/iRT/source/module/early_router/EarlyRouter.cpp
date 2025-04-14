@@ -1015,7 +1015,7 @@ ERNode* EarlyRouter::popFromOpenList(ERModel& er_model)
   return node;
 }
 
-// calculate known cost
+// calculate known
 
 double EarlyRouter::getKnownCost(ERModel& er_model, ERNode* start_node, ERNode* end_node)
 {
@@ -1072,7 +1072,7 @@ double EarlyRouter::getKnownViaCost(ERModel& er_model, ERNode* start_node, ERNod
   return via_cost;
 }
 
-// calculate estimate cost
+// calculate estimate
 
 double EarlyRouter::getEstimateCostToEnd(ERModel& er_model, ERNode* curr_node)
 {

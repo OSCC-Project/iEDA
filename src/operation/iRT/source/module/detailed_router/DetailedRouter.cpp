@@ -1054,7 +1054,7 @@ DRNode* DetailedRouter::popFromOpenList(DRBox& dr_box)
   return node;
 }
 
-// calculate known cost
+// calculate known
 
 double DetailedRouter::getKnownCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
@@ -1120,7 +1120,7 @@ double DetailedRouter::getKnownViaCost(DRBox& dr_box, DRNode* start_node, DRNode
   return via_cost;
 }
 
-// calculate estimate cost
+// calculate estimate
 
 double DetailedRouter::getEstimateCostToEnd(DRBox& dr_box, DRNode* curr_node)
 {

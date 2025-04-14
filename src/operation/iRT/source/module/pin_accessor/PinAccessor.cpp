@@ -1432,7 +1432,7 @@ PANode* PinAccessor::popFromOpenList(PABox& pa_box)
   return node;
 }
 
-// calculate known cost
+// calculate known
 
 double PinAccessor::getKnownCost(PABox& pa_box, PANode* start_node, PANode* end_node)
 {
@@ -1498,7 +1498,7 @@ double PinAccessor::getKnownViaCost(PABox& pa_box, PANode* start_node, PANode* e
   return via_cost;
 }
 
-// calculate estimate cost
+// calculate estimate
 
 double PinAccessor::getEstimateCostToEnd(PABox& pa_box, PANode* curr_node)
 {

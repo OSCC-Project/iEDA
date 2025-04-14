@@ -1210,7 +1210,7 @@ HRNode* HybridRouter::popFromOpenList(HRBox& hr_box)
   return node;
 }
 
-// calculate known cost
+// calculate known
 
 double HybridRouter::getKnownCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node)
 {
@@ -1276,7 +1276,7 @@ double HybridRouter::getKnownViaCost(HRBox& hr_box, HRNode* start_node, HRNode* 
   return via_cost;
 }
 
-// calculate estimate cost
+// calculate estimate
 
 double HybridRouter::getEstimateCostToEnd(HRBox& hr_box, HRNode* curr_node)
 {

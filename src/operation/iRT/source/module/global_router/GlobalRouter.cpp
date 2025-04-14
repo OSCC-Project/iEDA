@@ -1030,7 +1030,7 @@ GRNode* GlobalRouter::popFromOpenList(GRBox& gr_box)
   return node;
 }
 
-// calculate known cost
+// calculate known
 
 double GlobalRouter::getKnownCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node)
 {
@@ -1087,7 +1087,7 @@ double GlobalRouter::getKnownViaCost(GRBox& gr_box, GRNode* start_node, GRNode* 
   return via_cost;
 }
 
-// calculate estimate cost
+// calculate estimate
 
 double GlobalRouter::getEstimateCostToEnd(GRBox& gr_box, GRNode* curr_node)
 {

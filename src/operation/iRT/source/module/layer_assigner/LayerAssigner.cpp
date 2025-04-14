@@ -714,7 +714,7 @@ LANode* LayerAssigner::popFromOpenList(LAModel& la_model)
   return node;
 }
 
-// calculate known cost
+// calculate known
 
 double LayerAssigner::getKnownCost(LAModel& la_model, LANode* start_node, LANode* end_node)
 {
@@ -771,7 +771,7 @@ double LayerAssigner::getKnownViaCost(LAModel& la_model, LANode* start_node, LAN
   return via_cost;
 }
 
-// calculate estimate cost
+// calculate estimate
 
 double LayerAssigner::getEstimateCostToEnd(LAModel& la_model, LANode* curr_node)
 {

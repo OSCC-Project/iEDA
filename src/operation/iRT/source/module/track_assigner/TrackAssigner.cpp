@@ -919,7 +919,7 @@ TANode* TrackAssigner::popFromOpenList(TAPanel& ta_panel)
   return node;
 }
 
-// calculate known cost
+// calculate known
 
 double TrackAssigner::getKnownCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
@@ -980,7 +980,7 @@ double TrackAssigner::getKnownViaCost(TAPanel& ta_panel, TANode* start_node, TAN
   return 0;
 }
 
-// calculate estimate cost
+// calculate estimate
 
 double TrackAssigner::getEstimateCostToEnd(TAPanel& ta_panel, TANode* curr_node)
 {
