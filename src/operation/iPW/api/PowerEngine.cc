@@ -474,7 +474,7 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMapWithGPU(
  * @return unsigned 
  */
 unsigned PowerEngine::buildPGNetWireTopo() {
-  LOG_INFO << "build pg net wire start";
+  LOG_INFO << "build pg net wire topo start";
 
   auto* idb_adapter =
       dynamic_cast<ista::TimingIDBAdapter*>(_timing_engine->get_db_adapter());
@@ -515,7 +515,7 @@ unsigned PowerEngine::buildPGNetWireTopo() {
 
   _ipower->set_rust_pg_rc_data(rc_data);
 
-  LOG_INFO << "build pg net wire end";
+  LOG_INFO << "build pg net wire topo end";
 
   return 1;
 }
