@@ -240,15 +240,15 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
         break;
       case ViolationType::kCutEOLSpacing:
         new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
-        layer_routing_list = expandUpOneLayer(violation);
+        layer_routing_list = expandLayer(violation, {0, +1});
         break;
       case ViolationType::kCutShort:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = expandUpOneLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0, +1});
         break;
       case ViolationType::kDifferentLayerCutSpacing:
         new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
-        layer_routing_list = expandUpTwoLayer(violation);
+        layer_routing_list = expandLayer(violation, {0, +1, +2});
         break;
       case ViolationType::kEnclosure:
         break;
@@ -258,21 +258,21 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
         break;
       case ViolationType::kEndOfLineSpacing:
         new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
-        layer_routing_list = expandAdjacentOneLayer(violation);
+        layer_routing_list = expandLayer(violation, {-1, 0, +1});
         break;
       case ViolationType::kFloatingPatch:
         break;
       case ViolationType::kJogToJogSpacing:
         new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
-        layer_routing_list = expandAdjacentOneLayer(violation);
+        layer_routing_list = expandLayer(violation, {-1, 0, +1});
         break;
       case ViolationType::kMaximumWidth:
         break;
       case ViolationType::kMaxViaStack:
         break;
       case ViolationType::kMetalShort:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = expandAdjacentOneLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {-1, 0, +1});
         break;
       case ViolationType::kMinHole:
         break;
@@ -294,11 +294,11 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
         break;
       case ViolationType::kParallelRunLengthSpacing:
         new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
-        layer_routing_list = expandAdjacentOneLayer(violation);
+        layer_routing_list = expandLayer(violation, {-1, 0, +1});
         break;
       case ViolationType::kSameLayerCutSpacing:
         new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
-        layer_routing_list = expandUpOneLayer(violation);
+        layer_routing_list = expandLayer(violation, {0, +1});
         break;
       default:
         RTLOG.error(Loc::current(), "No violation type!");
@@ -313,8 +313,8 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
       case ViolationType::kCutEOLSpacing:
         break;
       case ViolationType::kCutShort:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = expandUpOneLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0, +1});
         break;
       case ViolationType::kDifferentLayerCutSpacing:
         break;
@@ -335,8 +335,8 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
       case ViolationType::kMaxViaStack:
         break;
       case ViolationType::kMetalShort:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = expandAdjacentOneLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {-1, 0, +1});
         break;
       case ViolationType::kMinHole:
         break;
@@ -349,6 +349,8 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
       case ViolationType::kMinStep:
         break;
       case ViolationType::kNonsufficientMetalOverlap:
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {-1, 0, +1});
         break;
       case ViolationType::kNotchSpacing:
         break;
@@ -358,11 +360,11 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
         break;
       case ViolationType::kParallelRunLengthSpacing:
         new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
-        layer_routing_list = expandAdjacentOneLayer(violation);
+        layer_routing_list = expandLayer(violation, {-1, 0, +1});
         break;
       case ViolationType::kSameLayerCutSpacing:
         new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
-        layer_routing_list = expandUpOneLayer(violation);
+        layer_routing_list = expandLayer(violation, {0, +1});
         break;
       default:
         RTLOG.error(Loc::current(), "No violation type!");
@@ -373,92 +375,92 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
       case ViolationType::kAdjacentCutSpacing:
         break;
       case ViolationType::kCornerFillSpacing:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kCutEOLSpacing:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kCutShort:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kDifferentLayerCutSpacing:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kEnclosure:
         break;
       case ViolationType::kEnclosureEdge:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kEnclosureParallel:
         break;
       case ViolationType::kEndOfLineSpacing:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kFloatingPatch:
         break;
       case ViolationType::kJogToJogSpacing:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kMaximumWidth:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kMaxViaStack:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kMetalShort:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kMinHole:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kMinimumArea:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kMinimumCut:
         break;
       case ViolationType::kMinimumWidth:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kMinStep:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kNonsufficientMetalOverlap:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kNotchSpacing:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kOffGridOrWrongWay:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kOutOfDie:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kParallelRunLengthSpacing:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kSameLayerCutSpacing:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       default:
         RTLOG.error(Loc::current(), "No violation type!");
@@ -476,11 +478,6 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
   return expanded_violation_list;
 }
 
-PlanarRect DRCEngine::keepRect(PlanarRect& real_rect)
-{
-  return enlargeRect(real_rect, 0);
-}
-
 PlanarRect DRCEngine::enlargeRect(PlanarRect& real_rect, int32_t required_size)
 {
   int32_t enlarged_x_size = 0;
@@ -494,59 +491,18 @@ PlanarRect DRCEngine::enlargeRect(PlanarRect& real_rect, int32_t required_size)
   return RTUTIL.getEnlargedRect(real_rect, enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
 }
 
-std::vector<std::pair<int32_t, bool>> DRCEngine::keepLayer(Violation& violation)
-{
-  int32_t violation_layer_idx = violation.get_violation_shape().get_layer_idx();
-
-  std::vector<std::pair<int32_t, bool>> layer_routing_list;
-  layer_routing_list.emplace_back(violation_layer_idx, true);
-  return layer_routing_list;
-}
-
-std::vector<std::pair<int32_t, bool>> DRCEngine::expandAdjacentOneLayer(Violation& violation)
+std::vector<std::pair<int32_t, bool>> DRCEngine::expandLayer(Violation& violation, std::vector<int32_t> offset_list)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
 
   int32_t violation_layer_idx = violation.get_violation_shape().get_layer_idx();
 
   std::vector<std::pair<int32_t, bool>> layer_routing_list;
-  layer_routing_list.emplace_back(violation_layer_idx, true);
-  if (0 < violation_layer_idx) {
-    layer_routing_list.emplace_back(violation_layer_idx - 1, true);
-  }
-  if (violation_layer_idx < (static_cast<int32_t>(routing_layer_list.size()) - 1)) {
-    layer_routing_list.emplace_back(violation_layer_idx + 1, true);
-  }
-  return layer_routing_list;
-}
-
-std::vector<std::pair<int32_t, bool>> DRCEngine::expandUpOneLayer(Violation& violation)
-{
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-
-  int32_t violation_layer_idx = violation.get_violation_shape().get_layer_idx();
-
-  std::vector<std::pair<int32_t, bool>> layer_routing_list;
-  layer_routing_list.emplace_back(violation_layer_idx, true);
-  if (violation_layer_idx < (static_cast<int32_t>(routing_layer_list.size()) - 1)) {
-    layer_routing_list.emplace_back(violation_layer_idx + 1, true);
-  }
-  return layer_routing_list;
-}
-
-std::vector<std::pair<int32_t, bool>> DRCEngine::expandUpTwoLayer(Violation& violation)
-{
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-
-  int32_t violation_layer_idx = violation.get_violation_shape().get_layer_idx();
-
-  std::vector<std::pair<int32_t, bool>> layer_routing_list;
-  layer_routing_list.emplace_back(violation_layer_idx, true);
-  if (violation_layer_idx < (static_cast<int32_t>(routing_layer_list.size()) - 1)) {
-    layer_routing_list.emplace_back(violation_layer_idx + 1, true);
-  }
-  if (violation_layer_idx < (static_cast<int32_t>(routing_layer_list.size()) - 2)) {
-    layer_routing_list.emplace_back(violation_layer_idx + 2, true);
+  for (int32_t offset : offset_list) {
+    int32_t offset_layer_idx = violation_layer_idx + offset;
+    if (0 <= offset_layer_idx && offset_layer_idx <= (static_cast<int32_t>(routing_layer_list.size()) - 1)) {
+      layer_routing_list.emplace_back(offset_layer_idx, true);
+    }
   }
   return layer_routing_list;
 }

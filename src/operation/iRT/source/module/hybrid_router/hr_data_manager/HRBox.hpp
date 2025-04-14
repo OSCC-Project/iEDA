@@ -57,10 +57,7 @@ class HRBox
   {
     _type_layer_net_fixed_rect_map = type_layer_net_fixed_rect_map;
   }
-  void set_net_final_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& net_final_result_map)
-  {
-    _net_final_result_map = net_final_result_map;
-  }
+  void set_net_final_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& net_final_result_map) { _net_final_result_map = net_final_result_map; }
   void set_net_task_final_result_map(const std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_task_final_result_map)
   {
     _net_task_final_result_map = net_task_final_result_map;

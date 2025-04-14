@@ -531,6 +531,16 @@ class Utility
 
 #if 1  // 形状有关计算
 
+  static PlanarRect getRect(PlanarCoord start_coord, PlanarCoord end_coord)
+  {
+    PlanarRect rect;
+    rect.set_ll_x(std::min(start_coord.get_x(), end_coord.get_x()));
+    rect.set_ll_y(std::min(start_coord.get_y(), end_coord.get_y()));
+    rect.set_ur_x(std::max(start_coord.get_x(), end_coord.get_x()));
+    rect.set_ur_y(std::max(start_coord.get_y(), end_coord.get_y()));
+    return rect;
+  }
+
   // 三个点的叉乘
   static int32_t crossProduct(PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
   {

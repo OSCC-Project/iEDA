@@ -16,10 +16,10 @@
 // ***************************************************************************************
 #pragma once
 
+#include "GridMap.hpp"
 #include "HRBoxId.hpp"
 #include "HRIterParam.hpp"
 #include "HRNet.hpp"
-#include "GridMap.hpp"
 
 namespace irt {
 

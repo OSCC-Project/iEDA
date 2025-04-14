@@ -1582,7 +1582,7 @@ void DetailedRouter::addViolationToGraph(DRBox& dr_box, LayerRect& searched_rect
     if (first_coord == second_coord) {
       continue;
     }
-    PlanarRect real_rect = RTUTIL.getEnlargedRect(first_coord, second_coord, 0);
+    PlanarRect real_rect = RTUTIL.getRect(first_coord, second_coord);
     if (!RTUTIL.existTrackGrid(real_rect, box_track_axis)) {
       continue;
     }

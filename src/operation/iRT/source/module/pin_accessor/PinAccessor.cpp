@@ -2025,7 +2025,7 @@ void PinAccessor::addViolationToGraph(PABox& pa_box, LayerRect& searched_rect, s
     if (first_coord == second_coord) {
       continue;
     }
-    PlanarRect real_rect = RTUTIL.getEnlargedRect(first_coord, second_coord, 0);
+    PlanarRect real_rect = RTUTIL.getRect(first_coord, second_coord);
     if (!RTUTIL.existTrackGrid(real_rect, box_track_axis)) {
       continue;
     }
@@ -2391,16 +2391,14 @@ void PinAccessor::printSummary(PAModel& pa_model)
   {
     routing_violation_num_map_table.set_cell_text_align(fort::text_align::right);
     routing_violation_num_map_table << fort::header << "routing"
-                                              << "#violation"
-                                              << "prop" << fort::endr;
+                                    << "#violation"
+                                    << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_violation_num_map_table << routing_layer.get_layer_name() << routing_violation_num_map[routing_layer.get_layer_idx()]
-                                                << RTUTIL.getPercentage(routing_violation_num_map[routing_layer.get_layer_idx()],
-                                                                        total_violation_num)
-                                                << fort::endr;
+                                      << RTUTIL.getPercentage(routing_violation_num_map[routing_layer.get_layer_idx()], total_violation_num) << fort::endr;
     }
-    routing_violation_num_map_table << fort::header << "Total" << total_violation_num
-                                              << RTUTIL.getPercentage(total_violation_num, total_violation_num) << fort::endr;
+    routing_violation_num_map_table << fort::header << "Total" << total_violation_num << RTUTIL.getPercentage(total_violation_num, total_violation_num)
+                                    << fort::endr;
   }
   RTUTIL.printTableList({routing_access_point_num_map_table, routing_wire_length_map_table, cut_via_num_map_table, routing_violation_num_map_table});
 }

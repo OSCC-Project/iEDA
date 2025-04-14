@@ -175,6 +175,9 @@ void ViolationRepairer::iterativeVRModel(VRModel& vr_model)
   vr_iter_param_list.emplace_back(3, 0, 3);
   vr_iter_param_list.emplace_back(3, 1, 3);
   vr_iter_param_list.emplace_back(3, 2, 3);
+  vr_iter_param_list.emplace_back(3, 0, 3);
+  vr_iter_param_list.emplace_back(3, 1, 3);
+  vr_iter_param_list.emplace_back(3, 2, 3);
   // clang-format on
   for (int32_t i = 0, iter = 1; i < static_cast<int32_t>(vr_iter_param_list.size()); i++, iter++) {
     Monitor iter_monitor;
@@ -409,24 +412,30 @@ void ViolationRepairer::buildViolation(VRBox& vr_box)
   PlanarRect& box_real_rect = vr_box.get_box_rect().get_real_rect();
 
   for (Violation* violation : RTDM.getViolationSet(vr_box.get_box_rect())) {
-    bool shape_in_box = false;
-    if (RTUTIL.isInside(box_real_rect, violation->get_violation_shape().get_real_rect())) {
-      shape_in_box = true;
+    vr_box.get_violation_list().push_back(*violation);
+    if (violation->get_violation_net_set().size() >= 2) {
+      continue;
     }
-    if (shape_in_box) {
-      vr_box.get_violation_list().push_back(*violation);
-      RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
+    if (!RTUTIL.isInside(box_real_rect, violation->get_violation_shape().get_real_rect())) {
+      continue;
     }
+    RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
   }
 }
 
 void ViolationRepairer::initNetTaskIdxSet(VRBox& vr_box)
 {
+  PlanarRect& box_real_rect = vr_box.get_box_rect().get_real_rect();
   std::set<int32_t>& net_idx_set = vr_box.get_net_idx_set();
+
   for (Violation& violation : vr_box.get_violation_list()) {
-    if (violation.get_violation_net_set().size() == 1) {
-      net_idx_set.insert(*violation.get_violation_net_set().begin());
+    if (violation.get_violation_net_set().size() >= 2) {
+      continue;
     }
+    if (!RTUTIL.isInside(box_real_rect, violation.get_violation_shape().get_real_rect())) {
+      continue;
+    }
+    net_idx_set.insert(*violation.get_violation_net_set().begin());
   }
 }
 
@@ -592,11 +601,15 @@ void ViolationRepairer::routeVRBox(VRBox& vr_box)
 
 void ViolationRepairer::initSingleTask(VRBox& vr_box, ViolationType& violation_type)
 {
+  PlanarRect& box_real_rect = vr_box.get_box_rect().get_real_rect();
   std::set<int32_t>& net_idx_set = vr_box.get_net_idx_set();
   std::vector<Violation>& violation_list = vr_box.get_violation_list();
 
   for (Violation& violation : violation_list) {
     if (violation.get_violation_net_set().size() >= 2) {
+      continue;
+    }
+    if (!RTUTIL.isInside(box_real_rect, violation.get_violation_shape().get_real_rect())) {
       continue;
     }
     if (violation.get_violation_type() != violation_type) {
@@ -613,7 +626,8 @@ void ViolationRepairer::initSingleTask(VRBox& vr_box, ViolationType& violation_t
     vr_box.set_curr_violation(violation);
     vr_box.set_curr_routing_segment_list(vr_box.get_net_task_final_result_map()[net_idx]);
     vr_box.set_curr_routing_patch_list(vr_box.get_net_task_final_patch_map()[net_idx]);
-    vr_box.set_curr_violation_list(vr_box.get_violation_list());
+    vr_box.set_curr_violation_list(violation_list);
+    break;
   }
 }
 
@@ -986,17 +1000,9 @@ void ViolationRepairer::updateCurrResultList(VRBox& vr_box, VRSolution& vr_solut
 
 void ViolationRepairer::updateCurrViolationList(VRBox& vr_box)
 {
-  PlanarRect& box_real_rect = vr_box.get_box_rect().get_real_rect();
-
   vr_box.get_curr_violation_list().clear();
   for (Violation new_violation : getViolationList(vr_box)) {
-    bool shape_in_box = false;
-    if (RTUTIL.isInside(box_real_rect, new_violation.get_violation_shape().get_real_rect())) {
-      shape_in_box = true;
-    }
-    if (shape_in_box) {
-      vr_box.get_curr_violation_list().push_back(new_violation);
-    }
+    vr_box.get_curr_violation_list().push_back(new_violation);
   }
 }
 
@@ -1073,28 +1079,40 @@ std::vector<Violation> ViolationRepairer::getViolationList(VRBox& vr_box)
 
 void ViolationRepairer::updateCurrSolvedStatus(VRBox& vr_box)
 {
-  int32_t within_net_violation_num = 0;
-  int32_t among_net_violation_num = 0;
+  std::map<ViolationType, std::pair<int32_t, int32_t>> within_type_origin_curr_map;
+  std::map<ViolationType, std::pair<int32_t, int32_t>> among_type_origin_curr_map;
   for (Violation& violation : vr_box.get_violation_list()) {
     if (violation.get_violation_net_set().size() <= 1) {
-      within_net_violation_num++;
+      within_type_origin_curr_map[violation.get_violation_type()].first++;
     } else {
-      among_net_violation_num++;
+      among_type_origin_curr_map[violation.get_violation_type()].first++;
     }
   }
-
-  int32_t curr_within_net_violation_num = 0;
-  int32_t curr_among_net_violation_num = 0;
   for (Violation& curr_violation : vr_box.get_curr_violation_list()) {
     if (curr_violation.get_violation_net_set().size() <= 1) {
-      curr_within_net_violation_num++;
+      within_type_origin_curr_map[curr_violation.get_violation_type()].second++;
     } else {
-      curr_among_net_violation_num++;
+      among_type_origin_curr_map[curr_violation.get_violation_type()].second++;
     }
   }
-  if (curr_within_net_violation_num < within_net_violation_num && curr_among_net_violation_num <= among_net_violation_num) {
-    vr_box.set_curr_is_solved(true);
+  bool is_solved = true;
+  for (auto& [violation_type, origin_curr] : within_type_origin_curr_map) {
+    if (!is_solved) {
+      break;
+    }
+    if (origin_curr.first < origin_curr.second) {
+      is_solved = false;
+    }
   }
+  for (auto& [violation_type, origin_curr] : among_type_origin_curr_map) {
+    if (!is_solved) {
+      break;
+    }
+    if (origin_curr.first < origin_curr.second) {
+      is_solved = false;
+    }
+  }
+  vr_box.set_curr_is_solved(is_solved);
 }
 
 void ViolationRepairer::updateTaskResult(VRBox& vr_box)

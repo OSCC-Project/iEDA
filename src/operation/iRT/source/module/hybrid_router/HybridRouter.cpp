@@ -1469,7 +1469,7 @@ void HybridRouter::uploadNetResult(HRModel& hr_model)
   Die& die = RTDM.getDatabase().get_die();
   std::vector<HRNet>& hr_net_list = hr_model.get_hr_net_list();
 
-  // detailed result
+  // final result
   {
     std::map<int32_t, std::set<Segment<LayerCoord>*>> net_final_result_map = RTDM.getNetFinalResultMap(die);
     for (auto& [net_idx, segment_set] : net_final_result_map) {
@@ -1662,7 +1662,7 @@ void HybridRouter::addViolationToGraph(HRBox& hr_box, LayerRect& searched_rect, 
     if (first_coord == second_coord) {
       continue;
     }
-    PlanarRect real_rect = RTUTIL.getEnlargedRect(first_coord, second_coord, 0);
+    PlanarRect real_rect = RTUTIL.getRect(first_coord, second_coord);
     if (!RTUTIL.existTrackGrid(real_rect, box_track_axis)) {
       continue;
     }
