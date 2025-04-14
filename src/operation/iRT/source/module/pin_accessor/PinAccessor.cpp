@@ -1250,14 +1250,14 @@ void PinAccessor::expandSearching(PABox& pa_box)
     if (neighbor_node->isClose()) {
       continue;
     }
-    double know_cost = getKnowCost(pa_box, path_head_node, neighbor_node);
-    if (neighbor_node->isOpen() && know_cost < neighbor_node->get_known_cost()) {
-      neighbor_node->set_known_cost(know_cost);
+    double known_cost = getKnownCost(pa_box, path_head_node, neighbor_node);
+    if (neighbor_node->isOpen() && known_cost < neighbor_node->get_known_cost()) {
+      neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
       // 对优先队列中的值修改了,需要重新建堆
       std::make_heap(open_queue.begin(), open_queue.end(), CmpPANodeCost());
     } else if (neighbor_node->isNone()) {
-      neighbor_node->set_known_cost(know_cost);
+      neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
       neighbor_node->set_estimated_cost(getEstimateCostToEnd(pa_box, neighbor_node));
       pushToOpenList(pa_box, neighbor_node);
@@ -1434,7 +1434,7 @@ PANode* PinAccessor::popFromOpenList(PABox& pa_box)
 
 // calculate known cost
 
-double PinAccessor::getKnowCost(PABox& pa_box, PANode* start_node, PANode* end_node)
+double PinAccessor::getKnownCost(PABox& pa_box, PANode* start_node, PANode* end_node)
 {
   bool exist_neighbor = false;
   for (auto& [orientation, neighbor_ptr] : start_node->get_neighbor_node_map()) {
@@ -1451,8 +1451,8 @@ double PinAccessor::getKnowCost(PABox& pa_box, PANode* start_node, PANode* end_n
   cost += start_node->get_known_cost();
   cost += getNodeCost(pa_box, start_node, RTUTIL.getOrientation(*start_node, *end_node));
   cost += getNodeCost(pa_box, end_node, RTUTIL.getOrientation(*end_node, *start_node));
-  cost += getKnowWireCost(pa_box, start_node, end_node);
-  cost += getKnowViaCost(pa_box, start_node, end_node);
+  cost += getKnownWireCost(pa_box, start_node, end_node);
+  cost += getKnownViaCost(pa_box, start_node, end_node);
   return cost;
 }
 
@@ -1471,7 +1471,7 @@ double PinAccessor::getNodeCost(PABox& pa_box, PANode* curr_node, Orientation or
   return cost;
 }
 
-double PinAccessor::getKnowWireCost(PABox& pa_box, PANode* start_node, PANode* end_node)
+double PinAccessor::getKnownWireCost(PABox& pa_box, PANode* start_node, PANode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   double prefer_wire_unit = pa_box.get_pa_iter_param()->get_prefer_wire_unit();
@@ -1491,7 +1491,7 @@ double PinAccessor::getKnowWireCost(PABox& pa_box, PANode* start_node, PANode* e
   return wire_cost;
 }
 
-double PinAccessor::getKnowViaCost(PABox& pa_box, PANode* start_node, PANode* end_node)
+double PinAccessor::getKnownViaCost(PABox& pa_box, PANode* start_node, PANode* end_node)
 {
   double via_unit = pa_box.get_pa_iter_param()->get_via_unit();
   double via_cost = (via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));

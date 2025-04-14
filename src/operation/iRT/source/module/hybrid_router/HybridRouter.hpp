@@ -98,10 +98,10 @@ class HybridRouter
   void resetSingleTask(HRBox& hr_box);
   void pushToOpenList(HRBox& hr_box, HRNode* curr_node);
   HRNode* popFromOpenList(HRBox& hr_box);
-  double getKnowCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node);
+  double getKnownCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node);
   double getNodeCost(HRBox& hr_box, HRNode* curr_node, Orientation orientation);
-  double getKnowWireCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node);
-  double getKnowViaCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node);
+  double getKnownWireCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node);
+  double getKnownViaCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node);
   double getEstimateCostToEnd(HRBox& hr_box, HRNode* curr_node);
   double getEstimateCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node);
   double getEstimateWireCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node);

@@ -1029,14 +1029,14 @@ void HybridRouter::expandSearching(HRBox& hr_box)
     if (neighbor_node->isClose()) {
       continue;
     }
-    double know_cost = getKnowCost(hr_box, path_head_node, neighbor_node);
-    if (neighbor_node->isOpen() && know_cost < neighbor_node->get_known_cost()) {
-      neighbor_node->set_known_cost(know_cost);
+    double known_cost = getKnownCost(hr_box, path_head_node, neighbor_node);
+    if (neighbor_node->isOpen() && known_cost < neighbor_node->get_known_cost()) {
+      neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
       // 对优先队列中的值修改了,需要重新建堆
       std::make_heap(open_queue.begin(), open_queue.end(), CmpHRNodeCost());
     } else if (neighbor_node->isNone()) {
-      neighbor_node->set_known_cost(know_cost);
+      neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
       neighbor_node->set_estimated_cost(getEstimateCostToEnd(hr_box, neighbor_node));
       pushToOpenList(hr_box, neighbor_node);
@@ -1212,7 +1212,7 @@ HRNode* HybridRouter::popFromOpenList(HRBox& hr_box)
 
 // calculate known cost
 
-double HybridRouter::getKnowCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node)
+double HybridRouter::getKnownCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node)
 {
   bool exist_neighbor = false;
   for (auto& [orientation, neighbor_ptr] : start_node->get_neighbor_node_map()) {
@@ -1229,8 +1229,8 @@ double HybridRouter::getKnowCost(HRBox& hr_box, HRNode* start_node, HRNode* end_
   cost += start_node->get_known_cost();
   cost += getNodeCost(hr_box, start_node, RTUTIL.getOrientation(*start_node, *end_node));
   cost += getNodeCost(hr_box, end_node, RTUTIL.getOrientation(*end_node, *start_node));
-  cost += getKnowWireCost(hr_box, start_node, end_node);
-  cost += getKnowViaCost(hr_box, start_node, end_node);
+  cost += getKnownWireCost(hr_box, start_node, end_node);
+  cost += getKnownViaCost(hr_box, start_node, end_node);
   return cost;
 }
 
@@ -1249,7 +1249,7 @@ double HybridRouter::getNodeCost(HRBox& hr_box, HRNode* curr_node, Orientation o
   return cost;
 }
 
-double HybridRouter::getKnowWireCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node)
+double HybridRouter::getKnownWireCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   double prefer_wire_unit = hr_box.get_hr_iter_param()->get_prefer_wire_unit();
@@ -1269,7 +1269,7 @@ double HybridRouter::getKnowWireCost(HRBox& hr_box, HRNode* start_node, HRNode* 
   return wire_cost;
 }
 
-double HybridRouter::getKnowViaCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node)
+double HybridRouter::getKnownViaCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node)
 {
   double via_unit = hr_box.get_hr_iter_param()->get_via_unit();
   double via_cost = (via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));

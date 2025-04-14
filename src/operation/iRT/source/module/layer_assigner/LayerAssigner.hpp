@@ -76,10 +76,10 @@ class LayerAssigner
   void resetSingleTask(LAModel& la_model);
   void pushToOpenList(LAModel& la_model, LANode* curr_node);
   LANode* popFromOpenList(LAModel& la_model);
-  double getKnowCost(LAModel& la_model, LANode* start_node, LANode* end_node);
+  double getKnownCost(LAModel& la_model, LANode* start_node, LANode* end_node);
   double getNodeCost(LAModel& la_model, LANode* curr_node, Orientation orientation);
-  double getKnowWireCost(LAModel& la_model, LANode* start_node, LANode* end_node);
-  double getKnowViaCost(LAModel& la_model, LANode* start_node, LANode* end_node);
+  double getKnownWireCost(LAModel& la_model, LANode* start_node, LANode* end_node);
+  double getKnownViaCost(LAModel& la_model, LANode* start_node, LANode* end_node);
   double getEstimateCostToEnd(LAModel& la_model, LANode* curr_node);
   double getEstimateCost(LAModel& la_model, LANode* start_node, LANode* end_node);
   double getEstimateWireCost(LAModel& la_model, LANode* start_node, LANode* end_node);

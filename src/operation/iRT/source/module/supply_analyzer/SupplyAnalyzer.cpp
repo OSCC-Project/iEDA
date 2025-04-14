@@ -206,7 +206,7 @@ std::vector<LayerRect> SupplyAnalyzer::getCrossingWireList(EXTLayerRect& search_
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
 
   RoutingLayer& routing_layer = routing_layer_list[search_rect.get_layer_idx()];
-  int32_t half_width = routing_layer.get_min_width() / 2;
+  int32_t half_wire_width = routing_layer.get_min_width() / 2;
 
   int32_t real_ll_x = search_rect.get_real_ll_x();
   int32_t real_ll_y = search_rect.get_real_ll_y();
@@ -216,11 +216,11 @@ std::vector<LayerRect> SupplyAnalyzer::getCrossingWireList(EXTLayerRect& search_
   std::vector<LayerRect> wire_list;
   if (routing_layer.isPreferH()) {
     for (int32_t y : RTUTIL.getScaleList(real_ll_y, real_ur_y, routing_layer.getYTrackGridList())) {
-      wire_list.emplace_back(real_ll_x, y - half_width, real_ur_x, y + half_width, search_rect.get_layer_idx());
+      wire_list.emplace_back(real_ll_x, y - half_wire_width, real_ur_x, y + half_wire_width, search_rect.get_layer_idx());
     }
   } else {
     for (int32_t x : RTUTIL.getScaleList(real_ll_x, real_ur_x, routing_layer.getXTrackGridList())) {
-      wire_list.emplace_back(x - half_width, real_ll_y, x + half_width, real_ur_y, search_rect.get_layer_idx());
+      wire_list.emplace_back(x - half_wire_width, real_ll_y, x + half_wire_width, real_ur_y, search_rect.get_layer_idx());
     }
   }
   return wire_list;

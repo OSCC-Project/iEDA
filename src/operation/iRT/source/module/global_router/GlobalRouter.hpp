@@ -86,10 +86,10 @@ class GlobalRouter
   void resetSingleTask(GRBox& gr_box);
   void pushToOpenList(GRBox& gr_box, GRNode* curr_node);
   GRNode* popFromOpenList(GRBox& gr_box);
-  double getKnowCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node);
+  double getKnownCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node);
   double getNodeCost(GRBox& gr_box, GRNode* curr_node, Orientation orientation);
-  double getKnowWireCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node);
-  double getKnowViaCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node);
+  double getKnownWireCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node);
+  double getKnownViaCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node);
   double getEstimateCostToEnd(GRBox& gr_box, GRNode* curr_node);
   double getEstimateCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node);
   double getEstimateWireCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node);

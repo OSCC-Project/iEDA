@@ -1756,7 +1756,7 @@ void RTInterface::routeTAPanel(TAPanel& ta_panel)
 
   TAPanelId& ta_panel_id = ta_panel.get_ta_panel_id();
   RoutingLayer& routing_layer = routing_layer_list[ta_panel_id.get_layer_idx()];
-  int32_t half_width = routing_layer.get_min_width() / 2;
+  int32_t half_wire_width = routing_layer.get_min_width() / 2;
 
   // 构造ls_panel
   lsa::LSPanel ls_panel;
@@ -1792,13 +1792,13 @@ void RTInterface::routeTAPanel(TAPanel& ta_panel)
       LayerCoord first_coord = ta_group_list.front().get_coord_list().front();
       LayerCoord second_coord = ta_group_list.back().get_coord_list().front();
       if (routing_layer.isPreferH()) {
-        first_coord.set_y(half_width);
-        second_coord.set_y(half_width);
+        first_coord.set_y(half_wire_width);
+        second_coord.set_y(half_wire_width);
       } else {
-        first_coord.set_x(half_width);
-        second_coord.set_x(half_width);
+        first_coord.set_x(half_wire_width);
+        second_coord.set_x(half_wire_width);
       }
-      LayerRect rect(RTUTIL.getEnlargedRect(first_coord, second_coord, half_width), ta_panel_id.get_layer_idx());
+      LayerRect rect(RTUTIL.getEnlargedRect(first_coord, second_coord, half_wire_width), ta_panel_id.get_layer_idx());
       lsa::LSShape ls_shape;
       ls_shape.net_id = ta_task->get_net_idx();
       ls_shape.task_id = ta_task->get_task_idx();
@@ -1855,8 +1855,8 @@ void RTInterface::routeTAPanel(TAPanel& ta_panel)
     std::map<int32_t, std::vector<Segment<LayerCoord>>> task_segment_map;
     for (lsa::LSShape& wire : ls_panel.wire_list) {
       Segment<LayerCoord> routing_segment(
-          LayerCoord(static_cast<int32_t>(wire.ll_x + half_width), static_cast<int32_t>(wire.ll_y + half_width), ls_panel.layer_id),
-          LayerCoord(static_cast<int32_t>(wire.ur_x - half_width), static_cast<int32_t>(wire.ur_y - half_width), ls_panel.layer_id));
+          LayerCoord(static_cast<int32_t>(wire.ll_x + half_wire_width), static_cast<int32_t>(wire.ll_y + half_wire_width), ls_panel.layer_id),
+          LayerCoord(static_cast<int32_t>(wire.ur_x - half_wire_width), static_cast<int32_t>(wire.ur_y - half_wire_width), ls_panel.layer_id));
       if (RTUTIL.isOblique(routing_segment.get_first(), routing_segment.get_second())) {
         RTLOG.error(Loc::current(), "The segment is oblique");
       }

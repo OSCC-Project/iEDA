@@ -87,10 +87,10 @@ class TrackAssigner
   void resetSingleTask(TAPanel& ta_panel);
   void pushToOpenList(TAPanel& ta_panel, TANode* curr_node);
   TANode* popFromOpenList(TAPanel& ta_panel);
-  double getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
+  double getKnownCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getNodeCost(TAPanel& ta_panel, TANode* curr_node, Orientation orientation);
-  double getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
-  double getKnowViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
+  double getKnownWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
+  double getKnownViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateCostToEnd(TAPanel& ta_panel, TANode* curr_node);
   double getEstimateCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);

@@ -546,14 +546,14 @@ void LayerAssigner::expandSearching(LAModel& la_model)
     if (neighbor_node->isClose()) {
       continue;
     }
-    double know_cost = getKnowCost(la_model, path_head_node, neighbor_node);
-    if (neighbor_node->isOpen() && know_cost < neighbor_node->get_known_cost()) {
-      neighbor_node->set_known_cost(know_cost);
+    double known_cost = getKnownCost(la_model, path_head_node, neighbor_node);
+    if (neighbor_node->isOpen() && known_cost < neighbor_node->get_known_cost()) {
+      neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
       // 对优先队列中的值修改了,需要重新建堆
       std::make_heap(open_queue.begin(), open_queue.end(), CmpLANodeCost());
     } else if (neighbor_node->isNone()) {
-      neighbor_node->set_known_cost(know_cost);
+      neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
       neighbor_node->set_estimated_cost(getEstimateCostToEnd(la_model, neighbor_node));
       pushToOpenList(la_model, neighbor_node);
@@ -716,7 +716,7 @@ LANode* LayerAssigner::popFromOpenList(LAModel& la_model)
 
 // calculate known cost
 
-double LayerAssigner::getKnowCost(LAModel& la_model, LANode* start_node, LANode* end_node)
+double LayerAssigner::getKnownCost(LAModel& la_model, LANode* start_node, LANode* end_node)
 {
   bool exist_neighbor = false;
   for (auto& [orientation, neighbor_ptr] : start_node->get_neighbor_node_map()) {
@@ -733,8 +733,8 @@ double LayerAssigner::getKnowCost(LAModel& la_model, LANode* start_node, LANode*
   cost += start_node->get_known_cost();
   cost += getNodeCost(la_model, start_node, RTUTIL.getOrientation(*start_node, *end_node));
   cost += getNodeCost(la_model, end_node, RTUTIL.getOrientation(*end_node, *start_node));
-  cost += getKnowWireCost(la_model, start_node, end_node);
-  cost += getKnowViaCost(la_model, start_node, end_node);
+  cost += getKnownWireCost(la_model, start_node, end_node);
+  cost += getKnownViaCost(la_model, start_node, end_node);
   return cost;
 }
 
@@ -747,7 +747,7 @@ double LayerAssigner::getNodeCost(LAModel& la_model, LANode* curr_node, Orientat
   return node_cost;
 }
 
-double LayerAssigner::getKnowWireCost(LAModel& la_model, LANode* start_node, LANode* end_node)
+double LayerAssigner::getKnownWireCost(LAModel& la_model, LANode* start_node, LANode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   double prefer_wire_unit = la_model.get_la_com_param().get_prefer_wire_unit();
@@ -764,7 +764,7 @@ double LayerAssigner::getKnowWireCost(LAModel& la_model, LANode* start_node, LAN
   return wire_cost;
 }
 
-double LayerAssigner::getKnowViaCost(LAModel& la_model, LANode* start_node, LANode* end_node)
+double LayerAssigner::getKnownViaCost(LAModel& la_model, LANode* start_node, LANode* end_node)
 {
   double via_unit = la_model.get_la_com_param().get_via_unit();
   double via_cost = (via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));

@@ -847,14 +847,14 @@ void EarlyRouter::expandSearching(ERModel& er_model)
     if (neighbor_node->isClose()) {
       continue;
     }
-    double know_cost = getKnowCost(er_model, path_head_node, neighbor_node);
-    if (neighbor_node->isOpen() && know_cost < neighbor_node->get_known_cost()) {
-      neighbor_node->set_known_cost(know_cost);
+    double known_cost = getKnownCost(er_model, path_head_node, neighbor_node);
+    if (neighbor_node->isOpen() && known_cost < neighbor_node->get_known_cost()) {
+      neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
       // 对优先队列中的值修改了,需要重新建堆
       std::make_heap(open_queue.begin(), open_queue.end(), CmpERNodeCost());
     } else if (neighbor_node->isNone()) {
-      neighbor_node->set_known_cost(know_cost);
+      neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
       neighbor_node->set_estimated_cost(getEstimateCostToEnd(er_model, neighbor_node));
       pushToOpenList(er_model, neighbor_node);
@@ -1017,7 +1017,7 @@ ERNode* EarlyRouter::popFromOpenList(ERModel& er_model)
 
 // calculate known cost
 
-double EarlyRouter::getKnowCost(ERModel& er_model, ERNode* start_node, ERNode* end_node)
+double EarlyRouter::getKnownCost(ERModel& er_model, ERNode* start_node, ERNode* end_node)
 {
   bool exist_neighbor = false;
   for (auto& [orientation, neighbor_ptr] : start_node->get_neighbor_node_map()) {
@@ -1034,8 +1034,8 @@ double EarlyRouter::getKnowCost(ERModel& er_model, ERNode* start_node, ERNode* e
   cost += start_node->get_known_cost();
   cost += getNodeCost(er_model, start_node, RTUTIL.getOrientation(*start_node, *end_node));
   cost += getNodeCost(er_model, end_node, RTUTIL.getOrientation(*end_node, *start_node));
-  cost += getKnowWireCost(er_model, start_node, end_node);
-  cost += getKnowViaCost(er_model, start_node, end_node);
+  cost += getKnownWireCost(er_model, start_node, end_node);
+  cost += getKnownViaCost(er_model, start_node, end_node);
   return cost;
 }
 
@@ -1048,7 +1048,7 @@ double EarlyRouter::getNodeCost(ERModel& er_model, ERNode* curr_node, Orientatio
   return node_cost;
 }
 
-double EarlyRouter::getKnowWireCost(ERModel& er_model, ERNode* start_node, ERNode* end_node)
+double EarlyRouter::getKnownWireCost(ERModel& er_model, ERNode* start_node, ERNode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   double prefer_wire_unit = er_model.get_er_com_param().get_prefer_wire_unit();
@@ -1065,7 +1065,7 @@ double EarlyRouter::getKnowWireCost(ERModel& er_model, ERNode* start_node, ERNod
   return wire_cost;
 }
 
-double EarlyRouter::getKnowViaCost(ERModel& er_model, ERNode* start_node, ERNode* end_node)
+double EarlyRouter::getKnownViaCost(ERModel& er_model, ERNode* start_node, ERNode* end_node)
 {
   double via_unit = er_model.get_er_com_param().get_via_unit();
   double via_cost = (via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));

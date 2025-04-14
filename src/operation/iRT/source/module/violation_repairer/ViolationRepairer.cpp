@@ -949,23 +949,23 @@ std::vector<VRSolution> ViolationRepairer::routeByMinimumArea(VRBox& vr_box)
   std::map<double, std::vector<EXTLayerRect>> env_cost_real_patch_map;
   {
     RoutingLayer& routing_layer = routing_layer_list[violation_layer_idx];
-    int32_t half_width = routing_layer.get_min_width() / 2;
-    int32_t half_length = routing_layer.get_min_area() / routing_layer.get_min_width() / 2;
+    int32_t half_wire_width = routing_layer.get_min_width() / 2;
+    int32_t half_wire_length = routing_layer.get_min_area() / routing_layer.get_min_width() / 2;
     if (routing_layer.isPreferH()) {
-      for (int32_t y : {bounding_box.get_ll_y() + (half_width), bounding_box.get_ur_y() - (half_width)}) {
-        for (int32_t x = bounding_box.get_ur_x() - half_length; x <= bounding_box.get_ll_x() + half_length; x += manufacture_grid) {
+      for (int32_t y : {bounding_box.get_ll_y() + (half_wire_width), bounding_box.get_ur_y() - (half_wire_width)}) {
+        for (int32_t x = bounding_box.get_ur_x() - half_wire_length; x <= bounding_box.get_ll_x() + half_wire_length; x += manufacture_grid) {
           EXTLayerRect patch;
-          patch.set_real_rect(RTUTIL.getEnlargedRect(PlanarCoord(x, y), half_length, half_width, half_length, half_width));
+          patch.set_real_rect(RTUTIL.getEnlargedRect(PlanarCoord(x, y), half_wire_length, half_wire_width, half_wire_length, half_wire_width));
           patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(patch.get_real_rect(), gcell_axis));
           patch.set_layer_idx(violation_layer_idx);
           env_cost_real_patch_map[getEnvCost(vr_box, curr_net_idx, patch)].push_back(patch);
         }
       }
     } else {
-      for (int32_t x : {bounding_box.get_ll_x() + (half_width), bounding_box.get_ur_x() - (half_width)}) {
-        for (int32_t y = bounding_box.get_ur_y() - half_length; y <= bounding_box.get_ll_y() + half_length; y += manufacture_grid) {
+      for (int32_t x : {bounding_box.get_ll_x() + (half_wire_width), bounding_box.get_ur_x() - (half_wire_width)}) {
+        for (int32_t y = bounding_box.get_ur_y() - half_wire_length; y <= bounding_box.get_ll_y() + half_wire_length; y += manufacture_grid) {
           EXTLayerRect patch;
-          patch.set_real_rect(RTUTIL.getEnlargedRect(PlanarCoord(x, y), half_width, half_length, half_width, half_length));
+          patch.set_real_rect(RTUTIL.getEnlargedRect(PlanarCoord(x, y), half_wire_width, half_wire_length, half_wire_width, half_wire_length));
           patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(patch.get_real_rect(), gcell_axis));
           patch.set_layer_idx(violation_layer_idx);
           env_cost_real_patch_map[getEnvCost(vr_box, curr_net_idx, patch)].push_back(patch);

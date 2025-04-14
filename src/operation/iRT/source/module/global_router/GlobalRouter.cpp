@@ -853,14 +853,14 @@ void GlobalRouter::expandSearching(GRBox& gr_box)
     if (neighbor_node->isClose()) {
       continue;
     }
-    double know_cost = getKnowCost(gr_box, path_head_node, neighbor_node);
-    if (neighbor_node->isOpen() && know_cost < neighbor_node->get_known_cost()) {
-      neighbor_node->set_known_cost(know_cost);
+    double known_cost = getKnownCost(gr_box, path_head_node, neighbor_node);
+    if (neighbor_node->isOpen() && known_cost < neighbor_node->get_known_cost()) {
+      neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
       // 对优先队列中的值修改了,需要重新建堆
       std::make_heap(open_queue.begin(), open_queue.end(), CmpGRNodeCost());
     } else if (neighbor_node->isNone()) {
-      neighbor_node->set_known_cost(know_cost);
+      neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
       neighbor_node->set_estimated_cost(getEstimateCostToEnd(gr_box, neighbor_node));
       pushToOpenList(gr_box, neighbor_node);
@@ -1032,7 +1032,7 @@ GRNode* GlobalRouter::popFromOpenList(GRBox& gr_box)
 
 // calculate known cost
 
-double GlobalRouter::getKnowCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node)
+double GlobalRouter::getKnownCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node)
 {
   bool exist_neighbor = false;
   for (auto& [orientation, neighbor_ptr] : start_node->get_neighbor_node_map()) {
@@ -1049,8 +1049,8 @@ double GlobalRouter::getKnowCost(GRBox& gr_box, GRNode* start_node, GRNode* end_
   cost += start_node->get_known_cost();
   cost += getNodeCost(gr_box, start_node, RTUTIL.getOrientation(*start_node, *end_node));
   cost += getNodeCost(gr_box, end_node, RTUTIL.getOrientation(*end_node, *start_node));
-  cost += getKnowWireCost(gr_box, start_node, end_node);
-  cost += getKnowViaCost(gr_box, start_node, end_node);
+  cost += getKnownWireCost(gr_box, start_node, end_node);
+  cost += getKnownViaCost(gr_box, start_node, end_node);
   return cost;
 }
 
@@ -1063,7 +1063,7 @@ double GlobalRouter::getNodeCost(GRBox& gr_box, GRNode* curr_node, Orientation o
   return node_cost;
 }
 
-double GlobalRouter::getKnowWireCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node)
+double GlobalRouter::getKnownWireCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   double prefer_wire_unit = gr_box.get_gr_iter_param()->get_prefer_wire_unit();
@@ -1080,7 +1080,7 @@ double GlobalRouter::getKnowWireCost(GRBox& gr_box, GRNode* start_node, GRNode* 
   return wire_cost;
 }
 
-double GlobalRouter::getKnowViaCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node)
+double GlobalRouter::getKnownViaCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node)
 {
   double via_unit = gr_box.get_gr_iter_param()->get_via_unit();
   double via_cost = (via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));

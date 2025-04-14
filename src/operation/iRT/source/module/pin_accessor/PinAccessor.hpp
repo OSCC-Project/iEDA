@@ -100,10 +100,10 @@ class PinAccessor
   void resetSingleTask(PABox& pa_box);
   void pushToOpenList(PABox& pa_box, PANode* curr_node);
   PANode* popFromOpenList(PABox& pa_box);
-  double getKnowCost(PABox& pa_box, PANode* start_node, PANode* end_node);
+  double getKnownCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   double getNodeCost(PABox& pa_box, PANode* curr_node, Orientation orientation);
-  double getKnowWireCost(PABox& pa_box, PANode* start_node, PANode* end_node);
-  double getKnowViaCost(PABox& pa_box, PANode* start_node, PANode* end_node);
+  double getKnownWireCost(PABox& pa_box, PANode* start_node, PANode* end_node);
+  double getKnownViaCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   double getEstimateCostToEnd(PABox& pa_box, PANode* curr_node);
   double getEstimateCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   double getEstimateWireCost(PABox& pa_box, PANode* start_node, PANode* end_node);

@@ -738,14 +738,14 @@ void TrackAssigner::expandSearching(TAPanel& ta_panel)
     if (neighbor_node->isClose()) {
       continue;
     }
-    double know_cost = getKnowCost(ta_panel, path_head_node, neighbor_node);
-    if (neighbor_node->isOpen() && know_cost < neighbor_node->get_known_cost()) {
-      neighbor_node->set_known_cost(know_cost);
+    double known_cost = getKnownCost(ta_panel, path_head_node, neighbor_node);
+    if (neighbor_node->isOpen() && known_cost < neighbor_node->get_known_cost()) {
+      neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
       // 对优先队列中的值修改了,需要重新建堆
       std::make_heap(open_queue.begin(), open_queue.end(), CmpTANodeCost());
     } else if (neighbor_node->isNone()) {
-      neighbor_node->set_known_cost(know_cost);
+      neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
       neighbor_node->set_estimated_cost(getEstimateCostToEnd(ta_panel, neighbor_node));
       pushToOpenList(ta_panel, neighbor_node);
@@ -921,7 +921,7 @@ TANode* TrackAssigner::popFromOpenList(TAPanel& ta_panel)
 
 // calculate known cost
 
-double TrackAssigner::getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
+double TrackAssigner::getKnownCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
   bool exist_neighbor = false;
   for (auto& [orientation, neighbor_ptr] : start_node->get_neighbor_node_map()) {
@@ -938,8 +938,8 @@ double TrackAssigner::getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode*
   cost += start_node->get_known_cost();
   cost += getNodeCost(ta_panel, start_node, RTUTIL.getOrientation(*start_node, *end_node));
   cost += getNodeCost(ta_panel, end_node, RTUTIL.getOrientation(*end_node, *start_node));
-  cost += getKnowWireCost(ta_panel, start_node, end_node);
-  cost += getKnowViaCost(ta_panel, start_node, end_node);
+  cost += getKnownWireCost(ta_panel, start_node, end_node);
+  cost += getKnownViaCost(ta_panel, start_node, end_node);
   return cost;
 }
 
@@ -958,7 +958,7 @@ double TrackAssigner::getNodeCost(TAPanel& ta_panel, TANode* curr_node, Orientat
   return cost;
 }
 
-double TrackAssigner::getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
+double TrackAssigner::getKnownWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   double prefer_wire_unit = ta_panel.get_ta_com_param()->get_prefer_wire_unit();
@@ -975,7 +975,7 @@ double TrackAssigner::getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TAN
   return wire_cost;
 }
 
-double TrackAssigner::getKnowViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
+double TrackAssigner::getKnownViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
   return 0;
 }
