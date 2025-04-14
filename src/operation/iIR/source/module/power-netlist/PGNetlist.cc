@@ -238,7 +238,7 @@ void IRPGNetlistBuilder::build(
     
     auto& pg_edge = pg_netlist.addEdge(via_start_node, via_end_node);
     // TODO(to taosimin), hard code the via resistance, need know the resistance of via.
-    pg_edge.set_resistance(0.001);
+    pg_edge.set_resistance(_c_via_resistance);
   }
   
   unsigned via_edge_num = pg_netlist.getEdgeNum() - line_edge_num;
@@ -304,7 +304,7 @@ void IRPGNetlistBuilder::build(
         // hard code the last instance resistance.
         double random_value = dis(gen);
         // random is to disturbance the value for LU decomposition.
-        pg_edge.set_resistance(10 + random_value);
+        pg_edge.set_resistance(_c_instance_row_resistance + random_value);
       }
 
       if (via_connected_nodes.size() > 0) {

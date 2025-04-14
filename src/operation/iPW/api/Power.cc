@@ -656,9 +656,10 @@ std::vector<IRInstancePower> Power::getInstancePowerData() {
     instance_power._switch_power = group_data->get_switch_power();
     instance_power._leakage_power = group_data->get_leakage_power();
     instance_power._total_power = group_data->get_total_power();
+
+    instance_power_data.emplace_back(std::move(instance_power));
   }
   
-  instance_power_data.emplace_back(std::move(instance_power));
   return instance_power_data;
 }
 /**
@@ -949,8 +950,11 @@ std::pair<double, double> Power::getNetToggleAndVoltageData(const char* net_name
  * @param spef_file 
  * @return unsigned 
  */
-unsigned Power::readPGSpef(const char* spef_file) {  
+unsigned Power::readPGSpef(const char* spef_file) {
+  LOG_INFO << "read pg spef start.";
   _ir_analysis.readSpef(spef_file);
+  set_rust_pg_rc_data(_ir_analysis.get_rc_data());
+  LOG_INFO << "read pg spef end.";
   return 1;
 }
 
