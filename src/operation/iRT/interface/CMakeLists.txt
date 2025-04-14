@@ -13,9 +13,11 @@ add_library(irt_interface
 target_link_libraries(irt_interface
     PRIVATE
         irt_source
-        idrc_pro_api
+        idrc_interface
         ls_assigner
         power
+        ieda_feature
+        idm
 )
 
 target_include_directories(irt_interface

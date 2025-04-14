@@ -736,4 +736,26 @@ std::string Str::addDoubleBackslash(std::string origin_str)
   return origin_str;
 }
 
-}  // namespace ieda
+/**
+ * @brief conate backslash str, such as
+ *   WEN & !( \
+ *  (BWEN[0]) & \
+ *  (BWEN[1]))
+ * 
+ * @param original_str 
+ * @return std::string 
+ */
+std::string Str::concateBackSlashStr(std::string original_str) {
+  auto it = std::remove_if(original_str.begin(), original_str.end(),  
+  [&original_str](char ch) {  
+      if (ch == '\\') {
+          return true;   
+      }  
+      return false;  
+  });
+
+  original_str.erase(it, original_str.end());
+  return original_str;
+}
+
+}  // namespace ieda  

@@ -453,12 +453,12 @@ __device__ void propagate_inst_slew_delay(GPU_Graph* the_graph,
     if (the_lib_arc._cap_unit == Lib_Cap_unit::kFF) {
       snk_cap_load = float(PF_TO_FF(snk_cap_load));  // change to FF
     }
-    float slew_value_ns =
+    float found_slew_value =
         find_value(the_slew_lib_table, src_slew_ns, snk_cap_load);
     CUDA_LOG_DEBUG(
         "find slew value %f src slew %f snk cap %f table line no %d "
         "lib arc id %d",
-        slew_value_ns, src_slew_ns, snk_cap_load, the_lib_arc._line_no,
+        found_slew_value, src_slew_ns, snk_cap_load, the_lib_arc._line_no,
         the_arc._lib_data_arc_id);
 
     table_index = GPU_Table_Base_Index::kDelayBase + in_trans_type;
@@ -469,17 +469,27 @@ __device__ void propagate_inst_slew_delay(GPU_Graph* the_graph,
           the_arc._lib_data_arc_id);
     }
     auto& the_delay_lib_table = the_lib_arc._table[table_index];
-    float delay_value_ns =
+    float found_delay_value =
         find_value(the_delay_lib_table, src_slew_ns, snk_cap_load);
 
     CUDA_LOG_DEBUG(
         "find delay value %f src slew %f snk cap %f table line no %d "
         "lib arc id %d",
-        delay_value_ns, src_slew_ns, snk_cap_load, the_lib_arc._line_no,
+        found_delay_value, src_slew_ns, snk_cap_load, the_lib_arc._line_no,
         the_arc._lib_data_arc_id);
+    
+    if (the_lib_arc._time_unit == Lib_Time_unit::kNS) {
+        return std::pair(int64_t(NS_TO_FS(found_slew_value)),
+                     int64_t(NS_TO_FS(found_delay_value)));
+    } else if (the_lib_arc._time_unit == Lib_Time_unit::kPS) {
+        return std::pair(int64_t(PS_TO_FS(found_slew_value)),
+                     int64_t(PS_TO_FS(found_delay_value)));
+    } else {
+      // should be FS
+        return std::pair(int64_t(found_slew_value),
+                     int64_t(found_delay_value));
+    }
 
-    return std::pair(int64_t(NS_TO_FS(slew_value_ns)),
-                     int64_t(NS_TO_FS(delay_value_ns)));
   };
 
   GPU_Fwd_Data<int64_t> one_src_slew_data;
@@ -568,15 +578,19 @@ __device__ void lut_constraint_delay(GPU_Graph* the_graph, GPU_Arc& the_arc,
       float src_slew_ns = FS_TO_NS(one_src_slew_data._data_value);
       float snk_slew_ns = FS_TO_NS(one_snk_slew_data._data_value);
 
-      float delay_value_ns =
+      float found_delay_value =
           find_value(the_lib_table, src_slew_ns, snk_slew_ns);
       CUDA_LOG_DEBUG(
           "find check value %f src slew %f snk slew %f table line no %d "
           "lib arc id %d",
-          delay_value_ns, src_slew_ns, snk_slew_ns, the_lib_arc._line_no,
+          found_delay_value, src_slew_ns, snk_slew_ns, the_lib_arc._line_no,
           the_arc._lib_data_arc_id);
 
-      int64_t delay_value = NS_TO_FS(delay_value_ns);
+      int64_t delay_value = (the_lib_arc._time_unit == Lib_Time_unit::kNS)
+                                ? NS_TO_FS(found_delay_value)
+                            : (the_lib_arc._time_unit == Lib_Time_unit::kPS)
+                                ? PS_TO_FS(found_delay_value)
+                                : found_delay_value;
       auto analysis_mode = one_snk_slew_data._analysis_mode;
 
       set_one_fwd_data<GPU_OP_TYPE::kDelay>(the_graph, the_arc, analysis_mode,

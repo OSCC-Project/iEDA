@@ -35,20 +35,9 @@ class DRCEngine
   // function
   void init();
   std::vector<Violation> getViolationList(DETask& de_task);
-
-  std::vector<Violation> getViolationListByTemp(DETask& de_task)
-  {
-    getViolationListBySelf(de_task);
-
-    filterViolationList(de_task);
-    if (de_task.get_proc_type() == DEProcType::kGet) {
-      buildViolationList(de_task);
-    }
-    return de_task.get_violation_list();
-  }
-
   void addTempIgnoredViolation(std::vector<Violation>& violation_list);
   void clearTempIgnoredViolationSet();
+  void destroy();
 
  private:
   // self
@@ -63,12 +52,10 @@ class DRCEngine
   DRCEngine& operator=(const DRCEngine& other) = delete;
   DRCEngine& operator=(DRCEngine&& other) = delete;
   // function
-  void getViolationListBySelf(DETask& de_task);
-  void buildTask(DETask& de_task);
-  void writeTask(DETask& de_task);
-  void readTask(DETask& de_task);
+  void buildIgnoredViolationSet();
   void getViolationListByInterface(DETask& de_task);
   void filterViolationList(DETask& de_task);
+  void checkViolationList(DETask& de_task);
   void buildViolationList(DETask& de_task);
 
 #if 1  // aux

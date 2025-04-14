@@ -40,7 +40,7 @@ class TAPanel
   std::map<int32_t, std::set<EXTLayerRect*>>& get_net_fixed_rect_map() { return _net_fixed_rect_map; }
   std::map<int32_t, std::map<int32_t, std::vector<LayerRect>>>& get_net_pin_access_result_map() { return _net_pin_access_result_map; }
   std::map<int32_t, std::vector<LayerRect>>& get_net_detailed_result_map() { return _net_detailed_result_map; }
-  std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& get_net_task_result_map() { return _net_task_result_map; }
+  std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& get_net_task_detailed_result_map() { return _net_task_detailed_result_map; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   ScaleAxis& get_panel_track_axis() { return _panel_track_axis; }
   GridMap<TANode>& get_ta_node_map() { return _ta_node_map; }
@@ -101,7 +101,7 @@ class TAPanel
   std::map<int32_t, std::set<EXTLayerRect*>> _net_fixed_rect_map;
   std::map<int32_t, std::map<int32_t, std::vector<LayerRect>>> _net_pin_access_result_map;
   std::map<int32_t, std::vector<LayerRect>> _net_detailed_result_map;
-  std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>> _net_task_result_map;
+  std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>> _net_task_detailed_result_map;
   std::vector<Violation> _violation_list;
   ScaleAxis _panel_track_axis;
   GridMap<TANode> _ta_node_map;

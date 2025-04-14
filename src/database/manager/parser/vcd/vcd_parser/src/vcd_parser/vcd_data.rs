@@ -345,6 +345,7 @@ impl VCDFile {
         self.date = date_text;
     }
 
+    #[allow(dead_code)]
     pub fn set_version(&mut self, version_text: String) {
         self.version = version_text;
     }

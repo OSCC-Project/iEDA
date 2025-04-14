@@ -27,7 +27,10 @@
 
 namespace ipower {
 
-CmdReportPower::CmdReportPower(const char* cmd_name) : TclCmd(cmd_name) {}
+CmdReportPower::CmdReportPower(const char* cmd_name) : TclCmd(cmd_name) {
+  auto* default_toggle = new TclDoubleOption("-toggle", 0, 0.02);
+  addOption(default_toggle);
+}
 
 unsigned CmdReportPower::check() { return 1; }
 
@@ -38,6 +41,11 @@ unsigned CmdReportPower::exec() {
 
   Sta* ista = Sta::getOrCreateSta();
   Power* ipower = Power::getOrCreatePower(&(ista->get_graph()));
+
+  auto* default_toggle_option = getOptionOrArg("-toggle");
+  double default_toggle = default_toggle_option->getDoubleVal();
+
+  ipower->set_default_toggle(default_toggle);
 
   ipower->runCompleteFlow();
 

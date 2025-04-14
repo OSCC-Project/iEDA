@@ -474,6 +474,8 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMapWithGPU(
  * @return unsigned 
  */
 unsigned PowerEngine::buildPGNetWireTopo() {
+  LOG_INFO << "build pg net wire start";
+
   auto* idb_adapter =
       dynamic_cast<ista::TimingIDBAdapter*>(_timing_engine->get_db_adapter());
   auto* idb_builder = idb_adapter->get_idb();
@@ -508,7 +510,69 @@ unsigned PowerEngine::buildPGNetWireTopo() {
 
   _ipower->set_rust_pg_rc_data(rc_data);
 
+  LOG_INFO << "build pg net wire end";
+
   return 1;
+}
+
+/**
+ * @brief reset ir data for rerun ir analysis.
+ * 
+ */
+void PowerEngine::resetIRAnalysisData() {
+  IRPGNetlistBuilder pg_netlist_builder;
+  _pg_netlist_builder = std::move(pg_netlist_builder);
+
+  _ipower->resetIRAnalysisData();
+}
+
+/**
+ * @brief get instance ir drop map.
+ * 
+ * @return std::map<Instance*, double> 
+ */
+std::map<Instance*, double> PowerEngine::getInstanceIRDrop() {
+  std::map<Instance*, double> instance_to_ir_drop;
+
+  auto& instance_pin_to_ir_drop = _ipower->getInstanceIRDrop();
+  auto sta_netlist = _timing_engine->get_netlist();
+
+  for (auto& [instance_pin_name, inst_ir_drop] : instance_pin_to_ir_drop) {
+    auto instance_name = Str::split(instance_pin_name.c_str(), ":").front();
+
+    auto* sta_inst = sta_netlist->findInstance(instance_name.c_str());
+    if (!sta_inst) {
+      continue;
+    }
+
+    instance_to_ir_drop[sta_inst] = inst_ir_drop;
+  }
+  
+  return instance_to_ir_drop;
+}
+
+/**
+ * @brief function to display ir drop map.
+ * 
+ * @return std::map<Instance::Coordinate, double> 
+ */
+std::map<Instance::Coordinate, double> PowerEngine::displayIRDropMap() {
+  LOG_INFO << "display IR Drop map start";
+
+  std::map<Instance::Coordinate, double> coord_to_ir_drop_map;
+
+  auto instance_to_ir_drop = getInstanceIRDrop();
+
+  for (auto& [sta_inst, inst_ir_drop] : instance_to_ir_drop) {
+
+    auto coord = sta_inst->get_coordinate().value();
+
+    coord_to_ir_drop_map[coord] = inst_ir_drop;
+  }
+
+  LOG_INFO << "display IR Drop map end";
+
+  return coord_to_ir_drop_map;
 }
 
 }  // namespace ipower

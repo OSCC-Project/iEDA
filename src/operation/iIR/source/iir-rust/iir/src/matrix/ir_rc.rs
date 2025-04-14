@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use super::c_str_to_r_str;
-use super::{RustIRPGNode, RustIRPGEdge, RustIRPGNetlist};
+use super::RustIRPGNetlist;
 
 /// RC node of the spef network.
 pub struct RCNode {
@@ -159,7 +159,7 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
     let mut rc_data = RCData::default();
 
     let spef_index_to_string = |index_str: &str| {
-        let split_names = split_spef_index_str(&index_str);
+        let split_names = split_spef_index_str(index_str);
         let index = split_names.0.parse::<usize>().unwrap();
         let node_name = node_name_map.get(&index);
         if !split_names.1.is_empty() {
@@ -175,7 +175,7 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
     for spef_net in spef_data_nets {
         // println!("{:?}", spef_net);
         let spef_net_name = &spef_net.name;
-        let net_name_str = spef_index_to_string(&spef_net_name);
+        let net_name_str = spef_index_to_string(spef_net_name);
         log::info!("build net {} rc data", net_name_str);
         let mut one_net_data = RCOneNetData::new(net_name_str);
 
