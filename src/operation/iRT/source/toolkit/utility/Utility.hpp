@@ -2255,6 +2255,10 @@ class Utility
 
 #if 1  // int类型
 
+  static GTLPointInt convertToGTLPointInt(const PlanarCoord& coord) { return GTLPointInt(coord.get_x(), coord.get_y()); }
+
+  static PlanarCoord convertToPlanarCoord(const GTLPointInt& gtl_point) { return PlanarCoord(gtl::x(gtl_point), gtl::y(gtl_point)); }
+
   static PlanarRect convertToPlanarRect(GTLRectInt& gtl_rect) { return PlanarRect(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect)); }
 
   static PlanarRect convertToPlanarRect(BGRectInt& boost_box)

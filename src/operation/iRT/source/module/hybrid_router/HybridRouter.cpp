@@ -283,16 +283,12 @@ void HybridRouter::iterativeHRModel(HRModel& hr_model)
    */
   std::vector<HRIterParam> hr_iter_param_list;
   // clang-format off
-  hr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
-  hr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
-  hr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
-  hr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 3, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
-  hr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 4, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
-  hr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
-  hr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
-  hr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
-  hr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 3, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
-  hr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 4, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
+  hr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
+  hr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
+  hr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
+  hr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
+  hr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
+  hr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
   // clang-format on
   initRoutingState(hr_model);
   for (int32_t i = 0, iter = 1; i < static_cast<int32_t>(hr_iter_param_list.size()); i++, iter++) {
@@ -972,10 +968,81 @@ bool HybridRouter::isConnectedAllEnd(HRBox& hr_box)
 
 void HybridRouter::routeSinglePath(HRBox& hr_box)
 {
+  initSelfArea(hr_box);
   initPathHead(hr_box);
   while (!searchEnded(hr_box)) {
     expandSearching(hr_box);
     resetPathHead(hr_box);
+  }
+}
+
+void HybridRouter::initSelfArea(HRBox& hr_box)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+
+  int32_t curr_net_idx = hr_box.get_curr_hr_task()->get_net_idx();
+  std::vector<std::vector<HRNode*>>& start_node_list_list = hr_box.get_start_node_list_list();
+  std::vector<std::vector<HRNode*>>& end_node_list_list = hr_box.get_end_node_list_list();
+  std::vector<HRNode*>& path_node_list = hr_box.get_path_node_list();
+
+  std::map<int32_t, std::vector<GTLPolyInt>> routing_gtl_poly_map;
+  {
+    std::map<int32_t, GTLPolySetInt> routing_gtl_poly_set_map;
+    for (auto& [layer_idx, net_fixed_rect_map] : hr_box.get_type_layer_net_fixed_rect_map()[true]) {
+      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+        if (curr_net_idx != net_idx) {
+          continue;
+        }
+        for (auto& fixed_rect : fixed_rect_set) {
+          routing_gtl_poly_set_map[layer_idx] += RTUTIL.convertToGTLRectInt(fixed_rect->get_real_rect());
+        }
+      }
+    }
+    for (auto& [net_idx, segment_set] : hr_box.get_net_final_result_map()) {
+      if (curr_net_idx != net_idx) {
+        continue;
+      }
+      for (Segment<LayerCoord>* segment : segment_set) {
+        for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+          if (!net_shape.get_is_routing()) {
+            continue;
+          }
+          routing_gtl_poly_set_map[net_shape.get_layer_idx()] += RTUTIL.convertToGTLRectInt(net_shape.get_rect());
+        }
+      }
+    }
+    for (NetShape& net_shape : RTDM.getNetShapeList(curr_net_idx, hr_box.get_routing_segment_list())) {
+      if (!net_shape.get_is_routing()) {
+        continue;
+      }
+      routing_gtl_poly_set_map[net_shape.get_layer_idx()] += RTUTIL.convertToGTLRectInt(net_shape.get_rect());
+    }
+    for (auto& [routing_layer_idx, gtl_poly_set] : routing_gtl_poly_set_map) {
+      std::vector<GTLPolyInt> gtl_poly_list;
+      gtl_poly_set.get_polygons(gtl_poly_list);
+      routing_gtl_poly_map[routing_layer_idx] = gtl_poly_list;
+    }
+  }
+  std::vector<HRNode*> hr_node_list;
+  for (std::vector<HRNode*>& start_node_list : start_node_list_list) {
+    hr_node_list.insert(hr_node_list.end(), start_node_list.begin(), start_node_list.end());
+  }
+  for (std::vector<HRNode*>& end_node_list : end_node_list_list) {
+    hr_node_list.insert(hr_node_list.end(), end_node_list.begin(), end_node_list.end());
+  }
+  hr_node_list.insert(hr_node_list.end(), path_node_list.begin(), path_node_list.end());
+
+  for (HRNode* hr_node : hr_node_list) {
+    int32_t self_area = 0;
+    GTLPointInt gtl_point = RTUTIL.convertToGTLPointInt(hr_node->get_planar_coord());
+    for (GTLPolyInt& gtl_poly : routing_gtl_poly_map[hr_node->get_layer_idx()]) {
+      if (!gtl::contains(gtl_poly, gtl_point)) {
+        continue;
+      }
+      self_area = static_cast<int32_t>(gtl::area(gtl_poly));
+      break;
+    }
+    hr_node->set_self_area(std::min(self_area, routing_layer_list[hr_node->get_layer_idx()].get_min_area()));
   }
 }
 
@@ -986,11 +1053,13 @@ void HybridRouter::initPathHead(HRBox& hr_box)
 
   for (std::vector<HRNode*>& start_node_list : start_node_list_list) {
     for (HRNode* start_node : start_node_list) {
+      start_node->set_known_area(start_node->get_self_area());
       start_node->set_estimated_cost(getEstimateCostToEnd(hr_box, start_node));
       pushToOpenList(hr_box, start_node);
     }
   }
   for (HRNode* path_node : path_node_list) {
+    path_node->set_known_area(path_node->get_self_area());
     path_node->set_estimated_cost(getEstimateCostToEnd(hr_box, path_node));
     pushToOpenList(hr_box, path_node);
   }
@@ -1030,13 +1099,16 @@ void HybridRouter::expandSearching(HRBox& hr_box)
       continue;
     }
     double known_cost = getKnownCost(hr_box, path_head_node, neighbor_node);
+    int32_t known_area = getKnownArea(hr_box, path_head_node, neighbor_node);
     if (neighbor_node->isOpen() && known_cost < neighbor_node->get_known_cost()) {
       neighbor_node->set_known_cost(known_cost);
+      neighbor_node->set_known_area(known_area);
       neighbor_node->set_parent_node(path_head_node);
       // 对优先队列中的值修改了,需要重新建堆
       std::make_heap(open_queue.begin(), open_queue.end(), CmpHRNodeCost());
     } else if (neighbor_node->isNone()) {
       neighbor_node->set_known_cost(known_cost);
+      neighbor_node->set_known_area(known_area);
       neighbor_node->set_parent_node(path_head_node);
       neighbor_node->set_estimated_cost(getEstimateCostToEnd(hr_box, neighbor_node));
       pushToOpenList(hr_box, neighbor_node);
@@ -1123,6 +1195,7 @@ void HybridRouter::resetSinglePath(HRBox& hr_box)
     visited_node->set_state(HRNodeState::kNone);
     visited_node->set_parent_node(nullptr);
     visited_node->set_known_cost(0);
+    visited_node->set_known_area(0);
     visited_node->set_estimated_cost(0);
   }
   single_path_visited_node_list.clear();
@@ -1229,6 +1302,7 @@ double HybridRouter::getKnownCost(HRBox& hr_box, HRNode* start_node, HRNode* end
   cost += getNodeCost(hr_box, end_node, RTUTIL.getOrientation(*end_node, *start_node));
   cost += getKnownWireCost(hr_box, start_node, end_node);
   cost += getKnownViaCost(hr_box, start_node, end_node);
+  cost += getKnownAreaCost(hr_box, start_node, end_node);
   return cost;
 }
 
@@ -1274,6 +1348,35 @@ double HybridRouter::getKnownViaCost(HRBox& hr_box, HRNode* start_node, HRNode* 
   return via_cost;
 }
 
+double HybridRouter::getKnownAreaCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  double area_unit = hr_box.get_hr_iter_param()->get_violation_unit();
+
+  double area_cost = 0;
+  if (start_node->get_layer_idx() != end_node->get_layer_idx()) {
+    if (start_node->get_known_area() < routing_layer_list[start_node->get_layer_idx()].get_min_area()) {
+      area_cost += area_unit;
+    }
+  }
+  return area_cost;
+}
+
+int32_t HybridRouter::getKnownArea(HRBox& hr_box, HRNode* start_node, HRNode* end_node)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  RoutingLayer& routing_layer = routing_layer_list[end_node->get_layer_idx()];
+
+  int32_t area = 0;
+  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
+    area += start_node->get_known_area();
+    area += (RTUTIL.getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord()) * routing_layer.get_min_width());
+  }
+  area += end_node->get_self_area();
+  area = std::min(area, routing_layer.get_min_area());
+  return area;
+}
+
 // calculate estimate
 
 double HybridRouter::getEstimateCostToEnd(HRBox& hr_box, HRNode* curr_node)
@@ -1297,6 +1400,7 @@ double HybridRouter::getEstimateCost(HRBox& hr_box, HRNode* start_node, HRNode* 
   double estimate_cost = 0;
   estimate_cost += getEstimateWireCost(hr_box, start_node, end_node);
   estimate_cost += getEstimateViaCost(hr_box, start_node, end_node);
+  estimate_cost += getEstimateAreaCost(hr_box, start_node, end_node);
   return estimate_cost;
 }
 
@@ -1316,6 +1420,38 @@ double HybridRouter::getEstimateViaCost(HRBox& hr_box, HRNode* start_node, HRNod
   double via_unit = hr_box.get_hr_iter_param()->get_via_unit();
   double via_cost = (via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));
   return via_cost;
+}
+
+double HybridRouter::getEstimateAreaCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  double area_unit = hr_box.get_hr_iter_param()->get_violation_unit();
+
+  int32_t need_wire_length = 0;
+  {
+    int32_t start_layer_idx = start_node->get_layer_idx();
+    int32_t end_layer_idx = end_node->get_layer_idx();
+    RTUTIL.swapByASC(start_layer_idx, end_layer_idx);
+    for (int32_t layer_idx = start_layer_idx; layer_idx <= end_layer_idx; layer_idx++) {
+      RoutingLayer& routing_layer = routing_layer_list[layer_idx];
+      int32_t curr_layer_area = 0;
+      if (start_node->get_layer_idx() == layer_idx) {
+        curr_layer_area += start_node->get_known_area();
+      }
+      if (end_node->get_layer_idx() == layer_idx) {
+        curr_layer_area += end_node->get_known_area();
+      }
+      if (routing_layer.get_min_area() <= curr_layer_area) {
+        continue;
+      }
+      need_wire_length += (routing_layer.get_min_area() - curr_layer_area) / routing_layer.get_min_width();
+    }
+  }
+  double area_cost = 0;
+  if (RTUTIL.getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord()) < need_wire_length) {
+    area_cost += area_unit;
+  }
+  return area_cost;
 }
 
 void HybridRouter::updateViolationList(HRBox& hr_box)
@@ -2516,6 +2652,15 @@ void HybridRouter::debugPlotHRBox(HRBox& hr_box, std::string flag)
             gp_text_orient_violation_number_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
             hr_node_map_struct.push(gp_text_orient_violation_number_map_info);
           }
+
+          y -= y_reduced_span;
+          GPText gp_text_known_area;
+          gp_text_known_area.set_coord(real_rect.get_ll_x(), y);
+          gp_text_known_area.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+          gp_text_known_area.set_message(RTUTIL.getString("known_area: ", hr_node.get_known_area()));
+          gp_text_known_area.set_layer_idx(RTGP.getGDSIdxByRouting(hr_node.get_layer_idx()));
+          gp_text_known_area.set_presentation(GPTextPresentation::kLeftMiddle);
+          hr_node_map_struct.push(gp_text_known_area);
         }
       }
     }

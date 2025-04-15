@@ -114,11 +114,15 @@ class HRNode : public LayerCoord
   // single path
   HRNodeState& get_state() { return _state; }
   HRNode* get_parent_node() const { return _parent_node; }
+  int32_t get_self_area() const { return _self_area; }
   double get_known_cost() const { return _known_cost; }
+  int32_t get_known_area() const { return _known_area; }
   double get_estimated_cost() const { return _estimated_cost; }
   void set_state(HRNodeState state) { _state = state; }
   void set_parent_node(HRNode* parent_node) { _parent_node = parent_node; }
+  void set_self_area(const int32_t self_area) { _self_area = self_area; }
   void set_known_cost(const double known_cost) { _known_cost = known_cost; }
+  void set_known_area(const int32_t known_area) { _known_area = known_area; }
   void set_estimated_cost(const double estimated_cost) { _estimated_cost = estimated_cost; }
   // function
   bool isNone() { return _state == HRNodeState::kNone; }
@@ -139,7 +143,9 @@ class HRNode : public LayerCoord
   // single path
   HRNodeState _state = HRNodeState::kNone;
   HRNode* _parent_node = nullptr;
+  int32_t _self_area = 0;
   double _known_cost = 0.0;  // include curr
+  int32_t _known_area = 0;   // include curr
   double _estimated_cost = 0.0;
 #endif
 };

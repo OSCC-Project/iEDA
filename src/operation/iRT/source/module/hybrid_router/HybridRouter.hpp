@@ -85,6 +85,7 @@ class HybridRouter
   void initSingleTask(HRBox& hr_box, HRTask* hr_task);
   bool isConnectedAllEnd(HRBox& hr_box);
   void routeSinglePath(HRBox& hr_box);
+  void initSelfArea(HRBox& hr_box);
   void initPathHead(HRBox& hr_box);
   bool searchEnded(HRBox& hr_box);
   void expandSearching(HRBox& hr_box);
@@ -102,10 +103,13 @@ class HybridRouter
   double getNodeCost(HRBox& hr_box, HRNode* curr_node, Orientation orientation);
   double getKnownWireCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node);
   double getKnownViaCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node);
+  double getKnownAreaCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node);
+  int32_t getKnownArea(HRBox& hr_box, HRNode* start_node, HRNode* end_node);
   double getEstimateCostToEnd(HRBox& hr_box, HRNode* curr_node);
   double getEstimateCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node);
   double getEstimateWireCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node);
   double getEstimateViaCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node);
+  double getEstimateAreaCost(HRBox& hr_box, HRNode* start_node, HRNode* end_node);
   void updateViolationList(HRBox& hr_box);
   std::vector<Violation> getViolationList(HRBox& hr_box);
   void updateBestResult(HRBox& hr_box);

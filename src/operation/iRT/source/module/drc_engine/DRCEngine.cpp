@@ -341,6 +341,8 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
       case ViolationType::kMinHole:
         break;
       case ViolationType::kMinimumArea:
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {-1, 0, +1});
         break;
       case ViolationType::kMinimumCut:
         break;
