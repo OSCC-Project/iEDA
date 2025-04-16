@@ -15,9 +15,9 @@ with open('/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml', 'r', e
             node_name = line.split(':')[0]
             i += 1
             coord_line = lines[i].strip()
-            coord_str = coord_line.split('[')[1].split(']')[0].strip()
-            coord = [int(num) for num in coord_str.split()]
-            nodes.append(coord)
+            # coord_str = coord_line.split('[')[1].split(']')[0].strip()
+            # coord = [int(num) for num in coord_str.split()]
+            nodes.append(coord_line)
         elif line.startswith('edge_'):
             edge_name = line.split(':')[0]
             i += 1
@@ -46,24 +46,27 @@ def plot_resistance_distribution(resistance_values):
         
 plot_resistance_distribution(resistances)
 
-        
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
 
-points = np.array(nodes)
-connections = edges
+is_plot_topo = False
 
-ax.scatter(points[:, 0], points[:, 1], points[:, 2], c='fuchsia', marker='o')
+if is_plot_topo:
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
 
-for conn in connections:
-    start = points[conn[0]]
-    end = points[conn[1]]
-    ax.plot([start[0], end[0]], [start[1], end[1]], [start[2], end[2]], 'lightgreen', linestyle='--')
+    points = np.array(nodes)
+    connections = edges
 
-ax.set_xlabel('X')
-ax.set_ylabel('Y')
-ax.set_zlabel('Z')
+    ax.scatter(points[:, 0], points[:, 1], points[:, 2], c='fuchsia', marker='o')
 
-ax.view_init(elev = 45, azim = 45)
-# plt.show()
-plt.savefig('pg_netlist.png', dpi=300)
+    for conn in connections:
+        start = points[conn[0]]
+        end = points[conn[1]]
+        ax.plot([start[0], end[0]], [start[1], end[1]], [start[2], end[2]], 'lightgreen', linestyle='--')
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+
+    ax.view_init(elev = 45, azim = 45)
+    # plt.show()
+    plt.savefig('pg_netlist.png', dpi=300)
