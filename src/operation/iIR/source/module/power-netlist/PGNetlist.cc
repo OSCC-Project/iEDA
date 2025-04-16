@@ -53,6 +53,7 @@ void IRPGNetlist::printToYaml(std::string yaml_path) {
 
     file << "  node1: " << edge.get_node1() << "\n";
     file << "  node2: " << edge.get_node2() << "\n";
+    file << "  resistance: " << edge.get_resistance() << "\n";
   }
 
   file.close();

@@ -4,6 +4,7 @@ import numpy as np
 
 nodes = []
 edges = []
+resistances = []
 
 with open('/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml', 'r', encoding='utf-8') as file:
     lines = file.readlines()
@@ -25,8 +26,26 @@ with open('/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml', 'r', e
             i += 1
             node2_line = lines[i].strip()
             node2 = int(node2_line.split(':')[1].strip())
+            
+            i += 1
+            resistance_line = lines[i].strip()
+            resistance = float(resistance_line.split(':')[1].strip())
+            
+            resistances.append(resistance)
+            
             edges.append((node1, node2))
         i += 1
+
+
+def plot_resistance_distribution(resistance_values):
+    plt.hist(resistance_values, bins=20, edgecolor='black')
+    plt.title('Resistance Distribution')
+    plt.xlabel('Resistance')
+    plt.ylabel('Frequency')
+    plt.savefig('resistance.png', dpi=300)
+        
+plot_resistance_distribution(resistances)
+
         
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
