@@ -4,6 +4,7 @@ use sprs::TriMat;
 use sprs::TriMatI;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::io::Write;
 
 use super::c_str_to_r_str;
 use super::RustIRPGNetlist;
@@ -113,6 +114,26 @@ impl RCOneNetData {
     pub fn get_resistances(&self) -> &Vec<RCResistance> {
         &self.resistances
     }
+
+    pub fn print_to_yaml(&self, yaml_file_path: &str) {
+        let mut file = std::fs::File::create(yaml_file_path).unwrap();
+        for (index, node) in self.nodes.borrow().iter().enumerate() {
+            let node_name = node.get_name();
+            let node_id = format!("node_{}", index);
+
+            writeln!(file, "{}:\n  {}", node_id, node_name).unwrap();
+        }
+
+        for (index, resistance) in self.resistances.iter().enumerate() {
+            let edge_id = format!("edge_{}", index);
+
+            writeln!(file, "{}:", edge_id).unwrap();
+            writeln!(file, "  node1: {}", resistance.from_node_id).unwrap();
+            writeln!(file, "  node2: {}", resistance.to_node_id).unwrap();
+
+            writeln!(file, "  resistance: {}", resistance.resistance).unwrap();
+        }
+    }
 }
 
 /// All power net rc data.
@@ -177,7 +198,7 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
         let spef_net_name = &spef_net.name;
         let net_name_str = spef_index_to_string(spef_net_name);
         log::info!("build net {} rc data", net_name_str);
-        let mut one_net_data = RCOneNetData::new(net_name_str);
+        let mut one_net_data = RCOneNetData::new(net_name_str.clone());
 
         // build the bump and inst pin node.
         for conn_entry in spef_net.get_conns() {
@@ -257,6 +278,10 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
             one_net_data.add_resistance(rc_resistance);
         }
 
+        if net_name_str == "VDD" {
+            one_net_data.print_to_yaml("/home/taosimin/ir_example/aes/pg_netlist/rc_data.yaml");
+        }
+
         rc_data.add_one_net_data(one_net_data);
     }
 
@@ -277,10 +302,10 @@ pub fn create_rc_data_from_topo(pg_netlist: &RustIRPGNetlist) -> RCOneNetData {
 
             if pg_node.is_bump {
                 rc_node.set_is_bump();
-            } else{
+            } else {
                 rc_node.set_is_inst_pin();
             }
-            
+
             one_net_data.add_node(rc_node);
         } else {
             let node_name = format!("{}:{}", net_name, node_id);
