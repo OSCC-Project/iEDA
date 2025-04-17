@@ -24,8 +24,7 @@ enum class DENetType
 {
   kNone,
   kRouteAmong,
-  kRouteHybrid,
-  kPatchHybrid
+  kRouteHybrid
 };
 
 struct GetDENetTypeName
@@ -42,9 +41,6 @@ struct GetDENetTypeName
         break;
       case DENetType::kRouteHybrid:
         net_type_name = "route_hybrid";
-        break;
-      case DENetType::kPatchHybrid:
-        net_type_name = "patch_hybrid";
         break;
       default:
         RTLOG.error(Loc::current(), "Unrecognized type!");

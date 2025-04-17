@@ -254,7 +254,7 @@ std::vector<Violation> ViolationRepairer::getViolationList(VRModel& vr_model)
     }
 
     de_task.set_proc_type(DEProcType::kGet);
-    de_task.set_net_type(DENetType::kPatchHybrid);
+    de_task.set_net_type(DENetType::kRouteHybrid);
     de_task.set_top_name(top_name);
     de_task.set_env_shape_list(env_shape_list);
     de_task.set_net_pin_shape_map(net_pin_shape_map);
@@ -671,8 +671,12 @@ void ViolationRepairer::buildGraphShapeMap(VRBox& vr_box)
 
 void ViolationRepairer::routeVRBox(VRBox& vr_box)
 {
-  for (ViolationType violation_type :
-       {ViolationType::kCutShort, ViolationType::kSameLayerCutSpacing, ViolationType::kParallelRunLengthSpacing, ViolationType::kMinimumArea}) {
+  std::vector<ViolationType> violation_type_list;
+  violation_type_list.push_back(ViolationType::kCutShort);
+  violation_type_list.push_back(ViolationType::kSameLayerCutSpacing);
+  violation_type_list.push_back(ViolationType::kParallelRunLengthSpacing);
+  violation_type_list.push_back(ViolationType::kMinimumArea);
+  for (ViolationType violation_type : violation_type_list) {
     while (true) {
       initSingleTask(vr_box, violation_type);
       if (vr_box.get_curr_net_idx() == -1) {
@@ -1167,7 +1171,7 @@ std::vector<Violation> ViolationRepairer::getViolationList(VRBox& vr_box)
 
   DETask de_task;
   de_task.set_proc_type(DEProcType::kGet);
-  de_task.set_net_type(DENetType::kPatchHybrid);
+  de_task.set_net_type(DENetType::kRouteHybrid);
   de_task.set_top_name(top_name);
   de_task.set_env_shape_list(env_shape_list);
   de_task.set_net_pin_shape_map(net_pin_shape_map);
@@ -1202,8 +1206,6 @@ void ViolationRepairer::updateCurrSolvedStatus(VRBox& vr_box, ViolationType& sol
     }
     if (violation_type == solved_violation_type) {
       is_solved = origin_curr.second < origin_curr.first;
-    } else {
-      is_solved = origin_curr.second <= origin_curr.first;
     }
   }
   for (auto& [violation_type, origin_curr] : among_type_origin_curr_map) {
