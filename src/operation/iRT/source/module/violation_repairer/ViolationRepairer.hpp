@@ -49,6 +49,10 @@ class ViolationRepairer
   VRModel initVRModel();
   std::vector<VRNet> convertToVRNetList(std::vector<Net>& net_list);
   VRNet convertToVRNet(Net& net);
+  void updateAccessPoint(VRModel& vr_model);
+  void initNetFinalResultMap(VRModel& vr_model);
+  void buildNetFinalResultMap(VRModel& vr_model);
+  void clearIgnoredViolation(VRModel& vr_model);
   void uploadViolation(VRModel& vr_model);
   std::vector<Violation> getViolationList(VRModel& vr_model);
   void iterativeVRModel(VRModel& vr_model);

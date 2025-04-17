@@ -22,7 +22,6 @@
 #include "EarlyRouter.hpp"
 #include "GDSPlotter.hpp"
 #include "GlobalRouter.hpp"
-#include "HybridRouter.hpp"
 #include "LSAssigner4iEDA/ls_assigner/LSAssigner.h"
 #include "LayerAssigner.hpp"
 #include "Monitor.hpp"
@@ -150,10 +149,6 @@ void RTInterface::runRT()
   DetailedRouter::initInst();
   RTDR.route();
   DetailedRouter::destroyInst();
-
-  HybridRouter::initInst();
-  RTHR.route();
-  HybridRouter::destroyInst();
 
   ViolationRepairer::initInst();
   RTVR.repair();
