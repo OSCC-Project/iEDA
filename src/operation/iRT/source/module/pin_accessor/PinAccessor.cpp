@@ -66,7 +66,7 @@ void PinAccessor::access()
   buildBlockTrimRectMap(pa_model);
   initAccessPointList(pa_model);
   uploadAccessPointList(pa_model);
-  iterativePAModel(pa_model);
+  routePAModel(pa_model);
   uploadAccessPoint(pa_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -529,7 +529,7 @@ void PinAccessor::uploadAccessPointList(PAModel& pa_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void PinAccessor::iterativePAModel(PAModel& pa_model)
+void PinAccessor::routePAModel(PAModel& pa_model)
 {
   int32_t cost_unit = RTDM.getOnlyPitch();
   double prefer_wire_unit = 1;

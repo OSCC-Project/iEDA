@@ -52,7 +52,7 @@ class GlobalRouter
   void buildLayerNodeMap(GRModel& gr_model);
   void buildOrientSupply(GRModel& gr_model);
   void reviseNodeDemand(GRModel& gr_model);
-  void iterativeGRModel(GRModel& gr_model);
+  void routeGRModel(GRModel& gr_model);
   void setGRIterParam(GRModel& gr_model, int32_t iter, GRIterParam& gr_iter_param);
   void initGRBoxMap(GRModel& gr_model);
   void buildBoxSchedule(GRModel& gr_model);

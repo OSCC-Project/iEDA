@@ -55,7 +55,7 @@ class DetailedRouter
   DRModel initDRModel();
   std::vector<DRNet> convertToDRNetList(std::vector<Net>& net_list);
   DRNet convertToDRNet(Net& net);
-  void iterativeDRModel(DRModel& dr_model);
+  void routeDRModel(DRModel& dr_model);
   void initRoutingState(DRModel& dr_model);
   void setDRIterParam(DRModel& dr_model, int32_t iter, DRIterParam& dr_iter_param);
   void resetRoutingState(DRModel& dr_model);

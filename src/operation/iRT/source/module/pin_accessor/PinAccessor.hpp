@@ -64,7 +64,7 @@ class PinAccessor
   std::vector<AccessPoint> getAccessPointList(PAModel& pa_model, int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
   void uniformSampleCoordList(PAModel& pa_model, std::vector<LayerCoord>& layer_coord_list);
   void uploadAccessPointList(PAModel& pa_model);
-  void iterativePAModel(PAModel& pa_model);
+  void routePAModel(PAModel& pa_model);
   void initRoutingState(PAModel& pa_model);
   void setPAIterParam(PAModel& pa_model, int32_t iter, PAIterParam& pa_iter_param);
   void initPABoxMap(PAModel& pa_model);

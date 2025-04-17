@@ -2,7 +2,7 @@ initGRModel:初始化GRModel
 buildLayerNodeMap:构建顶层graph
 buildOrientSupply:给顶层graph添加supply
 reviseNodeDemand:重新加载demand
-iterativeGRModel:迭代GRModel
+routeGRModel:迭代GRModel
     setGRIterParam:设置迭代参数
     initGRBoxMap:初始化GRBox框架
     buildBoxSchedule:构建Box布线时间表

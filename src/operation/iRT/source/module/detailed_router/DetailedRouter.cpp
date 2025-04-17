@@ -61,7 +61,7 @@ void DetailedRouter::route()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
   DRModel dr_model = initDRModel();
-  iterativeDRModel(dr_model);
+  routeDRModel(dr_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -100,7 +100,7 @@ DRNet DetailedRouter::convertToDRNet(Net& net)
   return dr_net;
 }
 
-void DetailedRouter::iterativeDRModel(DRModel& dr_model)
+void DetailedRouter::routeDRModel(DRModel& dr_model)
 {
   int32_t cost_unit = RTDM.getOnlyPitch();
   double prefer_wire_unit = 1;
