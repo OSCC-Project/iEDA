@@ -80,7 +80,7 @@ class ViolationRepairer
   void updateCurrResultList(VRBox& vr_box, VRSolution& vr_solution);
   void updateCurrViolationList(VRBox& vr_box);
   std::vector<Violation> getViolationList(VRBox& vr_box);
-  void updateCurrSolvedStatus(VRBox& vr_box);
+  void updateCurrSolvedStatus(VRBox& vr_box, ViolationType& violation_type);
   void updateTaskResult(VRBox& vr_box);
   void updateTaskPatch(VRBox& vr_box);
   void updateViolationList(VRBox& vr_box);

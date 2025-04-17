@@ -682,7 +682,7 @@ void ViolationRepairer::routeVRBox(VRBox& vr_box)
       for (VRSolution& vr_solution : getVRSolutionList(vr_box, violation_type)) {
         updateCurrResultList(vr_box, vr_solution);
         updateCurrViolationList(vr_box);
-        updateCurrSolvedStatus(vr_box);
+        updateCurrSolvedStatus(vr_box, violation_type);
         // debugPlotVRBox(vr_box, "after");
         if (vr_box.get_curr_is_solved()) {
           updateTaskResult(vr_box);
@@ -1177,7 +1177,7 @@ std::vector<Violation> ViolationRepairer::getViolationList(VRBox& vr_box)
   return RTDE.getViolationList(de_task);
 }
 
-void ViolationRepairer::updateCurrSolvedStatus(VRBox& vr_box)
+void ViolationRepairer::updateCurrSolvedStatus(VRBox& vr_box, ViolationType& solved_violation_type)
 {
   std::map<ViolationType, std::pair<int32_t, int32_t>> within_type_origin_curr_map;
   std::map<ViolationType, std::pair<int32_t, int32_t>> among_type_origin_curr_map;
@@ -1200,17 +1200,17 @@ void ViolationRepairer::updateCurrSolvedStatus(VRBox& vr_box)
     if (!is_solved) {
       break;
     }
-    if (origin_curr.first < origin_curr.second) {
-      is_solved = false;
+    if (violation_type == solved_violation_type) {
+      is_solved = origin_curr.second < origin_curr.first;
+    } else {
+      is_solved = origin_curr.second <= origin_curr.first;
     }
   }
   for (auto& [violation_type, origin_curr] : among_type_origin_curr_map) {
     if (!is_solved) {
       break;
     }
-    if (origin_curr.first < origin_curr.second) {
-      is_solved = false;
-    }
+    is_solved = origin_curr.second <= origin_curr.first;
   }
   vr_box.set_curr_is_solved(is_solved);
 }
