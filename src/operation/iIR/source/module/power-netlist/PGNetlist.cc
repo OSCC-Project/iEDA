@@ -43,7 +43,7 @@ void IRPGNetlist::printToYaml(std::string yaml_path) {
     const char* node_name = ieda::Str::printf("node_%d", node_id++);
     file << node_name << ":" << "\n";
 
-    file << "  coord: " << "[ " << node.get_coord().first << " "
+    file << "  " << node.get_node_name() << ": " << "[ " << node.get_coord().first << " "
          << node.get_coord().second << " " << node.get_layer_id() << " ]" << "\n";
   }
 
@@ -362,7 +362,7 @@ void IRPGNetlistBuilder::build(
   LOG_INFO << "total edge num: " << pg_netlist.getEdgeNum();
 
   // for debug.
-  // pg_netlist.printToYaml("/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml");
+  pg_netlist.printToYaml("/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml");
 }
 
 /**

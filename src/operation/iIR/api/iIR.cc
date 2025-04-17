@@ -97,6 +97,9 @@ unsigned iIR::solveIRDrop(const char* net_name) {
   IRSolver ir_solver;
   auto grid_voltages = ir_solver(G_matrix, J_vector);
 
+  std::optional<std::pair<std::string, double>> max_ir_drop;
+  std::optional<std::pair<std::string, double>> min_ir_drop;
+
   auto instance_node_ids = get_instance_node_ids(_rc_data, net_name);
   uintptr_t* instance_id;
   FOREACH_VEC_ELEM(&instance_node_ids, uintptr_t, instance_id) {
@@ -105,8 +108,27 @@ unsigned iIR::solveIRDrop(const char* net_name) {
 
     LOG_INFO << "instance: " << instance_name << " ir drop: "
              << ir_drop;
+
+    if (!max_ir_drop) {
+      max_ir_drop = {instance_name, ir_drop};
+      min_ir_drop = {instance_name, ir_drop};
+    } else {
+      if (ir_drop > max_ir_drop->second) {
+        max_ir_drop = {instance_name, ir_drop};
+      }
+
+      if (ir_drop < min_ir_drop->second) {
+        min_ir_drop = {instance_name, ir_drop};
+      }
+
+    }
+
+
     _instance_to_ir_drop[instance_name] = ir_drop;
   }
+
+  LOG_INFO << "max ir drop: " << max_ir_drop->first << " : " << max_ir_drop->second;
+  LOG_INFO << "min ir drop: " << min_ir_drop->first << " : " << min_ir_drop->second;
 
   return 1;
 }
