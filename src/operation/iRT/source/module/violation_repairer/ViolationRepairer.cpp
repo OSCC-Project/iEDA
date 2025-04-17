@@ -1031,57 +1031,216 @@ std::vector<VRSolution> ViolationRepairer::routeByMinimumArea(VRBox& vr_box)
   EXTLayerRect& violation_shape = vr_box.get_curr_violation().get_violation_shape();
   int32_t violation_layer_idx = violation_shape.get_layer_idx();
 
+  GTLPolySetInt gtl_min_area_poly_set;
   PlanarRect bounding_box;
   {
     PlanarRect violation_real_rect = violation_shape.get_real_rect();
     std::vector<PlanarRect> rect_list;
-    for (NetShape& net_shape : RTDM.getNetShapeList(curr_net_idx, vr_box.get_curr_routing_segment_list())) {
-      if (!net_shape.get_is_routing()) {
-        continue;
+    std::vector<PlanarRect> rect_stack;
+    rect_stack.push_back(violation_real_rect);
+    rect_list.push_back(violation_real_rect);
+    while (rect_stack.empty() == false) {
+      PlanarRect query_rect = rect_stack.back();
+      rect_stack.pop_back();
+      for (NetShape& net_shape : RTDM.getNetShapeList(curr_net_idx, vr_box.get_curr_routing_segment_list())) {
+        if (!net_shape.get_is_routing()) {
+          continue;
+        }
+        if (violation_layer_idx == net_shape.get_layer_idx() && RTUTIL.isClosedOverlap(query_rect, net_shape.get_rect())) {
+          if (RTUTIL.exist(rect_list, net_shape.get_rect()) || RTUTIL.isInside(query_rect, net_shape.get_rect())) {
+            continue;
+          }
+          rect_stack.push_back(net_shape.get_rect());
+          rect_list.push_back(net_shape.get_rect());
+        }
       }
-      if (violation_layer_idx == net_shape.get_layer_idx() && RTUTIL.isClosedOverlap(violation_real_rect, net_shape.get_rect())) {
-        rect_list.push_back(net_shape.get_rect());
+      for (EXTLayerRect& patch : vr_box.get_curr_routing_patch_list()) {
+        if (violation_layer_idx == patch.get_layer_idx() && RTUTIL.isClosedOverlap(query_rect, patch.get_real_rect())) {
+          if (RTUTIL.exist(rect_list, patch.get_real_rect()) || RTUTIL.isInside(query_rect, patch.get_real_rect())) {
+            continue;
+          }
+          rect_stack.push_back(patch.get_real_rect());
+          rect_list.push_back(patch.get_real_rect());
+        }
       }
     }
-    for (EXTLayerRect& patch : vr_box.get_curr_routing_patch_list()) {
-      if (violation_layer_idx == patch.get_layer_idx() && RTUTIL.isClosedOverlap(violation_real_rect, patch.get_real_rect())) {
-        rect_list.push_back(patch.get_real_rect());
-      }
+    for (PlanarRect& rect : rect_list) {
+      gtl_min_area_poly_set += RTUTIL.convertToGTLRectInt(rect);
     }
     bounding_box = RTUTIL.getBoundingBox(rect_list);
   }
-  std::map<double, std::vector<EXTLayerRect>> env_cost_real_patch_map;
+  std::map<double, std::vector<std::vector<EXTLayerRect>>> env_cost_real_patch_list_map;
   {
+    auto bound_manufacture_grid = [&](int32_t x) {
+      while (x % manufacture_grid != 0) {
+        x++;
+      }
+      return x;
+    };
+
     RoutingLayer& routing_layer = routing_layer_list[violation_layer_idx];
     int32_t half_wire_width = routing_layer.get_min_width() / 2;
     int32_t half_wire_length = routing_layer.get_min_area() / routing_layer.get_min_width() / 2;
-    if (routing_layer.isPreferH()) {
-      for (int32_t y : {bounding_box.get_ll_y() + (half_wire_width), bounding_box.get_ur_y() - (half_wire_width)}) {
-        for (int32_t x = bounding_box.get_ur_x() - half_wire_length; x <= bounding_box.get_ll_x() + half_wire_length; x += manufacture_grid) {
-          EXTLayerRect patch;
-          patch.set_real_rect(RTUTIL.getEnlargedRect(PlanarCoord(x, y), half_wire_length, half_wire_width, half_wire_length, half_wire_width));
-          patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(patch.get_real_rect(), gcell_axis));
-          patch.set_layer_idx(violation_layer_idx);
-          env_cost_real_patch_map[getEnvCost(vr_box, curr_net_idx, patch)].push_back(patch);
+    int32_t wire_width = routing_layer.get_min_width();
+    int32_t min_area = routing_layer.get_min_area();
+
+    int32_t require_area = min_area - gtl::area(gtl_min_area_poly_set);
+    int32_t require_length = (require_area + routing_layer.get_min_width() - 1) / routing_layer.get_min_width();
+    if (require_area < 0) {
+      return {};  // 理论上不会出现这种情况
+    }
+    if (require_length < wire_width) {
+      require_length = wire_width;
+    }
+
+    // 纯h方向
+    int32_t step_size = manufacture_grid * 4;
+
+    for (int32_t y :
+         std::set<int32_t>{bounding_box.get_ll_y() + (half_wire_width), bounding_box.get_ur_y() - (half_wire_width), bounding_box.getMidPoint().get_y()}) {
+      for (int32_t x = bounding_box.get_ur_x() - half_wire_length; x <= bounding_box.get_ll_x() + half_wire_length; x += step_size) {
+        x = bound_manufacture_grid(x);
+        y = bound_manufacture_grid(y);
+        EXTLayerRect patch;
+        patch.set_real_rect(RTUTIL.getEnlargedRect(PlanarCoord(x, y), half_wire_length, half_wire_width, half_wire_length, half_wire_width));
+        patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(patch.get_real_rect(), gcell_axis));
+        patch.set_layer_idx(violation_layer_idx);
+        env_cost_real_patch_list_map[getEnvCost(vr_box, curr_net_idx, patch)].push_back({patch});
+      }
+    }
+    // 纯v方向
+    for (int32_t x :
+         std::set<int32_t>{bounding_box.get_ll_x() + (half_wire_width), bounding_box.get_ur_x() - (half_wire_width), bounding_box.getMidPoint().get_x()}) {
+      for (int32_t y = bounding_box.get_ur_y() - half_wire_length; y <= bounding_box.get_ll_y() + half_wire_length; y += step_size) {
+        x = bound_manufacture_grid(x);
+        y = bound_manufacture_grid(y);
+        EXTLayerRect patch;
+        patch.set_real_rect(RTUTIL.getEnlargedRect(PlanarCoord(x, y), half_wire_width, half_wire_length, half_wire_width, half_wire_length));
+        patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(patch.get_real_rect(), gcell_axis));
+        patch.set_layer_idx(violation_layer_idx);
+        env_cost_real_patch_list_map[getEnvCost(vr_box, curr_net_idx, patch)].push_back({patch});
+      }
+    }
+    // h + v组合 +形
+    int32_t x_require_length = require_length / 2;
+    int32_t y_require_length = require_length - x_require_length;
+    x_require_length = bound_manufacture_grid(x_require_length);
+    y_require_length = bound_manufacture_grid(y_require_length);
+    std::vector<EXTLayerRect> x_patch_list;
+    std::vector<EXTLayerRect> y_patch_list;
+    half_wire_length = (x_require_length + bounding_box.getXSpan()) / 2;
+    half_wire_length = bound_manufacture_grid(half_wire_length);
+    for (int32_t y :
+         std::set<int32_t>{bounding_box.get_ll_y() + (half_wire_width), bounding_box.get_ur_y() - (half_wire_width), bounding_box.getMidPoint().get_y()}) {
+      for (int32_t x :
+           std::set<int32_t>{bounding_box.get_ur_x() - half_wire_length, bounding_box.getMidPoint().get_x(), bounding_box.get_ll_x() + half_wire_length}) {
+        x = bound_manufacture_grid(x);
+        y = bound_manufacture_grid(y);
+        EXTLayerRect patch;
+        patch.set_real_rect(RTUTIL.getEnlargedRect(PlanarCoord(x, y), half_wire_length, half_wire_width, half_wire_length, half_wire_width));
+        patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(patch.get_real_rect(), gcell_axis));
+        patch.set_layer_idx(violation_layer_idx);
+        x_patch_list.push_back(patch);
+      }
+    }
+    half_wire_length = (y_require_length + bounding_box.getYSpan()) / 2;
+    half_wire_length = bound_manufacture_grid(half_wire_length);
+    for (int32_t x :
+         std::set<int32_t>{bounding_box.get_ll_x() + (half_wire_width), bounding_box.get_ur_x() - (half_wire_width), bounding_box.getMidPoint().get_x()}) {
+      for (int32_t y :
+           std::set<int32_t>{bounding_box.get_ur_y() - half_wire_length, bounding_box.getMidPoint().get_y(), bounding_box.get_ll_y() + half_wire_length}) {
+        x = bound_manufacture_grid(x);
+        y = bound_manufacture_grid(y);
+
+        EXTLayerRect patch;
+        patch.set_real_rect(RTUTIL.getEnlargedRect(PlanarCoord(x, y), half_wire_width, half_wire_length, half_wire_width, half_wire_length));
+        patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(patch.get_real_rect(), gcell_axis));
+        patch.set_layer_idx(violation_layer_idx);
+        y_patch_list.push_back(patch);
+      }
+    }
+    for (EXTLayerRect x_patch : x_patch_list) {
+      for (EXTLayerRect y_patch : y_patch_list) {
+        if (!RTUTIL.isClosedOverlap(x_patch.get_real_rect(), y_patch.get_real_rect())) {
+          continue;
+        }
+        env_cost_real_patch_list_map[getEnvCost(vr_box, curr_net_idx, x_patch) + getEnvCost(vr_box, curr_net_idx, y_patch)].push_back({x_patch, y_patch});
+      }
+    }
+    // h + v组合 L形
+    for (int32_t y : std::set<int32_t>{bounding_box.get_ll_y() + (half_wire_width), bounding_box.get_ur_y() - (half_wire_width)}) {
+      for (int32_t x : std::set<int32_t>{bounding_box.get_ll_x() - x_require_length, bounding_box.get_ll_x()}) {
+        x = bound_manufacture_grid(x);
+        y = bound_manufacture_grid(y);
+        EXTLayerRect h_patch;
+        PlanarRect h_rect = RTUTIL.getEnlargedRect(PlanarCoord(x, y), 0, half_wire_width, x_require_length + bounding_box.getXSpan(), half_wire_width);
+        h_patch.set_real_rect(h_rect);
+        h_patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(h_patch.get_real_rect(), gcell_axis));
+        h_patch.set_layer_idx(violation_layer_idx);
+
+        std::vector<PlanarRect> v_patch_rect_list;
+        v_patch_rect_list.push_back(RTUTIL.getEnlargedRect(h_rect.get_ll(), wire_width, 0, 0, std::max(y_require_length, wire_width)));
+        v_patch_rect_list.push_back(RTUTIL.getEnlargedRect(h_rect.get_ll(), wire_width, std::max(y_require_length - wire_width, 0), 0, wire_width));
+
+        v_patch_rect_list.push_back(RTUTIL.getEnlargedRect(h_rect.get_ur(), 0, wire_width, wire_width, std::max(y_require_length - wire_width, 0)));
+        v_patch_rect_list.push_back(RTUTIL.getEnlargedRect(h_rect.get_ur(), 0, std::max(y_require_length, wire_width), wire_width, 0));
+        for (PlanarRect& v_patch_rect : v_patch_rect_list) {
+          EXTLayerRect v_patch;
+          v_patch.set_real_rect(v_patch_rect);
+          v_patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(v_patch.get_real_rect(), gcell_axis));
+          v_patch.set_layer_idx(violation_layer_idx);
+          env_cost_real_patch_list_map[getEnvCost(vr_box, curr_net_idx, h_patch) + getEnvCost(vr_box, curr_net_idx, v_patch)].push_back({h_patch, v_patch});
         }
       }
-    } else {
-      for (int32_t x : {bounding_box.get_ll_x() + (half_wire_width), bounding_box.get_ur_x() - (half_wire_width)}) {
-        for (int32_t y = bounding_box.get_ur_y() - half_wire_length; y <= bounding_box.get_ll_y() + half_wire_length; y += manufacture_grid) {
-          EXTLayerRect patch;
-          patch.set_real_rect(RTUTIL.getEnlargedRect(PlanarCoord(x, y), half_wire_width, half_wire_length, half_wire_width, half_wire_length));
-          patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(patch.get_real_rect(), gcell_axis));
-          patch.set_layer_idx(violation_layer_idx);
-          env_cost_real_patch_map[getEnvCost(vr_box, curr_net_idx, patch)].push_back(patch);
+    }
+
+    for (int32_t x : std::set<int32_t>{bounding_box.get_ll_x() + (half_wire_width), bounding_box.get_ur_x() - (half_wire_width)}) {
+      for (int32_t y : std::set<int32_t>{bounding_box.get_ll_y() - y_require_length, bounding_box.get_ll_y()}) {
+        x = bound_manufacture_grid(x);
+        y = bound_manufacture_grid(y);
+        EXTLayerRect v_patch;
+        PlanarRect v_rect = RTUTIL.getEnlargedRect(PlanarCoord(x, y), half_wire_width, 0, half_wire_width, y_require_length + bounding_box.getYSpan());
+        v_patch.set_real_rect(v_rect);
+        v_patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(v_patch.get_real_rect(), gcell_axis));
+        v_patch.set_layer_idx(violation_layer_idx);
+        std::vector<PlanarRect> h_patch_rect_list;
+        h_patch_rect_list.push_back(RTUTIL.getEnlargedRect(v_rect.get_ll(), 0, wire_width, std::max(x_require_length, wire_width), 0));
+        h_patch_rect_list.push_back(RTUTIL.getEnlargedRect(v_rect.get_ll(), std::max(x_require_length - wire_width, 0), wire_width, wire_width, 0));
+
+        h_patch_rect_list.push_back(RTUTIL.getEnlargedRect(v_rect.get_ur(), std::max(x_require_length, wire_width), 0, 0, wire_width));
+        h_patch_rect_list.push_back(RTUTIL.getEnlargedRect(v_rect.get_ur(), wire_width, 0, std::max(x_require_length - wire_width, 0), wire_width));
+        for (PlanarRect& h_patch_rect : h_patch_rect_list) {
+          EXTLayerRect h_patch;
+          h_patch.set_real_rect(h_patch_rect);
+          h_patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(h_patch.get_real_rect(), gcell_axis));
+          h_patch.set_layer_idx(violation_layer_idx);
+          env_cost_real_patch_list_map[getEnvCost(vr_box, curr_net_idx, h_patch) + getEnvCost(vr_box, curr_net_idx, v_patch)].push_back({h_patch, v_patch});
         }
       }
     }
   }
   std::vector<VRSolution> vr_solution_list;
-  if (!env_cost_real_patch_map.empty()) {
-    for (EXTLayerRect& patch : env_cost_real_patch_map.begin()->second) {
+  if (!env_cost_real_patch_list_map.empty()) {
+    for (std::vector<EXTLayerRect>& patch_list : env_cost_real_patch_list_map.begin()->second) {
+      GTLPolySetInt patched_poly = gtl_min_area_poly_set;
+      bool inside = true;
+      for (EXTLayerRect& patch : patch_list) {
+                gtl_min_area_poly_set += RTUTIL.convertToGTLRectInt(patch.get_real_rect());
+        if (!RTUTIL.isInside(vr_box.get_box_rect().get_real_rect(), patch.get_real_rect()) || patch.get_real_rect().get_ll_x() % manufacture_grid != 0
+            || patch.get_real_rect().get_ll_y() % manufacture_grid != 0 || patch.get_real_rect().get_ur_x() % manufacture_grid != 0
+            || patch.get_real_rect().get_ur_y() % manufacture_grid != 0) {
+          inside = false;
+          break;
+        }
+      }
+      if (inside == false || gtl::area(patched_poly) < routing_layer_list[violation_layer_idx].get_min_area()) {
+        continue;
+      }
+
       VRSolution vr_solution = getNewSolution(vr_box);
-      vr_solution.get_routing_patch_list().push_back(patch);
+      for (EXTLayerRect patch : patch_list) {
+        vr_solution.get_routing_patch_list().push_back(patch);
+      }
       vr_solution_list.push_back(vr_solution);
     }
   }
@@ -1204,8 +1363,18 @@ void ViolationRepairer::updateCurrSolvedStatus(VRBox& vr_box, ViolationType& sol
     if (!is_solved) {
       break;
     }
-    if (violation_type == solved_violation_type) {
-      is_solved = origin_curr.second < origin_curr.first;
+    if (solved_violation_type == ViolationType::kCutShort || solved_violation_type == ViolationType::kSameLayerCutSpacing) {
+      if (violation_type == solved_violation_type) {
+        is_solved = origin_curr.second < origin_curr.first;
+      }
+    } else if (solved_violation_type == ViolationType::kParallelRunLengthSpacing || solved_violation_type == ViolationType::kMinimumArea) {
+      if (violation_type == solved_violation_type) {
+        is_solved = origin_curr.second < origin_curr.first;
+      } else {
+        is_solved = origin_curr.second <= origin_curr.first;
+      }
+    } else {
+      RTLOG.error(Loc::current(), "Not support!");
     }
   }
   for (auto& [violation_type, origin_curr] : among_type_origin_curr_map) {
