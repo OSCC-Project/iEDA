@@ -16,6 +16,8 @@
 // ***************************************************************************************
 #include "DPPin.hh"
 
+#include <cstdint>
+
 namespace ipl {
 
 DPPin::DPPin(std::string name)

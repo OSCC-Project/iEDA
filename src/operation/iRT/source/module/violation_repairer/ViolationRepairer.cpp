@@ -260,7 +260,6 @@ std::vector<Violation> ViolationRepairer::getHybridNetViolationList(VRModel& vr_
     de_task.set_net_patch_map(net_patch_map);
     de_task.set_need_checked_net_set(need_checked_net_set);
   }
-  // return RTDE.getViolationListByTemp(de_task);
   return RTDE.getViolationList(de_task);
 }
 
@@ -1178,7 +1177,6 @@ std::vector<Violation> ViolationRepairer::getHybridNetViolationList(VRBox& vr_bo
   de_task.set_net_result_map(net_result_map);
   de_task.set_net_patch_map(net_patch_map);
   de_task.set_need_checked_net_set(need_checked_net_set);
-  // return RTDE.getViolationListByTemp(de_task);
   return RTDE.getViolationList(de_task);
 }
 

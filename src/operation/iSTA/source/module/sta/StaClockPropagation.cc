@@ -351,7 +351,7 @@ unsigned StaClockPropagation::operator()(StaGraph* /* the_graph */) {
 
   unsigned is_ok = 1;
 
-  LOG_INFO << "clock propagation num " << clocks.size();
+  LOG_INFO << "clock propagation clock num: " << clocks.size();
 
   for (auto& clock : clocks) {
     if (((_prop_type == PropType::kIdealClockProp) &&

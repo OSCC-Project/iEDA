@@ -4,6 +4,7 @@ import numpy as np
 
 nodes = []
 edges = []
+resistances = []
 
 with open('/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml', 'r', encoding='utf-8') as file:
     lines = file.readlines()
@@ -14,9 +15,9 @@ with open('/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml', 'r', e
             node_name = line.split(':')[0]
             i += 1
             coord_line = lines[i].strip()
-            coord_str = coord_line.split('[')[1].split(']')[0].strip()
-            coord = [int(num) for num in coord_str.split()]
-            nodes.append(coord)
+            # coord_str = coord_line.split('[')[1].split(']')[0].strip()
+            # coord = [int(num) for num in coord_str.split()]
+            nodes.append(coord_line)
         elif line.startswith('edge_'):
             edge_name = line.split(':')[0]
             i += 1
@@ -25,26 +26,47 @@ with open('/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml', 'r', e
             i += 1
             node2_line = lines[i].strip()
             node2 = int(node2_line.split(':')[1].strip())
+            
+            i += 1
+            resistance_line = lines[i].strip()
+            resistance = float(resistance_line.split(':')[1].strip())
+            
+            resistances.append(resistance)
+            
             edges.append((node1, node2))
         i += 1
+
+
+def plot_resistance_distribution(resistance_values):
+    plt.hist(resistance_values, bins=20, edgecolor='black')
+    plt.title('Resistance Distribution')
+    plt.xlabel('Resistance')
+    plt.ylabel('Frequency')
+    plt.savefig('resistance.png', dpi=300)
         
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
+plot_resistance_distribution(resistances)
 
-points = np.array(nodes)
-connections = edges
 
-ax.scatter(points[:, 0], points[:, 1], points[:, 2], c='fuchsia', marker='o')
+is_plot_topo = False
 
-for conn in connections:
-    start = points[conn[0]]
-    end = points[conn[1]]
-    ax.plot([start[0], end[0]], [start[1], end[1]], [start[2], end[2]], 'lightgreen', linestyle='--')
+if is_plot_topo:
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
 
-ax.set_xlabel('X')
-ax.set_ylabel('Y')
-ax.set_zlabel('Z')
+    points = np.array(nodes)
+    connections = edges
 
-ax.view_init(elev = 45, azim = 45)
-# plt.show()
-plt.savefig('pg_netlist.png', dpi=300)
+    ax.scatter(points[:, 0], points[:, 1], points[:, 2], c='fuchsia', marker='o')
+
+    for conn in connections:
+        start = points[conn[0]]
+        end = points[conn[1]]
+        ax.plot([start[0], end[0]], [start[1], end[1]], [start[2], end[2]], 'lightgreen', linestyle='--')
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+
+    ax.view_init(elev = 45, azim = 45)
+    # plt.show()
+    plt.savefig('pg_netlist.png', dpi=300)

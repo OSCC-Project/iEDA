@@ -25,6 +25,7 @@
 #include "GPLYPLayer.hpp"
 #include "GPPath.hpp"
 #include "GPStruct.hpp"
+#include "ViolationType.hpp"
 
 namespace idrc {
 
@@ -41,6 +42,7 @@ class GDSPlotter
   void plot(GPGDS& gp_gds, std::string gds_file_path);
   int32_t getGDSIdxByRouting(int32_t layer_idx);
   int32_t getGDSIdxByCut(int32_t below_layer_idx);
+  GPDataType convertGPDataType(ViolationType violation_type);
   void destroy();
 
  private:

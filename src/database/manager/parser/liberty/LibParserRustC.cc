@@ -37,6 +37,12 @@ namespace ista {
  *
  */
 void RustLibertyExprBuilder::execute() {
+  if (std::string::npos != _expr_str.find('\\')) {
+    // LOG_INFO << "before remove backslash, expr is " << _expr_str;
+    // contain backslash, remove backslash.
+    _expr_str = Str::concateBackSlashStr(_expr_str);
+    // LOG_INFO << "after remove backslash, expr is " << _expr_str;
+  }
   auto* rust_expr_result = rust_parse_expr(_expr_str.c_str());
   _result_expr = rust_convert_expr(rust_expr_result);
 }

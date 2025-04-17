@@ -14,12 +14,22 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "RuleValidator.hpp"
+#pragma once
+
+#include "DRCHeader.hpp"
 
 namespace idrc {
 
-void RuleValidator::verifySameLayerCutSpacing(RVBox& rv_box)
+class RVSummary
 {
-}
+ public:
+  RVSummary() = default;
+  ~RVSummary() = default;
+  std::map<std::string, std::map<std::string, int32_t>> type_statistics_map;
+  int32_t total_correct_num = 0;
+  int32_t total_incorrect_num = 0;
+  int32_t total_missed_num = 0;
+  int32_t total_statistics_num = 0;
+};
 
 }  // namespace idrc

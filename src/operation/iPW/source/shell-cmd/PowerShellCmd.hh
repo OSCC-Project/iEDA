@@ -33,6 +33,8 @@ using ieda::ScriptEngine;
 using ieda::TclCmd;
 using ieda::TclOption;
 using ieda::TclStringOption;
+using ieda::TclIntOption;
+using ieda::TclDoubleOption;
 
 /**
  * @brief set the design workspace.

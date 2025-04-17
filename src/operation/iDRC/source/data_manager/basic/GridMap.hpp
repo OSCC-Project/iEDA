@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Logger.hpp"
 #include "DRCHeader.hpp"
+#include "Logger.hpp"
 
 namespace idrc {
 

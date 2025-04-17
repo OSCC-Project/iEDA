@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
-#include "LayerRect.hpp"
 #include "LayerCoord.hpp"
+#include "LayerRect.hpp"
 #include "PlanarRect.hpp"
 
 namespace idrc {

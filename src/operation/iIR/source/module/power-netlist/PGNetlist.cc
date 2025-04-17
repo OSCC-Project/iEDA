@@ -43,7 +43,7 @@ void IRPGNetlist::printToYaml(std::string yaml_path) {
     const char* node_name = ieda::Str::printf("node_%d", node_id++);
     file << node_name << ":" << "\n";
 
-    file << "  coord: " << "[ " << node.get_coord().first << " "
+    file << "  " << node.get_node_name() << ": " << "[ " << node.get_coord().first << " "
          << node.get_coord().second << " " << node.get_layer_id() << " ]" << "\n";
   }
 
@@ -53,6 +53,7 @@ void IRPGNetlist::printToYaml(std::string yaml_path) {
 
     file << "  node1: " << edge.get_node1() << "\n";
     file << "  node2: " << edge.get_node2() << "\n";
+    file << "  resistance: " << edge.get_resistance() << "\n";
   }
 
   file.close();
@@ -238,7 +239,7 @@ void IRPGNetlistBuilder::build(
     
     auto& pg_edge = pg_netlist.addEdge(via_start_node, via_end_node);
     // TODO(to taosimin), hard code the via resistance, need know the resistance of via.
-    pg_edge.set_resistance(0.001);
+    pg_edge.set_resistance(_c_via_resistance);
   }
   
   unsigned via_edge_num = pg_netlist.getEdgeNum() - line_edge_num;
@@ -304,7 +305,7 @@ void IRPGNetlistBuilder::build(
         // hard code the last instance resistance.
         double random_value = dis(gen);
         // random is to disturbance the value for LU decomposition.
-        pg_edge.set_resistance(10 + random_value);
+        pg_edge.set_resistance(_c_instance_row_resistance + random_value);
       }
 
       if (via_connected_nodes.size() > 0) {
@@ -361,7 +362,7 @@ void IRPGNetlistBuilder::build(
   LOG_INFO << "total edge num: " << pg_netlist.getEdgeNum();
 
   // for debug.
-  // pg_netlist.printToYaml("/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml");
+  pg_netlist.printToYaml("/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml");
 }
 
 /**

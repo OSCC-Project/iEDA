@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
-#include "PlanarRect.hpp"
 #include "DRCHeader.hpp"
+#include "PlanarRect.hpp"
 
 namespace idrc {
 
@@ -63,19 +63,18 @@ class CutLayer
   int32_t _layer_idx = -1;
   int32_t _layer_order = -1;
   std::string _layer_name;
-  // curr prl
+  // prl
   int32_t _curr_spacing = -1;
   int32_t _curr_prl = -1;
   int32_t _curr_prl_spacing = -1;
-  // curr eol
+  // eol
   int32_t _curr_eol_spacing = -1;
   int32_t _curr_eol_prl = -1;
   int32_t _curr_eol_prl_spacing = -1;
-  // above prl
+  // diff layer spacing
   int32_t _above_spacing = -1;
   int32_t _above_prl = -1;
   int32_t _above_prl_spacing = -1;
-  // below prl
   int32_t _below_spacing = -1;
   int32_t _below_prl = -1;
   int32_t _below_prl_spacing = -1;
