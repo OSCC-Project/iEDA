@@ -79,12 +79,16 @@ class IRPGNode {
   void set_is_bump() { _is_bump = true; }
   auto is_bump() const { return _is_bump; }
 
+  void set_is_via() { _is_via = true; }
+  auto is_via() const { return _is_via; }
+
  private:
   IRNodeCoord _coord;  //!< The coord of the node.
   int _layer_id;       //!< The layer id of the node.
   int _node_id = -1; //!< The node id of the pg nodes.
   bool _is_instance_pin = false; //!< The node is instance VDD/GND.
   bool _is_bump = false; //!< The node is bump VDD/GND.
+  bool _is_via = false; //!< The node is via.
   const char* _node_name = nullptr; //!< The name of the node.
 };
 
@@ -158,7 +162,14 @@ class IRPGNetlist {
     auto& one_node = _nodes.emplace_back(coord, layer_id);
     _nodes_image.push_back(&one_node);
     _nodes_map[{coord, layer_id}] = &one_node;
-    one_node.set_node_id(_nodes.size() - 1);
+
+    auto node_id = _nodes.size() - 1;
+    one_node.set_node_id(node_id);
+
+    // set every node one name.
+    _node_id_to_name[node_id] = _net_name + ":" + std::to_string(node_id);
+    one_node.set_node_name(_node_id_to_name[node_id].c_str());
+
     return one_node;
   }
   IRPGNode* findNode(IRNodeCoord coord, int layer_id) {
