@@ -1775,11 +1775,6 @@ std::vector<Violation> PinAccessor::getViolationList(PAModel& pa_model)
         }
       }
     }
-    for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
-      for (Segment<LayerCoord>* segment : segment_set) {
-        net_result_map[net_idx].push_back(segment);
-      }
-    }
     std::set<int32_t> need_checked_net_set;
     for (PANet& pa_net : pa_model.get_pa_net_list()) {
       need_checked_net_set.insert(pa_net.get_net_idx());
