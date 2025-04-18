@@ -40,10 +40,19 @@ namespace iir {
 void IRPGNetlist::printToYaml(std::string yaml_path) {
   std::ofstream file(yaml_path, std::ios::trunc);
   for (unsigned node_id = 0; auto& node : _nodes) {
-    const char* node_name = ieda::Str::printf("node_%d", node_id++);
-    file << node_name << ":" << "\n";
+    const char* node_index = ieda::Str::printf("node_%d", node_id++);
+    file << node_index << ":" << "\n";
 
-    file << "  " << node.get_node_name() << ": " << "[ " << node.get_coord().first << " "
+    std::string node_name = node.get_node_name();
+    if (node.is_via()) {
+      node_name += "_via";
+    }
+
+    if (node.is_bump()) {
+      node_name += "_bump";
+    }
+
+    file << "  " << node_name << ": " << "[ " << node.get_coord().first << " "
          << node.get_coord().second << " " << node.get_layer_id() << " ]" << "\n";
   }
 
@@ -133,7 +142,8 @@ void IRPGNetlistBuilder::build(
     idb::IdbSpecialNet* special_net, idb::IdbPin* io_pin,
     std::function<double(unsigned, unsigned)> calc_resistance) {
   IRPGNetlist& pg_netlist = _pg_netlists.emplace_back();
-  pg_netlist.set_net_name(special_net->get_net_name());
+  auto& special_net_name = special_net->get_net_name();
+  pg_netlist.set_net_name(special_net_name);
 
   unsigned line_segment_num = 0;
   std::vector<BGSegment> bg_segments = buildBGSegments(special_net, line_segment_num);
@@ -226,11 +236,13 @@ void IRPGNetlistBuilder::build(
     auto* via_start_node = pg_netlist.findNode({bg_start.get<0>(), bg_start.get<1>()}, bg_start.get<2>());
     if (!via_start_node) {
       via_start_node = &(pg_netlist.addNode({bg_start.get<0>(), bg_start.get<1>()}, bg_start.get<2>()));
+      via_start_node->set_is_via();
     }
     
     auto* via_end_node = pg_netlist.findNode({bg_end.get<0>(), bg_end.get<1>()}, bg_end.get<2>());
     if (!via_end_node) {
       via_end_node = &(pg_netlist.addNode({bg_end.get<0>(), bg_end.get<1>()}, bg_end.get<2>()));
+      via_end_node->set_is_via();
     }
     
     if (bg_start.get<2>() == instance_pin_layer) {
@@ -362,7 +374,9 @@ void IRPGNetlistBuilder::build(
   LOG_INFO << "total edge num: " << pg_netlist.getEdgeNum();
 
   // for debug.
-  pg_netlist.printToYaml("/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml");
+  // if (special_net_name == "VDD") {
+  //   pg_netlist.printToYaml("/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml");
+  // }
 }
 
 /**

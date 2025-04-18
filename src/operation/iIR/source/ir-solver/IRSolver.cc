@@ -61,14 +61,33 @@ void PrintMatrix(Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
  * 
  * @param v_vector 
  */
-void PrintVector(Eigen::VectorXd& v_vector) {
-  std::ofstream out("/home/taosimin/iEDA24/iEDA/bin/vector.txt",
+void PrintVector(Eigen::VectorXd& v_vector, const std::string& filename) {
+  std::ofstream out(filename,
                     std::ios::trunc);
   for (Eigen::Index i = 0; i < v_vector.size(); ++i) {
     // LOG_INFO << "vector element at (" << i << "): " << v_vector(i);
     out << std::scientific << v_vector(i) << "\n";
   }
   out.close();
+}
+
+/**
+ * @brief print vector to csv for debug.
+ * 
+ * @param data 
+ * @param filename 
+ */
+void writeVectorToCsv(Eigen::VectorXd& data, const std::string& filename) {
+  std::ofstream ofs(filename, std::ios::trunc);
+  if (!ofs.is_open()) {
+      std::cerr << "Failed to open file: " << filename << std::endl;
+      return;
+  }
+  ofs << "index,value\n";  // CSV header
+  for (Eigen::Index i = 0; i < data.size(); ++i) {
+      ofs << i << "," << data(i) << "\n";
+  }
+  ofs.close();
 }
 
 /**
@@ -96,17 +115,23 @@ std::vector<double> IRSolver::operator()(
     LOG_FATAL << "LU solver error " << ret_value;
   }
 
-    // for debug
-  // PrintVector(J_vector);
+  // for debug
+  // PrintVector(J_vector, "/home/taosimin/iEDA24/iEDA/bin/current.txt");
   // PrintMatrix(G_matrix, 0);
 
   Eigen::VectorXd v_vector = solver.solve(J_vector);
+
+  // PrintVector(v_vector, "/home/taosimin/iEDA24/iEDA/bin/voltage.txt");
+  
+  // writeVectorToCsv(J_vector, "/home/taosimin/iEDA24/iEDA/bin/current.csv");
+  // writeVectorToCsv(v_vector, "/home/taosimin/iEDA24/iEDA/bin/voltage.csv");
 
   double voltage_max = v_vector.maxCoeff();
   std::vector<double> ir_drops;
   ir_drops.reserve(node_num);
   for (unsigned i = 0; i < node_num; ++i) {
     double val = v_vector(i);
+    // LOG_INFO << "node " << i << " voltage: " << val;
     ir_drops.push_back(voltage_max - val);
   }
 
