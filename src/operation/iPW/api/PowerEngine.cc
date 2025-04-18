@@ -491,7 +491,7 @@ unsigned PowerEngine::buildPGNetWireTopo() {
         [idb_adapter, dbu](unsigned layer_id, unsigned distance_dbu) -> double {
       std::optional<double> width = std::nullopt;
       double wire_length = double(distance_dbu) / dbu;
-      return idb_adapter->getResistance(layer_id, wire_length, width);
+      return idb_adapter->getResistance(layer_id, wire_length, width) * c_resistance_coef;
     };
 
     auto* io_pins = idb_design->get_io_pin_list();

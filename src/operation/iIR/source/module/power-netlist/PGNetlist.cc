@@ -260,7 +260,7 @@ void IRPGNetlistBuilder::build(
   // Finally, connect the instance pin list and PG Port.
   std::random_device rd; 
   std::mt19937 gen(rd()); 
-  std::uniform_real_distribution<> dis(0.0, 1.0);
+  std::uniform_real_distribution<> dis(0.0, _c_instance_row_resistance * 0.1);
 
   auto instance_pin_list = special_net->get_instance_pin_list()->get_pin_list();
   for (auto* instance_pin : instance_pin_list) {
