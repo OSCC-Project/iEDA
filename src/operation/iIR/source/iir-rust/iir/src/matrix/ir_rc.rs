@@ -9,6 +9,8 @@ use std::io::Write;
 use super::c_str_to_r_str;
 use super::RustIRPGNetlist;
 
+pub const POWER_INNER_RESISTANCE: f64 = 1e-9;
+
 /// RC node of the spef network.
 pub struct RCNode {
     name: String,
@@ -333,7 +335,11 @@ pub fn build_conductance_matrix(rc_one_net_data: &RCOneNetData) -> TriMatI<f64, 
     let resistances = rc_one_net_data.get_resistances();
 
     let matrix_size = nodes.borrow().len();
-    log::info!("matrix size {}", matrix_size);
+    let net_name = rc_one_net_data.get_name();
+    log::info!("{} matrix size {}", net_name, matrix_size);
+
+    let sum_resistance: f64 = resistances.iter().map(|x| x.resistance).sum();
+    log::info!("{} sum resistance {}", net_name, sum_resistance);
 
     let mut g_matrix = TriMat::new((matrix_size, matrix_size));
 
@@ -341,7 +347,7 @@ pub fn build_conductance_matrix(rc_one_net_data: &RCOneNetData) -> TriMatI<f64, 
         if node.get_is_bump() {
             let node_name = node.get_node_name();
             let node_id = rc_one_net_data.get_node_id(node_name).unwrap();
-            g_matrix.add_triplet(node_id, node_id, 1.0 / 1e-9);
+            g_matrix.add_triplet(node_id, node_id, 1.0 / POWER_INNER_RESISTANCE);
         }
     }
 
