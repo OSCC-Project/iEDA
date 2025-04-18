@@ -280,9 +280,9 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
             one_net_data.add_resistance(rc_resistance);
         }
 
-        if net_name_str == "VDD" {
-            one_net_data.print_to_yaml("/home/taosimin/ir_example/aes/pg_netlist/rc_data.yaml");
-        }
+        // if net_name_str == "VDD" {
+        //     one_net_data.print_to_yaml("/home/taosimin/ir_example/aes/pg_netlist/rc_data.yaml");
+        // }
 
         rc_data.add_one_net_data(one_net_data);
     }
