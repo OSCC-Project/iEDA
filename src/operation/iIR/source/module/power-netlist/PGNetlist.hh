@@ -242,10 +242,17 @@ class IRPGNetlistBuilder {
 
   auto* get_rust_rc_data() const { return _rust_rc_data; }
 
+  void set_instance_names(std::set<std::string> instance_names) {
+    _instance_names = std::move(instance_names);
+  }
+  auto& get_instance_names() { return _instance_names; }
+
  private:
   bgi::rtree<BGValue, bgi::quadratic<16>> _rtree;
   double _c_via_resistance = 0.001;
   double _c_instance_row_resistance = 0.0001;
+
+  std::set<std::string> _instance_names; //!< The instance have power.
 
   std::list<IRPGNetlist> _pg_netlists; //!< The builded pg netlist.
   std::vector<const void*> _rust_pg_netlists; //!< The rust pg netlist.
