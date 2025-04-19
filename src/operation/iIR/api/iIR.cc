@@ -94,7 +94,7 @@ unsigned iIR::solveIRDrop(const char* net_name) {
   auto J_vector = ir_matrix.buildCurrentVector(current_rust_map,
                                                one_net_matrix_data.node_num);
 
-  IRSolver ir_solver;
+  IRLUSolver ir_solver;
   auto grid_voltages = ir_solver(G_matrix, J_vector);
 
   std::optional<std::pair<std::string, double>> max_ir_drop;
