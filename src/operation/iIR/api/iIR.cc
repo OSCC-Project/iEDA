@@ -25,6 +25,7 @@
 #include "iIR.hh"
 
 #include <string_view>
+#include <optional>
 
 #include "ir-solver/IRSolver.hh"
 #include "log/Log.hh"
