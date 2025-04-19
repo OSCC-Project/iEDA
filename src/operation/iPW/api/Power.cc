@@ -645,7 +645,13 @@ std::vector<IRInstancePower> Power::getInstancePowerData() {
   IRInstancePower instance_power;
   PwrGroupData* group_data;
   FOREACH_PWR_GROUP_DATA(this, group_data) {
+    // skip net group data.
     if (dynamic_cast<Net*>(group_data->get_obj())) {
+      continue;
+    }
+
+    // skip the instance which power is 0.
+    if (group_data->get_total_power() < 1e-10) {
       continue;
     }
 
@@ -998,7 +1004,7 @@ unsigned Power::runIRAnalysis(std::string power_net_name) {
   CPU_PROF_START(0);
   LOG_INFO << "run IR analysis start";
   // set power data.
-  std::vector<IRInstancePower> instance_power_data =  getInstancePowerData();  
+  std::vector<IRInstancePower> instance_power_data = getInstancePowerData();  
   _ir_analysis.setInstancePowerData(std::move(instance_power_data));
 
   // calc ir drop.
