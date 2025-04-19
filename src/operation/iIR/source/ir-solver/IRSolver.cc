@@ -30,6 +30,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <Eigen/IterativeLinearSolvers>
 
 #include "log/Log.hh"
 
@@ -43,7 +44,8 @@ namespace iir {
  */
 void PrintMatrix(Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
                  Eigen::Index base_index) {
-  std::ofstream out("/home/taosimin/iEDA24/iEDA/bin/matrix.txt", std::ios::trunc);
+  std::ofstream out("/home/taosimin/iEDA24/iEDA/bin/matrix.txt",
+                    std::ios::trunc);
   for (Eigen::Index i = base_index; i < base_index + G_matrix.rows(); ++i) {
     for (Eigen::Index j = base_index; j < base_index + G_matrix.cols(); ++j) {
       // LOG_INFO << "matrix element at (" << i << ", " << j
@@ -58,12 +60,11 @@ void PrintMatrix(Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
 
 /**
  * @brief print vector data for debug.
- * 
- * @param v_vector 
+ *
+ * @param v_vector
  */
 void PrintVector(Eigen::VectorXd& v_vector, const std::string& filename) {
-  std::ofstream out(filename,
-                    std::ios::trunc);
+  std::ofstream out(filename, std::ios::trunc);
   for (Eigen::Index i = 0; i < v_vector.size(); ++i) {
     // LOG_INFO << "vector element at (" << i << "): " << v_vector(i);
     out << std::scientific << v_vector(i) << "\n";
@@ -73,25 +74,45 @@ void PrintVector(Eigen::VectorXd& v_vector, const std::string& filename) {
 
 /**
  * @brief print vector to csv for debug.
- * 
- * @param data 
- * @param filename 
+ *
+ * @param data
+ * @param filename
  */
 void writeVectorToCsv(Eigen::VectorXd& data, const std::string& filename) {
   std::ofstream ofs(filename, std::ios::trunc);
   if (!ofs.is_open()) {
-      std::cerr << "Failed to open file: " << filename << std::endl;
-      return;
+    std::cerr << "Failed to open file: " << filename << std::endl;
+    return;
   }
   ofs << "index,value\n";  // CSV header
   for (Eigen::Index i = 0; i < data.size(); ++i) {
-      ofs << i << "," << data(i) << "\n";
+    ofs << i << "," << data(i) << "\n";
   }
   ofs.close();
 }
 
 /**
- * @brief solver the ir drop.
+ * @brief get the ir drop from voltage vector.
+ *
+ * @param v_vector
+ * @return std::vector<double>
+ */
+std::vector<double> IRSolver::getIRDrop(Eigen::VectorXd& v_vector) {
+  double voltage_max = v_vector.maxCoeff();
+  auto node_num = v_vector.size();
+  std::vector<double> ir_drops;
+  ir_drops.reserve(node_num);
+  for (unsigned i = 0; i < node_num; ++i) {
+    double val = v_vector(i);
+    LOG_INFO << "node " << i << " voltage: " << val;
+    ir_drops.push_back(voltage_max - val);
+  }
+
+  return ir_drops;
+}
+
+/**
+ * @brief solver the ir drop use LU decomposition.
  *
  * @param G_matrix
  * @param J_vector
@@ -100,8 +121,6 @@ void writeVectorToCsv(Eigen::VectorXd& data, const std::string& filename) {
 std::vector<double> IRLUSolver::operator()(
     Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
     Eigen::VectorXd& J_vector) {
-  unsigned node_num = J_vector.size();
-
   Eigen::SimplicialLLT<Eigen::SparseMatrix<double>> solver;
   // solver.analyzePattern(G_matrix);
   // solver.factorize(G_matrix);
@@ -122,18 +141,45 @@ std::vector<double> IRLUSolver::operator()(
   Eigen::VectorXd v_vector = solver.solve(J_vector);
 
   PrintVector(v_vector, "/home/taosimin/iEDA24/iEDA/bin/voltage.txt");
-  
+
   // writeVectorToCsv(J_vector, "/home/taosimin/iEDA24/iEDA/bin/current.csv");
   // writeVectorToCsv(v_vector, "/home/taosimin/iEDA24/iEDA/bin/voltage.csv");
 
-  double voltage_max = v_vector.maxCoeff();
-  std::vector<double> ir_drops;
-  ir_drops.reserve(node_num);
-  for (unsigned i = 0; i < node_num; ++i) {
-    double val = v_vector(i);
-    LOG_INFO << "node " << i << " voltage: " << val;
-    ir_drops.push_back(voltage_max - val);
-  }
+  auto ir_drops = getIRDrop(v_vector);
+
+  return ir_drops;
+}
+
+/**
+ * @brief solver the ir drop use CG gradient.
+ *
+ * @param G_matrix
+ * @param J_vector
+ * @return std::vector<double>
+ */
+std::vector<double> IRCGSolver::operator()(
+    Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
+    Eigen::VectorXd& J_vector) {
+
+  Eigen::SparseMatrix<double> A = G_matrix;
+  Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,
+                           Eigen::Lower | Eigen::Upper>
+      cg;
+  cg.compute(A);
+  cg.setTolerance(1e-10);
+  cg.setMaxIterations(1000);
+  
+  Eigen::VectorXd X0 = Eigen::VectorXd::Constant(J_vector.size(), _nominal_voltage);
+  Eigen::VectorXd v_vector = cg.solveWithGuess(J_vector, X0);
+
+  LOG_INFO << "X:\n" << v_vector << std::endl;
+  LOG_INFO << "iteration num: " << cg.iterations() << std::endl;
+  LOG_INFO << "error: " << cg.error() << std::endl;
+
+  Eigen::VectorXd residual = G_matrix * v_vector - J_vector;
+  LOG_INFO << "residual norm: " << residual.norm() << std::endl;
+
+  auto ir_drops = getIRDrop(v_vector);
 
   return ir_drops;
 }
