@@ -53,6 +53,6 @@ macro(ADD_CUDA_PROJ proj_name)
                              PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
   target_compile_options(${lib_name}
                          PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:${NVCC_FLAGS}>)
-  target_link_libraries(${lib_name} PRIVATE CUDA::cudart)
+  target_link_libraries(${lib_name} PRIVATE CUDA::cudart CUDA::cusparse CUDA::cublas CUDA::cusolver)
 
 endmacro()
