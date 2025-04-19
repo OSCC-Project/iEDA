@@ -33,28 +33,47 @@
 
 namespace iir {
 
-void PrintMatrix(Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix, Eigen::Index base_index); 
+void PrintMatrix(Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
+                 Eigen::Index base_index);
 
 /**
  * @brief The static IR solver to solve AX=b.
- * 
+ *
  */
 class IRSolver {
  public:
   virtual std::vector<double> operator()(
       Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
       Eigen::VectorXd& J_vector) = 0;
+
+  std::vector<double> getIRDrop(Eigen::VectorXd& v_vector);
 };
 
 /**
  * @brief The solver use LU decomposition to solve AX=b.
- * 
+ *
  */
 class IRLUSolver : public IRSolver {
-    public:
-    std::vector<double> operator()(
-        Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
-        Eigen::VectorXd& J_vector) override;
+ public:
+  std::vector<double> operator()(
+      Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
+      Eigen::VectorXd& J_vector) override;
+};
+
+/**
+ * @brief The solver use CG gradient to solver AX=b.
+ *
+ */
+class IRCGSolver : public IRSolver {
+ public:
+ IRCGSolver(double nominal_voltage) : _nominal_voltage(nominal_voltage) {}
+ ~IRCGSolver() = default;
+  std::vector<double> operator()(
+      Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
+      Eigen::VectorXd& J_vector) override;
+
+  private:
+  double _nominal_voltage = 0.0;
 };
 
 }  // namespace iir
