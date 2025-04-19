@@ -167,9 +167,9 @@ std::vector<double> IRCGSolver::operator()(
       cg;
   cg.compute(A);
   cg.setTolerance(1e-10);
-  cg.setMaxIterations(1000);
+  cg.setMaxIterations(10000);
   
-  Eigen::VectorXd X0 = Eigen::VectorXd::Constant(J_vector.size(), _nominal_voltage);
+  Eigen::VectorXd X0 = Eigen::VectorXd::Constant(J_vector.size(), _nominal_voltage * 0.9);
   Eigen::VectorXd v_vector = cg.solveWithGuess(J_vector, X0);
 
   LOG_INFO << "X:\n" << v_vector << std::endl;
