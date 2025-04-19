@@ -18,8 +18,8 @@
 
 #include "ConnectType.hpp"
 #include "Net.hpp"
-#include "Pin.hpp"
 #include "PPPin.hpp"
+#include "Pin.hpp"
 
 namespace irt {
 

@@ -18,9 +18,9 @@
 
 #include "Direction.hpp"
 #include "LayerCoord.hpp"
+#include "PPObsType.hpp"
 #include "RTHeader.hpp"
 #include "Utility.hpp"
-#include "PPObsType.hpp"
 
 namespace irt {
 

@@ -532,7 +532,7 @@ std::vector<PPSolution> PinPatcher::getSolution(PPBox& pp_box)
   }
   std::vector<PPPatch> pp_patch_list;
   {
-    int32_t h_wire_length = (min_area - v_cutting_rect.getArea()) / wire_width + v_cutting_rect.getXSpan();
+    int32_t h_wire_length = static_cast<int32_t>(std::ceil((min_area - v_cutting_rect.getArea()) / wire_width) + v_cutting_rect.getXSpan());
     while (h_wire_length % manufacture_grid != 0) {
       h_wire_length++;
     }
@@ -545,7 +545,7 @@ std::vector<PPSolution> PinPatcher::getSolution(PPBox& pp_box)
         pp_patch_list.emplace_back(h_real_rect, violation_layer_idx);
       }
     }
-    int32_t v_wire_length = (min_area - h_cutting_rect.getArea()) / wire_width + h_cutting_rect.getYSpan();
+    int32_t v_wire_length = static_cast<int32_t>(std::ceil((min_area - h_cutting_rect.getArea()) / wire_width) + h_cutting_rect.getYSpan());
     while (v_wire_length % manufacture_grid != 0) {
       v_wire_length++;
     }
@@ -562,7 +562,7 @@ std::vector<PPSolution> PinPatcher::getSolution(PPBox& pp_box)
       EXTLayerRect& patch = pp_patch.get_patch();
       patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(patch.get_real_rect(), gcell_axis));
       pp_patch.set_direction(patch.get_real_rect().getRectDirection(layer_direction));
-      pp_patch.set_overlap_area(gtl::area(gtl_poly & RTUTIL.convertToGTLRectInt(patch.get_real_rect())));
+      pp_patch.set_overlap_area(static_cast<int32_t>(gtl::area(gtl_poly & RTUTIL.convertToGTLRectInt(patch.get_real_rect()))));
       pp_patch.set_env_cost(getEnvCost(pp_box, curr_net_idx, patch));
     }
     std::sort(pp_patch_list.begin(), pp_patch_list.end(), [&layer_direction](PPPatch& a, PPPatch& b) { return CmpPPPatch()(a, b, layer_direction); });
@@ -1386,10 +1386,7 @@ void PinPatcher::debugPlotPPModel(PPModel& pp_model, std::string flag)
   // violation
   {
     for (Violation* violation : RTDM.getViolationSet(die)) {
-      if (violation->get_violation_net_set().size() >= 2) {
-        continue;
-      }
-      GPStruct within_net_violation_struct(RTUTIL.getString("within_net_violation_", GetViolationTypeName()(violation->get_violation_type())));
+      GPStruct violation_struct(RTUTIL.getString("violation_", GetViolationTypeName()(violation->get_violation_type())));
       EXTLayerRect& violation_shape = violation->get_violation_shape();
 
       GPBoundary gp_boundary;
@@ -1400,26 +1397,8 @@ void PinPatcher::debugPlotPPModel(PPModel& pp_model, std::string flag)
       } else {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(violation_shape.get_layer_idx()));
       }
-      within_net_violation_struct.push(gp_boundary);
-      gp_gds.addStruct(within_net_violation_struct);
-    }
-    for (Violation* violation : RTDM.getViolationSet(die)) {
-      if (violation->get_violation_net_set().size() < 2) {
-        continue;
-      }
-      GPStruct among_net_violation_struct(RTUTIL.getString("among_net_violation_", GetViolationTypeName()(violation->get_violation_type())));
-      EXTLayerRect& violation_shape = violation->get_violation_shape();
-
-      GPBoundary gp_boundary;
-      gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kViolation));
-      gp_boundary.set_rect(violation_shape.get_real_rect());
-      if (violation->get_is_routing()) {
-        gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(violation_shape.get_layer_idx()));
-      } else {
-        gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(violation_shape.get_layer_idx()));
-      }
-      among_net_violation_struct.push(gp_boundary);
-      gp_gds.addStruct(among_net_violation_struct);
+      violation_struct.push(gp_boundary);
+      gp_gds.addStruct(violation_struct);
     }
   }
 
@@ -1613,11 +1592,8 @@ void PinPatcher::debugPlotPPBox(PPBox& pp_box, std::string flag)
 
   // violation
   {
-    for (Violation& violation : pp_box.get_curr_violation_list()) {
-      if (violation.get_violation_net_set().size() >= 2) {
-        continue;
-      }
-      GPStruct within_net_violation_struct(RTUTIL.getString("within_net_violation_", GetViolationTypeName()(violation.get_violation_type())));
+    for (Violation& violation : pp_box.get_violation_list()) {
+      GPStruct violation_struct(RTUTIL.getString("violation_", GetViolationTypeName()(violation.get_violation_type())));
       EXTLayerRect& violation_shape = violation.get_violation_shape();
 
       GPBoundary gp_boundary;
@@ -1628,14 +1604,12 @@ void PinPatcher::debugPlotPPBox(PPBox& pp_box, std::string flag)
       } else {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(violation_shape.get_layer_idx()));
       }
-      within_net_violation_struct.push(gp_boundary);
-      gp_gds.addStruct(within_net_violation_struct);
+      violation_struct.push(gp_boundary);
+      gp_gds.addStruct(violation_struct);
     }
+
     for (Violation& violation : pp_box.get_curr_violation_list()) {
-      if (violation.get_violation_net_set().size() < 2) {
-        continue;
-      }
-      GPStruct among_net_violation_struct(RTUTIL.getString("among_net_violation_", GetViolationTypeName()(violation.get_violation_type())));
+      GPStruct violation_struct(RTUTIL.getString("curr_violation_", GetViolationTypeName()(violation.get_violation_type())));
       EXTLayerRect& violation_shape = violation.get_violation_shape();
 
       GPBoundary gp_boundary;
@@ -1646,8 +1620,8 @@ void PinPatcher::debugPlotPPBox(PPBox& pp_box, std::string flag)
       } else {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(violation_shape.get_layer_idx()));
       }
-      among_net_violation_struct.push(gp_boundary);
-      gp_gds.addStruct(among_net_violation_struct);
+      violation_struct.push(gp_boundary);
+      gp_gds.addStruct(violation_struct);
     }
   }
 

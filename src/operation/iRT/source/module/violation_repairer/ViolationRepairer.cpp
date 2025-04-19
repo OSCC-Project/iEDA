@@ -1084,7 +1084,7 @@ std::vector<VRSolution> ViolationRepairer::routeByMinimumArea(VRBox& vr_box)
     int32_t wire_width = routing_layer.get_min_width();
     int32_t min_area = routing_layer.get_min_area();
 
-    int32_t require_area = min_area - gtl::area(gtl_min_area_poly_set);
+    int32_t require_area = static_cast<int32_t>(min_area - gtl::area(gtl_min_area_poly_set));
     int32_t require_length = (require_area + routing_layer.get_min_width() - 1) / routing_layer.get_min_width();
     if (require_area < 0) {
       return {};  // 理论上不会出现这种情况
@@ -1225,7 +1225,7 @@ std::vector<VRSolution> ViolationRepairer::routeByMinimumArea(VRBox& vr_box)
       GTLPolySetInt patched_poly = gtl_min_area_poly_set;
       bool inside = true;
       for (EXTLayerRect& patch : patch_list) {
-                gtl_min_area_poly_set += RTUTIL.convertToGTLRectInt(patch.get_real_rect());
+        gtl_min_area_poly_set += RTUTIL.convertToGTLRectInt(patch.get_real_rect());
         if (!RTUTIL.isInside(vr_box.get_box_rect().get_real_rect(), patch.get_real_rect()) || patch.get_real_rect().get_ll_x() % manufacture_grid != 0
             || patch.get_real_rect().get_ll_y() % manufacture_grid != 0 || patch.get_real_rect().get_ur_x() % manufacture_grid != 0
             || patch.get_real_rect().get_ur_y() % manufacture_grid != 0) {
