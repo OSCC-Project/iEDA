@@ -33,6 +33,9 @@
 #include <Eigen/IterativeLinearSolvers>
 
 #include "log/Log.hh"
+#if CUDA_IR_SOLVER
+  #include "ir-solver-cuda/ir_solver.cuh"
+#endif
 
 namespace iir {
 
@@ -160,14 +163,14 @@ std::vector<double> IRLUSolver::operator()(
 std::vector<double> IRCGSolver::operator()(
     Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
     Eigen::VectorXd& J_vector) {
-
+#if !CUDA_IR_SOLVER
   Eigen::SparseMatrix<double> A = G_matrix;
   Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,
                            Eigen::Lower | Eigen::Upper>
       cg;
   cg.compute(A);
-  cg.setTolerance(1e-10);
-  cg.setMaxIterations(10000);
+  cg.setTolerance(_tolerance);
+  cg.setMaxIterations(_max_iteration);
   
   Eigen::VectorXd X0 = Eigen::VectorXd::Constant(J_vector.size(), _nominal_voltage * 0.9);
   Eigen::VectorXd v_vector = cg.solveWithGuess(J_vector, X0);
@@ -175,6 +178,17 @@ std::vector<double> IRCGSolver::operator()(
   LOG_INFO << "X:\n" << v_vector << std::endl;
   LOG_INFO << "iteration num: " << cg.iterations() << std::endl;
   LOG_INFO << "error: " << cg.error() << std::endl;
+
+
+# else
+  Eigen::SparseMatrix<double> A = G_matrix;
+  Eigen::VectorXd X0 = Eigen::VectorXd::Constant(J_vector.size(), _nominal_voltage * 0.9);
+  auto X = ir_cg_solver(A, J_vector, X0, _tolerance, _max_iteration);
+  Eigen::VectorXd v_vector(X.size());
+  for(auto i = 0; i < X.size(); ++i) {
+    v_vector(i) = X[i];
+  }
+#endif
 
   Eigen::VectorXd residual = G_matrix * v_vector - J_vector;
   LOG_INFO << "residual norm: " << residual.norm() << std::endl;

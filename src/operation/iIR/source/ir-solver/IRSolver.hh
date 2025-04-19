@@ -74,6 +74,9 @@ class IRCGSolver : public IRSolver {
 
   private:
   double _nominal_voltage = 0.0;
+
+  double _tolerance = 1e-10;
+  int _max_iteration = 10000;
 };
 
 }  // namespace iir
