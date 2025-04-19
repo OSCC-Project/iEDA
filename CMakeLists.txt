@@ -86,6 +86,7 @@ if(BUILD_GUI)
     add_definitions(-DBUILD_GUI)
 endif()
 
+set(USE_GPU ON)
 if (USE_GPU)
     add_definitions(-DUSE_GPU)
     include(cmake/cuda.cmake)
