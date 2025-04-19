@@ -18,6 +18,7 @@
 
 #include "DRCEngine.hpp"
 #include "GDSPlotter.hpp"
+#include "PPPatch.hpp"
 #include "RTInterface.hpp"
 #include "Utility.hpp"
 
@@ -177,18 +178,17 @@ void PinPatcher::iterativePPModel(PPModel& pp_model)
   double via_unit = cost_unit;
   double fixed_rect_unit = 4 * non_prefer_wire_unit * cost_unit;
   double routed_rect_unit = 2 * via_unit;
-  double violation_unit = 4 * non_prefer_wire_unit * cost_unit;
   /**
-   * size, offset, schedule_interval, fixed_rect_unit, routed_rect_unit, violation_unit
+   * size, offset, schedule_interval, fixed_rect_unit, routed_rect_unit
    */
   std::vector<PPIterParam> pp_iter_param_list;
   // clang-format off
-  pp_iter_param_list.emplace_back(3, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit);
-  pp_iter_param_list.emplace_back(3, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit);
-  pp_iter_param_list.emplace_back(3, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit);
-  pp_iter_param_list.emplace_back(3, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit);
-  pp_iter_param_list.emplace_back(3, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit);
-  pp_iter_param_list.emplace_back(3, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit);
+  pp_iter_param_list.emplace_back(3, 0, 3, fixed_rect_unit, routed_rect_unit);
+  pp_iter_param_list.emplace_back(3, 1, 3, fixed_rect_unit, routed_rect_unit);
+  pp_iter_param_list.emplace_back(3, 2, 3, fixed_rect_unit, routed_rect_unit);
+  pp_iter_param_list.emplace_back(3, 0, 3, fixed_rect_unit, routed_rect_unit);
+  pp_iter_param_list.emplace_back(3, 1, 3, fixed_rect_unit, routed_rect_unit);
+  pp_iter_param_list.emplace_back(3, 2, 3, fixed_rect_unit, routed_rect_unit);
   // clang-format on
   for (int32_t i = 0, iter = 1; i < static_cast<int32_t>(pp_iter_param_list.size()); i++, iter++) {
     Monitor iter_monitor;
@@ -200,7 +200,7 @@ void PinPatcher::iterativePPModel(PPModel& pp_model)
     buildBoxSchedule(pp_model);
     // debugPlotPPModel(pp_model, "middle");
     routePPBoxMap(pp_model);
-    uploadNetPatch(pp_model);
+    uploadAccessPatch(pp_model);
     uploadViolation(pp_model);
     // debugPlotPPModel(pp_model, "after");
     updateSummary(pp_model);
@@ -312,21 +312,19 @@ void PinPatcher::routePPBoxMap(PPModel& pp_model)
       PPBox& pp_box = pp_box_map[pp_box_id.get_x()][pp_box_id.get_y()];
       buildFixedRect(pp_box);
       buildAccessResult(pp_box);
+      buildAccessPatch(pp_box);
       buildViolation(pp_box);
-      initNetIdxSet(pp_box);
-      buildNetPatch(pp_box);
       if (needRouting(pp_box)) {
         buildGraphShapeMap(pp_box);
         // debugCheckPPBox(pp_box);
         routePPBox(pp_box);
       }
-      uploadNetPatch(pp_box);
-      uploadViolation(pp_box);
+      uploadAccessPatch(pp_box);
       freePPBox(pp_box);
     }
     routed_box_num += pp_box_id_list.size();
-    RTLOG.info(Loc::current(), "Routed ", routed_box_num, "/", total_box_num, "(", RTUTIL.getPercentage(routed_box_num, total_box_num), ") boxes with ",
-               getViolationNum(pp_model), " violations", stage_monitor.getStatsInfo());
+    RTLOG.info(Loc::current(), "Routed ", routed_box_num, "/", total_box_num, "(", RTUTIL.getPercentage(routed_box_num, total_box_num), ")",
+               stage_monitor.getStatsInfo());
   }
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -342,56 +340,43 @@ void PinPatcher::buildAccessResult(PPBox& pp_box)
   pp_box.set_net_pin_access_result_map(RTDM.getNetPinAccessResultMap(pp_box.get_box_rect()));
 }
 
+void PinPatcher::buildAccessPatch(PPBox& pp_box)
+{
+  pp_box.set_net_access_patch_map(RTDM.getNetAccessPatchMap(pp_box.get_box_rect()));
+}
+
 void PinPatcher::buildViolation(PPBox& pp_box)
 {
-  PlanarRect& box_real_rect = pp_box.get_box_rect().get_real_rect();
-  std::vector<Violation>& violation_list = pp_box.get_violation_list();
-
-  for (Violation* violation : RTDM.getViolationSet(pp_box.get_box_rect())) {
-    if (!RTUTIL.isInside(box_real_rect, violation->get_violation_shape().get_real_rect())) {
-      continue;
-    }
-    violation_list.push_back(*violation);
-    RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
-  }
-}
-
-void PinPatcher::initNetIdxSet(PPBox& pp_box)
-{
-  std::vector<Violation>& violation_list = pp_box.get_violation_list();
-  std::set<int32_t>& net_idx_set = pp_box.get_net_idx_set();
-
-  for (Violation& violation : violation_list) {
-    if (violation.get_violation_type() != ViolationType::kMinimumArea) {
-      continue;
-    }
-    net_idx_set.insert(*violation.get_violation_net_set().begin());
-  }
-}
-
-void PinPatcher::buildNetPatch(PPBox& pp_box)
-{
-  PlanarRect& box_real_rect = pp_box.get_box_rect().get_real_rect();
-  std::set<int32_t>& net_idx_set = pp_box.get_net_idx_set();
-
-  for (auto& [net_idx, patch_set] : RTDM.getNetAccessPatchMap(pp_box.get_box_rect())) {
-    for (EXTLayerRect* patch : patch_set) {
-      if (RTUTIL.exist(net_idx_set, net_idx) && RTUTIL.isInside(box_real_rect, patch->get_real_rect())) {
-        pp_box.get_net_task_access_patch_map()[net_idx].push_back(*patch);
-        RTDM.updateNetAccessPatchToGCellMap(ChangeType::kDel, net_idx, patch);
-      } else {
-        pp_box.get_net_access_patch_map()[net_idx].insert(patch);
-      }
-    }
-  }
+  pp_box.set_violation_list(getViolationList(pp_box));
 }
 
 bool PinPatcher::needRouting(PPBox& pp_box)
 {
-  if (pp_box.get_net_idx_set().empty()) {
+  int32_t valid_violation_num = 0;
+  for (Violation& violation : pp_box.get_violation_list()) {
+    if (!isValid(pp_box, violation)) {
+      continue;
+    }
+    valid_violation_num++;
+  }
+  if (valid_violation_num == 0) {
     return false;
   }
   return true;
+}
+
+bool PinPatcher::isValid(PPBox& pp_box, Violation& violation)
+{
+  PlanarRect& box_real_rect = pp_box.get_box_rect().get_real_rect();
+
+  bool is_valid = true;
+  if (!RTUTIL.isInside(box_real_rect, violation.get_violation_shape().get_real_rect())) {
+    is_valid = false;
+  }
+  if (violation.get_violation_type() != ViolationType::kMinimumArea) {
+    is_valid = false;
+  }
+  return is_valid;
 }
 
 void PinPatcher::buildGraphShapeMap(PPBox& pp_box)
@@ -416,14 +401,6 @@ void PinPatcher::buildGraphShapeMap(PPBox& pp_box)
     for (EXTLayerRect* patch : patch_set) {
       updateFixedRectToGraph(pp_box, ChangeType::kAdd, net_idx, patch, true);
     }
-  }
-  for (auto& [net_idx, patch_list] : pp_box.get_net_task_access_patch_map()) {
-    for (EXTLayerRect& patch : patch_list) {
-      updateRoutedRectToGraph(pp_box, ChangeType::kAdd, net_idx, patch);
-    }
-  }
-  for (Violation& violation : pp_box.get_violation_list()) {
-    addViolationToGraph(pp_box, violation);
   }
 }
 
@@ -452,20 +429,14 @@ void PinPatcher::routePPBox(PPBox& pp_box)
 
 void PinPatcher::initSingleTask(PPBox& pp_box)
 {
-  std::set<int32_t>& net_idx_set = pp_box.get_net_idx_set();
-  std::vector<Violation>& violation_list = pp_box.get_violation_list();
-
-  for (Violation& violation : violation_list) {
-    if (violation.get_violation_type() != ViolationType::kMinimumArea) {
+  for (Violation& violation : pp_box.get_violation_list()) {
+    if (!isValid(pp_box, violation)) {
       continue;
     }
     if (RTUTIL.exist(pp_box.get_tried_fix_violation_set(), violation)) {
       continue;
     }
     int32_t net_idx = *violation.get_violation_net_set().begin();
-    if (!RTUTIL.exist(net_idx_set, net_idx)) {
-      RTLOG.error(Loc::current(), "The net_idx not in net_idx_set!");
-    }
     pp_box.set_curr_net_idx(net_idx);
     pp_box.set_curr_violation(violation);
     pp_box.set_curr_routing_patch_list(pp_box.get_net_task_access_patch_map()[net_idx]);
@@ -486,9 +457,9 @@ std::vector<PPSolution> PinPatcher::getSolution(PPBox& pp_box)
   int32_t violation_layer_idx = violation_shape.get_layer_idx();
 
   RoutingLayer& routing_layer = routing_layer_list[violation_layer_idx];
+  Direction layer_direction = routing_layer.get_prefer_direction();
   int32_t min_area = routing_layer.get_min_area();
-  int32_t min_width = routing_layer.get_min_width();
-  int32_t half_wire_width = min_width / 2;
+  int32_t wire_width = routing_layer.get_min_width();
 
   GTLPolyInt gtl_poly;
   {
@@ -529,7 +500,7 @@ std::vector<PPSolution> PinPatcher::getSolution(PPBox& pp_box)
     }
     gtl_poly = gtl_poly_list.front();
   }
-  PlanarRect h_rect;
+  PlanarRect h_cutting_rect;
   {
     std::vector<GTLRectInt> gtl_rect_list;
     gtl::get_rectangles(gtl_rect_list, gtl_poly, gtl::HORIZONTAL);
@@ -542,9 +513,9 @@ std::vector<PPSolution> PinPatcher::getSolution(PPBox& pp_box)
         best_gtl_rect = gtl_rect;
       }
     }
-    h_rect = RTUTIL.convertToPlanarRect(best_gtl_rect);
+    h_cutting_rect = RTUTIL.convertToPlanarRect(best_gtl_rect);
   }
-  PlanarRect v_rect;
+  PlanarRect v_cutting_rect;
   {
     std::vector<GTLRectInt> gtl_rect_list;
     gtl::get_rectangles(gtl_rect_list, gtl_poly, gtl::VERTICAL);
@@ -557,61 +528,53 @@ std::vector<PPSolution> PinPatcher::getSolution(PPBox& pp_box)
         best_gtl_rect = gtl_rect;
       }
     }
-    v_rect = RTUTIL.convertToPlanarRect(best_gtl_rect);
+    v_cutting_rect = RTUTIL.convertToPlanarRect(best_gtl_rect);
   }
-  std::vector<EXTLayerRect> h_patch_list;
+  std::vector<PPPatch> pp_patch_list;
   {
-    int32_t half_wire_length = ((min_area - v_rect.getArea()) / min_width + v_rect.getXSpan()) / 2;
-    for (int32_t y : {h_rect.getMidPoint().get_y(), v_rect.get_ll_y() + half_wire_width, v_rect.get_ur_y() - half_wire_width}) {
-      for (int32_t x = v_rect.get_ur_x() - half_wire_length; x <= v_rect.get_ll_x() + half_wire_length; x += manufacture_grid) {
-        EXTLayerRect patch;
-        patch.set_real_rect(RTUTIL.getEnlargedRect(PlanarCoord(x, y), half_wire_length, half_wire_width, half_wire_length, half_wire_width));
-        if (!RTUTIL.isInside(die.get_real_rect(), patch.get_real_rect())) {
+    int32_t h_wire_length = (min_area - v_cutting_rect.getArea()) / wire_width + v_cutting_rect.getXSpan();
+    while (h_wire_length % manufacture_grid != 0) {
+      h_wire_length++;
+    }
+    for (int32_t y : {h_cutting_rect.get_ll_y(), v_cutting_rect.get_ll_y(), v_cutting_rect.get_ur_y() - wire_width}) {
+      for (int32_t x = v_cutting_rect.get_ur_x() - h_wire_length; x <= v_cutting_rect.get_ll_x(); x += manufacture_grid) {
+        PlanarRect h_real_rect = RTUTIL.getEnlargedRect(PlanarCoord(x, y), 0, 0, h_wire_length, wire_width);
+        if (!RTUTIL.isInside(die.get_real_rect(), h_real_rect)) {
           continue;
         }
-        patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(patch.get_real_rect(), gcell_axis));
-        patch.set_layer_idx(violation_layer_idx);
-        h_patch_list.push_back(patch);
+        pp_patch_list.emplace_back(h_real_rect, violation_layer_idx);
       }
     }
-  }
-  std::vector<EXTLayerRect> v_patch_list;
-  {
-    int32_t half_wire_length = ((min_area - h_rect.getArea()) / routing_layer.get_min_width() + h_rect.getYSpan()) / 2;
-    for (int32_t x : {v_rect.getMidPoint().get_x(), h_rect.get_ll_x() + (half_wire_width), h_rect.get_ur_x() - (half_wire_width)}) {
-      for (int32_t y = h_rect.get_ur_y() - half_wire_length; y <= h_rect.get_ll_y() + half_wire_length; y += manufacture_grid) {
-        EXTLayerRect patch;
-        patch.set_real_rect(RTUTIL.getEnlargedRect(PlanarCoord(x, y), half_wire_length, half_wire_width, half_wire_length, half_wire_width));
-        if (!RTUTIL.isInside(die.get_real_rect(), patch.get_real_rect())) {
+    int32_t v_wire_length = (min_area - h_cutting_rect.getArea()) / wire_width + h_cutting_rect.getYSpan();
+    while (v_wire_length % manufacture_grid != 0) {
+      v_wire_length++;
+    }
+    for (int32_t x : {v_cutting_rect.get_ll_x(), h_cutting_rect.get_ll_x(), h_cutting_rect.get_ur_x() - wire_width}) {
+      for (int32_t y = h_cutting_rect.get_ur_y() - v_wire_length; y <= h_cutting_rect.get_ll_y(); y += manufacture_grid) {
+        PlanarRect v_real_rect = RTUTIL.getEnlargedRect(PlanarCoord(x, y), 0, 0, wire_width, v_wire_length);
+        if (!RTUTIL.isInside(die.get_real_rect(), v_real_rect)) {
           continue;
         }
-        patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(patch.get_real_rect(), gcell_axis));
-        patch.set_layer_idx(violation_layer_idx);
-        h_patch_list.push_back(patch);
+        pp_patch_list.emplace_back(v_real_rect, violation_layer_idx);
       }
     }
-  }
-  std::map<double, std::vector<EXTLayerRect>> env_cost_real_patch_map;
-  {
-    std::vector<EXTLayerRect> patch_list;
-    if (routing_layer_list[violation_layer_idx].isPreferH()) {
-      patch_list.insert(patch_list.end(), h_patch_list.begin(), h_patch_list.end());
-      patch_list.insert(patch_list.end(), v_patch_list.begin(), v_patch_list.end());
-    } else {
-      patch_list.insert(patch_list.end(), v_patch_list.begin(), v_patch_list.end());
-      patch_list.insert(patch_list.end(), h_patch_list.begin(), h_patch_list.end());
+    for (PPPatch& pp_patch : pp_patch_list) {
+      EXTLayerRect& patch = pp_patch.get_patch();
+      patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(patch.get_real_rect(), gcell_axis));
+      pp_patch.set_direction(patch.get_real_rect().getRectDirection(layer_direction));
+      pp_patch.set_overlap_area(gtl::area(gtl_poly & RTUTIL.convertToGTLRectInt(patch.get_real_rect())));
+      pp_patch.set_env_cost(getEnvCost(pp_box, curr_net_idx, patch));
     }
-    for (EXTLayerRect& patch : patch_list) {
-      env_cost_real_patch_map[getEnvCost(pp_box, curr_net_idx, patch)].push_back(patch);
-    }
+    std::sort(pp_patch_list.begin(), pp_patch_list.end(), [&layer_direction](PPPatch& a, PPPatch& b) { return CmpPPPatch()(a, b, layer_direction); });
   }
   std::vector<PPSolution> pp_solution_list;
-  if (!env_cost_real_patch_map.empty()) {
-    for (EXTLayerRect& patch : env_cost_real_patch_map.begin()->second) {
-      PPSolution pp_solution = getNewSolution(pp_box);
-      pp_solution.get_routing_patch_list().push_back(patch);
-      pp_solution_list.push_back(pp_solution);
+  for (PPPatch& pp_patch : pp_patch_list) {
+    if (pp_patch.get_env_cost() > 0) {
+      continue;
     }
+    PPSolution pp_solution = getNewSolution(pp_box);
+    pp_solution.get_routing_patch_list().push_back(pp_patch.get_patch());
+    pp_solution_list.push_back(pp_solution);
   }
   return pp_solution_list;
 }
@@ -625,16 +588,8 @@ PPSolution PinPatcher::getNewSolution(PPBox& pp_box)
 
 void PinPatcher::updateCurrViolationList(PPBox& pp_box, PPSolution& pp_solution)
 {
-  PlanarRect& box_real_rect = pp_box.get_box_rect().get_real_rect();
-
   pp_box.set_curr_routing_patch_list(pp_solution.get_routing_patch_list());
-  pp_box.get_curr_violation_list().clear();
-  for (Violation& violation : getViolationList(pp_box)) {
-    if (!RTUTIL.isInside(box_real_rect, violation.get_violation_shape().get_real_rect())) {
-      continue;
-    }
-    pp_box.get_curr_violation_list().push_back(violation);
-  }
+  pp_box.set_curr_violation_list(getViolationList(pp_box));
 }
 
 std::vector<Violation> PinPatcher::getViolationList(PPBox& pp_box)
@@ -683,7 +638,13 @@ std::vector<Violation> PinPatcher::getViolationList(PPBox& pp_box)
     }
   }
   std::set<int32_t> need_checked_net_set;
-  for (int32_t net_idx : pp_box.get_net_idx_set()) {
+  for (auto& [net_idx, pin_shape_list] : net_pin_shape_map) {
+    need_checked_net_set.insert(net_idx);
+  }
+  for (auto& [net_idx, segment_list] : net_result_map) {
+    need_checked_net_set.insert(net_idx);
+  }
+  for (auto& [net_idx, patch_set] : net_patch_map) {
     need_checked_net_set.insert(net_idx);
   }
 
@@ -704,14 +665,14 @@ void PinPatcher::updateCurrSolvedStatus(PPBox& pp_box)
   std::map<ViolationType, std::pair<int32_t, int32_t>> env_type_origin_curr_map;
   std::map<ViolationType, std::pair<int32_t, int32_t>> valid_type_origin_curr_map;
   for (Violation& violation : pp_box.get_violation_list()) {
-    if (violation.get_violation_type() != ViolationType::kMinimumArea) {
+    if (!isValid(pp_box, violation)) {
       env_type_origin_curr_map[violation.get_violation_type()].first++;
     } else {
       valid_type_origin_curr_map[violation.get_violation_type()].first++;
     }
   }
   for (Violation& curr_violation : pp_box.get_curr_violation_list()) {
-    if (curr_violation.get_violation_type() != ViolationType::kMinimumArea) {
+    if (!isValid(pp_box, curr_violation)) {
       env_type_origin_curr_map[curr_violation.get_violation_type()].second++;
     } else {
       valid_type_origin_curr_map[curr_violation.get_violation_type()].second++;
@@ -753,14 +714,7 @@ void PinPatcher::updateTaskPatch(PPBox& pp_box)
 
 void PinPatcher::updateViolationList(PPBox& pp_box)
 {
-  pp_box.get_violation_list().clear();
-  for (Violation new_violation : pp_box.get_curr_violation_list()) {
-    pp_box.get_violation_list().push_back(new_violation);
-  }
-  // 新结果添加到graph
-  for (Violation& violation : pp_box.get_violation_list()) {
-    addViolationToGraph(pp_box, violation);
-  }
+  pp_box.set_violation_list(pp_box.get_curr_violation_list());
 }
 
 void PinPatcher::resetSingleTask(PPBox& pp_box)
@@ -772,7 +726,7 @@ void PinPatcher::resetSingleTask(PPBox& pp_box)
   pp_box.set_curr_is_solved(false);
 }
 
-void PinPatcher::uploadNetPatch(PPBox& pp_box)
+void PinPatcher::uploadAccessPatch(PPBox& pp_box)
 {
   for (auto& [net_idx, patch_list] : pp_box.get_net_task_access_patch_map()) {
     for (EXTLayerRect& patch : patch_list) {
@@ -781,19 +735,10 @@ void PinPatcher::uploadNetPatch(PPBox& pp_box)
   }
 }
 
-void PinPatcher::uploadViolation(PPBox& pp_box)
-{
-  for (Violation& violation : pp_box.get_violation_list()) {
-    RTDM.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
-  }
-}
-
 void PinPatcher::freePPBox(PPBox& pp_box)
 {
-  pp_box.get_net_idx_set().clear();
   pp_box.get_graph_routing_net_fixed_rect_map().clear();
   pp_box.get_graph_routing_net_routed_rect_map().clear();
-  pp_box.get_graph_routing_violation_map().clear();
 }
 
 int32_t PinPatcher::getViolationNum(PPModel& pp_model)
@@ -803,7 +748,7 @@ int32_t PinPatcher::getViolationNum(PPModel& pp_model)
   return static_cast<int32_t>(RTDM.getViolationSet(die).size());
 }
 
-void PinPatcher::uploadNetPatch(PPModel& pp_model)
+void PinPatcher::uploadAccessPatch(PPModel& pp_model)
 {
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
@@ -860,7 +805,6 @@ double PinPatcher::getEnvCost(PPBox& pp_box, int32_t net_idx, EXTLayerRect& patc
 {
   double fixed_rect_unit = pp_box.get_pp_iter_param()->get_fixed_rect_unit();
   double routed_rect_unit = pp_box.get_pp_iter_param()->get_routed_rect_unit();
-  double violation_unit = pp_box.get_pp_iter_param()->get_violation_unit();
 
   double env_cost = 0;
   for (auto& [graph_net_idx, fixed_rect_set] : pp_box.get_graph_routing_net_fixed_rect_map()[patch.get_layer_idx()]) {
@@ -881,11 +825,6 @@ double PinPatcher::getEnvCost(PPBox& pp_box, int32_t net_idx, EXTLayerRect& patc
       if (RTUTIL.isOpenOverlap(patch.get_real_rect(), routed_rect)) {
         env_cost += routed_rect_unit;
       }
-    }
-  }
-  for (const PlanarRect& violation : pp_box.get_graph_routing_violation_map()[patch.get_layer_idx()]) {
-    if (RTUTIL.isClosedOverlap(patch.get_real_rect(), violation)) {
-      env_cost += violation_unit;
     }
   }
   return env_cost;
@@ -957,12 +896,6 @@ void PinPatcher::updateRoutedRectToGraph(PPBox& pp_box, ChangeType change_type, 
       pp_box.get_graph_routing_net_routed_rect_map()[net_shape.get_layer_idx()][net_idx].erase(graph_shape);
     }
   }
-}
-
-void PinPatcher::addViolationToGraph(PPBox& pp_box, Violation& violation)
-{
-  EXTLayerRect& violation_shape = violation.get_violation_shape();
-  pp_box.get_graph_routing_violation_map()[violation_shape.get_layer_idx()].insert(violation_shape.get_real_rect());
 }
 
 std::vector<PlanarRect> PinPatcher::getGraphShape(PPBox& pp_box, NetShape& net_shape)
@@ -1500,12 +1433,6 @@ void PinPatcher::debugCheckPPBox(PPBox& pp_box)
   if (pp_box_id.get_x() < 0 || pp_box_id.get_y() < 0) {
     RTLOG.error(Loc::current(), "The grid coord is illegal!");
   }
-
-  for (int32_t net_idx : pp_box.get_net_idx_set()) {
-    if (net_idx < 0) {
-      RTLOG.error(Loc::current(), "The idx of origin net is illegal!");
-    }
-  }
 }
 
 void PinPatcher::debugPlotPPBox(PPBox& pp_box, std::string flag)
@@ -1577,17 +1504,6 @@ void PinPatcher::debugPlotPPBox(PPBox& pp_box, std::string flag)
         gp_gds.addStruct(routed_rect_struct);
       }
     }
-    GPStruct violation_struct(RTUTIL.getString("graph_violation"));
-    for (auto& [routing_layer_idx, rect_set] : pp_box.get_graph_routing_violation_map()) {
-      for (const PlanarRect& rect : rect_set) {
-        GPBoundary gp_boundary;
-        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kGraphShape));
-        gp_boundary.set_rect(rect);
-        gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(routing_layer_idx));
-        violation_struct.push(gp_boundary);
-      }
-    }
-    gp_gds.addStruct(violation_struct);
   }
 
   // box_track_axis
@@ -1673,7 +1589,7 @@ void PinPatcher::debugPlotPPBox(PPBox& pp_box, std::string flag)
   }
 
   // task
-  for (int32_t net_idx : pp_box.get_net_idx_set()) {
+  for (auto& [net_idx, access_patch_list] : pp_box.get_net_task_access_patch_map()) {
     GPStruct task_struct(RTUTIL.getString("task(net_", net_idx, ")"));
     if (net_idx == pp_box.get_curr_net_idx()) {
       for (EXTLayerRect& patch : pp_box.get_curr_routing_patch_list()) {
@@ -1684,7 +1600,7 @@ void PinPatcher::debugPlotPPBox(PPBox& pp_box, std::string flag)
         task_struct.push(gp_boundary);
       }
     } else {
-      for (EXTLayerRect& patch : pp_box.get_net_task_access_patch_map()[net_idx]) {
+      for (EXTLayerRect& patch : access_patch_list) {
         GPBoundary gp_boundary;
         gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kPath));
         gp_boundary.set_rect(patch.get_real_rect());

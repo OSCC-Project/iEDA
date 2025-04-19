@@ -58,10 +58,10 @@ class PinPatcher
   void routePPBoxMap(PPModel& pp_model);
   void buildFixedRect(PPBox& pp_box);
   void buildAccessResult(PPBox& pp_box);
+  void buildAccessPatch(PPBox& pp_box);
   void buildViolation(PPBox& pp_box);
-  void initNetIdxSet(PPBox& pp_box);
-  void buildNetPatch(PPBox& pp_box);
   bool needRouting(PPBox& pp_box);
+  bool isValid(PPBox& pp_box, Violation& violation);
   void buildGraphShapeMap(PPBox& pp_box);
   void routePPBox(PPBox& pp_box);
   void initSingleTask(PPBox& pp_box);
@@ -73,11 +73,10 @@ class PinPatcher
   void updateTaskPatch(PPBox& pp_box);
   void updateViolationList(PPBox& pp_box);
   void resetSingleTask(PPBox& pp_box);
-  void uploadNetPatch(PPBox& pp_box);
-  void uploadViolation(PPBox& pp_box);
+  void uploadAccessPatch(PPBox& pp_box);
   void freePPBox(PPBox& pp_box);
   int32_t getViolationNum(PPModel& pp_model);
-  void uploadNetPatch(PPModel& pp_model);
+  void uploadAccessPatch(PPModel& pp_model);
   bool stopIteration(PPModel& pp_model);
 
 #if 1  // get env
@@ -89,7 +88,6 @@ class PinPatcher
   void updateFixedRectToGraph(PPBox& pp_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
   void updateRoutedRectToGraph(PPBox& pp_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
   void updateRoutedRectToGraph(PPBox& pp_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch);
-  void addViolationToGraph(PPBox& pp_box, Violation& violation);
   std::vector<PlanarRect> getGraphShape(PPBox& pp_box, NetShape& net_shape);
   std::vector<PlanarRect> getRoutingGraphShapeList(PPBox& pp_box, NetShape& net_shape);
 #endif

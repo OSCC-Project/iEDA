@@ -22,14 +22,13 @@ class PPIterParam
 {
  public:
   PPIterParam() = default;
-  PPIterParam(int32_t size, int32_t offset, int32_t schedule_interval, double fixed_rect_unit, double routed_rect_unit, double violation_unit)
+  PPIterParam(int32_t size, int32_t offset, int32_t schedule_interval, double fixed_rect_unit, double routed_rect_unit)
   {
     _size = size;
     _offset = offset;
     _schedule_interval = schedule_interval;
     _fixed_rect_unit = fixed_rect_unit;
     _routed_rect_unit = routed_rect_unit;
-    _violation_unit = violation_unit;
   }
   ~PPIterParam() = default;
   // getter
@@ -38,14 +37,12 @@ class PPIterParam
   int32_t get_schedule_interval() const { return _schedule_interval; }
   double get_fixed_rect_unit() const { return _fixed_rect_unit; }
   double get_routed_rect_unit() const { return _routed_rect_unit; }
-  double get_violation_unit() const { return _violation_unit; }
   // setter
   void set_size(const int32_t size) { _size = size; }
   void set_offset(const int32_t offset) { _offset = offset; }
   void set_schedule_interval(const int32_t schedule_interval) { _schedule_interval = schedule_interval; }
   void set_fixed_rect_unit(const double fixed_rect_unit) { _fixed_rect_unit = fixed_rect_unit; }
   void set_routed_rect_unit(const double routed_rect_unit) { _routed_rect_unit = routed_rect_unit; }
-  void set_violation_unit(const double violation_unit) { _violation_unit = violation_unit; }
 
  private:
   int32_t _size = -1;
@@ -53,7 +50,6 @@ class PPIterParam
   int32_t _schedule_interval = -1;
   double _fixed_rect_unit = 0;
   double _routed_rect_unit = 0;
-  double _violation_unit = 0;
 };
 
 }  // namespace irt

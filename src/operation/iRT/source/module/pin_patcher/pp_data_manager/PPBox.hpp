@@ -36,7 +36,6 @@ class PPBox
   EXTPlanarRect& get_box_rect() { return _box_rect; }
   PPBoxId& get_pp_box_id() { return _pp_box_id; }
   PPIterParam* get_pp_iter_param() { return _pp_iter_param; }
-  std::set<int32_t>& get_net_idx_set() { return _net_idx_set; }
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map() { return _type_layer_net_fixed_rect_map; }
   std::map<int32_t, std::map<int32_t, std::set<Segment<LayerCoord>*>>>& get_net_pin_access_result_map() { return _net_pin_access_result_map; }
   std::map<int32_t, std::set<EXTLayerRect*>>& get_net_access_patch_map() { return _net_access_patch_map; }
@@ -51,13 +50,11 @@ class PPBox
   {
     return _graph_routing_net_routed_rect_map;
   }
-  std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>& get_graph_routing_violation_map() { return _graph_routing_violation_map; }
   std::set<Violation, CmpViolation>& get_tried_fix_violation_set() { return _tried_fix_violation_set; }
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
   void set_pp_box_id(const PPBoxId& pp_box_id) { _pp_box_id = pp_box_id; }
   void set_pp_iter_param(PPIterParam* pp_iter_param) { _pp_iter_param = pp_iter_param; }
-  void set_net_idx_set(const std::set<int32_t>& net_idx_set) { _net_idx_set = net_idx_set; }
   void set_type_layer_net_fixed_rect_map(const std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& type_layer_net_fixed_rect_map)
   {
     _type_layer_net_fixed_rect_map = type_layer_net_fixed_rect_map;
@@ -83,10 +80,6 @@ class PPBox
   {
     _graph_routing_net_routed_rect_map = graph_routing_net_routed_rect_map;
   }
-  void set_graph_routing_violation_map(const std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>& graph_routing_violation_map)
-  {
-    _graph_routing_violation_map = graph_routing_violation_map;
-  }
   void set_tried_fix_violation_set(const std::set<Violation, CmpViolation>& tried_fix_violation_set) { _tried_fix_violation_set = tried_fix_violation_set; }
   // function
 #if 1
@@ -109,13 +102,11 @@ class PPBox
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
   std::map<int32_t, std::map<int32_t, std::set<Segment<LayerCoord>*>>> _net_pin_access_result_map;
   std::vector<Violation> _violation_list;
-  std::set<int32_t> _net_idx_set;
   std::map<int32_t, std::set<EXTLayerRect*>> _net_access_patch_map;
   std::map<int32_t, std::vector<EXTLayerRect>> _net_task_access_patch_map;
   ScaleAxis _box_track_axis;
   std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>> _graph_routing_net_fixed_rect_map;
   std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>> _graph_routing_net_routed_rect_map;
-  std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>> _graph_routing_violation_map;
   std::set<Violation, CmpViolation> _tried_fix_violation_set;
 #if 1
   // single task
