@@ -1670,7 +1670,7 @@ void TrackAssigner::debugPlotTAModel(TAModel& ta_model, std::string flag)
     }
   }
 
-  // net_pin_access_result
+  // access result
   for (auto& [net_idx, pin_access_result_map] : RTDM.getNetPinAccessResultMap(die)) {
     GPStruct access_result_struct(RTUTIL.getString("access_result(net_", net_idx, ")"));
     for (auto& [pin_idx, segment_set] : pin_access_result_map) {
@@ -2077,7 +2077,7 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, std::string flag)
     gp_gds.addStruct(fixed_rect_struct);
   }
 
-  // net_pin_access_result
+  // access result
   for (auto& [net_idx, pin_access_result_map] : ta_panel.get_net_pin_access_result_map()) {
     GPStruct access_result_struct(RTUTIL.getString("access_result(net_", net_idx, ")"));
     for (auto& [pin_idx, rect_list] : pin_access_result_map) {

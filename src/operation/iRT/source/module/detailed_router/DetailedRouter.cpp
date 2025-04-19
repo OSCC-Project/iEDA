@@ -2143,7 +2143,7 @@ void DetailedRouter::debugPlotDRModel(DRModel& dr_model, std::string flag)
     }
   }
 
-  // net_pin_access_result
+  // access result
   for (auto& [net_idx, pin_access_result_map] : RTDM.getNetPinAccessResultMap(die)) {
     GPStruct access_result_struct(RTUTIL.getString("access_result(net_", net_idx, ")"));
     for (auto& [pin_idx, segment_set] : pin_access_result_map) {
@@ -2564,7 +2564,7 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, std::string flag)
     }
   }
 
-  // net_pin_access_result
+  // access result
   for (auto& [net_idx, pin_access_result_map] : dr_box.get_net_pin_access_result_map()) {
     GPStruct access_result_struct(RTUTIL.getString("access_result(net_", net_idx, ")"));
     for (auto& [pin_idx, segment_set] : pin_access_result_map) {

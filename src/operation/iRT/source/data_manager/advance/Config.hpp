@@ -45,6 +45,8 @@ class Config
   std::string gp_temp_directory_path;  // building
   // **********   PinAccessor     ********** //
   std::string pa_temp_directory_path;  // building
+  // **********   PinPatcher     ********** //
+  std::string pp_temp_directory_path;  // building
   // ********     SupplyAnalyzer    ******** //
   std::string sa_temp_directory_path;  // building
   // ********   TopologyGenerator   ******** //

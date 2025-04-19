@@ -26,6 +26,7 @@
 #include "LayerAssigner.hpp"
 #include "Monitor.hpp"
 #include "PinAccessor.hpp"
+#include "PinPatcher.hpp"
 #include "RTInterface.hpp"
 #include "SupplyAnalyzer.hpp"
 #include "TopologyGenerator.hpp"
@@ -125,6 +126,10 @@ void RTInterface::runRT()
   PinAccessor::initInst();
   RTPA.access();
   PinAccessor::destroyInst();
+
+  PinPatcher::initInst();
+  RTPP.patch();
+  PinPatcher::destroyInst();
 
   SupplyAnalyzer::initInst();
   RTSA.analyze();

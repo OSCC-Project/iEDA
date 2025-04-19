@@ -175,11 +175,6 @@ void DRCEngine::filterViolationList(DETask& de_task)
       // net不包含布线net的舍弃
       continue;
     }
-    if (de_task.get_net_type() == DENetType::kRouteAmong) {
-      if (violation.get_violation_net_set().size() < 2) {
-        continue;
-      }
-    }
     if (RTUTIL.exist(_ignored_violation_set, violation) || RTUTIL.exist(_temp_ignored_violation_set, violation)) {
       // 自带的违例舍弃
       continue;
