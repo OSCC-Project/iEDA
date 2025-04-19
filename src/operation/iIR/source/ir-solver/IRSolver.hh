@@ -17,7 +17,7 @@
 /**
  * @file IRSolver.hh
  * @author shaozheqing (707005020@qq.com)
- * @brief
+ * @brief The IR Solver to solve AX=b.
  * @version 0.1
  * @date 2023-08-18
  *
@@ -34,10 +34,27 @@
 namespace iir {
 
 void PrintMatrix(Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix, Eigen::Index base_index); 
+
+/**
+ * @brief The static IR solver to solve AX=b.
+ * 
+ */
 class IRSolver {
  public:
-  std::vector<double> operator()(
+  virtual std::vector<double> operator()(
       Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
-      Eigen::VectorXd& J_vector);
+      Eigen::VectorXd& J_vector) = 0;
 };
+
+/**
+ * @brief The solver use LU decomposition to solve AX=b.
+ * 
+ */
+class IRLUSolver : public IRSolver {
+    public:
+    std::vector<double> operator()(
+        Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
+        Eigen::VectorXd& J_vector) override;
+};
+
 }  // namespace iir

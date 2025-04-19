@@ -97,7 +97,7 @@ void writeVectorToCsv(Eigen::VectorXd& data, const std::string& filename) {
  * @param J_vector
  * @return std::vector<double>
  */
-std::vector<double> IRSolver::operator()(
+std::vector<double> IRLUSolver::operator()(
     Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
     Eigen::VectorXd& J_vector) {
   unsigned node_num = J_vector.size();
@@ -116,12 +116,12 @@ std::vector<double> IRSolver::operator()(
   }
 
   // for debug
-  // PrintVector(J_vector, "/home/taosimin/iEDA24/iEDA/bin/current.txt");
-  // PrintMatrix(G_matrix, 0);
+  PrintVector(J_vector, "/home/taosimin/iEDA24/iEDA/bin/current.txt");
+  PrintMatrix(G_matrix, 0);
 
   Eigen::VectorXd v_vector = solver.solve(J_vector);
 
-  // PrintVector(v_vector, "/home/taosimin/iEDA24/iEDA/bin/voltage.txt");
+  PrintVector(v_vector, "/home/taosimin/iEDA24/iEDA/bin/voltage.txt");
   
   // writeVectorToCsv(J_vector, "/home/taosimin/iEDA24/iEDA/bin/current.csv");
   // writeVectorToCsv(v_vector, "/home/taosimin/iEDA24/iEDA/bin/voltage.csv");
@@ -131,7 +131,7 @@ std::vector<double> IRSolver::operator()(
   ir_drops.reserve(node_num);
   for (unsigned i = 0; i < node_num; ++i) {
     double val = v_vector(i);
-    // LOG_INFO << "node " << i << " voltage: " << val;
+    LOG_INFO << "node " << i << " voltage: " << val;
     ir_drops.push_back(voltage_max - val);
   }
 
