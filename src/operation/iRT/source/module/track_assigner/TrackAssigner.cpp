@@ -1058,20 +1058,21 @@ std::vector<Violation> TrackAssigner::getViolationList(TAPanel& ta_panel)
         continue;
       }
       for (EXTLayerRect* fixed_rect : fixed_rect_set) {
-        if (RTUTIL.isClosedOverlap(net_shape, fixed_rect->get_real_rect())) {
-          EXTLayerRect ext_layer_rect;
-          ext_layer_rect.set_real_rect(RTUTIL.getOverlap(net_shape, fixed_rect->get_real_rect()));
-          ext_layer_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(ext_layer_rect.get_real_rect(), gcell_axis));
-          ext_layer_rect.set_layer_idx(ta_panel.get_ta_panel_id().get_layer_idx());
-
-          Violation violation;
-          violation.set_violation_type(ViolationType::kMetalShort);
-          violation.set_violation_shape(ext_layer_rect);
-          violation.set_is_routing(true);
-          violation.set_violation_net_set({net_shape.get_net_idx(), net_idx});
-          violation.set_required_size(0);
-          violation_list.push_back(violation);
+        if (!RTUTIL.isClosedOverlap(net_shape, fixed_rect->get_real_rect())) {
+          continue;
         }
+        EXTLayerRect ext_layer_rect;
+        ext_layer_rect.set_real_rect(RTUTIL.getOverlap(net_shape, fixed_rect->get_real_rect()));
+        ext_layer_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(ext_layer_rect.get_real_rect(), gcell_axis));
+        ext_layer_rect.set_layer_idx(ta_panel.get_ta_panel_id().get_layer_idx());
+
+        Violation violation;
+        violation.set_violation_type(ViolationType::kMetalShort);
+        violation.set_violation_shape(ext_layer_rect);
+        violation.set_is_routing(true);
+        violation.set_violation_net_set({net_shape.get_net_idx(), net_idx});
+        violation.set_required_size(0);
+        violation_list.push_back(violation);
       }
     }
     for (auto& [net_idx, pin_access_result_map] : ta_panel.get_net_pin_access_result_map()) {
@@ -1080,29 +1081,9 @@ std::vector<Violation> TrackAssigner::getViolationList(TAPanel& ta_panel)
           continue;
         }
         for (LayerRect& rect : rect_list) {
-          if (RTUTIL.isClosedOverlap(net_shape, rect)) {
-            EXTLayerRect ext_layer_rect;
-            ext_layer_rect.set_real_rect(RTUTIL.getOverlap(net_shape, rect));
-            ext_layer_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(ext_layer_rect.get_real_rect(), gcell_axis));
-            ext_layer_rect.set_layer_idx(ta_panel.get_ta_panel_id().get_layer_idx());
-
-            Violation violation;
-            violation.set_violation_type(ViolationType::kMetalShort);
-            violation.set_violation_shape(ext_layer_rect);
-            violation.set_is_routing(true);
-            violation.set_violation_net_set({net_shape.get_net_idx(), net_idx});
-            violation.set_required_size(0);
-            violation_list.push_back(violation);
+          if (!RTUTIL.isClosedOverlap(net_shape, rect)) {
+            continue;
           }
-        }
-      }
-    }
-    for (auto& [net_idx, rect_list] : ta_panel.get_net_detailed_result_map()) {
-      if (net_shape.get_net_idx() == net_idx) {
-        continue;
-      }
-      for (LayerRect& rect : rect_list) {
-        if (RTUTIL.isClosedOverlap(net_shape, rect)) {
           EXTLayerRect ext_layer_rect;
           ext_layer_rect.set_real_rect(RTUTIL.getOverlap(net_shape, rect));
           ext_layer_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(ext_layer_rect.get_real_rect(), gcell_axis));
@@ -1118,15 +1099,16 @@ std::vector<Violation> TrackAssigner::getViolationList(TAPanel& ta_panel)
         }
       }
     }
-  }
-  for (size_t i = 0; i < net_shape_list.size(); i++) {
-    for (size_t j = i + 1; j < net_shape_list.size(); j++) {
-      if (net_shape_list[i].get_net_idx() == net_shape_list[j].get_net_idx()) {
+    for (auto& [net_idx, rect_list] : ta_panel.get_net_detailed_result_map()) {
+      if (net_shape.get_net_idx() == net_idx) {
         continue;
       }
-      if (RTUTIL.isClosedOverlap(net_shape_list[i], net_shape_list[j])) {
+      for (LayerRect& rect : rect_list) {
+        if (!RTUTIL.isClosedOverlap(net_shape, rect)) {
+          continue;
+        }
         EXTLayerRect ext_layer_rect;
-        ext_layer_rect.set_real_rect(RTUTIL.getOverlap(net_shape_list[i], net_shape_list[j]));
+        ext_layer_rect.set_real_rect(RTUTIL.getOverlap(net_shape, rect));
         ext_layer_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(ext_layer_rect.get_real_rect(), gcell_axis));
         ext_layer_rect.set_layer_idx(ta_panel.get_ta_panel_id().get_layer_idx());
 
@@ -1134,10 +1116,32 @@ std::vector<Violation> TrackAssigner::getViolationList(TAPanel& ta_panel)
         violation.set_violation_type(ViolationType::kMetalShort);
         violation.set_violation_shape(ext_layer_rect);
         violation.set_is_routing(true);
-        violation.set_violation_net_set({net_shape_list[i].get_net_idx(), net_shape_list[j].get_net_idx()});
+        violation.set_violation_net_set({net_shape.get_net_idx(), net_idx});
         violation.set_required_size(0);
         violation_list.push_back(violation);
       }
+    }
+  }
+  for (size_t i = 0; i < net_shape_list.size(); i++) {
+    for (size_t j = i + 1; j < net_shape_list.size(); j++) {
+      if (net_shape_list[i].get_net_idx() == net_shape_list[j].get_net_idx()) {
+        continue;
+      }
+      if (!RTUTIL.isClosedOverlap(net_shape_list[i], net_shape_list[j])) {
+        continue;
+      }
+      EXTLayerRect ext_layer_rect;
+      ext_layer_rect.set_real_rect(RTUTIL.getOverlap(net_shape_list[i], net_shape_list[j]));
+      ext_layer_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(ext_layer_rect.get_real_rect(), gcell_axis));
+      ext_layer_rect.set_layer_idx(ta_panel.get_ta_panel_id().get_layer_idx());
+
+      Violation violation;
+      violation.set_violation_type(ViolationType::kMetalShort);
+      violation.set_violation_shape(ext_layer_rect);
+      violation.set_is_routing(true);
+      violation.set_violation_net_set({net_shape_list[i].get_net_idx(), net_shape_list[j].get_net_idx()});
+      violation.set_required_size(0);
+      violation_list.push_back(violation);
     }
   }
   return violation_list;
