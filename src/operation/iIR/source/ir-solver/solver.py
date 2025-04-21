@@ -1,5 +1,5 @@
-from scipy.linalg import lu
 import numpy as np
+import time 
 
 
 A = np.loadtxt('/home/taosimin/iEDA24/iEDA/bin/matrix.txt', dtype=np.float64)
@@ -17,11 +17,11 @@ def cg_solver(A, b, init=None, tol=1e-6, maxiter=100):
     X = X.ravel()
     
     residual = A.dot(X)
-    print(residual)
+    # print(residual)
 
     residual = b - residual
     
-    print(residual)
+    # print(residual)
     
     p = residual.copy()
     r_dot_r = np.dot(residual, residual)
@@ -39,8 +39,18 @@ def cg_solver(A, b, init=None, tol=1e-6, maxiter=100):
 
         if r_dot_r < tol:
             break
-    return X, i
+    return X, i, r_dot_r
 
-X, num_iter = cg_solver(A, current, init=init, tol=1e-6, maxiter=1000)
+start_time = time.time()
+X, num_iter, r_dot_r = cg_solver(A, current, init=init, tol=1e-6, maxiter=1000)
 print("X: ", X)
 print("num_iter: ", num_iter)
+print("r_dot_r: ", np.sqrt(r_dot_r))
+
+residual = np.linalg.norm(A @ X - current)
+print(f"residual: {residual}")
+
+end_time = time.time()
+
+execution_time = end_time - start_time
+print("cg solver execution time: {:.6f} seconds".format(execution_time))
