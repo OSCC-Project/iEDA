@@ -25,7 +25,7 @@ void RuleValidator::verifyDifferentLayerCutSpacing(RVBox& rv_box)
   std::map<int32_t, std::map<int32_t, std::vector<PlanarRect>>> cut_net_rect_map;
   std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> cut_bg_rtree_map;
   for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
-    if (drc_shape->get_is_routing() || drc_shape->get_net_idx() == -1) {
+    if (drc_shape->get_is_routing()) {
       continue;
     }
     cut_net_rect_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()].push_back(drc_shape->get_rect());
@@ -45,11 +45,13 @@ void RuleValidator::verifyDifferentLayerCutSpacing(RVBox& rv_box)
     int32_t curr_spacing = cut_layer.get_below_spacing();
     int32_t curr_prl_spacing = cut_layer.get_below_prl_spacing();
     int32_t curr_prl = -1 * cut_layer.get_below_prl();
-    
+
     int32_t routing_layer_idx = -1;
     {
-      std::vector<int32_t>& routing_layer_idx_list = cut_to_adjacent_routing_map[different_layer_idx];
-      routing_layer_idx = *std::min_element(routing_layer_idx_list.begin(), routing_layer_idx_list.end());
+      if(cut_to_adjacent_routing_map.find(different_layer_idx) != cut_to_adjacent_routing_map.end()){
+        std::vector<int32_t>& routing_layer_idx_list = cut_to_adjacent_routing_map[different_layer_idx];
+        routing_layer_idx = *std::min_element(routing_layer_idx_list.begin(), routing_layer_idx_list.end());
+      }
     }
 
     for (auto& [net_idx, rect_list] : net_rect_map) {
