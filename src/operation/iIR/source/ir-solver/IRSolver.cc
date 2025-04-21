@@ -125,6 +125,7 @@ std::vector<double> IRLUSolver::operator()(
     Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
     Eigen::VectorXd& J_vector) {
   Eigen::SimplicialLLT<Eigen::SparseMatrix<double>> solver;
+  // use comute directorly, mask below code.
   // solver.analyzePattern(G_matrix);
   // solver.factorize(G_matrix);
   solver.compute(G_matrix);
@@ -163,6 +164,10 @@ std::vector<double> IRLUSolver::operator()(
 std::vector<double> IRCGSolver::operator()(
     Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
     Eigen::VectorXd& J_vector) {
+  // for debug
+  // PrintVector(J_vector, "/home/taosimin/iEDA24/iEDA/bin/current.txt");
+  // PrintMatrix(G_matrix, 0);
+  
 #if !CUDA_IR_SOLVER
   Eigen::SparseMatrix<double> A = G_matrix;
   Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,
@@ -185,7 +190,7 @@ std::vector<double> IRCGSolver::operator()(
   Eigen::VectorXd X0 = Eigen::VectorXd::Constant(J_vector.size(), _nominal_voltage * 0.9);
   auto X = ir_cg_solver(A, J_vector, X0, _tolerance, _max_iteration);
   Eigen::VectorXd v_vector(X.size());
-  for(auto i = 0; i < X.size(); ++i) {
+  for(decltype(X.size()) i = 0; i < X.size(); ++i) {
     v_vector(i) = X[i];
   }
 #endif
