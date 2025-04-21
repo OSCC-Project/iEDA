@@ -182,7 +182,7 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
     k++;
   }
   
-  CUDA_LOG_INFO("CG Iterations: %d", k - 1);
+  CUDA_LOG_INFO("GPU CG iteration num: %d", k - 1);
   CUDA_LOG_INFO("Final Residual Norm: %f", sqrt(r_dot_r));
 
   // for debug

@@ -107,7 +107,7 @@ std::vector<double> IRSolver::getIRDrop(Eigen::VectorXd& v_vector) {
   ir_drops.reserve(node_num);
   for (unsigned i = 0; i < node_num; ++i) {
     double val = v_vector(i);
-    LOG_INFO << "node " << i << " voltage: " << val;
+    // LOG_INFO << "node " << i << " voltage: " << val;
     ir_drops.push_back(voltage_max - val);
   }
 
@@ -139,12 +139,12 @@ std::vector<double> IRLUSolver::operator()(
   }
 
   // for debug
-  PrintVector(J_vector, "/home/taosimin/iEDA24/iEDA/bin/current.txt");
-  PrintMatrix(G_matrix, 0);
+  // PrintVector(J_vector, "/home/taosimin/iEDA24/iEDA/bin/current.txt");
+  // PrintMatrix(G_matrix, 0);
 
   Eigen::VectorXd v_vector = solver.solve(J_vector);
 
-  PrintVector(v_vector, "/home/taosimin/iEDA24/iEDA/bin/voltage.txt");
+  // PrintVector(v_vector, "/home/taosimin/iEDA24/iEDA/bin/voltage.txt");
 
   // writeVectorToCsv(J_vector, "/home/taosimin/iEDA24/iEDA/bin/current.csv");
   // writeVectorToCsv(v_vector, "/home/taosimin/iEDA24/iEDA/bin/voltage.csv");
@@ -152,6 +152,42 @@ std::vector<double> IRLUSolver::operator()(
   auto ir_drops = getIRDrop(v_vector);
 
   return ir_drops;
+}
+
+/**
+ * @brief CPU solver the ir drop use CG gradient.
+ * 
+ * @param A 
+ * @param b 
+ * @param x0 
+ * @param tol 
+ * @param max_iter 
+ * @return Eigen::VectorXd 
+ */
+Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A, const Eigen::VectorXd& b, const Eigen::VectorXd& x0, double tol, int max_iter) {
+  Eigen::VectorXd x = x0;
+  Eigen::VectorXd r = b - A * x;
+  Eigen::VectorXd p = r;
+  double rsold = r.dot(r);
+  
+  int i = 0;
+  for (; i < max_iter; ++i) {
+      Eigen::VectorXd Ap = A * p;
+      double alpha = rsold / p.dot(Ap);
+      x += alpha * p;
+      r -= alpha * Ap;
+      double rsnew = r.dot(r);
+      if (sqrt(rsnew) < tol) {
+          break;
+      }
+      p = r + (rsnew / rsold) * p;
+      rsold = rsnew;
+  }
+
+  LOG_INFO << "CPU CG iteration num: " << i - 1 << std::endl;
+  LOG_INFO << "Final Residual Norm: " << sqrt(rsold);
+
+  return x;
 }
 
 /**
@@ -178,12 +214,9 @@ std::vector<double> IRCGSolver::operator()(
   cg.setMaxIterations(_max_iteration);
   
   Eigen::VectorXd X0 = Eigen::VectorXd::Constant(J_vector.size(), _nominal_voltage * 0.9);
-  Eigen::VectorXd v_vector = cg.solveWithGuess(J_vector, X0);
+  Eigen::VectorXd v_vector = conjugateGradient(A, J_vector, X0, _tolerance, _max_iteration);
 
-  LOG_INFO << "X:\n" << v_vector << std::endl;
-  LOG_INFO << "iteration num: " << cg.iterations() << std::endl;
-  LOG_INFO << "error: " << cg.error() << std::endl;
-
+  LOG_INFO << "CPU solver X[0] result:\n" << v_vector(0) << std::endl;
 
 # else
   Eigen::SparseMatrix<double> A = G_matrix;
@@ -193,6 +226,8 @@ std::vector<double> IRCGSolver::operator()(
   for(decltype(X.size()) i = 0; i < X.size(); ++i) {
     v_vector(i) = X[i];
   }
+
+  LOG_INFO << "GPU solver X[0] result:\n" << v_vector(0) << std::endl;
 #endif
 
   Eigen::VectorXd residual = G_matrix * v_vector - J_vector;
