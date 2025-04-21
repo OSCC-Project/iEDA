@@ -25,10 +25,12 @@
 #include "iIR.hh"
 
 #include <string_view>
+#include <optional>
 
 #include "ir-solver/IRSolver.hh"
 #include "log/Log.hh"
 #include "matrix/IRMatrix.hh"
+#include "usage/usage.hh"
 
 namespace iir {
 
@@ -64,6 +66,8 @@ unsigned iIR::readInstancePowerDB(std::string_view instance_power_file_path) {
 }
 
 unsigned iIR::setInstancePowerData(std::vector<IRInstancePower> instance_power_data) {
+  _nominal_voltage = instance_power_data[0]._nominal_voltage;
+
   RustVec c_instance_power_data;
   c_instance_power_data.data = instance_power_data.data();
   c_instance_power_data.len = instance_power_data.size();
@@ -83,6 +87,10 @@ unsigned iIR::solveIRDrop(const char* net_name) {
     return 0;
   }
 
+  CPU_PROF_START(0);
+
+  LOG_INFO << "solve " << net_name << " IR drop start";
+
   auto one_net_matrix_data =
       build_one_net_conductance_matrix_data(_rc_data, net_name);
 
@@ -94,7 +102,7 @@ unsigned iIR::solveIRDrop(const char* net_name) {
   auto J_vector = ir_matrix.buildCurrentVector(current_rust_map,
                                                one_net_matrix_data.node_num);
 
-  IRSolver ir_solver;
+  IRCGSolver ir_solver(_nominal_voltage);
   auto grid_voltages = ir_solver(G_matrix, J_vector);
 
   std::optional<std::pair<std::string, double>> max_ir_drop;
@@ -106,8 +114,8 @@ unsigned iIR::solveIRDrop(const char* net_name) {
     double ir_drop = grid_voltages[*instance_id];
     std::string instance_name = get_instance_name(_rc_data, net_name, *instance_id);
 
-    LOG_INFO << "instance: " << instance_name << " ir drop: "
-             << ir_drop;
+    // LOG_INFO << "instance: " << instance_name << " ir drop: "
+    //          << ir_drop;
 
     if (!max_ir_drop) {
       max_ir_drop = {instance_name, ir_drop};
@@ -127,9 +135,12 @@ unsigned iIR::solveIRDrop(const char* net_name) {
     _instance_to_ir_drop[instance_name] = ir_drop;
   }
 
+  LOG_INFO << "solve " << net_name << " IR drop end";
+
   LOG_INFO << "max ir drop: " << max_ir_drop->first << " : " << max_ir_drop->second;
   LOG_INFO << "min ir drop: " << min_ir_drop->first << " : " << min_ir_drop->second;
 
+  CPU_PROF_END(0, "solve IR drop");
   return 1;
 }
 

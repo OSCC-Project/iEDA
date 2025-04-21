@@ -475,6 +475,15 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMapWithGPU(
  */
 unsigned PowerEngine::buildPGNetWireTopo() {
   LOG_INFO << "build pg net wire topo start";
+  
+  // set the instance names for build wire topo skip some no power instance.
+  std::vector<IRInstancePower> instance_power_data = _ipower->getInstancePowerData();
+  std::set<std::string> instance_names;
+  std::ranges::for_each(instance_power_data, [&instance_names](auto& instance_power) {
+    std::string instance_name = instance_power._instance_name;
+    instance_names.insert(std::move(instance_name));
+  });
+  _pg_netlist_builder.set_instance_names(std::move(instance_names));
 
   auto* idb_adapter =
       dynamic_cast<ista::TimingIDBAdapter*>(_timing_engine->get_db_adapter());
@@ -491,7 +500,7 @@ unsigned PowerEngine::buildPGNetWireTopo() {
         [idb_adapter, dbu](unsigned layer_id, unsigned distance_dbu) -> double {
       std::optional<double> width = std::nullopt;
       double wire_length = double(distance_dbu) / dbu;
-      return idb_adapter->getResistance(layer_id, wire_length, width);
+      return idb_adapter->getResistance(layer_id, wire_length, width) * c_resistance_coef;
     };
 
     auto* io_pins = idb_design->get_io_pin_list();

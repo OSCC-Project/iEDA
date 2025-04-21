@@ -6,7 +6,7 @@ nodes = []
 edges = []
 resistances = []
 
-with open('/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml', 'r', encoding='utf-8') as file:
+with open('/home/taosimin/ir_example/aes/pg_netlist/rc_data.yaml', 'r', encoding='utf-8') as file:
     lines = file.readlines()
     i = 0
     while i < len(lines):
@@ -36,13 +36,22 @@ with open('/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml', 'r', e
             edges.append((node1, node2))
         i += 1
 
+# 假设列表为 resistances
+max_value = max(resistances)  # 获取最大元素
+count_greater_than_10 = sum(1 for x in resistances if x > 10)  # 统计大于 100 的元素个数
+count_less_than_1 = sum(1 for x in resistances if x < 1)  # 统计小于 100 的元素个数
+
+print("最大元素:", max_value)
+print("总元素个数:", len(resistances))
+print("大于 10 的元素个数: %d 占比：%f" % (count_greater_than_10, count_greater_than_10 / len(resistances)))
+print("小于 1 的元素个数: %d 占比：%f" % (count_less_than_1, count_less_than_1 / len(resistances)))
 
 def plot_resistance_distribution(resistance_values):
-    plt.hist(resistance_values, bins=20, edgecolor='black')
+    plt.hist(resistance_values, bins=[0, 0.2, 0.4, 0.8, 1, 10, 50], edgecolor='black')
     plt.title('Resistance Distribution')
     plt.xlabel('Resistance')
     plt.ylabel('Frequency')
-    plt.savefig('resistance.png', dpi=300)
+    plt.savefig('resistance_estimate.png', dpi=300)
         
 plot_resistance_distribution(resistances)
 
