@@ -171,11 +171,8 @@ class IRPGNetlist {
     return one_node;
   }
   IRPGNode* findNode(IRNodeCoord coord, int layer_id) {
-    auto result = std::ranges::find_if(_nodes, [&](const IRPGNode& node) {
-      return node.get_coord() == coord && node.get_layer_id() == layer_id;
-    });
-    if (result != _nodes.end()) {
-      return &(*result);
+    if (_nodes_map.find({coord, layer_id}) != _nodes_map.end()) {
+      return _nodes_map[{coord, layer_id}];
     }
 
     return nullptr;
@@ -216,6 +213,7 @@ class IRPGNetlist {
  private:
   std::list<IRPGNode> _nodes;  //!< The nodes of the netlist.
   std::vector<IRPGNode*> _nodes_image; //!< The nodes image for fast access.
+  std::map<std::pair<IRNodeCoord, int>, IRPGNode*> _nodes_map; //!< The nodes map for fast access.
   std::vector<IRPGEdge> _edges;  //!< The edges of the netlist.
 
   std::map<unsigned, std::string> _node_id_to_name; //!< The node id to node name.
