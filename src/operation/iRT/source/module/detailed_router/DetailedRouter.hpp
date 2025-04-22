@@ -64,7 +64,6 @@ class DetailedRouter
   void splitNetResult(DRModel& dr_model);
   void routeDRBoxMap(DRModel& dr_model);
   void buildFixedRect(DRBox& dr_box);
-  void buildAccessResult(DRBox& dr_box);
   void buildNetResult(DRBox& dr_box);
   void initDRTaskList(DRModel& dr_model, DRBox& dr_box);
   void buildViolation(DRBox& dr_box);

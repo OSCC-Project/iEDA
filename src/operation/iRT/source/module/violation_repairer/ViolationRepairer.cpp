@@ -103,29 +103,29 @@ VRNet ViolationRepairer::convertToVRNet(Net& net)
 
 void ViolationRepairer::updateAccessPoint(VRModel& vr_model)
 {
-  Die& die = RTDM.getDatabase().get_die();
+  // Die& die = RTDM.getDatabase().get_die();
 
-  for (auto& [net_idx, access_point_set] : RTDM.getNetAccessPointMap(die)) {
-    for (AccessPoint* access_point : access_point_set) {
-      RTDM.updateAccessNetPointToGCellMap(ChangeType::kDel, net_idx, access_point);
-    }
-  }
-  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
-    Net* origin_net = vr_net.get_origin_net();
-    if (origin_net->get_net_idx() != vr_net.get_net_idx()) {
-      RTLOG.error(Loc::current(), "The net idx is not equal!");
-    }
-    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
-      Pin& origin_pin = origin_net->get_pin_list()[vr_pin.get_pin_idx()];
-      if (origin_pin.get_pin_idx() != vr_pin.get_pin_idx()) {
-        RTLOG.error(Loc::current(), "The pin idx is not equal!");
-      }
-      vr_pin.set_access_point(vr_pin.get_origin_access_point());
-      // 之后流程将暂时使用origin_access_point作为主要access point
-      origin_pin.set_access_point(origin_pin.get_origin_access_point());
-      RTDM.updateAccessNetPointToGCellMap(ChangeType::kAdd, vr_net.get_net_idx(), &origin_pin.get_access_point());
-    }
-  }
+  // for (auto& [net_idx, access_point_set] : RTDM.getNetAccessPointMap(die)) {
+  //   for (AccessPoint* access_point : access_point_set) {
+  //     RTDM.updateAccessNetPointToGCellMap(ChangeType::kDel, net_idx, access_point);
+  //   }
+  // }
+  // for (VRNet& vr_net : vr_model.get_vr_net_list()) {
+  //   Net* origin_net = vr_net.get_origin_net();
+  //   if (origin_net->get_net_idx() != vr_net.get_net_idx()) {
+  //     RTLOG.error(Loc::current(), "The net idx is not equal!");
+  //   }
+  //   for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
+  //     Pin& origin_pin = origin_net->get_pin_list()[vr_pin.get_pin_idx()];
+  //     if (origin_pin.get_pin_idx() != vr_pin.get_pin_idx()) {
+  //       RTLOG.error(Loc::current(), "The pin idx is not equal!");
+  //     }
+  //     vr_pin.set_access_point(vr_pin.get_origin_access_point());
+  //     // 之后流程将暂时使用origin_access_point作为主要access point
+  //     origin_pin.set_access_point(origin_pin.get_origin_access_point());
+  //     RTDM.updateAccessNetPointToGCellMap(ChangeType::kAdd, vr_net.get_net_idx(), &origin_pin.get_access_point());
+  //   }
+  // }
 }
 
 void ViolationRepairer::initNetFinalResultMap(VRModel& vr_model)

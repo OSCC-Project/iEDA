@@ -232,6 +232,8 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
       case ViolationType::kAdjacentCutSpacing:
         break;
       case ViolationType::kCornerFillSpacing:
+        new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
+        layer_routing_list = expandLayer(violation, {-1, 0, +1});
         break;
       case ViolationType::kCutEOLSpacing:
         new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
@@ -264,12 +266,16 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
       case ViolationType::kMaximumWidth:
         break;
       case ViolationType::kMaxViaStack:
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0, +1});
         break;
       case ViolationType::kMetalShort:
         new_real_rect = enlargeRect(new_real_rect, 0);
         layer_routing_list = expandLayer(violation, {-1, 0, +1});
         break;
       case ViolationType::kMinHole:
+        new_real_rect = enlargeRect(new_real_rect, static_cast<int32_t>(std::sqrt(violation.get_required_size())));
+        layer_routing_list = expandLayer(violation, {-1, 0, +1});
         break;
       case ViolationType::kMinimumArea:
         break;
@@ -278,12 +284,16 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
       case ViolationType::kMinimumWidth:
         break;
       case ViolationType::kMinStep:
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {-1, 0, +1});
         break;
       case ViolationType::kNonsufficientMetalOverlap:
         new_real_rect = enlargeRect(new_real_rect, 0);
         layer_routing_list = expandLayer(violation, {-1, 0, +1});
         break;
       case ViolationType::kNotchSpacing:
+        new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
+        layer_routing_list = expandLayer(violation, {-1, 0, +1});
         break;
       case ViolationType::kOffGridOrWrongWay:
         break;

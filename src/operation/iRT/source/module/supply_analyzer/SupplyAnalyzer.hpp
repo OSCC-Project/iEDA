@@ -47,7 +47,7 @@ class SupplyAnalyzer
   SupplyAnalyzer& operator=(SupplyAnalyzer&& other) = delete;
   // function
   SAModel initSAModel();
-  void buildLayerNodeMap(SAModel& sa_model);
+  void setSAComParam(SAModel& sa_model);
   void buildSupplySchedule(SAModel& sa_model);
   void analyzeSupply(SAModel& sa_model);
   EXTLayerRect getSearchRect(LayerCoord& first_coord, LayerCoord& second_coord);
