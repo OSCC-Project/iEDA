@@ -1430,6 +1430,12 @@ unsigned Sta::buildLibArcsGPU() {
         continue;
       }
 
+      if (table->getAxesSize() == 0) {
+        // (TODO totaosimin), need to process no axes table.
+        lib_gpu_arc._table[index] = gpu_table;
+        continue;
+      }
+
       // set the x axis.
       auto &x_axis = table->getAxis(0);
       auto &x_axis_values = x_axis.get_axis_values();
