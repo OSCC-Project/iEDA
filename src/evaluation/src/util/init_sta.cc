@@ -1275,8 +1275,8 @@ std::map<int, double> InitSTA::patchTimingMap(std::map<int, std::pair<std::pair<
   
   // 填充网格
   for (const auto& [coord, slack] : inst_timing_map) {
-    int64_t x = static_cast<int64_t>(coord.first) * dbu;  
-    int64_t y = static_cast<int64_t>(coord.second) * dbu;  
+    int64_t x = static_cast<int64_t>(coord.first * dbu);  
+    int64_t y = static_cast<int64_t>(coord.second * dbu);  
     int64_t grid_x = (x - min_x) / grid_size_x; 
     int64_t grid_y = (y - min_y) / grid_size_y; 
     grid[grid_x][grid_y].push_back({{x, y}, slack});
@@ -1334,8 +1334,8 @@ std::map<int, double> InitSTA::patchPowerMap(std::map<int, std::pair<std::pair<i
   int64_t min_y = INT64_MAX;  
   int64_t max_y = INT64_MIN;  
   for (const auto& [coord, _] : inst_power_map) {
-    int64_t x = static_cast<int64_t>(coord.first) * dbu;  
-    int64_t y = static_cast<int64_t>(coord.second) * dbu; 
+    int64_t x = static_cast<int64_t>(coord.first * dbu);  
+    int64_t y = static_cast<int64_t>(coord.second * dbu); 
     min_x = std::min(min_x, x);
     max_x = std::max(max_x, x);
     min_y = std::min(min_y, y);
@@ -1404,11 +1404,19 @@ std::map<int, double> InitSTA::patchPowerMap(std::map<int, std::pair<std::pair<i
 std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch)
 {
   std::map<int, double> patch_ir_drop_map;
+  for (const auto& [patch_id, _] : patch) {
+    patch_ir_drop_map[patch_id] = 0.0;
+  }
 
   // hard code std cell power net is VDD
   std::string power_net_name = "VDD";
   PW_INST->runIRAnalysis(power_net_name);
   auto instance_to_ir_drop = PW_INST->getInstanceIRDrop();
+
+  if (instance_to_ir_drop.empty()) {
+    LOG_WARNING << "No IR drop data available, returning zero values for all patches";
+    return patch_ir_drop_map; 
+  }
 
   auto* idb_adapter = STA_INST->getIDBAdapter();
   auto dbu = idb_adapter->get_dbu();
@@ -1423,8 +1431,8 @@ std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<
   
   for (auto& [sta_inst, ir_drop] : instance_to_ir_drop) {
     auto coord = sta_inst->get_coordinate().value();
-    int64_t x = static_cast<int64_t>(coord.first) * dbu;  
-    int64_t y = static_cast<int64_t>(coord.second) * dbu;  
+    int64_t x = static_cast<int64_t>(coord.first * dbu);  
+    int64_t y = static_cast<int64_t>(coord.second * dbu);  
     instances.emplace_back(x, y, ir_drop);
     min_x = std::min(min_x, x);
     max_x = std::max(max_x, x);
