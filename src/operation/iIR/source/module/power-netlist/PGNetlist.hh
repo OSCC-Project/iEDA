@@ -230,6 +230,9 @@ class IRPGNetlistBuilder {
   IRPGNetlistBuilder() = default;
   ~IRPGNetlistBuilder() = default;
 
+  auto& get_pg_netlists() { return _pg_netlists; }
+  auto& get_rust_pg_netlists() { return _rust_pg_netlists; }
+
   std::vector<BGSegment> buildBGSegments(idb::IdbSpecialNet* special_net,
                                          unsigned& line_segment_num);
 

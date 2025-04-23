@@ -516,6 +516,12 @@ unsigned PowerEngine::buildPGNetWireTopo() {
     _pg_netlist_builder.build(power_net, power_io_pin, calc_resistance);
   }
 
+  bool is_empty = _pg_netlist_builder.get_pg_netlists().empty();
+  if (is_empty) {
+    LOG_INFO << "pg net netlist empty";
+    return 0;
+  }
+
   _pg_netlist_builder.createRustPGNetlist();
   _pg_netlist_builder.createRustRCData();
 
