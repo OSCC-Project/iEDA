@@ -208,7 +208,7 @@ TEST_F(PowerTest, estimateIR) {
 
   auto* timing_engine = TimingEngine::getOrCreateTimingEngine();
   timing_engine->set_num_threads(48);
-  const char* design_work_space = "/home/taosimin/ir_example/aes";
+  const char* design_work_space = "/home/taosimin/ir_example/aes/rpt";
   timing_engine->set_design_work_space(design_work_space);
 
   std::vector<const char*> lib_files{
@@ -311,16 +311,26 @@ TEST_F(PowerTest, estimateIR) {
   std::string power_net_name = "VDD";
 
   // estimate rc from topo.
-  power_engine->buildPGNetWireTopo();
+  // power_engine->buildPGNetWireTopo();
 
   // or read pg spef to calc rc.
-  // const char* pg_spef_file_path = "/home/taosimin/ir_example/aes/aes_vdd_vss.spef";
-  // power_engine->readPGSpef(pg_spef_file_path);
+  const char* pg_spef_file_path = "/home/taosimin/ir_example/aes/aes_vdd_vss.spef";
+  power_engine->readPGSpef(pg_spef_file_path);
 
   power_engine->runIRAnalysis(power_net_name);
 
-  power_engine->displayPowerMap();
-  power_engine->displayIRDropMap();
+  // LOG_INFO << "rerun IR analysis";
+
+  // rerun IR test.
+  // power_engine->resetIRAnalysisData();
+  // power_engine->buildPGNetWireTopo();
+  // power_engine->runIRAnalysis(power_net_name);
+
+  // for display power map and IR drop map.
+  // power_engine->displayPowerMap();
+  // power_engine->displayIRDropMap();
+
+  power_engine->reportIRAnalysis();
 }
 
 }  // namespace

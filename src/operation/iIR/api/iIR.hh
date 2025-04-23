@@ -54,6 +54,9 @@ class iIR {
   void set_rc_data(const void* rust_rc_data) { _rc_data = rust_rc_data; }
   auto* get_rc_data() { return _rc_data; }
 
+  void set_nominal_voltage(double nominal_voltage) { _nominal_voltage = nominal_voltage; }
+  double get_nominal_voltage() { return _nominal_voltage; }
+
   auto& get_instance_to_ir_drop() { return _instance_to_ir_drop; }
 
   unsigned init();
@@ -66,6 +69,8 @@ class iIR {
  private:
   const void* _rc_data = nullptr;
   const void* _power_data = nullptr;
+
+  double _nominal_voltage = 0.0;
 
   std::map<std::string, double> _instance_to_ir_drop;
 };

@@ -645,7 +645,13 @@ std::vector<IRInstancePower> Power::getInstancePowerData() {
   IRInstancePower instance_power;
   PwrGroupData* group_data;
   FOREACH_PWR_GROUP_DATA(this, group_data) {
+    // skip net group data.
     if (dynamic_cast<Net*>(group_data->get_obj())) {
+      continue;
+    }
+
+    // skip the instance which power is 0.
+    if (group_data->get_total_power() < 1e-10) {
       continue;
     }
 
@@ -656,9 +662,10 @@ std::vector<IRInstancePower> Power::getInstancePowerData() {
     instance_power._switch_power = group_data->get_switch_power();
     instance_power._leakage_power = group_data->get_leakage_power();
     instance_power._total_power = group_data->get_total_power();
+
+    instance_power_data.emplace_back(std::move(instance_power));
   }
   
-  instance_power_data.emplace_back(std::move(instance_power));
   return instance_power_data;
 }
 /**
@@ -802,10 +809,14 @@ void CopyFile(
     std::string output_dir, std::string file_to_be_copy) {
   auto base_name = std::filesystem::path(file_to_be_copy).stem().string();
   auto extension = std::filesystem::path(file_to_be_copy).extension().string();
+  
+  // dest dir workspace and copy time stamp.
+  auto copy_work_space = copy_design_work_space->first;
+  auto copy_time = copy_design_work_space->second;
 
   std::string dest_file_name = Str::printf(
-      "%s/%s_%s%s", copy_design_work_space->first.c_str(), base_name.c_str(),
-      copy_design_work_space->second.c_str(), extension.c_str());
+      "%s/%s_%s%s", copy_work_space.c_str(), base_name.c_str(),
+      copy_time.c_str(), extension.c_str());
 
   std::string src_file =
       Str::printf("%s/%s", output_dir.c_str(), file_to_be_copy.c_str());
@@ -839,6 +850,7 @@ unsigned Power::reportPower(bool is_copy) {
   }
 
   auto backup_work_space = BackupPwrFiles(output_dir, is_copy);
+  _backup_work_dir = backup_work_space;
   std::filesystem::create_directories(output_dir);
 
   {
@@ -949,8 +961,11 @@ std::pair<double, double> Power::getNetToggleAndVoltageData(const char* net_name
  * @param spef_file 
  * @return unsigned 
  */
-unsigned Power::readPGSpef(const char* spef_file) {  
+unsigned Power::readPGSpef(const char* spef_file) {
+  LOG_INFO << "read pg spef start.";
   _ir_analysis.readSpef(spef_file);
+  set_rust_pg_rc_data(_ir_analysis.get_rc_data());
+  LOG_INFO << "read pg spef end.";
   return 1;
 }
 
@@ -989,7 +1004,7 @@ unsigned Power::runIRAnalysis(std::string power_net_name) {
   CPU_PROF_START(0);
   LOG_INFO << "run IR analysis start";
   // set power data.
-  std::vector<IRInstancePower> instance_power_data =  getInstancePowerData();  
+  std::vector<IRInstancePower> instance_power_data = getInstancePowerData();  
   _ir_analysis.setInstancePowerData(std::move(instance_power_data));
 
   // calc ir drop.
@@ -1007,7 +1022,7 @@ unsigned Power::runIRAnalysis(std::string power_net_name) {
  * 
  * @return unsigned 
  */
-unsigned Power::reportIRAnalysis() {
+unsigned Power::reportIRAnalysis(bool is_copy) {
   LOG_INFO << "report IR analysis start";
   Sta* ista = Sta::getOrCreateSta();
   std::string output_dir = get_design_work_space();
@@ -1015,13 +1030,28 @@ unsigned Power::reportIRAnalysis() {
     output_dir = ista->get_design_work_space();
   }
 
+  if (output_dir.empty()) {
+    LOG_ERROR << "The design work space is not set.";
+    return 0;
+  }
+
   std::string csv_file_name =
-      Str::printf("%s/%s_%s.csv", output_dir.c_str(), ista->get_design_name().c_str(), "ir_drop");
+      Str::printf("%s_%s.csv", ista->get_design_name().c_str(), "ir_drop");
+
+  if (is_copy) {
+    if (!_backup_work_dir) {
+      _backup_work_dir = BackupPwrFiles(output_dir, is_copy);
+    }
+
+    CopyFile(_backup_work_dir, output_dir, csv_file_name);
+  }
+
+  std::string output_path = output_dir + "/" + csv_file_name;
 
   // report in IR drop csv.
-  reportIRDropCSV(csv_file_name.c_str());
+  reportIRDropCSV(output_path.c_str());
 
-  LOG_INFO << "output ir drop report: " << csv_file_name;
+  LOG_INFO << "output ir drop report: " << output_path;
   
   LOG_INFO << "report IR analysis end";
   return 1;

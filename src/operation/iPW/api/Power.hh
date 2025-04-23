@@ -54,6 +54,9 @@ class Power {
   void set_design_work_space(const char* design_work_space) { _design_work_space = design_work_space; }
   const char* get_design_work_space() { return _design_work_space.c_str(); }
 
+  void set_default_toggle(double default_toggle) { _default_toggle = default_toggle; }
+  double get_default_toggle() { return _default_toggle; }
+
   auto& get_fastest_clock() { return _power_graph.get_fastest_clock(); }
   void setFastestClock(const char* clock_name, double clock_period_ns) {
     _power_graph.setFastestClock(clock_name, clock_period_ns);
@@ -134,6 +137,11 @@ class Power {
 
   // for IR analysis.
   unsigned readPGSpef(const char* spef_file);
+  void resetIRAnalysisData() {
+    iIR ir_analysis;
+    _ir_analysis = std::move(ir_analysis);
+    _rust_pg_rc_data = nullptr;
+  }
 
   auto& getInstanceIRDrop() {
     return _ir_analysis.get_instance_to_ir_drop();
@@ -141,14 +149,16 @@ class Power {
   
   unsigned runIRAnalysis(std::string power_net_name);
   unsigned reportIRDropCSV(const char* rpt_file_name);
-  unsigned reportIRAnalysis();
+  unsigned reportIRAnalysis(bool is_copy = true);
 
   std::pair<double, double> getNetToggleAndVoltageData(const char* net_name);
 
-  std::map<Instance::Coordinate, double> displayInstancePowerMap();
+  std::map<ista::Instance::Coordinate, double> displayInstancePowerMap();
 
  private:
-  std::string _design_work_space; // The power report work space.
+  std::string _design_work_space; //!< The power report work space.
+  std::optional<std::pair<std::string, std::string>> _backup_work_dir;
+  double _default_toggle = 0.02; //!< The default toggle value.
 
   PwrGraph _power_graph;         //< The power graph, mapped to sta graph.
   PwrSeqGraph _power_seq_graph;  //!< The power sequential graph, vertex is

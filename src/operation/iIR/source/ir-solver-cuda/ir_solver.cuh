@@ -15,36 +15,34 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file PwrConfig.hh
+ * @file ir_solver.cuh
  * @author simin tao (taosm@pcl.ac.cn)
- * @brief The power tool global config.
+ * @brief The ir cuda solver.
  * @version 0.1
- * @date 2023-04-08
+ * @date 2025-04-19
+ *
  */
 
 #pragma once
 
-constexpr unsigned c_num_threads = 48;
+#include <vector>
+#include <Eigen/Sparse>
 
-#ifndef COMPRESS_BIT
-#define COMPRESS_BIT
-#endif
+namespace iir {
 
-constexpr bool c_zlib_compress = false;
-constexpr unsigned c_compress_bit_size = 32;
+/**
+ * @brief ir cg solver.
+ * 
+ * @param A 
+ * @param b 
+ * @param x0 
+ * @param tol 
+ * @param max_iter 
+ * @return * std::vector<double> 
+ */
+std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double>& A,
+                                 Eigen::VectorXd& b,
+                                 Eigen::VectorXd& x0,
+                                 const double tol, const int max_iter);
 
-constexpr bool c_is_debug = false;
-constexpr double c_default_toggle = 0.02;  // time unit :ns, not used now, should be set by tcl cmd.
-constexpr double c_default_sp = 0.5;
-constexpr double c_default_clock_toggle = 2.0;
-constexpr double c_default_clock_sp = 0.5;
-constexpr double c_switch_power_K = 0.5;
-
-constexpr double c_default_period = 10;  // time unit :ns
-constexpr double c_default_toggle_relative_clk = 1.25;  // time unit :period
-
-// for estimate IR
-constexpr double c_resistance_coef = 0.5;
-
-namespace ista {}
-using namespace ista;
+}
