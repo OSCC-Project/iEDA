@@ -35,8 +35,6 @@ class GCell : public PlanarRect
   std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_global_result_map() { return _net_global_result_map; }
   std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_detailed_result_map() { return _net_detailed_result_map; }
   std::map<int32_t, std::set<EXTLayerRect*>>& get_net_detailed_patch_map() { return _net_detailed_patch_map; }
-  std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_final_result_map() { return _net_final_result_map; }
-  std::map<int32_t, std::set<EXTLayerRect*>>& get_net_final_patch_map() { return _net_final_patch_map; }
   std::set<Violation*>& get_violation_set() { return _violation_set; }
   // setter
   void set_type_layer_net_fixed_rect_map(const std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& type_layer_net_fixed_rect_map)
@@ -65,8 +63,6 @@ class GCell : public PlanarRect
   {
     _net_detailed_patch_map = net_detailed_patch_map;
   }
-  void set_net_final_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& net_final_result_map) { _net_final_result_map = net_final_result_map; }
-  void set_net_final_patch_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_final_patch_map) { _net_final_patch_map = net_final_patch_map; }
   void set_violation_set(const std::set<Violation*>& violation_set) { _violation_set = violation_set; }
   // function
 
@@ -87,10 +83,6 @@ class GCell : public PlanarRect
   std::map<int32_t, std::set<Segment<LayerCoord>*>> _net_detailed_result_map;
   // detailed routing patch
   std::map<int32_t, std::set<EXTLayerRect*>> _net_detailed_patch_map;
-  // final routing result
-  std::map<int32_t, std::set<Segment<LayerCoord>*>> _net_final_result_map;
-  // final patch shape 只有routing层有
-  std::map<int32_t, std::set<EXTLayerRect*>> _net_final_patch_map;
   // violation
   std::set<Violation*> _violation_set;
 };

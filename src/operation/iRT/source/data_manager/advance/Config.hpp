@@ -61,8 +61,6 @@ class Config
   std::string dr_temp_directory_path;  // building
   // **********  DetailedPatcher  ********** //
   std::string dp_temp_directory_path;  // building
-  // ********** ViolationRepairer ********** //
-  std::string vr_temp_directory_path;  // building
   // **********    EarlyRouter    ********** //
   std::string er_temp_directory_path;  // building
   /////////////////////////////////////////////
