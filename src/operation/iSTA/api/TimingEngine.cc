@@ -446,6 +446,17 @@ void TimingEngine::makeResistor(Net* net, RctNode* from_node, RctNode* to_node,
   }
   auto* rc_tree = rc_net->rct();
 
+  auto from_fanouts = from_node->get_fanout();
+
+  // judge whether the edge is already exist.
+  auto found = std::ranges::find_if(from_fanouts, [&](auto* edge) {
+    return &(edge->get_to()) == to_node;
+  });
+
+  if (found != from_fanouts.end()) {
+    return;
+  }
+
   rc_tree->insertEdge(from_node, to_node, res, true);
   rc_tree->insertEdge(to_node, from_node, res, false);
 }
