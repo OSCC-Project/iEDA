@@ -67,10 +67,7 @@ class PABox
   {
     _net_task_access_result_map = net_task_access_result_map;
   }
-  void set_pin_access_point_map(const std::map<PAPin*, AccessPoint>& pin_access_point_map)
-  {
-    _pin_access_point_map = pin_access_point_map;
-  }
+  void set_pin_access_point_map(const std::map<PAPin*, AccessPoint>& pin_access_point_map) { _pin_access_point_map = pin_access_point_map; }
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
   void set_layer_node_map(const std::vector<GridMap<PANode>>& layer_node_map) { _layer_node_map = layer_node_map; }
@@ -78,10 +75,7 @@ class PABox
   {
     _best_net_task_access_result_map = best_net_task_access_result_map;
   }
-  void set_best_pin_access_point_map(const std::map<PAPin*, AccessPoint>& best_pin_access_point_map)
-  {
-    _best_pin_access_point_map = best_pin_access_point_map;
-  }
+  void set_best_pin_access_point_map(const std::map<PAPin*, AccessPoint>& best_pin_access_point_map) { _best_pin_access_point_map = best_pin_access_point_map; }
   void set_best_violation_list(const std::vector<Violation>& best_violation_list) { _best_violation_list = best_violation_list; }
   // function
 #if 1  // astar

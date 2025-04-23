@@ -43,9 +43,9 @@ class Config
   std::string de_temp_directory_path;  // building
   // **********     GDSPlotter    ********** //
   std::string gp_temp_directory_path;  // building
-  // **********   PinAccessor     ********** //
+  // **********    PinAccessor    ********** //
   std::string pa_temp_directory_path;  // building
-  // **********   PinPatcher     ********** //
+  // **********    PinPatcher     ********** //
   std::string pp_temp_directory_path;  // building
   // ********     SupplyAnalyzer    ******** //
   std::string sa_temp_directory_path;  // building
@@ -59,6 +59,8 @@ class Config
   std::string ta_temp_directory_path;  // building
   // **********   DetailedRouter  ********** //
   std::string dr_temp_directory_path;  // building
+  // **********  DetailedPatcher  ********** //
+  std::string dp_temp_directory_path;  // building
   // ********** ViolationRepairer ********** //
   std::string vr_temp_directory_path;  // building
   // **********    EarlyRouter    ********** //

@@ -23,16 +23,16 @@
 
 namespace irt {
 
-class PPPatch
+class DPPatch
 {
  public:
-  PPPatch() = default;
-  PPPatch(const PlanarRect& planar_rect, const int32_t layer_idx)
+  DPPatch() = default;
+  DPPatch(const PlanarRect& planar_rect, const int32_t layer_idx)
   {
     _patch.set_real_rect(planar_rect);
     _patch.set_layer_idx(layer_idx);
   }
-  ~PPPatch() = default;
+  ~DPPatch() = default;
   // getter
   EXTLayerRect& get_patch() { return _patch; }
   Direction get_direction() const { return _direction; }
@@ -52,9 +52,9 @@ class PPPatch
   double _env_cost = 0.0;
 };
 
-struct CmpPPPatch
+struct CmpDPPatch
 {
-  bool operator()(const PPPatch& a, const PPPatch& b, Direction& layer_direction) const
+  bool operator()(const DPPatch& a, const DPPatch& b, Direction& layer_direction) const
   {
     SortStatus sort_status = SortStatus::kEqual;
     // 层方向优先

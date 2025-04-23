@@ -16,40 +16,31 @@
 // ***************************************************************************************
 #pragma once
 
-#include <string>
-
-#include "Logger.hpp"
+#include "EXTLayerRect.hpp"
+#include "LayerCoord.hpp"
 
 namespace irt {
 
-enum class PPObsType
+class DPSolution
 {
-  kNone = 0,
-  kPlanar = 1,
-  kSpace = 2
+ public:
+  DPSolution() = default;
+  ~DPSolution() = default;
+  // getter
+  std::vector<EXTLayerRect>& get_routing_patch_list() { return _routing_patch_list; }
+  double get_env_cost() const { return _env_cost; }
+  // setter
+  void set_routing_patch_list(const std::vector<EXTLayerRect>& routing_patch_list) { _routing_patch_list = routing_patch_list; }
+  void set_env_cost(const double env_cost) { _env_cost = env_cost; }
+
+ private:
+  std::vector<EXTLayerRect> _routing_patch_list;
+  double _env_cost = 0.0;
 };
 
-struct GetPPObsTypeName
+struct CmpDPSolution
 {
-  std::string operator()(const PPObsType& pp_obs_type) const
-  {
-    std::string pp_obs_type_name;
-    switch (pp_obs_type) {
-      case PPObsType::kNone:
-        pp_obs_type_name = "none";
-        break;
-      case PPObsType::kPlanar:
-        pp_obs_type_name = "planar";
-        break;
-      case PPObsType::kSpace:
-        pp_obs_type_name = "space";
-        break;
-      default:
-        RTLOG.error(Loc::current(), "Unrecognized type!");
-        break;
-    }
-    return pp_obs_type_name;
-  }
+  bool operator()(const DPSolution& a, const DPSolution& b) const { return a.get_env_cost() < b.get_env_cost(); }
 };
 
 }  // namespace irt

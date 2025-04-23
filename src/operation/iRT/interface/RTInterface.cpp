@@ -18,6 +18,7 @@
 
 #include "DRCEngine.hpp"
 #include "DRCInterface.hpp"
+#include "DetailedPatcher.hpp"
 #include "DetailedRouter.hpp"
 #include "EarlyRouter.hpp"
 #include "GDSPlotter.hpp"
@@ -154,6 +155,10 @@ void RTInterface::runRT()
   DetailedRouter::initInst();
   RTDR.route();
   DetailedRouter::destroyInst();
+
+  DetailedPatcher::initInst();
+  RTDP.patch();
+  DetailedPatcher::destroyInst();
 
   ViolationRepairer::initInst();
   RTVR.repair();

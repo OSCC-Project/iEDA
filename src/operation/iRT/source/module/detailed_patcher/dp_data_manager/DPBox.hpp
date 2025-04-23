@@ -16,29 +16,29 @@
 // ***************************************************************************************
 #pragma once
 
+#include "DPBoxId.hpp"
+#include "DPIterParam.hpp"
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
-#include "PPBoxId.hpp"
-#include "PPIterParam.hpp"
 #include "PriorityQueue.hpp"
 #include "ScaleAxis.hpp"
 #include "Violation.hpp"
 
 namespace irt {
 
-class PPBox
+class DPBox
 {
  public:
-  PPBox() = default;
-  ~PPBox() = default;
+  DPBox() = default;
+  ~DPBox() = default;
   // getter
   EXTPlanarRect& get_box_rect() { return _box_rect; }
-  PPBoxId& get_pp_box_id() { return _pp_box_id; }
-  PPIterParam* get_pp_iter_param() { return _pp_iter_param; }
+  DPBoxId& get_dp_box_id() { return _dp_box_id; }
+  DPIterParam* get_dp_iter_param() { return _dp_iter_param; }
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map() { return _type_layer_net_fixed_rect_map; }
-  std::map<int32_t, std::map<int32_t, std::set<Segment<LayerCoord>*>>>& get_net_pin_access_result_map() { return _net_pin_access_result_map; }
-  std::map<int32_t, std::set<EXTLayerRect*>>& get_net_access_patch_map() { return _net_access_patch_map; }
-  std::map<int32_t, std::vector<EXTLayerRect>>& get_net_task_access_patch_map() { return _net_task_access_patch_map; }
+  std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_detailed_result_map() { return _net_detailed_result_map; }
+  std::map<int32_t, std::set<EXTLayerRect*>>& get_net_detailed_patch_map() { return _net_detailed_patch_map; }
+  std::map<int32_t, std::vector<EXTLayerRect>>& get_net_task_detailed_patch_map() { return _net_task_detailed_patch_map; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
   std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>>& get_graph_routing_net_fixed_rect_map()
@@ -52,20 +52,23 @@ class PPBox
   std::set<Violation, CmpViolation>& get_tried_fix_violation_set() { return _tried_fix_violation_set; }
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
-  void set_pp_box_id(const PPBoxId& pp_box_id) { _pp_box_id = pp_box_id; }
-  void set_pp_iter_param(PPIterParam* pp_iter_param) { _pp_iter_param = pp_iter_param; }
+  void set_dp_box_id(const DPBoxId& dp_box_id) { _dp_box_id = dp_box_id; }
+  void set_dp_iter_param(DPIterParam* dp_iter_param) { _dp_iter_param = dp_iter_param; }
   void set_type_layer_net_fixed_rect_map(const std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& type_layer_net_fixed_rect_map)
   {
     _type_layer_net_fixed_rect_map = type_layer_net_fixed_rect_map;
   }
-  void set_net_pin_access_result_map(const std::map<int32_t, std::map<int32_t, std::set<Segment<LayerCoord>*>>>& net_pin_access_result_map)
+  void set_net_detailed_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& net_detailed_result_map)
   {
-    _net_pin_access_result_map = net_pin_access_result_map;
+    _net_detailed_result_map = net_detailed_result_map;
   }
-  void set_net_access_patch_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_access_patch_map) { _net_access_patch_map = net_access_patch_map; }
-  void set_net_task_access_patch_map(const std::map<int32_t, std::vector<EXTLayerRect>>& net_task_access_patch_map)
+  void set_net_detailed_patch_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_detailed_patch_map)
   {
-    _net_task_access_patch_map = net_task_access_patch_map;
+    _net_detailed_patch_map = net_detailed_patch_map;
+  }
+  void set_net_task_detailed_patch_map(const std::map<int32_t, std::vector<EXTLayerRect>>& net_task_detailed_patch_map)
+  {
+    _net_task_detailed_patch_map = net_task_detailed_patch_map;
   }
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
@@ -96,13 +99,13 @@ class PPBox
 #endif
  private:
   EXTPlanarRect _box_rect;
-  PPBoxId _pp_box_id;
-  PPIterParam* _pp_iter_param = nullptr;
+  DPBoxId _dp_box_id;
+  DPIterParam* _dp_iter_param = nullptr;
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
-  std::map<int32_t, std::map<int32_t, std::set<Segment<LayerCoord>*>>> _net_pin_access_result_map;
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> _net_detailed_result_map;
   std::vector<Violation> _violation_list;
-  std::map<int32_t, std::set<EXTLayerRect*>> _net_access_patch_map;
-  std::map<int32_t, std::vector<EXTLayerRect>> _net_task_access_patch_map;
+  std::map<int32_t, std::set<EXTLayerRect*>> _net_detailed_patch_map;
+  std::map<int32_t, std::vector<EXTLayerRect>> _net_task_detailed_patch_map;
   ScaleAxis _box_track_axis;
   std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>> _graph_routing_net_fixed_rect_map;
   std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>> _graph_routing_net_routed_rect_map;
