@@ -1246,6 +1246,11 @@ std::map<int, double> InitSTA::patchTimingMap(std::map<int, std::pair<std::pair<
 {
   std::map<int, double> patch_timing_map;
   auto inst_timing_map = STA_INST->get_ista()->displayTimingMap(ista::AnalysisMode::kMax);
+  if (inst_timing_map.empty()) {
+    LOG_ERROR << "No instance timing map found.";
+    return patch_timing_map;
+  }
+
   auto* idb_adapter = STA_INST->getIDBAdapter();
   auto dbu = idb_adapter->get_dbu();
 
@@ -1325,6 +1330,12 @@ std::map<int, double> InitSTA::patchPowerMap(std::map<int, std::pair<std::pair<i
 {
   std::map<int, double> patch_power_map;
   auto inst_power_map = PW_INST->get_power()->displayInstancePowerMap();
+
+  if (inst_power_map.empty()) {
+    LOG_ERROR << "No instance power map found.";
+    return patch_power_map;
+  }
+
   auto* idb_adapter = STA_INST->getIDBAdapter();
   auto dbu = idb_adapter->get_dbu();
   
@@ -1409,6 +1420,11 @@ std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<
   std::string power_net_name = "VDD";
   PW_INST->runIRAnalysis(power_net_name);
   auto instance_to_ir_drop = PW_INST->getInstanceIRDrop();
+
+  if (instance_to_ir_drop.empty()) {
+    LOG_ERROR << "No instance IR drop map found.";
+    return patch_ir_drop_map;
+  }
 
   auto* idb_adapter = STA_INST->getIDBAdapter();
   auto dbu = idb_adapter->get_dbu();
