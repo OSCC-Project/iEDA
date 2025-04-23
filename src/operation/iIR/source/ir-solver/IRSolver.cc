@@ -172,6 +172,7 @@ Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A, const Ei
   
   int i = 0;
   for (; i < max_iter; ++i) {
+      LOG_INFO_EVERY_N(100) << "CPU CG iteration num: " << i << " total " << max_iter;
       Eigen::VectorXd Ap = A * p;
       double alpha = rsold / p.dot(Ap);
       x += alpha * p;
@@ -184,7 +185,7 @@ Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A, const Ei
       rsold = rsnew;
   }
 
-  LOG_INFO << "CPU CG iteration num: " << i - 1 << std::endl;
+  LOG_INFO << "CPU CG iteration num: " << i - 1;
   LOG_INFO << "Final Residual Norm: " << sqrt(rsold);
 
   return x;
