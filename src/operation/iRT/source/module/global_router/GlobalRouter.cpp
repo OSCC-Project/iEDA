@@ -463,6 +463,9 @@ void GlobalRouter::initGRTaskList(GRModel& gr_model, GRBox& gr_box)
     for (auto& [net_idx, access_point_set] : net_access_point_map) {
       std::map<int32_t, GRGroup> pin_group_map;
       for (AccessPoint* access_point : access_point_set) {
+        if (!RTUTIL.isInside(box_grid_rect, access_point->get_grid_coord())) {
+          continue;
+        }
         pin_group_map[access_point->get_pin_idx()].get_coord_list().push_back(access_point->getGridLayerCoord());
       }
       for (auto& [pin_idx, group] : pin_group_map) {

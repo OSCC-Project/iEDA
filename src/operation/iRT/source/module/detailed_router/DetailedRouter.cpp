@@ -416,6 +416,9 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
     for (auto& [net_idx, access_point_set] : net_access_point_map) {
       std::map<int32_t, DRGroup> pin_group_map;
       for (AccessPoint* access_point : access_point_set) {
+        if (!RTUTIL.isInside(box_real_rect, access_point->get_real_coord())) {
+          continue;
+        }
         pin_group_map[access_point->get_pin_idx()].get_coord_list().push_back(access_point->getRealLayerCoord());
       }
       for (auto& [pin_idx, group] : pin_group_map) {

@@ -107,17 +107,32 @@ void DataManager::updateFixedRectToGCellMap(ChangeType change_type, int32_t net_
   }
 }
 
-void DataManager::updateAccessNetPointToGCellMap(ChangeType change_type, int32_t net_idx, AccessPoint* access_point)
+void DataManager::updateNetAccessPointToGCellMap(ChangeType change_type, int32_t net_idx, AccessPoint* access_point)
 {
+  ScaleAxis& gcell_axis = _database.get_gcell_axis();
+  Die& die = _database.get_die();
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
-
-  auto& net_access_point_map = gcell_map[access_point->get_grid_x()][access_point->get_grid_y()].get_net_access_point_map();
-  if (change_type == ChangeType::kAdd) {
-    net_access_point_map[net_idx].insert(access_point);
-  } else if (change_type == ChangeType::kDel) {
-    net_access_point_map[net_idx].erase(access_point);
-    if (net_access_point_map[net_idx].empty()) {
-      net_access_point_map.erase(net_idx);
+  int32_t detection_distance = _database.get_detection_distance();
+  if (detection_distance == -1) {
+    RTLOG.error(Loc::current(), "The detection_distance is not initialize!");
+  }
+  PlanarRect real_rect = RTUTIL.getEnlargedRect(access_point->get_real_coord(), detection_distance);
+  if (!RTUTIL.hasRegularRect(real_rect, die.get_real_rect())) {
+    return;
+  }
+  real_rect = RTUTIL.getRegularRect(real_rect, die.get_real_rect());
+  PlanarRect grid_rect = RTUTIL.getClosedGCellGridRect(real_rect, gcell_axis);
+  for (int32_t x = grid_rect.get_ll_x(); x <= grid_rect.get_ur_x(); x++) {
+    for (int32_t y = grid_rect.get_ll_y(); y <= grid_rect.get_ur_y(); y++) {
+      auto& net_access_point_map = gcell_map[x][y].get_net_access_point_map();
+      if (change_type == ChangeType::kAdd) {
+        net_access_point_map[net_idx].insert(access_point);
+      } else if (change_type == ChangeType::kDel) {
+        net_access_point_map[net_idx].erase(access_point);
+        if (net_access_point_map[net_idx].empty()) {
+          net_access_point_map.erase(net_idx);
+        }
+      }
     }
   }
   if (change_type == ChangeType::kDel) {
