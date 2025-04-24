@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include "AccessPoint.hpp"
 #include "DPBoxId.hpp"
 #include "DPIterParam.hpp"
 #include "LayerCoord.hpp"
@@ -36,6 +37,7 @@ class DPBox
   DPBoxId& get_dp_box_id() { return _dp_box_id; }
   DPIterParam* get_dp_iter_param() { return _dp_iter_param; }
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map() { return _type_layer_net_fixed_rect_map; }
+  std::map<int32_t, std::set<AccessPoint*>>& get_net_access_point_map() { return _net_access_point_map; }
   std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_detailed_result_map() { return _net_detailed_result_map; }
   std::map<int32_t, std::set<EXTLayerRect*>>& get_net_detailed_patch_map() { return _net_detailed_patch_map; }
   std::map<int32_t, std::vector<EXTLayerRect>>& get_net_task_detailed_patch_map() { return _net_task_detailed_patch_map; }
@@ -44,6 +46,10 @@ class DPBox
   std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>>& get_graph_routing_net_fixed_rect_map()
   {
     return _graph_routing_net_fixed_rect_map;
+  }
+  std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>>& get_graph_routing_net_access_rect_map()
+  {
+    return _graph_routing_net_access_rect_map;
   }
   std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>>& get_graph_routing_net_routed_rect_map()
   {
@@ -58,6 +64,7 @@ class DPBox
   {
     _type_layer_net_fixed_rect_map = type_layer_net_fixed_rect_map;
   }
+  void set_net_access_point_map(const std::map<int32_t, std::set<AccessPoint*>>& net_access_point_map) { _net_access_point_map = net_access_point_map; }
   void set_net_detailed_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& net_detailed_result_map)
   {
     _net_detailed_result_map = net_detailed_result_map;
@@ -76,6 +83,11 @@ class DPBox
       const std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>>& graph_routing_net_fixed_rect_map)
   {
     _graph_routing_net_fixed_rect_map = graph_routing_net_fixed_rect_map;
+  }
+  void set_graph_routing_net_access_rect_map(
+      const std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>>& graph_routing_net_access_rect_map)
+  {
+    _graph_routing_net_access_rect_map = graph_routing_net_access_rect_map;
   }
   void set_graph_routing_net_routed_rect_map(
       const std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>>& graph_routing_net_routed_rect_map)
@@ -102,12 +114,14 @@ class DPBox
   DPBoxId _dp_box_id;
   DPIterParam* _dp_iter_param = nullptr;
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
+  std::map<int32_t, std::set<AccessPoint*>> _net_access_point_map;
   std::map<int32_t, std::set<Segment<LayerCoord>*>> _net_detailed_result_map;
   std::vector<Violation> _violation_list;
   std::map<int32_t, std::set<EXTLayerRect*>> _net_detailed_patch_map;
   std::map<int32_t, std::vector<EXTLayerRect>> _net_task_detailed_patch_map;
   ScaleAxis _box_track_axis;
   std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>> _graph_routing_net_fixed_rect_map;
+  std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>> _graph_routing_net_access_rect_map;
   std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>> _graph_routing_net_routed_rect_map;
   std::set<Violation, CmpViolation> _tried_fix_violation_set;
 #if 1

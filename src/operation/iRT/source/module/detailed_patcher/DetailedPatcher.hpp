@@ -57,6 +57,7 @@ class DetailedPatcher
   void buildBoxSchedule(DPModel& dp_model);
   void routeDPBoxMap(DPModel& dp_model);
   void buildFixedRect(DPBox& dp_box);
+  void buildAccessPoint(DPBox& dp_box);
   void buildNetResult(DPBox& dp_box);
   void buildNetPatch(DPBox& dp_box);
   void buildViolation(DPBox& dp_box);
@@ -65,9 +66,11 @@ class DetailedPatcher
   void buildGraphShapeMap(DPBox& dp_box);
   void routeDPBox(DPBox& dp_box);
   void initSingleTask(DPBox& dp_box);
-  std::vector<DPSolution> getSolution(DPBox& dp_box);
+  std::vector<DPSolution> getSolutionList(DPBox& dp_box);
   DPSolution getNewSolution(DPBox& dp_box);
   void updateCurrViolationList(DPBox& dp_box, DPSolution& dp_solution);
+  void updateCurrPatchList(DPBox& dp_box, DPSolution& dp_solution);
+  void updateCurrViolationList(DPBox& dp_box);
   std::vector<Violation> getViolationList(DPBox& dp_box);
   void updateCurrSolvedStatus(DPBox& dp_box);
   void updateTaskPatch(DPBox& dp_box);
@@ -80,14 +83,17 @@ class DetailedPatcher
   bool stopIteration(DPModel& dp_model);
 
 #if 1  // get env
-  double getEnvCost(DPBox& dp_box, int32_t net_idx, EXTLayerRect& patch);
+  double getFixedRectCost(DPBox& dp_box, int32_t net_idx, EXTLayerRect& patch);
+  double getAccessRectCost(DPBox& dp_box, int32_t net_idx, EXTLayerRect& patch);
+  double getRoutedRectCost(DPBox& dp_box, int32_t net_idx, EXTLayerRect& patch);
 #endif
 
 #if 1  // update env
   void updateFixedRectToGraph(DPBox& dp_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
-  void updateFixedRectToGraph(DPBox& dp_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
+  void updateFixedRectToGraph(DPBox& dp_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& fixed_rect, bool is_routing);
+  void updateAccessRectToGraph(DPBox& dp_box, ChangeType change_type, int32_t net_idx, LayerRect& real_rect, bool is_routing);
   void updateRoutedRectToGraph(DPBox& dp_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
-  void updateRoutedRectToGraph(DPBox& dp_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch);
+  void updateRoutedRectToGraph(DPBox& dp_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* routed_rect, bool is_routing);
   std::vector<PlanarRect> getGraphShape(DPBox& dp_box, NetShape& net_shape);
   std::vector<PlanarRect> getRoutingGraphShapeList(DPBox& dp_box, NetShape& net_shape);
 #endif

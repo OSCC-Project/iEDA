@@ -22,13 +22,16 @@ class DPIterParam
 {
  public:
   DPIterParam() = default;
-  DPIterParam(int32_t size, int32_t offset, int32_t schedule_interval, double fixed_rect_unit, double routed_rect_unit)
+  DPIterParam(int32_t size, int32_t offset, int32_t schedule_interval, double fixed_rect_unit, double access_rect_unit, double routed_rect_unit,
+              bool force_patch)
   {
     _size = size;
     _offset = offset;
     _schedule_interval = schedule_interval;
     _fixed_rect_unit = fixed_rect_unit;
+    _access_rect_unit = access_rect_unit;
     _routed_rect_unit = routed_rect_unit;
+    _force_patch = force_patch;
   }
   ~DPIterParam() = default;
   // getter
@@ -36,20 +39,26 @@ class DPIterParam
   int32_t get_offset() const { return _offset; }
   int32_t get_schedule_interval() const { return _schedule_interval; }
   double get_fixed_rect_unit() const { return _fixed_rect_unit; }
+  double get_access_rect_unit() const { return _access_rect_unit; }
   double get_routed_rect_unit() const { return _routed_rect_unit; }
+  bool get_force_patch() const { return _force_patch; }
   // setter
   void set_size(const int32_t size) { _size = size; }
   void set_offset(const int32_t offset) { _offset = offset; }
   void set_schedule_interval(const int32_t schedule_interval) { _schedule_interval = schedule_interval; }
   void set_fixed_rect_unit(const double fixed_rect_unit) { _fixed_rect_unit = fixed_rect_unit; }
+  void set_access_rect_unit(const double access_rect_unit) { _access_rect_unit = access_rect_unit; }
   void set_routed_rect_unit(const double routed_rect_unit) { _routed_rect_unit = routed_rect_unit; }
+  void set_force_patch(const bool force_patch) { _force_patch = force_patch; }
 
  private:
   int32_t _size = -1;
   int32_t _offset = -1;
   int32_t _schedule_interval = -1;
   double _fixed_rect_unit = 0;
+  double _access_rect_unit = 0;
   double _routed_rect_unit = 0;
+  bool _force_patch = 0;
 };
 
 }  // namespace irt
