@@ -540,6 +540,10 @@ void RuleValidator::verifyEnclosureEdge(RVBox& rv_box)
               GTLRectInt query_gtl_rect = DRCUTIL.convertToGTLRectInt(query_planar_rect);
 
               for (int32_t cut_layer_idx : cut_layer_idx_list) {
+                // 判断rule2的ABOVE字段
+                if (routing_layer_idx == 1 && cut_layer_idx == 0) {
+                  continue;
+                }
                 // 搜索当前矩形内的via，无via则提前返回
                 std::vector<std::pair<BGRectInt, int32_t>> vias_in_current_rect
                     = queryRectbyRtreeWithWithin(cut_layer_all_query_tree, cut_layer_idx, gtl::xl(query_gtl_rect), gtl::yl(query_gtl_rect),
