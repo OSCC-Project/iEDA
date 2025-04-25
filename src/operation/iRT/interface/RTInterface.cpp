@@ -26,6 +26,7 @@
 #include "LayerAssigner.hpp"
 #include "Monitor.hpp"
 #include "PinAccessor.hpp"
+#include "PinPatcher.hpp"
 #include "RTInterface.hpp"
 #include "SupplyAnalyzer.hpp"
 #include "TopologyGenerator.hpp"
@@ -125,6 +126,10 @@ void RTInterface::runRT()
   PinAccessor::initInst();
   RTPA.access();
   PinAccessor::destroyInst();
+
+  PinPatcher::initInst();
+  RTPP.patch();
+  PinPatcher::destroyInst();
 
   SupplyAnalyzer::initInst();
   RTSA.analyze();
@@ -1813,19 +1818,6 @@ void RTInterface::routeTAPanel(TAPanel& ta_panel)
         ls_shape.ur_x = fixed_rect->get_real_ur_x();
         ls_shape.ur_y = fixed_rect->get_real_ur_y();
         ls_panel.hard_shape_list.push_back(ls_shape);
-      }
-    }
-    for (auto& [net_idx, pin_access_result_map] : ta_panel.get_net_pin_access_result_map()) {
-      for (auto& [pin_idx, rect_list] : pin_access_result_map) {
-        for (auto& rect : rect_list) {
-          lsa::LSShape ls_shape;
-          ls_shape.net_id = net_idx;
-          ls_shape.ll_x = rect.get_ll_x();
-          ls_shape.ll_y = rect.get_ll_y();
-          ls_shape.ur_x = rect.get_ur_x();
-          ls_shape.ur_y = rect.get_ur_y();
-          ls_panel.hard_shape_list.push_back(ls_shape);
-        }
       }
     }
     for (auto& [net_idx, rect_list] : ta_panel.get_net_detailed_result_map()) {

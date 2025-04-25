@@ -16,29 +16,28 @@
 // ***************************************************************************************
 #pragma once
 
-#include "RTHeader.hpp"
-#include "SAComParam.hpp"
+#include <string>
+#include <vector>
+
+#include "EXTLayerRect.hpp"
+#include "LayerCoord.hpp"
+#include "Pin.hpp"
 
 namespace irt {
 
-class SAModel
+class PPPin : public Pin
 {
  public:
-  SAModel() = default;
-  ~SAModel() = default;
+  PPPin() = default;
+  explicit PPPin(const Pin& pin) : Pin(pin) {}
+  ~PPPin() = default;
   // getter
-  SAComParam& get_sa_com_param() { return _sa_com_param; }
-  std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>>& get_grid_pair_list_list() { return _grid_pair_list_list; }
+
   // setter
-  void set_sa_com_param(const SAComParam& sa_com_param) { _sa_com_param = sa_com_param; }
-  void set_grid_pair_list_list(const std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>>& grid_pair_list_list)
-  {
-    _grid_pair_list_list = grid_pair_list_list;
-  }
+
+  // function
 
  private:
-  SAComParam _sa_com_param;
-  std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>> _grid_pair_list_list;
 };
 
 }  // namespace irt

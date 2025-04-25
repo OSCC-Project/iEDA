@@ -16,29 +16,34 @@
 // ***************************************************************************************
 #pragma once
 
-#include "RTHeader.hpp"
-#include "SAComParam.hpp"
+#include "ConnectType.hpp"
+#include "Net.hpp"
+#include "PPPin.hpp"
+#include "Pin.hpp"
 
 namespace irt {
 
-class SAModel
+class PPNet
 {
  public:
-  SAModel() = default;
-  ~SAModel() = default;
+  PPNet() = default;
+  ~PPNet() = default;
   // getter
-  SAComParam& get_sa_com_param() { return _sa_com_param; }
-  std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>>& get_grid_pair_list_list() { return _grid_pair_list_list; }
+  Net* get_origin_net() { return _origin_net; }
+  int32_t get_net_idx() const { return _net_idx; }
+  ConnectType get_connect_type() const { return _connect_type; }
+  std::vector<PPPin>& get_pp_pin_list() { return _pp_pin_list; }
   // setter
-  void set_sa_com_param(const SAComParam& sa_com_param) { _sa_com_param = sa_com_param; }
-  void set_grid_pair_list_list(const std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>>& grid_pair_list_list)
-  {
-    _grid_pair_list_list = grid_pair_list_list;
-  }
+  void set_origin_net(Net* origin_net) { _origin_net = origin_net; }
+  void set_net_idx(const int32_t net_idx) { _net_idx = net_idx; }
+  void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
+  void set_pp_pin_list(const std::vector<PPPin>& pp_pin_list) { _pp_pin_list = pp_pin_list; }
 
  private:
-  SAComParam _sa_com_param;
-  std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>> _grid_pair_list_list;
+  Net* _origin_net = nullptr;
+  int32_t _net_idx = -1;
+  ConnectType _connect_type = ConnectType::kNone;
+  std::vector<PPPin> _pp_pin_list;
 };
 
 }  // namespace irt

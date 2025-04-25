@@ -57,7 +57,7 @@ void GlobalRouter::route()
   buildLayerNodeMap(gr_model);
   buildOrientSupply(gr_model);
   reviseNodeDemand(gr_model);
-  iterativeGRModel(gr_model);
+  routeGRModel(gr_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -162,7 +162,7 @@ void GlobalRouter::reviseNodeDemand(GRModel& gr_model)
   }
 }
 
-void GlobalRouter::iterativeGRModel(GRModel& gr_model)
+void GlobalRouter::routeGRModel(GRModel& gr_model)
 {
   double prefer_wire_unit = 1;
   double non_prefer_wire_unit = 2.5 * prefer_wire_unit;

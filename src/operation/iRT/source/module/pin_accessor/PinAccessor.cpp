@@ -66,7 +66,7 @@ void PinAccessor::access()
   buildBlockTrimRectMap(pa_model);
   initAccessPointList(pa_model);
   uploadAccessPointList(pa_model);
-  iterativePAModel(pa_model);
+  routePAModel(pa_model);
   uploadAccessPoint(pa_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -529,7 +529,7 @@ void PinAccessor::uploadAccessPointList(PAModel& pa_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void PinAccessor::iterativePAModel(PAModel& pa_model)
+void PinAccessor::routePAModel(PAModel& pa_model)
 {
   int32_t cost_unit = RTDM.getOnlyPitch();
   double prefer_wire_unit = 1;
@@ -1620,29 +1620,23 @@ void PinAccessor::updateAccessPoint(PABox& pa_box)
       segment_coord_list.push_back(segment.get_first());
       segment_coord_list.push_back(segment.get_second());
     }
-    AccessPoint origin_access_point;
-    AccessPoint extend_access_point;
+    AccessPoint access_point;
     if (segment_coord_list.empty()) {
-      origin_access_point = AccessPoint(pa_task->get_pa_pin()->get_pin_idx(), RTUTIL.getFirstEqualCoord(pin_shape_coord_list, target_coord_list));
-      extend_access_point = AccessPoint(pa_task->get_pa_pin()->get_pin_idx(), RTUTIL.getFirstEqualCoord(pin_shape_coord_list, target_coord_list));
+      access_point = AccessPoint(pa_task->get_pa_pin()->get_pin_idx(), RTUTIL.getFirstEqualCoord(pin_shape_coord_list, target_coord_list));
     } else {
-      origin_access_point = AccessPoint(pa_task->get_pa_pin()->get_pin_idx(), RTUTIL.getFirstEqualCoord(pin_shape_coord_list, segment_coord_list));
-      extend_access_point = AccessPoint(pa_task->get_pa_pin()->get_pin_idx(), RTUTIL.getFirstEqualCoord(target_coord_list, segment_coord_list));
+      access_point = AccessPoint(pa_task->get_pa_pin()->get_pin_idx(), RTUTIL.getFirstEqualCoord(pin_shape_coord_list, segment_coord_list));
     }
-    if (origin_access_point.get_real_coord() == PlanarCoord(-1, -1)) {
-      RTLOG.error(Loc::current(), "The origin_access_point creation failed!");
+    if (access_point.get_real_coord() == PlanarCoord(-1, -1)) {
+      RTLOG.error(Loc::current(), "The access_point creation failed!");
     }
-    if (extend_access_point.get_real_coord() == PlanarCoord(-1, -1)) {
-      RTLOG.error(Loc::current(), "The extend_access_point creation failed!");
-    }
-    pa_box.get_pin_origin_extend_map()[pa_task->get_pa_pin()] = {origin_access_point, extend_access_point};
+    pa_box.get_pin_access_point_map()[pa_task->get_pa_pin()] = access_point;
   }
 }
 
 void PinAccessor::updateBestResult(PABox& pa_box)
 {
   std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& best_net_task_access_result_map = pa_box.get_best_net_task_access_result_map();
-  std::map<PAPin*, std::pair<AccessPoint, AccessPoint>>& best_pin_origin_extend_map = pa_box.get_best_pin_origin_extend_map();
+  std::map<PAPin*, AccessPoint>& best_pin_access_point_map = pa_box.get_best_pin_access_point_map();
   std::vector<Violation>& best_violation_list = pa_box.get_best_violation_list();
 
   int32_t curr_violation_num = static_cast<int32_t>(pa_box.get_violation_list().size());
@@ -1652,7 +1646,7 @@ void PinAccessor::updateBestResult(PABox& pa_box)
     }
   }
   best_net_task_access_result_map = pa_box.get_net_task_access_result_map();
-  best_pin_origin_extend_map = pa_box.get_pin_origin_extend_map();
+  best_pin_access_point_map = pa_box.get_pin_access_point_map();
   best_violation_list = pa_box.get_violation_list();
 }
 
@@ -1663,6 +1657,9 @@ void PinAccessor::updateTaskSchedule(PABox& pa_box, std::vector<PATask*>& routin
   std::set<PATask*> visited_routing_task_set;
   std::vector<PATask*> new_routing_task_list;
   for (Violation& violation : pa_box.get_violation_list()) {
+    if (!RTUTIL.isInside(pa_box.get_box_rect().get_real_rect(), violation.get_violation_shape().get_real_rect())) {
+      continue;
+    }
     for (PATask* pa_task : pa_box.get_pa_task_list()) {
       if (!RTUTIL.exist(violation.get_violation_net_set(), pa_task->get_net_idx())) {
         continue;
@@ -1701,9 +1698,8 @@ void PinAccessor::uploadBestResult(PABox& pa_box)
       RTDM.updateNetPinAccessResultToGCellMap(ChangeType::kAdd, pa_task->get_net_idx(), pa_task->get_pa_pin()->get_pin_idx(), new Segment<LayerCoord>(segment));
     }
   }
-  for (auto& [pa_pin, origin_extend_pair] : pa_box.get_best_pin_origin_extend_map()) {
-    pa_pin->set_origin_access_point(origin_extend_pair.first);
-    pa_pin->set_extend_access_point(origin_extend_pair.second);
+  for (auto& [pa_pin, access_point] : pa_box.get_best_pin_access_point_map()) {
+    pa_pin->set_access_point(access_point);
   }
   for (Violation& violation : pa_box.get_best_violation_list()) {
     RTDM.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
@@ -1775,11 +1771,6 @@ std::vector<Violation> PinAccessor::getViolationList(PAModel& pa_model)
         }
       }
     }
-    for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
-      for (Segment<LayerCoord>* segment : segment_set) {
-        net_result_map[net_idx].push_back(segment);
-      }
-    }
     std::set<int32_t> need_checked_net_set;
     for (PANet& pa_net : pa_model.get_pa_net_list()) {
       need_checked_net_set.insert(pa_net.get_net_idx());
@@ -1822,8 +1813,7 @@ void PinAccessor::updateBestResult(PAModel& pa_model)
   }
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      pa_pin.set_best_origin_access_point(pa_pin.get_origin_access_point());
-      pa_pin.set_best_extend_access_point(pa_pin.get_extend_access_point());
+      pa_pin.set_best_access_point(pa_pin.get_access_point());
     }
   }
   best_violation_list.clear();
@@ -1882,8 +1872,7 @@ void PinAccessor::uploadBestResult(PAModel& pa_model)
   }
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      pa_pin.set_origin_access_point(pa_pin.get_best_origin_access_point());
-      pa_pin.set_extend_access_point(pa_pin.get_best_extend_access_point());
+      pa_pin.set_access_point(pa_pin.get_best_access_point());
     }
   }
   for (Violation violation : pa_model.get_best_violation_list()) {
@@ -1911,8 +1900,7 @@ void PinAccessor::uploadAccessPoint(PAModel& pa_model)
     }
     std::vector<PlanarCoord> coord_list;
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      coord_list.push_back(pa_pin.get_origin_access_point().get_real_coord());
-      coord_list.push_back(pa_pin.get_extend_access_point().get_real_coord());
+      coord_list.push_back(pa_pin.get_access_point().get_real_coord());
     }
     BoundingBox& bounding_box = pa_net.get_bounding_box();
     bounding_box.set_real_rect(RTUTIL.getBoundingBox(coord_list));
@@ -1923,17 +1911,9 @@ void PinAccessor::uploadAccessPoint(PAModel& pa_model)
       if (origin_pin.get_pin_idx() != pa_pin.get_pin_idx()) {
         RTLOG.error(Loc::current(), "The pin idx is not equal!");
       }
-      AccessPoint& origin_access_point = pa_pin.get_origin_access_point();
-      origin_access_point.set_grid_coord(RTUTIL.getGCellGridCoordByBBox(origin_access_point.get_real_coord(), gcell_axis, bounding_box));
-      origin_pin.set_origin_access_point(origin_access_point);
-
-      AccessPoint& extend_access_point = pa_pin.get_extend_access_point();
-      extend_access_point.set_grid_coord(RTUTIL.getGCellGridCoordByBBox(extend_access_point.get_real_coord(), gcell_axis, bounding_box));
-      origin_pin.set_extend_access_point(extend_access_point);
-
-      pa_pin.set_access_point(pa_pin.get_extend_access_point());
-      // 之后流程将暂时使用extend_access_point作为主要access point
-      origin_pin.set_access_point(origin_pin.get_extend_access_point());
+      AccessPoint& access_point = pa_pin.get_access_point();
+      access_point.set_grid_coord(RTUTIL.getGCellGridCoordByBBox(access_point.get_real_coord(), gcell_axis, bounding_box));
+      origin_pin.set_access_point(access_point);
       RTDM.updateAccessNetPointToGCellMap(ChangeType::kAdd, pa_net.get_net_idx(), &origin_pin.get_access_point());
     }
   }
@@ -2302,8 +2282,7 @@ void PinAccessor::updateSummary(PAModel& pa_model)
 
   for (PANet& pa_net : pa_net_list) {
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      AccessPoint& extend_access_point = pa_pin.get_extend_access_point();
-      routing_access_point_num_map[extend_access_point.get_layer_idx()]++;
+      routing_access_point_num_map[pa_pin.get_access_point().get_layer_idx()]++;
       total_access_point_num++;
     }
   }
@@ -2571,7 +2550,7 @@ void PinAccessor::debugPlotPAModel(PAModel& pa_model, std::string flag)
     }
   }
 
-  // net_pin_access_result
+  // access result
   for (auto& [net_idx, pin_access_result_map] : RTDM.getNetPinAccessResultMap(die)) {
     GPStruct access_result_struct(RTUTIL.getString("access_result(net_", net_idx, ")"));
     for (auto& [pin_idx, segment_set] : pin_access_result_map) {
@@ -2974,7 +2953,7 @@ void PinAccessor::debugPlotPABox(PABox& pa_box, std::string flag)
     }
   }
 
-  // net_pin_access_result
+  // access result
   for (auto& [net_idx, pin_access_result_map] : pa_box.get_net_pin_access_result_map()) {
     GPStruct access_result_struct(RTUTIL.getString("access_result(net_", net_idx, ")"));
     for (auto& [pin_idx, segment_set] : pin_access_result_map) {

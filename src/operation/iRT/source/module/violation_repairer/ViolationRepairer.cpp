@@ -103,29 +103,29 @@ VRNet ViolationRepairer::convertToVRNet(Net& net)
 
 void ViolationRepairer::updateAccessPoint(VRModel& vr_model)
 {
-  Die& die = RTDM.getDatabase().get_die();
+  // Die& die = RTDM.getDatabase().get_die();
 
-  for (auto& [net_idx, access_point_set] : RTDM.getNetAccessPointMap(die)) {
-    for (AccessPoint* access_point : access_point_set) {
-      RTDM.updateAccessNetPointToGCellMap(ChangeType::kDel, net_idx, access_point);
-    }
-  }
-  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
-    Net* origin_net = vr_net.get_origin_net();
-    if (origin_net->get_net_idx() != vr_net.get_net_idx()) {
-      RTLOG.error(Loc::current(), "The net idx is not equal!");
-    }
-    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
-      Pin& origin_pin = origin_net->get_pin_list()[vr_pin.get_pin_idx()];
-      if (origin_pin.get_pin_idx() != vr_pin.get_pin_idx()) {
-        RTLOG.error(Loc::current(), "The pin idx is not equal!");
-      }
-      vr_pin.set_access_point(vr_pin.get_origin_access_point());
-      // 之后流程将暂时使用origin_access_point作为主要access point
-      origin_pin.set_access_point(origin_pin.get_origin_access_point());
-      RTDM.updateAccessNetPointToGCellMap(ChangeType::kAdd, vr_net.get_net_idx(), &origin_pin.get_access_point());
-    }
-  }
+  // for (auto& [net_idx, access_point_set] : RTDM.getNetAccessPointMap(die)) {
+  //   for (AccessPoint* access_point : access_point_set) {
+  //     RTDM.updateAccessNetPointToGCellMap(ChangeType::kDel, net_idx, access_point);
+  //   }
+  // }
+  // for (VRNet& vr_net : vr_model.get_vr_net_list()) {
+  //   Net* origin_net = vr_net.get_origin_net();
+  //   if (origin_net->get_net_idx() != vr_net.get_net_idx()) {
+  //     RTLOG.error(Loc::current(), "The net idx is not equal!");
+  //   }
+  //   for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
+  //     Pin& origin_pin = origin_net->get_pin_list()[vr_pin.get_pin_idx()];
+  //     if (origin_pin.get_pin_idx() != vr_pin.get_pin_idx()) {
+  //       RTLOG.error(Loc::current(), "The pin idx is not equal!");
+  //     }
+  //     vr_pin.set_access_point(vr_pin.get_origin_access_point());
+  //     // 之后流程将暂时使用origin_access_point作为主要access point
+  //     origin_pin.set_access_point(origin_pin.get_origin_access_point());
+  //     RTDM.updateAccessNetPointToGCellMap(ChangeType::kAdd, vr_net.get_net_idx(), &origin_pin.get_access_point());
+  //   }
+  // }
 }
 
 void ViolationRepairer::initNetFinalResultMap(VRModel& vr_model)
@@ -1084,7 +1084,7 @@ std::vector<VRSolution> ViolationRepairer::routeByMinimumArea(VRBox& vr_box)
     int32_t wire_width = routing_layer.get_min_width();
     int32_t min_area = routing_layer.get_min_area();
 
-    int32_t require_area = min_area - gtl::area(gtl_min_area_poly_set);
+    int32_t require_area = static_cast<int32_t>(min_area - gtl::area(gtl_min_area_poly_set));
     int32_t require_length = (require_area + routing_layer.get_min_width() - 1) / routing_layer.get_min_width();
     if (require_area < 0) {
       return {};  // 理论上不会出现这种情况
@@ -1225,7 +1225,7 @@ std::vector<VRSolution> ViolationRepairer::routeByMinimumArea(VRBox& vr_box)
       GTLPolySetInt patched_poly = gtl_min_area_poly_set;
       bool inside = true;
       for (EXTLayerRect& patch : patch_list) {
-                gtl_min_area_poly_set += RTUTIL.convertToGTLRectInt(patch.get_real_rect());
+        gtl_min_area_poly_set += RTUTIL.convertToGTLRectInt(patch.get_real_rect());
         if (!RTUTIL.isInside(vr_box.get_box_rect().get_real_rect(), patch.get_real_rect()) || patch.get_real_rect().get_ll_x() % manufacture_grid != 0
             || patch.get_real_rect().get_ll_y() % manufacture_grid != 0 || patch.get_real_rect().get_ur_x() % manufacture_grid != 0
             || patch.get_real_rect().get_ur_y() % manufacture_grid != 0) {

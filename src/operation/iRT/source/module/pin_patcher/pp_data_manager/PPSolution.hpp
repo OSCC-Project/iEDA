@@ -16,29 +16,31 @@
 // ***************************************************************************************
 #pragma once
 
-#include "RTHeader.hpp"
-#include "SAComParam.hpp"
+#include "EXTLayerRect.hpp"
+#include "LayerCoord.hpp"
 
 namespace irt {
 
-class SAModel
+class PPSolution
 {
  public:
-  SAModel() = default;
-  ~SAModel() = default;
+  PPSolution() = default;
+  ~PPSolution() = default;
   // getter
-  SAComParam& get_sa_com_param() { return _sa_com_param; }
-  std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>>& get_grid_pair_list_list() { return _grid_pair_list_list; }
+  std::vector<EXTLayerRect>& get_routing_patch_list() { return _routing_patch_list; }
+  double get_env_cost() const { return _env_cost; }
   // setter
-  void set_sa_com_param(const SAComParam& sa_com_param) { _sa_com_param = sa_com_param; }
-  void set_grid_pair_list_list(const std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>>& grid_pair_list_list)
-  {
-    _grid_pair_list_list = grid_pair_list_list;
-  }
+  void set_routing_patch_list(const std::vector<EXTLayerRect>& routing_patch_list) { _routing_patch_list = routing_patch_list; }
+  void set_env_cost(const double env_cost) { _env_cost = env_cost; }
 
  private:
-  SAComParam _sa_com_param;
-  std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>> _grid_pair_list_list;
+  std::vector<EXTLayerRect> _routing_patch_list;
+  double _env_cost = 0.0;
+};
+
+struct CmpPPSolution
+{
+  bool operator()(const PPSolution& a, const PPSolution& b) const { return a.get_env_cost() < b.get_env_cost(); }
 };
 
 }  // namespace irt

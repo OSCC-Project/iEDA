@@ -16,29 +16,40 @@
 // ***************************************************************************************
 #pragma once
 
-#include "RTHeader.hpp"
-#include "SAComParam.hpp"
+#include <string>
+
+#include "Logger.hpp"
 
 namespace irt {
 
-class SAModel
+enum class PPObsType
 {
- public:
-  SAModel() = default;
-  ~SAModel() = default;
-  // getter
-  SAComParam& get_sa_com_param() { return _sa_com_param; }
-  std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>>& get_grid_pair_list_list() { return _grid_pair_list_list; }
-  // setter
-  void set_sa_com_param(const SAComParam& sa_com_param) { _sa_com_param = sa_com_param; }
-  void set_grid_pair_list_list(const std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>>& grid_pair_list_list)
-  {
-    _grid_pair_list_list = grid_pair_list_list;
-  }
+  kNone = 0,
+  kPlanar = 1,
+  kSpace = 2
+};
 
- private:
-  SAComParam _sa_com_param;
-  std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>> _grid_pair_list_list;
+struct GetPPObsTypeName
+{
+  std::string operator()(const PPObsType& pp_obs_type) const
+  {
+    std::string pp_obs_type_name;
+    switch (pp_obs_type) {
+      case PPObsType::kNone:
+        pp_obs_type_name = "none";
+        break;
+      case PPObsType::kPlanar:
+        pp_obs_type_name = "planar";
+        break;
+      case PPObsType::kSpace:
+        pp_obs_type_name = "space";
+        break;
+      default:
+        RTLOG.error(Loc::current(), "Unrecognized type!");
+        break;
+    }
+    return pp_obs_type_name;
+  }
 };
 
 }  // namespace irt

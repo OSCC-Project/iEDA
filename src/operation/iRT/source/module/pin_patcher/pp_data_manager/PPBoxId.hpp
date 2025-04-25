@@ -17,28 +17,44 @@
 #pragma once
 
 #include "RTHeader.hpp"
-#include "SAComParam.hpp"
 
 namespace irt {
 
-class SAModel
+class PPBoxId
 {
  public:
-  SAModel() = default;
-  ~SAModel() = default;
-  // getter
-  SAComParam& get_sa_com_param() { return _sa_com_param; }
-  std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>>& get_grid_pair_list_list() { return _grid_pair_list_list; }
-  // setter
-  void set_sa_com_param(const SAComParam& sa_com_param) { _sa_com_param = sa_com_param; }
-  void set_grid_pair_list_list(const std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>>& grid_pair_list_list)
+  PPBoxId() = default;
+  PPBoxId(const int32_t x, const int32_t y)
   {
-    _grid_pair_list_list = grid_pair_list_list;
+    _x = x;
+    _y = y;
   }
+  ~PPBoxId() = default;
+  bool operator==(const PPBoxId& other) { return this->_x == other._x && this->_y == other._y; }
+  bool operator!=(const PPBoxId& other) { return !((*this) == other); }
+  // getter
+  int32_t get_x() const { return _x; }
+  int32_t get_y() const { return _y; }
+  // setter
+  void set_x(const int32_t x) { _x = x; }
+  void set_y(const int32_t y) { _y = y; }
+  // function
 
  private:
-  SAComParam _sa_com_param;
-  std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>> _grid_pair_list_list;
+  int32_t _x = -1;
+  int32_t _y = -1;
+};
+
+struct CmpPPBoxId
+{
+  bool operator()(const PPBoxId& a, const PPBoxId& b) const
+  {
+    if (a.get_x() != b.get_x()) {
+      return a.get_x() < b.get_x();
+    } else {
+      return a.get_y() < b.get_y();
+    }
+  }
 };
 
 }  // namespace irt

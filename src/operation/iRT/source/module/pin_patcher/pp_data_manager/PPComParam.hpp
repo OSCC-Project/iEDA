@@ -17,28 +17,17 @@
 #pragma once
 
 #include "RTHeader.hpp"
-#include "SAComParam.hpp"
 
 namespace irt {
 
-class SAModel
+class PPComParam
 {
  public:
-  SAModel() = default;
-  ~SAModel() = default;
+  PPComParam() = default;
+  ~PPComParam() = default;
   // getter
-  SAComParam& get_sa_com_param() { return _sa_com_param; }
-  std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>>& get_grid_pair_list_list() { return _grid_pair_list_list; }
   // setter
-  void set_sa_com_param(const SAComParam& sa_com_param) { _sa_com_param = sa_com_param; }
-  void set_grid_pair_list_list(const std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>>& grid_pair_list_list)
-  {
-    _grid_pair_list_list = grid_pair_list_list;
-  }
-
  private:
-  SAComParam _sa_com_param;
-  std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>> _grid_pair_list_list;
 };
 
 }  // namespace irt
