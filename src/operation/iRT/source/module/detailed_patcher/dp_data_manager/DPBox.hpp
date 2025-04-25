@@ -55,6 +55,7 @@ class DPBox
   {
     return _graph_routing_net_routed_rect_map;
   }
+  std::map<int32_t, std::vector<EXTLayerRect>>& get_net_force_patch_map() { return _net_force_patch_map; }
   std::set<Violation, CmpViolation>& get_tried_fix_violation_set() { return _tried_fix_violation_set; }
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
@@ -94,6 +95,7 @@ class DPBox
   {
     _graph_routing_net_routed_rect_map = graph_routing_net_routed_rect_map;
   }
+  void set_net_force_patch_map(const std::map<int32_t, std::vector<EXTLayerRect>>& net_force_patch_map) { _net_force_patch_map = net_force_patch_map; }
   void set_tried_fix_violation_set(const std::set<Violation, CmpViolation>& tried_fix_violation_set) { _tried_fix_violation_set = tried_fix_violation_set; }
   // function
 #if 1
@@ -123,6 +125,7 @@ class DPBox
   std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>> _graph_routing_net_fixed_rect_map;
   std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>> _graph_routing_net_access_rect_map;
   std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>> _graph_routing_net_routed_rect_map;
+  std::map<int32_t, std::vector<EXTLayerRect>> _net_force_patch_map;
   std::set<Violation, CmpViolation> _tried_fix_violation_set;
 #if 1
   // single task

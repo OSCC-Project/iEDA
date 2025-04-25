@@ -56,6 +56,7 @@ void DetailedPatcher::patch()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
   DPModel dp_model = initDPModel();
+  clearDetailedPatch(dp_model);
   uploadViolation(dp_model);
   updateSummary(dp_model);
   printSummary(dp_model);
@@ -96,6 +97,17 @@ DPNet DetailedPatcher::convertToDPNet(Net& net)
     dp_net.get_dp_pin_list().push_back(DPPin(pin));
   }
   return dp_net;
+}
+
+void DetailedPatcher::clearDetailedPatch(DPModel& dp_model)
+{
+  Die& die = RTDM.getDatabase().get_die();
+
+  for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      RTDM.updateNetDetailedPatchToGCellMap(ChangeType::kDel, net_idx, patch);
+    }
+  }
 }
 
 void DetailedPatcher::uploadViolation(DPModel& dp_model)
@@ -212,6 +224,8 @@ void DetailedPatcher::iterativeDPModel(DPModel& dp_model)
       break;
     }
   }
+  clearDetailedPatch(dp_model);
+  uploadForcePatch(dp_model);
 }
 
 void DetailedPatcher::setDPIterParam(DPModel& dp_model, int32_t iter, DPIterParam& dp_iter_param)
@@ -318,6 +332,7 @@ void DetailedPatcher::routeDPBoxMap(DPModel& dp_model)
         buildGraphShapeMap(dp_box);
         // debugCheckDPBox(dp_box);
         routeDPBox(dp_box);
+        uploadForcePatch(dp_model, dp_box);
       }
       uploadNetPatch(dp_box);
       freeDPBox(dp_box);
@@ -460,6 +475,7 @@ void DetailedPatcher::routeDPBox(DPBox& dp_box)
       updateCurrViolationList(dp_box);
       updateTaskPatch(dp_box);
       updateViolationList(dp_box);
+      updateFrocePatch(dp_box, dp_solution_list.front());
     }
     dp_box.get_tried_fix_violation_set().insert(dp_box.get_curr_violation());
     resetSingleTask(dp_box);
@@ -612,11 +628,13 @@ std::vector<DPSolution> DetailedPatcher::getSolutionList(DPBox& dp_box)
       continue;
     }
     DPSolution dp_solution = getNewSolution(dp_box);
+    dp_solution.set_curr_patch(dp_patch.get_patch());
     dp_solution.get_routing_patch_list().push_back(dp_patch.get_patch());
     dp_solution_list.push_back(dp_solution);
   }
   if (dp_solution_list.empty()) {
     DPSolution dp_solution = getNewSolution(dp_box);
+    dp_solution.set_curr_patch(dp_patch_list.front().get_patch());
     dp_solution.get_routing_patch_list().push_back(dp_patch_list.front().get_patch());
     dp_solution_list.push_back(dp_solution);
   }
@@ -763,6 +781,11 @@ void DetailedPatcher::updateViolationList(DPBox& dp_box)
   dp_box.set_violation_list(dp_box.get_curr_violation_list());
 }
 
+void DetailedPatcher::updateFrocePatch(DPBox& dp_box, DPSolution& dp_solution)
+{
+  dp_box.get_net_force_patch_map()[dp_box.get_curr_net_idx()].push_back(dp_solution.get_curr_patch());
+}
+
 void DetailedPatcher::resetSingleTask(DPBox& dp_box)
 {
   dp_box.set_curr_net_idx(-1);
@@ -770,6 +793,15 @@ void DetailedPatcher::resetSingleTask(DPBox& dp_box)
   dp_box.get_curr_routing_patch_list().clear();
   dp_box.get_curr_violation_list().clear();
   dp_box.set_curr_is_solved(false);
+}
+
+void DetailedPatcher::uploadForcePatch(DPModel& dp_model, DPBox& dp_box)
+{
+  for (auto& [net_idx, force_patch_list] : dp_box.get_net_force_patch_map()) {
+    for (EXTLayerRect& force_patch : force_patch_list) {
+      dp_model.get_box_net_force_patch_map()[dp_box.get_dp_box_id()][net_idx].push_back(force_patch);
+    }
+  }
 }
 
 void DetailedPatcher::uploadNetPatch(DPBox& dp_box)
@@ -842,6 +874,17 @@ bool DetailedPatcher::stopIteration(DPModel& dp_model)
     return true;
   }
   return false;
+}
+
+void DetailedPatcher::uploadForcePatch(DPModel& dp_model)
+{
+  for (auto& [dp_box_id, net_force_patch_map] : dp_model.get_box_net_force_patch_map()) {
+    for (auto& [net_idx, force_patch_list] : net_force_patch_map) {
+      for (EXTLayerRect& force_patch : force_patch_list) {
+        RTDM.updateNetDetailedPatchToGCellMap(ChangeType::kAdd, net_idx, new EXTLayerRect(force_patch));
+      }
+    }
+  }
 }
 
 #if 1  // get env

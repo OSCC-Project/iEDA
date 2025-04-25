@@ -27,20 +27,15 @@ class DPSolution
   DPSolution() = default;
   ~DPSolution() = default;
   // getter
+  EXTLayerRect& get_curr_patch() { return _curr_patch; }
   std::vector<EXTLayerRect>& get_routing_patch_list() { return _routing_patch_list; }
-  double get_env_cost() const { return _env_cost; }
   // setter
+  void set_curr_patch(const EXTLayerRect& curr_patch) { _curr_patch = curr_patch; }
   void set_routing_patch_list(const std::vector<EXTLayerRect>& routing_patch_list) { _routing_patch_list = routing_patch_list; }
-  void set_env_cost(const double env_cost) { _env_cost = env_cost; }
 
  private:
+  EXTLayerRect _curr_patch;
   std::vector<EXTLayerRect> _routing_patch_list;
-  double _env_cost = 0.0;
-};
-
-struct CmpDPSolution
-{
-  bool operator()(const DPSolution& a, const DPSolution& b) const { return a.get_env_cost() < b.get_env_cost(); }
 };
 
 }  // namespace irt

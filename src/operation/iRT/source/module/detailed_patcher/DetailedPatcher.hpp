@@ -49,6 +49,7 @@ class DetailedPatcher
   DPModel initDPModel();
   std::vector<DPNet> convertToDPNetList(std::vector<Net>& net_list);
   DPNet convertToDPNet(Net& net);
+  void clearDetailedPatch(DPModel& dp_model);
   void uploadViolation(DPModel& dp_model);
   std::vector<Violation> getViolationList(DPModel& dp_model);
   void iterativeDPModel(DPModel& dp_model);
@@ -75,12 +76,15 @@ class DetailedPatcher
   void updateCurrSolvedStatus(DPBox& dp_box);
   void updateTaskPatch(DPBox& dp_box);
   void updateViolationList(DPBox& dp_box);
+  void updateFrocePatch(DPBox& dp_box, DPSolution& dp_solution);
   void resetSingleTask(DPBox& dp_box);
+  void uploadForcePatch(DPModel& dp_model, DPBox& dp_box);
   void uploadNetPatch(DPBox& dp_box);
   void freeDPBox(DPBox& dp_box);
   int32_t getViolationNum(DPModel& dp_model);
   void uploadNetPatch(DPModel& dp_model);
   bool stopIteration(DPModel& dp_model);
+  void uploadForcePatch(DPModel& dp_model);
 
 #if 1  // get env
   double getFixedRectCost(DPBox& dp_box, int32_t net_idx, EXTLayerRect& patch);
