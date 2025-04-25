@@ -205,14 +205,14 @@ Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A, const Ei
   int i = 0;
   for (; i < max_iter; ++i) {
       LOG_INFO_EVERY_N(200) << "CPU CG iteration num: " << i << " total " << max_iter;
-      LOG_INFO_EVERY_N(200) << "x:\n"<< x.transpose(); 
+      // LOG_INFO_EVERY_N(200) << "x:\n"<< x.transpose(); 
       Eigen::VectorXd Ap = A * p;
       // PrintVector(Ax, "AP.txt");
       double alpha = rsold / p.dot(Ap);
       x += alpha * p;
-      LOG_INFO_EVERY_N(1) << "x:\n"<< x.transpose(); 
+      // LOG_INFO_EVERY_N(1) << "x:\n"<< x.transpose(); 
       r -= alpha * Ap;
-      LOG_INFO_EVERY_N(1) << "r:\n"<< r.transpose(); 
+      // LOG_INFO_EVERY_N(1) << "r:\n"<< r.transpose(); 
       double rsnew = r.dot(r);
       if (sqrt(rsnew) < tol) {
           break;
@@ -221,7 +221,14 @@ Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A, const Ei
       rsold = rsnew;
   }
 
-  LOG_INFO << "CPU CG iteration num: " << i - 1 << std::endl;
+  LOG_INFO << "Last 20 elements of x:";
+  int size = x.size();
+  int start_index = std::max(0, size - 20);
+  for (int i = start_index; i < size; ++i) {
+    LOG_INFO << "x[" << i << "] = " << x[i];
+  }
+
+  LOG_INFO << "CPU CG iteration num: " << i - 1;
   LOG_INFO << "Final Residual Norm: " << sqrt(rsold);
 
   return x;
