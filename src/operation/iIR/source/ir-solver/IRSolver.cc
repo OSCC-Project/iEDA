@@ -213,9 +213,10 @@ Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A, const Ei
       // LOG_INFO_EVERY_N(1) << "x:\n"<< x.transpose(); 
       r -= alpha * Ap;
       // LOG_INFO_EVERY_N(1) << "r:\n"<< r.transpose(); 
-      LOG_INFO_EVERY_N(1) << "x:\n"<< x.transpose(); 
-      r -= alpha * Ap;
-      LOG_INFO_EVERY_N(1) << "r:\n"<< r.transpose(); 
+      double rsnew = r.dot(r);
+      if (sqrt(rsnew) < tol) {
+          break;
+      }
       p = r + (rsnew / rsold) * p;
       rsold = rsnew;
   }
