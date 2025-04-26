@@ -16,38 +16,26 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Logger.hpp"
+#include "EXTLayerRect.hpp"
+#include "LayerCoord.hpp"
 
 namespace irt {
 
-enum class DENetType
+class DRSolution
 {
-  kNone,
-  kRouteHybrid,
-  kPatchHybrid
-};
+ public:
+  DRSolution() = default;
+  ~DRSolution() = default;
+  // getter
+  EXTLayerRect& get_curr_patch() { return _curr_patch; }
+  std::vector<EXTLayerRect>& get_routing_patch_list() { return _routing_patch_list; }
+  // setter
+  void set_curr_patch(const EXTLayerRect& curr_patch) { _curr_patch = curr_patch; }
+  void set_routing_patch_list(const std::vector<EXTLayerRect>& routing_patch_list) { _routing_patch_list = routing_patch_list; }
 
-struct GetDENetTypeName
-{
-  std::string operator()(const DENetType& net_type) const
-  {
-    std::string net_type_name;
-    switch (net_type) {
-      case DENetType::kNone:
-        net_type_name = "none";
-        break;
-      case DENetType::kRouteHybrid:
-        net_type_name = "route_hybrid";
-        break;
-      case DENetType::kPatchHybrid:
-        net_type_name = "patch_hybrid";
-        break;
-      default:
-        RTLOG.error(Loc::current(), "Unrecognized type!");
-        break;
-    }
-    return net_type_name;
-  }
+ private:
+  EXTLayerRect _curr_patch;
+  std::vector<EXTLayerRect> _routing_patch_list;
 };
 
 }  // namespace irt

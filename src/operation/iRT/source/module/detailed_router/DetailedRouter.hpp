@@ -23,6 +23,8 @@
 #include "DRModel.hpp"
 #include "DRNet.hpp"
 #include "DRNode.hpp"
+#include "DRPatch.hpp"
+#include "DRSolution.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
@@ -64,19 +66,23 @@ class DetailedRouter
   void splitNetResult(DRModel& dr_model);
   void routeDRBoxMap(DRModel& dr_model);
   void buildFixedRect(DRBox& dr_box);
+  void buildAccessPoint(DRBox& dr_box);
   void buildNetResult(DRBox& dr_box);
+  void buildNetPatch(DRBox& dr_box);
   void initDRTaskList(DRModel& dr_model, DRBox& dr_box);
   void buildViolation(DRBox& dr_box);
   bool needRouting(DRBox& dr_box);
   void buildBoxTrackAxis(DRBox& dr_box);
   void buildLayerNodeMap(DRBox& dr_box);
+  void buildLayerShadowMap(DRBox& dr_box);
   void buildDRNodeNeighbor(DRBox& dr_box);
   void buildOrientNetMap(DRBox& dr_box);
+  void buildNetShadowMap(DRBox& dr_box);
   void exemptPinShape(DRBox& dr_box);
   void routeDRBox(DRBox& dr_box);
   std::vector<DRTask*> initTaskSchedule(DRBox& dr_box);
   void routeDRTask(DRBox& dr_box, DRTask* dr_task);
-  void initSingleTask(DRBox& dr_box, DRTask* dr_task);
+  void initSingleRouteTask(DRBox& dr_box, DRTask* dr_task);
   bool isConnectedAllEnd(DRBox& dr_box);
   void routeSinglePath(DRBox& dr_box);
   void initPathHead(DRBox& dr_box);
@@ -100,6 +106,20 @@ class DetailedRouter
   double getEstimateCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
+  void patchDRTask(DRBox& dr_box, DRTask* dr_task);
+  void initSinglePatchTask(DRBox& dr_box, DRTask* dr_task);
+  std::vector<Violation> getPatchViolationList(DRBox& dr_box);
+  void initSingleViolation(DRBox& dr_box);
+  bool isValid(DRBox& dr_box, Violation& violation);
+  std::vector<DRSolution> getSolutionList(DRBox& dr_box);
+  DRSolution getNewSolution(DRBox& dr_box);
+  void updateCurrPatchList(DRBox& dr_box, DRSolution& dr_solution);
+  void updateCurrViolationList(DRBox& dr_box);
+  void updateCurrSolvedStatus(DRBox& dr_box);
+  void updateTaskPatch(DRBox& dr_box);
+  void updatePatchViolationList(DRBox& dr_box);
+  void resetSingleViolation(DRBox& dr_box);
+  void resetSinglePatchTask(DRBox& dr_box);
   void updateViolationList(DRBox& dr_box);
   std::vector<Violation> getViolationList(DRBox& dr_box);
   void updateBestResult(DRBox& dr_box);
@@ -109,6 +129,7 @@ class DetailedRouter
   void freeDRBox(DRBox& dr_box);
   int32_t getViolationNum(DRModel& dr_model);
   void uploadNetResult(DRModel& dr_model);
+  void uploadNetPatch(DRModel& dr_model);
   void uploadViolation(DRModel& dr_model);
   std::vector<Violation> getViolationList(DRModel& dr_model);
   void updateBestResult(DRModel& dr_model);
@@ -125,6 +146,19 @@ class DetailedRouter
   std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
   std::map<DRNode*, std::set<Orientation>> getRoutingNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
   std::map<DRNode*, std::set<Orientation>> getCutNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
+  void updateFixedRectToShadow(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
+  void updateFixedRectToShadow(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& fixed_rect, bool is_routing);
+  void updateAccessRectToShadow(DRBox& dr_box, ChangeType change_type, int32_t net_idx, LayerRect& real_rect, bool is_routing);
+  void updateRoutedRectToShadow(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
+  void updateRoutedRectToShadow(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* routed_rect, bool is_routing);
+  std::vector<PlanarRect> getShadowShape(DRBox& dr_box, NetShape& net_shape);
+  std::vector<PlanarRect> getRoutingShadowShapeList(DRBox& dr_box, NetShape& net_shape);
+#endif
+
+#if 1  // get env
+  double getFixedRectCost(DRBox& dr_box, int32_t net_idx, EXTLayerRect& patch);
+  double getAccessRectCost(DRBox& dr_box, int32_t net_idx, EXTLayerRect& patch);
+  double getRoutedRectCost(DRBox& dr_box, int32_t net_idx, EXTLayerRect& patch);
 #endif
 
 #if 1  // exhibit

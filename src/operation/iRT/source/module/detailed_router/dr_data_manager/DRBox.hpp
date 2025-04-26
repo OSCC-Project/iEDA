@@ -16,9 +16,11 @@
 // ***************************************************************************************
 #pragma once
 
+#include "AccessPoint.hpp"
 #include "DRBoxId.hpp"
 #include "DRIterParam.hpp"
 #include "DRNode.hpp"
+#include "DRShadow.hpp"
 #include "DRTask.hpp"
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
@@ -40,12 +42,17 @@ class DRBox
   bool get_initial_routing() const { return _initial_routing; }
   std::vector<DRTask*>& get_dr_task_list() { return _dr_task_list; }
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map() { return _type_layer_net_fixed_rect_map; }
+  std::map<int32_t, std::set<AccessPoint*>>& get_net_access_point_map() { return _net_access_point_map; }
   std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_detailed_result_map() { return _net_detailed_result_map; }
   std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_net_task_detailed_result_map() { return _net_task_detailed_result_map; }
+  std::map<int32_t, std::set<EXTLayerRect*>>& get_net_detailed_patch_map() { return _net_detailed_patch_map; }
+  std::map<int32_t, std::vector<EXTLayerRect>>& get_net_task_detailed_patch_map() { return _net_task_detailed_patch_map; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
   std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
+  std::vector<DRShadow>& get_layer_shadow_map() { return _layer_shadow_map; }
   std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_best_net_task_detailed_result_map() { return _best_net_task_detailed_result_map; }
+  std::map<int32_t, std::vector<EXTLayerRect>>& get_best_net_task_detailed_patch_map() { return _best_net_task_detailed_patch_map; }
   std::vector<Violation>& get_best_violation_list() { return _best_violation_list; }
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
@@ -57,6 +64,7 @@ class DRBox
   {
     _type_layer_net_fixed_rect_map = type_layer_net_fixed_rect_map;
   }
+  void set_net_access_point_map(const std::map<int32_t, std::set<AccessPoint*>>& net_access_point_map) { _net_access_point_map = net_access_point_map; }
   void set_net_detailed_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& net_detailed_result_map)
   {
     _net_detailed_result_map = net_detailed_result_map;
@@ -65,12 +73,25 @@ class DRBox
   {
     _net_task_detailed_result_map = net_task_detailed_result_map;
   }
+  void set_net_detailed_patch_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_detailed_patch_map)
+  {
+    _net_detailed_patch_map = net_detailed_patch_map;
+  }
+  void set_net_task_detailed_patch_map(const std::map<int32_t, std::vector<EXTLayerRect>>& net_task_detailed_patch_map)
+  {
+    _net_task_detailed_patch_map = net_task_detailed_patch_map;
+  }
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
   void set_layer_node_map(const std::vector<GridMap<DRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
+  void set_layer_shadow_map(const std::vector<DRShadow>& layer_shadow_map) { _layer_shadow_map = layer_shadow_map; }
   void set_best_net_task_detailed_result_map(const std::map<int32_t, std::vector<Segment<LayerCoord>>>& best_net_task_detailed_result_map)
   {
     _best_net_task_detailed_result_map = best_net_task_detailed_result_map;
+  }
+  void set_best_net_task_detailed_patch_map(const std::map<int32_t, std::vector<EXTLayerRect>>& best_net_task_detailed_patch_map)
+  {
+    _best_net_task_detailed_patch_map = best_net_task_detailed_patch_map;
   }
   void set_best_violation_list(const std::vector<Violation>& best_violation_list) { _best_violation_list = best_violation_list; }
   // function
@@ -104,6 +125,24 @@ class DRBox
   void set_path_head_node(DRNode* path_head_node) { _path_head_node = path_head_node; }
   void set_end_node_list_idx(const int32_t end_node_list_idx) { _end_node_list_idx = end_node_list_idx; }
 #endif
+#if 1  // zstar
+  // single task
+  std::vector<Violation>& get_patch_violation_list() { return _patch_violation_list; }
+  int32_t get_curr_net_idx() const { return _curr_net_idx; }
+  std::set<Violation, CmpViolation>& get_tried_fix_violation_set() { return _tried_fix_violation_set; }
+  void set_patch_violation_list(const std::vector<Violation>& patch_violation_list) { _patch_violation_list = patch_violation_list; }
+  void set_curr_net_idx(const int32_t curr_net_idx) { _curr_net_idx = curr_net_idx; }
+  void set_tried_fix_violation_set(const std::set<Violation, CmpViolation>& tried_fix_violation_set) { _tried_fix_violation_set = tried_fix_violation_set; }
+  // single violation
+  Violation& get_curr_violation() { return _curr_violation; }
+  std::vector<EXTLayerRect>& get_curr_routing_patch_list() { return _curr_routing_patch_list; }
+  std::vector<Violation>& get_curr_violation_list() { return _curr_violation_list; }
+  bool get_curr_is_solved() const { return _curr_is_solved; }
+  void set_curr_violation(const Violation& curr_violation) { _curr_violation = curr_violation; }
+  void set_curr_routing_patch_list(const std::vector<EXTLayerRect>& curr_routing_patch_list) { _curr_routing_patch_list = curr_routing_patch_list; }
+  void set_curr_violation_list(const std::vector<Violation>& curr_violation_list) { _curr_violation_list = curr_violation_list; }
+  void set_curr_is_solved(const bool curr_is_solved) { _curr_is_solved = curr_is_solved; }
+#endif
 
  private:
   EXTPlanarRect _box_rect;
@@ -112,12 +151,17 @@ class DRBox
   bool _initial_routing = true;
   std::vector<DRTask*> _dr_task_list;
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
+  std::map<int32_t, std::set<AccessPoint*>> _net_access_point_map;
   std::map<int32_t, std::set<Segment<LayerCoord>*>> _net_detailed_result_map;
   std::map<int32_t, std::vector<Segment<LayerCoord>>> _net_task_detailed_result_map;
+  std::map<int32_t, std::set<EXTLayerRect*>> _net_detailed_patch_map;
+  std::map<int32_t, std::vector<EXTLayerRect>> _net_task_detailed_patch_map;
   std::vector<Violation> _violation_list;
   ScaleAxis _box_track_axis;
   std::vector<GridMap<DRNode>> _layer_node_map;
+  std::vector<DRShadow> _layer_shadow_map;
   std::map<int32_t, std::vector<Segment<LayerCoord>>> _best_net_task_detailed_result_map;
+  std::map<int32_t, std::vector<EXTLayerRect>> _best_net_task_detailed_patch_map;
   std::vector<Violation> _best_violation_list;
 #if 1  // astar
   // single task
@@ -132,6 +176,17 @@ class DRBox
   std::vector<DRNode*> _single_path_visited_node_list;
   DRNode* _path_head_node = nullptr;
   int32_t _end_node_list_idx = -1;
+#endif
+#if 1  // zstar
+  // single task
+  std::vector<Violation> _patch_violation_list;
+  int32_t _curr_net_idx = -1;
+  std::set<Violation, CmpViolation> _tried_fix_violation_set;
+  // single violation
+  Violation _curr_violation;
+  std::vector<EXTLayerRect> _curr_routing_patch_list;
+  std::vector<Violation> _curr_violation_list;
+  bool _curr_is_solved = false;
 #endif
 };
 

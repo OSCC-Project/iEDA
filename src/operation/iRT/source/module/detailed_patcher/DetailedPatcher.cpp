@@ -169,7 +169,7 @@ std::vector<Violation> DetailedPatcher::getViolationList(DPModel& dp_model)
     }
 
     de_task.set_proc_type(DEProcType::kGet);
-    de_task.set_net_type(DENetType::kRouteHybrid);
+    de_task.set_net_type(DENetType::kPatchHybrid);
     de_task.set_top_name(top_name);
     de_task.set_env_shape_list(env_shape_list);
     de_task.set_net_pin_shape_map(net_pin_shape_map);
@@ -714,7 +714,7 @@ std::vector<Violation> DetailedPatcher::getViolationList(DPBox& dp_box)
 
   DETask de_task;
   de_task.set_proc_type(DEProcType::kGet);
-  de_task.set_net_type(DENetType::kRouteHybrid);
+  de_task.set_net_type(DENetType::kPatchHybrid);
   de_task.set_top_name(top_name);
   de_task.set_env_shape_list(env_shape_list);
   de_task.set_net_pin_shape_map(net_pin_shape_map);

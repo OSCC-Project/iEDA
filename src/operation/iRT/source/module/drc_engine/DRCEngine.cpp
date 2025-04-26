@@ -133,7 +133,7 @@ void DRCEngine::buildIgnoredViolationSet()
       need_checked_net_set.insert(net.get_net_idx());
     }
     de_task.set_proc_type(DEProcType::kIgnore);
-    de_task.set_net_type(DENetType::kRouteAmong);
+    de_task.set_net_type(DENetType::kRouteHybrid);
     de_task.set_top_name(top_name);
     de_task.set_env_shape_list(env_shape_list);
     de_task.set_net_pin_shape_map(net_pin_shape_map);
@@ -227,7 +227,7 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
   }
   PlanarRect new_real_rect = violation.get_violation_shape().get_real_rect();
   std::vector<std::pair<int32_t, bool>> layer_routing_list;
-  if (net_type == DENetType::kRouteAmong) {
+  if (net_type == DENetType::kRouteHybrid) {
     switch (violation.get_violation_type()) {
       case ViolationType::kAdjacentCutSpacing:
         break;
@@ -311,7 +311,7 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
         RTLOG.error(Loc::current(), "No violation type!");
         break;
     }
-  } else if (net_type == DENetType::kRouteHybrid) {
+  } else if (net_type == DENetType::kPatchHybrid) {
     switch (violation.get_violation_type()) {
       case ViolationType::kAdjacentCutSpacing:
         break;
