@@ -57,7 +57,7 @@ Power* Power::getOrCreatePower(StaGraph* sta_graph) {
   if (_power == nullptr) {
     if (_power == nullptr) {
       std::lock_guard<std::mutex> lock(mt);
-      _power = new Power(sta_graph);
+      _power = new Power(sta_graph);      
     }
   }
   return _power;
@@ -278,6 +278,72 @@ unsigned Power::updatePower() {
   }
 
   return 1;
+}
+
+/**
+ * @brief get the instance owned group.
+ *
+ * @param inst
+ * @return std::optional<PwrGroupData::PwrGroupType>
+ */
+std::optional<PwrGroupData::PwrGroupType> Power::getInstPowerGroup(
+    Instance* the_inst) {
+  auto* lib_cell = the_inst->get_inst_cell();
+  std::array<std::function<std::optional<PwrGroupData::PwrGroupType>(Instance *
+                                                                     the_inst)>,
+             7>
+      group_prioriy_array{
+          [this, lib_cell](
+              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
+            // judge whether io cell.
+            return std::nullopt;
+          },
+          [this, lib_cell](
+              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
+            // judge whether memory.
+            return std::nullopt;
+          },
+          [this, lib_cell](
+              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
+            // judge whether black box.
+            return std::nullopt;
+          },
+          [this, lib_cell](
+              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
+            // judge whether register.
+            if (lib_cell->isSequentialCell()) {
+              return PwrGroupData::PwrGroupType::kSeq;
+            }
+            return std::nullopt;
+          },
+          [this, lib_cell](
+              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
+            // judge whether clock network.
+            Pin* pin;
+            FOREACH_INSTANCE_PIN(the_inst, pin) {
+              auto* the_pwr_vertex = _power_graph.getPowerVertex(pin);
+              if (the_pwr_vertex->is_clock_network()) {
+                return PwrGroupData::PwrGroupType::kClockNetwork;
+              }
+            }
+            return std::nullopt;
+          },
+          [this, lib_cell](
+              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
+            // judge whether register.
+            if (!lib_cell->isSequentialCell()) {
+              return PwrGroupData::PwrGroupType::kComb;
+            }
+            return std::nullopt;
+          }};
+
+  for (auto group_type_func : group_prioriy_array) {
+    auto power_type = group_type_func(the_inst);
+    if (power_type) {
+      return power_type;
+    }
+  }
+  return std::nullopt;
 }
 
 /**
@@ -569,6 +635,65 @@ unsigned Power::reportInstancePowerCSV(const char* rpt_file_name) {
 }
 
 /**
+ * @brief get instance power data.
+ * 
+ * @return unsigned 
+ */
+std::vector<IRInstancePower> Power::getInstancePowerData() {
+  std::vector<IRInstancePower> instance_power_data;
+
+  IRInstancePower instance_power;
+  PwrGroupData* group_data;
+  FOREACH_PWR_GROUP_DATA(this, group_data) {
+    // skip net group data.
+    if (dynamic_cast<Net*>(group_data->get_obj())) {
+      continue;
+    }
+
+    // skip the instance which power is 0.
+    if (group_data->get_total_power() < 1e-10) {
+      continue;
+    }
+
+    auto* inst = dynamic_cast<Instance*>(group_data->get_obj());
+    instance_power._instance_name = inst->get_name();
+    instance_power._nominal_voltage = group_data->get_nom_voltage();
+    instance_power._internal_power = group_data->get_internal_power();
+    instance_power._switch_power = group_data->get_switch_power();
+    instance_power._leakage_power = group_data->get_leakage_power();
+    instance_power._total_power = group_data->get_total_power();
+
+    instance_power_data.emplace_back(std::move(instance_power));
+  }
+  
+  return instance_power_data;
+}
+/**
+ * @brief get instance power map.
+ * 
+ * @return std::map<Instance::Coordinate, double> 
+ */
+std::map<Instance::Coordinate, double> Power::displayInstancePowerMap() {
+  LOG_INFO << "display instance power map start";
+
+  std::map<Instance::Coordinate, double> instance_power_map;
+
+  PwrGroupData* group_data;
+  FOREACH_PWR_GROUP_DATA(this, group_data) {
+    if (dynamic_cast<Net*>(group_data->get_obj())) {
+      continue;
+    }
+
+    auto* inst = dynamic_cast<Instance*>(group_data->get_obj());
+    instance_power_map[inst->get_coordinate().value()] = group_data->get_total_power();
+  }
+
+  LOG_INFO << "display instance power map end";
+
+  return instance_power_map;
+}
+
+/**
  * @brief init power graph data
  *
  * @param
@@ -660,52 +785,54 @@ unsigned Power::initToggleSPData() {
   return 1;
 }
 
+std::optional<std::pair<std::string, std::string>> BackupPwrFiles(
+    std::string output_dir, bool is_copy) {
+  if (!is_copy) {
+    return std::nullopt;
+  }
+
+  std::string now_time = Time::getNowWallTime();
+  std::string tmp = Str::replace(now_time, ":", "_");
+  std::string copy_design_work_space =
+      Str::printf("%s_pwr_%s", output_dir.c_str(), tmp.c_str());
+
+  if (std::filesystem::exists(output_dir)) {
+    std::filesystem::create_directories(copy_design_work_space);
+  }
+
+  return std::pair{copy_design_work_space, tmp};
+};
+
+// copy file to copy directory
+void CopyFile(
+    std::optional<std::pair<std::string, std::string>> copy_design_work_space,
+    std::string output_dir, std::string file_to_be_copy) {
+  auto base_name = std::filesystem::path(file_to_be_copy).stem().string();
+  auto extension = std::filesystem::path(file_to_be_copy).extension().string();
+  
+  // dest dir workspace and copy time stamp.
+  auto copy_work_space = copy_design_work_space->first;
+  auto copy_time = copy_design_work_space->second;
+
+  std::string dest_file_name = Str::printf(
+      "%s/%s_%s%s", copy_work_space.c_str(), base_name.c_str(),
+      copy_time.c_str(), extension.c_str());
+
+  std::string src_file =
+      Str::printf("%s/%s", output_dir.c_str(), file_to_be_copy.c_str());
+  if (std::filesystem::exists(src_file)) {
+    std::filesystem::copy_file(
+        src_file, dest_file_name,
+        std::filesystem::copy_options::overwrite_existing);
+  }
+};
+
 /**
  * @brief report power
  *
  * @return unsigned
  */
 unsigned Power::reportPower(bool is_copy) {
-  // create backup working directory.
-  auto backup_pwr_files = [this, is_copy](std::string output_dir)
-      -> std::optional<std::pair<std::string, std::string>> {
-    if (!is_copy) {
-      return std::nullopt;
-    }
-
-    std::string now_time = Time::getNowWallTime();
-    std::string tmp = Str::replace(now_time, ":", "_");
-    std::string copy_design_work_space =
-        Str::printf("%s_pwr_%s", output_dir.c_str(), tmp.c_str());
-
-    if (std::filesystem::exists(output_dir)) {
-      std::filesystem::create_directories(copy_design_work_space);
-    }
-
-    return std::pair{copy_design_work_space, tmp};
-  };
-
-  // copy file to copy directory
-  auto copy_file = [](std::optional<std::pair<std::string, std::string>>
-                          copy_design_work_space,
-                      std::string output_dir, std::string file_to_be_copy) {
-    auto base_name = std::filesystem::path(file_to_be_copy).stem().string();
-    auto extension =
-        std::filesystem::path(file_to_be_copy).extension().string();
-
-    std::string dest_file_name = Str::printf(
-        "%s/%s_%s%s", copy_design_work_space->first.c_str(), base_name.c_str(),
-        copy_design_work_space->second.c_str(), extension.c_str());
-
-    std::string src_file =
-        Str::printf("%s/%s", output_dir.c_str(), file_to_be_copy.c_str());
-    if (std::filesystem::exists(src_file)) {
-      std::filesystem::copy_file(
-          src_file, dest_file_name,
-          std::filesystem::copy_options::overwrite_existing);
-    }
-  };
-
   Sta* ista = Sta::getOrCreateSta();
 
   ieda::Stats stats;
@@ -722,14 +849,15 @@ unsigned Power::reportPower(bool is_copy) {
     return 0;
   }
 
-  auto backup_work_space = backup_pwr_files(output_dir);
+  auto backup_work_space = BackupPwrFiles(output_dir, is_copy);
+  _backup_work_dir = backup_work_space;
   std::filesystem::create_directories(output_dir);
 
   {
     std::string file_name =
         Str::printf("%s.pwr", ista->get_design_name().c_str());
     if (is_copy) {
-      copy_file(backup_work_space, output_dir, file_name);
+      CopyFile(backup_work_space, output_dir, file_name);
     }
     std::string output_path = output_dir + "/" + file_name;
     reportSummaryPower(output_path.c_str(), PwrAnalysisMode::kAveraged);
@@ -740,7 +868,7 @@ unsigned Power::reportPower(bool is_copy) {
         Str::printf("%s_%s.pwr", ista->get_design_name().c_str(), "instance");
 
     if (is_copy) {
-      copy_file(backup_work_space, output_dir, file_name);
+      CopyFile(backup_work_space, output_dir, file_name);
     }
 
     std::string output_path = output_dir + "/" + file_name;
@@ -752,13 +880,13 @@ unsigned Power::reportPower(bool is_copy) {
         Str::printf("%s_%s.csv", ista->get_design_name().c_str(), "instance");
 
     if (is_copy) {
-      copy_file(backup_work_space, output_dir, file_name);
+      CopyFile(backup_work_space, output_dir, file_name);
     }
     std::string output_path = output_dir + "/" + file_name;
     reportInstancePowerCSV(output_path.c_str());
   }
 
-  LOG_INFO << "power report end";
+  LOG_INFO << "power report end, output dir: " << output_dir;
   double memory_delta = stats.memoryDelta();
   LOG_INFO << "power report memory usage " << memory_delta << "MB";
   double time_delta = stats.elapsedRunTime();
@@ -785,69 +913,150 @@ unsigned Power::runCompleteFlow() {
 }
 
 /**
- * @brief get the instance owned group.
- *
- * @param inst
- * @return std::optional<PwrGroupData::PwrGroupType>
+ * @brief get the toggle and vdd data of a net.
+ * 
+ * @param net_name 
+ * @return std::pair<double, double> 
  */
-std::optional<PwrGroupData::PwrGroupType> Power::getInstPowerGroup(
-    Instance* the_inst) {
-  auto* lib_cell = the_inst->get_inst_cell();
-  std::array<std::function<std::optional<PwrGroupData::PwrGroupType>(Instance *
-                                                                     the_inst)>,
-             7>
-      group_prioriy_array{
-          [this, lib_cell](
-              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
-            // judge whether io cell.
-            return std::nullopt;
-          },
-          [this, lib_cell](
-              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
-            // judge whether memory.
-            return std::nullopt;
-          },
-          [this, lib_cell](
-              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
-            // judge whether black box.
-            return std::nullopt;
-          },
-          [this, lib_cell](
-              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
-            // judge whether register.
-            if (lib_cell->isSequentialCell()) {
-              return PwrGroupData::PwrGroupType::kSeq;
-            }
-            return std::nullopt;
-          },
-          [this, lib_cell](
-              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
-            // judge whether clock network.
-            Pin* pin;
-            FOREACH_INSTANCE_PIN(the_inst, pin) {
-              auto* the_pwr_vertex = _power_graph.getPowerVertex(pin);
-              if (the_pwr_vertex->is_clock_network()) {
-                return PwrGroupData::PwrGroupType::kClockNetwork;
-              }
-            }
-            return std::nullopt;
-          },
-          [this, lib_cell](
-              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
-            // judge whether register.
-            if (!lib_cell->isSequentialCell()) {
-              return PwrGroupData::PwrGroupType::kComb;
-            }
-            return std::nullopt;
-          }};
+std::pair<double, double> Power::getNetToggleAndVoltageData(const char* net_name) {
+  auto* sta_graph = _power_graph.get_sta_graph();
+  auto* nl = sta_graph->get_nl();
+  auto* the_net = nl->findNet(net_name);
 
-  for (auto group_type_func : group_prioriy_array) {
-    auto power_type = group_type_func(the_inst);
-    if (power_type) {
-      return power_type;
-    }
+  auto* driver_obj = the_net->getDriver();
+  if (!driver_obj || the_net->getLoads().empty()) {
+    return {0.0, 0.0};
   }
-  return std::nullopt;
+
+  if (driver_obj->isPort() && ((the_net->getLoads().size() == 1) &&
+                               the_net->getLoads().front()->isPort())) {
+    return {0.0, 0.0};
+  }
+
+  auto driver_sta_vertex = sta_graph->findVertex(driver_obj);
+
+  PwrVertex* driver_pwr_vertex = nullptr;
+  if (driver_sta_vertex) {
+    driver_pwr_vertex = _power_graph.staToPwrVertex(*driver_sta_vertex);
+  } else {
+    return {0.0, 0.0};
+  }
+
+  // get VDD
+  auto driver_voltage = driver_pwr_vertex->getDriveVoltage();
+  if (!driver_voltage) {
+    LOG_FATAL << "can not get driver voltage.";
+  }
+  double vdd = driver_voltage.value();
+
+  // get Toggle
+  double toggle = driver_pwr_vertex->getToggleData(std::nullopt);
+
+  return {toggle, vdd};
 }
+
+/**
+ * @brief read pg spef file.
+ * 
+ * @param spef_file 
+ * @return unsigned 
+ */
+unsigned Power::readPGSpef(const char* spef_file) {
+  LOG_INFO << "read pg spef start.";
+  _ir_analysis.readSpef(spef_file);
+  set_rust_pg_rc_data(_ir_analysis.get_rc_data());
+  LOG_INFO << "read pg spef end.";
+  return 1;
+}
+
+/**
+ * @brief report IR Drop in csv file.
+ * 
+ * @param rpt_file_name 
+ * @return unsigned 
+ */
+unsigned Power::reportIRDropCSV(const char* rpt_file_name) {
+  std::ofstream csv_file(rpt_file_name);
+  csv_file << "Instance Name"
+           << ","
+           << "IR Drop"
+           << "\n";
+  auto data_str = [](double data) { return Str::printf("%.3e", data); };
+  auto instance_to_ir_drop = getInstanceIRDrop();
+
+  for (auto& [instance_name, ir_drop] : instance_to_ir_drop) {
+
+    csv_file << instance_name << ","
+             << data_str(ir_drop) << "\n";
+  }
+
+  csv_file.close();
+
+  return 1;
+}
+
+/**
+ * @brief run ir analysis.
+ * 
+ * @return unsigned 
+ */
+unsigned Power::runIRAnalysis(std::string power_net_name) {
+  CPU_PROF_START(0);
+  LOG_INFO << "run IR analysis start";
+  // set power data.
+  std::vector<IRInstancePower> instance_power_data = getInstancePowerData();  
+  _ir_analysis.setInstancePowerData(std::move(instance_power_data));
+
+  // calc ir drop.
+  _ir_analysis.solveIRDrop(power_net_name.c_str());
+
+  LOG_INFO << "run IR analysis end";
+
+  CPU_PROF_END(0, "run IR analysis");
+
+  return 1;
+}
+
+/**
+ * @brief report ir analysis.
+ * 
+ * @return unsigned 
+ */
+unsigned Power::reportIRAnalysis(bool is_copy) {
+  LOG_INFO << "report IR analysis start";
+  Sta* ista = Sta::getOrCreateSta();
+  std::string output_dir = get_design_work_space();
+  if (output_dir.empty()) {
+    output_dir = ista->get_design_work_space();
+  }
+
+  if (output_dir.empty()) {
+    LOG_ERROR << "The design work space is not set.";
+    return 0;
+  }
+
+  std::string csv_file_name =
+      Str::printf("%s_%s.csv", ista->get_design_name().c_str(), "ir_drop");
+
+  if (is_copy) {
+    if (!_backup_work_dir) {
+      _backup_work_dir = BackupPwrFiles(output_dir, is_copy);
+    }
+
+    CopyFile(_backup_work_dir, output_dir, csv_file_name);
+  }
+
+  std::string output_path = output_dir + "/" + csv_file_name;
+
+  // report in IR drop csv.
+  reportIRDropCSV(output_path.c_str());
+
+  LOG_INFO << "output ir drop report: " << output_path;
+  
+  LOG_INFO << "report IR analysis end";
+  return 1;
+}
+
+
 
 }  // namespace ipower

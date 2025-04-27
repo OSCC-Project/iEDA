@@ -164,7 +164,7 @@ void DataManager::updateNetPinAccessResultToGCellMap(ChangeType change_type, int
   }
 }
 
-void DataManager::updateGlobalNetResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment)
+void DataManager::updateNetGlobalResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment)
 {
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
 
@@ -325,8 +325,7 @@ void DataManager::updateViolationToGCellMap(ChangeType change_type, Violation* v
   }
 }
 
-std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> DataManager::getTypeLayerNetFixedRectMap(
-    EXTPlanarRect& region)
+std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> DataManager::getTypeLayerNetFixedRectMap(EXTPlanarRect& region)
 {
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
 
@@ -572,7 +571,7 @@ void DataManager::buildConfig()
   }
   // **********     DRCEngine     ********** //
   _config.de_temp_directory_path = _config.temp_directory_path + "drc_engine/";
-  // **********     GDSPlotter     ********** //
+  // **********     GDSPlotter    ********** //
   _config.gp_temp_directory_path = _config.temp_directory_path + "gds_plotter/";
   // **********   PinAccessor     ********** //
   _config.pa_temp_directory_path = _config.temp_directory_path + "pin_accessor/";
@@ -580,7 +579,7 @@ void DataManager::buildConfig()
   _config.sa_temp_directory_path = _config.temp_directory_path + "supply_analyzer/";
   // ********   TopologyGenerator   ******** //
   _config.tg_temp_directory_path = _config.temp_directory_path + "topology_generator/";
-  // **********   LayerAssigner    ********** //
+  // **********   LayerAssigner   ********** //
   _config.la_temp_directory_path = _config.temp_directory_path + "layer_assigner/";
   // **********   GlobalRouter    ********** //
   _config.gr_temp_directory_path = _config.temp_directory_path + "global_router/";
@@ -588,9 +587,9 @@ void DataManager::buildConfig()
   _config.ta_temp_directory_path = _config.temp_directory_path + "track_assigner/";
   // **********  DetailedRouter   ********** //
   _config.dr_temp_directory_path = _config.temp_directory_path + "detailed_router/";
-  // **********  ViolationRepairer  ********** //
+  // ********** ViolationRepairer ********** //
   _config.vr_temp_directory_path = _config.temp_directory_path + "violation_repairer/";
-  // **********   EarlyRouter    ********** //
+  // **********    EarlyRouter    ********** //
   _config.er_temp_directory_path = _config.temp_directory_path + "early_router/";
   /////////////////////////////////////////////
   // **********        RT         ********** //
@@ -599,15 +598,15 @@ void DataManager::buildConfig()
   RTUTIL.createDirByFile(_config.log_file_path);
   // **********     DRCEngine     ********** //
   RTUTIL.createDir(_config.de_temp_directory_path);
-  // **********     GDSPlotter     ********** //
+  // **********    GDSPlotter     ********** //
   RTUTIL.createDir(_config.gp_temp_directory_path);
   // **********   PinAccessor     ********** //
   RTUTIL.createDir(_config.pa_temp_directory_path);
-  // **********   SupplyAnalyzer     ********** //
+  // **********  SupplyAnalyzer   ********** //
   RTUTIL.createDir(_config.sa_temp_directory_path);
   // *********  TopologyGenerator  ********* //
   RTUTIL.createDir(_config.tg_temp_directory_path);
-  // **********   LayerAssigner    ********** //
+  // **********   LayerAssigner   ********** //
   RTUTIL.createDir(_config.la_temp_directory_path);
   // **********   GlobalRouter    ********** //
   RTUTIL.createDir(_config.gr_temp_directory_path);
@@ -615,9 +614,9 @@ void DataManager::buildConfig()
   RTUTIL.createDir(_config.ta_temp_directory_path);
   // **********  DetailedRouter   ********** //
   RTUTIL.createDir(_config.dr_temp_directory_path);
-  // **********  ViolationRepairer  ********** //
+  // ********** ViolationRepairer ********** //
   RTUTIL.createDir(_config.vr_temp_directory_path);
-  // **********   EarlyRouter    ********** //
+  // **********    EarlyRouter    ********** //
   RTUTIL.createDir(_config.er_temp_directory_path);
   /////////////////////////////////////////////
   RTLOG.openLogFileStream(_config.log_file_path);
@@ -757,14 +756,12 @@ void DataManager::checkLayerList()
     }
     for (ScaleGrid& x_track_grid : routing_layer.getXTrackGridList()) {
       if (x_track_grid.get_step_length() <= 0) {
-        RTLOG.error(Loc::current(), "The layer '", layer_name, "' x_track_grid step length '", x_track_grid.get_step_length(),
-                    "' is wrong!");
+        RTLOG.error(Loc::current(), "The layer '", layer_name, "' x_track_grid step length '", x_track_grid.get_step_length(), "' is wrong!");
       }
     }
     for (ScaleGrid& y_track_grid : routing_layer.getYTrackGridList()) {
       if (y_track_grid.get_step_length() <= 0) {
-        RTLOG.error(Loc::current(), "The layer '", layer_name, "' y_track_grid step length '", y_track_grid.get_step_length(),
-                    "' is wrong!");
+        RTLOG.error(Loc::current(), "The layer '", layer_name, "' y_track_grid step length '", y_track_grid.get_step_length(), "' is wrong!");
       }
     }
     SpacingTable& prl_spacing_table = routing_layer.get_prl_spacing_table();
@@ -867,20 +864,16 @@ std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction)
 {
   Die& die = _database.get_die();
   Row& row = _database.get_row();
+  int32_t row_height = row.get_height();
+  int32_t only_pitch = getOnlyPitch();
 
   int32_t die_start_scale = (direction == Direction::kVertical ? die.get_real_ll_x() : die.get_real_ll_y());
   int32_t die_end_scale = (direction == Direction::kVertical ? die.get_real_ur_x() : die.get_real_ur_y());
-  int32_t row_mid_scale = (direction == Direction::kVertical ? row.get_start_x() : row.get_start_y());
-  // 为了防止与track重合,减去一个recommended_pitch的一半
-  row_mid_scale -= (getOnlyPitch() / 2);
-  int32_t step_length = row.get_height();
+  int32_t step_length = (row_height / only_pitch) * only_pitch + ((row_height % only_pitch) >= (only_pitch / 2) ? only_pitch : 0);
 
   std::vector<int32_t> gcell_scale_list;
   gcell_scale_list.push_back(die_start_scale);
-  for (int32_t gcell_scale = row_mid_scale; gcell_scale >= die_start_scale; gcell_scale -= step_length) {
-    gcell_scale_list.push_back(gcell_scale);
-  }
-  for (int32_t gcell_scale = row_mid_scale; gcell_scale <= die_end_scale; gcell_scale += step_length) {
+  for (int32_t gcell_scale = die_start_scale + (only_pitch / 2); gcell_scale <= die_end_scale; gcell_scale += step_length) {
     gcell_scale_list.push_back(gcell_scale);
   }
   gcell_scale_list.push_back(die_end_scale);
@@ -888,8 +881,7 @@ std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction)
   std::sort(gcell_scale_list.begin(), gcell_scale_list.end());
   // 删除小于step_length的
   for (int32_t i = 2; i < static_cast<int32_t>(gcell_scale_list.size()); i++) {
-    if (std::abs(gcell_scale_list[i - 2] - gcell_scale_list[i - 1]) < step_length
-        || std::abs(gcell_scale_list[i - 1] - gcell_scale_list[i]) < step_length) {
+    if (std::abs(gcell_scale_list[i - 2] - gcell_scale_list[i - 1]) < step_length || std::abs(gcell_scale_list[i - 1] - gcell_scale_list[i]) < step_length) {
       gcell_scale_list[i - 1] = gcell_scale_list[i - 2];
     }
   }
@@ -920,16 +912,14 @@ void DataManager::checkGCellAxis()
     if (x_grid_list[i - 1].get_end_line() < x_grid_list[i].get_start_line()) {
       RTLOG.error(Loc::current(), "The x grid with gap '", x_grid_list[i - 1].get_end_line(), " < ", x_grid_list[i].get_start_line(), "'!");
     } else if (x_grid_list[i - 1].get_end_line() > x_grid_list[i].get_start_line()) {
-      RTLOG.error(Loc::current(), "The x grid with overlapping '", x_grid_list[i - 1].get_end_line(), " < ",
-                  x_grid_list[i].get_start_line(), "'!");
+      RTLOG.error(Loc::current(), "The x grid with overlapping '", x_grid_list[i - 1].get_end_line(), " < ", x_grid_list[i].get_start_line(), "'!");
     }
   }
   for (size_t i = 1; i < y_grid_list.size(); i++) {
     if (y_grid_list[i - 1].get_end_line() < y_grid_list[i].get_start_line()) {
       RTLOG.error(Loc::current(), "The y grid with gap '", y_grid_list[i - 1].get_end_line(), " < ", y_grid_list[i].get_start_line(), "'!");
     } else if (y_grid_list[i - 1].get_end_line() > y_grid_list[i].get_start_line()) {
-      RTLOG.error(Loc::current(), "The y grid with overlapping '", y_grid_list[i - 1].get_end_line(), " > ",
-                  y_grid_list[i].get_start_line(), "'!");
+      RTLOG.error(Loc::current(), "The y grid with overlapping '", y_grid_list[i - 1].get_end_line(), " > ", y_grid_list[i].get_start_line(), "'!");
     }
   }
 }
@@ -952,12 +942,12 @@ void DataManager::checkDie()
   Die& die = _database.get_die();
 
   if (die.get_real_ll_x() < 0 || die.get_real_ll_y() < 0 || die.get_real_ur_x() < 0 || die.get_real_ur_y() < 0) {
-    RTLOG.error(Loc::current(), "The die '(", die.get_real_ll_x(), " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ",
-                die.get_real_ur_y(), ")' is wrong!");
+    RTLOG.error(Loc::current(), "The die '(", die.get_real_ll_x(), " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(),
+                ")' is wrong!");
   }
   if ((die.get_real_ur_x() <= die.get_real_ll_x()) || (die.get_real_ur_y() <= die.get_real_ll_y())) {
-    RTLOG.error(Loc::current(), "The die '(", die.get_real_ll_x(), " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ",
-                die.get_real_ur_y(), ")' is wrong!");
+    RTLOG.error(Loc::current(), "The die '(", die.get_real_ll_x(), " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(),
+                ")' is wrong!");
   }
 }
 
@@ -1019,24 +1009,22 @@ void DataManager::checkObstacleList()
 
 #pragma omp parallel for
   for (Obstacle& obstacle : routing_obstacle_list) {
-    if (obstacle.get_real_ll_x() < die.get_real_ll_x() || obstacle.get_real_ll_y() < die.get_real_ll_y()
-        || die.get_real_ur_x() < obstacle.get_real_ur_x() || die.get_real_ur_y() < obstacle.get_real_ur_y()) {
+    if (obstacle.get_real_ll_x() < die.get_real_ll_x() || obstacle.get_real_ll_y() < die.get_real_ll_y() || die.get_real_ur_x() < obstacle.get_real_ur_x()
+        || die.get_real_ur_y() < obstacle.get_real_ur_y()) {
       // log
-      RTLOG.error(Loc::current(), "The obstacle '(", obstacle.get_real_ll_x(), " , ", obstacle.get_real_ll_y(), ") - (",
-                  obstacle.get_real_ur_x(), " , ", obstacle.get_real_ur_y(), ") ",
-                  routing_layer_list[obstacle.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
-                  die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
+      RTLOG.error(Loc::current(), "The obstacle '(", obstacle.get_real_ll_x(), " , ", obstacle.get_real_ll_y(), ") - (", obstacle.get_real_ur_x(), " , ",
+                  obstacle.get_real_ur_y(), ") ", routing_layer_list[obstacle.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(),
+                  " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
     }
   }
 #pragma omp parallel for
   for (Obstacle& obstacle : cut_obstacle_list) {
-    if (obstacle.get_real_ll_x() < die.get_real_ll_x() || obstacle.get_real_ll_y() < die.get_real_ll_y()
-        || die.get_real_ur_x() < obstacle.get_real_ur_x() || die.get_real_ur_y() < obstacle.get_real_ur_y()) {
+    if (obstacle.get_real_ll_x() < die.get_real_ll_x() || obstacle.get_real_ll_y() < die.get_real_ll_y() || die.get_real_ur_x() < obstacle.get_real_ur_x()
+        || die.get_real_ur_y() < obstacle.get_real_ur_y()) {
       // log
-      RTLOG.error(Loc::current(), "The obstacle '(", obstacle.get_real_ll_x(), " , ", obstacle.get_real_ll_y(), ") - (",
-                  obstacle.get_real_ur_x(), " , ", obstacle.get_real_ur_y(), ") ",
-                  routing_layer_list[obstacle.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
-                  die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
+      RTLOG.error(Loc::current(), "The obstacle '(", obstacle.get_real_ll_x(), " , ", obstacle.get_real_ll_y(), ") - (", obstacle.get_real_ur_x(), " , ",
+                  obstacle.get_real_ur_y(), ") ", routing_layer_list[obstacle.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(),
+                  " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
     }
   }
 }
@@ -1112,17 +1100,16 @@ void DataManager::checkPinList(Net& net)
           || die.get_real_ur_x() < routing_shape.get_real_ur_x() || die.get_real_ur_y() < routing_shape.get_real_ur_y()) {
         RTLOG.error(Loc::current(), "The pin_shape '(", routing_shape.get_real_ll_x(), " , ", routing_shape.get_real_ll_y(), ") - (",
                     routing_shape.get_real_ur_x(), " , ", routing_shape.get_real_ur_y(), ") ",
-                    routing_layer_list[routing_shape.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
-                    die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
+                    routing_layer_list[routing_shape.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ", die.get_real_ll_y(),
+                    ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
       }
     }
     for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
-      if (cut_shape.get_real_ll_x() < die.get_real_ll_x() || cut_shape.get_real_ll_y() < die.get_real_ll_y()
-          || die.get_real_ur_x() < cut_shape.get_real_ur_x() || die.get_real_ur_y() < cut_shape.get_real_ur_y()) {
-        RTLOG.error(Loc::current(), "The pin_shape '(", cut_shape.get_real_ll_x(), " , ", cut_shape.get_real_ll_y(), ") - (",
-                    cut_shape.get_real_ur_x(), " , ", cut_shape.get_real_ur_y(), ") ",
-                    cut_layer_list[cut_shape.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
-                    die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
+      if (cut_shape.get_real_ll_x() < die.get_real_ll_x() || cut_shape.get_real_ll_y() < die.get_real_ll_y() || die.get_real_ur_x() < cut_shape.get_real_ur_x()
+          || die.get_real_ur_y() < cut_shape.get_real_ur_y()) {
+        RTLOG.error(Loc::current(), "The pin_shape '(", cut_shape.get_real_ll_x(), " , ", cut_shape.get_real_ll_y(), ") - (", cut_shape.get_real_ur_x(), " , ",
+                    cut_shape.get_real_ur_y(), ") ", cut_layer_list[cut_shape.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(),
+                    " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
       }
     }
   }
@@ -1211,11 +1198,10 @@ void DataManager::makeLayerViaMasterList()
     }
     direction_list.front() = first_direction;
   }
-  for (size_t layer_idx = 0; layer_idx < layer_via_master_list.size(); layer_idx++) {
+  for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_via_master_list.size()); layer_idx++) {
     std::vector<ViaMaster>& via_master_list = layer_via_master_list[layer_idx];
-    std::sort(via_master_list.begin(), via_master_list.end(),
-              [&direction_list](ViaMaster& a, ViaMaster& b) { return CmpViaMaster()(a, b, direction_list); });
-    for (size_t i = 0; i < via_master_list.size(); i++) {
+    std::sort(via_master_list.begin(), via_master_list.end(), [&direction_list](ViaMaster& a, ViaMaster& b) { return CmpViaMaster()(a, b, direction_list); });
+    for (int32_t i = 0; i < static_cast<int32_t>(via_master_list.size()); i++) {
       via_master_list[i].set_via_master_idx(layer_idx, i);
     }
   }
@@ -1421,7 +1407,7 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "DRCEngine");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "de_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.de_temp_directory_path);
-  // **********     GDSPlotter     ********** //
+  // **********    GDSPlotter     ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "GDSPlotter");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "gp_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.gp_temp_directory_path);
@@ -1429,15 +1415,15 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "PinAccessor");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "pa_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.pa_temp_directory_path);
-  // **********   SupplyAnalyzer   ********** //
+  // **********  SupplyAnalyzer   ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "SupplyAnalyzer");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "sa_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.sa_temp_directory_path);
-  // **********  TopologyGenerator  ********* //
+  // ********** TopologyGenerator  ********* //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "TopologyGenerator");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "tg_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.tg_temp_directory_path);
-  // **********   LayerAssigner    ********** //
+  // **********   LayerAssigner   ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "LayerAssigner");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "la_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.la_temp_directory_path);
@@ -1453,11 +1439,11 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "DetailedRouter");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "dr_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.dr_temp_directory_path);
-  // **********  ViolationRepairer  ********** //
+  // ********** ViolationRepairer ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "ViolationRepairer");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "vr_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.vr_temp_directory_path);
-  // **********   EarlyRouter    ********** //
+  // **********    EarlyRouter    ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "EarlyRouter");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "er_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.er_temp_directory_path);
@@ -1466,8 +1452,8 @@ void DataManager::printConfig()
 
 void DataManager::printDatabase()
 {
-  ////////////////////////////////////////////////
-  // ********** RT ********** //
+  /////////////////////////////////////////////
+  // **********        RT         ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(0), "RT_DATABASE");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "design_name");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _database.get_design_name());
@@ -1477,13 +1463,13 @@ void DataManager::printDatabase()
   }
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "def_file_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _database.get_def_file_path());
-  // ********** MicronDBU ********** //
+  // **********     MicronDBU     ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "micron_dbu");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _database.get_micron_dbu());
-  // ********** ManufactureGrid ********** //
+  // **********  ManufactureGrid  ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "manufacture_grid");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _database.get_manufacture_grid());
-  // ********** GCellAxis ********** //
+  // **********     GCellAxis     ********** //
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "gcell_axis");
   std::vector<ScaleGrid>& x_grid_list = gcell_axis.get_x_grid_list();
@@ -1498,21 +1484,21 @@ void DataManager::printDatabase()
     RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), "start:", y_grid.get_start_line(), " step_length:", y_grid.get_step_length(),
                " step_num:", y_grid.get_step_num(), " end:", y_grid.get_end_line());
   }
-  // ********** Die ********** //
+  // **********        Die        ********** //
   Die& die = _database.get_die();
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "die");
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "(", die.get_real_ll_x(), ",", die.get_real_ll_y(), ")-(", die.get_real_ur_x(),
-             ",", die.get_real_ur_y(), ")");
-  // ********** RoutingLayer ********** //
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "real:(", die.get_real_ll_x(), ",", die.get_real_ll_y(), ")-(", die.get_real_ur_x(), ",",
+             die.get_real_ur_y(), ")");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "grid:(", die.get_grid_ll_x(), ",", die.get_grid_ll_y(), ")-(", die.get_grid_ur_x(), ",",
+             die.get_grid_ur_y(), ")");
+  // **********    RoutingLayer   ********** //
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "routing_layer_num");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), routing_layer_list.size());
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "routing_layer");
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "idx:", routing_layer.get_layer_idx(),
-               " order:", routing_layer.get_layer_order(), " name:", routing_layer.get_layer_name(),
-               " min_width:", routing_layer.get_min_width(), " min_area:", routing_layer.get_min_area(),
-               " prefer_direction:", GetDirectionName()(routing_layer.get_prefer_direction()));
+    RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "idx:", routing_layer.get_layer_idx(), " order:", routing_layer.get_layer_order(),
+               " name:", routing_layer.get_layer_name(), " prefer_direction:", GetDirectionName()(routing_layer.get_prefer_direction()));
 
     ScaleAxis& track_axis = routing_layer.get_track_axis();
     RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "track_axis");
@@ -1529,7 +1515,7 @@ void DataManager::printDatabase()
                  " step_num:", y_grid.get_step_num(), " end:", y_grid.get_end_line());
     }
   }
-  // ********** CutLayer ********** //
+  // **********      CutLayer     ********** //
   std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "cut_layer_num");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), cut_layer_list.size());
@@ -1538,7 +1524,7 @@ void DataManager::printDatabase()
     RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "idx:", cut_layer.get_layer_idx(), " order:", cut_layer.get_layer_order(),
                " name:", cut_layer.get_layer_name());
   }
-  // ********** ViaMaster ********** //
+  // **********      ViaMaster    ********** //
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "layer_via_master_list");
   for (size_t below_layer_idx = 0; below_layer_idx < layer_via_master_list.size(); below_layer_idx++) {
@@ -1548,12 +1534,12 @@ void DataManager::printDatabase()
     }
     RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), via_master_name_string);
   }
-  // ********** Obstacle ********** //
+  // **********      Obstacle     ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "routing_obstacle_num");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _database.get_routing_obstacle_list().size());
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "cut_obstacle_num");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _database.get_cut_obstacle_list().size());
-  // ********** Net ********** //
+  // **********        Net        ********** //
   std::vector<Net>& net_list = _database.get_net_list();
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "net_num");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), net_list.size());
@@ -1575,10 +1561,9 @@ void DataManager::printDatabase()
     if (pin_num == pin_num_upper_limit) {
       head_info += ">=";
     }
-    RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), head_info, pin_num, " pins: ", net_num, "(",
-               RTUTIL.getPercentage(net_num, net_list.size()), ")");
+    RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), head_info, pin_num, " pins: ", net_num, "(", RTUTIL.getPercentage(net_num, net_list.size()), ")");
   }
-  ////////////////////////////////////////////////
+  /////////////////////////////////////////////
 }
 
 void DataManager::writePYScript()
@@ -1596,17 +1581,15 @@ void DataManager::writePYScript()
   RTUTIL.pushStream(python_file, "output_dir = os.path.join(directory, 'output_png')", "\n");
   RTUTIL.pushStream(python_file, "os.makedirs(output_dir, exist_ok=True)", "\n");
   RTUTIL.pushStream(python_file, "def process_csv(filename):", "\n");
-  RTUTIL.pushStream(
-      python_file,
-      "    output_name = os.path.basename(os.path.dirname(filename)) + \"_\" + os.path.splitext(os.path.basename(filename))[0]", "\n");
+  RTUTIL.pushStream(python_file, "    output_name = os.path.basename(os.path.dirname(filename)) + \"_\" + os.path.splitext(os.path.basename(filename))[0]",
+                    "\n");
   RTUTIL.pushStream(python_file, "    plt.figure()  ", "\n");
   RTUTIL.pushStream(python_file, "    temp = sns.heatmap(np.array(pd.read_csv(filename)), cmap='hot_r')", "\n");
   RTUTIL.pushStream(python_file, "    temp.set_title(output_name)", "\n");
   RTUTIL.pushStream(python_file, "    plt.savefig(os.path.join(output_dir, output_name + \".png\"), dpi=300, bbox_inches='tight')", "\n");
   RTUTIL.pushStream(python_file, "    plt.close()  ", "\n");
-  RTUTIL.pushStream(
-      python_file,
-      "csv_files = [os.path.join(root, file) for root, _, files in os.walk(directory) for file in files if file.endswith(\".csv\")]", "\n");
+  RTUTIL.pushStream(python_file, "csv_files = [os.path.join(root, file) for root, _, files in os.walk(directory) for file in files if file.endswith(\".csv\")]",
+                    "\n");
   RTUTIL.pushStream(python_file, "with Pool() as pool:", "\n");
   RTUTIL.pushStream(python_file, "    pool.map(process_csv, csv_files)", "\n");
   RTUTIL.closeFileStream(python_file);
@@ -1629,12 +1612,22 @@ void DataManager::destroyGCellMap()
   }
   for (auto& [net_idx, segment_set] : getNetGlobalResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
-      RTDM.updateGlobalNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+      RTDM.updateNetGlobalResultToGCellMap(ChangeType::kDel, net_idx, segment);
     }
   }
   for (auto& [net_idx, segment_set] : getNetDetailedResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
       RTDM.updateNetDetailedResultToGCellMap(ChangeType::kDel, net_idx, segment);
+    }
+  }
+  for (auto& [net_idx, segment_set] : getNetFinalResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      RTDM.updateNetFinalResultToGCellMap(ChangeType::kDel, net_idx, segment);
+    }
+  }
+  for (auto& [net_idx, patch_set] : getNetFinalPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      RTDM.updateNetFinalPatchToGCellMap(ChangeType::kDel, net_idx, patch);
     }
   }
   for (Violation* violation : getViolationSet(die)) {

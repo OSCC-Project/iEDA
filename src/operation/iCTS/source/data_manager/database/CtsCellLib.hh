@@ -26,6 +26,7 @@
 #include <map>
 #include <span>
 #include <tuple>
+#include <unordered_map>
 #include <vector>
 
 #include "ModelFactory.hh"

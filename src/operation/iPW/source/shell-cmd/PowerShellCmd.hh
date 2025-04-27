@@ -33,6 +33,8 @@ using ieda::ScriptEngine;
 using ieda::TclCmd;
 using ieda::TclOption;
 using ieda::TclStringOption;
+using ieda::TclIntOption;
+using ieda::TclDoubleOption;
 
 /**
  * @brief set the design workspace.
@@ -61,6 +63,19 @@ class CmdReadVcd : public TclCmd {
 };
 
 /**
+ * @brief read_pg_spef cmd.
+ * 
+ */
+class CmdReadPGSpef : public TclCmd {
+public:
+  explicit CmdReadPGSpef(const char* cmd_name);
+  ~CmdReadPGSpef() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+};
+
+/**
  * @brief report_power command reports power.
  *
  */
@@ -71,6 +86,20 @@ class CmdReportPower : public TclCmd {
 
   unsigned check() override;
   unsigned exec() override;
+};
+
+/**
+ * @brief report_ir_drop cmd.
+ * 
+ */
+class CmdReportIRDrop : public TclCmd {
+public:
+  explicit CmdReportIRDrop(const char* cmd_name);
+  ~CmdReportIRDrop() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
 };
 
 }  // namespace ipower

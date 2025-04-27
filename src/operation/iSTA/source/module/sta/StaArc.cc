@@ -26,6 +26,7 @@
 #include "StaDump.hh"
 #include "StaFunc.hh"
 #include "StaVertex.hh"
+#include "propagation-cuda/propagation.cuh"
 
 namespace ista {
 
@@ -60,6 +61,34 @@ int StaArc::get_arc_delay(AnalysisMode analysis_mode, TransType trans_type) {
   }
 
   return 0;
+}
+
+/**
+ * @brief init arc delay data.
+ * 
+ */
+void StaArc::initArcDelayData() {
+  auto& delay_bucket = getDataBucket();
+  if (!delay_bucket.empty()) {
+    return;
+  }
+
+  auto construct_delay_data = [this](AnalysisMode delay_type,
+                                     TransType trans_type, StaArc* own_arc,
+                                     int delay) {
+    StaArcDelayData* arc_delay =
+        new StaArcDelayData(delay_type, trans_type, own_arc, delay);
+    ;
+    own_arc->addData(arc_delay);
+
+    arc_delay->set_arc_delay(delay);
+  };
+
+  /*if not, create default zero slew.*/
+  construct_delay_data(AnalysisMode::kMax, TransType::kRise, this, 0);
+  construct_delay_data(AnalysisMode::kMax, TransType::kFall, this, 0);
+  construct_delay_data(AnalysisMode::kMin, TransType::kRise, this, 0);
+  construct_delay_data(AnalysisMode::kMin, TransType::kFall, this, 0);
 }
 
 /**
@@ -100,6 +129,56 @@ StaNetArc::StaNetArc(StaVertex* driver, StaVertex* load, Net* net)
 
 StaInstArc::StaInstArc(StaVertex* src, StaVertex* snk, LibArc* lib_arc,
                        Instance* inst)
-    : StaArc(src, snk), _lib_arc(lib_arc), _inst(inst) {}
+    : StaArc(src, snk),
+      _lib_arc(lib_arc),
+      _inst(inst){}
+
+// for debug by printLIBTableGPU.(to be deleted)
+void printLibTableGPU(const Lib_Table_GPU& gpu_table) {
+  // print x axis
+  std::cout << "index_1(";
+  for (unsigned i = 0; i < gpu_table._num_x; ++i) {
+    std::cout << std::fixed << std::setprecision(8) << gpu_table._x[i];
+    if (i < gpu_table._num_x - 1) {
+      std::cout << ",";
+    }
+  }
+  std::cout << ");" << std::endl;
+
+  // print y axis
+  std::cout << "index_2(";
+  for (unsigned i = 0; i < gpu_table._num_y; ++i) {
+    std::cout << std::fixed << std::setprecision(8) << gpu_table._y[i];
+    if (i < gpu_table._num_y - 1) {
+      std::cout << ",";
+    }
+  }
+  std::cout << ");" << std::endl;
+
+  // print values
+  std::cout << "values (";
+  for (unsigned i = 0; i < gpu_table._num_values / gpu_table._num_y; ++i) {
+    std::cout << "\"";
+    for (unsigned j = 0; j < gpu_table._num_y; ++j) {
+      std::cout << std::fixed << std::setprecision(8)
+                << gpu_table._values[i * gpu_table._num_y + j];
+      if (j < gpu_table._num_y - 1) {
+        std::cout << ",";
+      }
+    }
+    std::cout << "\"";
+    if (i < gpu_table._num_values - 1) {
+      std::cout << ",";
+    }
+  }
+  std::cout << ");" << std::endl;
+}
+
+/**
+ * @brief build gpu lib arc(axes and values) according to the lib arc.
+ */
+void StaInstArc::buildLibArcsGPU() {
+
+}
 
 }  // namespace ista

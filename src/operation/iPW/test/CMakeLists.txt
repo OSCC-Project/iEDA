@@ -15,10 +15,11 @@ target_link_libraries(
   PUBLIC
   gtest
   gtest_main
-
+  boost_system
   PRIVATE
   vcd_wrapper
   log
   power
   usage ista-engine core calc_power plot_power
+
 )

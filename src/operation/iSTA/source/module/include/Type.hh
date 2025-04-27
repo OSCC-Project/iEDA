@@ -88,6 +88,7 @@ using ModeTransPair = std::pair<AnalysisMode, TransType>;
 #define F_TO_PF(cap) ((cap) / g_pf2f)
 
 enum class DelayCalcMethod : int { kElmore = 0, kArnoldi = 1 };
+enum class PropagationMethod : int { kDFS = 0, kBFS = 1 };
 
 enum class CapacitiveUnit { kPF = 0, kFF = 1, kF = 2 };
 enum class ResistanceUnit { kOHM = 0, kkOHM = 1 };

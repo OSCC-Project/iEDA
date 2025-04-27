@@ -103,6 +103,28 @@ void TimingEngine::set_db_adapter(std::unique_ptr<TimingDBAdapter> db_adapter) {
 }
 
 /**
+ * @brief read def design for construct netlist db.
+ * 
+ * @param def_file 
+ * @param lef_files 
+ * @return TimingEngine& 
+ */
+TimingEngine& TimingEngine::readDefDesign(std::string def_file,
+                                          std::vector<std::string>& lef_files) {
+  auto* db_builder = new idb::IdbBuilder();
+  db_builder->buildLef(lef_files);
+  db_builder->buildDef(def_file);
+
+  auto db_adapter = std::make_unique<TimingIDBAdapter>(get_ista());
+  db_adapter->set_idb(db_builder);
+  db_adapter->convertDBToTimingNetlist();
+
+  set_db_adapter(std::move(db_adapter));
+
+  return *this;
+}
+
+/**
  * @brief get the LibTable of a cell.
  * table.
  *
@@ -419,7 +441,21 @@ void TimingEngine::incrCap(RctNode* node, double cap, bool is_incremental) {
 void TimingEngine::makeResistor(Net* net, RctNode* from_node, RctNode* to_node,
                                 double res) {
   auto* rc_net = _timing_engine->get_ista()->getRcNet(net);
+  if (!rc_net) {
+    return;
+  }
   auto* rc_tree = rc_net->rct();
+
+  auto from_fanouts = from_node->get_fanout();
+
+  // judge whether the edge is already exist.
+  auto found = std::ranges::find_if(from_fanouts, [&](auto* edge) {
+    return &(edge->get_to()) == to_node;
+  });
+
+  if (found != from_fanouts.end()) {
+    return;
+  }
 
   rc_tree->insertEdge(from_node, to_node, res, true);
   rc_tree->insertEdge(to_node, from_node, res, false);

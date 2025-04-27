@@ -58,10 +58,7 @@ class Utility
   }
 
   // 判断线段是否为一个点
-  static bool isProximal(const PlanarCoord& start_coord, const PlanarCoord& end_coord)
-  {
-    return getDirection(start_coord, end_coord) == Direction::kProximal;
-  }
+  static bool isProximal(const PlanarCoord& start_coord, const PlanarCoord& end_coord) { return getDirection(start_coord, end_coord) == Direction::kProximal; }
 
   // 判断线段是否为水平线
   static bool isHorizontal(const PlanarCoord& start_coord, const PlanarCoord& end_coord)
@@ -70,74 +67,15 @@ class Utility
   }
 
   // 判断线段是否为竖直线
-  static bool isVertical(const PlanarCoord& start_coord, const PlanarCoord& end_coord)
-  {
-    return getDirection(start_coord, end_coord) == Direction::kVertical;
-  }
+  static bool isVertical(const PlanarCoord& start_coord, const PlanarCoord& end_coord) { return getDirection(start_coord, end_coord) == Direction::kVertical; }
 
   // 判断线段是否为斜线
-  static bool isOblique(const PlanarCoord& start_coord, const PlanarCoord& end_coord)
-  {
-    return getDirection(start_coord, end_coord) == Direction::kOblique;
-  }
+  static bool isOblique(const PlanarCoord& start_coord, const PlanarCoord& end_coord) { return getDirection(start_coord, end_coord) == Direction::kOblique; }
 
   // 判断线段是否为直角线
   static bool isRightAngled(const PlanarCoord& start_coord, const PlanarCoord& end_coord)
   {
     return isProximal(start_coord, end_coord) || isHorizontal(start_coord, end_coord) || isVertical(start_coord, end_coord);
-  }
-
-  // 三个坐标是否共线
-  static bool isCollinear(PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
-  {
-    return getDirection(first_coord, second_coord) == getDirection(second_coord, third_coord);
-  }
-
-  // 坐标集合是否共线
-  static bool isCollinear(std::vector<PlanarCoord>& coord_list)
-  {
-    if (coord_list.empty()) {
-      RTLOG.error(Loc::current(), "The coord list is empty!");
-    } else if (coord_list.size() <= 2) {
-      return true;
-    } else {
-      Direction pre_direction = getDirection(coord_list[0], coord_list[1]);
-      for (size_t i = 2; i < coord_list.size(); i++) {
-        Direction curr_direction = getDirection(coord_list[i - 1], coord_list[i]);
-        if (pre_direction != curr_direction) {
-          return false;
-        }
-        pre_direction = curr_direction;
-      }
-      return true;
-    }
-  }
-
-  // 叉乘
-  static int32_t crossProduct(PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
-  {
-    return (second_coord.get_x() - first_coord.get_x()) * (third_coord.get_y() - first_coord.get_y())
-           - (second_coord.get_y() - first_coord.get_y()) * (third_coord.get_x() - first_coord.get_x());
-  }
-
-  // 是否是凸角
-  static bool isConvexCorner(PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
-  {
-    if (isCollinear(first_coord, second_coord, third_coord)) {
-      return false;
-    }
-
-    return crossProduct(first_coord, second_coord, third_coord) < 0;
-  }
-
-  // 是否是凹角
-  static bool isConcaveCorner(PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
-  {
-    if (isCollinear(first_coord, second_coord, third_coord)) {
-      return false;
-    }
-
-    return crossProduct(first_coord, second_coord, third_coord) > 0;
   }
 
   static std::vector<Orientation> getOrientationList(const PlanarCoord& start_coord, const PlanarCoord& end_coord,
@@ -151,8 +89,7 @@ class Utility
   }
 
   // 判断线段方向 从start到end
-  static Orientation getOrientation(const LayerCoord& start_coord, const LayerCoord& end_coord,
-                                    Orientation point_orientation = Orientation::kNone)
+  static Orientation getOrientation(const LayerCoord& start_coord, const LayerCoord& end_coord, Orientation point_orientation = Orientation::kNone)
   {
     Orientation orientation;
 
@@ -176,8 +113,7 @@ class Utility
     return orientation;
   }
 
-  static Orientation getOrientation(const PlanarCoord& start_coord, const PlanarCoord& end_coord,
-                                    Orientation point_orientation = Orientation::kNone)
+  static Orientation getOrientation(const PlanarCoord& start_coord, const PlanarCoord& end_coord, Orientation point_orientation = Orientation::kNone)
   {
     return getOrientation(LayerCoord(start_coord), LayerCoord(end_coord));
   }
@@ -281,10 +217,7 @@ class Utility
   }
 
   // 获得线段的长度
-  static int32_t getManhattanDistance(Segment<PlanarCoord> segment)
-  {
-    return getManhattanDistance(segment.get_first(), segment.get_second());
-  }
+  static int32_t getManhattanDistance(Segment<PlanarCoord> segment) { return getManhattanDistance(segment.get_first(), segment.get_second()); }
 
   // 获得坐标集合的H树线长
   static int32_t getHTreeLength(std::vector<PlanarCoord>& coord_list)
@@ -352,6 +285,47 @@ class Utility
     v_tree_length += std::abs(max_y - min_y);
     v_tree_length += std::abs(max_x - min_x);
     return v_tree_length;
+  }
+
+  // 获得两个线段的最短距离点对
+  static Segment<PlanarCoord> getShortenCoordPair(Segment<PlanarCoord>& seg1, Segment<PlanarCoord>& seg2)
+  {
+    if (isIntersection(seg1, seg2)) {
+      PlanarCoord coord = getIntersection(seg1, seg2);
+      return Segment<PlanarCoord>(coord, coord);
+    }
+
+    Segment<PlanarCoord> candidate_seg1 = getShortenCoordPair(seg1, seg2.get_first());
+    Segment<PlanarCoord> candidate_seg2 = getShortenCoordPair(seg1, seg2.get_second());
+
+    if (getManhattanDistance(candidate_seg1) < getManhattanDistance(candidate_seg2)) {
+      return candidate_seg1;
+    } else {
+      return candidate_seg2;
+    }
+  }
+
+  // 获得线段和点的最短距离点对
+  static Segment<PlanarCoord> getShortenCoordPair(Segment<PlanarCoord>& seg, PlanarCoord& coord)
+  {
+    int32_t coord_x = coord.get_x();
+    int32_t coord_y = coord.get_y();
+    int32_t first_coord_x = seg.get_first().get_x();
+    int32_t first_coord_y = seg.get_first().get_y();
+    int32_t second_coord_x = seg.get_second().get_x();
+    int32_t second_coord_y = seg.get_second().get_y();
+
+    if (first_coord_y == second_coord_y && first_coord_x <= coord_x && coord_x <= second_coord_x) {
+      return Segment<PlanarCoord>(PlanarCoord(coord_x, first_coord_y), coord);
+    } else if (first_coord_x == second_coord_x && first_coord_y <= coord_y && coord_y <= second_coord_y) {
+      return Segment<PlanarCoord>(PlanarCoord(first_coord_x, coord_y), coord);
+    }
+
+    if (getManhattanDistance(coord, seg.get_first()) < getManhattanDistance(coord, seg.get_second())) {
+      return Segment<PlanarCoord>(coord, seg.get_first());
+    } else {
+      return Segment<PlanarCoord>(coord, seg.get_second());
+    }
   }
 
 #endif
@@ -489,18 +463,83 @@ class Utility
    *         |  ——————————    |
    *         |________________|
    */
-  static bool isInside(const PlanarRect& master, const PlanarRect& rect)
+  static bool isInside(const PlanarRect& master, const PlanarRect& rect) { return (isInside(master, rect.get_ll()) && isInside(master, rect.get_ur())); }
+
+  static void addOffset(PlanarCoord& coord, PlanarCoord& offset_coord) { addOffset(coord, offset_coord.get_x(), offset_coord.get_y()); }
+
+  static void addOffset(PlanarCoord& coord, int32_t x_offset, int32_t y_offset)
   {
-    return (isInside(master, rect.get_ll()) && isInside(master, rect.get_ur()));
+    coord.set_x(coord.get_x() + x_offset);
+    coord.set_y(coord.get_y() + y_offset);
+  }
+
+  static void minusOffset(PlanarCoord& coord, PlanarCoord& offset_coord) { minusOffset(coord, offset_coord.get_x(), offset_coord.get_y()); }
+
+  static void minusOffset(PlanarCoord& coord, int32_t x_offset, int32_t y_offset)
+  {
+    coord.set_x((coord.get_x() - x_offset) < 0 ? 0 : (coord.get_x() - x_offset));
+    coord.set_y((coord.get_y() - y_offset) < 0 ? 0 : (coord.get_y() - y_offset));
+  }
+
+  // 三个坐标是否共线
+  static bool isCollinear(PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
+  {
+    return getDirection(first_coord, second_coord) == getDirection(second_coord, third_coord);
+  }
+
+  // 坐标集合是否共线
+  static bool isCollinear(std::vector<PlanarCoord>& coord_list)
+  {
+    if (coord_list.empty()) {
+      RTLOG.error(Loc::current(), "The coord list is empty!");
+    } else if (coord_list.size() <= 2) {
+      return true;
+    } else {
+      Direction pre_direction = getDirection(coord_list[0], coord_list[1]);
+      for (size_t i = 2; i < coord_list.size(); i++) {
+        Direction curr_direction = getDirection(coord_list[i - 1], coord_list[i]);
+        if (pre_direction != curr_direction) {
+          return false;
+        }
+        pre_direction = curr_direction;
+      }
+      return true;
+    }
+  }
+
+  // 是否是凸角位置
+  static bool isConvexCorner(PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
+  {
+    if (isCollinear(first_coord, second_coord, third_coord)) {
+      return false;
+    }
+
+    return crossProduct(first_coord, second_coord, third_coord) < 0;
+  }
+
+  // 是否是凹角位置
+  static bool isConcaveCorner(PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
+  {
+    if (isCollinear(first_coord, second_coord, third_coord)) {
+      return false;
+    }
+
+    return crossProduct(first_coord, second_coord, third_coord) > 0;
   }
 
 #endif
 
 #if 1  // 形状有关计算
 
+  // 三个点的叉乘
+  static int32_t crossProduct(PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
+  {
+    return (second_coord.get_x() - first_coord.get_x()) * (third_coord.get_y() - first_coord.get_y())
+           - (second_coord.get_y() - first_coord.get_y()) * (third_coord.get_x() - first_coord.get_x());
+  }
+
   // 获得两个线段的交点
-  static PlanarCoord getIntersection(PlanarCoord first_coord1, PlanarCoord second_coord1, PlanarCoord first_coord2,
-                                     PlanarCoord second_coord2)
+  static PlanarCoord getIntersection(PlanarCoord first_coord1, PlanarCoord second_coord1, PlanarCoord first_coord2, PlanarCoord second_coord2)
   {
     Segment<PlanarCoord> seg1(first_coord1, second_coord1);
     Segment<PlanarCoord> seg2(first_coord2, second_coord2);
@@ -537,9 +576,7 @@ class Utility
     // 叉积运算
     auto cross = [](double ux, double uy, double vx, double vy) { return ux * vy - vx * uy; };
     // 判断线段 (ux, uy) -- (vx, vy) 是否包含 (mx, my)
-    auto both_side = [&](double mx, double my, double ux, double uy, double vx, double vy) {
-      return (ux - mx) * (vx - mx) <= 0 && (uy - my) * (vy - my) <= 0;
-    };
+    auto both_side = [&](double mx, double my, double ux, double uy, double vx, double vy) { return (ux - mx) * (vx - mx) <= 0 && (uy - my) * (vy - my) <= 0; };
     // 共线处理
     if (cross(cax, cay, cbx, cby) == 0) {
       bool c_in_ab = both_side(cx, cy, ax, ay, bx, by);
@@ -573,9 +610,7 @@ class Utility
       return PlanarCoord(-1, -1);
     }
     // 判断两条线段是否有公共点
-    auto intersect = [&]() {
-      return cross(acx, acy, abx, aby) * cross(adx, ady, abx, aby) <= 0 && cross(cax, cay, cdx, cdy) * cross(cbx, cby, cdx, cdy) <= 0;
-    };
+    auto intersect = [&]() { return cross(acx, acy, abx, aby) * cross(adx, ady, abx, aby) <= 0 && cross(cax, cay, cdx, cdy) * cross(cbx, cby, cdx, cdy) <= 0; };
     if (!intersect()) {
       return PlanarCoord(-1, -1);
     }
@@ -613,8 +648,7 @@ class Utility
       intersection_point_list.push_back(intersection_point);
     }
     std::sort(intersection_point_list.begin(), intersection_point_list.end(), CmpPlanarCoordByXASC());
-    intersection_point_list.erase(std::unique(intersection_point_list.begin(), intersection_point_list.end()),
-                                  intersection_point_list.end());
+    intersection_point_list.erase(std::unique(intersection_point_list.begin(), intersection_point_list.end()), intersection_point_list.end());
     return intersection_point_list;
   }
 
@@ -672,16 +706,6 @@ class Utility
     return overlap_rect_list;
   }
 
-  // 计算rect在master上覆盖的面积占master总面积的比例
-  static double getOverlapRatio(PlanarRect& master, PlanarRect& rect)
-  {
-    double ratio = 0;
-    if (isOpenOverlap(master, rect)) {
-      ratio = getOverlap(master, rect).getArea() / master.getArea();
-    }
-    return ratio;
-  }
-
   static Segment<LayerCoord> getOverlap(const LayerRect& rect, const Segment<LayerCoord>& segment)
   {
     int32_t rect_ll_x = rect.get_ll_x();
@@ -706,8 +730,7 @@ class Utility
         int32_t overlap_max_x = std::min(rect_ur_x, std::max(first_x, second_x));
 
         if (overlap_min_x <= overlap_max_x) {
-          return Segment<LayerCoord>(LayerCoord(overlap_min_x, first_y, rect_layer_idx),
-                                     LayerCoord(overlap_max_x, first_y, rect_layer_idx));
+          return Segment<LayerCoord>(LayerCoord(overlap_min_x, first_y, rect_layer_idx), LayerCoord(overlap_max_x, first_y, rect_layer_idx));
         }
       }
     } else if (first_x == second_x && first_layer_idx == second_layer_idx) {
@@ -716,14 +739,12 @@ class Utility
         int32_t overlap_max_y = std::min(rect_ur_y, std::max(first_y, second_y));
 
         if (overlap_min_y <= overlap_max_y) {
-          return Segment<LayerCoord>(LayerCoord(first_x, overlap_min_y, rect_layer_idx),
-                                     LayerCoord(first_x, overlap_max_y, rect_layer_idx));
+          return Segment<LayerCoord>(LayerCoord(first_x, overlap_min_y, rect_layer_idx), LayerCoord(first_x, overlap_max_y, rect_layer_idx));
         }
       }
     } else if (first_x == second_x && first_y == second_y) {
       if (first_x >= rect_ll_x && first_x <= rect_ur_x && first_y >= rect_ll_y && first_y <= rect_ur_y
-          && rect_layer_idx >= std::min(first_layer_idx, second_layer_idx)
-          && rect_layer_idx <= std::max(first_layer_idx, second_layer_idx)) {
+          && rect_layer_idx >= std::min(first_layer_idx, second_layer_idx) && rect_layer_idx <= std::max(first_layer_idx, second_layer_idx)) {
         return Segment<LayerCoord>(LayerCoord(first_x, first_y, rect_layer_idx), LayerCoord(first_x, first_y, rect_layer_idx));
       }
     }
@@ -768,8 +789,7 @@ class Utility
       }
     } else if (first_x == second_x && first_y == second_y) {
       if (first_x >= rect_ll_x && first_x <= rect_ur_x && first_y >= rect_ll_y && first_y <= rect_ur_y
-          && rect_layer_idx >= std::min(first_layer_idx, second_layer_idx)
-          && rect_layer_idx <= std::max(first_layer_idx, second_layer_idx)) {
+          && rect_layer_idx >= std::min(first_layer_idx, second_layer_idx) && rect_layer_idx <= std::max(first_layer_idx, second_layer_idx)) {
         return true;
       }
     }
@@ -905,8 +925,7 @@ class Utility
   }
 
   // 扩大矩形
-  static PlanarRect getEnlargedRect(PlanarRect rect, int32_t ll_x_minus_offset, int32_t ll_y_minus_offset, int32_t ur_x_add_offset,
-                                    int32_t ur_y_add_offset)
+  static PlanarRect getEnlargedRect(PlanarRect rect, int32_t ll_x_minus_offset, int32_t ll_y_minus_offset, int32_t ur_x_add_offset, int32_t ur_y_add_offset)
   {
     minusOffset(rect.get_ll(), ll_x_minus_offset, ll_y_minus_offset);
     addOffset(rect.get_ur(), ur_x_add_offset, ur_y_add_offset);
@@ -957,6 +976,94 @@ class Utility
     addOffset(rect.get_ll(), shrinked_size, shrinked_size);
     minusOffset(rect.get_ur(), shrinked_size, shrinked_size);
     return rect;
+  }
+
+  // 获得坐标集合的外接矩形
+  static PlanarRect getBoundingBox(const std::vector<LayerCoord>& coord_list)
+  {
+    std::vector<PlanarCoord> planar_coord_list;
+    planar_coord_list.insert(planar_coord_list.end(), coord_list.begin(), coord_list.end());
+    return getBoundingBox(planar_coord_list);
+  }
+
+  // 获得坐标集合的外接矩形
+  static PlanarRect getBoundingBox(const std::vector<PlanarCoord>& coord_list)
+  {
+    PlanarRect bounding_box;
+    if (coord_list.empty()) {
+      RTLOG.warn(Loc::current(), "The coord list size is empty!");
+    } else {
+      int32_t ll_x = INT32_MAX;
+      int32_t ll_y = INT32_MAX;
+      int32_t ur_x = INT32_MIN;
+      int32_t ur_y = INT32_MIN;
+      for (size_t i = 0; i < coord_list.size(); i++) {
+        const PlanarCoord& coord = coord_list[i];
+
+        ll_x = std::min(ll_x, coord.get_x());
+        ll_y = std::min(ll_y, coord.get_y());
+        ur_x = std::max(ur_x, coord.get_x());
+        ur_y = std::max(ur_y, coord.get_y());
+      }
+      bounding_box.set_ll(ll_x, ll_y);
+      bounding_box.set_ur(ur_x, ur_y);
+    }
+    return bounding_box;
+  }
+
+  static PlanarRect getBoundingBox(const std::vector<PlanarRect>& rect_list)
+  {
+    int32_t ll_x = INT32_MAX;
+    int32_t ll_y = INT32_MAX;
+    int32_t ur_x = INT32_MIN;
+    int32_t ur_y = INT32_MIN;
+
+    for (size_t i = 0; i < rect_list.size(); i++) {
+      ll_x = std::min(ll_x, rect_list[i].get_ll_x());
+      ll_y = std::min(ll_y, rect_list[i].get_ll_y());
+      ur_x = std::max(ur_x, rect_list[i].get_ur_x());
+      ur_y = std::max(ur_y, rect_list[i].get_ur_y());
+    }
+    return PlanarRect(ll_x, ll_y, ur_x, ur_y);
+  }
+
+  // 获得坐标集合的重心
+  static LayerCoord getBalanceCoord(const std::vector<LayerCoord>& coord_list)
+  {
+    if (coord_list.empty()) {
+      return LayerCoord(-1, -1, -1);
+    }
+    std::vector<int32_t> x_list;
+    std::vector<int32_t> y_list;
+    std::vector<int32_t> layer_idx_list;
+    x_list.reserve(coord_list.size());
+    y_list.reserve(coord_list.size());
+    layer_idx_list.reserve(coord_list.size());
+    for (const LayerCoord& coord : coord_list) {
+      x_list.push_back(coord.get_x());
+      y_list.push_back(coord.get_y());
+      layer_idx_list.push_back(coord.get_layer_idx());
+    }
+
+    return LayerCoord(getAverage(x_list), getAverage(y_list), getAverage(layer_idx_list));
+  }
+
+  // 获得坐标集合的重心
+  static PlanarCoord getBalanceCoord(const std::vector<PlanarCoord>& coord_list)
+  {
+    if (coord_list.empty()) {
+      return PlanarCoord(-1, -1);
+    }
+    std::vector<int32_t> x_value_list;
+    std::vector<int32_t> y_value_list;
+    x_value_list.reserve(coord_list.size());
+    y_value_list.reserve(coord_list.size());
+    for (const PlanarCoord& coord : coord_list) {
+      x_value_list.push_back(coord.get_x());
+      y_value_list.push_back(coord.get_y());
+    }
+
+    return PlanarCoord(getAverage(x_value_list), getAverage(y_value_list));
   }
 
 #endif
@@ -1175,7 +1282,7 @@ class Utility
   }
 #endif
 
-#if 1  // 与GCell有关的计算
+#if 1  // 与Axis有关的计算
 
   // 如果与边缘相交,则取内的,不取边缘上
   static PlanarRect getOpenGCellGridRect(const PlanarRect& real_rect, ScaleAxis& gcell_axis)
@@ -1240,10 +1347,8 @@ class Utility
   static PlanarCoord getGCellGridCoordByBBox(const PlanarCoord& real_coord, ScaleAxis& gcell_axis, EXTPlanarRect& bounding_box)
   {
     return PlanarCoord(
-        (real_coord.get_x() == bounding_box.get_real_ur_x() ? bounding_box.get_grid_ur_x()
-                                                            : getGCellGridLB(real_coord.get_x(), gcell_axis.get_x_grid_list())),
-        (real_coord.get_y() == bounding_box.get_real_ur_y() ? bounding_box.get_grid_ur_y()
-                                                            : getGCellGridLB(real_coord.get_y(), gcell_axis.get_y_grid_list())));
+        (real_coord.get_x() == bounding_box.get_real_ur_x() ? bounding_box.get_grid_ur_x() : getGCellGridLB(real_coord.get_x(), gcell_axis.get_x_grid_list())),
+        (real_coord.get_y() == bounding_box.get_real_ur_y() ? bounding_box.get_grid_ur_y() : getGCellGridLB(real_coord.get_y(), gcell_axis.get_y_grid_list())));
   }
 
   // [ll , ur)
@@ -1331,8 +1436,8 @@ class Utility
     swapByASC(first_x, second_x);
     swapByASC(first_y, second_y);
 
-    return PlanarRect(getRealLBByGCell(first_x, x_grid_list), getRealLBByGCell(first_y, y_grid_list),
-                      getRealRTByGCell(second_x, x_grid_list), getRealRTByGCell(second_y, y_grid_list));
+    return PlanarRect(getRealLBByGCell(first_x, x_grid_list), getRealLBByGCell(first_y, y_grid_list), getRealRTByGCell(second_x, x_grid_list),
+                      getRealRTByGCell(second_y, y_grid_list));
   }
 
   static PlanarRect getRealRectByGCell(PlanarCoord grid_coord, ScaleAxis& gcell_axis)
@@ -1345,8 +1450,7 @@ class Utility
     std::vector<ScaleGrid>& x_grid_list = gcell_axis.get_x_grid_list();
     std::vector<ScaleGrid>& y_grid_list = gcell_axis.get_y_grid_list();
 
-    return PlanarRect(getRealLBByGCell(x, x_grid_list), getRealLBByGCell(y, y_grid_list), getRealRTByGCell(x, x_grid_list),
-                      getRealRTByGCell(y, y_grid_list));
+    return PlanarRect(getRealLBByGCell(x, x_grid_list), getRealLBByGCell(y, y_grid_list), getRealRTByGCell(x, x_grid_list), getRealRTByGCell(y, y_grid_list));
   }
 
   static int32_t getRealLBByGCell(int32_t grid, std::vector<ScaleGrid>& gcell_grid_list)
@@ -1387,10 +1491,6 @@ class Utility
     return 0;
   }
 
-#endif
-
-#if 1  // 与Track有关的计算
-
   /**
    * 计算边界包含的刻度列表,如果边界与刻度重合,那么也会包含在内
    */
@@ -1405,8 +1505,7 @@ class Utility
           scale_line_list.push_back(scale_grid.get_start_line());
         }
       } else {
-        for (int32_t scale_line = scale_grid.get_start_line(); scale_line <= scale_grid.get_end_line();
-             scale_line += scale_grid.get_step_length()) {
+        for (int32_t scale_line = scale_grid.get_start_line(); scale_line <= scale_grid.get_end_line(); scale_line += scale_grid.get_step_length()) {
           if (begin_line <= scale_line && scale_line <= end_line) {
             scale_line_list.push_back(scale_line);
           }
@@ -1421,8 +1520,8 @@ class Utility
   /**
    * 反取begin_line和end_line之外的数据,比begin_line小的存pre_scale_list,比end_line大的存post_scale_set
    */
-  static void getScaleList(int32_t begin_line, int32_t end_line, std::vector<ScaleGrid>& scale_grid_list,
-                           std::vector<int32_t>& pre_scale_list, std::vector<int32_t>& post_scale_set)
+  static void getScaleList(int32_t begin_line, int32_t end_line, std::vector<ScaleGrid>& scale_grid_list, std::vector<int32_t>& pre_scale_list,
+                           std::vector<int32_t>& post_scale_set)
   {
     swapByASC(begin_line, end_line);
 
@@ -1436,8 +1535,7 @@ class Utility
           post_scale_set.push_back(scale_grid.get_start_line());
         }
       } else {
-        for (int32_t scale_line = scale_grid.get_start_line(); scale_line <= scale_grid.get_end_line();
-             scale_line += scale_grid.get_step_length()) {
+        for (int32_t scale_line = scale_grid.get_start_line(); scale_line <= scale_grid.get_end_line(); scale_line += scale_grid.get_step_length()) {
           if (scale_line < begin_line) {
             pre_scale_list.push_back(scale_line);
           }
@@ -1493,8 +1591,7 @@ class Utility
     return grid_rect;
   }
 
-  static std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> getTrackGridOrientationMap(const PlanarRect& real_rect,
-                                                                                                       ScaleAxis& track_axis)
+  static std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> getTrackGridOrientationMap(const PlanarRect& real_rect, ScaleAxis& track_axis)
   {
     std::set<int32_t> x_pre_set;
     std::set<int32_t> x_mid_set;
@@ -1536,8 +1633,8 @@ class Utility
     return grid_orientation_map;
   }
 
-  static void getTrackIndexSet(std::vector<ScaleGrid>& scale_grid_list, int32_t ll_scale, int32_t ur_scale,
-                               std::set<int32_t>& pre_index_set, std::set<int32_t>& mid_index_set, std::set<int32_t>& post_index_set)
+  static void getTrackIndexSet(std::vector<ScaleGrid>& scale_grid_list, int32_t ll_scale, int32_t ur_scale, std::set<int32_t>& pre_index_set,
+                               std::set<int32_t>& mid_index_set, std::set<int32_t>& post_index_set)
   {
     int32_t pre_index = -1;
     int32_t post_index = -1;
@@ -1580,8 +1677,8 @@ class Utility
     }
   }
 
-  static void getTrackScaleSet(std::vector<ScaleGrid>& scale_grid_list, int32_t ll_scale, int32_t ur_scale,
-                               std::set<int32_t>& pre_scale_set, std::set<int32_t>& mid_scale_set, std::set<int32_t>& post_scale_set)
+  static void getTrackScaleSet(std::vector<ScaleGrid>& scale_grid_list, int32_t ll_scale, int32_t ur_scale, std::set<int32_t>& pre_scale_set,
+                               std::set<int32_t>& mid_scale_set, std::set<int32_t>& post_scale_set)
   {
     int32_t pre_scale = INT32_MIN;
     int32_t post_scale = INT32_MAX;
@@ -1618,152 +1715,47 @@ class Utility
     }
   }
 
+  static std::vector<ScaleGrid> makeScaleGridList(std::vector<int32_t>& scale_list)
+  {
+    std::vector<ScaleGrid> scale_grid_list;
+
+    if (scale_list.size() == 1) {
+      ScaleGrid scale_grid;
+      scale_grid.set_start_line(scale_list.front());
+      scale_grid.set_step_length(0);
+      scale_grid.set_step_num(0);
+      scale_grid.set_end_line(scale_list.front());
+      scale_grid_list.push_back(scale_grid);
+    } else {
+      for (size_t i = 1; i < scale_list.size(); i++) {
+        int32_t pre_scale = scale_list[i - 1];
+        int32_t curr_scale = scale_list[i];
+
+        ScaleGrid scale_grid;
+        scale_grid.set_start_line(pre_scale);
+        scale_grid.set_step_length(curr_scale - pre_scale);
+        scale_grid.set_step_num(1);
+        scale_grid.set_end_line(curr_scale);
+        scale_grid_list.push_back(scale_grid);
+      }
+    }
+
+    // merge
+    merge(scale_grid_list, [](ScaleGrid& sentry, ScaleGrid& soldier) {
+      if (sentry.get_step_length() != soldier.get_step_length()) {
+        return false;
+      }
+      sentry.set_start_line(std::min(sentry.get_start_line(), soldier.get_start_line()));
+      sentry.set_step_num(sentry.get_step_num() + 1);
+      sentry.set_end_line(std::max(sentry.get_end_line(), soldier.get_end_line()));
+      return true;
+    });
+    return scale_grid_list;
+  }
+
 #endif
 
-#if 1  // irt数据结构工具函数
-
-  // 获得坐标集合的外接矩形
-  static PlanarRect getBoundingBox(const std::vector<LayerCoord>& coord_list)
-  {
-    std::vector<PlanarCoord> planar_coord_list;
-    planar_coord_list.insert(planar_coord_list.end(), coord_list.begin(), coord_list.end());
-    return getBoundingBox(planar_coord_list);
-  }
-
-  // 获得坐标集合的外接矩形
-  static PlanarRect getBoundingBox(const std::vector<PlanarCoord>& coord_list)
-  {
-    PlanarRect bounding_box;
-    if (coord_list.empty()) {
-      RTLOG.warn(Loc::current(), "The coord list size is empty!");
-    } else {
-      int32_t ll_x = INT32_MAX;
-      int32_t ll_y = INT32_MAX;
-      int32_t ur_x = INT32_MIN;
-      int32_t ur_y = INT32_MIN;
-      for (size_t i = 0; i < coord_list.size(); i++) {
-        const PlanarCoord& coord = coord_list[i];
-
-        ll_x = std::min(ll_x, coord.get_x());
-        ll_y = std::min(ll_y, coord.get_y());
-        ur_x = std::max(ur_x, coord.get_x());
-        ur_y = std::max(ur_y, coord.get_y());
-      }
-      bounding_box.set_ll(ll_x, ll_y);
-      bounding_box.set_ur(ur_x, ur_y);
-    }
-    return bounding_box;
-  }
-
-  static PlanarRect getBoundingBox(const std::vector<PlanarRect>& rect_list)
-  {
-    int32_t ll_x = INT32_MAX;
-    int32_t ll_y = INT32_MAX;
-    int32_t ur_x = INT32_MIN;
-    int32_t ur_y = INT32_MIN;
-
-    for (size_t i = 0; i < rect_list.size(); i++) {
-      ll_x = std::min(ll_x, rect_list[i].get_ll_x());
-      ll_y = std::min(ll_y, rect_list[i].get_ll_y());
-      ur_x = std::max(ur_x, rect_list[i].get_ur_x());
-      ur_y = std::max(ur_y, rect_list[i].get_ur_y());
-    }
-    return PlanarRect(ll_x, ll_y, ur_x, ur_y);
-  }
-
-  // 获得坐标集合的重心
-  static LayerCoord getBalanceCoord(const std::vector<LayerCoord>& coord_list)
-  {
-    if (coord_list.empty()) {
-      return LayerCoord(-1, -1, -1);
-    }
-    std::vector<int32_t> x_list;
-    std::vector<int32_t> y_list;
-    std::vector<int32_t> layer_idx_list;
-    x_list.reserve(coord_list.size());
-    y_list.reserve(coord_list.size());
-    layer_idx_list.reserve(coord_list.size());
-    for (const LayerCoord& coord : coord_list) {
-      x_list.push_back(coord.get_x());
-      y_list.push_back(coord.get_y());
-      layer_idx_list.push_back(coord.get_layer_idx());
-    }
-
-    return LayerCoord(getAverage(x_list), getAverage(y_list), getAverage(layer_idx_list));
-  }
-
-  // 获得坐标集合的重心
-  static PlanarCoord getBalanceCoord(const std::vector<PlanarCoord>& coord_list)
-  {
-    if (coord_list.empty()) {
-      return PlanarCoord(-1, -1);
-    }
-    std::vector<int32_t> x_value_list;
-    std::vector<int32_t> y_value_list;
-    x_value_list.reserve(coord_list.size());
-    y_value_list.reserve(coord_list.size());
-    for (const PlanarCoord& coord : coord_list) {
-      x_value_list.push_back(coord.get_x());
-      y_value_list.push_back(coord.get_y());
-    }
-
-    return PlanarCoord(getAverage(x_value_list), getAverage(y_value_list));
-  }
-
-  // 获得两个线段的最短距离点对
-  static Segment<PlanarCoord> getShortenCoordPair(Segment<PlanarCoord>& seg1, Segment<PlanarCoord>& seg2)
-  {
-    if (isIntersection(seg1, seg2)) {
-      PlanarCoord coord = getIntersection(seg1, seg2);
-      return Segment<PlanarCoord>(coord, coord);
-    }
-
-    Segment<PlanarCoord> candidate_seg1 = getShortenCoordPair(seg1, seg2.get_first());
-    Segment<PlanarCoord> candidate_seg2 = getShortenCoordPair(seg1, seg2.get_second());
-
-    if (getManhattanDistance(candidate_seg1) < getManhattanDistance(candidate_seg2)) {
-      return candidate_seg1;
-    } else {
-      return candidate_seg2;
-    }
-  }
-
-  // 获得线段和点的最短距离点对
-  static Segment<PlanarCoord> getShortenCoordPair(Segment<PlanarCoord>& seg, PlanarCoord& coord)
-  {
-    int32_t coord_x = coord.get_x();
-    int32_t coord_y = coord.get_y();
-    int32_t first_coord_x = seg.get_first().get_x();
-    int32_t first_coord_y = seg.get_first().get_y();
-    int32_t second_coord_x = seg.get_second().get_x();
-    int32_t second_coord_y = seg.get_second().get_y();
-
-    if (first_coord_y == second_coord_y && first_coord_x <= coord_x && coord_x <= second_coord_x) {
-      return Segment<PlanarCoord>(PlanarCoord(coord_x, first_coord_y), coord);
-    } else if (first_coord_x == second_coord_x && first_coord_y <= coord_y && coord_y <= second_coord_y) {
-      return Segment<PlanarCoord>(PlanarCoord(first_coord_x, coord_y), coord);
-    }
-
-    if (getManhattanDistance(coord, seg.get_first()) < getManhattanDistance(coord, seg.get_second())) {
-      return Segment<PlanarCoord>(coord, seg.get_first());
-    } else {
-      return Segment<PlanarCoord>(coord, seg.get_second());
-    }
-  }
-
-  // 获得配置的值
-  template <typename T>
-  static T getConfigValue(std::map<std::string, std::any>& config_map, const std::string& config_name, const T& default_value)
-  {
-    T value;
-    if (exist(config_map, config_name)) {
-      value = std::any_cast<T>(config_map[config_name]);
-    } else {
-      RTLOG.warn(Loc::current(), "The config '", config_name, "' uses the default value!");
-      value = default_value;
-    }
-    return value;
-  }
+#if 1  // irt使用的函数
 
   // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
   static MTree<LayerCoord> getTreeByFullFlow(LayerCoord& root_coord, std::vector<Segment<LayerCoord>>& segment_list,
@@ -1774,8 +1766,7 @@ class Utility
   }
 
   // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
-  static MTree<LayerCoord> getTreeByFullFlow(std::vector<LayerCoord>& candidate_root_coord_list,
-                                             std::vector<Segment<LayerCoord>>& segment_list,
+  static MTree<LayerCoord> getTreeByFullFlow(std::vector<LayerCoord>& candidate_root_coord_list, std::vector<Segment<LayerCoord>>& segment_list,
                                              std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC>& key_coord_pin_map)
   {
     // 判断是否有斜线段
@@ -1997,8 +1988,7 @@ class Utility
   }
 
   // 删除无效(没有关键坐标的子树)的结点
-  static void eraseInvalidNode(MTree<LayerCoord>& coord_tree,
-                               std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC>& key_coord_pin_map)
+  static void eraseInvalidNode(MTree<LayerCoord>& coord_tree, std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC>& key_coord_pin_map)
   {
     std::vector<TNode<LayerCoord>*> erase_node_list;
     std::map<TNode<LayerCoord>*, TNode<LayerCoord>*> curr_to_parent_node_map;
@@ -2031,8 +2021,7 @@ class Utility
   }
 
   // 融合中间(平面进行切点融合,通孔进行层切割)结点
-  static void mergeMiddleNode(MTree<LayerCoord>& coord_tree,
-                              std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC>& key_coord_pin_map)
+  static void mergeMiddleNode(MTree<LayerCoord>& coord_tree, std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC>& key_coord_pin_map)
   {
     std::vector<TNode<LayerCoord>*> merge_node_list;
     std::map<TNode<LayerCoord>*, TNode<LayerCoord>*> middle_to_start_node_map;
@@ -2053,8 +2042,8 @@ class Utility
             continue;
           }
           TNode<LayerCoord>* parent_node = middle_to_start_node_map[node];
-          if (getDirection(parent_node->value().get_planar_coord(), node_coord) == getDirection(node_coord, child_node_coord)
-              && node->getChildrenNum() == 1 && !exist(key_coord_pin_map, node->value())) {
+          if (getDirection(parent_node->value().get_planar_coord(), node_coord) == getDirection(node_coord, child_node_coord) && node->getChildrenNum() == 1
+              && !exist(key_coord_pin_map, node->value())) {
             parent_node->delChild(node);
             parent_node->addChild(child_node);
             merge_node_list.push_back(node);
@@ -2090,8 +2079,7 @@ class Utility
   }
 
   // 检查树是否到达所有的关键坐标
-  static bool passCheckingConnectivity(MTree<LayerCoord>& coord_tree,
-                                       std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC>& key_coord_pin_map)
+  static bool passCheckingConnectivity(MTree<LayerCoord>& coord_tree, std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC>& key_coord_pin_map)
   {
     std::map<int32_t, bool> visited_map;
     for (auto& [key_coord, pin_idx_list] : key_coord_pin_map) {
@@ -2118,86 +2106,72 @@ class Utility
     return is_connectivity;
   }
 
-  /**
-   * curr_layer_idx在可布线层内
-   *    如果不是最高可布线层,向上打孔
-   *    是最高可布线层,向下打孔
-   *
-   * curr_layer_idx在可布线层外
-   *    打孔到最近的可布线层
-   */
-  static std::vector<int32_t> getReservedViaBelowLayerIdxList(int32_t curr_layer_idx, int32_t bottom_layer_idx, int32_t top_layer_idx)
+  // 获得配置的值
+  template <typename T>
+  static T getConfigValue(std::map<std::string, std::any>& config_map, const std::string& config_name, const T& default_value)
   {
-    if (bottom_layer_idx > top_layer_idx) {
-      RTLOG.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
-    }
-    std::vector<int32_t> reserved_via_below_layer_idx_list;
-    if (curr_layer_idx <= bottom_layer_idx) {
-      for (int32_t layer_idx = curr_layer_idx; layer_idx <= bottom_layer_idx && layer_idx < top_layer_idx; layer_idx++) {
-        reserved_via_below_layer_idx_list.push_back(layer_idx);
-      }
-    } else if (bottom_layer_idx < curr_layer_idx && curr_layer_idx < top_layer_idx) {
-      reserved_via_below_layer_idx_list.push_back(curr_layer_idx);
-    } else if (top_layer_idx <= curr_layer_idx) {
-      for (int32_t layer_idx = std::max(bottom_layer_idx, top_layer_idx - 1); layer_idx < curr_layer_idx; layer_idx++) {
-        reserved_via_below_layer_idx_list.push_back(layer_idx);
-      }
-    }
-    return reserved_via_below_layer_idx_list;
-  }
-
-  static std::vector<ScaleGrid> makeScaleGridList(std::vector<int32_t>& scale_list)
-  {
-    std::vector<ScaleGrid> scale_grid_list;
-
-    if (scale_list.size() == 1) {
-      ScaleGrid scale_grid;
-      scale_grid.set_start_line(scale_list.front());
-      scale_grid.set_step_length(0);
-      scale_grid.set_step_num(0);
-      scale_grid.set_end_line(scale_list.front());
-      scale_grid_list.push_back(scale_grid);
+    T value;
+    if (exist(config_map, config_name)) {
+      value = std::any_cast<T>(config_map[config_name]);
     } else {
-      for (size_t i = 1; i < scale_list.size(); i++) {
-        int32_t pre_scale = scale_list[i - 1];
-        int32_t curr_scale = scale_list[i];
+      RTLOG.warn(Loc::current(), "The config '", config_name, "' uses the default value!");
+      value = default_value;
+    }
+    return value;
+  }
 
-        ScaleGrid scale_grid;
-        scale_grid.set_start_line(pre_scale);
-        scale_grid.set_step_length(curr_scale - pre_scale);
-        scale_grid.set_step_num(1);
-        scale_grid.set_end_line(curr_scale);
-        scale_grid_list.push_back(scale_grid);
+  template <typename T>
+  static bool passCheckingConnectivity(std::vector<T>& key_coord_list, std::vector<Segment<T>>& routing_segment_list)
+  {
+    if (key_coord_list.empty()) {
+      RTLOG.error(Loc::current(), "The key_coord_list is empty!");
+    }
+    std::vector<std::pair<bool, T>> visited_coord_pair_list;
+    std::vector<std::pair<bool, Segment<T>>> visited_segment_pair_list;
+    visited_coord_pair_list.reserve(key_coord_list.size());
+    visited_segment_pair_list.reserve(routing_segment_list.size());
+    for (size_t i = 0; i < key_coord_list.size(); i++) {
+      visited_coord_pair_list.emplace_back(false, key_coord_list[i]);
+    }
+    for (size_t i = 0; i < routing_segment_list.size(); i++) {
+      visited_segment_pair_list.emplace_back(false, routing_segment_list[i]);
+    }
+    std::queue<T> node_queue = initQueue(key_coord_list.front());
+    while (!node_queue.empty()) {
+      T node = getFrontAndPop(node_queue);
+      for (size_t i = 0; i < visited_coord_pair_list.size(); i++) {
+        std::pair<bool, T>& visited_coord_pair = visited_coord_pair_list[i];
+        if (visited_coord_pair.first == true) {
+          continue;
+        }
+        if (node == visited_coord_pair.second) {
+          visited_coord_pair.first = true;
+        }
+      }
+      std::vector<T> next_node_list;
+      for (size_t i = 0; i < visited_segment_pair_list.size(); i++) {
+        std::pair<bool, Segment<T>>& visited_segment_pair = visited_segment_pair_list[i];
+        if (visited_segment_pair.first == true) {
+          continue;
+        }
+        T& node1 = visited_segment_pair.second.get_first();
+        T& node2 = visited_segment_pair.second.get_second();
+        if (node == node1 || node == node2) {
+          T child_node = (node == node1 ? node2 : node1);
+          next_node_list.push_back(child_node);
+          visited_segment_pair.first = true;
+        }
+      }
+      addListToQueue(node_queue, next_node_list);
+    }
+    bool is_connected = true;
+    for (auto& [visited, coord] : visited_coord_pair_list) {
+      is_connected = visited;
+      if (is_connected == false) {
+        break;
       }
     }
-
-    // merge
-    merge(scale_grid_list, [](ScaleGrid& sentry, ScaleGrid& soldier) {
-      if (sentry.get_step_length() != soldier.get_step_length()) {
-        return false;
-      }
-      sentry.set_start_line(std::min(sentry.get_start_line(), soldier.get_start_line()));
-      sentry.set_step_num(sentry.get_step_num() + 1);
-      sentry.set_end_line(std::max(sentry.get_end_line(), soldier.get_end_line()));
-      return true;
-    });
-    return scale_grid_list;
-  }
-
-  static void addOffset(PlanarCoord& coord, PlanarCoord& offset_coord) { addOffset(coord, offset_coord.get_x(), offset_coord.get_y()); }
-
-  static void addOffset(PlanarCoord& coord, int32_t x_offset, int32_t y_offset)
-  {
-    coord.set_x(coord.get_x() + x_offset);
-    coord.set_y(coord.get_y() + y_offset);
-  }
-
-  static void minusOffset(PlanarCoord& coord, PlanarCoord& offset_coord) { minusOffset(coord, offset_coord.get_x(), offset_coord.get_y()); }
-
-  static void minusOffset(PlanarCoord& coord, int32_t x_offset, int32_t y_offset)
-  {
-    coord.set_x((coord.get_x() - x_offset) < 0 ? 0 : (coord.get_x() - x_offset));
-    coord.set_y((coord.get_y() - y_offset) < 0 ? 0 : (coord.get_y() - y_offset));
+    return is_connected;
   }
 
   static void printTableList(const std::vector<fort::char_table>& table_list)
@@ -2214,7 +2188,7 @@ class Utility
       max_size = std::max(max_size, static_cast<int32_t>(table.size()));
     }
     for (std::vector<std::string>& table : print_table_list) {
-      for (int32_t i = table.size(); i < max_size; i++) {
+      for (int32_t i = static_cast<int32_t>(table.size()); i < max_size; i++) {
         std::string table_str;
         table_str.append(table.front().length(), ' ');
         table.push_back(table_str);
@@ -2231,16 +2205,28 @@ class Utility
     }
   }
 
+  // 计算rect在master上覆盖的面积占master总面积的比例
+  static double getOverlapRatio(PlanarRect& master, PlanarRect& rect)
+  {
+    double ratio = 0;
+    if (isOpenOverlap(master, rect)) {
+      ratio = getOverlap(master, rect).getArea() / master.getArea();
+    }
+    return ratio;
+  }
+
+  static LayerCoord getFirstEqualCoord(std::vector<LayerCoord> a_list, std::vector<LayerCoord> b_list)
+  {
+    return getFirstEqualItem(a_list, b_list, CmpLayerCoordByXASC());
+  }
+
 #endif
 
 #if 1  // boost数据结构工具函数
 
 #if 1  // int类型
 
-  static PlanarRect convertToPlanarRect(GTLRectInt& gtl_rect)
-  {
-    return PlanarRect(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect));
-  }
+  static PlanarRect convertToPlanarRect(GTLRectInt& gtl_rect) { return PlanarRect(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect)); }
 
   static PlanarRect convertToPlanarRect(BGRectInt& boost_box)
   {
@@ -2257,10 +2243,7 @@ class Utility
     return BGRectInt(BGPointInt(gtl::xl(gtl_rect), gtl::yl(gtl_rect)), BGPointInt(gtl::xh(gtl_rect), gtl::yh(gtl_rect)));
   }
 
-  static GTLRectInt convertToGTLRectInt(const PlanarRect& rect)
-  {
-    return GTLRectInt(rect.get_ll_x(), rect.get_ll_y(), rect.get_ur_x(), rect.get_ur_y());
-  }
+  static GTLRectInt convertToGTLRectInt(const PlanarRect& rect) { return GTLRectInt(rect.get_ll_x(), rect.get_ll_y(), rect.get_ur_x(), rect.get_ur_y()); }
 
   static GTLRectInt convertToGTLRectInt(BGRectInt& boost_box)
   {
@@ -2364,20 +2347,17 @@ class Utility
     return getCuttingRectListByBoost(master_list, rect_list, true);
   }
 
-  static std::vector<PlanarRect> getOpenCuttingRectListByBoost(const std::vector<PlanarRect>& master_list,
-                                                               const std::vector<PlanarRect>& rect_list)
+  static std::vector<PlanarRect> getOpenCuttingRectListByBoost(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
   {
     return getCuttingRectListByBoost(master_list, rect_list, true);
   }
 
-  static std::vector<PlanarRect> getClosedCuttingRectListByBoost(const std::vector<PlanarRect>& master_list,
-                                                                 const std::vector<PlanarRect>& rect_list)
+  static std::vector<PlanarRect> getClosedCuttingRectListByBoost(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
   {
     return getCuttingRectListByBoost(master_list, rect_list, false);
   }
 
-  static std::vector<PlanarRect> getCuttingRectListByBoost(const std::vector<PlanarRect>& master_list,
-                                                           const std::vector<PlanarRect>& rect_list, bool is_open)
+  static std::vector<PlanarRect> getCuttingRectListByBoost(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list, bool is_open)
   {
     std::vector<PlanarRect> result_list;
     if (!is_open) {
@@ -2494,8 +2474,7 @@ class Utility
     return result_list;
   }
 
-  static std::vector<PlanarRect> getCuttingSpecialRectList(const std::vector<PlanarRect>& special_rect_list,
-                                                           const std::vector<PlanarRect>& rect_list)
+  static std::vector<PlanarRect> getCuttingSpecialRectList(const std::vector<PlanarRect>& special_rect_list, const std::vector<PlanarRect>& rect_list)
   {
     std::vector<PlanarRect> result_list;
     for (const PlanarRect& special_rect : special_rect_list) {
@@ -2506,8 +2485,7 @@ class Utility
         PlanarCoord point = special_rect.get_ll();
         bool exist_inside = false;
         for (const PlanarRect& rect : rect_list) {
-          if (rect.get_ll_x() < point.get_x() && point.get_x() < rect.get_ur_x() && rect.get_ll_y() < point.get_y()
-              && point.get_y() < rect.get_ur_y()) {
+          if (rect.get_ll_x() < point.get_x() && point.get_x() < rect.get_ur_x() && rect.get_ll_y() < point.get_y() && point.get_y() < rect.get_ur_y()) {
             exist_inside = true;
             break;
           }
@@ -2577,9 +2555,8 @@ class Utility
 
 #if 1  // reduce
 
-  static std::vector<PlanarRect> getOpenShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
-                                                                int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
-                                                                int32_t ur_y_minus_offset)
+  static std::vector<PlanarRect> getOpenShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset, int32_t ll_y_add_offset,
+                                                                int32_t ur_x_minus_offset, int32_t ur_y_minus_offset)
   {
     return getShrinkedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, true);
   }
@@ -2589,16 +2566,14 @@ class Utility
     return getShrinkedRectListByBoost(master_list, shrinked_offset, shrinked_offset, shrinked_offset, shrinked_offset, false);
   }
 
-  static std::vector<PlanarRect> getClosedShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
-                                                                  int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
-                                                                  int32_t ur_y_minus_offset)
+  static std::vector<PlanarRect> getClosedShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset, int32_t ll_y_add_offset,
+                                                                  int32_t ur_x_minus_offset, int32_t ur_y_minus_offset)
   {
     return getShrinkedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, false);
   }
 
-  static std::vector<PlanarRect> getShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
-                                                            int32_t ll_y_add_offset, int32_t ur_x_minus_offset, int32_t ur_y_minus_offset,
-                                                            bool is_open)
+  static std::vector<PlanarRect> getShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset, int32_t ll_y_add_offset,
+                                                            int32_t ur_x_minus_offset, int32_t ur_y_minus_offset, bool is_open)
   {
     std::vector<PlanarRect> result_list;
 
@@ -2816,6 +2791,26 @@ class Utility
 #endif
 
 #if 1  // std数据结构工具函数
+
+  template <typename T, typename Compare>
+  static T getFirstEqualItem(std::vector<T> a_list, std::vector<T> b_list, Compare cmp)
+  {
+    std::sort(a_list.begin(), a_list.end(), cmp);
+    a_list.erase(std::unique(a_list.begin(), a_list.end()), a_list.end());
+    std::sort(b_list.begin(), b_list.end(), cmp);
+    b_list.erase(std::unique(b_list.begin(), b_list.end()), b_list.end());
+    for (size_t i = 0, j = 0; i < a_list.size() && j < b_list.size();) {
+      if (a_list[i] == b_list[j]) {
+        return a_list[i];
+        break;
+      } else if (cmp(a_list[i], b_list[j])) {
+        i++;
+      } else {
+        j++;
+      }
+    }
+    return T();
+  }
 
   template <typename Key, typename Value>
   static Value getValueByAny(std::map<Key, std::any>& map, const Key& key, const Value& default_value)
@@ -3421,6 +3416,62 @@ class Utility
     std::set_difference(master_list.begin(), master_list.end(), set_list.begin(), set_list.end(), std::back_inserter(result));
 
     return std::set<T>(result.begin(), result.end());
+  }
+
+  /**
+   * 从多个list中,每个选择一个元素并生成所有可能的组合,非递归
+   */
+  template <typename T>
+  static std::vector<std::vector<T>> getCombList(std::vector<std::vector<T>>& list_list)
+  {
+    if (list_list.empty()) {
+      return {};
+    }
+    std::vector<std::vector<T>> comb_list = {{}};
+    for (const std::vector<T>& list : list_list) {
+      std::vector<std::vector<T>> new_comb_list;
+      for (const std::vector<T>& comb : comb_list) {
+        for (const T& item : list) {
+          std::vector<T> new_comb = comb;
+          new_comb.push_back(item);
+          new_comb_list.push_back(new_comb);
+        }
+      }
+      comb_list = new_comb_list;
+    }
+    return comb_list;
+  }
+
+  /**
+   * 从一个list中,生成只包含n个元素所有可能的组合,非递归
+   */
+  template <typename T>
+  static std::vector<std::vector<T>> getCombList(std::vector<T>& list, int32_t n)
+  {
+    int32_t list_num = static_cast<int32_t>(list.size());
+    if (n <= 0 || list_num < n) {
+      return {};
+    }
+    std::vector<std::vector<T>> comb_list;
+    for (int32_t mask = 0; mask < (1 << list_num); ++mask) {
+      int32_t count = 0;
+      for (int32_t i = 0; i < list_num; ++i) {
+        if (mask & (1 << i)) {
+          count++;
+        }
+      }
+      if (count != n) {
+        continue;
+      }
+      std::vector<T> curr_comb;
+      for (int32_t i = 0; i < list_num; ++i) {
+        if (mask & (1 << i)) {
+          curr_comb.push_back(list[i]);
+        }
+      }
+      comb_list.push_back(curr_comb);
+    }
+    return comb_list;
   }
 
 #endif

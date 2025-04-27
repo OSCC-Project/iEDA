@@ -53,6 +53,7 @@ IdbDesign::IdbDesign(IdbLayout* layout)
   _special_net_list = new IdbSpecialNetList();
   _region_list = new IdbRegionList();
   _fill_list = new IdbFillList();
+  _bus_bit_chars = new IdbBusBitChars();
 
   _bus_list = new IdbBusList();
 }

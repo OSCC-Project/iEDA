@@ -42,24 +42,17 @@ unsigned CmdReadLefDef::exec() {
     return 0;
   }
 
-  auto* db_builder = new idb::IdbBuilder();
 
   TclOption* lef_option = getOptionOrArg("-lef");
   auto lef_files = lef_option->getStringList();
 
-  db_builder->buildLef(lef_files);
-
   TclOption* def_option = getOptionOrArg("-def");
   auto* def_file = def_option->getStringVal();
-  db_builder->buildDef(def_file);
 
   auto* timing_engine = TimingEngine::getOrCreateTimingEngine();
-  auto db_adapter =
-      std::make_unique<TimingIDBAdapter>(timing_engine->get_ista());
-  db_adapter->set_idb(db_builder);
-  unsigned is_ok = db_adapter->convertDBToTimingNetlist();
+  timing_engine->readDefDesign(def_file, lef_files);
 
-  return is_ok;
+  return 1;
 }
 
 }  // namespace ista

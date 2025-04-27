@@ -681,6 +681,19 @@ std::string Str::trimBackslash(std::string origin_str)
 }
 
 /**
+ * @brief trim \
+ *
+ * @param origin_str
+ * @return std::string
+ */
+std::string Str::trimEscape(std::string origin_str)
+{
+  std::string str = origin_str;
+  str.erase(std::remove(str.begin(), str.end(), '\\'), str.end());
+  return str;
+}
+
+/**
  * @brief change [] to \[\]
  *
  * @param origin_str
@@ -698,4 +711,51 @@ std::string Str::addBackslash(std::string origin_str)
   return origin_str;
 }
 
-}  // namespace ieda
+/**
+ * @brief change [] to \\[\\]
+ *
+ * @param origin_str
+ * @return std::string
+ */
+std::string Str::addDoubleBackslash(std::string origin_str)
+{
+  std::string new_value_2;
+
+  if (ieda::Str::contain(origin_str.c_str(), "[") && ieda::Str::contain(origin_str.c_str(), "]")) {
+    std::string new_value_1 = replace(origin_str, R"(\[)", R"(\[)");
+    new_value_2 = replace(new_value_1, R"(\])", R"(\])");
+  }
+
+  if (ieda::Str::contain(new_value_2.c_str(), "[") && ieda::Str::contain(new_value_2.c_str(), "]")) {
+    std::string new_value_3 = replace(new_value_2, R"(\[)", R"(\[)");
+    std::string new_value_4 = replace(new_value_3, R"(\])", R"(\])");
+
+    return new_value_4;
+  }
+
+  return origin_str;
+}
+
+/**
+ * @brief conate backslash str, such as
+ *   WEN & !( \
+ *  (BWEN[0]) & \
+ *  (BWEN[1]))
+ * 
+ * @param original_str 
+ * @return std::string 
+ */
+std::string Str::concateBackSlashStr(std::string original_str) {
+  auto it = std::remove_if(original_str.begin(), original_str.end(),  
+  [&original_str](char ch) {  
+      if (ch == '\\') {
+          return true;   
+      }  
+      return false;  
+  });
+
+  original_str.erase(it, original_str.end());
+  return original_str;
+}
+
+}  // namespace ieda  

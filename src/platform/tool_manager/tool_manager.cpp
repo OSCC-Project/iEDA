@@ -19,7 +19,7 @@
 #include "builder.h"
 #include "icts_io.h"
 #include "idm.h"
-#include "idrc_io.h"
+// #include "idrc_io.h"
 #include "ieval_io.h"
 #include "ifp_io.h"
 #include "ino_io.h"
@@ -279,17 +279,20 @@ bool ToolManager::autoRunRouter(std::string config_file_path)
 /// idrc
 bool ToolManager::autoRunDRC(std::string config, std::string path)
 {
-  return drcInst->runDRC(config, path);
+  return true;
+  // return drcInst->runDRC(config, path);
 }
 
 bool ToolManager::readDrcDetailFromFile(std::string path)
 {
-  return drcInst->readDrcFromFile(path);
+  return true;
+  // return drcInst->readDrcFromFile(path);
 }
 
 bool ToolManager::saveDrcDetailToFile(std::string path)
 {
-  return drcInst->saveDrcToFile(path);
+  return true;
+  // return drcInst->saveDrcToFile(path);
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

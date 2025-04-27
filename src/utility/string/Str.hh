@@ -73,7 +73,10 @@ class Str
   static std::pair<std::string, std::optional<std::pair<int, int>>> matchBusSliceName(const char* str);
 
   static std::string trimBackslash(std::string origin_str);
+  static std::string trimEscape(std::string origin_str);
   static std::string addBackslash(std::string origin_str);
+  static std::string addDoubleBackslash(std::string origin_str);
+  static std::string concateBackSlashStr(std::string original_str);
 };
 
 }  // namespace ieda

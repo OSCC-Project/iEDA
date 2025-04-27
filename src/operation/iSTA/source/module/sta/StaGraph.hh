@@ -104,6 +104,14 @@ class StaGraph {
     return _main2assistant[main_vertex].get();
   }
 
+  std::vector<StaVertex*> getAssistants() {
+    std::vector<StaVertex*> assistants;
+    for (auto& [main_vertex, assistant_vertex] : _main2assistant) {
+      assistants.push_back(assistant_vertex.get());
+    }
+    return assistants;
+  }
+
   auto& get_main2assistant() { return _main2assistant; }
 
   StaVertex* getMain(StaVertex* assistant_vertex) {
@@ -126,6 +134,11 @@ class StaGraph {
   BTreeSet<StaVertex*>& get_port_vertexes() { return _port_vertexes; }
 
   std::vector<std::unique_ptr<StaVertex>>& get_vertexes() { return _vertexes; }
+  void sortVertexByLevel() {
+    std::stable_sort(_vertexes.begin(), _vertexes.end(),
+              [](auto& lhs, auto& rhs) { return lhs->get_level() < rhs->get_level(); });
+
+  }
   std::vector<std::unique_ptr<StaArc>>& get_arcs() { return _arcs; }
 
   std::size_t numVertex() const { return _vertexes.size(); }

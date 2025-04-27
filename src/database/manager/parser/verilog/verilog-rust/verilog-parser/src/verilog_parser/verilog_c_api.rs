@@ -66,8 +66,8 @@ pub extern "C" fn rust_convert_verilog_id(c_verilog_virtual_base_id: *mut c_void
     let rust_verilog_id = RustVerilogID { id: name };
 
     let rust_verilog_id_pointer = Box::new(rust_verilog_id);
-    let raw_pointer = Box::into_raw(rust_verilog_id_pointer);
-    raw_pointer
+    
+    Box::into_raw(rust_verilog_id_pointer)
 }
 
 #[no_mangle]
@@ -109,8 +109,8 @@ pub extern "C" fn rust_convert_verilog_index_id(c_verilog_virtual_base_id: *mut 
     let rust_verilog_index_id = RustVerilogIndexID { id: name, base_id, index };
 
     let rust_verilog_index_id_pointer = Box::new(rust_verilog_index_id);
-    let raw_pointer = Box::into_raw(rust_verilog_index_id_pointer);
-    raw_pointer
+    
+    Box::into_raw(rust_verilog_index_id_pointer)
 }
 
 #[no_mangle]
@@ -167,8 +167,8 @@ pub extern "C" fn rust_convert_verilog_slice_id(c_verilog_virtual_base_id: *mut 
     let rust_verilog_slice_id = RustVerilogSliceID { id: name, base_id, range_base, range_max };
 
     let rust_verilog_slice_id_pointer = Box::new(rust_verilog_slice_id);
-    let raw_pointer = Box::into_raw(rust_verilog_slice_id_pointer);
-    raw_pointer
+    
+    Box::into_raw(rust_verilog_slice_id_pointer)
 }
 
 #[no_mangle]
@@ -194,13 +194,13 @@ pub extern "C" fn rust_convert_verilog_net_id_expr(c_verilog_net_id_expr: *mut c
 
     let line_no = (*verilog_net_id_expr).get_net_expr().get_line_no();
     let verilog_id_box = (*verilog_net_id_expr).get_verilog_id();
-    let verilog_id = &*verilog_id_box as *const _ as *const c_void;
+    let verilog_id = verilog_id_box as *const _ as *const c_void;
 
     let rust_verilog_net_id_expr = RustVerilogNetIDExpr { line_no, verilog_id };
 
     let rust_verilog_net_id_expr_pointer = Box::new(rust_verilog_net_id_expr);
-    let raw_pointer = Box::into_raw(rust_verilog_net_id_expr_pointer);
-    raw_pointer
+    
+    Box::into_raw(rust_verilog_net_id_expr_pointer)
 }
 
 #[repr(C)]
@@ -225,8 +225,8 @@ pub extern "C" fn rust_convert_verilog_net_concat_expr(
     let rust_verilog_net_concat_expr = RustVerilogNetConcatExpr { line_no, verilog_id_concat };
 
     let rust_verilog_net_concat_expr_pointer = Box::new(rust_verilog_net_concat_expr);
-    let raw_pointer = Box::into_raw(rust_verilog_net_concat_expr_pointer);
-    raw_pointer
+    
+    Box::into_raw(rust_verilog_net_concat_expr_pointer)
 }
 
 #[repr(C)]
@@ -246,13 +246,13 @@ pub extern "C" fn rust_convert_verilog_constant_expr(
 
     let line_no = (*verilog_constant_expr).get_net_expr().get_line_no();
     let verilog_id_box = (*verilog_constant_expr).get_verilog_id();
-    let verilog_id = &*verilog_id_box as *const _ as *const c_void;
+    let verilog_id = verilog_id_box as *const _ as *const c_void;
 
     let rust_verilog_constant_expr = RustVerilogConstantExpr { line_no, verilog_id };
 
     let rust_verilog_constant_expr_pointer = Box::new(rust_verilog_constant_expr);
-    let raw_pointer = Box::into_raw(rust_verilog_constant_expr_pointer);
-    raw_pointer
+    
+    Box::into_raw(rust_verilog_constant_expr_pointer)
 }
 
 #[no_mangle]
@@ -308,8 +308,8 @@ pub extern "C" fn rust_convert_raw_verilog_module(
 
         let rust_verilog_module = RustVerilogModule { line_no, module_name, port_list, module_stmts };
         let rust_verilog_module_pointer = Box::new(rust_verilog_module);
-        let raw_pointer = Box::into_raw(rust_verilog_module_pointer);
-        raw_pointer
+        
+        Box::into_raw(rust_verilog_module_pointer)
     }
 }
 
@@ -336,8 +336,8 @@ pub extern "C" fn rust_convert_verilog_dcl(c_verilog_dcl_struct: *mut c_void) ->
 
     let rust_verilog_dcl = RustVerilogDcl { line_no, dcl_type, dcl_name, range };
     let rust_verilog_dcl_pointer = Box::new(rust_verilog_dcl);
-    let raw_pointer = Box::into_raw(rust_verilog_dcl_pointer);
-    raw_pointer
+    
+    Box::into_raw(rust_verilog_dcl_pointer)
 }
 
 #[repr(C)]
@@ -355,8 +355,8 @@ pub extern "C" fn rust_convert_verilog_dcls(c_verilog_dcls_struct: *mut c_void) 
     let verilog_dcls = rust_vec_to_c_array(verilog_dcls_rust_vec);
     let rust_verilog_dcls = RustVerilogDcls { line_no, verilog_dcls };
     let rust_verilog_dcls_pointer = Box::new(rust_verilog_dcls);
-    let raw_pointer = Box::into_raw(rust_verilog_dcls_pointer);
-    raw_pointer
+    
+    Box::into_raw(rust_verilog_dcls_pointer)
 }
 
 #[repr(C)]
@@ -385,8 +385,8 @@ pub extern "C" fn rust_convert_verilog_inst(c_verilog_inst: *mut c_void) -> *mut
 
     let rust_verilog_inst = RustVerilogInst { line_no, inst_name, cell_name, port_connections };
     let rust_verilog_inst_pointer = Box::new(rust_verilog_inst);
-    let raw_pointer = Box::into_raw(rust_verilog_inst_pointer);
-    raw_pointer
+    
+    Box::into_raw(rust_verilog_inst_pointer)
 }
 
 #[repr(C)]
@@ -406,15 +406,15 @@ pub extern "C" fn rust_convert_verilog_assign(c_verilog_assign: *mut c_void) -> 
     let left_net_expr_box = (*verilog_assign).get_left_net_expr();
     let right_net_expr_box = (*verilog_assign).get_right_net_expr();
 
-    let c_left_net_expr = &*left_net_expr_box as *const _ as *const c_void;
-    let c_right_net_expr = &*right_net_expr_box as *const _ as *const c_void;
+    let c_left_net_expr = left_net_expr_box as *const _ as *const c_void;
+    let c_right_net_expr = right_net_expr_box as *const _ as *const c_void;
 
     let rust_verilog_assign =
         RustVerilogAssign { line_no, left_net_expr: c_left_net_expr, right_net_expr: c_right_net_expr };
 
     let rust_verilog_assign_pointer = Box::new(rust_verilog_assign);
-    let raw_pointer = Box::into_raw(rust_verilog_assign_pointer);
-    raw_pointer
+    
+    Box::into_raw(rust_verilog_assign_pointer)
 }
 
 #[repr(C)]
@@ -432,7 +432,7 @@ pub extern "C" fn rust_convert_verilog_port_ref_port_connect(
 
     let net_expr = (*c_port_connect).get_net_expr();
 
-    let c_port_id = &*port_id as *const _ as *const c_void;
+    let c_port_id = port_id as *const _ as *const c_void;
     let c_net_expr =
         if let Some(net_expr_box) = net_expr { net_expr_box as *const _ as *mut c_void } else { std::ptr::null_mut() };
 
@@ -495,8 +495,8 @@ pub extern "C" fn rust_convert_verilog_file(c_verilog_file: *const verilog_data:
 
         let rust_verilog_file = RustVerilogFile { verilog_modules };
         let rust_verilog_file_pointer = Box::new(rust_verilog_file);
-        let raw_pointer = Box::into_raw(rust_verilog_file_pointer);
-        raw_pointer
+        
+        Box::into_raw(rust_verilog_file_pointer)
     }
 }
 

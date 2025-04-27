@@ -27,6 +27,7 @@
 #ifndef IPL_DPNET_H
 #define IPL_DPNET_H
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
