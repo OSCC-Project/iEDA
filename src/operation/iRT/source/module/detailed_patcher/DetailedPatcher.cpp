@@ -1524,7 +1524,7 @@ void DetailedPatcher::debugPlotDPModel(DPModel& dp_model, std::string flag)
       EXTLayerRect& violation_shape = violation->get_violation_shape();
 
       GPBoundary gp_boundary;
-      gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kViolation));
+      gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kPatchViolation));
       gp_boundary.set_rect(violation_shape.get_real_rect());
       if (violation->get_is_routing()) {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(violation_shape.get_layer_idx()));
@@ -1598,7 +1598,7 @@ void DetailedPatcher::debugPlotDPBox(DPBox& dp_box, std::string flag)
         GPStruct fixed_rect_struct(RTUTIL.getString("graph_fixed_rect(net_", net_idx, ")"));
         for (const PlanarRect& rect : rect_set) {
           GPBoundary gp_boundary;
-          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kGraphShape));
+          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShadow));
           gp_boundary.set_rect(rect);
           gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(routing_layer_idx));
           fixed_rect_struct.push(gp_boundary);
@@ -1612,7 +1612,7 @@ void DetailedPatcher::debugPlotDPBox(DPBox& dp_box, std::string flag)
         GPStruct access_rect_struct(RTUTIL.getString("graph_access_rect(net_", net_idx, ")"));
         for (const PlanarRect& rect : rect_set) {
           GPBoundary gp_boundary;
-          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kGraphShape));
+          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShadow));
           gp_boundary.set_rect(rect);
           gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(routing_layer_idx));
           access_rect_struct.push(gp_boundary);
@@ -1626,7 +1626,7 @@ void DetailedPatcher::debugPlotDPBox(DPBox& dp_box, std::string flag)
         GPStruct routed_rect_struct(RTUTIL.getString("graph_routed_rect(net_", net_idx, ")"));
         for (const PlanarRect& rect : rect_set) {
           GPBoundary gp_boundary;
-          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kGraphShape));
+          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShadow));
           gp_boundary.set_rect(rect);
           gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(routing_layer_idx));
           routed_rect_struct.push(gp_boundary);
@@ -1762,7 +1762,7 @@ void DetailedPatcher::debugPlotDPBox(DPBox& dp_box, std::string flag)
       EXTLayerRect& violation_shape = violation.get_violation_shape();
 
       GPBoundary gp_boundary;
-      gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kViolation));
+      gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kPatchViolation));
       gp_boundary.set_rect(violation_shape.get_real_rect());
       if (violation.get_is_routing()) {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(violation_shape.get_layer_idx()));
@@ -1778,7 +1778,7 @@ void DetailedPatcher::debugPlotDPBox(DPBox& dp_box, std::string flag)
       EXTLayerRect& violation_shape = violation.get_violation_shape();
 
       GPBoundary gp_boundary;
-      gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kViolation));
+      gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kPatchViolation));
       gp_boundary.set_rect(violation_shape.get_real_rect());
       if (violation.get_is_routing()) {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(violation_shape.get_layer_idx()));

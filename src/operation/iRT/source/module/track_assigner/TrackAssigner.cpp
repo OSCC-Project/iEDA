@@ -1612,7 +1612,7 @@ void TrackAssigner::debugPlotTAModel(TAModel& ta_model, std::string flag)
       EXTLayerRect& violation_shape = violation->get_violation_shape();
 
       GPBoundary gp_boundary;
-      gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kViolation));
+      gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kRouteViolation));
       gp_boundary.set_rect(violation_shape.get_real_rect());
       if (violation->get_is_routing()) {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(violation_shape.get_layer_idx()));
@@ -2013,7 +2013,7 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, std::string flag)
       EXTLayerRect& violation_shape = violation.get_violation_shape();
 
       GPBoundary gp_boundary;
-      gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kViolation));
+      gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kRouteViolation));
       gp_boundary.set_rect(violation_shape.get_real_rect());
       if (violation.get_is_routing()) {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(violation_shape.get_layer_idx()));

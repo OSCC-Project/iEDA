@@ -27,13 +27,16 @@ class DRSolution
   DRSolution() = default;
   ~DRSolution() = default;
   // getter
+  bool get_is_only() const { return _is_only; }
   EXTLayerRect& get_curr_patch() { return _curr_patch; }
   std::vector<EXTLayerRect>& get_routing_patch_list() { return _routing_patch_list; }
   // setter
+  void set_is_only(const bool is_only) { _is_only = is_only; }
   void set_curr_patch(const EXTLayerRect& curr_patch) { _curr_patch = curr_patch; }
   void set_routing_patch_list(const std::vector<EXTLayerRect>& routing_patch_list) { _routing_patch_list = routing_patch_list; }
 
  private:
+  bool _is_only = false;
   EXTLayerRect _curr_patch;
   std::vector<EXTLayerRect> _routing_patch_list;
 };
