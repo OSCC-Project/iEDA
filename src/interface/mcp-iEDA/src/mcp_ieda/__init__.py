@@ -10,7 +10,7 @@ def get_ieda_path() -> Path:
         raise EnvironmentError("Environment variable 'iEDA' is not set.")
     return Path(ieda_path)
 
-def main(iEDA: Path | None, verbose: bool) -> None:
+def main(iEDA: Path | None, verbose: int) -> None:
     import asyncio
 
     logging_level = logging.WARN
