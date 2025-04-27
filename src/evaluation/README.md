@@ -105,16 +105,16 @@ evaluation/api文件夹提供外部使用的接口，根据指标进行分类，
 |  `findBBoxUy(string)` |     线网名称           |       线网外接矩形右上角y坐标            | 根据线网名称，查找线网外接矩形右上角y坐标  |
 |  `egrUnionMap(string，string)` |   设计阶段名称(用于文件名)，iRT生成拥塞的文件目录          |       二维拥塞图路径            | 启动iRT进行早期全局布线且结果保存到指定拥塞文件目录下，计算各个布线层的GCell拥塞，输出按照所有方向累加后的二维拥塞图路径  |
 
-### Timing API
+### Timing(Power) API
 
-支持通过五种不同的线长模型（HPWL，FLUTE，SALT，EGR，DR）完成RC Tree的构建，并进行静态时序分析。支持时序、功耗各项指标的计算，支持设计级、线网级、路径级的时序和功耗指标查询。值得注意的是，时序评估器尚未支持直接基于布线结果(route.def)构建RCTree进行时序和功耗分析，目前EGR和DR需要调用iRT分别执行完对应GR和DR的流程，较为耗时。
+支持通过五种不同的线长模型（HPWL，FLUTE，SALT，EGR，DR）完成RC Tree的构建，并进行静态时序分析和功耗分析。支持时序、功耗各项指标的计算，支持设计级、线网级、路径级的时序和功耗指标查询。值得注意的是，时序评估器尚未支持直接基于布线结果(route.def)构建RCTree进行时序和功耗分析，目前EGR和DR需要调用iRT分别执行完对应GR和DR的流程，较为耗时。
 - 时序：setup_tns, setup_wns, hold_tns, hold_wns, suggest_freq
 - 功耗：static_power, dynamic_power
 
 |  接口名   |                   输入参数                  |                     返回类型                     |    底层逻辑  |
 | :-----: | :--------------------------------------: | :------------------------------------------: | :------------------------------------------: |
-|  `runSTA()` |    —              |      —           | 启动iSTA进行时序和功耗的评估，保存在对应线长模型与评估指标的map中，默认执行五种线长模型   |
-|  `evalTiming(string, bool)` |    线长模型，是否在流程中执行过iRT            |      —           | 启动iSTA进行时序和功耗的评估，只评估指定线长模型对应的时序和功耗，保存在对应线长模型与评估指标的map中   |
+|  `runSTA()` |    —              |      —           | 启动iSTA/iPW进行时序/功耗的评估，保存在对应线长模型与评估指标的map中，默认执行五种线长模型   |
+|  `evalTiming(string, bool)` |    线长模型，是否在流程中执行过iRT            |      —           | 启动iSTA/iPW进行时序/功耗的评估，只评估指定线长模型对应的时序/功耗，保存在对应线长模型与评估指标的map中   |
 |  `evalDesign()` |    —            | `struct{clock_name, setup_tns, setup_wns, hold_tns, hold_wns, suggest_freq, static_power, dynamic_power}`               | 从线长模型与评估指标的map中，查询并返回整个设计的时序和功耗信息，默认执行五种线长模型   |
 |  `evalNetPower()` |    —            | `map<线长模型，<线网名称，switch power>>`               | 从线长模型与功耗指标的map中，查询并返回特定线长模型下每个线网对应的切换功耗   |
 |  `getEarlySlack(string)` |    引脚名称            |        `early_slack`        | 计算引脚对应的early_slack值   |
