@@ -30,7 +30,7 @@ option(BUILD_PYTHON "Build Python bindings (default OFF)" OFF)
 option(USE_PROFILER "Enable performance profiling (default OFF)" OFF)
 option(SANITIZER "Enable address sanitizer (default OFF)" OFF)
 option(BUILD_GUI "Enable GUI components (default OFF)" OFF)
-option(USE_GPU "Enable GPU acceleration (default OFF)" ON)
+option(USE_GPU "Enable GPU acceleration (default OFF)" OFF)
 option(COMPATIBILITY_MODE "Enable compatibility mode (disable aggressive optimizations)" ON)
 
 if(NOT DEFINED CMD_BUILD)
