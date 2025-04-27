@@ -47,7 +47,7 @@ namespace iir {
  */
 void PrintMatrix(Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
                  Eigen::Index base_index) {
-  std::ofstream out("/home/taosimin/iEDA24/iEDA/bin/matrix.txt",
+  std::ofstream out("matrix.txt",
                     std::ios::trunc);
   for (Eigen::Index i = base_index; i < base_index + G_matrix.rows(); ++i) {
     for (Eigen::Index j = base_index; j < base_index + G_matrix.cols(); ++j) {
@@ -62,11 +62,39 @@ void PrintMatrix(Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
 }
 
 /**
+ * @brief print sparse matrix in CSR.
+ * 
+ * @param G_matrix 
+ */
+void PrintCSCMatrix(Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix) {
+  std::ofstream out("matrix_sparse.txt", std::ios::trunc);
+
+  // Convert Eigen::Map to Eigen::SparseMatrix
+  Eigen::SparseMatrix<double> sparse_matrix = G_matrix;
+
+  // Ensure the matrix is in compressed format
+  sparse_matrix.makeCompressed();
+
+  // Iterate over the columns of the sparse matrix (CSC format)
+  for (int col = 0; col < sparse_matrix.cols(); ++col) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(sparse_matrix, col); it; ++it) {
+      Eigen::Index row = it.row();  // Row index
+      double value = it.value();    // Non-zero value
+
+      out << "Col: " << col << ", Row: " << row
+          << ", Value: " << std::fixed << std::setprecision(6) << value << "\n";
+    }
+  }
+
+  out.close();
+}
+
+/**
  * @brief print vector data for debug.
  *
  * @param v_vector
  */
-void PrintVector(Eigen::VectorXd& v_vector, const std::string& filename) {
+void PrintVector(const Eigen::VectorXd& v_vector, const std::string& filename) {
   std::ofstream out(filename, std::ios::trunc);
   for (Eigen::Index i = 0; i < v_vector.size(); ++i) {
     // LOG_INFO << "vector element at (" << i << "): " << v_vector(i);
@@ -166,16 +194,25 @@ std::vector<double> IRLUSolver::operator()(
  */
 Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A, const Eigen::VectorXd& b, const Eigen::VectorXd& x0, double tol, int max_iter) {
   Eigen::VectorXd x = x0;
-  Eigen::VectorXd r = b - A * x;
+  Eigen::VectorXd Ax = A * x;
+  // PrintVector(Ax, "Ax.txt");
+  // PrintVector(b, "b.txt");
+  Eigen::VectorXd r = b - Ax;
+  // PrintVector(r, "residual.txt");
   Eigen::VectorXd p = r;
   double rsold = r.dot(r);
   
   int i = 0;
   for (; i < max_iter; ++i) {
+      LOG_INFO_EVERY_N(200) << "CPU CG iteration num: " << i << " total " << max_iter;
+      // LOG_INFO_EVERY_N(200) << "x:\n"<< x.transpose(); 
       Eigen::VectorXd Ap = A * p;
+      // PrintVector(Ax, "AP.txt");
       double alpha = rsold / p.dot(Ap);
       x += alpha * p;
+      // LOG_INFO_EVERY_N(1) << "x:\n"<< x.transpose(); 
       r -= alpha * Ap;
+      // LOG_INFO_EVERY_N(1) << "r:\n"<< r.transpose(); 
       double rsnew = r.dot(r);
       if (sqrt(rsnew) < tol) {
           break;
@@ -184,7 +221,14 @@ Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A, const Ei
       rsold = rsnew;
   }
 
-  LOG_INFO << "CPU CG iteration num: " << i - 1 << std::endl;
+  LOG_INFO << "Last 20 elements of x:";
+  int size = x.size();
+  int start_index = std::max(0, size - 20);
+  for (int i = start_index; i < size; ++i) {
+    LOG_INFO << "x[" << i << "] = " << x[i];
+  }
+
+  LOG_INFO << "CPU CG iteration num: " << i - 1;
   LOG_INFO << "Final Residual Norm: " << sqrt(rsold);
 
   return x;
@@ -203,6 +247,7 @@ std::vector<double> IRCGSolver::operator()(
   // for debug
   // PrintVector(J_vector, "/home/taosimin/iEDA24/iEDA/bin/current.txt");
   // PrintMatrix(G_matrix, 0);
+  // PrintCSCMatrix(G_matrix);
   
 #if !CUDA_IR_SOLVER
   Eigen::SparseMatrix<double> A = G_matrix;

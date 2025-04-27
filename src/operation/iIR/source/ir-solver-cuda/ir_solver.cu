@@ -44,13 +44,13 @@ namespace iir {
 
 /**
  * @brief The ir cg solver use cuda.
- * 
- * @param A 
- * @param b 
- * @param x0 
- * @param tol 
- * @param max_iter 
- * @return std::vector<double> 
+ *
+ * @param A
+ * @param b
+ * @param x0
+ * @param tol
+ * @param max_iter
+ * @return std::vector<double>
  */
 std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
                                  Eigen::VectorXd &b, Eigen::VectorXd &x0,
@@ -77,13 +77,17 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
   CUDA_CHECK(cudaMalloc((void **)&d_Ap, num_rows * sizeof(double)));
 
   // Copy data to device
-  CUDA_CHECK(cudaMemcpy(d_csrVal, csrVal, nnz * sizeof(double), cudaMemcpyHostToDevice));
+  CUDA_CHECK(cudaMemcpy(d_csrVal, csrVal, nnz * sizeof(double),
+                        cudaMemcpyHostToDevice));
   CUDA_CHECK(cudaMemcpy(d_csrRowPtr, csrRowPtr, (num_rows + 1) * sizeof(int),
-             cudaMemcpyHostToDevice));
-  CUDA_CHECK(cudaMemcpy(d_csrColInd, csrColInd, nnz * sizeof(int), cudaMemcpyHostToDevice));
-  CUDA_CHECK(cudaMemcpy(d_b, b.data(), num_rows * sizeof(double), cudaMemcpyHostToDevice));
-  CUDA_CHECK(cudaMemcpy(d_x, x0.data(), num_rows * sizeof(double), cudaMemcpyHostToDevice));
-  
+                        cudaMemcpyHostToDevice));
+  CUDA_CHECK(cudaMemcpy(d_csrColInd, csrColInd, nnz * sizeof(int),
+                        cudaMemcpyHostToDevice));
+  CUDA_CHECK(cudaMemcpy(d_b, b.data(), num_rows * sizeof(double),
+                        cudaMemcpyHostToDevice));
+  CUDA_CHECK(cudaMemcpy(d_x, x0.data(), num_rows * sizeof(double),
+                        cudaMemcpyHostToDevice));
+
   // for debug
   // print_device_array(d_b, num_rows);
   // print_device_array(d_x, num_rows);
@@ -118,24 +122,27 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
 
   cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA, vecX,
                &beta, vecR, CUDA_R_64F, CUSPARSE_SPMV_ALG_DEFAULT, dBuffer);
-  
+
   // for debug
-  // print_csr_matrix(num_rows, num_cols, nnz, d_csrRowPtr, d_csrColInd, d_csrVal);
-  // print_device_array(d_r, num_rows);
+  // print_csr_matrix(num_rows, num_cols, nnz, d_csrRowPtr, d_csrColInd,
+  // d_csrVal); print_device_array(d_r, num_rows);
 
   cublasHandle_t cublasHandle;
   cublasCreate(&cublasHandle);
 
   // Perform r = b - A * x
   double neg_one = -1.0;
-  cublasDaxpy(cublasHandle, num_rows, &neg_one, d_r, 1, d_b, 1);  // r = b - vecR
-  CUDA_CHECK(cudaMemcpy(d_r, d_b, num_rows * sizeof(double), cudaMemcpyDeviceToDevice)); // Copy b to r
+  cublasDaxpy(cublasHandle, num_rows, &neg_one, d_r, 1, d_b,
+              1);  // r = b - vecR
+  CUDA_CHECK(cudaMemcpy(d_r, d_b, num_rows * sizeof(double),
+                        cudaMemcpyDeviceToDevice));  // Copy b to r
 
   // for debug
   // print_device_array(d_r, num_rows);
 
   // Copy r to p
-  CUDA_CHECK(cudaMemcpy(d_p, d_r, num_rows * sizeof(double), cudaMemcpyDeviceToDevice));
+  CUDA_CHECK(cudaMemcpy(d_p, d_r, num_rows * sizeof(double),
+                        cudaMemcpyDeviceToDevice));
 
   // Compute initial r_dot_r
   cublasDdot(cublasHandle, num_rows, d_r, 1, d_r, 1, &r_dot_r);
@@ -159,7 +166,7 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
 
     // x = x + alpha * p
     cublasDaxpy(cublasHandle, num_rows, &alpha, d_p, 1, d_x, 1);
-    
+
     // for debug
     // print_device_array(d_x, num_rows);
 
@@ -181,7 +188,7 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
     r_dot_r = r_dot_r_new;
     k++;
   }
-  
+
   CUDA_LOG_INFO("GPU CG iteration num: %d", k - 1);
   CUDA_LOG_INFO("Final Residual Norm: %f", sqrt(r_dot_r));
 
@@ -190,7 +197,15 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
 
   // Copy result back to host
   std::vector<double> x(num_rows);
-  CUDA_CHECK(cudaMemcpy(x.data(), d_x, num_rows * sizeof(double), cudaMemcpyDeviceToHost));
+  CUDA_CHECK(cudaMemcpy(x.data(), d_x, num_rows * sizeof(double),
+                        cudaMemcpyDeviceToHost));
+
+  CUDA_LOG_INFO("Last 20 elements of x:");
+  int size = x.size();
+  int start_index = std::max(0, size - 20);
+  for (int i = start_index; i < size; ++i) {
+    CUDA_LOG_INFO("x[%d]: %f", i, x[i]);
+  }
 
   // Free resources
   cudaFree(d_csrVal);

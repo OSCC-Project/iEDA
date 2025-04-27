@@ -77,7 +77,7 @@ void LmFeatureTiming::buildWireTimingPowerFeature(LmNet* lm_net, const std::stri
     double delay = eval_tp->getWireDelay(net_name, node_name);
     double power = 0.5 * toggle * voltage * capacitance;
 
-    LOG_INFO << "node " << node_name << " resistance " << resistance << " cap " << capacitance << " slew " << slew << " delay " << delay
+    LOG_INFO_EVERY_N(100) << "node " << node_name << " resistance " << resistance << " cap " << capacitance << " slew " << slew << " delay " << delay
              << " power " << power;
 
     return std::tuple(resistance, capacitance, slew, delay, power);
