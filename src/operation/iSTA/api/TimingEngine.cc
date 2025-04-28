@@ -136,6 +136,7 @@ TimingEngine& TimingEngine::readDefDesign(std::string def_file,
 LibTable* TimingEngine::getCellLibertyTable(const char* cell_name,
                                             LibTable::TableType table_type) {
   LibCell* lib_cell = _ista->findLibertyCell(cell_name);
+  LOG_FATAL_IF(!lib_cell) << cell_name << " lib cell is not found.";
   const char* from_port_name = nullptr;
   const char* to_port_name = nullptr;
 
