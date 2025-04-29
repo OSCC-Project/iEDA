@@ -20,6 +20,7 @@
 #include "DRBoxId.hpp"
 #include "DRIterParam.hpp"
 #include "DRNode.hpp"
+#include "DRPatch.hpp"
 #include "DRShadow.hpp"
 #include "DRTask.hpp"
 #include "LayerCoord.hpp"
@@ -128,17 +129,21 @@ class DRBox
 #if 1  // zstar
   // single task
   DRTask* get_curr_patch_task() { return _curr_patch_task; }
+  std::vector<EXTLayerRect>& get_routing_patch_list() { return _routing_patch_list; }
   std::vector<Violation>& get_patch_violation_list() { return _patch_violation_list; }
   std::set<Violation, CmpViolation>& get_tried_fix_violation_set() { return _tried_fix_violation_set; }
   void set_curr_patch_task(DRTask* curr_patch_task) { _curr_patch_task = curr_patch_task; }
+  void set_routing_patch_list(const std::vector<EXTLayerRect>& routing_patch_list) { _routing_patch_list = routing_patch_list; }
   void set_patch_violation_list(const std::vector<Violation>& patch_violation_list) { _patch_violation_list = patch_violation_list; }
   void set_tried_fix_violation_set(const std::set<Violation, CmpViolation>& tried_fix_violation_set) { _tried_fix_violation_set = tried_fix_violation_set; }
   // single violation
-  Violation& get_curr_violation() { return _curr_violation; }
-  std::vector<Violation>& get_curr_violation_list() { return _curr_violation_list; }
+  Violation& get_curr_patch_violation() { return _curr_patch_violation; }
+  DRPatch& get_curr_candidate_patch() { return _curr_candidate_patch; }
+  std::vector<Violation>& get_curr_patch_violation_list() { return _curr_patch_violation_list; }
   bool get_curr_is_solved() const { return _curr_is_solved; }
-  void set_curr_violation(const Violation& curr_violation) { _curr_violation = curr_violation; }
-  void set_curr_violation_list(const std::vector<Violation>& curr_violation_list) { _curr_violation_list = curr_violation_list; }
+  void set_curr_patch_violation(const Violation& curr_patch_violation) { _curr_patch_violation = curr_patch_violation; }
+  void set_curr_candidate_patch(const DRPatch& curr_candidate_patch) { _curr_candidate_patch = curr_candidate_patch; }
+  void set_curr_patch_violation_list(const std::vector<Violation>& curr_patch_violation_list) { _curr_patch_violation_list = curr_patch_violation_list; }
   void set_curr_is_solved(const bool curr_is_solved) { _curr_is_solved = curr_is_solved; }
 #endif
 
@@ -178,11 +183,13 @@ class DRBox
 #if 1  // zstar
   // single task
   DRTask* _curr_patch_task = nullptr;
+  std::vector<EXTLayerRect> _routing_patch_list;
   std::vector<Violation> _patch_violation_list;
   std::set<Violation, CmpViolation> _tried_fix_violation_set;
   // single violation
-  Violation _curr_violation;
-  std::vector<Violation> _curr_violation_list;
+  Violation _curr_patch_violation;
+  DRPatch _curr_candidate_patch;
+  std::vector<Violation> _curr_patch_violation_list;
   bool _curr_is_solved = false;
 #endif
 };

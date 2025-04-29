@@ -35,17 +35,12 @@ class DPModel
   DPIterParam& get_dp_iter_param() { return _dp_iter_param; }
   GridMap<DPBox>& get_dp_box_map() { return _dp_box_map; }
   std::vector<std::vector<DPBoxId>>& get_dp_box_id_list_list() { return _dp_box_id_list_list; }
-  std::map<DPBoxId, std::map<int32_t, std::vector<EXTLayerRect>>, CmpDPBoxId>& get_box_net_force_patch_map() { return _box_net_force_patch_map; }
   // setter
   void set_dp_net_list(const std::vector<DPNet>& dp_net_list) { _dp_net_list = dp_net_list; }
   void set_iter(const int32_t iter) { _iter = iter; }
   void set_dp_iter_param(const DPIterParam& dp_iter_param) { _dp_iter_param = dp_iter_param; }
   void set_dp_box_map(const GridMap<DPBox>& dp_box_map) { _dp_box_map = dp_box_map; }
   void set_dp_box_id_list_list(const std::vector<std::vector<DPBoxId>>& dp_box_id_list_list) { _dp_box_id_list_list = dp_box_id_list_list; }
-  void set_box_net_force_patch_map(const std::map<DPBoxId, std::map<int32_t, std::vector<EXTLayerRect>>, CmpDPBoxId>& box_net_force_patch_map)
-  {
-    _box_net_force_patch_map = box_net_force_patch_map;
-  }
 
  private:
   std::vector<DPNet> _dp_net_list;
@@ -53,7 +48,6 @@ class DPModel
   DPIterParam _dp_iter_param;
   GridMap<DPBox> _dp_box_map;
   std::vector<std::vector<DPBoxId>> _dp_box_id_list_list;
-  std::map<DPBoxId, std::map<int32_t, std::vector<EXTLayerRect>>, CmpDPBoxId> _box_net_force_patch_map;
 };
 
 }  // namespace irt

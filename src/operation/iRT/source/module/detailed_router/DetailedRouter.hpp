@@ -24,7 +24,6 @@
 #include "DRNet.hpp"
 #include "DRNode.hpp"
 #include "DRPatch.hpp"
-#include "DRSolution.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
@@ -60,8 +59,8 @@ class DetailedRouter
   void routeDRModel(DRModel& dr_model);
   void initRoutingState(DRModel& dr_model);
   void setDRIterParam(DRModel& dr_model, int32_t iter, DRIterParam& dr_iter_param);
-  void resetRoutingState(DRModel& dr_model);
   void initDRBoxMap(DRModel& dr_model);
+  void resetRoutingState(DRModel& dr_model);
   void buildBoxSchedule(DRModel& dr_model);
   void splitNetResult(DRModel& dr_model);
   void routeDRBoxMap(DRModel& dr_model);
@@ -95,7 +94,7 @@ class DetailedRouter
   void resetSinglePath(DRBox& dr_box);
   void updateTaskResult(DRBox& dr_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(DRBox& dr_box);
-  void resetSingleTask(DRBox& dr_box);
+  void resetSingleRouteTask(DRBox& dr_box);
   void pushToOpenList(DRBox& dr_box, DRNode* curr_node);
   DRNode* popFromOpenList(DRBox& dr_box);
   double getKnownCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
@@ -109,14 +108,14 @@ class DetailedRouter
   void patchDRTask(DRBox& dr_box, DRTask* dr_task);
   void initSinglePatchTask(DRBox& dr_box, DRTask* dr_task);
   std::vector<Violation> getPatchViolationList(DRBox& dr_box);
-  bool initCurrViolation(DRBox& dr_box);
-  bool isValid(DRBox& dr_box, Violation& violation);
-  std::vector<DRSolution> getSolutionList(DRBox& dr_box);
-  DRSolution getNewSolution(DRBox& dr_box);
-  void updateCurrViolationList(DRBox& dr_box, DRSolution& dr_solution);
-  void updateCurrSolvedStatus(DRBox& dr_box);
-  void updateTaskPatch(DRBox& dr_box, DRSolution& dr_solution);
+  bool searchViolation(DRBox& dr_box);
+  bool isValidPatchViolation(DRBox& dr_box, Violation& violation);
+  void patchSingleViolation(DRBox& dr_box);
+  std::vector<DRPatch> getCandidatePatchList(DRBox& dr_box);
+  void buildSingleViolation(DRBox& dr_box, DRPatch& dr_patch);
+  void updateSingleViolation(DRBox& dr_box);
   void resetSingleViolation(DRBox& dr_box);
+  void updateTaskPatch(DRBox& dr_box);
   void resetSinglePatchTask(DRBox& dr_box);
   void updateRouteViolationList(DRBox& dr_box);
   std::vector<Violation> getRouteViolationList(DRBox& dr_box);
@@ -134,7 +133,7 @@ class DetailedRouter
   bool stopIteration(DRModel& dr_model);
   void selectBestResult(DRModel& dr_model);
   void uploadBestResult(DRModel& dr_model);
-
+  
 #if 1  // update env
   void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
   void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);

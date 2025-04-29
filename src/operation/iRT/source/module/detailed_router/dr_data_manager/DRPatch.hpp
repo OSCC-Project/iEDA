@@ -39,6 +39,8 @@ class DRPatch
   double get_routed_rect_cost() const { return _routed_rect_cost; }
   Direction get_direction() const { return _direction; }
   int32_t get_overlap_area() const { return _overlap_area; }
+  // const getter
+  const EXTLayerRect& get_patch() const { return _patch; }
   // setter
   void set_patch(const EXTLayerRect& patch) { _patch = patch; }
   void set_fixed_rect_cost(const double fixed_rect_cost) { _fixed_rect_cost = fixed_rect_cost; }
@@ -83,6 +85,34 @@ struct CmpDRPatch
         sort_status = SortStatus::kEqual;
       } else {
         sort_status = SortStatus::kFalse;
+      }
+    }
+    // real_rect比较
+    if (sort_status == SortStatus::kEqual) {
+      const PlanarRect& a_real_rect = a.get_patch().get_real_rect();
+      const PlanarRect& b_real_rect = b.get_patch().get_real_rect();
+      if (a_real_rect != b_real_rect) {
+        if (CmpPlanarRectByXASC()(a_real_rect, b_real_rect)) {
+          sort_status = SortStatus::kTrue;
+        } else {
+          sort_status = SortStatus::kFalse;
+        }
+      } else {
+        sort_status = SortStatus::kEqual;
+      }
+    }
+    // grid_rect比较
+    if (sort_status == SortStatus::kEqual) {
+      const PlanarRect& a_grid_rect = a.get_patch().get_grid_rect();
+      const PlanarRect& b_grid_rect = b.get_patch().get_grid_rect();
+      if (a_grid_rect != b_grid_rect) {
+        if (CmpPlanarRectByXASC()(a_grid_rect, b_grid_rect)) {
+          sort_status = SortStatus::kTrue;
+        } else {
+          sort_status = SortStatus::kFalse;
+        }
+      } else {
+        sort_status = SortStatus::kEqual;
       }
     }
     // 层方向优先
