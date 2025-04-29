@@ -588,8 +588,6 @@ void DataManager::buildConfig()
   _config.gp_temp_directory_path = _config.temp_directory_path + "gds_plotter/";
   // **********    PinAccessor    ********** //
   _config.pa_temp_directory_path = _config.temp_directory_path + "pin_accessor/";
-  // **********    PinPatcher     ********** //
-  _config.pp_temp_directory_path = _config.temp_directory_path + "pin_patcher/";
   // ********     SupplyAnalyzer    ******** //
   _config.sa_temp_directory_path = _config.temp_directory_path + "supply_analyzer/";
   // ********   TopologyGenerator   ******** //
@@ -602,8 +600,6 @@ void DataManager::buildConfig()
   _config.ta_temp_directory_path = _config.temp_directory_path + "track_assigner/";
   // **********  DetailedRouter   ********** //
   _config.dr_temp_directory_path = _config.temp_directory_path + "detailed_router/";
-  // **********  DetailedPatcher  ********** //
-  _config.dp_temp_directory_path = _config.temp_directory_path + "detailed_patcher/";
   // **********    EarlyRouter    ********** //
   _config.er_temp_directory_path = _config.temp_directory_path + "early_router/";
   /////////////////////////////////////////////
@@ -617,8 +613,6 @@ void DataManager::buildConfig()
   RTUTIL.createDir(_config.gp_temp_directory_path);
   // **********    PinAccessor    ********** //
   RTUTIL.createDir(_config.pa_temp_directory_path);
-  // **********    PinPatcher     ********** //
-  RTUTIL.createDir(_config.pp_temp_directory_path);
   // **********  SupplyAnalyzer   ********** //
   RTUTIL.createDir(_config.sa_temp_directory_path);
   // *********  TopologyGenerator  ********* //
@@ -631,8 +625,6 @@ void DataManager::buildConfig()
   RTUTIL.createDir(_config.ta_temp_directory_path);
   // **********  DetailedRouter   ********** //
   RTUTIL.createDir(_config.dr_temp_directory_path);
-  // **********  DetailedPatcher  ********** //
-  RTUTIL.createDir(_config.dp_temp_directory_path);
   // **********    EarlyRouter    ********** //
   RTUTIL.createDir(_config.er_temp_directory_path);
   /////////////////////////////////////////////
@@ -1461,10 +1453,6 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "PinAccessor");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "pa_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.pa_temp_directory_path);
-  // **********    PinPatcher     ********** //
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "PinPatcher");
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "pp_temp_directory_path");
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.pp_temp_directory_path);
   // **********  SupplyAnalyzer   ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "SupplyAnalyzer");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "sa_temp_directory_path");
@@ -1489,10 +1477,6 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "DetailedRouter");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "dr_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.dr_temp_directory_path);
-  // **********  DetailedPatcher  ********** //
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "DetailedPatcher");
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "dp_temp_directory_path");
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.dp_temp_directory_path);
   // **********    EarlyRouter    ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "EarlyRouter");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "er_temp_directory_path");

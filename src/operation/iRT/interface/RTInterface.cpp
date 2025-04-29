@@ -18,7 +18,6 @@
 
 #include "DRCEngine.hpp"
 #include "DRCInterface.hpp"
-#include "DetailedPatcher.hpp"
 #include "DetailedRouter.hpp"
 #include "EarlyRouter.hpp"
 #include "GDSPlotter.hpp"
@@ -27,7 +26,6 @@
 #include "LayerAssigner.hpp"
 #include "Monitor.hpp"
 #include "PinAccessor.hpp"
-#include "PinPatcher.hpp"
 #include "RTInterface.hpp"
 #include "SupplyAnalyzer.hpp"
 #include "TopologyGenerator.hpp"
@@ -127,10 +125,6 @@ void RTInterface::runRT()
   RTPA.access();
   PinAccessor::destroyInst();
 
-  PinPatcher::initInst();
-  RTPP.patch();
-  PinPatcher::destroyInst();
-
   SupplyAnalyzer::initInst();
   RTSA.analyze();
   SupplyAnalyzer::destroyInst();
@@ -154,10 +148,6 @@ void RTInterface::runRT()
   DetailedRouter::initInst();
   RTDR.route();
   DetailedRouter::destroyInst();
-
-  DetailedPatcher::initInst();
-  RTDP.patch();
-  DetailedPatcher::destroyInst();
 
   destroyFlute();
   RTGP.destroy();
