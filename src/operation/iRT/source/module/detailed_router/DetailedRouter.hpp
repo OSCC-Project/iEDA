@@ -110,6 +110,7 @@ class DetailedRouter
   std::vector<Violation> getPatchViolationList(DRBox& dr_box);
   bool searchViolation(DRBox& dr_box);
   bool isValidPatchViolation(DRBox& dr_box, Violation& violation);
+  std::vector<PlanarRect> getViolationOverlapRect(DRBox& dr_box, Violation& violation);
   void patchSingleViolation(DRBox& dr_box);
   std::vector<DRPatch> getCandidatePatchList(DRBox& dr_box);
   void buildSingleViolation(DRBox& dr_box, DRPatch& dr_patch);
@@ -124,7 +125,7 @@ class DetailedRouter
   void selectBestResult(DRBox& dr_box);
   void uploadBestResult(DRBox& dr_box);
   void freeDRBox(DRBox& dr_box);
-  int32_t getViolationNum(DRModel& dr_model);
+  int32_t getRouteViolationNum(DRModel& dr_model);
   void uploadNetResult(DRModel& dr_model);
   void uploadNetPatch(DRModel& dr_model);
   void uploadViolation(DRModel& dr_model);

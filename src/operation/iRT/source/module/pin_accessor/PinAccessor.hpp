@@ -73,18 +73,21 @@ class PinAccessor
   void routePABoxMap(PAModel& pa_model);
   void buildFixedRect(PABox& pa_box);
   void buildAccessResult(PABox& pa_box);
+  void buildAccessPatch(PABox& pa_box);
   void initPATaskList(PAModel& pa_model, PABox& pa_box);
-  void buildViolation(PABox& pa_box);
+  void buildRouteViolation(PABox& pa_box);
   bool needRouting(PABox& pa_box);
   void buildBoxTrackAxis(PABox& pa_box);
   void buildLayerNodeMap(PABox& pa_box);
+  void buildLayerShadowMap(PABox& pa_box);
   void buildPANodeNeighbor(PABox& pa_box);
   void buildOrientNetMap(PABox& pa_box);
+  void buildNetShadowMap(PABox& pa_box);
   void exemptPinShape(PABox& pa_box);
   void routePABox(PABox& pa_box);
   std::vector<PATask*> initTaskSchedule(PABox& pa_box);
   void routePATask(PABox& pa_box, PATask* pa_task);
-  void initSingleTask(PABox& pa_box, PATask* pa_task);
+  void initSingleRouteTask(PABox& pa_box, PATask* pa_task);
   bool isConnectedAllEnd(PABox& pa_box);
   void routeSinglePath(PABox& pa_box);
   void initPathHead(PABox& pa_box);
@@ -97,7 +100,7 @@ class PinAccessor
   void resetSinglePath(PABox& pa_box);
   void updateTaskResult(PABox& pa_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(PABox& pa_box);
-  void resetSingleTask(PABox& pa_box);
+  void resetSingleRouteTask(PABox& pa_box);
   void pushToOpenList(PABox& pa_box, PANode* curr_node);
   PANode* popFromOpenList(PABox& pa_box);
   double getKnownCost(PABox& pa_box, PANode* start_node, PANode* end_node);
@@ -108,17 +111,30 @@ class PinAccessor
   double getEstimateCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   double getEstimateWireCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   double getEstimateViaCost(PABox& pa_box, PANode* start_node, PANode* end_node);
-  void updateViolationList(PABox& pa_box);
-  std::vector<Violation> getViolationList(PABox& pa_box);
+  void patchPATask(PABox& pa_box, PATask* pa_task);
+  void initSinglePatchTask(PABox& pa_box, PATask* pa_task);
+  std::vector<Violation> getPatchViolationList(PABox& pa_box);
+  bool searchViolation(PABox& pa_box);
+  bool isValidPatchViolation(PABox& pa_box, Violation& violation);
+  std::vector<PlanarRect> getViolationOverlapRect(PABox& pa_box, Violation& violation);
+  void patchSingleViolation(PABox& pa_box);
+  std::vector<PAPatch> getCandidatePatchList(PABox& pa_box);
+  void buildSingleViolation(PABox& pa_box, PAPatch& pa_patch);
+  void updateSingleViolation(PABox& pa_box);
+  void resetSingleViolation(PABox& pa_box);
+  void updateTaskPatch(PABox& pa_box);
+  void resetSinglePatchTask(PABox& pa_box);
+  void updateRouteViolationList(PABox& pa_box);
+  std::vector<Violation> getRouteViolationList(PABox& pa_box);
   void updateAccessPoint(PABox& pa_box);
   void updateBestResult(PABox& pa_box);
   void updateTaskSchedule(PABox& pa_box, std::vector<PATask*>& routing_task_list);
   void selectBestResult(PABox& pa_box);
   void uploadBestResult(PABox& pa_box);
   void freePABox(PABox& pa_box);
-  int32_t getViolationNum(PAModel& pa_model);
+  int32_t getRouteViolationNum(PAModel& pa_model);
   void uploadViolation(PAModel& pa_model);
-  std::vector<Violation> getViolationList(PAModel& pa_model);
+  std::vector<Violation> getRouteViolationList(PAModel& pa_model);
   void updateBestResult(PAModel& pa_model);
   bool stopIteration(PAModel& pa_model);
   void selectBestResult(PAModel& pa_model);
@@ -127,13 +143,25 @@ class PinAccessor
 
 #if 1  // update env
   void updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
-  void updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
+  void updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
   void updateRoutedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
-  void addViolationToGraph(PABox& pa_box, Violation& violation);
-  void addViolationToGraph(PABox& pa_box, LayerRect& searched_rect, std::vector<Segment<LayerCoord>>& overlap_segment_list);
+  void updateRoutedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& routed_rect, bool is_routing);
+  void addRouteViolationToGraph(PABox& pa_box, Violation& violation);
+  void addRouteViolationToGraph(PABox& pa_box, LayerRect& searched_rect, std::vector<Segment<LayerCoord>>& overlap_segment_list);
   std::map<PANode*, std::set<Orientation>> getNodeOrientationMap(PABox& pa_box, NetShape& net_shape);
   std::map<PANode*, std::set<Orientation>> getRoutingNodeOrientationMap(PABox& pa_box, NetShape& net_shape);
   std::map<PANode*, std::set<Orientation>> getCutNodeOrientationMap(PABox& pa_box, NetShape& net_shape);
+  void updateFixedRectToShadow(PABox& pa_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
+  void updateFixedRectToShadow(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
+  void updateRoutedRectToShadow(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
+  void updateRoutedRectToShadow(PABox& pa_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& routed_rect, bool is_routing);
+  std::vector<PlanarRect> getShadowShape(PABox& pa_box, NetShape& net_shape);
+  std::vector<PlanarRect> getRoutingShadowShapeList(PABox& pa_box, NetShape& net_shape);
+#endif
+
+#if 1  // get env
+  double getFixedRectCost(PABox& pa_box, int32_t net_idx, EXTLayerRect& patch);
+  double getRoutedRectCost(PABox& pa_box, int32_t net_idx, EXTLayerRect& patch);
 #endif
 
 #if 1  // exhibit

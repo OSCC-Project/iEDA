@@ -179,7 +179,7 @@ void DataManager::updateNetPinAccessResultToGCellMap(ChangeType change_type, int
   }
 }
 
-void DataManager::updateNetAccessPatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect)
+void DataManager::updateNetPinAccessPatchToGCellMap(ChangeType change_type, int32_t net_idx, int32_t pin_idx, EXTLayerRect* ext_layer_rect)
 {
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
   Die& die = _database.get_die();
@@ -196,13 +196,16 @@ void DataManager::updateNetAccessPatchToGCellMap(ChangeType change_type, int32_t
   PlanarRect grid_rect = RTUTIL.getClosedGCellGridRect(real_rect, gcell_axis);
   for (int32_t x = grid_rect.get_ll_x(); x <= grid_rect.get_ur_x(); x++) {
     for (int32_t y = grid_rect.get_ll_y(); y <= grid_rect.get_ur_y(); y++) {
-      auto& net_access_patch_map = gcell_map[x][y].get_net_access_patch_map();
+      auto& net_pin_access_patch_map = gcell_map[x][y].get_net_pin_access_patch_map();
       if (change_type == ChangeType::kAdd) {
-        net_access_patch_map[net_idx].insert(ext_layer_rect);
+        net_pin_access_patch_map[net_idx][pin_idx].insert(ext_layer_rect);
       } else if (change_type == ChangeType::kDel) {
-        net_access_patch_map[net_idx].erase(ext_layer_rect);
-        if (net_access_patch_map[net_idx].empty()) {
-          net_access_patch_map.erase(net_idx);
+        net_pin_access_patch_map[net_idx][pin_idx].erase(ext_layer_rect);
+        if (net_pin_access_patch_map[net_idx][pin_idx].empty()) {
+          net_pin_access_patch_map.erase(net_idx);
+        }
+        if (net_pin_access_patch_map[net_idx].empty()) {
+          net_pin_access_patch_map.erase(net_idx);
         }
       }
     }
@@ -389,19 +392,21 @@ std::map<int32_t, std::map<int32_t, std::set<Segment<LayerCoord>*>>> DataManager
   return net_pin_access_result_map;
 }
 
-std::map<int32_t, std::set<EXTLayerRect*>> DataManager::getNetAccessPatchMap(EXTPlanarRect& region)
+std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>> DataManager::getNetPinAccessPatchMap(EXTPlanarRect& region)
 {
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
 
-  std::map<int32_t, std::set<EXTLayerRect*>> net_access_patch_map;
+  std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>> net_pin_access_patch_map;
   for (int32_t x = region.get_grid_ll_x(); x <= region.get_grid_ur_x(); x++) {
     for (int32_t y = region.get_grid_ll_y(); y <= region.get_grid_ur_y(); y++) {
-      for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_access_patch_map()) {
-        net_access_patch_map[net_idx].insert(patch_set.begin(), patch_set.end());
+      for (auto& [net_idx, pin_access_patch_map] : gcell_map[x][y].get_net_pin_access_patch_map()) {
+        for (auto& [pin_idx, patch_set] : pin_access_patch_map) {
+          net_pin_access_patch_map[net_idx][pin_idx].insert(patch_set.begin(), patch_set.end());
+        }
       }
     }
   }
-  return net_access_patch_map;
+  return net_pin_access_patch_map;
 }
 
 std::map<int32_t, std::set<Segment<LayerCoord>*>> DataManager::getNetGlobalResultMap(EXTPlanarRect& region)
@@ -1644,9 +1649,11 @@ void DataManager::destroyGCellMap()
       }
     }
   }
-  for (auto& [net_idx, patch_set] : getNetAccessPatchMap(die)) {
-    for (EXTLayerRect* patch : patch_set) {
-      RTDM.updateNetAccessPatchToGCellMap(ChangeType::kDel, net_idx, patch);
+  for (auto& [net_idx, pin_access_patch_map] : getNetPinAccessPatchMap(die)) {
+    for (auto& [pin_idx, patch_set] : pin_access_patch_map) {
+      for (EXTLayerRect* patch : patch_set) {
+        RTDM.updateNetPinAccessPatchToGCellMap(ChangeType::kDel, net_idx, pin_idx, patch);
+      }
     }
   }
   for (auto& [net_idx, segment_set] : getNetGlobalResultMap(die)) {
@@ -1657,6 +1664,11 @@ void DataManager::destroyGCellMap()
   for (auto& [net_idx, segment_set] : getNetDetailedResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
       RTDM.updateNetDetailedResultToGCellMap(ChangeType::kDel, net_idx, segment);
+    }
+  }
+  for (auto& [net_idx, patch_set] : getNetDetailedPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      RTDM.updateNetDetailedPatchToGCellMap(ChangeType::kDel, net_idx, patch);
     }
   }
   for (Violation* violation : getViolationSet(die)) {
