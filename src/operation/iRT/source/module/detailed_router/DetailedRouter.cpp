@@ -1365,7 +1365,7 @@ bool DetailedRouter::isValidPatchViolation(DRBox& dr_box, Violation& violation)
 std::vector<PlanarRect> DetailedRouter::getViolationOverlapRect(DRBox& dr_box, Violation& violation)
 {
   int32_t curr_net_idx = dr_box.get_curr_patch_task()->get_net_idx();
-  EXTLayerRect& violation_shape = dr_box.get_curr_patch_violation().get_violation_shape();
+  EXTLayerRect& violation_shape = violation.get_violation_shape();
   PlanarRect violation_real_rect = violation_shape.get_real_rect();
   int32_t violation_layer_idx = violation_shape.get_layer_idx();
 
