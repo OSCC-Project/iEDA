@@ -1304,14 +1304,8 @@ std::vector<Violation> DetailedRouter::getPatchViolationList(DRBox& dr_box)
     }
   }
   std::set<int32_t> need_checked_net_set;
-  for (auto& [net_idx, pin_shape_list] : net_pin_shape_map) {
-    need_checked_net_set.insert(net_idx);
-  }
-  for (auto& [net_idx, segment_list] : net_result_map) {
-    need_checked_net_set.insert(net_idx);
-  }
-  for (auto& [net_idx, patch_set] : net_patch_map) {
-    need_checked_net_set.insert(net_idx);
+  for (DRTask* dr_task : dr_box.get_dr_task_list()) {
+    need_checked_net_set.insert(dr_task->get_net_idx());
   }
 
   DETask de_task;

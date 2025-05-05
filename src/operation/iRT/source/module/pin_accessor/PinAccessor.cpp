@@ -690,7 +690,7 @@ void PinAccessor::routePABoxMap(PAModel& pa_model)
   size_t routed_box_num = 0;
   for (std::vector<PABoxId>& pa_box_id_list : pa_model.get_pa_box_id_list_list()) {
     Monitor stage_monitor;
-#pragma omp parallel for
+    #pragma omp parallel for
     for (PABoxId& pa_box_id : pa_box_id_list) {
       PABox& pa_box = pa_box_map[pa_box_id.get_x()][pa_box_id.get_y()];
       buildFixedRect(pa_box);
@@ -1717,14 +1717,8 @@ std::vector<Violation> PinAccessor::getPatchViolationList(PABox& pa_box)
     }
   }
   std::set<int32_t> need_checked_net_set;
-  for (auto& [net_idx, pin_shape_list] : net_pin_shape_map) {
-    need_checked_net_set.insert(net_idx);
-  }
-  for (auto& [net_idx, segment_list] : net_result_map) {
-    need_checked_net_set.insert(net_idx);
-  }
-  for (auto& [net_idx, patch_set] : net_patch_map) {
-    need_checked_net_set.insert(net_idx);
+  for (PATask* pa_task : pa_box.get_pa_task_list()) {
+    need_checked_net_set.insert(pa_task->get_net_idx());
   }
 
   DETask de_task;
@@ -2206,6 +2200,9 @@ void PinAccessor::updateTaskSchedule(PABox& pa_box, std::vector<PATask*>& routin
     }
     for (PATask* pa_task : pa_box.get_pa_task_list()) {
       if (!RTUTIL.exist(violation.get_violation_net_set(), pa_task->get_net_idx())) {
+        continue;
+      }
+      if (!RTUTIL.isClosedOverlap(violation.get_violation_shape().get_real_rect(), pa_task->get_bounding_box())) {
         continue;
       }
       if (pa_task->get_routed_times() < max_routed_times && !RTUTIL.exist(visited_routing_task_set, pa_task)) {

@@ -1054,6 +1054,9 @@ void TrackAssigner::updateTaskSchedule(TAPanel& ta_panel, std::vector<TATask*>& 
       if (!RTUTIL.exist(violation.get_violation_net_set(), ta_task->get_net_idx())) {
         continue;
       }
+      if (!RTUTIL.isClosedOverlap(violation.get_violation_shape().get_real_rect(), ta_task->get_bounding_box())) {
+        continue;
+      }
       if (ta_task->get_routed_times() < max_routed_times && !RTUTIL.exist(visited_routing_task_set, ta_task)) {
         visited_routing_task_set.insert(ta_task);
         new_routing_task_list.push_back(ta_task);
