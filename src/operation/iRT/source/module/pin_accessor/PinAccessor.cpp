@@ -1767,7 +1767,7 @@ bool PinAccessor::isValidPatchViolation(PABox& pa_box, Violation& violation)
   PlanarRect& box_real_rect = pa_box.get_box_rect().get_real_rect();
 
   bool is_valid = true;
-  if (!RTUTIL.isInside(box_real_rect, violation.get_violation_shape().get_real_rect())) {
+  if (!RTUTIL.isOpenOverlap(box_real_rect, violation.get_violation_shape().get_real_rect())) {
     is_valid = false;
   }
   if (violation.get_violation_type() != ViolationType::kMinimumArea) {

@@ -419,7 +419,7 @@ void DetailedRouter::buildNetPatch(DRBox& dr_box)
 
   for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(dr_box.get_box_rect())) {
     for (EXTLayerRect* patch : patch_set) {
-      if (RTUTIL.isInside(box_real_rect, patch->get_real_rect())) {
+      if (RTUTIL.isOpenOverlap(box_real_rect, patch->get_real_rect())) {
         dr_box.get_net_task_detailed_patch_map()[net_idx].push_back(*patch);
         RTDM.updateNetDetailedPatchToGCellMap(ChangeType::kDel, net_idx, patch);
       } else {
@@ -1347,7 +1347,7 @@ bool DetailedRouter::isValidPatchViolation(DRBox& dr_box, Violation& violation)
   PlanarRect& box_real_rect = dr_box.get_box_rect().get_real_rect();
 
   bool is_valid = true;
-  if (!RTUTIL.isInside(box_real_rect, violation.get_violation_shape().get_real_rect())) {
+  if (!RTUTIL.isOpenOverlap(box_real_rect, violation.get_violation_shape().get_real_rect())) {
     is_valid = false;
   }
   if (violation.get_violation_type() != ViolationType::kMinimumArea) {
