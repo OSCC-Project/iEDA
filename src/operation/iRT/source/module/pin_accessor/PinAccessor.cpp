@@ -690,7 +690,7 @@ void PinAccessor::routePABoxMap(PAModel& pa_model)
   size_t routed_box_num = 0;
   for (std::vector<PABoxId>& pa_box_id_list : pa_model.get_pa_box_id_list_list()) {
     Monitor stage_monitor;
-    #pragma omp parallel for
+#pragma omp parallel for
     for (PABoxId& pa_box_id : pa_box_id_list) {
       PABox& pa_box = pa_box_map[pa_box_id.get_x()][pa_box_id.get_y()];
       buildFixedRect(pa_box);
@@ -882,45 +882,52 @@ void PinAccessor::initPATaskList(PAModel& pa_model, PABox& pa_box)
     for (PATask* pa_task : pa_task_list) {
       net_pin_task_map[pa_task->get_net_idx()][pa_task->get_pa_pin()->get_pin_idx()] = pa_task->get_task_idx();
     }
-    std::vector<std::pair<int32_t, int32_t>> net_pin_pair_list;
-    for (auto& [net_idx, pin_access_result_map] : net_pin_access_result_map) {
-      for (auto& [pin_idx, segment_set] : pin_access_result_map) {
-        if (!RTUTIL.exist(net_pin_task_map, net_idx)) {
-          continue;
+    {
+      std::vector<std::pair<int32_t, int32_t>> net_pin_pair_list;
+      for (auto& [net_idx, pin_access_result_map] : net_pin_access_result_map) {
+        for (auto& [pin_idx, segment_set] : pin_access_result_map) {
+          if (!RTUTIL.exist(net_pin_task_map, net_idx)) {
+            continue;
+          }
+          if (!RTUTIL.exist(net_pin_task_map[net_idx], pin_idx)) {
+            continue;
+          }
+          for (Segment<LayerCoord>* segment : segment_set) {
+            net_task_access_result_map[net_idx][net_pin_task_map[net_idx][pin_idx]].push_back(*segment);
+            RTDM.updateNetPinAccessResultToGCellMap(ChangeType::kDel, net_idx, pin_idx, segment);
+          }
+          net_pin_pair_list.emplace_back(net_idx, pin_idx);
         }
-        if (!RTUTIL.exist(net_pin_task_map[net_idx], pin_idx)) {
-          continue;
+      }
+      for (auto& [net_idx, pin_idx] : net_pin_pair_list) {
+        net_pin_access_result_map[net_idx].erase(pin_idx);
+        if (net_pin_access_result_map[net_idx].empty()) {
+          net_pin_access_result_map.erase(net_idx);
         }
-        for (Segment<LayerCoord>* segment : segment_set) {
-          net_task_access_result_map[net_idx][net_pin_task_map[net_idx][pin_idx]].push_back(*segment);
-          RTDM.updateNetPinAccessResultToGCellMap(ChangeType::kDel, net_idx, pin_idx, segment);
-        }
-        net_pin_pair_list.emplace_back(net_idx, pin_idx);
       }
     }
-    for (auto& [net_idx, pin_access_patch_map] : net_pin_access_patch_map) {
-      for (auto& [pin_idx, patch_set] : pin_access_patch_map) {
-        if (!RTUTIL.exist(net_pin_task_map, net_idx)) {
-          continue;
+    {
+      std::vector<std::pair<int32_t, int32_t>> net_pin_pair_list;
+      for (auto& [net_idx, pin_access_patch_map] : net_pin_access_patch_map) {
+        for (auto& [pin_idx, patch_set] : pin_access_patch_map) {
+          if (!RTUTIL.exist(net_pin_task_map, net_idx)) {
+            continue;
+          }
+          if (!RTUTIL.exist(net_pin_task_map[net_idx], pin_idx)) {
+            continue;
+          }
+          for (EXTLayerRect* patch : patch_set) {
+            net_task_access_patch_map[net_idx][net_pin_task_map[net_idx][pin_idx]].push_back(*patch);
+            RTDM.updateNetPinAccessPatchToGCellMap(ChangeType::kDel, net_idx, pin_idx, patch);
+          }
+          net_pin_pair_list.emplace_back(net_idx, pin_idx);
         }
-        if (!RTUTIL.exist(net_pin_task_map[net_idx], pin_idx)) {
-          continue;
-        }
-        for (EXTLayerRect* patch : patch_set) {
-          net_task_access_patch_map[net_idx][net_pin_task_map[net_idx][pin_idx]].push_back(*patch);
-          RTDM.updateNetPinAccessPatchToGCellMap(ChangeType::kDel, net_idx, pin_idx, patch);
-        }
-        net_pin_pair_list.emplace_back(net_idx, pin_idx);
       }
-    }
-    for (auto& [net_idx, pin_idx] : net_pin_pair_list) {
-      net_pin_access_result_map[net_idx].erase(pin_idx);
-      if (net_pin_access_result_map[net_idx].empty()) {
-        net_pin_access_result_map.erase(net_idx);
-      }
-      net_pin_access_patch_map[net_idx].erase(pin_idx);
-      if (net_pin_access_patch_map[net_idx].empty()) {
-        net_pin_access_patch_map.erase(net_idx);
+      for (auto& [net_idx, pin_idx] : net_pin_pair_list) {
+        net_pin_access_patch_map[net_idx].erase(pin_idx);
+        if (net_pin_access_patch_map[net_idx].empty()) {
+          net_pin_access_patch_map.erase(net_idx);
+        }
       }
     }
   }

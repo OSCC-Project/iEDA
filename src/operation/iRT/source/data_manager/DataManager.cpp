@@ -202,7 +202,7 @@ void DataManager::updateNetPinAccessPatchToGCellMap(ChangeType change_type, int3
       } else if (change_type == ChangeType::kDel) {
         net_pin_access_patch_map[net_idx][pin_idx].erase(ext_layer_rect);
         if (net_pin_access_patch_map[net_idx][pin_idx].empty()) {
-          net_pin_access_patch_map.erase(net_idx);
+          net_pin_access_patch_map[net_idx].erase(pin_idx);
         }
         if (net_pin_access_patch_map[net_idx].empty()) {
           net_pin_access_patch_map.erase(net_idx);
