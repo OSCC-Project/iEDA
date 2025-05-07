@@ -72,6 +72,7 @@ class PinAccessor
   void buildBoxSchedule(PAModel& pa_model);
   void routePABoxMap(PAModel& pa_model);
   void buildFixedRect(PABox& pa_box);
+  void buildAccessPoint(PABox& pa_box);
   void buildAccessResult(PABox& pa_box);
   void buildAccessPatch(PABox& pa_box);
   void initPATaskList(PAModel& pa_model, PABox& pa_box);
@@ -153,6 +154,7 @@ class PinAccessor
   std::map<PANode*, std::set<Orientation>> getCutNodeOrientationMap(PABox& pa_box, NetShape& net_shape);
   void updateFixedRectToShadow(PABox& pa_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
   void updateFixedRectToShadow(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
+  void updateAccessRectToShadow(PABox& pa_box, ChangeType change_type, int32_t net_idx, LayerRect& real_rect, bool is_routing);
   void updateRoutedRectToShadow(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
   void updateRoutedRectToShadow(PABox& pa_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& routed_rect, bool is_routing);
   std::vector<PlanarRect> getShadowShape(PABox& pa_box, NetShape& net_shape);
@@ -161,6 +163,7 @@ class PinAccessor
 
 #if 1  // get env
   double getFixedRectCost(PABox& pa_box, int32_t net_idx, EXTLayerRect& patch);
+  double getAccessRectCost(PABox& pa_box, int32_t net_idx, EXTLayerRect& patch);
   double getRoutedRectCost(PABox& pa_box, int32_t net_idx, EXTLayerRect& patch);
 #endif
 

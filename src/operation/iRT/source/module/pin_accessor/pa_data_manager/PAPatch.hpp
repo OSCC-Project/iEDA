@@ -36,6 +36,7 @@ class PAPatch
   // getter
   EXTLayerRect& get_patch() { return _patch; }
   double get_fixed_rect_cost() const { return _fixed_rect_cost; }
+  double get_access_rect_cost() const { return _access_rect_cost; }
   double get_routed_rect_cost() const { return _routed_rect_cost; }
   Direction get_direction() const { return _direction; }
   int32_t get_overlap_area() const { return _overlap_area; }
@@ -44,15 +45,17 @@ class PAPatch
   // setter
   void set_patch(const EXTLayerRect& patch) { _patch = patch; }
   void set_fixed_rect_cost(const double fixed_rect_cost) { _fixed_rect_cost = fixed_rect_cost; }
+  void set_access_rect_cost(const double access_rect_cost) { _access_rect_cost = access_rect_cost; }
   void set_routed_rect_cost(const double routed_rect_cost) { _routed_rect_cost = routed_rect_cost; }
   void set_direction(const Direction& direction) { _direction = direction; }
   void set_overlap_area(const int32_t overlap_area) { _overlap_area = overlap_area; }
   // function
-  double getTotalCost() { return (_fixed_rect_cost + _routed_rect_cost); }
+  double getTotalCost() { return (_fixed_rect_cost + _access_rect_cost + _routed_rect_cost); }
 
  private:
   EXTLayerRect _patch;
   double _fixed_rect_cost = 0.0;
+  double _access_rect_cost = 0.0;
   double _routed_rect_cost = 0.0;
   Direction _direction = Direction::kNone;
   int32_t _overlap_area = 0;
@@ -70,6 +73,18 @@ struct CmpPAPatch
       if (a_fixed_rect_cost < b_fixed_rect_cost) {
         sort_status = SortStatus::kTrue;
       } else if (a_fixed_rect_cost == b_fixed_rect_cost) {
+        sort_status = SortStatus::kEqual;
+      } else {
+        sort_status = SortStatus::kFalse;
+      }
+    }
+    // access_rect_cost 大小升序
+    if (sort_status == SortStatus::kEqual) {
+      double a_access_rect_cost = a.get_access_rect_cost();
+      double b_access_rect_cost = b.get_access_rect_cost();
+      if (a_access_rect_cost < b_access_rect_cost) {
+        sort_status = SortStatus::kTrue;
+      } else if (a_access_rect_cost == b_access_rect_cost) {
         sort_status = SortStatus::kEqual;
       } else {
         sort_status = SortStatus::kFalse;

@@ -134,7 +134,7 @@ class DetailedRouter
   bool stopIteration(DRModel& dr_model);
   void selectBestResult(DRModel& dr_model);
   void uploadBestResult(DRModel& dr_model);
-  
+
 #if 1  // update env
   void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
   void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
@@ -147,6 +147,7 @@ class DetailedRouter
   std::map<DRNode*, std::set<Orientation>> getCutNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
   void updateFixedRectToShadow(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
   void updateFixedRectToShadow(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
+  void updateAccessRectToShadow(DRBox& dr_box, ChangeType change_type, int32_t net_idx, LayerRect& real_rect, bool is_routing);
   void updateRoutedRectToShadow(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
   void updateRoutedRectToShadow(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& routed_rect, bool is_routing);
   std::vector<PlanarRect> getShadowShape(DRBox& dr_box, NetShape& net_shape);
@@ -155,6 +156,7 @@ class DetailedRouter
 
 #if 1  // get env
   double getFixedRectCost(DRBox& dr_box, int32_t net_idx, EXTLayerRect& patch);
+  double getAccessRectCost(DRBox& dr_box, int32_t net_idx, EXTLayerRect& patch);
   double getRoutedRectCost(DRBox& dr_box, int32_t net_idx, EXTLayerRect& patch);
 #endif
 
