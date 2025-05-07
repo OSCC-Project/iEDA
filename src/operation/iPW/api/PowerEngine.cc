@@ -504,6 +504,7 @@ unsigned PowerEngine::buildPGNetWireTopo() {
 
   // buid pg netlist
   for (auto* power_net : special_net_list->get_net_list()) {
+    auto* idb_design = idb_builder->get_def_service()->get_design();
     auto power_net_name = power_net->get_net_name();
 
     auto* io_pins = idb_design->get_io_pin_list();
