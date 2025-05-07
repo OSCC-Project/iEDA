@@ -829,16 +829,20 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         remove_to_merge_nets[left_net_name] = the_right_net;
 
       } else if (the_left_net && !the_left_port) {
-        // assign net = input_port;
-
-        LOG_FATAL_IF(!the_right_port) << "the right port is not exist.";
-        the_left_net->addPinPort(the_right_port);
+        // assign net = input_port;        
+        if (the_right_port) {          
+          the_left_net->addPinPort(the_right_port);
+        } else {
+          LOG_ERROR << "the right port is not exist.";
+        }
 
       } else if (the_right_net && !the_right_port) {
         // assign output_port = net;
-
-        LOG_FATAL_IF(!the_left_port) << "the left port is not exist.";
-        the_right_net->addPinPort(the_left_port);
+        if (the_left_port) {
+          the_right_net->addPinPort(the_left_port);
+        } else {
+          LOG_ERROR << "the left port is not exist.";
+        }
 
       } else if (!the_right_net && !the_left_net && the_right_port) {
         // assign output_port = input_port;
@@ -867,11 +871,45 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       }
 
       // remove ununsed nets.
-      if (the_left_net->get_pin_ports().size() == 0) {
+      if (the_left_net && the_left_net->get_pin_ports().size() == 0) {
+        // update the remove to merge nets before remove net.
+        for (auto it = remove_to_merge_nets.begin();
+             it != remove_to_merge_nets.end();) {
+          auto &merge_net = it->second;
+          if (merge_net == the_left_net) {
+            if (the_right_net && the_right_net->get_pin_ports().size() > 0) {
+              it->second = the_right_net; 
+              ++it;
+            } else {
+              it = remove_to_merge_nets.erase(
+                  it); 
+            }
+          } else {
+            ++it;
+          }
+        }
+
         design_netlist.removeNet(the_left_net);
+        the_left_net = nullptr;
       }
 
-      if (the_right_net->get_pin_ports().size() == 0) {
+      if (the_right_net && the_right_net->get_pin_ports().size() == 0) {
+        // update the remove to merge nets before remove net.
+        for (auto it = remove_to_merge_nets.begin();
+             it != remove_to_merge_nets.end();) {
+          auto &merge_net = it->second;
+          if (merge_net == the_right_net) {
+            if (the_left_net) {
+              merge_net = the_left_net;
+              ++it;
+            } else {
+              it = remove_to_merge_nets.erase(it);
+            }
+          } else {
+            ++it;
+          }
+        }
+
         design_netlist.removeNet(the_right_net);
       }
     }
