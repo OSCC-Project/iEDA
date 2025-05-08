@@ -27,16 +27,11 @@ class PAShadow
   ~PAShadow() = default;
   // getter
   std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>& get_net_fixed_rect_map() { return _net_fixed_rect_map; }
-  std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>& get_net_access_rect_map() { return _net_access_rect_map; }
   std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>& get_net_routed_rect_map() { return _net_routed_rect_map; }
   // setter
   void set_net_fixed_rect_map(const std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>& net_fixed_rect_map)
   {
     _net_fixed_rect_map = net_fixed_rect_map;
-  }
-  void set_net_access_rect_map(const std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>& net_access_rect_map)
-  {
-    _net_access_rect_map = net_access_rect_map;
   }
   void set_net_routed_rect_map(const std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>& net_routed_rect_map)
   {
@@ -46,7 +41,6 @@ class PAShadow
 
  private:
   std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>> _net_fixed_rect_map;
-  std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>> _net_access_rect_map;
   std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>> _net_routed_rect_map;
 };
 
