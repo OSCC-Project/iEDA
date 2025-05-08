@@ -108,6 +108,7 @@ class PinAccessor
   double getNodeCost(PABox& pa_box, PANode* curr_node, Orientation orientation);
   double getKnownWireCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   double getKnownViaCost(PABox& pa_box, PANode* start_node, PANode* end_node);
+  double getKnownSelfCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   double getEstimateCostToEnd(PABox& pa_box, PANode* curr_node);
   double getEstimateCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   double getEstimateWireCost(PABox& pa_box, PANode* start_node, PANode* end_node);

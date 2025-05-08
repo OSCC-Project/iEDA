@@ -101,6 +101,7 @@ class DetailedRouter
   double getNodeCost(DRBox& dr_box, DRNode* curr_node, Orientation orientation);
   double getKnownWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getKnownViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
+  double getKnownSelfCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateCostToEnd(DRBox& dr_box, DRNode* curr_node);
   double getEstimateCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);

@@ -1193,6 +1193,7 @@ double DetailedRouter::getKnownCost(DRBox& dr_box, DRNode* start_node, DRNode* e
   cost += getNodeCost(dr_box, end_node, RTUTIL.getOrientation(*end_node, *start_node));
   cost += getKnownWireCost(dr_box, start_node, end_node);
   cost += getKnownViaCost(dr_box, start_node, end_node);
+  cost += getKnownSelfCost(dr_box, start_node, end_node);
   return cost;
 }
 
@@ -1236,6 +1237,41 @@ double DetailedRouter::getKnownViaCost(DRBox& dr_box, DRNode* start_node, DRNode
   double via_unit = dr_box.get_dr_iter_param()->get_via_unit();
   double via_cost = (via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));
   return via_cost;
+}
+
+double DetailedRouter::getKnownSelfCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  double violation_unit = dr_box.get_dr_iter_param()->get_violation_unit();
+
+  double self_cost = 0;
+  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
+    RoutingLayer& routing_layer = routing_layer_list[start_node->get_layer_idx()];
+    if (routing_layer.get_prefer_direction() != RTUTIL.getDirection(*start_node, *end_node)) {
+      return self_cost;
+    }
+  }
+  int32_t non_prefer_wire_length = 0;
+  {
+    DRNode* curr_node = start_node;
+    DRNode* pre_node = curr_node->get_parent_node();
+    while (pre_node != nullptr) {
+      if (pre_node->get_layer_idx() != curr_node->get_layer_idx()) {
+        break;
+      }
+      RoutingLayer& routing_layer = routing_layer_list[curr_node->get_layer_idx()];
+      if (routing_layer.get_prefer_direction() == RTUTIL.getDirection(*pre_node, *curr_node)) {
+        break;
+      }
+      non_prefer_wire_length += RTUTIL.getManhattanDistance(pre_node->get_planar_coord(), curr_node->get_planar_coord());
+      curr_node = pre_node;
+      pre_node = curr_node->get_parent_node();
+    }
+  }
+  if (0 < non_prefer_wire_length && non_prefer_wire_length < RTDM.getOnlyPitch()) {
+    self_cost += violation_unit;
+  }
+  return self_cost;
 }
 
 // calculate estimate
