@@ -121,12 +121,6 @@ void DetailedRouter::routeDRModel(DRModel& dr_model)
   dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
   dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
   dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
-  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
-  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
-  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
-  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
-  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
-  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
   // clang-format on
   initRoutingState(dr_model);
   for (int32_t i = 0, iter = 1; i < static_cast<int32_t>(dr_iter_param_list.size()); i++, iter++) {
@@ -1242,7 +1236,7 @@ double DetailedRouter::getKnownViaCost(DRBox& dr_box, DRNode* start_node, DRNode
 double DetailedRouter::getKnownSelfCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  double violation_unit = dr_box.get_dr_iter_param()->get_violation_unit();
+  double non_prefer_wire_unit = dr_box.get_dr_iter_param()->get_non_prefer_wire_unit();
 
   double self_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
@@ -1268,8 +1262,9 @@ double DetailedRouter::getKnownSelfCost(DRBox& dr_box, DRNode* start_node, DRNod
       pre_node = curr_node->get_parent_node();
     }
   }
-  if (0 < non_prefer_wire_length && non_prefer_wire_length < RTDM.getOnlyPitch()) {
-    self_cost += violation_unit;
+  if (non_prefer_wire_length > 0) {
+    self_cost += std::max(0, RTDM.getOnlyPitch() - non_prefer_wire_length);
+    self_cost *= non_prefer_wire_unit;
   }
   return self_cost;
 }
@@ -1819,16 +1814,10 @@ void DetailedRouter::updateTaskSchedule(DRBox& dr_box, std::vector<DRTask*>& rou
 {
   int32_t max_routed_times = dr_box.get_dr_iter_param()->get_max_routed_times();
 
-  PlanarRect box_valid_rect = dr_box.get_box_rect().get_real_rect();
-  int32_t shrinked_size = RTDM.getOnlyPitch();
-  if (RTUTIL.hasShrinkedRect(box_valid_rect, shrinked_size)) {
-    box_valid_rect = RTUTIL.getShrinkedRect(box_valid_rect, shrinked_size);
-  }
-
   std::set<DRTask*> visited_routing_task_set;
   std::vector<DRTask*> new_routing_task_list;
   for (Violation& violation : dr_box.get_route_violation_list()) {
-    if (!RTUTIL.isInside(box_valid_rect, violation.get_violation_shape().get_real_rect())) {
+    if (!RTUTIL.isInside(dr_box.get_box_rect().get_real_rect(), violation.get_violation_shape().get_real_rect())) {
       continue;
     }
     for (DRTask* dr_task : dr_box.get_dr_task_list()) {

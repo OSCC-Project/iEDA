@@ -1663,7 +1663,7 @@ double PinAccessor::getKnownViaCost(PABox& pa_box, PANode* start_node, PANode* e
 double PinAccessor::getKnownSelfCost(PABox& pa_box, PANode* start_node, PANode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  double violation_unit = pa_box.get_pa_iter_param()->get_violation_unit();
+  double non_prefer_wire_unit = pa_box.get_pa_iter_param()->get_non_prefer_wire_unit();
 
   double self_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
@@ -1689,8 +1689,9 @@ double PinAccessor::getKnownSelfCost(PABox& pa_box, PANode* start_node, PANode* 
       pre_node = curr_node->get_parent_node();
     }
   }
-  if (0 < non_prefer_wire_length && non_prefer_wire_length < RTDM.getOnlyPitch()) {
-    self_cost += violation_unit;
+  if (non_prefer_wire_length > 0) {
+    self_cost += std::max(0, RTDM.getOnlyPitch() - non_prefer_wire_length);
+    self_cost *= non_prefer_wire_unit;
   }
   return self_cost;
 }
@@ -2291,16 +2292,10 @@ void PinAccessor::updateTaskSchedule(PABox& pa_box, std::vector<PATask*>& routin
 {
   int32_t max_routed_times = pa_box.get_pa_iter_param()->get_max_routed_times();
 
-  PlanarRect box_valid_rect = pa_box.get_box_rect().get_real_rect();
-  int32_t shrinked_size = RTDM.getOnlyPitch();
-  if (RTUTIL.hasShrinkedRect(box_valid_rect, shrinked_size)) {
-    box_valid_rect = RTUTIL.getShrinkedRect(box_valid_rect, shrinked_size);
-  }
-
   std::set<PATask*> visited_routing_task_set;
   std::vector<PATask*> new_routing_task_list;
   for (Violation& violation : pa_box.get_route_violation_list()) {
-    if (!RTUTIL.isInside(box_valid_rect, violation.get_violation_shape().get_real_rect())) {
+    if (!RTUTIL.isInside(pa_box.get_box_rect().get_real_rect(), violation.get_violation_shape().get_real_rect())) {
       continue;
     }
     for (PATask* pa_task : pa_box.get_pa_task_list()) {

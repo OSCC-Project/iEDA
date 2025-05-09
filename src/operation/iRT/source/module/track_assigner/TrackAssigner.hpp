@@ -55,6 +55,8 @@ class TrackAssigner
   void initTAPanelMap(TAModel& ta_model);
   void buildPanelSchedule(TAModel& ta_model);
   void assignTAPanelMap(TAModel& ta_model);
+  void buildAccessResult(TAPanel& ta_panel);
+  void buildAccessPatch(TAPanel& ta_panel);
   void buildNetResult(TAPanel& ta_panel);
   void initTATaskList(TAModel& ta_model, TAPanel& ta_panel);
   void buildViolation(TAPanel& ta_panel);
