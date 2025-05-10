@@ -204,15 +204,12 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
           second_orient_supply_map[second_orientation]++;
         }
       }
+      int32_t max_supply = std::max(0, static_cast<int32_t>(wire_list.size()) - supply_reduction);
       for (auto& [orient, supply] : first_orient_supply_map) {
-        if (supply == static_cast<int32_t>(wire_list.size())) {
-          supply = std::max(0, supply - supply_reduction);
-        }
+        supply = std::min(supply, max_supply);
       }
       for (auto& [orient, supply] : second_orient_supply_map) {
-        if (supply == static_cast<int32_t>(wire_list.size())) {
-          supply = std::max(0, supply - supply_reduction);
-        }
+        supply = std::min(supply, max_supply);
       }
     }
     analyzed_pair_num += grid_pair_list.size();
