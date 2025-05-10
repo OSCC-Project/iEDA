@@ -1423,8 +1423,12 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<std::pair<EXTLa
       ids_result_shape_list.emplace_back(getIDSShape(net_idx, patch->getRealLayerRect(), true));
     }
   }
+  std::vector<ids::Violation> ids_violation_list;
+  {
+    ids_violation_list = DRCI.getViolationList(ids_env_shape_list, ids_result_shape_list);
+  }
   std::vector<Violation> violation_list;
-  for (ids::Violation ids_violation : DRCI.getViolationList(ids_env_shape_list, ids_result_shape_list)) {
+  for (ids::Violation& ids_violation : ids_violation_list) {
     EXTLayerRect ext_layer_rect;
     ext_layer_rect.set_real_ll(ids_violation.ll_x, ids_violation.ll_y);
     ext_layer_rect.set_real_ur(ids_violation.ur_x, ids_violation.ur_y);
