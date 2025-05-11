@@ -64,8 +64,8 @@ void TopologyGenerator::generate()
   updateSummary(tg_model);
   printSummary(tg_model);
   outputGuide(tg_model);
-  outputPlanarDemandCSV(tg_model);
-  outputPlanarOverflowCSV(tg_model);
+  outputDemandCSV(tg_model);
+  outputOverflowCSV(tg_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -677,7 +677,7 @@ void TopologyGenerator::outputGuide(TGModel& tg_model)
   RTUTIL.closeFileStream(guide_file_stream);
 }
 
-void TopologyGenerator::outputPlanarDemandCSV(TGModel& tg_model)
+void TopologyGenerator::outputDemandCSV(TGModel& tg_model)
 {
   std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
   int32_t output_inter_result = RTDM.getConfig().output_inter_result;
@@ -699,7 +699,7 @@ void TopologyGenerator::outputPlanarDemandCSV(TGModel& tg_model)
   RTUTIL.closeFileStream(demand_csv_file);
 }
 
-void TopologyGenerator::outputPlanarOverflowCSV(TGModel& tg_model)
+void TopologyGenerator::outputOverflowCSV(TGModel& tg_model)
 {
   std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
   int32_t output_inter_result = RTDM.getConfig().output_inter_result;
