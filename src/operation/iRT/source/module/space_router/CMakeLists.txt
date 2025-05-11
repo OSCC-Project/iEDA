@@ -1,8 +1,8 @@
-if(DEBUG_IRT_GLOBAL_ROUTER)
-    message(STATUS "RT: DEBUG_IRT_GLOBAL_ROUTER")
+if(DEBUG_IRT_SPACE_ROUTER)
+    message(STATUS "RT: DEBUG_IRT_SPACE_ROUTER")
     set(CMAKE_BUILD_TYPE "Debug")
 else()
-    message(STATUS "RT: RELEASE_IRT_GLOBAL_ROUTER")   
+    message(STATUS "RT: RELEASE_IRT_SPACE_ROUTER")   
     set(CMAKE_BUILD_TYPE "Release")   
 endif()
 

@@ -75,11 +75,11 @@ class LASummary
   std::map<std::string, double> power_map;
 };
 
-class GRSummary
+class SRSummary
 {
  public:
-  GRSummary() = default;
-  ~GRSummary() = default;
+  SRSummary() = default;
+  ~SRSummary() = default;
   std::map<int32_t, int32_t> routing_demand_map;
   int32_t total_demand = 0;
   std::map<int32_t, int32_t> routing_overflow_map;
@@ -146,7 +146,7 @@ class Summary
   SASummary sa_summary;
   TGSummary tg_summary;
   LASummary la_summary;
-  std::map<int32_t, GRSummary> iter_sr_summary_map;
+  std::map<int32_t, SRSummary> iter_sr_summary_map;
   TASummary ta_summary;
   std::map<int32_t, DRSummary> iter_dr_summary_map;
   ERSummary er_summary;

@@ -1211,7 +1211,7 @@ void RTInterface::outputSummary()
   // sr_summary
   {
     for (auto& [iter, sr_summary] : rt_summary.iter_sr_summary_map) {
-      ieda_feature::GRSummary& top_sr_summary = top_rt_summary.iter_sr_summary_map[iter];
+      ieda_feature::SRSummary& top_sr_summary = top_rt_summary.iter_sr_summary_map[iter];
       top_sr_summary.routing_demand_map = sr_summary.routing_demand_map;
       top_sr_summary.total_demand = sr_summary.total_demand;
       top_sr_summary.routing_overflow_map = sr_summary.routing_overflow_map;
