@@ -1787,6 +1787,35 @@ class Utility
 #if 1  // irt使用的函数
 
   // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
+  static MTree<PlanarCoord> getTreeByFullFlow(PlanarCoord& root_coord, std::vector<Segment<PlanarCoord>>& segment_list,
+                                              std::map<PlanarCoord, std::set<int32_t>, CmpPlanarCoordByXASC>& key_coord_pin_map)
+  {
+    std::vector<PlanarCoord> candidate_root_coord_list{root_coord};
+    return getTreeByFullFlow(candidate_root_coord_list, segment_list, key_coord_pin_map);
+  }
+
+  // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
+  static MTree<PlanarCoord> getTreeByFullFlow(std::vector<PlanarCoord>& candidate_root_coord_list, std::vector<Segment<PlanarCoord>>& segment_list,
+                                              std::map<PlanarCoord, std::set<int32_t>, CmpPlanarCoordByXASC>& key_coord_pin_map)
+  {
+    std::vector<LayerCoord> candidate_root_coord_list_temp;
+    for (PlanarCoord& candidate_root_coord : candidate_root_coord_list) {
+      candidate_root_coord_list_temp.push_back(candidate_root_coord);
+    }
+    std::vector<Segment<LayerCoord>> segment_list_temp;
+    for (Segment<PlanarCoord>& segment : segment_list) {
+      segment_list_temp.emplace_back(segment.get_first(), segment.get_second());
+    }
+    std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map_temp;
+    for (auto& [key_coord, pin_idx_set] : key_coord_pin_map) {
+      key_coord_pin_map_temp[key_coord] = pin_idx_set;
+    }
+    MTree<LayerCoord> coord_tree = getTreeByFullFlow(candidate_root_coord_list_temp, segment_list_temp, key_coord_pin_map_temp);
+    std::function<PlanarCoord(LayerCoord&)> convert = [](LayerCoord& coord) { return coord.get_planar_coord(); };
+    return convertTree(coord_tree, convert);
+  }
+
+  // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
   static MTree<LayerCoord> getTreeByFullFlow(LayerCoord& root_coord, std::vector<Segment<LayerCoord>>& segment_list,
                                              std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC>& key_coord_pin_map)
   {
@@ -1914,7 +1943,7 @@ class Utility
       x_cut_list_map[second_layer_idx].insert(second_coord.get_x());
       y_cut_list_map[second_layer_idx].insert(second_coord.get_y());
     }
-    for (auto& [key_coord, pin_idx] : key_coord_pin_map) {
+    for (auto& [key_coord, pin_idx_set] : key_coord_pin_map) {
       int32_t layer_idx = key_coord.get_layer_idx();
       x_cut_list_map[layer_idx].insert(key_coord.get_x());
       y_cut_list_map[layer_idx].insert(key_coord.get_y());
@@ -2111,8 +2140,8 @@ class Utility
   static bool passCheckingConnectivity(MTree<LayerCoord>& coord_tree, std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC>& key_coord_pin_map)
   {
     std::map<int32_t, bool> visited_map;
-    for (auto& [key_coord, pin_idx_list] : key_coord_pin_map) {
-      for (int32_t pin_idx : pin_idx_list) {
+    for (auto& [key_coord, pin_idx_set] : key_coord_pin_map) {
+      for (int32_t pin_idx : pin_idx_set) {
         visited_map[pin_idx] = false;
       }
     }

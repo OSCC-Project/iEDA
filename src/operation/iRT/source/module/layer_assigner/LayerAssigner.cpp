@@ -50,7 +50,7 @@ void LayerAssigner::destroyInst()
 
 // function
 
-void LayerAssigner::route()
+void LayerAssigner::assign()
 {
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");

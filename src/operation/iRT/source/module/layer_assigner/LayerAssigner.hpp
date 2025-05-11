@@ -34,7 +34,7 @@ class LayerAssigner
   static LayerAssigner& getInst();
   static void destroyInst();
   // function
-  void route();
+  void assign();
 
  private:
   // self

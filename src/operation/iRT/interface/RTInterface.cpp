@@ -134,7 +134,7 @@ void RTInterface::runRT()
   TopologyGenerator::destroyInst();
 
   LayerAssigner::initInst();
-  RTLA.route();
+  RTLA.assign();
   LayerAssigner::destroyInst();
 
   SpaceRouter::initInst();
