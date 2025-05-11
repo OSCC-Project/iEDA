@@ -146,7 +146,7 @@ class Summary
   SASummary sa_summary;
   TGSummary tg_summary;
   LASummary la_summary;
-  std::map<int32_t, GRSummary> iter_gr_summary_map;
+  std::map<int32_t, GRSummary> iter_sr_summary_map;
   TASummary ta_summary;
   std::map<int32_t, DRSummary> iter_dr_summary_map;
   ERSummary er_summary;

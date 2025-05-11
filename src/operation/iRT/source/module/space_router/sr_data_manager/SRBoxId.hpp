@@ -20,18 +20,18 @@
 
 namespace irt {
 
-class GRBoxId
+class SRBoxId
 {
  public:
-  GRBoxId() = default;
-  GRBoxId(const int32_t x, const int32_t y)
+  SRBoxId() = default;
+  SRBoxId(const int32_t x, const int32_t y)
   {
     _x = x;
     _y = y;
   }
-  ~GRBoxId() = default;
-  bool operator==(const GRBoxId& other) { return this->_x == other._x && this->_y == other._y; }
-  bool operator!=(const GRBoxId& other) { return !((*this) == other); }
+  ~SRBoxId() = default;
+  bool operator==(const SRBoxId& other) { return this->_x == other._x && this->_y == other._y; }
+  bool operator!=(const SRBoxId& other) { return !((*this) == other); }
   // getter
   int32_t get_x() const { return _x; }
   int32_t get_y() const { return _y; }
@@ -45,9 +45,9 @@ class GRBoxId
   int32_t _y = -1;
 };
 
-struct CmpGRBoxId
+struct CmpSRBoxId
 {
-  bool operator()(const GRBoxId& a, const GRBoxId& b) const
+  bool operator()(const SRBoxId& a, const SRBoxId& b) const
   {
     if (a.get_x() != b.get_x()) {
       return a.get_x() < b.get_x();

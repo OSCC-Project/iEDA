@@ -21,7 +21,7 @@
 #include "DetailedRouter.hpp"
 #include "EarlyRouter.hpp"
 #include "GDSPlotter.hpp"
-#include "GlobalRouter.hpp"
+#include "SpaceRouter.hpp"
 #include "LSAssigner4iEDA/ls_assigner/LSAssigner.h"
 #include "LayerAssigner.hpp"
 #include "Monitor.hpp"
@@ -137,9 +137,9 @@ void RTInterface::runRT()
   RTLA.route();
   LayerAssigner::destroyInst();
 
-  GlobalRouter::initInst();
-  RTGR.route();
-  GlobalRouter::destroyInst();
+  SpaceRouter::initInst();
+  RTSR.route();
+  SpaceRouter::destroyInst();
 
   TrackAssigner::initInst();
   RTTA.assign();
@@ -1208,27 +1208,27 @@ void RTInterface::outputSummary()
     }
     top_rt_summary.la_summary.power_info = {rt_summary.la_summary.power_map["static_power"], rt_summary.la_summary.power_map["dynamic_power"]};
   }
-  // gr_summary
+  // sr_summary
   {
-    for (auto& [iter, gr_summary] : rt_summary.iter_gr_summary_map) {
-      ieda_feature::GRSummary& top_gr_summary = top_rt_summary.iter_gr_summary_map[iter];
-      top_gr_summary.routing_demand_map = gr_summary.routing_demand_map;
-      top_gr_summary.total_demand = gr_summary.total_demand;
-      top_gr_summary.routing_overflow_map = gr_summary.routing_overflow_map;
-      top_gr_summary.total_overflow = gr_summary.total_overflow;
-      top_gr_summary.routing_wire_length_map = gr_summary.routing_wire_length_map;
-      top_gr_summary.total_wire_length = gr_summary.total_wire_length;
-      top_gr_summary.cut_via_num_map = gr_summary.cut_via_num_map;
-      top_gr_summary.total_via_num = gr_summary.total_via_num;
-      for (auto& [clock_name, timing_map] : gr_summary.clock_timing) {
+    for (auto& [iter, sr_summary] : rt_summary.iter_sr_summary_map) {
+      ieda_feature::GRSummary& top_sr_summary = top_rt_summary.iter_sr_summary_map[iter];
+      top_sr_summary.routing_demand_map = sr_summary.routing_demand_map;
+      top_sr_summary.total_demand = sr_summary.total_demand;
+      top_sr_summary.routing_overflow_map = sr_summary.routing_overflow_map;
+      top_sr_summary.total_overflow = sr_summary.total_overflow;
+      top_sr_summary.routing_wire_length_map = sr_summary.routing_wire_length_map;
+      top_sr_summary.total_wire_length = sr_summary.total_wire_length;
+      top_sr_summary.cut_via_num_map = sr_summary.cut_via_num_map;
+      top_sr_summary.total_via_num = sr_summary.total_via_num;
+      for (auto& [clock_name, timing_map] : sr_summary.clock_timing) {
         ieda_feature::ClockTiming clock_timing;
         clock_timing.clock_name = clock_name;
         clock_timing.setup_tns = timing_map["TNS"];
         clock_timing.setup_wns = timing_map["WNS"];
         clock_timing.suggest_freq = timing_map["Freq(MHz)"];
-        top_gr_summary.clocks_timing.push_back(clock_timing);
+        top_sr_summary.clocks_timing.push_back(clock_timing);
       }
-      top_gr_summary.power_info = {gr_summary.power_map["static_power"], gr_summary.power_map["dynamic_power"]};
+      top_sr_summary.power_info = {sr_summary.power_map["static_power"], sr_summary.power_map["dynamic_power"]};
     }
   }
   // ta_summary

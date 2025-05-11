@@ -16,34 +16,34 @@
 // ***************************************************************************************
 #pragma once
 
-#include "GRBoxId.hpp"
-#include "GRIterParam.hpp"
-#include "GRNet.hpp"
+#include "SRBoxId.hpp"
+#include "SRIterParam.hpp"
+#include "SRNet.hpp"
 #include "GridMap.hpp"
 
 namespace irt {
 
-class GRModel
+class SRModel
 {
  public:
-  GRModel() = default;
-  ~GRModel() = default;
+  SRModel() = default;
+  ~SRModel() = default;
   // getter
-  std::vector<GRNet>& get_gr_net_list() { return _gr_net_list; }
-  std::vector<GridMap<GRNode>>& get_layer_node_map() { return _layer_node_map; }
+  std::vector<SRNet>& get_sr_net_list() { return _sr_net_list; }
+  std::vector<GridMap<SRNode>>& get_layer_node_map() { return _layer_node_map; }
   int32_t get_iter() const { return _iter; }
-  GRIterParam& get_gr_iter_param() { return _gr_iter_param; }
-  GridMap<GRBox>& get_gr_box_map() { return _gr_box_map; }
-  std::vector<std::vector<GRBoxId>>& get_gr_box_id_list_list() { return _gr_box_id_list_list; }
+  SRIterParam& get_sr_iter_param() { return _sr_iter_param; }
+  GridMap<SRBox>& get_sr_box_map() { return _sr_box_map; }
+  std::vector<std::vector<SRBoxId>>& get_sr_box_id_list_list() { return _sr_box_id_list_list; }
   std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_best_net_task_global_result_map() { return _best_net_task_global_result_map; }
   int32_t get_best_overflow() const { return _best_overflow; }
   // setter
-  void set_gr_net_list(const std::vector<GRNet>& gr_net_list) { _gr_net_list = gr_net_list; }
-  void set_layer_node_map(const std::vector<GridMap<GRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
+  void set_sr_net_list(const std::vector<SRNet>& sr_net_list) { _sr_net_list = sr_net_list; }
+  void set_layer_node_map(const std::vector<GridMap<SRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
   void set_iter(const int32_t iter) { _iter = iter; }
-  void set_gr_iter_param(const GRIterParam& gr_iter_param) { _gr_iter_param = gr_iter_param; }
-  void set_gr_box_map(const GridMap<GRBox>& gr_box_map) { _gr_box_map = gr_box_map; }
-  void set_gr_box_id_list_list(const std::vector<std::vector<GRBoxId>>& gr_box_id_list_list) { _gr_box_id_list_list = gr_box_id_list_list; }
+  void set_sr_iter_param(const SRIterParam& sr_iter_param) { _sr_iter_param = sr_iter_param; }
+  void set_sr_box_map(const GridMap<SRBox>& sr_box_map) { _sr_box_map = sr_box_map; }
+  void set_sr_box_id_list_list(const std::vector<std::vector<SRBoxId>>& sr_box_id_list_list) { _sr_box_id_list_list = sr_box_id_list_list; }
   void set_best_net_task_global_result_map(const std::map<int32_t, std::vector<Segment<LayerCoord>>>& best_net_task_global_result_map)
   {
     _best_net_task_global_result_map = best_net_task_global_result_map;
@@ -51,12 +51,12 @@ class GRModel
   void set_best_overflow(const int32_t best_overflow) { _best_overflow = best_overflow; }
 
  private:
-  std::vector<GRNet> _gr_net_list;
-  std::vector<GridMap<GRNode>> _layer_node_map;
+  std::vector<SRNet> _sr_net_list;
+  std::vector<GridMap<SRNode>> _layer_node_map;
   int32_t _iter = -1;
-  GRIterParam _gr_iter_param;
-  GridMap<GRBox> _gr_box_map;
-  std::vector<std::vector<GRBoxId>> _gr_box_id_list_list;
+  SRIterParam _sr_iter_param;
+  GridMap<SRBox> _sr_box_map;
+  std::vector<std::vector<SRBoxId>> _sr_box_id_list_list;
   std::map<int32_t, std::vector<Segment<LayerCoord>>> _best_net_task_global_result_map;
   int32_t _best_overflow = 0;
 };

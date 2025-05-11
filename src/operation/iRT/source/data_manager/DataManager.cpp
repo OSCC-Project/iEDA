@@ -599,8 +599,8 @@ void DataManager::buildConfig()
   _config.tg_temp_directory_path = _config.temp_directory_path + "topology_generator/";
   // **********   LayerAssigner   ********** //
   _config.la_temp_directory_path = _config.temp_directory_path + "layer_assigner/";
-  // **********   GlobalRouter    ********** //
-  _config.gr_temp_directory_path = _config.temp_directory_path + "global_router/";
+  // **********    SpaceRouter    ********** //
+  _config.sr_temp_directory_path = _config.temp_directory_path + "space_router/";
   // **********   TrackAssigner   ********** //
   _config.ta_temp_directory_path = _config.temp_directory_path + "track_assigner/";
   // **********  DetailedRouter   ********** //
@@ -624,8 +624,8 @@ void DataManager::buildConfig()
   RTUTIL.createDir(_config.tg_temp_directory_path);
   // **********   LayerAssigner   ********** //
   RTUTIL.createDir(_config.la_temp_directory_path);
-  // **********   GlobalRouter    ********** //
-  RTUTIL.createDir(_config.gr_temp_directory_path);
+  // **********    SpaceRouter    ********** //
+  RTUTIL.createDir(_config.sr_temp_directory_path);
   // **********   TrackAssigner   ********** //
   RTUTIL.createDir(_config.ta_temp_directory_path);
   // **********  DetailedRouter   ********** //
@@ -1470,10 +1470,10 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "LayerAssigner");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "la_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.la_temp_directory_path);
-  // **********   GlobalRouter    ********** //
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "GlobalRouter");
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "gr_temp_directory_path");
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.gr_temp_directory_path);
+  // **********    SpaceRouter    ********** //
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "SpaceRouter");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "sr_temp_directory_path");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.sr_temp_directory_path);
   // **********   TrackAssigner   ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "TrackAssigner");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "ta_temp_directory_path");

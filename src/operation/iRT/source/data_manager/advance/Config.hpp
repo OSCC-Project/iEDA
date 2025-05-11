@@ -51,8 +51,8 @@ class Config
   std::string tg_temp_directory_path;  // building
   // **********   LayerAssigner   ********** //
   std::string la_temp_directory_path;  // building
-  // **********   GlobalRouter    ********** //
-  std::string gr_temp_directory_path;  // building
+  // **********    SpaceRouter    ********** //
+  std::string sr_temp_directory_path;  // building
   // **********   TrackAssigner   ********** //
   std::string ta_temp_directory_path;  // building
   // **********   DetailedRouter  ********** //

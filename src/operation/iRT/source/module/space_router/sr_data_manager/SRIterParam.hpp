@@ -20,11 +20,11 @@
 
 namespace irt {
 
-class GRIterParam
+class SRIterParam
 {
  public:
-  GRIterParam() = default;
-  GRIterParam(double prefer_wire_unit, double via_unit, int32_t size, int32_t offset, int32_t schedule_interval, double overflow_unit, int32_t max_routed_times)
+  SRIterParam() = default;
+  SRIterParam(double prefer_wire_unit, double via_unit, int32_t size, int32_t offset, int32_t schedule_interval, double overflow_unit, int32_t max_routed_times)
   {
     _prefer_wire_unit = prefer_wire_unit;
     _via_unit = via_unit;
@@ -34,7 +34,7 @@ class GRIterParam
     _overflow_unit = overflow_unit;
     _max_routed_times = max_routed_times;
   }
-  ~GRIterParam() = default;
+  ~SRIterParam() = default;
   // getter
   double get_prefer_wire_unit() const { return _prefer_wire_unit; }
   double get_via_unit() const { return _via_unit; }

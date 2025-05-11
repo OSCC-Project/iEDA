@@ -16,39 +16,24 @@
 // ***************************************************************************************
 #pragma once
 
-#include "ConnectType.hpp"
-#include "GRBox.hpp"
-#include "GRPin.hpp"
-#include "GridMap.hpp"
-#include "Guide.hpp"
-#include "MTree.hpp"
-#include "Net.hpp"
-#include "Pin.hpp"
-#include "TNode.hpp"
+#include "Direction.hpp"
+#include "LayerCoord.hpp"
 
 namespace irt {
 
-class GRNet
+class SRGroup
 {
  public:
-  GRNet() = default;
-  ~GRNet() = default;
+  SRGroup() = default;
+  ~SRGroup() = default;
   // getter
-  Net* get_origin_net() { return _origin_net; }
-  int32_t get_net_idx() const { return _net_idx; }
-  ConnectType get_connect_type() const { return _connect_type; }
-  std::vector<GRPin>& get_gr_pin_list() { return _gr_pin_list; }
+  std::vector<LayerCoord>& get_coord_list() { return _coord_list; }
   // setter
-  void set_origin_net(Net* origin_net) { _origin_net = origin_net; }
-  void set_net_idx(const int32_t net_idx) { _net_idx = net_idx; }
-  void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
-  void set_gr_pin_list(const std::vector<GRPin>& gr_pin_list) { _gr_pin_list = gr_pin_list; }
+  void set_coord_list(const std::vector<LayerCoord>& coord_list) { _coord_list = coord_list; }
+  // function
 
  private:
-  Net* _origin_net = nullptr;
-  int32_t _net_idx = -1;
-  ConnectType _connect_type = ConnectType::kNone;
-  std::vector<GRPin> _gr_pin_list;
+  std::vector<LayerCoord> _coord_list;
 };
 
 }  // namespace irt

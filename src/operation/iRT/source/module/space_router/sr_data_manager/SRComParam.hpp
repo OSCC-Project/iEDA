@@ -18,11 +18,11 @@
 
 namespace irt {
 
-class GRComParam
+class SRComParam
 {
  public:
-  GRComParam() = default;
-  ~GRComParam() = default;
+  SRComParam() = default;
+  ~SRComParam() = default;
   // getter
   // setter
  private:

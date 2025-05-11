@@ -16,28 +16,39 @@
 // ***************************************************************************************
 #pragma once
 
-#include <string>
-#include <vector>
-
-#include "EXTLayerRect.hpp"
-#include "LayerCoord.hpp"
+#include "ConnectType.hpp"
+#include "SRBox.hpp"
+#include "SRPin.hpp"
+#include "GridMap.hpp"
+#include "Guide.hpp"
+#include "MTree.hpp"
+#include "Net.hpp"
 #include "Pin.hpp"
+#include "TNode.hpp"
 
 namespace irt {
 
-class GRPin : public Pin
+class SRNet
 {
  public:
-  GRPin() = default;
-  explicit GRPin(const Pin& pin) : Pin(pin) {}
-  ~GRPin() = default;
+  SRNet() = default;
+  ~SRNet() = default;
   // getter
-
+  Net* get_origin_net() { return _origin_net; }
+  int32_t get_net_idx() const { return _net_idx; }
+  ConnectType get_connect_type() const { return _connect_type; }
+  std::vector<SRPin>& get_sr_pin_list() { return _sr_pin_list; }
   // setter
-
-  // function
+  void set_origin_net(Net* origin_net) { _origin_net = origin_net; }
+  void set_net_idx(const int32_t net_idx) { _net_idx = net_idx; }
+  void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
+  void set_sr_pin_list(const std::vector<SRPin>& sr_pin_list) { _sr_pin_list = sr_pin_list; }
 
  private:
+  Net* _origin_net = nullptr;
+  int32_t _net_idx = -1;
+  ConnectType _connect_type = ConnectType::kNone;
+  std::vector<SRPin> _sr_pin_list;
 };
 
 }  // namespace irt
