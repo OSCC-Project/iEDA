@@ -16,10 +16,10 @@
 // ***************************************************************************************
 #pragma once
 
+#include "GridMap.hpp"
 #include "SRBoxId.hpp"
 #include "SRIterParam.hpp"
 #include "SRNet.hpp"
-#include "GridMap.hpp"
 
 namespace irt {
 

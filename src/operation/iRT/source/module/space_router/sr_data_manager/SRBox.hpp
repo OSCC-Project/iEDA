@@ -16,13 +16,13 @@
 // ***************************************************************************************
 #pragma once
 
+#include "LayerCoord.hpp"
+#include "LayerRect.hpp"
+#include "PriorityQueue.hpp"
 #include "SRBoxId.hpp"
 #include "SRIterParam.hpp"
 #include "SRNode.hpp"
 #include "SRTask.hpp"
-#include "LayerCoord.hpp"
-#include "LayerRect.hpp"
-#include "PriorityQueue.hpp"
 #include "ScaleAxis.hpp"
 #include "Violation.hpp"
 

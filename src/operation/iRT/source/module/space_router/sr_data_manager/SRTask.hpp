@@ -17,9 +17,9 @@
 #pragma once
 
 #include "ConnectType.hpp"
-#include "SRGroup.hpp"
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
+#include "SRGroup.hpp"
 #include "SortStatus.hpp"
 
 namespace irt {

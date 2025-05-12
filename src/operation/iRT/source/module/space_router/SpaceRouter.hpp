@@ -19,8 +19,8 @@
 #include "Config.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
-#include "SRModel.hpp"
 #include "Monitor.hpp"
+#include "SRModel.hpp"
 
 namespace irt {
 
