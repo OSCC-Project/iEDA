@@ -1111,7 +1111,7 @@ void PinAccessor::buildOrientNetMap(PABox& pa_box)
         LayerRect real_rect;
         real_rect.set_rect(RTUTIL.getOffsetRect(layer_enclosure_map[layer_idx], access_point->get_real_coord()));
         real_rect.set_layer_idx(layer_idx);
-        updateFixedRectToGraph(pa_box, ChangeType::kAdd, net_idx, real_rect, true);
+        updateRoutedRectToGraph(pa_box, ChangeType::kAdd, net_idx, real_rect, true);
       }
     }
   }
@@ -1179,7 +1179,7 @@ void PinAccessor::buildNetShadowMap(PABox& pa_box)
         LayerRect real_rect;
         real_rect.set_rect(RTUTIL.getOffsetRect(layer_enclosure_map[layer_idx], access_point->get_real_coord()));
         real_rect.set_layer_idx(layer_idx);
-        updateFixedRectToShadow(pa_box, ChangeType::kAdd, net_idx, real_rect, true);
+        updateRoutedRectToShadow(pa_box, ChangeType::kAdd, net_idx, real_rect, true);
       }
     }
   }
@@ -1744,8 +1744,10 @@ void PinAccessor::patchPATask(PABox& pa_box, PATask* pa_task)
 {
   initSinglePatchTask(pa_box, pa_task);
   while (searchViolation(pa_box)) {
+    addViolationToShadow(pa_box);
     patchSingleViolation(pa_box);
     resetSingleViolation(pa_box);
+    clearViolationShadow(pa_box);
   }
   updateTaskPatch(pa_box);
   resetSinglePatchTask(pa_box);
@@ -1928,6 +1930,16 @@ std::vector<PlanarRect> PinAccessor::getViolationOverlapRect(PABox& pa_box, Viol
   return overlap_rect_list;
 }
 
+void PinAccessor::addViolationToShadow(PABox& pa_box)
+{
+  for (Violation& patch_violation : pa_box.get_patch_violation_list()) {
+    if (patch_violation.get_violation_type() == ViolationType::kMinimumArea) {
+      continue;
+    }
+    addPatchViolationToShadow(pa_box, patch_violation);
+  }
+}
+
 void PinAccessor::patchSingleViolation(PABox& pa_box)
 {
   std::vector<PAPatch> pa_patch_list = getCandidatePatchList(pa_box);
@@ -2037,6 +2049,7 @@ std::vector<PAPatch> PinAccessor::getCandidatePatchList(PABox& pa_box)
       patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(patch.get_real_rect(), gcell_axis));
       pa_patch.set_fixed_rect_cost(getFixedRectCost(pa_box, curr_net_idx, patch));
       pa_patch.set_routed_rect_cost(getRoutedRectCost(pa_box, curr_net_idx, patch));
+      pa_patch.set_violation_cost(getViolationCost(pa_box, curr_net_idx, patch));
       pa_patch.set_direction(patch.get_real_rect().getRectDirection(layer_direction));
       pa_patch.set_overlap_area(static_cast<int32_t>(gtl::area(gtl_poly & RTUTIL.convertToGTLRectInt(patch.get_real_rect()))));
     }
@@ -2129,6 +2142,13 @@ void PinAccessor::resetSingleViolation(PABox& pa_box)
   pa_box.set_curr_candidate_patch(PAPatch());
   pa_box.get_curr_patch_violation_list().clear();
   pa_box.set_curr_is_solved(false);
+}
+
+void PinAccessor::clearViolationShadow(PABox& pa_box)
+{
+  for (PAShadow& pa_shadow : pa_box.get_layer_shadow_map()) {
+    pa_shadow.get_violation_set().clear();
+  }
 }
 
 void PinAccessor::updateTaskPatch(PABox& pa_box)
@@ -2295,14 +2315,23 @@ void PinAccessor::updateTaskSchedule(PABox& pa_box, std::vector<PATask*>& routin
   std::set<PATask*> visited_routing_task_set;
   std::vector<PATask*> new_routing_task_list;
   for (Violation& violation : pa_box.get_route_violation_list()) {
-    if (!RTUTIL.isInside(pa_box.get_box_rect().get_real_rect(), violation.get_violation_shape().get_real_rect())) {
+    EXTLayerRect& violation_shape = violation.get_violation_shape();
+    if (!RTUTIL.isInside(pa_box.get_box_rect().get_real_rect(), violation_shape.get_real_rect())) {
       continue;
     }
     for (PATask* pa_task : pa_box.get_pa_task_list()) {
       if (!RTUTIL.exist(violation.get_violation_net_set(), pa_task->get_net_idx())) {
         continue;
       }
-      if (!RTUTIL.isClosedOverlap(violation.get_violation_shape().get_real_rect(), pa_task->get_bounding_box())) {
+      bool result_overlap = RTUTIL.isClosedOverlap(violation_shape.get_real_rect(), pa_task->get_bounding_box());
+      bool patch_overlap = false;
+      for (EXTLayerRect& patch : pa_box.get_net_task_access_patch_map()[pa_task->get_net_idx()][pa_task->get_task_idx()]) {
+        if (violation_shape.get_layer_idx() == patch.get_layer_idx() && RTUTIL.isClosedOverlap(violation_shape.get_real_rect(), patch.get_real_rect())) {
+          patch_overlap = true;
+          break;
+        }
+      }
+      if (!result_overlap && !patch_overlap) {
         continue;
       }
       if (pa_task->get_routed_times() < max_routed_times && !RTUTIL.exist(visited_routing_task_set, pa_task)) {
@@ -2641,6 +2670,20 @@ void PinAccessor::updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, 
   }
 }
 
+void PinAccessor::updateRoutedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, LayerRect& real_rect, bool is_routing)
+{
+  NetShape net_shape(net_idx, real_rect, is_routing);
+  for (auto& [pa_node, orientation_set] : getNodeOrientationMap(pa_box, net_shape)) {
+    for (Orientation orientation : orientation_set) {
+      if (change_type == ChangeType::kAdd) {
+        pa_node->get_orient_routed_rect_map()[orientation].insert(net_shape.get_net_idx());
+      } else if (change_type == ChangeType::kDel) {
+        pa_node->get_orient_routed_rect_map()[orientation].erase(net_shape.get_net_idx());
+      }
+    }
+  }
+}
+
 void PinAccessor::updateRoutedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
   for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
@@ -2672,29 +2715,33 @@ void PinAccessor::updateRoutedRectToGraph(PABox& pa_box, ChangeType change_type,
 
 void PinAccessor::addRouteViolationToGraph(PABox& pa_box, Violation& violation)
 {
-  LayerRect searched_rect;
-  {
-    EXTLayerRect& violation_shape = violation.get_violation_shape();
-    searched_rect.set_rect(RTUTIL.getEnlargedRect(violation_shape.get_real_rect(), RTDM.getOnlyPitch()));
+  LayerRect searched_rect = violation.get_violation_shape().get_real_rect();
+  std::vector<Segment<LayerCoord>> overlap_segment_list;
+  while (true) {
+    searched_rect.set_rect(RTUTIL.getEnlargedRect(searched_rect, RTDM.getOnlyPitch()));
     if (violation.get_is_routing()) {
-      searched_rect.set_layer_idx(violation_shape.get_layer_idx());
+      searched_rect.set_layer_idx(violation.get_violation_shape().get_layer_idx());
     } else {
       RTLOG.error(Loc::current(), "The violation layer is cut!");
     }
-  }
-  std::vector<Segment<LayerCoord>> overlap_segment_list;
-
-  for (auto& [net_idx, task_access_result_map] : pa_box.get_net_task_access_result_map()) {
-    for (auto& [task_idx, segment_list] : task_access_result_map) {
-      if (!RTUTIL.exist(violation.get_violation_net_set(), net_idx)) {
-        continue;
-      }
-      for (Segment<LayerCoord>& segment : segment_list) {
-        if (!RTUTIL.isOverlap(searched_rect, segment)) {
+    for (auto& [net_idx, task_access_result_map] : pa_box.get_net_task_access_result_map()) {
+      for (auto& [task_idx, segment_list] : task_access_result_map) {
+        if (!RTUTIL.exist(violation.get_violation_net_set(), net_idx)) {
           continue;
         }
-        overlap_segment_list.push_back(segment);
+        for (Segment<LayerCoord>& segment : segment_list) {
+          if (!RTUTIL.isOverlap(searched_rect, segment)) {
+            continue;
+          }
+          overlap_segment_list.push_back(segment);
+        }
       }
+    }
+    if (!overlap_segment_list.empty()) {
+      break;
+    }
+    if (!RTUTIL.isInside(pa_box.get_box_rect().get_real_rect(), searched_rect)) {
+      break;
     }
   }
   addRouteViolationToGraph(pa_box, searched_rect, overlap_segment_list);
@@ -3003,6 +3050,22 @@ void PinAccessor::updateFixedRectToShadow(PABox& pa_box, ChangeType change_type,
   }
 }
 
+void PinAccessor::updateRoutedRectToShadow(PABox& pa_box, ChangeType change_type, int32_t net_idx, LayerRect& real_rect, bool is_routing)
+{
+  NetShape net_shape(net_idx, real_rect, is_routing);
+  if (!net_shape.get_is_routing()) {
+    return;
+  }
+  for (PlanarRect& shadow_shape : getShadowShape(pa_box, net_shape)) {
+    PAShadow& pa_shadow = pa_box.get_layer_shadow_map()[net_shape.get_layer_idx()];
+    if (change_type == ChangeType::kAdd) {
+      pa_shadow.get_net_routed_rect_map()[net_idx].insert(shadow_shape);
+    } else if (change_type == ChangeType::kDel) {
+      pa_shadow.get_net_routed_rect_map()[net_idx].erase(shadow_shape);
+    }
+  }
+}
+
 void PinAccessor::updateRoutedRectToShadow(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
   for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
@@ -3034,6 +3097,14 @@ void PinAccessor::updateRoutedRectToShadow(PABox& pa_box, ChangeType change_type
       pa_shadow.get_net_routed_rect_map()[net_idx].erase(shadow_shape);
     }
   }
+}
+
+void PinAccessor::addPatchViolationToShadow(PABox& pa_box, Violation& violation)
+{
+  EXTLayerRect& violation_shape = violation.get_violation_shape();
+
+  PAShadow& pa_shadow = pa_box.get_layer_shadow_map()[violation_shape.get_layer_idx()];
+  pa_shadow.get_violation_set().insert(violation_shape.get_real_rect());
 }
 
 std::vector<PlanarRect> PinAccessor::getShadowShape(PABox& pa_box, NetShape& net_shape)
@@ -3107,15 +3178,10 @@ double PinAccessor::getFixedRectCost(PABox& pa_box, int32_t net_idx, EXTLayerRec
     if (net_idx == graph_net_idx) {
       continue;
     }
-    bool is_overlap = false;
     for (const PlanarRect& fixed_rect : fixed_rect_set) {
       if (RTUTIL.isOpenOverlap(patch.get_real_rect(), fixed_rect)) {
-        is_overlap = true;
-        break;
+        fixed_rect_cost += fixed_rect_unit;
       }
-    }
-    if (is_overlap) {
-      fixed_rect_cost += fixed_rect_unit;
     }
   }
   return fixed_rect_cost;
@@ -3131,18 +3197,27 @@ double PinAccessor::getRoutedRectCost(PABox& pa_box, int32_t net_idx, EXTLayerRe
     if (net_idx == graph_net_idx) {
       continue;
     }
-    bool is_overlap = false;
     for (const PlanarRect& routed_rect : routed_rect_set) {
       if (RTUTIL.isOpenOverlap(patch.get_real_rect(), routed_rect)) {
-        is_overlap = true;
-        break;
+        routed_rect_cost += routed_rect_unit;
       }
-    }
-    if (is_overlap) {
-      routed_rect_cost += routed_rect_unit;
     }
   }
   return routed_rect_cost;
+}
+
+double PinAccessor::getViolationCost(PABox& pa_box, int32_t net_idx, EXTLayerRect& patch)
+{
+  double violation_unit = pa_box.get_pa_iter_param()->get_violation_unit();
+  std::vector<PAShadow>& layer_shadow_map = pa_box.get_layer_shadow_map();
+
+  double violation_cost = 0;
+  for (const PlanarRect& violation : layer_shadow_map[patch.get_layer_idx()].get_violation_set()) {
+    if (RTUTIL.isOpenOverlap(patch.get_real_rect(), violation)) {
+      violation_cost += violation_unit;
+    }
+  }
+  return violation_cost;
 }
 
 #endif
@@ -3983,6 +4058,16 @@ void PinAccessor::debugPlotPABox(PABox& pa_box, std::string flag)
         }
         gp_gds.addStruct(routed_rect_struct);
       }
+
+      GPStruct violation_struct(RTUTIL.getString("shadow_violation"));
+      for (const PlanarRect& rect : pa_shadow.get_violation_set()) {
+        GPBoundary gp_boundary;
+        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShadow));
+        gp_boundary.set_rect(rect);
+        gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(layer_idx));
+        violation_struct.push(gp_boundary);
+      }
+      gp_gds.addStruct(violation_struct);
     }
   }
 

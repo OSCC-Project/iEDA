@@ -702,7 +702,7 @@ void DetailedRouter::buildOrientNetMap(DRBox& dr_box)
         LayerRect real_rect;
         real_rect.set_rect(RTUTIL.getOffsetRect(layer_enclosure_map[layer_idx], access_point->get_real_coord()));
         real_rect.set_layer_idx(layer_idx);
-        updateFixedRectToGraph(dr_box, ChangeType::kAdd, net_idx, real_rect, true);
+        updateRoutedRectToGraph(dr_box, ChangeType::kAdd, net_idx, real_rect, true);
       }
     }
   }
@@ -762,7 +762,7 @@ void DetailedRouter::buildNetShadowMap(DRBox& dr_box)
         LayerRect real_rect;
         real_rect.set_rect(RTUTIL.getOffsetRect(layer_enclosure_map[layer_idx], access_point->get_real_coord()));
         real_rect.set_layer_idx(layer_idx);
-        updateFixedRectToShadow(dr_box, ChangeType::kAdd, net_idx, real_rect, true);
+        updateRoutedRectToShadow(dr_box, ChangeType::kAdd, net_idx, real_rect, true);
       }
     }
   }
@@ -1317,8 +1317,10 @@ void DetailedRouter::patchDRTask(DRBox& dr_box, DRTask* dr_task)
 {
   initSinglePatchTask(dr_box, dr_task);
   while (searchViolation(dr_box)) {
+    addViolationToShadow(dr_box);
     patchSingleViolation(dr_box);
     resetSingleViolation(dr_box);
+    clearViolationShadow(dr_box);
   }
   updateTaskPatch(dr_box);
   resetSinglePatchTask(dr_box);
@@ -1491,6 +1493,16 @@ std::vector<PlanarRect> DetailedRouter::getViolationOverlapRect(DRBox& dr_box, V
   return overlap_rect_list;
 }
 
+void DetailedRouter::addViolationToShadow(DRBox& dr_box)
+{
+  for (Violation& patch_violation : dr_box.get_patch_violation_list()) {
+    if (patch_violation.get_violation_type() == ViolationType::kMinimumArea) {
+      continue;
+    }
+    addPatchViolationToShadow(dr_box, patch_violation);
+  }
+}
+
 void DetailedRouter::patchSingleViolation(DRBox& dr_box)
 {
   std::vector<DRPatch> dr_patch_list = getCandidatePatchList(dr_box);
@@ -1600,6 +1612,7 @@ std::vector<DRPatch> DetailedRouter::getCandidatePatchList(DRBox& dr_box)
       patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(patch.get_real_rect(), gcell_axis));
       dr_patch.set_fixed_rect_cost(getFixedRectCost(dr_box, curr_net_idx, patch));
       dr_patch.set_routed_rect_cost(getRoutedRectCost(dr_box, curr_net_idx, patch));
+      dr_patch.set_violation_cost(getViolationCost(dr_box, curr_net_idx, patch));
       dr_patch.set_direction(patch.get_real_rect().getRectDirection(layer_direction));
       dr_patch.set_overlap_area(static_cast<int32_t>(gtl::area(gtl_poly & RTUTIL.convertToGTLRectInt(patch.get_real_rect()))));
     }
@@ -1692,6 +1705,13 @@ void DetailedRouter::resetSingleViolation(DRBox& dr_box)
   dr_box.set_curr_candidate_patch(DRPatch());
   dr_box.get_curr_patch_violation_list().clear();
   dr_box.set_curr_is_solved(false);
+}
+
+void DetailedRouter::clearViolationShadow(DRBox& dr_box)
+{
+  for (DRShadow& dr_shadow : dr_box.get_layer_shadow_map()) {
+    dr_shadow.get_violation_set().clear();
+  }
 }
 
 void DetailedRouter::updateTaskPatch(DRBox& dr_box)
@@ -1817,7 +1837,8 @@ void DetailedRouter::updateTaskSchedule(DRBox& dr_box, std::vector<DRTask*>& rou
   std::set<DRTask*> visited_routing_task_set;
   std::vector<DRTask*> new_routing_task_list;
   for (Violation& violation : dr_box.get_route_violation_list()) {
-    if (!RTUTIL.isInside(dr_box.get_box_rect().get_real_rect(), violation.get_violation_shape().get_real_rect())) {
+    EXTLayerRect& violation_shape = violation.get_violation_shape();
+    if (!RTUTIL.isInside(dr_box.get_box_rect().get_real_rect(), violation_shape.get_real_rect())) {
       continue;
     }
     for (DRTask* dr_task : dr_box.get_dr_task_list()) {
@@ -2173,6 +2194,20 @@ void DetailedRouter::updateFixedRectToGraph(DRBox& dr_box, ChangeType change_typ
   }
 }
 
+void DetailedRouter::updateRoutedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, LayerRect& real_rect, bool is_routing)
+{
+  NetShape net_shape(net_idx, real_rect, is_routing);
+  for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape)) {
+    for (Orientation orientation : orientation_set) {
+      if (change_type == ChangeType::kAdd) {
+        dr_node->get_orient_routed_rect_map()[orientation].insert(net_shape.get_net_idx());
+      } else if (change_type == ChangeType::kDel) {
+        dr_node->get_orient_routed_rect_map()[orientation].erase(net_shape.get_net_idx());
+      }
+    }
+  }
+}
+
 void DetailedRouter::updateRoutedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
   for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
@@ -2204,26 +2239,31 @@ void DetailedRouter::updateRoutedRectToGraph(DRBox& dr_box, ChangeType change_ty
 
 void DetailedRouter::addRouteViolationToGraph(DRBox& dr_box, Violation& violation)
 {
-  LayerRect searched_rect;
-  {
-    EXTLayerRect& violation_shape = violation.get_violation_shape();
-    searched_rect.set_rect(RTUTIL.getEnlargedRect(violation_shape.get_real_rect(), RTDM.getOnlyPitch()));
+  LayerRect searched_rect = violation.get_violation_shape().get_real_rect();
+  std::vector<Segment<LayerCoord>> overlap_segment_list;
+  while (true) {
+    searched_rect.set_rect(RTUTIL.getEnlargedRect(searched_rect, RTDM.getOnlyPitch()));
     if (violation.get_is_routing()) {
-      searched_rect.set_layer_idx(violation_shape.get_layer_idx());
+      searched_rect.set_layer_idx(violation.get_violation_shape().get_layer_idx());
     } else {
       RTLOG.error(Loc::current(), "The violation layer is cut!");
     }
-  }
-  std::vector<Segment<LayerCoord>> overlap_segment_list;
-  for (auto& [net_idx, segment_list] : dr_box.get_net_task_detailed_result_map()) {
-    if (!RTUTIL.exist(violation.get_violation_net_set(), net_idx)) {
-      continue;
-    }
-    for (Segment<LayerCoord>& segment : segment_list) {
-      if (!RTUTIL.isOverlap(searched_rect, segment)) {
+    for (auto& [net_idx, segment_list] : dr_box.get_net_task_detailed_result_map()) {
+      if (!RTUTIL.exist(violation.get_violation_net_set(), net_idx)) {
         continue;
       }
-      overlap_segment_list.push_back(segment);
+      for (Segment<LayerCoord>& segment : segment_list) {
+        if (!RTUTIL.isOverlap(searched_rect, segment)) {
+          continue;
+        }
+        overlap_segment_list.push_back(segment);
+      }
+    }
+    if (!overlap_segment_list.empty()) {
+      break;
+    }
+    if (!RTUTIL.isInside(dr_box.get_box_rect().get_real_rect(), searched_rect)) {
+      break;
     }
   }
   addRouteViolationToGraph(dr_box, searched_rect, overlap_segment_list);
@@ -2532,6 +2572,22 @@ void DetailedRouter::updateFixedRectToShadow(DRBox& dr_box, ChangeType change_ty
   }
 }
 
+void DetailedRouter::updateRoutedRectToShadow(DRBox& dr_box, ChangeType change_type, int32_t net_idx, LayerRect& real_rect, bool is_routing)
+{
+  NetShape net_shape(net_idx, real_rect, is_routing);
+  if (!net_shape.get_is_routing()) {
+    return;
+  }
+  for (PlanarRect& shadow_shape : getShadowShape(dr_box, net_shape)) {
+    DRShadow& dr_shadow = dr_box.get_layer_shadow_map()[net_shape.get_layer_idx()];
+    if (change_type == ChangeType::kAdd) {
+      dr_shadow.get_net_routed_rect_map()[net_idx].insert(shadow_shape);
+    } else if (change_type == ChangeType::kDel) {
+      dr_shadow.get_net_routed_rect_map()[net_idx].erase(shadow_shape);
+    }
+  }
+}
+
 void DetailedRouter::updateRoutedRectToShadow(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
   for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
@@ -2563,6 +2619,14 @@ void DetailedRouter::updateRoutedRectToShadow(DRBox& dr_box, ChangeType change_t
       dr_shadow.get_net_routed_rect_map()[net_idx].erase(shadow_shape);
     }
   }
+}
+
+void DetailedRouter::addPatchViolationToShadow(DRBox& dr_box, Violation& violation)
+{
+  EXTLayerRect& violation_shape = violation.get_violation_shape();
+
+  DRShadow& dr_shadow = dr_box.get_layer_shadow_map()[violation_shape.get_layer_idx()];
+  dr_shadow.get_violation_set().insert(violation_shape.get_real_rect());
 }
 
 std::vector<PlanarRect> DetailedRouter::getShadowShape(DRBox& dr_box, NetShape& net_shape)
@@ -2636,15 +2700,10 @@ double DetailedRouter::getFixedRectCost(DRBox& dr_box, int32_t net_idx, EXTLayer
     if (net_idx == graph_net_idx) {
       continue;
     }
-    bool is_overlap = false;
     for (const PlanarRect& fixed_rect : fixed_rect_set) {
       if (RTUTIL.isOpenOverlap(patch.get_real_rect(), fixed_rect)) {
-        is_overlap = true;
-        break;
+        fixed_rect_cost += fixed_rect_unit;
       }
-    }
-    if (is_overlap) {
-      fixed_rect_cost += fixed_rect_unit;
     }
   }
   return fixed_rect_cost;
@@ -2660,18 +2719,27 @@ double DetailedRouter::getRoutedRectCost(DRBox& dr_box, int32_t net_idx, EXTLaye
     if (net_idx == graph_net_idx) {
       continue;
     }
-    bool is_overlap = false;
     for (const PlanarRect& routed_rect : routed_rect_set) {
       if (RTUTIL.isOpenOverlap(patch.get_real_rect(), routed_rect)) {
-        is_overlap = true;
-        break;
+        routed_rect_cost += routed_rect_unit;
       }
-    }
-    if (is_overlap) {
-      routed_rect_cost += routed_rect_unit;
     }
   }
   return routed_rect_cost;
+}
+
+double DetailedRouter::getViolationCost(DRBox& dr_box, int32_t net_idx, EXTLayerRect& patch)
+{
+  double violation_unit = dr_box.get_dr_iter_param()->get_violation_unit();
+  std::vector<DRShadow>& layer_shadow_map = dr_box.get_layer_shadow_map();
+
+  double violation_cost = 0;
+  for (const PlanarRect& violation : layer_shadow_map[patch.get_layer_idx()].get_violation_set()) {
+    if (RTUTIL.isOpenOverlap(patch.get_real_rect(), violation)) {
+      violation_cost += violation_unit;
+    }
+  }
+  return violation_cost;
 }
 
 #endif
@@ -3519,6 +3587,16 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, std::string flag)
         }
         gp_gds.addStruct(routed_rect_struct);
       }
+
+      GPStruct violation_struct(RTUTIL.getString("shadow_violation"));
+      for (const PlanarRect& rect : dr_shadow.get_violation_set()) {
+        GPBoundary gp_boundary;
+        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShadow));
+        gp_boundary.set_rect(rect);
+        gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(layer_idx));
+        violation_struct.push(gp_boundary);
+      }
+      gp_gds.addStruct(violation_struct);
     }
   }
 

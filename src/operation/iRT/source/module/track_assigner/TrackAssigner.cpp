@@ -1141,14 +1141,16 @@ void TrackAssigner::updateTaskSchedule(TAPanel& ta_panel, std::vector<TATask*>& 
   std::set<TATask*> visited_routing_task_set;
   std::vector<TATask*> new_routing_task_list;
   for (Violation& violation : ta_panel.get_violation_list()) {
-    if (!RTUTIL.isInside(ta_panel.get_panel_rect().get_real_rect(), violation.get_violation_shape().get_real_rect())) {
+    EXTLayerRect& violation_shape = violation.get_violation_shape();
+    if (!RTUTIL.isInside(ta_panel.get_panel_rect().get_real_rect(), violation_shape.get_real_rect())) {
       continue;
     }
     for (TATask* ta_task : ta_panel.get_ta_task_list()) {
       if (!RTUTIL.exist(violation.get_violation_net_set(), ta_task->get_net_idx())) {
         continue;
       }
-      if (!RTUTIL.isClosedOverlap(violation.get_violation_shape().get_real_rect(), ta_task->get_bounding_box())) {
+      bool result_overlap = RTUTIL.isClosedOverlap(violation_shape.get_real_rect(), ta_task->get_bounding_box());
+      if (!result_overlap) {
         continue;
       }
       if (ta_task->get_routed_times() < max_routed_times && !RTUTIL.exist(visited_routing_task_set, ta_task)) {
@@ -1273,28 +1275,33 @@ void TrackAssigner::addViolationToGraph(TAPanel& ta_panel, Violation& violation)
   if (!net_shape.get_is_routing() || (ta_panel.get_ta_panel_id().get_layer_idx() != net_shape.get_layer_idx())) {
     return;
   }
-  LayerRect searched_rect;
-  {
-    EXTLayerRect& violation_shape = violation.get_violation_shape();
-    searched_rect.set_rect(RTUTIL.getEnlargedRect(violation_shape.get_real_rect(), RTDM.getOnlyPitch()));
+  LayerRect searched_rect = violation.get_violation_shape().get_real_rect();
+  std::vector<Segment<LayerCoord>> overlap_segment_list;
+  while (true) {
+    searched_rect.set_rect(RTUTIL.getEnlargedRect(searched_rect, RTDM.getOnlyPitch()));
     if (violation.get_is_routing()) {
-      searched_rect.set_layer_idx(violation_shape.get_layer_idx());
+      searched_rect.set_layer_idx(violation.get_violation_shape().get_layer_idx());
     } else {
       RTLOG.error(Loc::current(), "The violation layer is cut!");
     }
-  }
-  std::vector<Segment<LayerCoord>> overlap_segment_list;
-  for (auto& [net_idx, task_detailed_result_map] : ta_panel.get_net_task_detailed_result_map()) {
-    for (auto& [task_idx, segment_list] : task_detailed_result_map) {
-      if (!RTUTIL.exist(violation.get_violation_net_set(), net_idx)) {
-        continue;
-      }
-      for (Segment<LayerCoord>& segment : segment_list) {
-        if (!RTUTIL.isOverlap(searched_rect, segment)) {
+    for (auto& [net_idx, task_detailed_result_map] : ta_panel.get_net_task_detailed_result_map()) {
+      for (auto& [task_idx, segment_list] : task_detailed_result_map) {
+        if (!RTUTIL.exist(violation.get_violation_net_set(), net_idx)) {
           continue;
         }
-        overlap_segment_list.push_back(segment);
+        for (Segment<LayerCoord>& segment : segment_list) {
+          if (!RTUTIL.isOverlap(searched_rect, segment)) {
+            continue;
+          }
+          overlap_segment_list.push_back(segment);
+        }
       }
+    }
+    if (!overlap_segment_list.empty()) {
+      break;
+    }
+    if (!RTUTIL.isInside(ta_panel.get_panel_rect().get_real_rect(), searched_rect)) {
+      break;
     }
   }
   addViolationToGraph(ta_panel, searched_rect, overlap_segment_list);
