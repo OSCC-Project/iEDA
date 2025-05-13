@@ -2275,6 +2275,9 @@ int32_t DefRead::parse_bus_bit_chars(const char* bus_bit_chars_str)
   bus_bit_chars->setLeftDelimiter(bus_bit_chars_str[0]);
   bus_bit_chars->setRightDelimter(bus_bit_chars_str[1]);
 
+  if (design->get_bus_bit_chars() != nullptr) {
+    delete design->get_bus_bit_chars();
+  }
   design->set_bus_bit_chars(bus_bit_chars);
   return kDbSuccess;
 }
