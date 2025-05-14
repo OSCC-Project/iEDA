@@ -171,6 +171,7 @@ void DRCInterface::wrapDatabase()
   wrapMicronDBU();
   wrapManufactureGrid();
   wrapDie();
+  wrapPropertyDefinition();
   wrapLayerList();
   wrapLayerInfo();
 }
@@ -192,6 +193,20 @@ void DRCInterface::wrapDie()
   Die& die = DRCDM.getDatabase().get_die();
   die.set_ll(idb_die->get_llx(), idb_die->get_lly());
   die.set_ur(idb_die->get_urx(), idb_die->get_ury());
+}
+
+void DRCInterface::wrapPropertyDefinition()
+{
+  PropertyDefinition& property_definition = DRCDM.getDatabase().get_property_definition();
+  std::set<ViolationType>& exist_rule_set = DRCDM.getDatabase().get_exist_rule_set();
+
+  // max via stack
+  {
+    property_definition.set_max_via_stack_num(4);
+    property_definition.set_start_routing_layer_idx(0);
+    property_definition.set_end_routing_layer_idx(6);
+    exist_rule_set.insert(ViolationType::kMaxViaStack);
+  }
 }
 
 void DRCInterface::wrapLayerList()
