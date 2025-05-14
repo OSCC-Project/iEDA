@@ -967,6 +967,8 @@ void RuleValidator::debugVerifyRVBoxByGolden(RVBox& rv_box)
           } else {
             if (violation_type == ViolationType::kMinHole || violation_type == ViolationType::kMinimumArea) {
               required_size = static_cast<int32_t>(std::round(std::stod(required) * micron_dbu * micron_dbu));
+            } else if (violation_type == ViolationType::kMaxViaStack) {
+              required_size = static_cast<int32_t>(std::round(std::stod(required)));
             } else {
               required_size = static_cast<int32_t>(std::round(std::stod(required) * micron_dbu));
             }
