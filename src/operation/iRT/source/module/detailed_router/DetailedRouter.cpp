@@ -1485,7 +1485,7 @@ std::vector<PlanarRect> DetailedRouter::getViolationOverlapRect(DRBox& dr_box, V
   {
     int32_t max_overlap_area = INT32_MIN;
     for (GTLPolyInt& gtl_poly : gtl_poly_list) {
-      int32_t overlap_area = gtl::area(gtl_poly & RTUTIL.convertToGTLRectInt(violation_real_rect));
+      int32_t overlap_area = static_cast<int32_t>(gtl::area(gtl_poly & RTUTIL.convertToGTLRectInt(violation_real_rect)));
       if (max_overlap_area < overlap_area) {
         best_gtl_poly = gtl_poly;
       }
@@ -1920,10 +1920,17 @@ void DetailedRouter::uploadNetResult(DRModel& dr_model)
 
   // detailed result
   {
-    std::map<int32_t, std::set<Segment<LayerCoord>*>> net_detailed_result_map = RTDM.getNetDetailedResultMap(die);
-    for (auto& [net_idx, segment_set] : net_detailed_result_map) {
+    std::vector<std::set<Segment<LayerCoord>*>> detailed_result_list;
+    detailed_result_list.resize(dr_net_list.size());
+    for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
+      detailed_result_list[net_idx] = segment_set;
+    }
+    std::vector<std::set<Segment<LayerCoord>*>> new_detailed_result_list;
+    new_detailed_result_list.resize(dr_net_list.size());
+#pragma omp parallel for
+    for (int32_t net_idx = 0; net_idx < static_cast<int32_t>(detailed_result_list.size()); net_idx++) {
       std::vector<Segment<LayerCoord>> routing_segment_list;
-      for (Segment<LayerCoord>* segment : segment_set) {
+      for (Segment<LayerCoord>* segment : detailed_result_list[net_idx]) {
         routing_segment_list.emplace_back(segment->get_first(), segment->get_second());
       }
       std::vector<LayerCoord> candidate_root_coord_list;
@@ -1936,13 +1943,17 @@ void DetailedRouter::uploadNetResult(DRModel& dr_model)
       }
       MTree<LayerCoord> coord_tree = RTUTIL.getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
       for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
-        RTDM.updateNetDetailedResultToGCellMap(ChangeType::kAdd, net_idx,
-                                               new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value()));
+        new_detailed_result_list[net_idx].insert(new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value()));
       }
     }
-    for (auto& [net_idx, segment_set] : net_detailed_result_map) {
-      for (Segment<LayerCoord>* segment : segment_set) {
+    for (int32_t net_idx = 0; net_idx < static_cast<int32_t>(detailed_result_list.size()); net_idx++) {
+      for (Segment<LayerCoord>* segment : detailed_result_list[net_idx]) {
         RTDM.updateNetDetailedResultToGCellMap(ChangeType::kDel, net_idx, segment);
+      }
+    }
+    for (int32_t net_idx = 0; net_idx < static_cast<int32_t>(new_detailed_result_list.size()); net_idx++) {
+      for (Segment<LayerCoord>* segment : new_detailed_result_list[net_idx]) {
+        RTDM.updateNetDetailedResultToGCellMap(ChangeType::kAdd, net_idx, segment);
       }
     }
   }

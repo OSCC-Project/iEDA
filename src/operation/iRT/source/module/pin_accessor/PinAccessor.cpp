@@ -1922,7 +1922,7 @@ std::vector<PlanarRect> PinAccessor::getViolationOverlapRect(PABox& pa_box, Viol
   {
     int32_t max_overlap_area = INT32_MIN;
     for (GTLPolyInt& gtl_poly : gtl_poly_list) {
-      int32_t overlap_area = gtl::area(gtl_poly & RTUTIL.convertToGTLRectInt(violation_real_rect));
+      int32_t overlap_area = static_cast<int32_t>(gtl::area(gtl_poly & RTUTIL.convertToGTLRectInt(violation_real_rect)));
       if (max_overlap_area < overlap_area) {
         best_gtl_poly = gtl_poly;
       }
