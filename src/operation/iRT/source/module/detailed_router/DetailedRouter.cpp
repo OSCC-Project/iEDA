@@ -1481,11 +1481,18 @@ std::vector<PlanarRect> DetailedRouter::getViolationOverlapRect(DRBox& dr_box, V
   if (gtl_poly_list.empty()) {
     return {};
   }
-  if (gtl_poly_list.size() != 1) {
-    RTLOG.error(Loc::current(), "The violation poly size != 1!");
+  GTLPolyInt best_gtl_poly = gtl_poly_list.front();
+  {
+    int32_t max_overlap_area = INT32_MIN;
+    for (GTLPolyInt& gtl_poly : gtl_poly_list) {
+      int32_t overlap_area = gtl::area(gtl_poly & RTUTIL.convertToGTLRectInt(violation_real_rect));
+      if (max_overlap_area < overlap_area) {
+        best_gtl_poly = gtl_poly;
+      }
+    }
   }
   std::vector<GTLRectInt> gtl_rect_list;
-  gtl::get_max_rectangles(gtl_rect_list, gtl_poly_list.front());
+  gtl::get_max_rectangles(gtl_rect_list, best_gtl_poly);
   std::vector<PlanarRect> overlap_rect_list;
   for (GTLRectInt& gtl_rect : gtl_rect_list) {
     overlap_rect_list.push_back(RTUTIL.convertToPlanarRect(gtl_rect));
@@ -1544,9 +1551,6 @@ std::vector<DRPatch> DetailedRouter::getCandidatePatchList(DRBox& dr_box)
     }
     std::vector<GTLPolyInt> gtl_poly_list;
     gtl_poly_set.get_polygons(gtl_poly_list);
-    if (gtl_poly_list.size() != 1) {
-      RTLOG.error(Loc::current(), "The violation poly size != 1!");
-    }
     gtl_poly = gtl_poly_list.front();
   }
   PlanarRect h_cutting_rect;

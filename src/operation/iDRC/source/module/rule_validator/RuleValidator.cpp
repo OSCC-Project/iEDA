@@ -82,7 +82,7 @@ void RuleValidator::setRVComParam(RVModel& rv_model)
 {
   int32_t only_pitch = DRCDM.getOnlyPitch();
   int32_t box_size = 500 * only_pitch;
-  int32_t expand_size = 2 * only_pitch;
+  int32_t expand_size = 5 * only_pitch;
   /**
    * box_size, expand_size
    */

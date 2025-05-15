@@ -1278,7 +1278,7 @@ void DataManager::checkPinList(Net& net)
 
 void DataManager::buildDetectionDistance()
 {
-  _database.set_detection_distance(3 * getOnlyPitch());
+  _database.set_detection_distance(5 * getOnlyPitch());
 }
 
 void DataManager::buildGCellMap()

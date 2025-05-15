@@ -204,11 +204,12 @@ void DRCInterface::wrapPropertyDefinition()
   {
     idb::IdbLayers* idb_layer_list = dmInst->get_idb_def_service()->get_layout()->get_layers();
     idb::IdbMaxViaStack* idb_max_via_stack = dmInst->get_idb_lef_service()->get_layout()->get_max_via_stack();
-
-    property_definition.set_max_via_stack_num(idb_max_via_stack->get_stacked_via_num());
-    property_definition.set_bottom_routing_layer_idx(idb_layer_list->find_layer(idb_max_via_stack->get_layer_bottom())->get_id());
-    property_definition.set_top_routing_layer_idx(idb_layer_list->find_layer(idb_max_via_stack->get_layer_top())->get_id());
-    exist_rule_set.insert(ViolationType::kMaxViaStack);
+    if (idb_max_via_stack != nullptr) {
+      property_definition.set_max_via_stack_num(idb_max_via_stack->get_stacked_via_num());
+      property_definition.set_bottom_routing_layer_idx(idb_layer_list->find_layer(idb_max_via_stack->get_layer_bottom())->get_id());
+      property_definition.set_top_routing_layer_idx(idb_layer_list->find_layer(idb_max_via_stack->get_layer_top())->get_id());
+      exist_rule_set.insert(ViolationType::kMaxViaStack);
+    }
   }
 }
 
