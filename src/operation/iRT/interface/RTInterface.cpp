@@ -30,6 +30,7 @@
 #include "SupplyAnalyzer.hpp"
 #include "TopologyGenerator.hpp"
 #include "TrackAssigner.hpp"
+#include "ViolationReporter.hpp"
 #include "api/PowerEngine.hh"
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
@@ -148,6 +149,10 @@ void RTInterface::runRT()
   DetailedRouter::initInst();
   RTDR.route();
   DetailedRouter::destroyInst();
+
+  ViolationReporter::initInst();
+  RTVR.report();
+  ViolationReporter::destroyInst();
 
   destroyFlute();
   RTGP.destroy();
