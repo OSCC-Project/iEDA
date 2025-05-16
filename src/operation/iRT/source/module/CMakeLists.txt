@@ -7,6 +7,7 @@ add_subdirectory(${IRT_MODULE}/layer_assigner)
 add_subdirectory(${IRT_MODULE}/space_router)
 add_subdirectory(${IRT_MODULE}/track_assigner)
 add_subdirectory(${IRT_MODULE}/detailed_router)
+add_subdirectory(${IRT_MODULE}/violation_reporter)
 add_subdirectory(${IRT_MODULE}/early_router)
 
 add_library(irt_module INTERFACE)
@@ -22,5 +23,6 @@ target_link_libraries(irt_module
         irt_space_router
         irt_track_assigner
         irt_detailed_router
+        irt_violation_reporter
         irt_early_router
 )

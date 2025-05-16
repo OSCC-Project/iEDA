@@ -28,6 +28,7 @@ set(CMAKE_CXX_STANDARD 20)
 # set(DEBUG_IRT_SPACE_ROUTER ON)
 # set(DEBUG_IRT_TRACK_ASSIGNER ON) 
 # set(DEBUG_IRT_DETAILED_ROUTER ON)
+# set(DEBUG_IRT_VIOLATION_REPORTER ON)
 # set(DEBUG_IRT_EARLY_ROUTER ON)
 
 ############################ debug source utility ############################
