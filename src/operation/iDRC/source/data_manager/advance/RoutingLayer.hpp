@@ -81,6 +81,29 @@ class RoutingLayer
   void set_adjacent_eol(const int32_t adjacent_eol) { _adjacent_eol = adjacent_eol; }
   // function
   bool isPreferH() const { return _prefer_direction == Direction::kHorizontal; }
+  int32_t getMaxSpacing() { return _prl_spacing_table.get_width_parallel_length_map().back().back(); }
+  int32_t getSpacing(int32_t width, int32_t parallel_length)
+  {
+    std::vector<int32_t>& width_list = _prl_spacing_table.get_width_list();
+    std::vector<int32_t>& parallel_length_list = _prl_spacing_table.get_parallel_length_list();
+    GridMap<int32_t>& width_parallel_length_map = _prl_spacing_table.get_width_parallel_length_map();
+
+    int32_t width_idx = static_cast<int32_t>(width_list.size()) - 1;
+    for (int32_t i = width_idx; 0 <= i; i--) {
+      if (width_list[i] <= width) {
+        width_idx = i;
+        break;
+      }
+    }
+    int32_t parallel_length_idx = static_cast<int32_t>(parallel_length_list.size()) - 1;
+    for (int32_t i = parallel_length_idx; 0 <= i; i--) {
+      if (parallel_length_list[i] <= parallel_length) {
+        parallel_length_idx = i;
+        break;
+      }
+    }
+    return width_parallel_length_map[width_idx][parallel_length_idx];
+  }
 
  private:
   int32_t _layer_idx = -1;

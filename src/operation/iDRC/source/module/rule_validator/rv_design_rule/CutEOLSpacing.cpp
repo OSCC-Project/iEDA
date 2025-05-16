@@ -38,7 +38,7 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
     // 该函数用来更新overhang_list,使用之前保证cut rect在polygon_rect里面
     // overhang顺序：east south west north
     if (gtl::contains(gtl_polygon_rect, gtl_cut_rect) == false) {
-    // if(gtl::intersects(gtl_polygon_rect, gtl_cut_rect,false) == false) {
+      // if(gtl::intersects(gtl_polygon_rect, gtl_cut_rect,false) == false) {
       return;  // 不完全包含的忽略
     }
     GTLSegment east_segment(GTLPointInt(gtl::xh(gtl_polygon_rect), gtl::yl(gtl_polygon_rect)),
@@ -86,9 +86,9 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
   int32_t smaller_overhang = 40 * 2;  // 有一个overhang小于这个值
   int32_t equal_overhang = 0;         // 正交边(相邻边)的overhang等于这个值
 
-  int32_t side_ext = 65 * 2;       // 
-  int32_t backward_ext = 120 * 2;  // 
-  int32_t span_length = 55 * 2;    // 
+  int32_t side_ext = 65 * 2;       //
+  int32_t backward_ext = 120 * 2;  //
+  int32_t span_length = 55 * 2;    //
 
   std::vector<int32_t> cut_eol_spacing_layers = {1, 2, 3, 4, 5, 6};
   // 基础数据
@@ -143,7 +143,7 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
     gtl_poly_set.get(gtl_hole_poly_list);
     // polyset -> polygon -> maxrect -> cut
     for (GTLHolePolyInt& gtl_hole_poly : gtl_hole_poly_list) {
-      //获得eol 边
+      // 获得eol 边
       int32_t coord_size = static_cast<int32_t>(gtl_hole_poly.size());
       if (coord_size < 4) {
         continue;
@@ -256,8 +256,8 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
             GTLPointInt b = GTLPointInt(coord_list[eol_idx].get_x(), coord_list[eol_idx].get_y());
             GTLSegment eol_edge = GTLSegment(a, b);
             for (int32_t i = 0; i < overhang_dis_list.size(); i++) {  // 找到对应的overhang segment
-              // if (gtl::contains(eol_edge, overhang_list[i]) && gtl::length(eol_edge) < eol_width) {
-                if (gtl::contains(eol_edge, overhang_list[i])) {
+                                                                      // if (gtl::contains(eol_edge, overhang_list[i]) && gtl::length(eol_edge) < eol_width) {
+              if (gtl::contains(eol_edge, overhang_list[i])) {
                 is_eol_edge_list[i] = true;
                 is_eol_edge = true;
               }
@@ -338,14 +338,22 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
 
           // 判断是否有overlap，用查找区域和gtl_routing_overlap_poly & 来判断能否查找
           std::vector<std::vector<bool>> is_overlap_list(4, std::vector<bool>(2, false));
-          is_overlap_list[0][0] = is_polygon_interact_rect(gtl_north_right_rect, gtl_routing_overlap_poly) && !is_polygon_interact_rect(gtl_north_right_rect, gtl_cut_poly);
-          is_overlap_list[0][1] = is_polygon_interact_rect(gtl_south_right_rect, gtl_routing_overlap_poly) && !is_polygon_interact_rect(gtl_south_right_rect, gtl_cut_poly);
-          is_overlap_list[1][0] = is_polygon_interact_rect(gtl_east_down_rect, gtl_routing_overlap_poly) && !is_polygon_interact_rect(gtl_east_down_rect, gtl_cut_poly);
-          is_overlap_list[1][1] = is_polygon_interact_rect(gtl_west_down_rect, gtl_routing_overlap_poly) && !is_polygon_interact_rect(gtl_west_down_rect, gtl_cut_poly);
-          is_overlap_list[2][0] = is_polygon_interact_rect(gtl_south_left_rect, gtl_routing_overlap_poly) && !is_polygon_interact_rect(gtl_south_left_rect, gtl_cut_poly);
-          is_overlap_list[2][1] = is_polygon_interact_rect(gtl_north_left_rect, gtl_routing_overlap_poly) && !is_polygon_interact_rect(gtl_north_left_rect, gtl_cut_poly);
-          is_overlap_list[3][0] = is_polygon_interact_rect(gtl_west_up_rect, gtl_routing_overlap_poly) && !is_polygon_interact_rect(gtl_west_up_rect, gtl_cut_poly);
-          is_overlap_list[3][1] = is_polygon_interact_rect(gtl_east_up_rect, gtl_routing_overlap_poly) && !is_polygon_interact_rect(gtl_east_up_rect, gtl_cut_poly);
+          is_overlap_list[0][0]
+              = is_polygon_interact_rect(gtl_north_right_rect, gtl_routing_overlap_poly) && !is_polygon_interact_rect(gtl_north_right_rect, gtl_cut_poly);
+          is_overlap_list[0][1]
+              = is_polygon_interact_rect(gtl_south_right_rect, gtl_routing_overlap_poly) && !is_polygon_interact_rect(gtl_south_right_rect, gtl_cut_poly);
+          is_overlap_list[1][0]
+              = is_polygon_interact_rect(gtl_east_down_rect, gtl_routing_overlap_poly) && !is_polygon_interact_rect(gtl_east_down_rect, gtl_cut_poly);
+          is_overlap_list[1][1]
+              = is_polygon_interact_rect(gtl_west_down_rect, gtl_routing_overlap_poly) && !is_polygon_interact_rect(gtl_west_down_rect, gtl_cut_poly);
+          is_overlap_list[2][0]
+              = is_polygon_interact_rect(gtl_south_left_rect, gtl_routing_overlap_poly) && !is_polygon_interact_rect(gtl_south_left_rect, gtl_cut_poly);
+          is_overlap_list[2][1]
+              = is_polygon_interact_rect(gtl_north_left_rect, gtl_routing_overlap_poly) && !is_polygon_interact_rect(gtl_north_left_rect, gtl_cut_poly);
+          is_overlap_list[3][0]
+              = is_polygon_interact_rect(gtl_west_up_rect, gtl_routing_overlap_poly) && !is_polygon_interact_rect(gtl_west_up_rect, gtl_cut_poly);
+          is_overlap_list[3][1]
+              = is_polygon_interact_rect(gtl_east_up_rect, gtl_routing_overlap_poly) && !is_polygon_interact_rect(gtl_east_up_rect, gtl_cut_poly);
 
           bool no_less_span = max_x_span >= span_length && max_y_span >= span_length;  // 都大于等于span只考虑一边，否则两边
           std::vector<bool> is_use_spacing_list(4, false);                             // 最终判断该边是否需要生成spacing区域
@@ -428,7 +436,7 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
             GTLRectInt gtl_origin_cut = gtl_cut;
             PlanarRect origin_cut = DRCUTIL.convertToPlanarRect(gtl_origin_cut);
             // 先check两个rect是否重叠
-            if(env_cut == origin_cut) {
+            if (env_cut == origin_cut) {
               continue;  // 同一个cut忽略
             }
             int32_t need_spacing;
@@ -449,11 +457,11 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
               continue;  // 都不满足的忽略
             }
             PlanarRect violation_rect;
-            if(DRCUTIL.isClosedOverlap(env_cut, origin_cut)) {
+            if (DRCUTIL.isClosedOverlap(env_cut, origin_cut)) {
               violation_rect = DRCUTIL.getOverlap(env_cut, origin_cut);
             } else {
-               violation_rect = DRCUTIL.getSpacingRect(env_cut, origin_cut);
-            } 
+              violation_rect = DRCUTIL.getSpacingRect(env_cut, origin_cut);
+            }
 
             Violation violation;
             violation.set_violation_type(ViolationType::kCutEOLSpacing);

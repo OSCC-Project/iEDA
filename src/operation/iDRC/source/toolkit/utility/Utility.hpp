@@ -56,6 +56,13 @@ class Utility
     }
   }
 
+  static int32_t getParallelLength(PlanarRect& a, PlanarRect& b)
+  {
+    int32_t x_parallel_length = std::max(0, std::min(a.get_ur_x(), b.get_ur_x()) - std::max(a.get_ll_x(), b.get_ll_x()));
+    int32_t y_parallel_length = std::max(0, std::min(a.get_ur_y(), b.get_ur_y()) - std::max(a.get_ll_y(), b.get_ll_y()));
+    return std::max(x_parallel_length, y_parallel_length);
+  }
+
 #endif
 
 #if 1  // 方向方位计算

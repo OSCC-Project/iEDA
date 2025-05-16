@@ -129,7 +129,8 @@ void RuleValidator::verifyCornerFillSpacing(RVBox& rv_box)
           routing_bg_rtree_map[routing_layer_idx].query(bgi::intersects(DRCUTIL.convertToBGRectInt(check_rect)), std::back_inserter(bg_rect_net_pair_list));
           for (auto& [bg_env_rect, env_net_idx] : bg_rect_net_pair_list) {
             PlanarRect env_rect = DRCUTIL.convertToPlanarRect(bg_env_rect);
-            if (gtl::area(gtl_hole_poly & DRCUTIL.convertToGTLRectInt(env_rect)) == env_rect.getArea()) {
+            GTLRectInt env_gtl_rect = DRCUTIL.convertToGTLRectInt(bg_env_rect);
+            if (gtl::area(gtl_hole_poly & env_gtl_rect) == gtl::area(env_gtl_rect)) {
               continue;
             }
             if (!DRCUTIL.isOpenOverlap(env_rect, check_rect)) {
