@@ -842,16 +842,15 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
 
   auto build_nets = [this, &design_netlist]() {
     // build nets
-    auto db_net_list = _idb_design->get_net_list()->get_net_list();
-    for (auto* db_net : db_net_list) {
+
+    auto process_net = [this, &design_netlist]<typename T>(T* db_net) {
+      std::string raw_name = db_net->get_net_name();
       if ((db_net->get_connect_type() == IdbConnectType::kPower) ||
           (db_net->get_connect_type() == IdbConnectType::kGround)) {
-        continue;
+        return;
       }
 
-      std::string raw_name = db_net->get_net_name();
-
-      std::regex re(R"(\\)");
+      std::regex re(R"(\\)"); 
       std::string net_name = std::regex_replace(raw_name, re, "");
       Net* sta_net = design_netlist.findNet(net_name.c_str());
 
@@ -903,6 +902,16 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
 
       LOG_INFO_EVERY_N(10000)
           << "build net num: " << design_netlist.getNetNum();
+    };
+
+    auto db_net_list = _idb_design->get_net_list()->get_net_list();
+    for (auto* db_net : db_net_list) {
+      process_net(db_net);
+    }
+
+    auto db_special_nets = _idb_design->get_special_net_list()->get_net_list();
+    for (auto* db_special_net : db_special_nets) {
+      process_net(db_special_net);
     }
   };
 
