@@ -76,7 +76,7 @@ bool DefWrite::initFile(const char* file)
       return false;
     }
   } else {
-    _font = SaveFormat::kDef;
+    _font = SaveFormat::kUnzip;
     _file_write = fopen(file, "w+");
     if (_file_write == nullptr) {
       std::cout << "Open def file failed..." << std::endl;
@@ -101,7 +101,7 @@ bool DefWrite::closeFile()
       _file_write_gz = nullptr;
       break;
 
-    case SaveFormat::kDef:
+    case SaveFormat::kUnzip:
     default:
       result = fclose(_file_write);
       _file_write = nullptr;
@@ -120,7 +120,7 @@ void DefWrite::writestr(const char* strdata, ...)
   va_list args;
   va_start(args, strdata);
   switch (_font) {
-    case SaveFormat::kDef:
+    case SaveFormat::kUnzip:
       vfprintf(_file_write, strdata, args);
       break;
     case SaveFormat::kGzip:
@@ -159,6 +159,10 @@ bool DefWrite::writeDb(const char* file)
       writeChip();
       break;
     }
+    case DefWriteType::kLef: {
+      writeLef();
+      break;
+    }
 
     default: {
       writeChip();
@@ -167,6 +171,25 @@ bool DefWrite::writeDb(const char* file)
   }
 
   return closeFile();
+}
+
+/**
+ * @brief Write the design to the lef fine.
+ *
+ * @param file Path to the file.
+ * @return true if writing succeeds, false otherwise.
+ */
+bool DefWrite::writeLef()
+{
+  write_version();
+  write_divider_char();
+  write_busbit_char();
+  write_lef_macro();
+
+  writestr("\n");
+  write_libreary_end();
+
+  return true;
 }
 
 /**
@@ -230,6 +253,12 @@ int32_t DefWrite::write_end()
   return kDbSuccess;
 }
 
+int32_t DefWrite::write_libreary_end()
+{
+  writestr("END LIBRARY\n");
+  return kDbSuccess;
+}
+
 /**
  * @brief Writes the VERSION information to the DEF file.
  * @return Status code indicating success or failure.
@@ -247,6 +276,8 @@ int32_t DefWrite::write_version()
 
 int32_t DefWrite::write_divider_char()
 {
+  writestr("DIVIDERCHAR \"/\" ;\n");
+
   return kDbSuccess;
 }
 
@@ -1097,6 +1128,72 @@ int32_t DefWrite::write_fill()
   }
 
   cout << "Write FILLS success..." << endl;
+  return kDbSuccess;
+}
+
+int32_t DefWrite::write_lef_macro()
+{
+  auto* design = _def_service->get_design();
+  auto* layout = _def_service->get_layout();
+
+  auto spacer = "  ";
+  writestr("\n");
+  writestr("MACRO %s\n", design->get_design_name().c_str());
+  writestr("%sCLASS BLOCK ;\n", spacer);
+  writestr("%sFOREIGN %s ;\n", spacer, design->get_design_name().c_str());
+  writestr("%sORIGIN 0.0 0.0 ;\n", spacer);
+  writestr("%sSIZE %.3f %.3f ;\n", spacer, design->transToUDB(layout->get_die()->get_width()),
+           design->transToUDB(layout->get_die()->get_height()));
+  writestr("%sSYMMETRY X Y ;\n", spacer);
+
+  write_lef_macro_pins();
+
+  writestr("\n");
+  writestr("END %s\n", design->get_design_name().c_str());
+
+  cout << "Write Macro success..." << endl;
+  return kDbSuccess;
+}
+
+int32_t DefWrite::write_lef_macro_pins()
+{
+  auto* design = _def_service->get_design();
+  auto* io_pins = design->get_io_pin_list();
+
+  auto spacer = "  ";
+  for (auto idb_pin : io_pins->get_pin_list()) {
+    writestr("%sPIN %s\n", spacer, idb_pin->get_pin_name().c_str());
+    /// definition
+    {
+      auto* io_term = idb_pin->get_term();
+
+      auto* enum_property = IdbEnum::GetInstance()->get_connect_property();
+      /// DIRECTION
+      string direction = enum_property->get_direction_name(io_term->get_direction());
+      writestr("%s%sDIRECTION %s ;\n", spacer, spacer, direction.c_str());
+      /// USE
+      string use = enum_property->get_type_name(io_term->get_type());
+      writestr("%s%sUSE %s ;\n", spacer, spacer, use.c_str());
+    }
+
+    /// PORT
+    {
+      writestr("%s%sPORT\n", spacer, spacer);
+
+      for (auto* layer_shape : idb_pin->get_port_box_list()) {
+        writestr("%s%s%sLAYER %s ;\n", spacer, spacer, spacer, layer_shape->get_layer()->get_name().c_str());
+        for (auto* rect : layer_shape->get_rect_list()) {
+          writestr("%s%s%s%sRECT %.3f %.3f %.3f %.3f ;\n", spacer, spacer, spacer, spacer, design->transToUDB(rect->get_low_x()),
+                   design->transToUDB(rect->get_low_y()), design->transToUDB(rect->get_high_x()), design->transToUDB(rect->get_high_y()));
+        }
+      }
+
+      writestr("%s%sEND\n", spacer, spacer);
+    }
+
+    writestr("%sEND %s\n", spacer, idb_pin->get_pin_name());
+  }
+
   return kDbSuccess;
 }
 

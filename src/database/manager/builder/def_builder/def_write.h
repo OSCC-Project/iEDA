@@ -58,13 +58,14 @@ enum class DefWriteType
   kDetailPlace,
   kGlobalRouting,
   kDetailRouting,
+  kLef,
   kMax
 };
 
 // 需要存为其它形式，可以添加其它枚举类型
 enum class SaveFormat
 {
-  kDef,
+  kUnzip,
   kGzip
 };
 
@@ -108,6 +109,9 @@ class DefWrite
   int32_t write_group();
   int32_t write_fill();
   int32_t write_end();
+  int32_t write_lef_macro();
+  int32_t write_lef_macro_pins();
+  int32_t write_libreary_end();
 
   void set_start_time(clock_t time) { _start_time = time; }
   void set_end_time(clock_t time) { _end_time = time; }
@@ -119,6 +123,7 @@ class DefWrite
   bool writeDbSynthesis();
   bool initFile(const char* file);
   bool closeFile();
+  bool writeLef();
 
  private:
   IdbDefService* _def_service;
