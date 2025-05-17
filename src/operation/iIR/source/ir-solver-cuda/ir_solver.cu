@@ -54,7 +54,7 @@ namespace iir {
  */
 std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
                                  Eigen::VectorXd &b, Eigen::VectorXd &x0,
-                                 const double tol, const int max_iter) {
+                                 const double tol, const int max_iter, double lambda) {
   // Convert Eigen sparse matrix to CSR format
   A.makeCompressed();
   int num_rows = A.rows();
@@ -65,13 +65,14 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
   const double *csrVal = A.valuePtr();
 
   // Allocate device memory
-  double *d_csrVal, *d_b, *d_x, *d_r, *d_p, *d_Ap;
+  double *d_csrVal, *d_b, *d_x, *d_x0, *d_r, *d_p, *d_Ap;
   int *d_csrRowPtr, *d_csrColInd;
   CUDA_CHECK(cudaMalloc((void **)&d_csrVal, nnz * sizeof(double)));
   CUDA_CHECK(cudaMalloc((void **)&d_csrRowPtr, (num_rows + 1) * sizeof(int)));
   CUDA_CHECK(cudaMalloc((void **)&d_csrColInd, nnz * sizeof(int)));
   CUDA_CHECK(cudaMalloc((void **)&d_b, num_rows * sizeof(double)));
   CUDA_CHECK(cudaMalloc((void **)&d_x, num_rows * sizeof(double)));
+  CUDA_CHECK(cudaMalloc((void **)&d_x0, num_rows * sizeof(double)));
   CUDA_CHECK(cudaMalloc((void **)&d_r, num_rows * sizeof(double)));
   CUDA_CHECK(cudaMalloc((void **)&d_p, num_rows * sizeof(double)));
   CUDA_CHECK(cudaMalloc((void **)&d_Ap, num_rows * sizeof(double)));
@@ -87,10 +88,13 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
                         cudaMemcpyHostToDevice));
   CUDA_CHECK(cudaMemcpy(d_x, x0.data(), num_rows * sizeof(double),
                         cudaMemcpyHostToDevice));
+  CUDA_CHECK(cudaMemcpy(d_x0, x0.data(), num_rows * sizeof(double),
+                        cudaMemcpyHostToDevice));
 
   // for debug
   // print_device_array(d_b, num_rows);
   // print_device_array(d_x, num_rows);
+  // print_device_array(d_x0, num_rows);
 
   // cuSPARSE handle
   cusparseHandle_t handle;
@@ -130,30 +134,39 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
   cublasHandle_t cublasHandle;
   cublasCreate(&cublasHandle);
 
-  // Perform r = b - A * x
+  // Perform r = b - A * x - lambda * x (L2 regularization)
+  double neg_lambda = -lambda; // Example value for lambda
   double neg_one = -1.0;
-  cublasDaxpy(cublasHandle, num_rows, &neg_one, d_r, 1, d_b,
-              1);  // r = b - vecR
+  cublasDaxpy(cublasHandle, num_rows, &neg_one, d_r, 1, d_b, 1);  // r = b - A * x
+  cublasDaxpy(cublasHandle, num_rows, &(neg_lambda), d_x, 1, d_b, 1); // Add L2 regularization
   CUDA_CHECK(cudaMemcpy(d_r, d_b, num_rows * sizeof(double),
-                        cudaMemcpyDeviceToDevice));  // Copy b to r
+  cudaMemcpyDeviceToDevice));  // Copy b to r
 
   // for debug
   // print_device_array(d_r, num_rows);
-
   // Copy r to p
   CUDA_CHECK(cudaMemcpy(d_p, d_r, num_rows * sizeof(double),
                         cudaMemcpyDeviceToDevice));
 
+  // print_device_array(d_p, num_rows);
+
   // Compute initial r_dot_r
   cublasDdot(cublasHandle, num_rows, d_r, 1, d_r, 1, &r_dot_r);
+
+  // Initialize variables to track minimum residual and corresponding x
+  double min_r_dot_r_new = r_dot_r;
+  double *d_min_x;
+  CUDA_CHECK(cudaMalloc((void **)&d_min_x, num_rows * sizeof(double)));
+  CUDA_CHECK(cudaMemcpy(d_min_x, d_x, num_rows * sizeof(double), cudaMemcpyDeviceToDevice));
 
   int k = 0;
   double one = 1.0;
   double zero = 0.0;
   while (k < max_iter && sqrt(r_dot_r) > tol) {
-    // Ap = A * p
+    // Ap = A * p + lambda * p (L2 regularization)
     cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one, matA, vecP,
                  &zero, vecAp, CUDA_R_64F, CUSPARSE_SPMV_ALG_DEFAULT, dBuffer);
+    cublasDaxpy(cublasHandle, num_rows, &lambda, d_p, 1, d_Ap, 1);
 
     // alpha = r_dot_r / (p^T * Ap)
     double p_dot_Ap;
@@ -177,35 +190,39 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
     // r_dot_r_new = r^T * r
     cublasDdot(cublasHandle, num_rows, d_r, 1, d_r, 1, &r_dot_r_new);
 
+    // Update minimum residual and corresponding x
+    if (r_dot_r_new < min_r_dot_r_new) {
+      min_r_dot_r_new = r_dot_r_new;
+      CUDA_CHECK(cudaMemcpy(d_min_x, d_x, num_rows * sizeof(double), cudaMemcpyDeviceToDevice));
+    }
+
     // beta = r_dot_r_new / r_dot_r
     beta = r_dot_r_new / r_dot_r;
 
     // p = r + beta * p
     cublasDscal(cublasHandle, num_rows, &beta, d_p, 1);
-    double one = 1.0;
     cublasDaxpy(cublasHandle, num_rows, &one, d_r, 1, d_p, 1);
+
+    // print_device_array(d_p, num_rows);
 
     r_dot_r = r_dot_r_new;
     k++;
   }
-
-  CUDA_LOG_INFO("GPU CG iteration num: %d", k - 1);
-  CUDA_LOG_INFO("Final Residual Norm: %f", sqrt(r_dot_r));
-
   // for debug
   // print_device_array(d_x, num_rows);
-
   // Copy result back to host
   std::vector<double> x(num_rows);
-  CUDA_CHECK(cudaMemcpy(x.data(), d_x, num_rows * sizeof(double),
-                        cudaMemcpyDeviceToHost));
-
+  CUDA_CHECK(cudaMemcpy(x.data(), d_min_x, num_rows * sizeof(double), cudaMemcpyDeviceToHost));
   CUDA_LOG_INFO("Last 20 elements of x:");
   int size = x.size();
   int start_index = std::max(0, size - 20);
   for (int i = start_index; i < size; ++i) {
     CUDA_LOG_INFO("x[%d]: %f", i, x[i]);
   }
+  
+  CUDA_LOG_INFO("GPU CG iteration num: %d", k);
+  CUDA_LOG_INFO("Final Residual Norm: %f", sqrt(r_dot_r));
+  CUDA_LOG_INFO("Minimum Residual Norm: %f", sqrt(min_r_dot_r_new));
 
   // Free resources
   cudaFree(d_csrVal);
@@ -213,10 +230,12 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
   cudaFree(d_csrColInd);
   cudaFree(d_b);
   cudaFree(d_x);
+  cudaFree(d_x0);
   cudaFree(d_r);
   cudaFree(d_p);
   cudaFree(d_Ap);
   cudaFree(dBuffer);
+  cudaFree(d_min_x);
   cusparseDestroySpMat(matA);
   cusparseDestroyDnVec(vecX);
   cusparseDestroyDnVec(vecR);
@@ -228,5 +247,7 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
 
   return x;
 }
+
+
 
 }  // namespace iir

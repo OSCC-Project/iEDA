@@ -73,10 +73,12 @@ class IRCGSolver : public IRSolver {
       Eigen::VectorXd& J_vector) override;
 
   private:
-  double _nominal_voltage = 0.0;
+  double _nominal_voltage;
 
   double _tolerance = 1e-10;
-  int _max_iteration = 1000;
+  int _max_iteration = 200;
+
+  double _lambda = 0.0000001; //!< Regularization parameter.
 };
 
 }  // namespace iir
