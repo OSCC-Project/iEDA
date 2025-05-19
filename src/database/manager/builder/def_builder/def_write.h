@@ -111,6 +111,7 @@ class DefWrite
   int32_t write_end();
   int32_t write_lef_macro();
   int32_t write_lef_macro_pins();
+  int32_t write_lef_macro_obs();
   int32_t write_libreary_end();
 
   void set_start_time(clock_t time) { _start_time = time; }
@@ -134,8 +135,11 @@ class DefWrite
   FILE* _file_write;
   gzFile _file_write_gz;
   DefWriteType _type;
+  const char* _spacer = "  ";
 
   SaveFormat _font;
   void writestr(const char* strdata, ...);
+
+  std::pair<int, int> get_pdn_layer_order_range();
 };
 }  // namespace idb
