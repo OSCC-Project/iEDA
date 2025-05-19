@@ -40,7 +40,7 @@ inline void print_device_array(double* d_data, size_t num_elements) {
     thrust::host_vector<double> h_data(dev_ptr, dev_ptr + num_elements);
 
     for (size_t i = 0; i < h_data.size(); ++i) {
-        out << h_data[i] << " ";
+        out << h_data[i] << "\n";
     }
     out << std::endl;
 

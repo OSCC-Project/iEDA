@@ -43,6 +43,6 @@ namespace iir {
 std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double>& A,
                                  Eigen::VectorXd& b,
                                  Eigen::VectorXd& x0,
-                                 const double tol, const int max_iter);
+                                 const double tol, const int max_iter, double lambda);
 
 }

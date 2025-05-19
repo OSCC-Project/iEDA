@@ -83,18 +83,32 @@ double Net::getLoad(AnalysisMode mode, TransType trans_type) {
  * @return DesignObject*
  */
 DesignObject* Net::getDriver() {
+  std::vector<DesignObject*> drivers;
   for (auto* obj : _pin_ports) {
     if (obj->isPort()) {
       auto* port = dynamic_cast<Port*>(obj);
       if (port->isInput()) {
-        return port;
+        drivers.push_back(port);
       }
     } else {  // for pin.
       auto* pin = dynamic_cast<Pin*>(obj);
       if (pin->isOutput()) {
-        return pin;
+        drivers.push_back(pin);
       }
     }
+  }
+
+  if (drivers.size() == 1) {
+    return drivers[0];
+  } else if (drivers.size() > 1) {
+    for (auto* driver : drivers) {
+      if (!driver->isInout()) {
+        return driver;
+      }
+    }
+
+    LOG_INFO << "Net " << get_name() << " has multiple drivers option, select random one.";
+    return drivers[0];
   }
 
   return nullptr;
