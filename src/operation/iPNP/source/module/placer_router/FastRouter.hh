@@ -15,21 +15,42 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file test.cpp
- * @author Xinhao li
+ * @file EarlyGlobal.hh
+ * @author Jianrong Su
  * @brief
  * @version 0.1
- * @date 2024-07-15
+ * @date 2025-04-27
  */
 
-void callCongestionEvaluator(int other_parameter, int evaluator_option)
-{
-  if (evaluator_option == 0) {
-    // module 1
-  }
-  if (evaluator_option == 1) {
-    // module 2
-  }
+#pragma once
+
+#include <map>
+#include <string>
+#include <vector>
+#include <any>
+
+namespace idb {
+  class IdbDesign;
+  class IdbBuilder;
+  class DataManager;
 }
 
-// test: SSH connect
+namespace irt {
+  class RTInterface;
+}
+
+namespace ipnp {
+
+class FastRouter
+{
+public:
+  FastRouter() = default;
+  ~FastRouter() = default;
+
+  void runFastRouter(idb::IdbBuilder* idb_builder);
+  
+private:
+    
+};
+
+} // namespace ipnp

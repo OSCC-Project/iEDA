@@ -65,8 +65,16 @@ class DataManager
   /// getter
   DataConfig& get_config() { return _config; };
   IdbBuilder* get_idb_builder() { return _idb_builder; }
+  void set_idb_builder(IdbBuilder* idb_builder) {
+    _idb_builder = idb_builder;
+  }
   IdbDefService* get_idb_def_service() { return _idb_def_service; }
+  void set_idb_def_service(IdbDefService* idb_def_service) {
+    _idb_def_service = idb_def_service;
+  }
   IdbLefService* get_idb_lef_service() { return _idb_lef_service; }
+  void set_idb_lef_service(IdbLefService* idb_lef_service) { _idb_lef_service = idb_lef_service; }
+  
   IdbDesign* get_idb_design() { return _idb_def_service != nullptr ? _idb_def_service->get_design() : nullptr; }
   IdbLayout* get_idb_layout() { return _idb_lef_service != nullptr ? _idb_lef_service->get_layout() : nullptr; }
   bool is_def_read() { return _idb_def_service != nullptr ? true : false; }
