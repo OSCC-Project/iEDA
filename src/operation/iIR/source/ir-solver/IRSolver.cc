@@ -196,7 +196,7 @@ Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A,
                                   const Eigen::VectorXd& b,
                                   const Eigen::VectorXd& x0, double tol,
                                   int max_iter, double lambda) {
-  Eigen::VectorXd x = x0;
+  Eigen::VectorXd x = x0 * 0.95;
   Eigen::VectorXd Ax = A * x;
   // PrintVector(Ax, "Ax.txt");
 
@@ -213,8 +213,10 @@ Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A,
   rsold_file << "iteration,rsold\n";
 
   int i = 0;
+  int min_residual_iter = 0;
   for (; i < max_iter; ++i) {
-    // LOG_INFO << "CG iteration num: " << i + 1 << " rsold: " << rsold;
+    LOG_INFO_EVERY_N(100) << "CG iteration num: " << i + 1
+                          << " residual: " << sqrt(rsold);
     // LOG_INFO_EVERY_N(200) << "x:\n"<< x.transpose();
 
     // L2 regularization for gradient
@@ -222,18 +224,23 @@ Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A,
     double alpha = rsold / p.dot(Ap);
     x += alpha * p;
 
+    x = x.cwiseMax(x0 * 0.8);  // Ensure min x
+
     // LOG_INFO_EVERY_N(1) << "x:\n"<< x.transpose();
     r -= alpha * Ap;
     // LOG_INFO_EVERY_N(1) << "r:\n"<< r.transpose();
     double rsnew = r.dot(r);
-    if (sqrt(rsnew) < tol) {
-      break;
-    }
 
     // Update the minimum residual and its corresponding x value
     if (rsnew < min_rsnew) {
       min_rsnew = rsnew;
       min_x = x;
+      min_residual_iter = i;
+    }
+
+    if (sqrt(rsnew) < tol) {
+      rsold =  rsnew;
+      break;
     }
 
     double beta = rsnew / rsold;
@@ -250,9 +257,10 @@ Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A,
     LOG_INFO << "x[" << index << "] = " << min_x[index];
   }
 
-  LOG_INFO << "CPU CG iteration num: " << i;
-  LOG_INFO << "Final Residual Norm: " << sqrt(rsold);
-  LOG_INFO << "Minum Residual Norm: " << sqrt(min_rsnew);
+  LOG_INFO << "CPU CG toal iteration num: " << i
+           << ", minum residual iter: " << min_residual_iter;
+  LOG_INFO << "Final residual Norm: " << sqrt(rsold)
+           << ", minum residual Norm: " << sqrt(min_rsnew);
 
   // Close the file after the loop
   rsold_file.close();
@@ -285,23 +293,23 @@ std::vector<double> IRCGSolver::operator()(
   cg.setMaxIterations(_max_iteration);
 
   Eigen::VectorXd X0 =
-      Eigen::VectorXd::Constant(J_vector.size(), _nominal_voltage * 0.9);
+      Eigen::VectorXd::Constant(J_vector.size(), _nominal_voltage);
   Eigen::VectorXd v_vector =
       conjugateGradient(A, J_vector, X0, _tolerance, _max_iteration, _lambda);
 
-  LOG_INFO << "CPU solver X[0] result:\n" << v_vector(0) << std::endl;
+  LOG_INFO << "CPU solver X[0] result:" << v_vector(0) << std::endl;
 
 #else
   Eigen::SparseMatrix<double> A = G_matrix;
   Eigen::VectorXd X0 =
-      Eigen::VectorXd::Constant(J_vector.size(), _nominal_voltage * 0.9);
+      Eigen::VectorXd::Constant(J_vector.size(), _nominal_voltage);
   auto X = ir_cg_solver(A, J_vector, X0, _tolerance, _max_iteration, _lambda);
   Eigen::VectorXd v_vector(X.size());
   for (decltype(X.size()) i = 0; i < X.size(); ++i) {
     v_vector(i) = X[i];
   }
 
-  LOG_INFO << "GPU solver X[0] result:\n" << v_vector(0) << std::endl;
+  LOG_INFO << "GPU solver X[0] result:" << v_vector(0) << std::endl;
 #endif
 
   Eigen::VectorXd residual = G_matrix * v_vector - J_vector;
