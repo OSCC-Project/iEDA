@@ -40,6 +40,18 @@
 #include "gpu/kernel_common.h"
 #include "ir_solver.cuh"
 
+#include <thrust/device_vector.h>
+#include <thrust/transform.h>
+#include <thrust/functional.h>
+
+void c_wise_max(double* d_vector, int n, double max_value) {
+  thrust::device_ptr<double> ptr(d_vector);
+  thrust::transform(ptr, ptr + n, 
+                   thrust::make_constant_iterator(max_value), 
+                   ptr, 
+                   thrust::maximum<double>());
+}
+
 namespace iir {
 
 /**
@@ -64,6 +76,8 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
   const int *csrColInd = A.innerIndexPtr();
   const double *csrVal = A.valuePtr();
 
+  Eigen::VectorXd x0_new = x0 * 0.95;
+
   // Allocate device memory
   double *d_csrVal, *d_b, *d_x, *d_x0, *d_r, *d_p, *d_Ap;
   int *d_csrRowPtr, *d_csrColInd;
@@ -86,7 +100,7 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
                         cudaMemcpyHostToDevice));
   CUDA_CHECK(cudaMemcpy(d_b, b.data(), num_rows * sizeof(double),
                         cudaMemcpyHostToDevice));
-  CUDA_CHECK(cudaMemcpy(d_x, x0.data(), num_rows * sizeof(double),
+  CUDA_CHECK(cudaMemcpy(d_x, x0_new.data(), num_rows * sizeof(double),
                         cudaMemcpyHostToDevice));
   CUDA_CHECK(cudaMemcpy(d_x0, x0.data(), num_rows * sizeof(double),
                         cudaMemcpyHostToDevice));
@@ -139,8 +153,7 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
   double neg_one = -1.0;
   cublasDaxpy(cublasHandle, num_rows, &neg_one, d_r, 1, d_b, 1);  // r = b - A * x
   cublasDaxpy(cublasHandle, num_rows, &(neg_lambda), d_x, 1, d_b, 1); // Add L2 regularization
-  CUDA_CHECK(cudaMemcpy(d_r, d_b, num_rows * sizeof(double),
-  cudaMemcpyDeviceToDevice));  // Copy b to r
+  CUDA_CHECK(cudaMemcpy(d_r, d_b, num_rows * sizeof(double), cudaMemcpyDeviceToDevice));  // Copy b to r
 
   // for debug
   // print_device_array(d_r, num_rows);
@@ -160,6 +173,7 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
   CUDA_CHECK(cudaMemcpy(d_min_x, d_x, num_rows * sizeof(double), cudaMemcpyDeviceToDevice));
 
   int k = 0;
+  int min_residual_iter = 0;
   double one = 1.0;
   double zero = 0.0;
   while (k < max_iter && sqrt(r_dot_r) > tol) {
@@ -179,6 +193,9 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
 
     // x = x + alpha * p
     cublasDaxpy(cublasHandle, num_rows, &alpha, d_p, 1, d_x, 1);
+    
+    // Apply min constraints to x
+    c_wise_max(d_x, num_rows, x0(0) * 0.8); 
 
     // for debug
     // print_device_array(d_x, num_rows);
@@ -194,6 +211,7 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
     if (r_dot_r_new < min_r_dot_r_new) {
       min_r_dot_r_new = r_dot_r_new;
       CUDA_CHECK(cudaMemcpy(d_min_x, d_x, num_rows * sizeof(double), cudaMemcpyDeviceToDevice));
+      min_residual_iter = k;
     }
 
     // beta = r_dot_r_new / r_dot_r
@@ -220,9 +238,8 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
     CUDA_LOG_INFO("x[%d]: %f", i, x[i]);
   }
   
-  CUDA_LOG_INFO("GPU CG iteration num: %d", k);
-  CUDA_LOG_INFO("Final Residual Norm: %f", sqrt(r_dot_r));
-  CUDA_LOG_INFO("Minimum Residual Norm: %f", sqrt(min_r_dot_r_new));
+  CUDA_LOG_INFO("GPU CG iteration num: %d, minum residual iter: %d", k + 1, min_residual_iter);
+  CUDA_LOG_INFO("Final Residual Norm: %f, minimum Residual Norm: %f", sqrt(r_dot_r), sqrt(min_r_dot_r_new));
 
   // Free resources
   cudaFree(d_csrVal);
