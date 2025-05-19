@@ -128,7 +128,7 @@ std::vector<CtsPin*> Router::getSinkPins(CtsNet* clk_net)
   for (auto* load_pin : clk_net->get_load_pins()) {
     auto* load_inst = load_pin->get_instance();
     auto inst_type = load_inst->get_type();
-    if (inst_type != CtsInstanceType::kBuffer) {
+    if (inst_type != CtsInstanceType::kBuffer && inst_type != CtsInstanceType::kMux) {
       pins.push_back(load_pin);
     }
   }
