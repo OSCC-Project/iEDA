@@ -258,7 +258,7 @@ Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A,
   }
 
   LOG_INFO << "CPU CG toal iteration num: " << i
-           << ", minum residual iter: " << min_residual_iter;
+           << ", minum residual iter: " << min_residual_iter + 1;
   LOG_INFO << "Final residual Norm: " << sqrt(rsold)
            << ", minum residual Norm: " << sqrt(min_rsnew);
 

@@ -238,7 +238,7 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
     CUDA_LOG_INFO("x[%d]: %f", i, x[i]);
   }
   
-  CUDA_LOG_INFO("GPU CG iteration num: %d, minum residual iter: %d", k + 1, min_residual_iter);
+  CUDA_LOG_INFO("GPU CG iteration num: %d, minum residual iter: %d", k, min_residual_iter + 1);
   CUDA_LOG_INFO("Final Residual Norm: %f, minimum Residual Norm: %f", sqrt(r_dot_r), sqrt(min_r_dot_r_new));
 
   // Free resources
