@@ -52,9 +52,9 @@ void Solver::init()
 
   std::ranges::for_each(_cts_pins, [&](CtsPin* pin) {
     auto* cts_inst = pin->get_instance();
-    auto type = cts_inst->get_type() == CtsInstanceType::kSink
-                    ? InstType::kSink
-                    : cts_inst->get_type() == CtsInstanceType::kMux ? InstType::kNoneLib : InstType::kBuffer;
+    auto type = cts_inst->get_type() == CtsInstanceType::kSink  ? InstType::kSink
+                : cts_inst->get_type() == CtsInstanceType::kMux ? InstType::kBuffer
+                                                                : InstType::kBuffer;
     auto* inst = new Inst(cts_inst->get_name(), cts_inst->get_location(), type);
     auto* load_pin = inst->get_load_pin();
     load_pin->set_name(pin->get_full_name());
@@ -70,6 +70,7 @@ void Solver::init()
       _sink_pins.push_back(load_pin);  // TBD for mux pin
     }
   });
+  TreeBuilder::localPlace(_sink_pins);
 }
 
 void Solver::resolveSinks()
