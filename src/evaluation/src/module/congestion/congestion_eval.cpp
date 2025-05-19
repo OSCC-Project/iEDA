@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <numeric>
 #include <sstream>
 #include <stdexcept>
 
@@ -890,12 +891,18 @@ void CongestionEval::evalNetInfo()
     int32_t net_ly = INT32_MAX;
     int32_t net_ux = INT32_MIN;
     int32_t net_uy = INT32_MIN;
+    std::vector<int32_t> x_coords, y_coords;
+    std::vector<std::pair<int32_t, int32_t>> points;
     for (const auto& pin : net.pins) {
       net_lx = std::min(net_lx, pin.lx);
       net_ly = std::min(net_ly, pin.ly);
       net_ux = std::max(net_ux, pin.lx);
       net_uy = std::max(net_uy, pin.ly);
+      x_coords.push_back(pin.lx);
+      y_coords.push_back(pin.ly);
+      points.emplace_back(pin.lx, pin.ly);
     }
+
     int pin_num = net.pins.size();
 
     int aspect_ratio = 1;
@@ -905,10 +912,17 @@ void CongestionEval::evalNetInfo()
       aspect_ratio = std::round((net_uy - net_ly) / static_cast<double>(net_ux - net_lx));
     }
 
+    int bin_count = 10;
+    double x_entropy = calculateEntropy(x_coords, bin_count);
+    double y_entropy = calculateEntropy(y_coords, bin_count);
+
+    auto [avg_x_nn_distance, std_x_nn_distance, ratio_x_nn_distance] = calculateNearestNeighborStats(x_coords);
+    auto [avg_y_nn_distance, std_y_nn_distance, ratio_y_nn_distance] = calculateNearestNeighborStats(y_coords);
+
     double l_ness = 0.0;
     if (pin_num < 3) {
       l_ness = 1.0;
-    } else if (pin_num <= 15) {
+    } else if (pin_num <= 31) {
       std::vector<std::pair<int32_t, int32_t>> point_set;
       for (const auto& pin : net.pins) {
         point_set.push_back(std::make_pair(pin.lx, pin.ly));
@@ -925,6 +939,30 @@ void CongestionEval::evalNetInfo()
     int32_t bbox_ly = net_ly;
     int32_t bbox_ux = net_ux;
     int32_t bbox_uy = net_uy;
+    // debug
+    if (net.name == "n664") {
+      std::cout << "Debug Info for net: " << net.name << "\n";
+      std::cout << "x_coords: ";
+      for (const auto& x : x_coords) {
+        std::cout << x << " ";
+      }
+      std::cout << "\n";
+
+      std::cout << "y_coords: ";
+      for (const auto& y : y_coords) {
+        std::cout << y << " ";
+      }
+      std::cout << "\n";
+
+      std::cout << "x_entropy: " << x_entropy << "\n";
+      std::cout << "y_entropy: " << y_entropy << "\n";
+      std::cout << "avg_x_nn_distance: " << avg_x_nn_distance << "\n";
+      std::cout << "std_x_nn_distance: " << std_x_nn_distance << "\n";
+      std::cout << "ratio_x_nn_distance: " << ratio_x_nn_distance << "\n";
+      std::cout << "avg_y_nn_distance: " << avg_y_nn_distance << "\n";
+      std::cout << "std_y_nn_distance: " << std_y_nn_distance << "\n";
+      std::cout << "ratio_y_nn_distance: " << ratio_y_nn_distance << "\n";
+    }
 
     _name_pin_numer.emplace(net.name, pin_num);
     _name_aspect_ratio.emplace(net.name, aspect_ratio);
@@ -936,7 +974,73 @@ void CongestionEval::evalNetInfo()
     _name_bbox_ly.emplace(net.name, bbox_ly);
     _name_bbox_ux.emplace(net.name, bbox_ux);
     _name_bbox_uy.emplace(net.name, bbox_uy);
+    _name_x_entropy.emplace(net.name, x_entropy);
+    _name_y_entropy.emplace(net.name, y_entropy);
+    _name_avg_x_nn_distance.emplace(net.name, avg_x_nn_distance);
+    _name_std_x_nn_distance.emplace(net.name, std_x_nn_distance);
+    _name_ratio_x_nn_distance.emplace(net.name, ratio_x_nn_distance);
+    _name_avg_y_nn_distance.emplace(net.name, avg_y_nn_distance);
+    _name_std_y_nn_distance.emplace(net.name, std_y_nn_distance);
+    _name_ratio_y_nn_distance.emplace(net.name, ratio_y_nn_distance);
   }
+}
+
+double CongestionEval::calculateEntropy(const std::vector<int32_t>& coords, int bin_count)
+{
+  if (coords.empty())
+    return 0.0;
+
+  int32_t min_val = *std::min_element(coords.begin(), coords.end());
+  int32_t max_val = *std::max_element(coords.begin(), coords.end());
+  double bin_width = (max_val - min_val) / static_cast<double>(bin_count);
+
+  if (bin_width == 0)
+    return 0.0;
+
+  std::vector<int> bins(bin_count, 0);
+  for (int32_t coord : coords) {
+    int bin_index = std::min(bin_count - 1, static_cast<int>((coord - min_val) / bin_width));
+    bins[bin_index]++;
+  }
+
+  double entropy = 0.0;
+  int total_points = coords.size();
+  for (int count : bins) {
+    if (count > 0) {
+      double p = count / static_cast<double>(total_points);
+      entropy -= p * std::log2(p);
+    }
+  }
+
+  return entropy;
+}
+
+std::tuple<double, double, double> CongestionEval::calculateNearestNeighborStats(const std::vector<int32_t>& coords)
+{
+  if (coords.size() < 2)
+    return {0.0, 0.0, 0.0};
+
+  std::vector<int32_t> sorted_coords = coords;
+  std::sort(sorted_coords.begin(), sorted_coords.end());
+
+  std::vector<double> distances;
+  for (size_t i = 1; i < sorted_coords.size(); ++i) {
+    distances.push_back(static_cast<double>(sorted_coords[i] - sorted_coords[i - 1]));
+  }
+
+  double avg = std::accumulate(distances.begin(), distances.end(), 0.0) / distances.size();
+  double variance
+      = std::accumulate(distances.begin(), distances.end(), 0.0, [avg](double acc, double d) { return acc + (d - avg) * (d - avg); })
+        / distances.size();
+  double std_dev = std::sqrt(variance);
+
+  double max_neighbor_distance = *std::max_element(distances.begin(), distances.end());
+
+  double span = static_cast<double>(sorted_coords.back() - sorted_coords.front());
+
+  double ratio = (span > 0) ? (max_neighbor_distance / span) : 0.0;
+
+  return {avg, std_dev, ratio};
 }
 
 int CongestionEval::findPinNumber(std::string net_name)
@@ -1027,6 +1131,78 @@ int32_t CongestionEval::findBBoxUy(std::string net_name)
     return it->second;
   }
   throw std::runtime_error("BBox uy not found for net: " + net_name);
+}
+
+double CongestionEval::findXEntropy(std::string net_name)
+{
+  auto it = _name_x_entropy.find(net_name);
+  if (it != _name_x_entropy.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("X entropy not found for net: " + net_name);
+}
+
+double CongestionEval::findYEntropy(std::string net_name)
+{
+  auto it = _name_y_entropy.find(net_name);
+  if (it != _name_y_entropy.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("Y entropy not found for net: " + net_name);
+}
+
+double CongestionEval::findAvgXNNDistance(std::string net_name)
+{
+  auto it = _name_avg_x_nn_distance.find(net_name);
+  if (it != _name_avg_x_nn_distance.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("Average X nearest neighbor distance not found for net: " + net_name);
+}
+
+double CongestionEval::findStdXNNDistance(std::string net_name)
+{
+  auto it = _name_std_x_nn_distance.find(net_name);
+  if (it != _name_std_x_nn_distance.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("Standard deviation X nearest neighbor distance not found for net: " + net_name);
+}
+
+double CongestionEval::findRatioXNNDistance(std::string net_name)
+{
+  auto it = _name_ratio_x_nn_distance.find(net_name);
+  if (it != _name_ratio_x_nn_distance.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("Ratio X nearest neighbor distance not found for net: " + net_name);
+}
+
+double CongestionEval::findAvgYNNDistance(std::string net_name)
+{
+  auto it = _name_avg_y_nn_distance.find(net_name);
+  if (it != _name_avg_y_nn_distance.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("Average Y nearest neighbor distance not found for net: " + net_name);
+}
+
+double CongestionEval::findStdYNNDistance(std::string net_name)
+{
+  auto it = _name_std_y_nn_distance.find(net_name);
+  if (it != _name_std_y_nn_distance.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("Standard deviation Y nearest neighbor distance not found for net: " + net_name);
+}
+
+double CongestionEval::findRatioYNNDistance(std::string net_name)
+{
+  auto it = _name_ratio_y_nn_distance.find(net_name);
+  if (it != _name_ratio_y_nn_distance.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("Ratio Y nearest neighbor distance not found for net: " + net_name);
 }
 
 std::string CongestionEval::getEGRDirPath()

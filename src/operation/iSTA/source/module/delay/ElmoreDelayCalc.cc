@@ -714,6 +714,9 @@ void RcTree::applyDelayDataToArray() {
         res_array.emplace_back((*found_edge)->get_res());
 
         int parent_pos = rc_node->get_parent()->get_flatten_pos();
+        if (flatten_pos >= node_num) {
+          LOG_FATAL << "flatten pos " << flatten_pos << " is larger than node num " << node_num;
+        }
         parent_pos_array[flatten_pos] = parent_pos;
 
         if (children_pos_array[parent_pos * 2] == 0) {

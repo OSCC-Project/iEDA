@@ -17,11 +17,11 @@ namespace ieda_feature {
 // Wirelength
 struct TotalWLSummary
 {
-  int32_t HPWL;
-  int32_t FLUTE;
-  int32_t HTree;
-  int32_t VTree;
-  int32_t GRWL;
+  int64_t HPWL;
+  int64_t FLUTE;
+  int64_t HTree;
+  int64_t VTree;
+  int64_t GRWL;
 };
 
 // Density

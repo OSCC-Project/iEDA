@@ -87,9 +87,12 @@ pub fn build_instance_current_vector(
         instance_power_pin_name += net_data.get_name();
         let node_index = net_data.get_node_id(&instance_power_pin_name).unwrap_or_else(|| {
             log::error!("node {} not found in net {}", instance_power_pin_name, net_data.get_name());
-            0
+            usize::MAX
         });
-        instance_current_data.insert(node_index, instance_current);
+        
+        if node_index != usize::MAX {
+            instance_current_data.insert(node_index, instance_current);
+        }
     }
 
     let nodes = net_data.get_nodes();

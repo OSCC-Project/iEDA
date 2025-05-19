@@ -68,6 +68,10 @@
 #include "time/Time.hh"
 #include "usage/usage.hh"
 
+#if CUDA_PROPAGATION
+#include "propagation-cuda/lib_arc.cuh"
+#endif
+
 namespace ista {
 
 static bool IsFileExists(const char *name) {
@@ -826,16 +830,20 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         remove_to_merge_nets[left_net_name] = the_right_net;
 
       } else if (the_left_net && !the_left_port) {
-        // assign net = input_port;
-
-        LOG_FATAL_IF(!the_right_port) << "the right port is not exist.";
-        the_left_net->addPinPort(the_right_port);
+        // assign net = input_port;        
+        if (the_right_port) {          
+          the_left_net->addPinPort(the_right_port);
+        } else {
+          LOG_ERROR << "the right port is not exist.";
+        }
 
       } else if (the_right_net && !the_right_port) {
         // assign output_port = net;
-
-        LOG_FATAL_IF(!the_left_port) << "the left port is not exist.";
-        the_right_net->addPinPort(the_left_port);
+        if (the_left_port) {
+          the_right_net->addPinPort(the_left_port);
+        } else {
+          LOG_ERROR << "the left port is not exist.";
+        }
 
       } else if (!the_right_net && !the_left_net && the_right_port) {
         // assign output_port = input_port;
@@ -864,11 +872,45 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       }
 
       // remove ununsed nets.
-      if (the_left_net->get_pin_ports().size() == 0) {
+      if (the_left_net && the_left_net->get_pin_ports().size() == 0) {
+        // update the remove to merge nets before remove net.
+        for (auto it = remove_to_merge_nets.begin();
+             it != remove_to_merge_nets.end();) {
+          auto &merge_net = it->second;
+          if (merge_net == the_left_net) {
+            if (the_right_net && the_right_net->get_pin_ports().size() > 0) {
+              it->second = the_right_net; 
+              ++it;
+            } else {
+              it = remove_to_merge_nets.erase(
+                  it); 
+            }
+          } else {
+            ++it;
+          }
+        }
+
         design_netlist.removeNet(the_left_net);
+        the_left_net = nullptr;
       }
 
-      if (the_right_net->get_pin_ports().size() == 0) {
+      if (the_right_net && the_right_net->get_pin_ports().size() == 0) {
+        // update the remove to merge nets before remove net.
+        for (auto it = remove_to_merge_nets.begin();
+             it != remove_to_merge_nets.end();) {
+          auto &merge_net = it->second;
+          if (merge_net == the_right_net) {
+            if (the_left_net) {
+              merge_net = the_left_net;
+              ++it;
+            } else {
+              it = remove_to_merge_nets.erase(it);
+            }
+          } else {
+            ++it;
+          }
+        }
+
         design_netlist.removeNet(the_right_net);
       }
     }
@@ -1427,6 +1469,12 @@ unsigned Sta::buildLibArcsGPU() {
       Lib_Table_GPU gpu_table;
 
       if (!table) {
+        lib_gpu_arc._table[index] = gpu_table;
+        continue;
+      }
+
+      if (table->getAxesSize() == 0) {
+        // (TODO totaosimin), need to process no axes table.
         lib_gpu_arc._table[index] = gpu_table;
         continue;
       }
@@ -2526,6 +2574,37 @@ unsigned Sta::resetPathData() {
   return 1;
 }
 
+#if CUDA_PROPAGATION
+unsigned Sta::resetGPUData() {
+  _gpu_vertices.clear();
+  _gpu_arcs.clear();
+
+  GPU_Flatten_Data flatten_data;
+  _flatten_data = std::move(flatten_data);
+
+  GPU_Graph gpu_graph;
+  _gpu_graph = std::move(gpu_graph);
+
+  _lib_gpu_arcs.clear();
+
+  free_lib_data_gpu(_gpu_lib_data, _lib_gpu_tables, _lib_gpu_table_ptrs);
+
+  Lib_Data_GPU gpu_lib_data;
+  _gpu_lib_data = std::move(gpu_lib_data);
+
+  _lib_gpu_tables.clear();
+  _lib_gpu_table_ptrs.clear();
+
+  _arc_to_index.clear();
+  _at_to_index.clear();
+  _index_to_at.clear();
+
+  return 1;
+
+}
+#endif
+
+
 /**
  * @brief update the timing data.
  *
@@ -2539,6 +2618,10 @@ unsigned Sta::updateTiming() {
   resetSdcConstrain();
   resetGraphData();
   resetPathData();
+
+#if CUDA_PROPAGATION
+  resetGPUData();
+#endif
 
   StaGraph &the_graph = get_graph();
   if (_propagation_method == PropagationMethod::kDFS) {
@@ -3194,7 +3277,7 @@ void Sta::printFlattenData() {
 
     output_file << "GPU_AT_DATA_" << at_data_index++ << ": " << std::endl;
     output_file << "  own_vertex: " << own_vertex->getName() << std::endl;
-    output_file << "  vertex level" << own_vertex->get_level() << std::endl;
+    output_file << "  vertex level: " << own_vertex->get_level() << std::endl;
     output_file << "  launch_clock_name: " << launch_clock_name << std::endl;
     output_file << "  launch_clock_index: " << at_data._own_clock_index
                 << std::endl;

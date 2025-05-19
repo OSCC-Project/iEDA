@@ -32,7 +32,7 @@ class InitEGR
   float getNetEGRWL(std::string net_name);
 
   void parseGuideFile(const std::string& guide_path);
-  float parseEGRWL(std::string guide_path);
+  double parseEGRWL(std::string guide_path);
   float parseNetEGRWL(std::string guide_path, std::string net_name);
   float parsePathEGRWL(std::string guide_path, std::string net_name, std::string load_name);
 

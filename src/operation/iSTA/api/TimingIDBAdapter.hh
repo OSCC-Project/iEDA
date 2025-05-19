@@ -57,6 +57,7 @@ using idb::IdbLayerRouting;
 using idb::IdbLayout;
 using idb::IdbLefService;
 using idb::IdbNet;
+using idb::IdbSpecialNet;
 using idb::IdbNetList;
 using idb::IdbPin;
 using idb::IdbPlacementStatus;
@@ -173,9 +174,20 @@ class TimingIDBAdapter : public TimingDBAdapter {
     _sta2dbNet[sta_net] = db_net;
     _db2staNet[db_net] = sta_net;
   }
+
   void removeCrossRef(Net* sta_net, IdbNet* db_net) {
     _sta2dbNet.erase(sta_net);
     _db2staNet.erase(db_net);
+  }
+
+  void crossRef(Net* sta_net, IdbSpecialNet* db_net) {
+    _sta2dbSpecialNet[sta_net] = db_net;
+    _db2staSpecialNet[db_net] = sta_net;
+  }
+
+  void removeCrossRef(Net* sta_net, IdbSpecialNet* db_net) {
+    _sta2dbSpecialNet.erase(sta_net);
+    _db2staSpecialNet.erase(db_net);
   }
 
   void crossRef(Pin* sta_pin, IdbPin* db_pin) {
@@ -207,6 +219,9 @@ class TimingIDBAdapter : public TimingDBAdapter {
 
   FlatMap<IdbNet*, Net*> _db2staNet;
   FlatMap<Net*, IdbNet*> _sta2dbNet;
+
+  FlatMap<IdbSpecialNet*, Net*> _db2staSpecialNet;
+  FlatMap<Net*, IdbSpecialNet*> _sta2dbSpecialNet;
 
   FlatMap<IdbPin*, Pin*> _db2staPin;  // net: get instance_pin
   FlatMap<Pin*, IdbPin*> _sta2dbPin;

@@ -6,18 +6,35 @@
 #include "union_api.h"
 #include "wirelength_api.h"
 
-void TestBuildNetEval();
+void TestBuildNetEval(const std::string& db_config_path);
 
-int main()
-{
-  TestBuildNetEval();
-
-  return 0;
+void PrintUsage(const char* program_name) {
+  std::cout << "Union Evaluation" << std::endl;
+  std::cout << "Usage: " << program_name << " <function_name>" << std::endl;
+  std::cout << "Available parameters:" << std::endl;
+  std::cout << "  <db_config_path> Path to the database configuration file." << std::endl;
+  std::cout << "  --help, -h       Show this help message and exit." << std::endl;
 }
 
-void TestBuildNetEval()
+int main(const int argc, const char * argv[])
 {
-  dmInst->init("/data/project_share/dataset_baseline/jpeg_encoder/workspace/config/iEDA_config/db_default_config_tmp.json");
+  if (argc == 2) {
+    if (const std::string arg = argv[1]; arg == "--help" || arg == "-h") {
+      PrintUsage(argv[0]);
+      return 0;
+    } else {
+      TestBuildNetEval(arg);
+      return 0;
+    }
+  }
+  std::cerr << "Error: Incorrect number of arguments." << std::endl;
+  PrintUsage(argv[0]);
+  return 1;
+}
+
+void TestBuildNetEval(const std::string& db_config_path)
+{
+  dmInst->init(db_config_path);
   UNION_API_INST->initIDB();
   UNION_API_INST->initEGR(true);
   UNION_API_INST->initFlute();
