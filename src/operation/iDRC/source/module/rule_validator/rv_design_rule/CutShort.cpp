@@ -24,7 +24,6 @@ void RuleValidator::verifyCutShort(RVBox& rv_box)
 
   std::map<int32_t, GTLPolySetInt> cut_gtl_poly_set_map;
   std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> cut_bg_rtree_map;
-
   for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
     if (drc_shape->get_is_routing()) {
       continue;
@@ -32,7 +31,6 @@ void RuleValidator::verifyCutShort(RVBox& rv_box)
     cut_gtl_poly_set_map[drc_shape->get_layer_idx()] += DRCUTIL.convertToGTLRectInt(DRCUTIL.getEnlargedRect(drc_shape->get_rect(), 1));
     cut_bg_rtree_map[drc_shape->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(drc_shape->get_rect()), drc_shape->get_net_idx()));
   }
-
   for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
     if (drc_shape->get_is_routing()) {
       continue;

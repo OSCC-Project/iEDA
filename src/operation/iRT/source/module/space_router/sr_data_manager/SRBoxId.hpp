@@ -20,14 +20,41 @@
 
 namespace irt {
 
-class VRComParam
+class SRBoxId
 {
  public:
-  VRComParam() = default;
-  ~VRComParam() = default;
+  SRBoxId() = default;
+  SRBoxId(const int32_t x, const int32_t y)
+  {
+    _x = x;
+    _y = y;
+  }
+  ~SRBoxId() = default;
+  bool operator==(const SRBoxId& other) { return this->_x == other._x && this->_y == other._y; }
+  bool operator!=(const SRBoxId& other) { return !((*this) == other); }
   // getter
+  int32_t get_x() const { return _x; }
+  int32_t get_y() const { return _y; }
   // setter
+  void set_x(const int32_t x) { _x = x; }
+  void set_y(const int32_t y) { _y = y; }
+  // function
+
  private:
+  int32_t _x = -1;
+  int32_t _y = -1;
+};
+
+struct CmpSRBoxId
+{
+  bool operator()(const SRBoxId& a, const SRBoxId& b) const
+  {
+    if (a.get_x() != b.get_x()) {
+      return a.get_x() < b.get_x();
+    } else {
+      return a.get_y() < b.get_y();
+    }
+  }
 };
 
 }  // namespace irt

@@ -20,7 +20,7 @@
 
 - pin_accessor: 对所有pin分配access点,在port上找到可以接入的点
 
-- global_router: 全局布线器,以GCell为单位,在三维网格上进行全局布线
+- space_router: 全局布线器,以GCell为单位,在三维网格上进行全局布线
 
 - track_assigner: wire轨道分配,建模为布线问题进行轨道分配
 

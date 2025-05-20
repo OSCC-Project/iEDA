@@ -16,40 +16,16 @@
 // ***************************************************************************************
 #pragma once
 
-#include <string>
-
-#include "Logger.hpp"
-
 namespace irt {
 
-enum class VRObsType
+class SRComParam
 {
-  kNone = 0,
-  kPlanar = 1,
-  kSpace = 2
-};
-
-struct GetVRObsTypeName
-{
-  std::string operator()(const VRObsType& vr_obs_type) const
-  {
-    std::string vr_obs_type_name;
-    switch (vr_obs_type) {
-      case VRObsType::kNone:
-        vr_obs_type_name = "none";
-        break;
-      case VRObsType::kPlanar:
-        vr_obs_type_name = "planar";
-        break;
-      case VRObsType::kSpace:
-        vr_obs_type_name = "space";
-        break;
-      default:
-        RTLOG.error(Loc::current(), "Unrecognized type!");
-        break;
-    }
-    return vr_obs_type_name;
-  }
+ public:
+  SRComParam() = default;
+  ~SRComParam() = default;
+  // getter
+  // setter
+ private:
 };
 
 }  // namespace irt

@@ -21,19 +21,18 @@ namespace idrc {
 void RuleValidator::verifyOffGridOrWrongWay(RVBox& rv_box)
 {
   int32_t manufacture_grid = DRCDM.getDatabase().get_manufacture_grid();
+  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = DRCDM.getDatabase().get_cut_to_adjacent_routing_map();
 
   std::map<int32_t, std::map<int32_t, GTLPolySetInt>> routing_net_gtl_poly_set_map;
-  for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
-    if (!drc_shape->get_is_routing() || drc_shape->get_net_idx() == -1) {
-      continue;
-    }
-    routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
-  }
   for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+    int32_t routing_layer_idx = -1;
     if (!drc_shape->get_is_routing()) {
-      continue;
+      std::vector<int32_t>& routing_layer_idx_list = cut_to_adjacent_routing_map[drc_shape->get_layer_idx()];
+      routing_layer_idx = *std::min_element(routing_layer_idx_list.begin(), routing_layer_idx_list.end());
+    } else {
+      routing_layer_idx = drc_shape->get_layer_idx();
     }
-    routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
+    routing_net_gtl_poly_set_map[routing_layer_idx][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
   }
   for (auto& [routing_layer_idx, net_gtl_poly_set_map] : routing_net_gtl_poly_set_map) {
     for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set_map) {

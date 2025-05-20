@@ -18,6 +18,7 @@
 
 #include "CutLayer.hpp"
 #include "Die.hpp"
+#include "PropertyDefinition.hpp"
 #include "RoutingLayer.hpp"
 #include "ViolationType.hpp"
 
@@ -32,6 +33,7 @@ class Database
   int32_t get_micron_dbu() const { return _micron_dbu; }
   int32_t get_manufacture_grid() const { return _manufacture_grid; }
   Die& get_die() { return _die; }
+  PropertyDefinition& get_property_definition() { return _property_definition; }
   std::vector<RoutingLayer>& get_routing_layer_list() { return _routing_layer_list; }
   std::vector<CutLayer>& get_cut_layer_list() { return _cut_layer_list; }
   std::set<ViolationType>& get_exist_rule_set() { return _exist_rule_set; }
@@ -50,6 +52,7 @@ class Database
   int32_t _micron_dbu = -1;
   int32_t _manufacture_grid = -1;
   Die _die;
+  PropertyDefinition _property_definition;
   std::vector<RoutingLayer> _routing_layer_list;
   std::vector<CutLayer> _cut_layer_list;
   std::set<ViolationType> _exist_rule_set;

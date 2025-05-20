@@ -65,12 +65,14 @@ class RoutingLayer
     std::vector<int32_t>& width_list = _prl_spacing_table.get_width_list();
     GridMap<int32_t>& width_parallel_length_map = _prl_spacing_table.get_width_parallel_length_map();
 
-    for (size_t i = 0; (i + 1) < width_list.size(); i++) {
-      if (width_list[i] <= rect.getWidth() && rect.getWidth() < width_list[i + 1]) {
-        return width_parallel_length_map[i].front();
+    int32_t width_idx = static_cast<int32_t>(width_list.size()) - 1;
+    for (int32_t i = width_idx; 0 <= i; i--) {
+      if (width_list[i] <= rect.getWidth()) {
+        width_idx = i;
+        break;
       }
     }
-    return width_parallel_length_map.back().front();
+    return width_parallel_length_map[width_idx].front();
   }
 
  private:
@@ -80,9 +82,9 @@ class RoutingLayer
   Direction _prefer_direction = Direction::kNone;
   ScaleAxis _track_axis;
   // min width
-  int32_t _min_width = 0;
+  int32_t _min_width = -1;
   // min area
-  int32_t _min_area = 0;
+  int32_t _min_area = -1;
   // prl
   SpacingTable _prl_spacing_table;
   // eol

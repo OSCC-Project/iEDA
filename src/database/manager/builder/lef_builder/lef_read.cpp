@@ -40,6 +40,7 @@
 #include "IdbLayerShape.h"
 #include "IdbLayout.h"
 #include "IdbObs.h"
+#include "Str.hh"
 #include "property_parser/cutlayer_parser.h"
 #include "property_parser/masterslicelayer_parser.h"
 #include "property_parser/routinglayer_parser.h"
@@ -98,13 +99,13 @@ bool LefRead::createDb(const char* file_name)
   lefrSetMacroCbk(macroCB);
   lefrSetMacroEndCbk(macroEndCB);
   lefrSetManufacturingCbk(manufacturingCB);
-  // lefrSetMaxStackViaCbk(maxStackViaCB);
+  lefrSetMaxStackViaCbk(maxStackViaCB);
   // lefrSetMinFeatureCbk(minFeatureCB);
   lefrSetNonDefaultCbk(nonDefaultCB);
   lefrSetObstructionCbk(obstructionCB);
   lefrSetPinCbk(pinCB);
   // lefrSetPropBeginCbk(propDefBeginCB);
-  // lefrSetPropCbk(propDefCB);
+  lefrSetPropCbk(propDefCB);
   // lefrSetPropEndCbk(propDefEndCB);
   lefrSetSiteCbk(siteCB);
   // lefrSetSpacingBeginCbk(spacingBeginCB);
@@ -174,6 +175,94 @@ int LefRead::parse_manufacture_grid(double value)
 {
   IdbLayout* layout = _lef_service->get_layout();
   layout->set_manufacture_grid(transUnitDB(value));
+
+  return kDbSuccess;
+}
+
+int LefRead::propDefCB(lefrCallbackType_e c, lefiProp* prop, lefiUserData data)
+{
+  LefRead* lef_reader = (LefRead*) data;
+  if (!lef_reader->check_type(c)) {
+    std::cout << "Check Type Error [Lef : property definition] ..." << std::endl;
+    return kDbFail;
+  }
+
+  lef_reader->parse_property_definition(prop);
+  return kDbSuccess;
+}
+
+int LefRead::parse_property_definition(lefiProp* prop)
+{
+  IdbLayout* layout = _lef_service->get_layout();
+
+  auto property_type = prop->lefiProp::propType();
+  std::string name = prop->lefiProp::propName();
+  auto data_type = prop->lefiProp::dataType();
+
+  // set max via stack
+  if (name == "LEF58_MAXVIASTACK" && prop->lefiProp::hasString()) {
+    std::string data = prop->lefiProp::string();
+    parse_max_stack_via_lef58(data);
+  }
+
+  return kDbSuccess;
+}
+
+int LefRead::parse_max_stack_via_lef58(std::string data)
+{
+  IdbLayout* layout = _lef_service->get_layout();
+
+  auto max_via_stack = new IdbMaxViaStack();
+
+  const char* sep = " ";
+  vector<std::string> strs = ieda::Str::split(data.c_str(), sep);
+  for (size_t i = 0; i < strs.size(); ++i) {
+    if (strs[i] == "MAXVIASTACK") {
+      auto number = atoi(strs[i + 1].c_str());
+      max_via_stack->set_stacked_via_num(number);
+    }
+
+    if (strs[i] == "NOSINGLE") {
+      max_via_stack->set_no_single(true);
+    }
+
+    if (strs[i] == "RANGE") {
+      std::string bottom_layer = strs[i + 1];
+      std::string top_layer = strs[i + 2];
+      max_via_stack->set_layer_bottom(bottom_layer);
+      max_via_stack->set_layer_top(top_layer);
+    }
+  }
+
+  layout->set_max_via_stack(max_via_stack);
+
+  return kDbSuccess;
+}
+
+int LefRead::maxStackViaCB(lefrCallbackType_e c, lefiMaxStackVia* maxStack, lefiUserData data)
+{
+  LefRead* lef_reader = (LefRead*) data;
+  if (!lef_reader->check_type(c)) {
+    std::cout << "Check Type Error [Lef : max via stack] ..." << std::endl;
+    return kDbFail;
+  }
+
+  lef_reader->parse_max_stack_via(maxStack);
+  return kDbSuccess;
+}
+
+int LefRead::parse_max_stack_via(lefiMaxStackVia* maxStack)
+{
+  IdbLayout* layout = _lef_service->get_layout();
+
+  auto max_via_stack = new IdbMaxViaStack();
+  max_via_stack->set_stacked_via_num(maxStack->lefiMaxStackVia::maxStackVia());
+  std::string top_layer = maxStack->lefiMaxStackVia::maxStackViaTopLayer();
+  max_via_stack->set_layer_top(top_layer);
+  std::string bottom_layer = maxStack->lefiMaxStackVia::maxStackViaBottomLayer();
+  max_via_stack->set_layer_bottom(bottom_layer);
+
+  layout->set_max_via_stack(max_via_stack);
 
   return kDbSuccess;
 }
