@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+// #include <boost/gil/extension/io/bmp.hpp>
 #include <boost/gil/typedefs.hpp>
 
 #include "IdbInstance.h"
@@ -73,7 +74,7 @@ class ReportPlace : public ReportBase
       drawRect(view(img), x / scale, y / scale, 200, 60, colors[i]);
     }
     std::string bmpfile = file.empty()? "inst_distro.bmp" : file;
-    write_view(bmpfile, flipped_up_down_view(view(img)), bmp_tag{});
+    // write_view(bmpfile, flipped_up_down_view(view(img)), bmp_tag{});
     std::cout << "result saved to "<< bmpfile << std::endl;
   }
 

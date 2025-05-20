@@ -31,7 +31,7 @@ option(USE_PROFILER "Enable performance profiling (default OFF)" OFF)
 option(SANITIZER "Enable address sanitizer (default OFF)" OFF)
 option(BUILD_GUI "Enable GUI components (default OFF)" OFF)
 option(USE_GPU "Enable GPU acceleration (default OFF)" OFF)
-option(COMPATIBILITY_MODE "Enable compatibility mode (disable aggressive optimizations)" OFF)
+option(COMPATIBILITY_MODE "Enable compatibility mode (disable aggressive optimizations)" ON)
 
 if(NOT DEFINED CMD_BUILD)
     set(SANITIZER OFF)
@@ -67,6 +67,9 @@ if(NOT COMPATIBILITY_MODE)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
     set(CMAKE_AR "gcc-ar")
     set(CMAKE_RANLIB "gcc-ranlib")
+    
+    # diable use gpu for lto confilct with cuda
+    set(USE_GPU OFF)
 endif()
 
 if(USE_PROFILER)
@@ -85,6 +88,7 @@ endif()
 if(BUILD_GUI)
     add_definitions(-DBUILD_GUI)
 endif()
+
 
 if (USE_GPU)
     add_definitions(-DUSE_GPU)

@@ -79,12 +79,16 @@ class IRPGNode {
   void set_is_bump() { _is_bump = true; }
   auto is_bump() const { return _is_bump; }
 
+  void set_is_via() { _is_via = true; }
+  auto is_via() const { return _is_via; }
+
  private:
   IRNodeCoord _coord;  //!< The coord of the node.
   int _layer_id;       //!< The layer id of the node.
   int _node_id = -1; //!< The node id of the pg nodes.
   bool _is_instance_pin = false; //!< The node is instance VDD/GND.
   bool _is_bump = false; //!< The node is bump VDD/GND.
+  bool _is_via = false; //!< The node is via.
   const char* _node_name = nullptr; //!< The name of the node.
 };
 
@@ -157,15 +161,18 @@ class IRPGNetlist {
   IRPGNode& addNode(IRNodeCoord coord, int layer_id) {
     auto& one_node = _nodes.emplace_back(coord, layer_id);
     _nodes_image.push_back(&one_node);
-    one_node.set_node_id(_nodes.size() - 1);
+    auto node_id = _nodes.size() - 1;
+    one_node.set_node_id(node_id);
+
+    // set every node one name.
+    _node_id_to_name[node_id] = _net_name + ":" + std::to_string(node_id);
+    one_node.set_node_name(_node_id_to_name[node_id].c_str());
+
     return one_node;
   }
   IRPGNode* findNode(IRNodeCoord coord, int layer_id) {
-    auto result = std::ranges::find_if(_nodes, [&](const IRPGNode& node) {
-      return node.get_coord() == coord && node.get_layer_id() == layer_id;
-    });
-    if (result != _nodes.end()) {
-      return &(*result);
+    if (_nodes_map.find({coord, layer_id}) != _nodes_map.end()) {
+      return _nodes_map[{coord, layer_id}];
     }
 
     return nullptr;
@@ -206,6 +213,7 @@ class IRPGNetlist {
  private:
   std::list<IRPGNode> _nodes;  //!< The nodes of the netlist.
   std::vector<IRPGNode*> _nodes_image; //!< The nodes image for fast access.
+  std::map<std::pair<IRNodeCoord, int>, IRPGNode*> _nodes_map; //!< The nodes map for fast access.
   std::vector<IRPGEdge> _edges;  //!< The edges of the netlist.
 
   std::map<unsigned, std::string> _node_id_to_name; //!< The node id to node name.
@@ -222,6 +230,9 @@ class IRPGNetlistBuilder {
   IRPGNetlistBuilder() = default;
   ~IRPGNetlistBuilder() = default;
 
+  auto& get_pg_netlists() { return _pg_netlists; }
+  auto& get_rust_pg_netlists() { return _rust_pg_netlists; }
+
   std::vector<BGSegment> buildBGSegments(idb::IdbSpecialNet* special_net,
                                          unsigned& line_segment_num);
 
@@ -232,8 +243,17 @@ class IRPGNetlistBuilder {
 
   auto* get_rust_rc_data() const { return _rust_rc_data; }
 
+  void set_instance_names(std::set<std::string> instance_names) {
+    _instance_names = std::move(instance_names);
+  }
+  auto& get_instance_names() { return _instance_names; }
+
  private:
   bgi::rtree<BGValue, bgi::quadratic<16>> _rtree;
+  double _c_via_resistance = 0.001;
+  double _c_instance_row_resistance = 0.0001;
+
+  std::set<std::string> _instance_names; //!< The instance have power.
 
   std::list<IRPGNetlist> _pg_netlists; //!< The builded pg netlist.
   std::vector<const void*> _rust_pg_netlists; //!< The rust pg netlist.

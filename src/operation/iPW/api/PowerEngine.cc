@@ -474,25 +474,38 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMapWithGPU(
  * @return unsigned 
  */
 unsigned PowerEngine::buildPGNetWireTopo() {
-  LOG_INFO << "build pg net wire start";
+  LOG_INFO << "build pg net wire topo start";
+  
+  // set the instance names for build wire topo skip some no power instance.
+  std::vector<IRInstancePower> instance_power_data = _ipower->getInstancePowerData();
+  std::set<std::string> instance_names;
+  std::ranges::for_each(instance_power_data, [&instance_names](auto& instance_power) {
+    std::string instance_name = instance_power._instance_name;
+    instance_names.insert(std::move(instance_name));
+  });
+  _pg_netlist_builder.set_instance_names(std::move(instance_names));
 
   auto* idb_adapter =
       dynamic_cast<ista::TimingIDBAdapter*>(_timing_engine->get_db_adapter());
   auto* idb_builder = idb_adapter->get_idb();
   auto* special_net_list =
       idb_builder->get_def_service()->get_design()->get_special_net_list();
+  auto* idb_design = idb_builder->get_def_service()->get_design();
+  auto dbu = idb_design->get_units()->get_micron_dbu();
+
+  std::function<double(unsigned, unsigned)> calc_resistance =
+      [idb_adapter, dbu](unsigned layer_id, unsigned distance_dbu) -> double {
+    std::optional<double> width = std::nullopt;
+    double wire_length = double(distance_dbu) / dbu;
+    double resistance = idb_adapter->getResistance(layer_id, wire_length, width);
+    resistance *= c_resistance_coef;
+    return resistance;
+  };
+
   // buid pg netlist
   for (auto* power_net : special_net_list->get_net_list()) {
     auto* idb_design = idb_builder->get_def_service()->get_design();
-    auto dbu = idb_design->get_units()->get_micron_dbu();
     auto power_net_name = power_net->get_net_name();
-
-    std::function<double(unsigned, unsigned)> calc_resistance =
-        [idb_adapter, dbu](unsigned layer_id, unsigned distance_dbu) -> double {
-      std::optional<double> width = std::nullopt;
-      double wire_length = double(distance_dbu) / dbu;
-      return idb_adapter->getResistance(layer_id, wire_length, width);
-    };
 
     auto* io_pins = idb_design->get_io_pin_list();
     auto* power_io_pin = io_pins->find_pin(power_net_name);
@@ -503,6 +516,12 @@ unsigned PowerEngine::buildPGNetWireTopo() {
     _pg_netlist_builder.build(power_net, power_io_pin, calc_resistance);
   }
 
+  bool is_empty = _pg_netlist_builder.get_pg_netlists().empty();
+  if (is_empty) {
+    LOG_INFO << "pg net netlist empty";
+    return 0;
+  }
+
   _pg_netlist_builder.createRustPGNetlist();
   _pg_netlist_builder.createRustRCData();
 
@@ -510,7 +529,7 @@ unsigned PowerEngine::buildPGNetWireTopo() {
 
   _ipower->set_rust_pg_rc_data(rc_data);
 
-  LOG_INFO << "build pg net wire end";
+  LOG_INFO << "build pg net wire topo end";
 
   return 1;
 }
