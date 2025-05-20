@@ -865,7 +865,9 @@ void IDBWrapper::writeBackSourceDatabase()
 
 void IDBWrapper::writeDef(std::string file_name = "")
 {
-  _idbw_database->_idb_builder->saveDef("./" + file_name);
+  if (const auto ret = _idbw_database->_idb_builder->saveDef("./" + file_name); !ret) {
+    LOG_FATAL << "Fail to write DEF file!";
+  }
 }
 
 std::string IDBWrapper::fixSlash(std::string raw_str)
