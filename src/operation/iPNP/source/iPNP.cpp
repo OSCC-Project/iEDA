@@ -66,7 +66,7 @@ void iPNP::runSynthesis()
 void iPNP::runOptimize()
 {
   PdnOptimizer pdn_optimizer;
-  pdn_optimizer.optimize(_initialized_network);
+  pdn_optimizer.optimize(_initialized_network, _idb_wrapper.get_idb_builder());
   _current_opt_network = pdn_optimizer.get_out_put_grid();
 }
 
@@ -113,32 +113,23 @@ void iPNP::run()
     FastPlacer fast_placer;
     fast_placer.runFastPlacer(_idb_wrapper.get_idb_builder());
 
-    runOptimize();
+    // runOptimize();
+    _current_opt_network = _initialized_network;
 
     saveToIdb();
 
     writeIdbToDef(_output_def_path);
 
-
     CongestionEval cong_eval;
     cong_eval.evalEGR(_idb_wrapper.get_idb_builder());
     
-
-    // DefConverter def_converter;
-    // def_converter.runDefConverter(
-    //   "/home/sujianrong/iEDA/src/operation/iPNP/data/test/output.def",
-    //   "/home/sujianrong/iEDA/src/operation/iPNP/data/test/aes_test_die.def",
-    //   "SPECIALNETS 5 ;",
-    //   "END SPECIALNETS");
-    // def_converter.runDefConverter(
-    //   "/home/sujianrong/iEDA/src/operation/iPNP/data/test/output.def",
-    //   "/home/sujianrong/iEDA/src/operation/iPNP/data/test/aes_test_die.def",
-    //   "COMPONENTS",
-    //   "END COMPONENTS");
-    
     IREval ir_eval;
-    ir_eval.runIREval();
-    std::map<ista::Instance::Coordinate, double> coord_ir_map = ir_eval.get_Coord_IR_map();
+    ir_eval.runIREval(_idb_wrapper.get_idb_builder());
+    // std::map<ista::Instance::Coordinate, double> coord_ir_map = ir_eval.get_Coord_IR_map();
+    // double max_ir_drop = ir_eval.getMaxIRDrop();
+    // double min_ir_drop = ir_eval.getMinIRDrop();
+    // std::cout << "Max IR Drop: " << max_ir_drop << std::endl;
+    // std::cout << "Min IR Drop: " << min_ir_drop << std::endl;
 
   }
   else {

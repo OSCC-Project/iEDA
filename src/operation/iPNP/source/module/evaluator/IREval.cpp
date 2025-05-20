@@ -23,15 +23,16 @@
  */
 
 #include "IREval.hh"
+#include "iPNPIdbWrapper.hh"
 
 #include "log/Log.hh"
 
 namespace ipnp {
 
 
-void IREval::runIREval()
+void IREval::runIREval(idb::IdbBuilder* idb_builder)
 {
-  initIREval();
+  initIREval(idb_builder);
   std::string power_net_name = "VDD";
   std::map<ista::Instance::Coordinate, double> coord_ir_map;
 
@@ -45,7 +46,7 @@ void IREval::runIREval()
 
 }
 
-void IREval::initIREval()
+void IREval::initIREval(idb::IdbBuilder* idb_builder)
 {
   LOG_INFO << "Start initialize IREval";
 
@@ -135,7 +136,14 @@ void IREval::initIREval()
 
   std::string def_file = "/home/sujianrong/iEDA/src/operation/iPNP/data/test/output.def";
 
-  _timing_engine->readDefDesign(def_file, lef_files);
+  // debug
+  // iPNPIdbWrapper temp_wrapper;
+  // temp_wrapper.set_idb_builder(idb_builder);
+  // temp_wrapper.set_idb_design(idb_builder->get_def_service()->get_design());
+  // temp_wrapper.writeIdbToDef("/home/sujianrong/iEDA/src/operation/iPNP/data/test/debug.def");
+
+  // _timing_engine->readDefDesign(def_file, lef_files);
+  _timing_engine->setDefDesignBuilder(idb_builder);
 
   _timing_engine->readSdc("/home/sujianrong/aes/aes.sdc");
 
@@ -157,6 +165,40 @@ void IREval::initIREval()
 
 }
 
+double IREval::getMaxIRDrop() const
+{
+  if (_coord_ir_map.empty()) {
+    return 0.0;  // 如果映射为空，返回0
+  }
 
+  double max_ir_drop = -std::numeric_limits<double>::max(); // 使用负的最大值
+
+  // 使用迭代器遍历
+  for (auto it = _coord_ir_map.begin(); it != _coord_ir_map.end(); ++it) {
+    if (it->second > max_ir_drop) {
+      max_ir_drop = it->second;
+    }
+  }
+
+  return max_ir_drop;
+}
+
+double IREval::getMinIRDrop() const
+{
+  if (_coord_ir_map.empty()) {
+    return 0.0;  // 如果映射为空，返回0
+  }
+
+  double min_ir_drop = std::numeric_limits<double>::max();
+
+  // 使用迭代器遍历
+  for (auto it = _coord_ir_map.begin(); it != _coord_ir_map.end(); ++it) {
+    if (it->second < min_ir_drop) {
+      min_ir_drop = it->second;
+    }
+  }
+
+  return min_ir_drop;
+}
 
 }  // namespace ipnp

@@ -39,15 +39,17 @@ class CongestionEval
   CongestionEval() = default;
   ~CongestionEval() = default;
 
-  std::vector<std::vector<double>> get_map_overflow() { return _map_overflow; }
-  auto get_cong_rudy_value() { return _net_cong_rudy; }
+  // std::vector<std::vector<double>> get_map_overflow() { return _map_overflow; }
+  // auto get_cong_rudy_value() { return _net_cong_rudy; }
 
-  void evalRudyRouting();
+  // void evalRudyRouting();
   void evalEGR(idb::IdbBuilder* idb_builder);
-
- private:
-  std::vector<std::vector<double>> _map_overflow;
-  std::vector<float> _net_cong_rudy;
+  int32_t get_total_overflow_union() { return _total_overflow_union; }
+  
+private:
+  // std::vector<std::vector<double>> _map_overflow;
+  // std::vector<float> _net_cong_rudy;
+  int32_t _total_overflow_union;
 };
 
 }  // namespace ipnp

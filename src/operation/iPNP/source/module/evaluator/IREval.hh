@@ -29,6 +29,7 @@
 #include <map>
 #include <string>
 #include <memory>
+#include <limits>
 
 #include "api/PowerEngine.hh"
 #include "api/TimingEngine.hh"
@@ -50,9 +51,12 @@ class IREval
    IREval()=default;  
   ~IREval()=default;
 
-  void runIREval();
-  std::map<ista::Instance::Coordinate, double> get_Coord_IR_map() {return _coord_ir_map;}
-
+  void runIREval(idb::IdbBuilder* idb_builder);
+  
+  std::map<ista::Instance::Coordinate, double> get_Coord_IR_map() { return _coord_ir_map; }
+  double getMaxIRDrop() const;
+  double getMinIRDrop() const;
+  
 private:
   ista::TimingEngine* _timing_engine;
   ipower::PowerEngine* _power_engine;
@@ -62,7 +66,7 @@ private:
 
   std::map<ista::Instance::Coordinate, double> _coord_ir_map;
 
-  void initIREval();
+  void initIREval(idb::IdbBuilder* idb_builder);
 };
 
 }  // namespace ipnp

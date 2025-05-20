@@ -27,17 +27,17 @@
 #include "congestion_api.h"
 
 namespace ipnp {
-  void CongestionEval::evalRudyRouting()
-  {
-    // auto& eval_api = eval::EvalAPI::initInst();
+  // void CongestionEval::evalRudyRouting()
+  // {
+  //   // auto& eval_api = eval::EvalAPI::initInst();
 
-    int32_t bin_cnt_x = 512;  // Grid size
-    int32_t bin_cnt_y = 512;
-    // eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
+  //   int32_t bin_cnt_x = 512;  // Grid size
+  //   int32_t bin_cnt_y = 512;
+  //   // eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
 
-    string eval_method = "RUDY";
-    // _net_cong_rudy = eval_api.evalNetCong(eval_method);  // using RUDY
-  }
+  //   string eval_method = "RUDY";
+  //   // _net_cong_rudy = eval_api.evalNetCong(eval_method);  // using RUDY
+  // }
 
   void CongestionEval::evalEGR(idb::IdbBuilder* idb_builder)
   {
@@ -52,9 +52,9 @@ namespace ipnp {
     ieval::OverflowSummary overflow_summary;
 
     std::string temp = congestion_api.egrUnionMap(stage, map_path);
+
     overflow_summary = congestion_api.egrOverflow(stage, temp);
-
-
+    _total_overflow_union = overflow_summary.total_overflow_union;
 
   }
 }  // namespace ipnp
