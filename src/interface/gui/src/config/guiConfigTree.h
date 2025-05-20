@@ -21,9 +21,9 @@
 #include <string>
 #include <vector>
 
-using namespace std;
-
 namespace igui {
+  using namespace std;
+
   enum class GuiTreeColEnum : int32_t { kLayerColor, kName, kVisible, kMax };
 
   enum class GuiOptionValue : int32_t { kOff, kOn, kmax };
