@@ -83,7 +83,7 @@ bool DefWrite::initFile(const char* file)
     _font = SaveFormat::kUnzip;
     _file_write = fopen(file, "w+");
     if (_file_write == nullptr) {
-      std::cout << "Open def file failed..." << std::endl;
+      std::cerr << "Open def file failed..." << std::endl;
       return false;
     }
   }

@@ -74,7 +74,7 @@ bool DefRead::createDb(const char* file)
     FILE* f = fopen(file, "r");
 
     if (f == NULL) {
-      std::cout << "Open def file failed..." << std::endl;
+      std::cerr << "Open def file failed..." << std::endl;
       return false;
     }
 
@@ -257,7 +257,7 @@ bool DefRead::createDbGzip(const char* gzip_file)
   defGZFile f = defrGZipOpen(gzip_file, "r");
 
   if (f == NULL) {
-    std::cout << "Open def file failed..." << std::endl;
+    std::cerr << "Open def file failed..." << std::endl;
     return false;
   }
 
