@@ -1,3 +1,4 @@
+#include "FastRouter.hh"
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
 // Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
@@ -15,11 +16,33 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file EarlyGlobal.hh
- * @author Xinhao li
- * @brief
+ * @file FastRouter.cpp
+ * @author Jianrong Su
+ * @brief FastRouter实现文件
  * @version 0.1
- * @date 2024-07-15
+ * @date 2025-04-27
  */
 
-#pragma once
+#include "RTInterface.hpp"
+
+namespace ipnp {
+  void ipnp::FastRouter::runFastRouter(idb::IdbBuilder* idb_builder)
+  {
+    irt::RTInterface& rti = irt::RTInterface::getInst();
+
+    std::map<std::string, std::any> config_map;
+    config_map["-output_def_file_path"] = std::string("/home/sujianrong/iEDA/src/operation/iPNP/data/rt"); // 输出def的路径
+    config_map["-temp_directory_path"] = std::string("/home/sujianrong/iEDA/src/operation/iPNP/data/rt/rt_temp_directory"); // 临时文件路径
+
+    
+    rti.initRT(config_map);
+    rti.runEGR();
+    // rti.runRT();
+    rti.clearDef();
+    rti.destroyRT();
+  }
+
+
+} // namespace ipnp
+
+

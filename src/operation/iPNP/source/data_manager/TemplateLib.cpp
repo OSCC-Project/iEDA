@@ -46,6 +46,7 @@ void TemplateLib::gen_template_libs()
 
   // Vertical direction templates
   _vertical_templates.push_back(gen_single_template(StripeDirection::kVertical, 8000.0, 1600.0, 19200.0, 8000.0));
+  // _vertical_templates.push_back(gen_single_template(StripeDirection::kVertical, 900.0, 1600.0, 9600.0, 8000.0));
   _vertical_templates.push_back(gen_single_template(StripeDirection::kVertical, 900.0, 1600.0, 19200.0, 8000.0));
   _vertical_templates.push_back(gen_single_template(StripeDirection::kVertical, 4.0, 0.8, 9.6, 4.0));
   _vertical_templates.push_back(gen_single_template(StripeDirection::kVertical, 4.65, 15.0, 10.0, 2.925));

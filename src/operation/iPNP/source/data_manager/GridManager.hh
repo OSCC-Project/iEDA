@@ -105,7 +105,7 @@ class PDNRectanGridRegion : public PDNGridRegion
 class GridManager
 {
  public:
-  GridManager();
+   GridManager() = default;
   ~GridManager() = default;
 
   // Getters
@@ -129,20 +129,23 @@ class GridManager
   void set_power_layers(std::vector<int> power_layers){
     _power_layers = power_layers;
     _layer_count = power_layers.size();
-    initialize_grid_data();
+    // initialize_grid_data();
   }
   void set_layer_count(int layer_count) { _layer_count = layer_count; }
   void set_ho_region_num(int ho_region_num) { _ho_region_num = ho_region_num; }
   void set_ver_region_num(int ver_region_num) { _ver_region_num = ver_region_num; }
-  void set_core_width(double chip_width) { _core_width = chip_width; }
-  void set_core_height(double chip_height) { _core_height = chip_height; }
-  void set_grid_data(std::vector<std::vector<std::vector<PDNRectanGridRegion>>> grid_data) { _grid_data = grid_data; } 
-  void set_single_template(int layer_idx, int row, int col, const SingleTemplate& single_template) { _template_data[layer_idx][row][col] = single_template; }
-  void set_core_llx(int32_t core_llx) { _core_llx = core_llx; } 
+  void set_core_llx(int32_t core_llx) { _core_llx = core_llx; }
   void set_core_lly(int32_t core_lly) { _core_lly = core_lly; }
   void set_core_urx(int32_t core_urx) { _core_urx = core_urx; }
   void set_core_ury(int32_t core_ury) { _core_ury = core_ury; }
-  void update_GridManager_data() { initialize_grid_data(); }
+  void set_core_width(double chip_width) { _core_width = chip_width; }
+  void set_core_height(double chip_height) { _core_height = chip_height; }
+  void set_die_width(double die_width) { _die_width = die_width; }
+  void set_die_height(double die_height) { _die_height = die_height; }
+  void set_grid_data(std::vector<std::vector<std::vector<PDNRectanGridRegion>>> grid_data) { _grid_data = grid_data; }
+  void set_single_template(int layer_idx, int row, int col, const SingleTemplate& single_template) { _template_data[layer_idx][row][col] = single_template; }
+
+  void init_GridManager_data();
   
 private:
   std::vector<int> _power_layers;   // layers that have power nets
@@ -152,6 +155,8 @@ private:
 
   int32_t _core_width;   // width of the core
   int32_t _core_height;  // height of the core
+  int32_t _die_width;   // width of the core
+  int32_t _die_height;  // height of the core
   int32_t _core_llx;    // left bottom x coordinate of the core 
   int32_t _core_lly;    // left bottom y coordinate of the core
   int32_t _core_urx;    // right top x coordinate of the core
@@ -162,7 +167,7 @@ private:
   std::vector<std::vector<std::vector<SingleTemplate>>> _template_data;       // [layer][row][col]
   TemplateLib _template_libs;   // Template library manager
 
-  void initialize_grid_data();
+  void initialize_grid_data(int32_t width, int32_t height);
 };
 
 }  // namespace ipnp

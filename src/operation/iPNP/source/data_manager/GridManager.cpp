@@ -34,23 +34,13 @@ PDNRectanGridRegion::PDNRectanGridRegion() : _x_left_bottom(10.0), _y_left_botto
 {
 }
 
-/**
- * @brief Randomly initialize the number of region.
- * @attention chip width and height should be passed in from iDB.
- */
-GridManager::GridManager()
-  : _power_layers({ 9,8,7,6 }),
-  _layer_count(_power_layers.size()),
-  _ho_region_num(3),
-  _ver_region_num(3),
-  _core_width(100.0),
-  _core_height(100.0)
+void GridManager::init_GridManager_data()
 {
   _template_libs.gen_template_libs();
-  initialize_grid_data();
+  initialize_grid_data(_die_width, _die_height);
 }
 
-void GridManager::initialize_grid_data()
+void GridManager::initialize_grid_data(int32_t width, int32_t height)
 {
   // Initialize 3D grid data
   _grid_data.resize(_layer_count);
@@ -61,12 +51,12 @@ void GridManager::initialize_grid_data()
       for (int col = 0; col < _ver_region_num; ++col) {
         PDNRectanGridRegion& region = _grid_data[i][row][col];
         // Set default coordinates for each region
-        double x_left = col * (_core_width / _ver_region_num);
-        double y_bottom = row * (_core_height / _ho_region_num);
+        double x_left = col * (width / _ver_region_num);
+        double y_bottom = row * (height / _ho_region_num);
         region.set_x_left_bottom(x_left);
         region.set_y_left_bottom(y_bottom);
-        region.set_x_right_top(x_left + _core_width / _ver_region_num);
-        region.set_y_right_top(y_bottom + _core_height / _ho_region_num);
+        region.set_x_right_top(x_left + width / _ver_region_num);
+        region.set_y_right_top(y_bottom + height / _ho_region_num);
       }
     }
   }

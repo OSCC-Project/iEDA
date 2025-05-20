@@ -28,33 +28,41 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <memory>
 
-#include "iPNPCommon.hh"
+#include "api/PowerEngine.hh"
+#include "api/TimingEngine.hh"
+#include "api/Power.hh"
 
-// 前向声明
+namespace idb {
+class IdbDesign;
+} 
+
 namespace ipower {
-class Instance;
+  class PowerEngine;
 }
 
 namespace ipnp {
 class IREval
 {
  public:
-  IREval() = default;
-  ~IREval() = default;
 
-  double get_ir_value() { return ir_value; }
-  std::vector<std::vector<double>> get_ir_map() { return ir_map; }
+   IREval()=default;  
+  ~IREval()=default;
+
+  void runIREval();
+  std::map<ista::Instance::Coordinate, double> get_Coord_IR_map() {return _coord_ir_map;}
+
+private:
+  ista::TimingEngine* _timing_engine;
+  ipower::PowerEngine* _power_engine;
   
-  // 运行IR分析
-  unsigned runIRAnalysis(const std::string& power_net_name = "VDD");
+  Sta* _ista;
+  ipower::Power* _ipower;
 
- private:
-  // 处理IR分析结果
-  void processIRResults(const std::map<std::pair<double, double>, double>& ir_drop_map);
+  std::map<ista::Instance::Coordinate, double> _coord_ir_map;
 
-  std::vector<std::vector<double>> ir_map;
-  double ir_value{0.0};
+  void initIREval();
 };
 
 }  // namespace ipnp

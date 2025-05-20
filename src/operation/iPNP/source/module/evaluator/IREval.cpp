@@ -23,118 +23,140 @@
  */
 
 #include "IREval.hh"
-#include "api/PowerEngine.hh"
+
 #include "log/Log.hh"
 
 namespace ipnp {
 
-/**
- * @brief 运行IR分析
- * 
- * @param power_net_name 电源网络名称，默认为VDD
- * @return unsigned 分析结果
- */
-unsigned IREval::runIRAnalysis(const std::string& power_net_name) {
-  try {
-    // 获取PowerEngine单例
-    ipower::PowerEngine* power_engine = ipower::PowerEngine::getOrCreatePowerEngine();
-    
-    // 重置IR分析数据
-    power_engine->resetIRAnalysisData();
-    
-    // 构建电源网络拓扑
-    power_engine->buildPGNetWireTopo();
-    
-    // 运行IR分析
-    unsigned result = power_engine->runIRAnalysis(power_net_name);
-    
-    // 获取IR分布图
-    auto ir_drop_map = power_engine->displayIRDropMap();
-    
-    // 转换坐标格式
-    std::map<std::pair<double, double>, double> coordinate_ir_map;
-    for (const auto& [coord, ir_drop] : ir_drop_map) {
-      coordinate_ir_map[{coord.first, coord.second}] = ir_drop;
-    }
-    
-    // 处理IR分析结果
-    processIRResults(coordinate_ir_map);
-    
-    return result;
-  } catch (const std::exception& e) {
-    LOG_ERROR << "Error during IR analysis: " << e.what();
-    return 0;
-  }
+
+void IREval::runIREval()
+{
+  initIREval();
+  std::string power_net_name = "VDD";
+  std::map<ista::Instance::Coordinate, double> coord_ir_map;
+
+  _power_engine->resetIRAnalysisData();
+  _power_engine->buildPGNetWireTopo();
+  _power_engine->runIRAnalysis(power_net_name);
+
+  _power_engine->reportIRAnalysis();
+
+  _coord_ir_map = _power_engine->displayIRDropMap();
+
 }
 
-/**
- * @brief 处理IR分析结果
- * 
- * @param ir_drop_map IR电压降映射
- */
-void IREval::processIRResults(const std::map<std::pair<double, double>, double>& ir_drop_map) {
-  // 清空原有IR map
-  ir_map.clear();
-  
-  // 如果没有数据，直接返回
-  if (ir_drop_map.empty()) {
-    ir_value = 0.0;
-    return;
-  }
-  
-  // 计算IR平均值
-  double total_ir = 0.0;
-  int count = 0;
-  
-  // 找出坐标范围
-  double min_x = std::numeric_limits<double>::max();
-  double max_x = std::numeric_limits<double>::min();
-  double min_y = std::numeric_limits<double>::max();
-  double max_y = std::numeric_limits<double>::min();
-  
-  for (const auto& [coord, ir_drop] : ir_drop_map) {
-    min_x = std::min(min_x, coord.first);
-    max_x = std::max(max_x, coord.first);
-    min_y = std::min(min_y, coord.second);
-    max_y = std::max(max_y, coord.second);
-    
-    total_ir += ir_drop;
-    count++;
-  }
-  
-  // 计算平均IR drop
-  if (count > 0) {
-    ir_value = total_ir / count;
-  } else {
-    ir_value = 0.0;
-  }
-  
-  // 后续可以根据需要将点数据转换为网格数据
-  // 例如创建一个二维网格来表示IR分布
-  // 这里简单实现为示例
-  const int grid_size = 100;  // 网格大小
-  
-  // 初始化网格
-  ir_map.resize(grid_size, std::vector<double>(grid_size, 0.0));
-  
-  // 计算网格单元大小
-  double cell_width = (max_x - min_x) / grid_size;
-  double cell_height = (max_y - min_y) / grid_size;
-  
-  if (cell_width <= 0 || cell_height <= 0) {
-    return;  // 避免除以零
-  }
-  
-  // 填充网格
-  for (const auto& [coord, ir_drop] : ir_drop_map) {
-    int grid_x = static_cast<int>((coord.first - min_x) / cell_width);
-    int grid_y = static_cast<int>((coord.second - min_y) / cell_height);
-    
-    // 确保在网格范围内
-    if (grid_x >= 0 && grid_x < grid_size && grid_y >= 0 && grid_y < grid_size) {
-      ir_map[grid_y][grid_x] = ir_drop;
-    }
-  }
+void IREval::initIREval()
+{
+  LOG_INFO << "Start initialize IREval";
+
+  _timing_engine = TimingEngine::getOrCreateTimingEngine();
+  _timing_engine->set_num_threads(48);
+  const char* design_work_space = "/home/sujianrong/iEDA/src/operation/iPNP/data/ir/ir_temp_directory";
+
+  _timing_engine->set_design_work_space(design_work_space);
+
+  std::vector<const char*> lib_files{
+      "/home/sujianrong/T28/lib/tcbn28hpcplusbwp40p140ssg0p81v125c.lib",
+      "/home/sujianrong/T28/lib/tcbn28hpcplusbwp40p140hvtssg0p81v125c.lib",
+      "/home/sujianrong/T28/lib/tcbn28hpcplusbwp35p140ssg0p81v125c.lib",
+      "/home/sujianrong/T28/lib/tcbn28hpcplusbwp35p140lvtssg0p81v125c.lib",
+      "/home/sujianrong/T28/lib/tcbn28hpcplusbwp40p140lvtssg0p81v125c.lib",
+      "/home/sujianrong/T28/lib/tcbn28hpcplusbwp30p140lvtssg0p81v125c.lib",
+      "/home/sujianrong/T28/lib/tcbn28hpcplusbwp30p140ssg0p81v125c.lib" };
+  _timing_engine->readLiberty(lib_files);
+
+  _timing_engine->get_ista()->set_analysis_mode(ista::AnalysisMode::kMaxMin);
+  _timing_engine->get_ista()->set_n_worst_path_per_clock(1);
+
+  std::vector<std::string> lef_files{
+    "/home/sujianrong/T28/tlef/tsmcn28_9lm6X2ZUTRDL.tlef",
+    "/home/sujianrong/T28/lef/PLLTS28HPMLAINT.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140opplvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140lvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140uhvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140hvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140oppuhvt.lef",
+    "/home/sujianrong/T28/lef/ts5n28hpcplvta256x32m4fw_130a.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140cg.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140oppuhvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140mbhvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140ulvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140uhvt.lef",
+    "/home/sujianrong/T28/lef/ts5n28hpcplvta64x100m2fw_130a.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140hvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140oppulvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140mb.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140cgcwhvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140lvt.lef",
+    "/home/sujianrong/T28/lef/tpbn28v_9lm.lef",
+    "/home/sujianrong/T28/lef/ts5n28hpcplvta64x128m2f_130a.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140uhvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140mblvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140cgcw.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140mbhvt.lef",
+    "/home/sujianrong/T28/lef/tpbn28v.lef",
+    "/home/sujianrong/T28/lef/ts5n28hpcplvta64x128m2fw_130a.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140lvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140ulvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140opphvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140cgehvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140mb.lef",
+    "/home/sujianrong/T28/lef/tphn28hpcpgv18_9lm.lef",
+    "/home/sujianrong/T28/lef/ts5n28hpcplvta64x88m2fw_130a.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140mb.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140cghvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140opp.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140cghvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140oppehvt.lef",
+    "/home/sujianrong/T28/lef/ts1n28hpcplvtb2048x48m8sw_180a.lef",
+    "/home/sujianrong/T28/lef/ts5n28hpcplvta64x92m2fw_130a.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140mblvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140cg.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140opplvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140cg.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140opphvt.lef",
+    "/home/sujianrong/T28/lef/ts1n28hpcplvtb512x128m4sw_180a.lef",
+    "/home/sujianrong/T28/lef/ts5n28hpcplvta64x96m2fw_130a.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140opphvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140hvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140oppuhvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140cguhvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140opp.lef",
+    "/home/sujianrong/T28/lef/ts1n28hpcplvtb512x64m4sw_180a.lef",
+    "/home/sujianrong/T28/lef/ts6n28hpcplvta2048x32m8sw_130a.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140opp.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140oppulvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140ehvt.lef",
+    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140opplvt.lef",
+    "/home/sujianrong/T28/lef/ts1n28hpcplvtb8192x64m8sw_180a.lef" };
+
+  std::string def_file = "/home/sujianrong/iEDA/src/operation/iPNP/data/test/output.def";
+
+  _timing_engine->readDefDesign(def_file, lef_files);
+
+  _timing_engine->readSdc("/home/sujianrong/aes/aes.sdc");
+
+  // timing_engine->readSpef("/home/taosimin/ir_example/aes/aes.spef");
+
+  _timing_engine->buildGraph();
+
+  _timing_engine->get_ista()->updateTiming();
+  _timing_engine->reportTiming();
+
+  _ista = Sta::getOrCreateSta();
+  _ipower = ipower::Power::getOrCreatePower(&(_ista->get_graph()));
+
+  _ipower->runCompleteFlow();
+
+  _power_engine = ipower::PowerEngine::getOrCreatePowerEngine();
+
+  LOG_INFO << "End initialize IREval";
+
 }
+
+
 
 }  // namespace ipnp

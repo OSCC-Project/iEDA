@@ -24,7 +24,17 @@
 
 #pragma once
 
-#include "iPNPCommon.hh"
+#include <string>
+
+namespace idb {
+  class IdbDesign;
+  class IdbBuilder;
+}
+
+namespace ipl {
+  class PLAPI;
+  extern PLAPI& iPLAPIInst;
+}
 
 namespace ipnp {
 class FastPlacer
@@ -33,12 +43,11 @@ class FastPlacer
   FastPlacer() = default;
   ~FastPlacer() = default;
 
-  void fastPlace(idb::IdbSpecialNet* netlist);
+  void runFastPlacer(idb::IdbBuilder* idb_builder);
 
-  idb::IdbLayer* get_place_result() { return _place_result; }
 
- private:
-  idb::IdbLayer* _place_result = nullptr;
+private:
+  
 };
 
 }  // namespace ipnp

@@ -23,21 +23,38 @@
  */
 
 #include "CongestionEval.hh"
+#include "idm.h"
+#include "congestion_api.h"
 
 namespace ipnp {
-void CongestionEval::rudy_routing()
-{
-  // auto& eval_api = eval::EvalAPI::initInst();
+  void CongestionEval::evalRudyRouting()
+  {
+    // auto& eval_api = eval::EvalAPI::initInst();
 
-  int32_t bin_cnt_x = 512;  // Grid size
-  int32_t bin_cnt_y = 512;
-  // eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
+    int32_t bin_cnt_x = 512;  // Grid size
+    int32_t bin_cnt_y = 512;
+    // eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
 
-  string eval_method = "RUDY";
-  // _net_cong_rudy = eval_api.evalNetCong(eval_method);  // using RUDY
-}
+    string eval_method = "RUDY";
+    // _net_cong_rudy = eval_api.evalNetCong(eval_method);  // using RUDY
+  }
 
-void CongestionEval::global_routing()
-{
-}
+  void CongestionEval::evalEGR(idb::IdbBuilder* idb_builder)
+  {
+    dmInst->set_idb_builder(idb_builder);
+    dmInst->set_idb_def_service(idb_builder->get_def_service());
+    dmInst->set_idb_lef_service(idb_builder->get_lef_service());
+
+    std::string map_path = "/home/sujianrong/iEDA/src/operation/iPNP/data";
+    std::string stage = "place";
+
+    ieval::CongestionAPI congestion_api;
+    ieval::OverflowSummary overflow_summary;
+
+    std::string temp = congestion_api.egrUnionMap(stage, map_path);
+    overflow_summary = congestion_api.egrOverflow(stage, temp);
+
+
+
+  }
 }  // namespace ipnp

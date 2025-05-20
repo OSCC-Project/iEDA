@@ -87,7 +87,10 @@ namespace ipnp {
       std::cerr << "Error: Failed to save DEF file to: " << def_file_path << std::endl;
     }
 
-    delete db_builder;
+    // delete db_builder;
+
+    auto* temp = get_idb_builder();
+
   }
 
 }  // namespace ipnp

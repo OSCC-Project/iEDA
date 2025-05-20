@@ -42,8 +42,8 @@ class CongestionEval
   std::vector<std::vector<double>> get_map_overflow() { return _map_overflow; }
   auto get_cong_rudy_value() { return _net_cong_rudy; }
 
-  void rudy_routing();
-  void global_routing();
+  void evalRudyRouting();
+  void evalEGR(idb::IdbBuilder* idb_builder);
 
  private:
   std::vector<std::vector<double>> _map_overflow;

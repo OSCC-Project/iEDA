@@ -25,13 +25,14 @@
 #include "iPNP.hh"
 
 #include "FastPlacer.hh"
+#include "CongestionEval.hh"
 #include "NetworkSynthesis.hh"
 #include "PdnOptimizer.hh"
 #include "iPNPIdbWrapper.hh"
+#include "IREval.hh"
+#include "utility/DefConverter.hh"
 
 namespace ipnp {
-
-class PndOptimizer;
 
 iPNP::iPNP(){}
 
@@ -52,28 +53,17 @@ iPNP::iPNP(const std::string& config_file)
  * @brief Generate initial solution. Decide which region to place, and place templates on regions randomly.
  * @attention Version_1.0 only consider rectangular grid region.
  */
-void iPNP::initSynthesize()
+void iPNP::runSynthesis()
 {
-  /**
-   * @todo add template_lib infomation to _initialized_network
-   */
-
   NetworkSynthesis network_synthesizer(SysnType::kDefault, _input_network);
 
   network_synthesizer.synthesizeNetwork();
 
   _initialized_network = network_synthesizer.get_network();
 
-  /**
-   * @todo version_2.0: Add result of fastplacer
-   * @brief consider regions with irregular shapes
-   */
-  // FastPlacer fast_placer;
-  // fast_placer.fastPlace(_input_netlist);
-  // idb::IdbLayer* fast_place_result = fast_placer.getPlaceResult();
 }
 
-void iPNP::optimize()
+void iPNP::runOptimize()
 {
   PdnOptimizer pdn_optimizer;
   pdn_optimizer.optimize(_initialized_network);
@@ -92,39 +82,64 @@ void iPNP::readDef(std::vector<std::string> lef_files, std::string def_path)
   _idb_wrapper.set_idb_builder(db_builder);
 }
 
-void iPNP::getIdbDesignInfo()
+void iPNP::init()
 {
   // Initialize the input network
   _input_network = GridManager();
-  _input_network.set_power_layers({ 9,8,7 });
+  _input_network.set_power_layers({ 9,8,7,6,5,4,3 });
   _input_network.set_layer_count(_input_network.get_power_layers().size());
   _input_network.set_ho_region_num(3);
   _input_network.set_ver_region_num(3);
   _input_network.set_core_width(_idb_wrapper.get_input_core_width());
   _input_network.set_core_height(_idb_wrapper.get_input_core_height());
+  _input_network.set_die_width(_idb_wrapper.get_input_die_width());
+  _input_network.set_die_height(_idb_wrapper.get_input_die_height());
   _input_network.set_core_llx(_idb_wrapper.get_input_core_lx());
   _input_network.set_core_lly(_idb_wrapper.get_input_core_ly());
   _input_network.set_core_urx(_idb_wrapper.get_input_core_hx());
   _input_network.set_core_ury(_idb_wrapper.get_input_core_hy());
-  _input_network.update_GridManager_data();
+  _input_network.init_GridManager_data();
   
 }
 
 void iPNP::run()
 {
-  
   if (_idb_wrapper.get_idb_design()) {
-    
-    getIdbDesignInfo();
-    
-    initSynthesize();
 
-    optimize();
+    init();
+    
+    runSynthesis();
+
+    FastPlacer fast_placer;
+    fast_placer.runFastPlacer(_idb_wrapper.get_idb_builder());
+
+    runOptimize();
 
     saveToIdb();
 
     writeIdbToDef(_output_def_path);
+
+
+    CongestionEval cong_eval;
+    cong_eval.evalEGR(_idb_wrapper.get_idb_builder());
     
+
+    // DefConverter def_converter;
+    // def_converter.runDefConverter(
+    //   "/home/sujianrong/iEDA/src/operation/iPNP/data/test/output.def",
+    //   "/home/sujianrong/iEDA/src/operation/iPNP/data/test/aes_test_die.def",
+    //   "SPECIALNETS 5 ;",
+    //   "END SPECIALNETS");
+    // def_converter.runDefConverter(
+    //   "/home/sujianrong/iEDA/src/operation/iPNP/data/test/output.def",
+    //   "/home/sujianrong/iEDA/src/operation/iPNP/data/test/aes_test_die.def",
+    //   "COMPONENTS",
+    //   "END COMPONENTS");
+    
+    IREval ir_eval;
+    ir_eval.runIREval();
+    std::map<ista::Instance::Coordinate, double> coord_ir_map = ir_eval.get_Coord_IR_map();
+
   }
   else {
     std::cout << "Warning: idb design is empty!" << std::endl;

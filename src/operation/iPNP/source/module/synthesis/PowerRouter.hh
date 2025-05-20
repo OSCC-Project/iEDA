@@ -65,10 +65,12 @@ public:
 
 private:
 
-  void addPowerStripes(idb::IdbSpecialNet* power_net, GridManager pnp_network);
+  void addPowerStripesToCore(idb::IdbSpecialNet* power_net, GridManager pnp_network);
+  void addPowerStripesToDie(idb::IdbSpecialNet* power_net, GridManager pnp_network);
   void addPowerFollowPin(idb::IdbDesign* idb_design, idb::IdbSpecialNet* power_net);
-
-  void addVSSNet(idb::IdbDesign* idb_design, GridManager pnp_network);  
+  void addPowerPort(idb::IdbDesign* idb_design, GridManager pnp_network, std::string pin_name, std::string layer_name);
+  
+  void addVSSNet(idb::IdbDesign* idb_design, GridManager pnp_network);
   void addVDDNet(idb::IdbDesign* idb_design, GridManager pnp_network);
 };
 

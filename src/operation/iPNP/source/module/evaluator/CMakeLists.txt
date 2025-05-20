@@ -3,4 +3,5 @@ add_library(evaluator
     IREval.cpp
 )
 
-target_link_libraries(evaluator PUBLIC power ista-engine)
+target_link_libraries(evaluator PUBLIC power ista-engine idm eval_density_api)
+ 

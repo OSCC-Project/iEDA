@@ -29,6 +29,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <memory>
 
 #include "GridManager.hh"
 #include "iPNPIdbWrapper.hh"
@@ -74,9 +75,9 @@ class iPNP
   void readDef(std::vector<std::string> lef_files, std::string def_path);
   void setIdb(idb::IdbDesign* input_idb_design) { _idb_wrapper.set_idb_design(input_idb_design); }
 
-  void getIdbDesignInfo();
-  void initSynthesize();
-  void optimize();  // including calling Evaluator and modify PDN
+  void init();
+  void runSynthesis();
+  void runOptimize();  // including calling Evaluator and modify PDN
   void saveToIdb() { _idb_wrapper.saveToIdb(_current_opt_network); }
   void writeIdbToDef(std::string def_path) { _idb_wrapper.writeIdbToDef(def_path); }
 
