@@ -125,6 +125,23 @@ TimingEngine& TimingEngine::readDefDesign(std::string def_file,
 }
 
 /**
+ * @brief set the db builder which has read def design.
+ * 
+ * @param db_builder 
+ * @return TimingEngine& 
+ */
+TimingEngine& TimingEngine::setDefDesignBuilder(void* db_builder) {
+  auto db_adapter = std::make_unique<TimingIDBAdapter>(get_ista());
+
+  db_adapter->set_idb(static_cast<idb::IdbBuilder*>(db_builder));
+  db_adapter->convertDBToTimingNetlist();
+
+  set_db_adapter(std::move(db_adapter));
+
+  return *this;
+}
+
+/**
  * @brief get the LibTable of a cell.
  * table.
  *
