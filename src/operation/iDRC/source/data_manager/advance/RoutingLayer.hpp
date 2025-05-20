@@ -15,8 +15,8 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
-#include <optional>
 
+#include "DRCHeader.hpp"
 #include "Logger.hpp"
 #include "PlanarRect.hpp"
 #include "SpacingTable.hpp"
