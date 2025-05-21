@@ -88,7 +88,8 @@ std::vector<BGSegment> IRPGNetlistBuilder::buildBGSegments(
       if (idb_segment->is_line()) {
         auto* coord_start = idb_segment->get_point_start();
         auto* coord_end = idb_segment->get_point_second();
-        int layer_id = idb_segment->get_layer()->get_id() + 1;
+        std::string layer_name = idb_segment->get_layer()->get_name();
+        unsigned layer_id = getLayerId(layer_name);
 
         auto bg_segment = BGSegment(
             BGPoint(coord_start->get_x(), coord_start->get_y(), layer_id),
@@ -110,16 +111,31 @@ std::vector<BGSegment> IRPGNetlistBuilder::buildBGSegments(
         auto* coord = idb_via->get_coordinate();
 
         auto top_layer_shape = idb_via->get_top_layer_shape();
-        auto top_layer_id = top_layer_shape.get_layer()->get_id() + 1;
+        std::string top_layer_name = idb_segment->get_layer()->get_name();
+        auto top_layer_id = getLayerId(top_layer_name);
 
         auto bottom_layer_shape = idb_via->get_bottom_layer_shape();
-        auto bottom_layer_id = bottom_layer_shape.get_layer()->get_id() + 1;
+        std::string bottom_layer_name =
+            bottom_layer_shape.get_layer()->get_name();
+        auto bottom_layer_id = getLayerId(bottom_layer_name);
 
-        // build cut segment
-        BGPoint cut_start(coord->get_x(), coord->get_y(), bottom_layer_id);
-        BGPoint cut_end(coord->get_x(), coord->get_y(), top_layer_id);
-        auto cut_path = BGSegment(cut_start, cut_end);
-        bg_segments.emplace_back(std::move(cut_path));
+        // build via segment
+        if (bottom_layer_id < top_layer_id) {
+          BGPoint via_start(coord->get_x(), coord->get_y(), bottom_layer_id);
+          BGPoint via_end(coord->get_x(), coord->get_y(), top_layer_id);
+
+          auto via_path = BGSegment(via_start, via_end);
+          bg_segments.emplace_back(std::move(via_path));
+        } else {
+          
+          BGPoint via_start(coord->get_x(), coord->get_y(), top_layer_id);
+          BGPoint via_end(coord->get_x(), coord->get_y(), bottom_layer_id);
+
+          auto via_path = BGSegment(via_start, via_end);
+          bg_segments.emplace_back(std::move(via_path));
+        }
+
+
       }
     }
   }
@@ -127,7 +143,8 @@ std::vector<BGSegment> IRPGNetlistBuilder::buildBGSegments(
   LOG_INFO << "via segment num: " << bg_segments.size() - line_segment_num;
 
   for (int i = 0; auto& bg_seg : bg_segments) {
-    _rtree.insert(std::make_pair(BGRect(bg_seg.first, bg_seg.second), i++));
+    _rtree.insert(std::make_pair(BGRect(bg_seg.first, bg_seg.second), i));
+    i++;
   }
 
   return bg_segments;
@@ -183,7 +200,8 @@ void IRPGNetlistBuilder::build(
         auto right_y = bg::get<1>(right_top);
         auto right_layer_id = bg::get<2>(right_top);
         auto right_tuple = std::make_tuple(right_x, right_y, right_layer_id);
-
+        
+        // other segment should have one intersect point with the specify segment.
         LOG_FATAL_IF(left_tuple != right_tuple)
             << "instersect box should be one point";
 
@@ -345,12 +363,26 @@ void IRPGNetlistBuilder::build(
     }
   }
 
-  auto* port_layer_shape = io_pin->get_port_box_list().front();
-
-  // connect io node to the segment node.
-  auto layer_id = port_layer_shape->get_layer()->get_id() + 1;
-  auto bounding_box = port_layer_shape->get_bounding_box();
-  auto middle_point = bounding_box.get_middle_point();
+  idb::IdbLayerShape* port_layer_shape = nullptr;
+  idb::IdbCoordinate<int32_t> middle_point;
+  int layer_id = 0;
+  if (io_pin->get_port_box_list().size() > 0) {
+    port_layer_shape = io_pin->get_port_box_list().front();
+      // connect io node to the segment node.
+    auto layer_name = port_layer_shape->get_layer()->get_name();
+    layer_id = getLayerId(layer_name);
+    auto bounding_box = port_layer_shape->get_bounding_box();
+    middle_point = bounding_box.get_middle_point();
+  } else {
+    auto* io_port = io_pin->get_term()->get_port_list().front();
+    if (io_port->get_layer_shape().size() == 0) {
+      LOG_FATAL << "io port layer shape is empty";
+    }
+    port_layer_shape = io_port->get_layer_shape().front();
+    auto layer_name = port_layer_shape->get_layer()->get_name();
+    layer_id = getLayerId(layer_name);
+    middle_point = *(io_port->get_coordinate());
+  }
 
   // create bump node.
   auto* bump_node = &(pg_netlist.addNode(
