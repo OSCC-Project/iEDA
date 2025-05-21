@@ -44,6 +44,7 @@ int registerCmdDB()
   registerTclCmd(CmdInitDef, "def_init");
   registerTclCmd(CmdInitVerilog, "verilog_init");
   registerTclCmd(CmdSaveDef, "def_save");
+  registerTclCmd(CmdSaveLef, "lef_save");
   registerTclCmd(CmdSaveNetlist, "netlist_save");
   registerTclCmd(CmdSaveJSON, "json_save");
   registerTclCmd(CmdSaveGDS, "gds_save");

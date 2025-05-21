@@ -74,6 +74,7 @@ class DRCInterface
   void wrapMicronDBU();
   void wrapManufactureGrid();
   void wrapDie();
+  void wrapPropertyDefinition();
   void wrapLayerList();
   void wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
   void wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);

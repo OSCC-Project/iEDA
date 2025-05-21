@@ -100,7 +100,11 @@ IdbDesign::~IdbDesign()
     delete _fill_list;
     _fill_list = nullptr;
   }
-  if (_bus_list) {
+  if (_bus_bit_chars != nullptr) {
+    delete _bus_bit_chars;
+    _bus_bit_chars = nullptr;
+  }
+  if (_bus_list != nullptr) {
     delete _bus_list;
     _bus_list = nullptr;
   }

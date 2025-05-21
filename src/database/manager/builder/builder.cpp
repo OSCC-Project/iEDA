@@ -271,6 +271,17 @@ bool IdbBuilder::saveDef(string file, DefWriteType type)
   return def_write->writeDb(file.c_str());
 }
 
+bool IdbBuilder::saveLef(string file)
+{
+  if (IdbDefServiceResult::kServiceFailed == _def_service->DefFileWriteInit(file.c_str())) {
+    std::cout << "Create LEF file failed..." << endl;
+    return false;
+  }
+
+  std::shared_ptr<DefWrite> def_writer = std::make_shared<DefWrite>(_def_service, DefWriteType::kLef);
+  return def_writer->writeDb(file.c_str());
+}
+
 void IdbBuilder::saveVerilog(std::string verilog_file_name, std::set<std::string>& exclude_cell_names, bool is_add_space_for_escape_name)
 {
   IdbDesign* idb_design = _def_service->get_design();

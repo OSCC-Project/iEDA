@@ -531,6 +531,16 @@ class Utility
 
 #if 1  // 形状有关计算
 
+  static PlanarRect getRect(PlanarCoord start_coord, PlanarCoord end_coord)
+  {
+    PlanarRect rect;
+    rect.set_ll_x(std::min(start_coord.get_x(), end_coord.get_x()));
+    rect.set_ll_y(std::min(start_coord.get_y(), end_coord.get_y()));
+    rect.set_ur_x(std::max(start_coord.get_x(), end_coord.get_x()));
+    rect.set_ur_y(std::max(start_coord.get_y(), end_coord.get_y()));
+    return rect;
+  }
+
   // 三个点的叉乘
   static int32_t crossProduct(PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
   {
@@ -965,16 +975,35 @@ class Utility
 
   static bool hasShrinkedRect(PlanarRect rect, int32_t shrinked_size)
   {
-    addOffset(rect.get_ll(), shrinked_size, shrinked_size);
-    minusOffset(rect.get_ur(), shrinked_size, shrinked_size);
+    return hasShrinkedRect(rect, shrinked_size, shrinked_size, shrinked_size, shrinked_size);
+  }
 
+  static bool hasShrinkedRect(PlanarRect rect, int32_t x_shrinked_size, int32_t y_shrinked_size)
+  {
+    return hasShrinkedRect(rect, x_shrinked_size, y_shrinked_size, x_shrinked_size, y_shrinked_size);
+  }
+
+  static bool hasShrinkedRect(PlanarRect rect, int32_t ll_x_add_offset, int32_t ll_y_add_offset, int32_t ur_x_minus_offset, int32_t ur_y_minus_offset)
+  {
+    addOffset(rect.get_ll(), ll_x_add_offset, ll_y_add_offset);
+    minusOffset(rect.get_ur(), ur_x_minus_offset, ur_y_minus_offset);
     return rect.get_ll_x() <= rect.get_ur_x() && rect.get_ll_y() <= rect.get_ur_y();
   }
 
   static PlanarRect getShrinkedRect(PlanarRect rect, int32_t shrinked_size)
   {
-    addOffset(rect.get_ll(), shrinked_size, shrinked_size);
-    minusOffset(rect.get_ur(), shrinked_size, shrinked_size);
+    return getShrinkedRect(rect, shrinked_size, shrinked_size, shrinked_size, shrinked_size);
+  }
+
+  static PlanarRect getShrinkedRect(PlanarRect rect, int32_t x_shrinked_size, int32_t y_shrinked_size)
+  {
+    return getShrinkedRect(rect, x_shrinked_size, y_shrinked_size, x_shrinked_size, y_shrinked_size);
+  }
+
+  static PlanarRect getShrinkedRect(PlanarRect rect, int32_t ll_x_add_offset, int32_t ll_y_add_offset, int32_t ur_x_minus_offset, int32_t ur_y_minus_offset)
+  {
+    addOffset(rect.get_ll(), ll_x_add_offset, ll_y_add_offset);
+    minusOffset(rect.get_ur(), ur_x_minus_offset, ur_y_minus_offset);
     return rect;
   }
 
@@ -1758,6 +1787,35 @@ class Utility
 #if 1  // irt使用的函数
 
   // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
+  static MTree<PlanarCoord> getTreeByFullFlow(PlanarCoord& root_coord, std::vector<Segment<PlanarCoord>>& segment_list,
+                                              std::map<PlanarCoord, std::set<int32_t>, CmpPlanarCoordByXASC>& key_coord_pin_map)
+  {
+    std::vector<PlanarCoord> candidate_root_coord_list{root_coord};
+    return getTreeByFullFlow(candidate_root_coord_list, segment_list, key_coord_pin_map);
+  }
+
+  // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
+  static MTree<PlanarCoord> getTreeByFullFlow(std::vector<PlanarCoord>& candidate_root_coord_list, std::vector<Segment<PlanarCoord>>& segment_list,
+                                              std::map<PlanarCoord, std::set<int32_t>, CmpPlanarCoordByXASC>& key_coord_pin_map)
+  {
+    std::vector<LayerCoord> candidate_root_coord_list_temp;
+    for (PlanarCoord& candidate_root_coord : candidate_root_coord_list) {
+      candidate_root_coord_list_temp.push_back(candidate_root_coord);
+    }
+    std::vector<Segment<LayerCoord>> segment_list_temp;
+    for (Segment<PlanarCoord>& segment : segment_list) {
+      segment_list_temp.emplace_back(segment.get_first(), segment.get_second());
+    }
+    std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map_temp;
+    for (auto& [key_coord, pin_idx_set] : key_coord_pin_map) {
+      key_coord_pin_map_temp[key_coord] = pin_idx_set;
+    }
+    MTree<LayerCoord> coord_tree = getTreeByFullFlow(candidate_root_coord_list_temp, segment_list_temp, key_coord_pin_map_temp);
+    std::function<PlanarCoord(LayerCoord&)> convert = [](LayerCoord& coord) { return coord.get_planar_coord(); };
+    return convertTree(coord_tree, convert);
+  }
+
+  // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
   static MTree<LayerCoord> getTreeByFullFlow(LayerCoord& root_coord, std::vector<Segment<LayerCoord>>& segment_list,
                                              std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC>& key_coord_pin_map)
   {
@@ -1885,7 +1943,7 @@ class Utility
       x_cut_list_map[second_layer_idx].insert(second_coord.get_x());
       y_cut_list_map[second_layer_idx].insert(second_coord.get_y());
     }
-    for (auto& [key_coord, pin_idx] : key_coord_pin_map) {
+    for (auto& [key_coord, pin_idx_set] : key_coord_pin_map) {
       int32_t layer_idx = key_coord.get_layer_idx();
       x_cut_list_map[layer_idx].insert(key_coord.get_x());
       y_cut_list_map[layer_idx].insert(key_coord.get_y());
@@ -2082,8 +2140,8 @@ class Utility
   static bool passCheckingConnectivity(MTree<LayerCoord>& coord_tree, std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC>& key_coord_pin_map)
   {
     std::map<int32_t, bool> visited_map;
-    for (auto& [key_coord, pin_idx_list] : key_coord_pin_map) {
-      for (int32_t pin_idx : pin_idx_list) {
+    for (auto& [key_coord, pin_idx_set] : key_coord_pin_map) {
+      for (int32_t pin_idx : pin_idx_set) {
         visited_map[pin_idx] = false;
       }
     }
@@ -2226,6 +2284,10 @@ class Utility
 
 #if 1  // int类型
 
+  static GTLPointInt convertToGTLPointInt(const PlanarCoord& coord) { return GTLPointInt(coord.get_x(), coord.get_y()); }
+
+  static PlanarCoord convertToPlanarCoord(const GTLPointInt& gtl_point) { return PlanarCoord(gtl::x(gtl_point), gtl::y(gtl_point)); }
+
   static PlanarRect convertToPlanarRect(GTLRectInt& gtl_rect) { return PlanarRect(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect)); }
 
   static PlanarRect convertToPlanarRect(BGRectInt& boost_box)
@@ -2333,6 +2395,22 @@ class Utility
     } else {
       return std::max(std::max(x_spacing, y_spacing), 0);
     }
+  }
+
+  static std::vector<PlanarRect> getMaxRectList(const std::vector<PlanarRect>& master_list)
+  {
+    GTLPolySetInt gtl_poly_set;
+    for (const PlanarRect& master : master_list) {
+      gtl_poly_set += convertToGTLRectInt(master);
+    }
+    std::vector<GTLRectInt> gtl_rect_list;
+    gtl::get_max_rectangles(gtl_rect_list, gtl_poly_set);
+    std::vector<PlanarRect> result_list;
+    result_list.reserve(gtl_rect_list.size());
+    for (GTLRectInt& gtl_rect : gtl_rect_list) {
+      result_list.push_back(convertToPlanarRect(gtl_rect));
+    }
+    return result_list;
   }
 
 #endif

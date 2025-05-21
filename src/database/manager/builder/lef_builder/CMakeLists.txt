@@ -22,7 +22,7 @@ target_include_directories(lef_builder
         ${HOME_THIRDPARTY}/lefdef/lef
 )
 
-target_link_libraries(lef_builder PRIVATE lef geometry_db)
+target_link_libraries(lef_builder PRIVATE lef geometry_db str)
 target_link_libraries(lef_builder PUBLIC absl::strings)
 
 option(TEST_LEFPARSER "If ON, test db." OFF)
@@ -35,5 +35,5 @@ if(TEST_LEFPARSER)
         ${HOME_DATABASE}/data/design
         ${HOME_DATABASE}/manager/service/lef_service
     )
-    target_link_libraries(test_parser libgtest.a libgtest_main.a pthread)
+    target_link_libraries(test_parser libgtest.a libgtest_main.a pthread str)
 endif()

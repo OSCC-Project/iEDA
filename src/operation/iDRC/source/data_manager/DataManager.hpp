@@ -60,6 +60,7 @@ class DataManager
   void buildDie();
   void makeDie();
   void checkDie();
+  void buildPropertyDefinition();
   void buildLayerList();
   void transLayerList();
   void makeLayerList();
