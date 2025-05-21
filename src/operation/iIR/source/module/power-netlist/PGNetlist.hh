@@ -250,10 +250,30 @@ class IRPGNetlistBuilder {
   }
   auto& get_instance_names() { return _instance_names; }
 
+  int setLayerNameToId(const string& layer_name, unsigned layer_id) {
+    if (_layer_name_to_id.contains(layer_name)) {
+      return 0;
+    }
+    _layer_name_to_id[layer_name] = layer_id;
+    return 1;
+  }
+
+  unsigned getLayerId(const std::string& layer_name) {
+    unsigned layer_id = 0;
+    if (_layer_name_to_id.contains(layer_name)) {
+      layer_id = _layer_name_to_id[layer_name];
+    } else {
+      LOG_FATAL << "Layer " << layer_name << " not found ID.";
+    }
+    return layer_id;
+  }
+
  private:
   bgi::rtree<BGValue, bgi::quadratic<16>> _rtree;
   double _c_via_resistance = 0.001;
   double _c_instance_row_resistance = 0.0001;
+
+  std::map<std::string, unsigned> _layer_name_to_id; //!< The layer name to id map.
 
   std::set<std::string> _instance_names; //!< The instance have power.
 
