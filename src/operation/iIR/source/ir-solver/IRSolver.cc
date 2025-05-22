@@ -240,6 +240,7 @@ Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A,
 
     if (sqrt(rsnew) < tol) {
       rsold =  rsnew;
+      ++i;
       break;
     }
 
