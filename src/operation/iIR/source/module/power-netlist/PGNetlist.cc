@@ -394,6 +394,8 @@ void IRPGNetlistBuilder::build(
   auto& stored_node_name = pg_netlist.getNodeName(bump_node->get_node_id());
   bump_node->set_node_name(stored_node_name.c_str());
 
+  pg_netlist.addBumpNode(bump_node);
+
   // connect bump node to segment node.
   bool is_found = false;
   for (auto& [segment_id, point_set] : segment_to_point) {
@@ -465,6 +467,17 @@ void IRPGNetlistBuilder::createRustRCData() {
   auto* rust_pg_netlist_vec_ptr = _rust_pg_netlists.data();
   auto len = _rust_pg_netlists.size();
   _rust_rc_data = create_rc_data(rust_pg_netlist_vec_ptr, len);
+}
+
+/**
+ * @brief calc every node resistance from bump node.
+ * 
+ */
+void IRPGNetlistBuilder::calcResistanceFromBumpNode(std::string net_name) {
+  // auto* pg_netlist = getPGNetlist(net_name);
+
+  // TODO(to taosimin), need to calc the resistance from bump node to all
+  // segment node.
 }
 
 }  // namespace iir
