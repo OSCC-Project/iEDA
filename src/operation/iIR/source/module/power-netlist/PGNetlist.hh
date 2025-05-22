@@ -82,14 +82,20 @@ class IRPGNode {
   void set_is_via() { _is_via = true; }
   auto is_via() const { return _is_via; }
 
+  void set_is_visited() { _is_visited = true; }
+  auto is_visited() const { return _is_visited; }
+
  private:
   IRNodeCoord _coord;  //!< The coord of the node.
   int _layer_id;       //!< The layer id of the node.
   int _node_id = -1; //!< The node id of the pg nodes.
-  bool _is_instance_pin = false; //!< The node is instance VDD/GND.
-  bool _is_bump = false; //!< The node is bump VDD/GND.
-  bool _is_via = false; //!< The node is via.
+  unsigned _is_instance_pin : 1 = 0; //!< The node is instance VDD/GND.
+  unsigned _is_bump : 1 = 0; //!< The node is bump VDD/GND.
+  unsigned _is_via : 1 = 0; //!< The node is via.
+  unsigned _is_visited : 1 = 0; //!< The node is visited.
+  unsigned _reserved : 28 = 0; //!< The reserved bits.
   const char* _node_name = nullptr; //!< The name of the node.
+
 };
 
 /**
@@ -210,6 +216,11 @@ class IRPGNetlist {
     return _node_id_to_name[node_id];
   }
 
+  void addBumpNode(IRPGNode* bump_node) {
+    _bump_nodes.push_back(bump_node);
+  }
+  auto& get_bump_nodes() { return _bump_nodes; }
+
   void printToYaml(std::string yaml_path);
 
  private:
@@ -217,6 +228,8 @@ class IRPGNetlist {
   std::vector<IRPGNode*> _nodes_image; //!< The nodes image for fast access.
   std::map<std::pair<IRNodeCoord, int>, IRPGNode*> _nodes_map; //!< The nodes map for fast access.
   std::vector<IRPGEdge> _edges;  //!< The edges of the netlist.
+
+  std::vector<IRPGNode*> _bump_nodes; //!< The bump nodes of the netlist.
 
   std::map<unsigned, std::string> _node_id_to_name; //!< The node id to node name.
 
@@ -233,6 +246,15 @@ class IRPGNetlistBuilder {
   ~IRPGNetlistBuilder() = default;
 
   auto& get_pg_netlists() { return _pg_netlists; }
+  IRPGNetlist* getPGNetlist(std::string net_name) {
+    for (auto& pg_netlist : _pg_netlists) {
+      if (pg_netlist.get_net_name() == net_name) {
+        return &pg_netlist;
+      }
+    }
+    LOG_FATAL << "net " << net_name << " not found.";
+    return nullptr;
+  }
   auto& get_rust_pg_netlists() { return _rust_pg_netlists; }
 
   std::vector<BGSegment> buildBGSegments(idb::IdbSpecialNet* special_net,
@@ -280,6 +302,8 @@ class IRPGNetlistBuilder {
     LOG_FATAL << "Layer ID " << layer_id << " not found name.";
     return "";
   }
+
+  void calcResistanceFromBumpNode(std::string net_name);
 
  private:
   bgi::rtree<BGValue, bgi::quadratic<16>> _rtree;
