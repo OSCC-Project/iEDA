@@ -21,6 +21,7 @@
 #include "GDSPlotter.hpp"
 #include "Monitor.hpp"
 #include "RuleValidator.hpp"
+#include "feature_manager.h"
 #include "idm.h"
 
 namespace idrc {
@@ -78,14 +79,14 @@ void DRCInterface::initDRC(std::map<std::string, std::any> config_map, bool enab
   DRCLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-std::map<std::string, std::vector<ids::Violation>> DRCInterface::checkDef()
+void DRCInterface::checkDef()
 {
   std::map<std::string, std::vector<ids::Violation>> type_violation_map;
   for (ids::Violation& ids_violation : getViolationList(buildEnvShapeList(), buildResultShapeList())) {
     type_violation_map[ids_violation.violation_type].push_back(ids_violation);
   }
   printSummary(type_violation_map);
-  return type_violation_map;
+  outputSummary(type_violation_map);
 }
 
 void DRCInterface::destroyDRC()
@@ -859,6 +860,25 @@ void DRCInterface::printSummary(std::map<std::string, std::vector<ids::Violation
     type_violation_map_table << fort::header << "Total" << total_violation_num << DRCUTIL.getPercentage(total_violation_num, total_violation_num) << fort::endr;
   }
   DRCUTIL.printTableList({type_violation_map_table});
+}
+
+void DRCInterface::outputSummary(std::map<std::string, std::vector<ids::Violation>>& type_violation_map)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = DRCDM.getDatabase().get_cut_layer_list();
+
+  featureInst->get_type_layer_violation_map().clear();
+  for (auto& [type, violation_list] : type_violation_map) {
+    for (ids::Violation& violation : violation_list) {
+      std::string layer_name;
+      if (violation.is_routing) {
+        layer_name = routing_layer_list[violation.layer_idx].get_layer_name();
+      } else {
+        layer_name = cut_layer_list[violation.layer_idx].get_layer_name();
+      }
+      featureInst->get_type_layer_violation_map()[type][layer_name].push_back(violation);
+    }
+  }
 }
 
 DRCShape DRCInterface::convertToDRCShape(const ids::Shape& ids_shape)
