@@ -78,19 +78,14 @@ void DRCInterface::initDRC(std::map<std::string, std::any> config_map, bool enab
   DRCLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void DRCInterface::checkDef()
+std::map<std::string, std::vector<ids::Violation>> DRCInterface::checkDef()
 {
   std::map<std::string, std::vector<ids::Violation>> type_violation_map;
   for (ids::Violation& ids_violation : getViolationList(buildEnvShapeList(), buildResultShapeList())) {
     type_violation_map[ids_violation.violation_type].push_back(ids_violation);
   }
   printSummary(type_violation_map);
-  {
-    // 接入aieda，暂存数据
-    for (auto& [type, violation_list] : type_violation_map) {
-      // todo
-    }
-  }
+  return type_violation_map;
 }
 
 void DRCInterface::destroyDRC()
