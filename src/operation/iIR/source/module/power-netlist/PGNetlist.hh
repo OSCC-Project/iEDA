@@ -248,6 +248,9 @@ class IRPGNetlistBuilder {
   }
   auto& get_instance_names() { return _instance_names; }
 
+  void set_dbu(double dbu) { _dbu = dbu; }
+  auto get_dbu() const { return _dbu; }
+
   int setLayerNameToId(const string& layer_name, unsigned layer_id) {
     if (_layer_name_to_id.contains(layer_name)) {
       return 0;
@@ -266,10 +269,21 @@ class IRPGNetlistBuilder {
     return layer_id;
   }
 
+  std::string getLayerName(unsigned layer_id) {
+    for (auto& [layer_name, id] : _layer_name_to_id) {
+      if (id == layer_id) {
+        return layer_name;
+      }
+    }
+    LOG_FATAL << "Layer ID " << layer_id << " not found name.";
+    return "";
+  }
+
  private:
   bgi::rtree<BGValue, bgi::quadratic<16>> _rtree;
   double _c_via_resistance = 0.001;
   double _c_instance_row_resistance = 0.0001;
+  double _dbu = 2000; //!< The dbu for the design.
 
   std::map<std::string, unsigned> _layer_name_to_id; //!< The layer name to id map.
 
