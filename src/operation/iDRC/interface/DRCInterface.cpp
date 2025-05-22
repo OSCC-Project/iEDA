@@ -80,9 +80,17 @@ void DRCInterface::initDRC(std::map<std::string, std::any> config_map, bool enab
 
 void DRCInterface::checkDef()
 {
-  std::vector<ids::Shape> ids_env_shape_list = buildEnvShapeList();
-  std::vector<ids::Shape> ids_result_shape_list = buildResultShapeList();
-  getViolationList(ids_env_shape_list, ids_result_shape_list);
+  std::map<std::string, std::vector<ids::Violation>> type_violation_map;
+  for (ids::Violation& ids_violation : getViolationList(buildEnvShapeList(), buildResultShapeList())) {
+    type_violation_map[ids_violation.violation_type].push_back(ids_violation);
+  }
+  printSummary(type_violation_map);
+  {
+    // 接入aieda，暂存数据
+    for (auto& [type, violation_list] : type_violation_map) {
+      // todo
+    }
+  }
 }
 
 void DRCInterface::destroyDRC()
@@ -111,16 +119,17 @@ void DRCInterface::destroyDRC()
   Logger::destroyInst();
 }
 
-std::vector<ids::Violation> DRCInterface::getViolationList(std::vector<ids::Shape>& ids_env_shape_list, std::vector<ids::Shape>& ids_result_shape_list)
+std::vector<ids::Violation> DRCInterface::getViolationList(const std::vector<ids::Shape>& ids_env_shape_list,
+                                                           const std::vector<ids::Shape>& ids_result_shape_list)
 {
   std::vector<DRCShape> drc_env_shape_list;
   drc_env_shape_list.reserve(ids_env_shape_list.size());
-  for (ids::Shape& ids_env_shape : ids_env_shape_list) {
+  for (const ids::Shape& ids_env_shape : ids_env_shape_list) {
     drc_env_shape_list.push_back(convertToDRCShape(ids_env_shape));
   }
   std::vector<DRCShape> drc_result_shape_list;
   drc_result_shape_list.reserve(ids_result_shape_list.size());
-  for (ids::Shape& ids_result_shape : ids_result_shape_list) {
+  for (const ids::Shape& ids_result_shape : ids_result_shape_list) {
     drc_result_shape_list.push_back(convertToDRCShape(ids_result_shape));
   }
   std::vector<ids::Violation> ids_violation_list;
@@ -493,7 +502,7 @@ void DRCInterface::output()
 
 #endif
 
-#if 1  // form def
+#if 1  // check
 
 std::vector<ids::Shape> DRCInterface::buildEnvShapeList()
 {
@@ -834,11 +843,30 @@ std::vector<ids::Shape> DRCInterface::buildResultShapeList()
   return result_shape_list;
 }
 
-#endif
+void DRCInterface::printSummary(std::map<std::string, std::vector<ids::Violation>>& type_violation_map)
+{
+  std::string& golden_directory_path = DRCDM.getConfig().golden_directory_path;
+  if (golden_directory_path != "null") {
+    return;
+  }
+  int32_t total_violation_num = 0;
+  for (auto& [type, violation_list] : type_violation_map) {
+    total_violation_num += static_cast<int32_t>(violation_list.size());
+  }
+  fort::char_table type_violation_map_table;
+  {
+    type_violation_map_table.set_cell_text_align(fort::text_align::right);
+    type_violation_map_table << fort::header << "violation_type"
+                             << "violation_num" << "prop" << fort::endr;
+    for (auto& [type, violation_list] : type_violation_map) {
+      type_violation_map_table << type << violation_list.size() << DRCUTIL.getPercentage(violation_list.size(), total_violation_num) << fort::endr;
+    }
+    type_violation_map_table << fort::header << "Total" << total_violation_num << DRCUTIL.getPercentage(total_violation_num, total_violation_num) << fort::endr;
+  }
+  DRCUTIL.printTableList({type_violation_map_table});
+}
 
-#if 1  // form tool
-
-DRCShape DRCInterface::convertToDRCShape(ids::Shape& ids_shape)
+DRCShape DRCInterface::convertToDRCShape(const ids::Shape& ids_shape)
 {
   DRCShape drc_shape;
   drc_shape.set_net_idx(ids_shape.net_idx);
