@@ -503,6 +503,7 @@ unsigned PowerEngine::buildPGNetWireTopo() {
       idb_builder->get_def_service()->get_design()->get_special_net_list();
   auto* idb_design = idb_builder->get_def_service()->get_design();
   auto dbu = idb_design->get_units()->get_micron_dbu();
+  _pg_netlist_builder.set_dbu(dbu);
 
   std::function<double(unsigned, unsigned)> calc_resistance =
       [idb_adapter, dbu](unsigned layer_id, unsigned distance_dbu) -> double {
