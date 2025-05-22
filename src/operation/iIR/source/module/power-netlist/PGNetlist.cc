@@ -21,12 +21,11 @@
  * @version 0.1
  * @date 2025-02-22
  */
-#include "PGNetlist.hh"
-
 #include <fstream>
 #include <iostream>
 #include <random>
 
+#include "PGNetlist.hh"
 #include "iir-rust/IRRustC.hh"
 #include "log/Log.hh"
 #include "string/Str.hh"
@@ -42,7 +41,8 @@ void IRPGNetlist::printToYaml(std::string yaml_path) {
   std::ofstream file(yaml_path, std::ios::trunc);
   for (unsigned node_id = 0; auto& node : _nodes) {
     const char* node_index = ieda::Str::printf("node_%d", node_id++);
-    file << node_index << ":" << "\n";
+    file << node_index << ":"
+         << "\n";
 
     std::string node_name = node.get_node_name();
     if (node.is_via()) {
@@ -53,14 +53,16 @@ void IRPGNetlist::printToYaml(std::string yaml_path) {
       node_name += "_bump";
     }
 
-    file << "  " << node_name << ": " << "[ " << node.get_coord().first << " "
-         << node.get_coord().second << " " << node.get_layer_id() << " ]"
+    file << "  " << node_name << ": "
+         << "[ " << node.get_coord().first << " " << node.get_coord().second
+         << " " << node.get_layer_id() << " ]"
          << "\n";
   }
 
   for (unsigned edge_id = 0; auto& edge : _edges) {
     const char* edge_name = ieda::Str::printf("edge_%d", edge_id++);
-    file << edge_name << ":" << "\n";
+    file << edge_name << ":"
+         << "\n";
 
     file << "  node1: " << edge.get_node1() << "\n";
     file << "  node2: " << edge.get_node2() << "\n";
@@ -127,15 +129,12 @@ std::vector<BGSegment> IRPGNetlistBuilder::buildBGSegments(
           auto via_path = BGSegment(via_start, via_end);
           bg_segments.emplace_back(std::move(via_path));
         } else {
-          
           BGPoint via_start(coord->get_x(), coord->get_y(), top_layer_id);
           BGPoint via_end(coord->get_x(), coord->get_y(), bottom_layer_id);
 
           auto via_path = BGSegment(via_start, via_end);
           bg_segments.emplace_back(std::move(via_path));
         }
-
-
       }
     }
   }
@@ -200,8 +199,9 @@ void IRPGNetlistBuilder::build(
         auto right_y = bg::get<1>(right_top);
         auto right_layer_id = bg::get<2>(right_top);
         auto right_tuple = std::make_tuple(right_x, right_y, right_layer_id);
-        
-        // other segment should have one intersect point with the specify segment.
+
+        // other segment should have one intersect point with the specify
+        // segment.
         LOG_FATAL_IF(left_tuple != right_tuple)
             << "instersect box should be one point";
 
@@ -299,7 +299,8 @@ void IRPGNetlistBuilder::build(
     auto instance_name = instance_pin->get_instance()->get_name();
     if (!_instance_names.contains(instance_name)) {
       // skip the no power instance.
-      LOG_INFO_FIRST_N(10) << "skip the no power instance: " << instance_name << " in wire topo";
+      LOG_INFO_FIRST_N(10) << "skip the no power instance: " << instance_name
+                           << " in wire topo";
       continue;
     }
 
@@ -368,7 +369,7 @@ void IRPGNetlistBuilder::build(
   int layer_id = 0;
   if (io_pin->get_port_box_list().size() > 0) {
     port_layer_shape = io_pin->get_port_box_list().front();
-      // connect io node to the segment node.
+    // connect io node to the segment node.
     auto layer_name = port_layer_shape->get_layer()->get_name();
     layer_id = getLayerId(layer_name);
     auto bounding_box = port_layer_shape->get_bounding_box();
@@ -419,6 +420,10 @@ void IRPGNetlistBuilder::build(
   }
 
   LOG_FATAL_IF(!is_found) << "bump node is not connected";
+
+  LOG_INFO << "net " << special_net_name
+           << " bump node location: " << middle_point.get_x() / _dbu << " "
+           << middle_point.get_y() / _dbu << " " << getLayerName(layer_id);
 
   LOG_INFO << "instance pin edge num: "
            << pg_netlist.getEdgeNum() - via_edge_num - line_edge_num;
