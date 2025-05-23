@@ -190,7 +190,6 @@ target_link_libraries(iGUI
     # file_manager_drc 
     file_manager_placement
     tool_api_ipl
-    idrc_pro_violation
     ieda_feature
 )
 if(OpenMP_CXX_FOUND)
@@ -213,7 +212,5 @@ target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/interface)
 target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/config)
 target_include_directories(iGUI 
     PUBLIC 
-        # ${HOME_PLATFORM}/
-        # ${HOME_PLATFORM}//tool_api
-        # ${HOME_PLATFORM}//tool_api/irt_io
+    ${HOME_DATABASE}/interaction/RT_DRC
 )

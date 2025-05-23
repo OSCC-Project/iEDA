@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include "tcl_definition.h"
 #include "tcl_util.h"
 
 namespace tcl {
@@ -60,6 +61,34 @@ class TclInitDRC : public TclCmd
 
  private:
   std::vector<std::pair<std::string, ValueType>> _config_list;
+};
+
+class CmdDRCAutoRun : public TclCmd
+{
+ public:
+  explicit CmdDRCAutoRun(const char* cmd_name);
+  ~CmdDRCAutoRun() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
+class CmdDRCSaveDetailFile : public TclCmd
+{
+ public:
+  explicit CmdDRCSaveDetailFile(const char* cmd_name);
+  ~CmdDRCSaveDetailFile() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
 };
 
 }  // namespace tcl
