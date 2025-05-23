@@ -36,6 +36,7 @@ bool init_drc(const std::string& temp_directory_path, const int& thread_number, 
   }
 
   DRCI.initDRC(config_map, false);
+  return true;
 }
 
 bool run_drc(const std::string& config, const std::string& report)
