@@ -70,30 +70,27 @@ class IRPGNode {
 
   void set_node_id(unsigned id) { _node_id = id; }
   auto get_node_id() const { return _node_id; }
-  void set_is_instance_pin() { _is_instance_pin = true; }
-  bool is_instance_pin() const { return _is_instance_pin; }
-
   void set_node_name(const char* name) { _node_name = name; }
   auto get_node_name() const { return _node_name; }
 
+  void set_is_instance_pin() { _is_instance_pin = true; }
+  bool is_instance_pin() const { return _is_instance_pin; }
+
   void set_is_bump() { _is_bump = true; }
-  auto is_bump() const { return _is_bump; }
+  bool is_bump() const { return _is_bump; }
 
   void set_is_via() { _is_via = true; }
-  auto is_via() const { return _is_via; }
+  bool is_via() const { return _is_via; }
 
-  void set_is_visited() { _is_visited = true; }
-  auto is_visited() const { return _is_visited; }
 
  private:
   IRNodeCoord _coord;  //!< The coord of the node.
   int _layer_id;       //!< The layer id of the node.
   int _node_id = -1; //!< The node id of the pg nodes.
-  unsigned _is_instance_pin : 1 = 0; //!< The node is instance VDD/GND.
-  unsigned _is_bump : 1 = 0; //!< The node is bump VDD/GND.
-  unsigned _is_via : 1 = 0; //!< The node is via.
-  unsigned _is_visited : 1 = 0; //!< The node is visited.
-  unsigned _reserved : 28 = 0; //!< The reserved bits.
+  bool _is_instance_pin = false; //!< The node is instance VDD/GND.
+  bool _is_bump = false; //!< The node is bump VDD/GND.
+  bool _is_via = false; //!< The node is via.
+
   const char* _node_name = nullptr; //!< The name of the node.
 
 };

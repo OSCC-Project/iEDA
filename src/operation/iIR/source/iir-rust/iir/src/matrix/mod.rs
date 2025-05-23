@@ -60,6 +60,7 @@ pub struct RustIRPGNode {
     node_id: i32,
     is_instance_pin: bool,
     is_bump: bool,
+    is_via: bool,
     node_name: *const c_char,
 }
 
