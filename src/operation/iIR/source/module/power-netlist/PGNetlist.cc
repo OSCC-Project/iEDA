@@ -221,7 +221,7 @@ void IRPGNetlistBuilder::build(
     auto [x2, y2] = node2->get_coord();
     auto distance = std::abs(x1 - x2) + std::abs(y1 - y2);
     // pg node layer from one first, we need minus one.
-    double resistance = calc_resistance(node1->get_layer_id() - 1, distance);
+    double resistance = calc_resistance(node1->get_layer_id(), distance);
 
     return resistance;
   };
