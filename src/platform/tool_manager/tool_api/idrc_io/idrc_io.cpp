@@ -19,10 +19,10 @@
 #include "DRCInterface.hpp"
 #include "builder.h"
 #include "feature_manager.h"
+#include "file_drc.h"
 #include "flow_config.h"
 #include "idm.h"
 #include "report_manager.h"
-#include "file_drc.h"
 
 #ifdef USE_PROFILER
 #include <gperftools/profiler.h>
@@ -33,13 +33,15 @@ DrcIO* DrcIO::_instance = nullptr;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-bool DrcIO::runDRC(std::string config, std::string report_path)
+bool DrcIO::runDRC(std::string config, std::string report_path, bool has_init)
 {
   flowConfigInst->set_status_stage("iDRC - Design Rule Check");
   ieda::Stats stats;
 
-  std::map<std::string, std::any> config_map;
-  DRCI.initDRC(config_map, false);
+  if (!has_init) {
+    std::map<std::string, std::any> config_map;
+    DRCI.initDRC(config_map, false);
+  }
   DRCI.checkDef();
   DRCI.destroyDRC();
 

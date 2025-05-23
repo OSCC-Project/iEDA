@@ -38,7 +38,7 @@ class DrcIO
   }
 
   /// io
-  bool runDRC(std::string config = "", std::string report_path = "");
+  bool runDRC(std::string config = "", std::string report_path = "", bool has_init = false);
   bool readDrcFromFile(std::string path = "");
   bool saveDrcToFile(std::string path);
 

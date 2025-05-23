@@ -277,9 +277,9 @@ bool ToolManager::autoRunRouter(std::string config_file_path)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// idrc
-bool ToolManager::autoRunDRC(std::string config, std::string path)
+bool ToolManager::autoRunDRC(std::string config, std::string path, bool has_init)
 {
-  return drcInst->runDRC(config, path);
+  return drcInst->runDRC(config, path, has_init);
 }
 
 bool ToolManager::readDrcDetailFromFile(std::string path)
