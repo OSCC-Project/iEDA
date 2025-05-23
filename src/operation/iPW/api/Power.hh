@@ -36,7 +36,6 @@
 using namespace iir;
 
 namespace ipower {
-
 /**
  * @brief The top class of power analysis.
  *
