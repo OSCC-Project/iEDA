@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include "DRCHeader.hpp"
 #include "Logger.hpp"
 #include "PlanarRect.hpp"
 #include "SpacingTable.hpp"

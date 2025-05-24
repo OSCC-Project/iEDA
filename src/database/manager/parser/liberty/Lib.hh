@@ -166,6 +166,7 @@ class LibTable : public LibObject
   LibAxis& getAxis(unsigned int index);
 
   Vector<std::unique_ptr<LibAxis>>& get_axes();
+  auto getAxesSize() { return _axes.size(); }
 
   void set_table_values(std::vector<std::unique_ptr<LibAttrValue>>&& table_values) { _table_values = std::move(table_values); }
   auto& get_table_values() { return _table_values; }

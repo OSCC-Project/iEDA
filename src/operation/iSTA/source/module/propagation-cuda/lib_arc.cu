@@ -314,8 +314,9 @@ __device__ float find_value(Lib_Table_GPU& lib_table_gpu, float slew,
  * @param lib_arcs_cpu The vector of Lib_Arc_GPU.
  */
 void build_lib_data_gpu(Lib_Data_GPU& lib_data_gpu,
+                        std::vector<Lib_Table_GPU>& lib_tables_gpu,
+                        std::vector<Lib_Table_GPU*>& lib_gpu_table_ptrs,
                         std::vector<Lib_Arc_GPU>& lib_arcs_cpu) {
-
   lib_data_gpu._num_arcs = lib_arcs_cpu.size();
 
   cudaMalloc(&(lib_data_gpu._arcs_gpu),
@@ -333,6 +334,7 @@ void build_lib_data_gpu(Lib_Data_GPU& lib_data_gpu,
     CUDA_CHECK(cudaMemcpy(d_tables, cpu_arc._table,
                           cpu_arc._num_table * sizeof(Lib_Table_GPU),
                           cudaMemcpyHostToDevice));
+    lib_gpu_table_ptrs.push_back(d_tables);
 
     for (unsigned j = 0; j < cpu_arc._num_table; ++j) {
       Lib_Table_GPU& cpu_table = cpu_arc._table[j];
@@ -348,6 +350,7 @@ void build_lib_data_gpu(Lib_Data_GPU& lib_data_gpu,
           &(one_table._values), cpu_table._num_values * sizeof(float), stream1));
       CUDA_CHECK(cudaStreamSynchronize(stream1));
 
+      // assign gpu table data.
       CUDA_CHECK(cudaMemcpyAsync(one_table._x, cpu_table._x,
                                  cpu_table._num_x * sizeof(float),
                                  cudaMemcpyHostToDevice, stream1));
@@ -368,8 +371,12 @@ void build_lib_data_gpu(Lib_Data_GPU& lib_data_gpu,
                                  sizeof(Lib_Table_GPU), cudaMemcpyHostToDevice,
                                  stream1));
       CUDA_CHECK(cudaStreamSynchronize(stream1));
+
+      lib_tables_gpu.emplace_back(std::move(one_table));
     }
 
+
+    // assign gpu arc data.
     Lib_Arc_GPU* gpu_arc = &lib_data_gpu._arcs_gpu[i];
 
     CUDA_CHECK(cudaMemcpyAsync(&(gpu_arc->_table), &d_tables,
@@ -387,6 +394,32 @@ void build_lib_data_gpu(Lib_Data_GPU& lib_data_gpu,
     CUDA_CHECK(cudaStreamSynchronize(stream1));
   }
   cudaStreamDestroy(stream1);
+}
+
+/**
+ * @brief free gpu data memory.
+ * 
+ * @param lib_data_gpu 
+ * @param lib_tables_gpu 
+ */
+void free_lib_data_gpu(Lib_Data_GPU& lib_data_gpu,
+                       std::vector<Lib_Table_GPU>& lib_tables_gpu,
+                       std::vector<Lib_Table_GPU*>& lib_gpu_table_ptrs) { 
+
+  for (auto& lib_table : lib_tables_gpu) {
+    cudaFree(lib_table._x);
+    cudaFree(lib_table._y);
+    cudaFree(lib_table._values);
+  }
+
+  for (auto* lib_table_ptr : lib_gpu_table_ptrs) {
+    cudaFree(lib_table_ptr);
+  }
+  
+  if (lib_data_gpu._arcs_gpu) {
+    cudaFree(lib_data_gpu._arcs_gpu);
+  }
+  
 }
 
 /**

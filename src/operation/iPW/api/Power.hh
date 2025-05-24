@@ -149,7 +149,7 @@ class Power {
   
   unsigned runIRAnalysis(std::string power_net_name);
   unsigned reportIRDropCSV(const char* rpt_file_name);
-  unsigned reportIRAnalysis();
+  unsigned reportIRAnalysis(bool is_copy = true);
 
   std::pair<double, double> getNetToggleAndVoltageData(const char* net_name);
 
@@ -157,6 +157,7 @@ class Power {
 
  private:
   std::string _design_work_space; //!< The power report work space.
+  std::optional<std::pair<std::string, std::string>> _backup_work_dir;
   double _default_toggle = 0.02; //!< The default toggle value.
 
   PwrGraph _power_graph;         //< The power graph, mapped to sta graph.

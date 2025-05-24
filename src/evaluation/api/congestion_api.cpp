@@ -219,6 +219,45 @@ int32_t CongestionAPI::findBBoxUy(std::string net_name)
 {
   return EVAL_CONGESTION_INST->findBBoxUy(net_name);
 }
+double CongestionAPI::findXEntropy(std::string net_name)
+{
+  return EVAL_CONGESTION_INST->findXEntropy(net_name);
+}
+
+double CongestionAPI::findYEntropy(std::string net_name)
+{
+  return EVAL_CONGESTION_INST->findYEntropy(net_name);
+}
+
+double CongestionAPI::findAvgXNNDistance(std::string net_name)
+{
+  return EVAL_CONGESTION_INST->findAvgXNNDistance(net_name);
+}
+
+double CongestionAPI::findStdXNNDistance(std::string net_name)
+{
+  return EVAL_CONGESTION_INST->findStdXNNDistance(net_name);
+}
+
+double CongestionAPI::findRatioXNNDistance(std::string net_name)
+{
+  return EVAL_CONGESTION_INST->findRatioXNNDistance(net_name);
+}
+
+double CongestionAPI::findAvgYNNDistance(std::string net_name)
+{
+  return EVAL_CONGESTION_INST->findAvgYNNDistance(net_name);
+}
+
+double CongestionAPI::findStdYNNDistance(std::string net_name)
+{
+  return EVAL_CONGESTION_INST->findStdYNNDistance(net_name);
+}
+
+double CongestionAPI::findRatioYNNDistance(std::string net_name)
+{
+  return EVAL_CONGESTION_INST->findRatioYNNDistance(net_name);
+}
 
 std::string CongestionAPI::egrUnionMap(std::string stage, std::string rt_dir_path)
 {

@@ -68,10 +68,10 @@ void InitEGR::runEGR(bool enable_timing)
   rt_interface.destroyRT();
 }
 
-float InitEGR::parseEGRWL(std::string guide_path)
+double InitEGR::parseEGRWL(std::string guide_path)
 {
   parseGuideFile(guide_path);
-  float total_egr_wl = 0.0;
+  double total_egr_wl = 0.0;
   for (const auto& net : _net_lengths) {
     total_egr_wl += net.second;
   }

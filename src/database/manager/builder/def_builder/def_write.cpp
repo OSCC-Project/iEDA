@@ -83,7 +83,7 @@ bool DefWrite::initFile(const char* file)
     _font = SaveFormat::kUnzip;
     _file_write = fopen(file, "w+");
     if (_file_write == nullptr) {
-      std::cout << "Open def file failed..." << std::endl;
+      std::cerr << "Open def file failed..." << std::endl;
       return false;
     }
   }
@@ -1145,7 +1145,7 @@ int32_t DefWrite::write_lef_macro()
   writestr("%sCLASS BLOCK ;\n", _spacer);
   writestr("%sFOREIGN %s ;\n", _spacer, design->get_design_name().c_str());
   writestr("%sORIGIN 0.0 0.0 ;\n", _spacer);
-  writestr("%sSIZE %.3f %.3f ;\n", _spacer, design->transToUDB(layout->get_die()->get_width()),
+  writestr("%sSIZE %.3f BY %.3f ;\n", _spacer, design->transToUDB(layout->get_die()->get_width()),
            design->transToUDB(layout->get_die()->get_height()));
   writestr("%sSYMMETRY X Y ;\n", _spacer);
 
@@ -1165,6 +1165,7 @@ int32_t DefWrite::write_lef_macro_pins()
   auto* layout = _def_service->get_layout();
   auto* layers = layout->get_layers();
   auto* pdn_list = design->get_special_net_list();
+  auto* die = layout->get_die();
 
   /// write io ports
   auto* io_pins = design->get_io_pin_list();
@@ -1190,6 +1191,11 @@ int32_t DefWrite::write_lef_macro_pins()
       for (auto* layer_shape : idb_pin->get_port_box_list()) {
         writestr("%s%s%sLAYER %s ;\n", _spacer, _spacer, _spacer, layer_shape->get_layer()->get_name().c_str());
         for (auto* rect : layer_shape->get_rect_list()) {
+          if (rect->get_low_x() < die->get_bounding_box()->get_low_x() || rect->get_low_y() < die->get_bounding_box()->get_low_y()
+              || rect->get_high_x() > die->get_bounding_box()->get_high_x() || rect->get_high_y() > die->get_bounding_box()->get_high_y()) {
+            std::cout << "error boundry" << std::endl;
+          }
+
           writestr("%s%s%s%sRECT %.3f %.3f %.3f %.3f ;\n", _spacer, _spacer, _spacer, _spacer, design->transToUDB(rect->get_low_x()),
                    design->transToUDB(rect->get_low_y()), design->transToUDB(rect->get_high_x()), design->transToUDB(rect->get_high_y()));
         }

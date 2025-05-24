@@ -235,19 +235,22 @@ class StaInstArc : public StaArc {
 
   auto* get_inst() { return _inst; }
 
+#if CUDA_PROPAGATION
   Lib_Arc_GPU* get_lib_gpu_arc() const { return _lib_gpu_arc; }
   void set_lib_gpu_arc(Lib_Arc_GPU* lib_gpu_arc) { _lib_gpu_arc = lib_gpu_arc; }
-  void buildLibArcsGPU();
 
   int get_lib_arc_id() const { return _lib_arc_id; }
   void set_lib_arc_id(int arc_id) { _lib_arc_id = arc_id; }
+#endif
 
  private:
   LibArc* _lib_arc;  //!< The mapped to lib arc.
   Instance* _inst;   //!< The owned inst.
 
+#if CUDA_PROPAGATION
   Lib_Arc_GPU* _lib_gpu_arc = nullptr;  //!< The gpu lib arc.
   int _lib_arc_id = -1; //!< The arc id for gpu lib data.
+#endif
 
   FORBIDDEN_COPY(StaInstArc);
 };

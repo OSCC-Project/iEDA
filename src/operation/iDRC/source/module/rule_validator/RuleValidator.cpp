@@ -96,6 +96,7 @@ void RuleValidator::setRVComParam(RVModel& rv_model)
 
 void RuleValidator::buildRVModel(RVModel& rv_model)
 {
+  std::vector<RVBox>& rv_box_list = rv_model.get_rv_box_list();
   int32_t box_size = rv_model.get_rv_com_param().get_box_size();
   int32_t expand_size = rv_model.get_rv_com_param().get_expand_size();
 
@@ -119,14 +120,13 @@ void RuleValidator::buildRVModel(RVModel& rv_model)
     }
     offset_x = bounding_box.get_ll_x();
     offset_y = bounding_box.get_ll_y();
-    PlanarRect enlarged_rect = DRCUTIL.getEnlargedRect(bounding_box, 1);
-    grid_x_size = static_cast<int32_t>(std::ceil(enlarged_rect.getXSpan() / 1.0 / box_size));
-    grid_y_size = static_cast<int32_t>(std::ceil(enlarged_rect.getYSpan() / 1.0 / box_size));
+    grid_x_size = bounding_box.getXSpan() / box_size + 1;
+    grid_y_size = bounding_box.getYSpan() / box_size + 1;
   }
-  rv_model.get_rv_box_list().resize(grid_x_size * grid_y_size);
+  rv_box_list.resize(grid_x_size * grid_y_size);
   for (int32_t grid_x = 0; grid_x < grid_x_size; grid_x++) {
     for (int32_t grid_y = 0; grid_y < grid_y_size; grid_y++) {
-      RVBox& rv_box = rv_model.get_rv_box_list()[grid_x + grid_y * grid_x_size];
+      RVBox& rv_box = rv_box_list[grid_x + grid_y * grid_x_size];
       rv_box.set_box_idx(grid_x + grid_y * grid_x_size);
       rv_box.get_box_rect().set_ll(grid_x * box_size + offset_x, grid_y * box_size + offset_y);
       rv_box.get_box_rect().set_ur((grid_x + 1) * box_size + offset_x, (grid_y + 1) * box_size + offset_y);
@@ -141,7 +141,11 @@ void RuleValidator::buildRVModel(RVModel& rv_model)
     int32_t grid_ur_y = (searched_rect.get_ur_y() - offset_y) / box_size;
     for (int32_t grid_x = grid_ll_x; grid_x <= grid_ur_x; grid_x++) {
       for (int32_t grid_y = grid_ll_y; grid_y <= grid_ur_y; grid_y++) {
-        rv_model.get_rv_box_list()[grid_x + grid_y * grid_x_size].get_drc_env_shape_list().push_back(&drc_env_shape);
+        int32_t box_idx = grid_x + grid_y * grid_x_size;
+        if (rv_box_list.size() <= box_idx) {
+          DRCLOG.error(Loc::current(), "rv_box_list.size() <= box_idx!");
+        }
+        rv_box_list[box_idx].get_drc_env_shape_list().push_back(&drc_env_shape);
       }
     }
   }
@@ -154,7 +158,11 @@ void RuleValidator::buildRVModel(RVModel& rv_model)
     int32_t grid_ur_y = (searched_rect.get_ur_y() - offset_y) / box_size;
     for (int32_t grid_x = grid_ll_x; grid_x <= grid_ur_x; grid_x++) {
       for (int32_t grid_y = grid_ll_y; grid_y <= grid_ur_y; grid_y++) {
-        rv_model.get_rv_box_list()[grid_x + grid_y * grid_x_size].get_drc_result_shape_list().push_back(&drc_result_shape);
+        int32_t box_idx = grid_x + grid_y * grid_x_size;
+        if (rv_box_list.size() <= box_idx) {
+          DRCLOG.error(Loc::current(), "rv_box_list.size() <= box_idx!");
+        }
+        rv_box_list[box_idx].get_drc_result_shape_list().push_back(&drc_result_shape);
       }
     }
   }

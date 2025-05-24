@@ -26,12 +26,12 @@
 #include "define.h"
 
 using namespace ista;
-using namespace std;
 
 const int TYPE_RISE = (int) ista::TransType::kRise - 1;
 const int TYPE_FALL = (int) ista::TransType::kFall - 1;
 
 namespace ito {
+using namespace std;
 
 #define timingEngine ToTimingEngine::getInstance()
 

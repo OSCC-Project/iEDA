@@ -30,8 +30,8 @@
 #include "json.hpp"
 using json = nlohmann::json;
 
-using namespace std;
 namespace idm {
+using namespace std;
 
 class CtsConfig
 {

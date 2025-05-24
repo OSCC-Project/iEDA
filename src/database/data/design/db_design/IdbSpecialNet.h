@@ -129,6 +129,7 @@ class IdbSpecialNet
   void set_weight(int32_t weight) { _weight = weight; }
 
   void add_io_pin(IdbPin* io_pin);
+  auto* get_io_pins() { return _io_pin_list; }
   void add_instance_pin(IdbPin* inst_pin);
   void add_instance(IdbInstance* instance);
 

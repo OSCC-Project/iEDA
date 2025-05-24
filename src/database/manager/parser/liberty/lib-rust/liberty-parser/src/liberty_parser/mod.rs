@@ -294,6 +294,7 @@ fn process_pair(
         Rule::string_text => process_string_text(pair),
         Rule::expr_operator => process_string(pair),
         Rule::id => process_string(pair),
+        Rule::version_id => process_string(pair),
         Rule::multiline_string => process_multiline_string(&mut substitute_queue),
         Rule::expr_token => process_expr_token(pair, &mut substitute_queue),
         Rule::simple_attribute => process_simple_attribute(pair, lib_file_path, &mut substitute_queue),

@@ -115,7 +115,9 @@ double PwrCalcInternalPower::calcCombInputPinPower(Instance* inst,
     // be calculated based on the percentage of the input toggle.
     double input_pin_toggle = getToggleData(input_pin);
     double output_flip_toggle =
-        (input_pin_toggle / input_sum_toggle) * output_pin_toggle;
+        output_pin_toggle > 0
+            ? (input_pin_toggle / input_sum_toggle) * output_pin_toggle
+            : 0;
     double output_no_flip_toggle = input_pin_toggle - output_flip_toggle;
 
     // the internal power of this condition.
