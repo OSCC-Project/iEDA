@@ -787,6 +787,9 @@ void DataManager::checkLayerList()
     if (prl_spacing_table.get_width_list().empty()) {
       RTLOG.error(Loc::current(), "The layer '", layer_name, "' spacing width_list is empty!");
     }
+    if (routing_layer.get_notch_spacing() == -1) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' notch_spacing == -1!");
+    }
     if (prl_spacing_table.get_parallel_length_list().empty()) {
       RTLOG.error(Loc::current(), "The layer '", layer_name, "' spacing parallel_length_list is empty!");
     }
@@ -1118,6 +1121,7 @@ void DataManager::makeObstacleList()
 {
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
   Die& die = _database.get_die();
+  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = _database.get_cut_to_adjacent_routing_map();
   std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
   std::vector<Obstacle>& cut_obstacle_list = _database.get_cut_obstacle_list();
 
@@ -1147,6 +1151,19 @@ void DataManager::makeObstacleList()
     cut_obstacle.set_real_rect(RTUTIL.getRegularRect(cut_obstacle.get_real_rect(), die.get_real_rect()));
     cut_obstacle.set_grid_rect(RTUTIL.getClosedGCellGridRect(cut_obstacle.get_real_rect(), gcell_axis));
   }
+  std::set<int32_t> ignore_cut_layer_idx_set;
+  for (auto& [cut_layer_idx, routing_layer_idx_list] : cut_to_adjacent_routing_map) {
+    if (routing_layer_idx_list.size() == 1) {
+      ignore_cut_layer_idx_set.insert(cut_layer_idx);
+    }
+  }
+  std::vector<Obstacle> cut_obstacle_list_temp;
+  for (Obstacle& cut_obstacle : cut_obstacle_list) {
+    if (!RTUTIL.exist(ignore_cut_layer_idx_set, cut_obstacle.get_layer_idx())) {
+      cut_obstacle_list_temp.push_back(cut_obstacle);
+    }
+  }
+  cut_obstacle_list = cut_obstacle_list_temp;
 }
 
 void DataManager::checkObstacleList()

@@ -38,6 +38,7 @@ class RoutingLayer
   ScaleAxis& get_track_axis() { return _track_axis; }
   int32_t get_min_width() const { return _min_width; }
   int32_t get_min_area() const { return _min_area; }
+  int32_t get_notch_spacing() const { return _notch_spacing; }
   SpacingTable& get_prl_spacing_table() { return _prl_spacing_table; }
   int32_t get_eol_spacing() const { return _eol_spacing; }
   int32_t get_eol_ete() const { return _eol_ete; }
@@ -50,6 +51,7 @@ class RoutingLayer
   void set_track_axis(const ScaleAxis& track_axis) { _track_axis = track_axis; }
   void set_min_width(const int32_t min_width) { _min_width = min_width; }
   void set_min_area(const int32_t min_area) { _min_area = min_area; }
+  void set_notch_spacing(const int32_t notch_spacing) { _notch_spacing = notch_spacing; }
   void set_prl_spacing_table(const SpacingTable& prl_spacing_table) { _prl_spacing_table = prl_spacing_table; }
   void set_eol_spacing(const int32_t eol_spacing) { _eol_spacing = eol_spacing; }
   void set_eol_ete(const int32_t eol_ete) { _eol_ete = eol_ete; }
@@ -60,19 +62,20 @@ class RoutingLayer
   std::vector<ScaleGrid>& getYTrackGridList() { return _track_axis.get_y_grid_list(); }
   std::vector<ScaleGrid>& getPreferTrackGridList() { return isPreferH() ? getYTrackGridList() : getXTrackGridList(); }
   std::vector<ScaleGrid>& getNonPreferTrackGridList() { return isPreferH() ? getXTrackGridList() : getYTrackGridList(); }
-  int32_t getPRLSpacing(const PlanarRect& rect)
+  int32_t getPRLSpacing(const PlanarRect& rect) { return getPRLSpacing(rect.getWidth()); }
+  int32_t getPRLSpacing(const int32_t width)
   {
     std::vector<int32_t>& width_list = _prl_spacing_table.get_width_list();
     GridMap<int32_t>& width_parallel_length_map = _prl_spacing_table.get_width_parallel_length_map();
 
     int32_t width_idx = static_cast<int32_t>(width_list.size()) - 1;
     for (int32_t i = width_idx; 0 <= i; i--) {
-      if (width_list[i] <= rect.getWidth()) {
+      if (width_list[i] <= width) {
         width_idx = i;
         break;
       }
     }
-    return width_parallel_length_map[width_idx].front();
+    return width_parallel_length_map[width_idx].back();
   }
 
  private:
@@ -85,6 +88,8 @@ class RoutingLayer
   int32_t _min_width = -1;
   // min area
   int32_t _min_area = -1;
+  // notch
+  int32_t _notch_spacing = -1;
   // prl
   SpacingTable _prl_spacing_table;
   // eol

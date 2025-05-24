@@ -421,6 +421,19 @@ void RTInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLay
   {
     routing_layer.set_min_area(idb_layer->get_area());
   }
+  // notch
+  {
+    IdbLayerSpacingNotchLength& idb_notch = idb_layer->get_spacing_notchlength();
+    idb::routinglayer::Lef58SpacingNotchlength* idb_lef58_notch = idb_layer->get_lef58_spacing_notchlength().get();
+    if (idb_notch.exist()) {
+      routing_layer.set_notch_spacing(idb_notch.get_min_spacing());
+    } else if (idb_lef58_notch != nullptr) {
+      routing_layer.set_notch_spacing(idb_lef58_notch->get_min_spacing());
+    } else {
+      RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " notch spacing is empty!");
+      routing_layer.set_notch_spacing(0);
+    }
+  }
   // prl
   {
     std::shared_ptr<idb::IdbParallelSpacingTable> idb_spacing_table;
