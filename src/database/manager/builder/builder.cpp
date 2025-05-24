@@ -33,6 +33,8 @@
 
 #include "builder.h"
 
+#include "log/Log.hh"
+
 using std::cout;
 using std::endl;
 
@@ -113,7 +115,10 @@ IdbDefService* IdbBuilder::buildDef(string file)
   std::cout << "Read DEF file : " << file << endl;
 
   std::shared_ptr<DefRead> def_read = std::make_shared<DefRead>(_def_service);
-  def_read->createDb(file.c_str());
+  if (const auto ret = def_read->createDb(file.c_str()); !ret) {
+    LOG_FATAL << "Def file read failed..." << endl;
+  }
+
   buildNet();
   buildBus();
   log();
@@ -139,7 +144,10 @@ IdbDefService* IdbBuilder::buildDefGzip(string gzip_file)
   std::cout << "Read DEF ZIP file : " << gzip_file << endl;
 
   std::shared_ptr<DefRead> def_read = std::make_shared<DefRead>(_def_service);
-  def_read->createDbGzip(gzip_file.c_str());
+  if (const auto ret = def_read->createDbGzip(gzip_file.c_str()); !ret) {
+    LOG_FATAL << "Def file read failed..." << endl;
+  }
+
   buildNet();
   buildBus();
   log();

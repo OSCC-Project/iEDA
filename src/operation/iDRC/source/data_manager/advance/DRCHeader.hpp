@@ -46,6 +46,7 @@
 #include <iostream>
 #include <list>
 #include <mutex>
+#include <optional>
 #include <ostream>
 #include <queue>
 #include <regex>

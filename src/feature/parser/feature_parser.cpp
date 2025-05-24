@@ -244,13 +244,13 @@ bool FeatureParser::buildSummaryEvalJsonl(std::string jsonl_path)
   congestion["Congestion"] = buildSummaryCongestion();
   file_stream << congestion << std::endl;
 
-  json timing;
-  timing["Timing"] = buildSummaryTiming();
-  file_stream << timing << std::endl;
+  // json timing;
+  // timing["Timing"] = buildSummaryTiming();
+  // file_stream << timing << std::endl;
 
-  json power;
-  power["Power"] = buildSummaryPower();
-  file_stream << power << std::endl;
+  // json power;
+  // power["Power"] = buildSummaryPower();
+  // file_stream << power << std::endl;
 
   ieda::closeFileStream(file_stream);
 

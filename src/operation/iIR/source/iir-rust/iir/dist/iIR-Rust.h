@@ -11,6 +11,8 @@ Do not modify this manually.
 #include <stdint.h>
 #include <stdlib.h>
 
+#define POWER_INNER_RESISTANCE 1e-9
+
 typedef struct HashMap_usize__f64 HashMap_usize__f64;
 
 /**

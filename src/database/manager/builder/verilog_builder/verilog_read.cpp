@@ -489,7 +489,15 @@ int32_t RustVerilogRead::build_assign()
           left_io_pin->set_net(the_right_idb_net);
           left_io_pin->set_net_name(right_net_name);
         }
-        
+
+        assert(the_left_idb_net != the_right_idb_net);
+        // the remove map to merge net maybe removed, need update the new net.
+        for (auto [remove_net_name, merge_idb_net] : remove_to_merge_nets) {
+          if (merge_idb_net->get_net_name() == left_net_name) {
+            remove_to_merge_nets[remove_net_name] = the_right_idb_net;
+          }
+        }
+
         idb_net_list->remove_net(left_net_name);
         remove_to_merge_nets[left_net_name] = the_right_idb_net; 
 

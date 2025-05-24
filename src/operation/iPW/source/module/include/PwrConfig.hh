@@ -43,5 +43,8 @@ constexpr double c_switch_power_K = 0.5;
 constexpr double c_default_period = 10;  // time unit :ns
 constexpr double c_default_toggle_relative_clk = 1.25;  // time unit :period
 
+// for estimate IR
+constexpr double c_resistance_coef = 0.5;
+
 namespace ista {}
 using namespace ista;
