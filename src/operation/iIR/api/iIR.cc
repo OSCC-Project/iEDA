@@ -94,6 +94,9 @@ unsigned iIR::solveIRDrop(const char* net_name) {
   auto one_net_matrix_data =
       build_one_net_conductance_matrix_data(_rc_data, net_name);
 
+  double sum_resistance = get_sum_resistance(_rc_data, net_name);
+  LOG_INFO << "sum resistance: " << sum_resistance;
+
   IRMatrix ir_matrix;
   auto G_matrix = ir_matrix.buildConductanceMatrix(one_net_matrix_data);
 
@@ -102,7 +105,11 @@ unsigned iIR::solveIRDrop(const char* net_name) {
   auto J_vector = ir_matrix.buildCurrentVector(current_rust_map,
                                                one_net_matrix_data.node_num);
 
-  IRCGSolver ir_solver(_nominal_voltage);
+  // Get the minimum element of J_vector
+  double min_element = J_vector.minCoeff();
+  LOG_INFO << "minimum element in J_vector: " << min_element;
+
+  IRLUSolver ir_solver;
   auto grid_voltages = ir_solver(G_matrix, J_vector);
 
   std::optional<std::pair<std::string, double>> max_ir_drop;
