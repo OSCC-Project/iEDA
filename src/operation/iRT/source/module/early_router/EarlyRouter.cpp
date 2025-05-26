@@ -116,8 +116,9 @@ void EarlyRouter::setERComParam(ERModel& er_model)
 {
   int32_t topo_spilt_length = 10;
   double prefer_wire_unit = 1;
+  double non_prefer_wire_unit = 2.5 * prefer_wire_unit;
   double via_unit = 1;
-  double overflow_unit = 2;
+  double overflow_unit = 4 * non_prefer_wire_unit;
   /**
    * topo_spilt_length, prefer_wire_unit, via_unit, overflow_unit
    */

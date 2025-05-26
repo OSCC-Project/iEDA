@@ -55,9 +55,8 @@ class TrackAssigner
   void initTAPanelMap(TAModel& ta_model);
   void buildPanelSchedule(TAModel& ta_model);
   void assignTAPanelMap(TAModel& ta_model);
-  void buildAccessResult(TAPanel& ta_panel);
-  void buildAccessPatch(TAPanel& ta_panel);
   void buildNetResult(TAPanel& ta_panel);
+  void buildNetPatch(TAPanel& ta_panel);
   void initTATaskList(TAModel& ta_model, TAPanel& ta_panel);
   void buildViolation(TAPanel& ta_panel);
   bool needRouting(TAPanel& ta_panel);
@@ -97,6 +96,8 @@ class TrackAssigner
   double getEstimateViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   void updateViolationList(TAPanel& ta_panel);
   std::vector<Violation> getViolationList(TAPanel& ta_panel);
+  std::vector<Violation> getViolationListByShort(TAPanel& ta_panel, std::map<int32_t, std::vector<PlanarRect>>& env_net_rect_map,
+                                                 std::map<int32_t, std::vector<PlanarRect>>& result_net_rect_map);
   void updateTaskSchedule(TAPanel& ta_panel, std::vector<TATask*>& routing_task_list);
   void routeTAPanelByInterface(TAPanel& ta_panel);
   void uploadNetResult(TAPanel& ta_panel);

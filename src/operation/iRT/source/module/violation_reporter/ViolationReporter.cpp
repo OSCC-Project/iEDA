@@ -628,7 +628,7 @@ void ViolationReporter::debugPlotVRModel(VRModel& vr_model, std::string flag)
     GPStruct detailed_patch_struct(RTUTIL.getString("detailed_patch(net_", net_idx, ")"));
     for (EXTLayerRect* patch : patch_set) {
       GPBoundary gp_boundary;
-      gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kPath));
+      gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kPatch));
       gp_boundary.set_rect(patch->get_real_rect());
       gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(patch->get_layer_idx()));
       detailed_patch_struct.push(gp_boundary);
