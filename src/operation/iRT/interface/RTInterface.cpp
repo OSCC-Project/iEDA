@@ -303,6 +303,7 @@ void RTInterface::wrapConfig(std::map<std::string, std::any>& config_map)
   RTDM.getConfig().top_routing_layer = RTUTIL.getConfigValue<std::string>(config_map, "-top_routing_layer", "");
   RTDM.getConfig().output_inter_result = RTUTIL.getConfigValue<int32_t>(config_map, "-output_inter_result", 0);
   RTDM.getConfig().enable_timing = RTUTIL.getConfigValue<int32_t>(config_map, "-enable_timing", 0);
+  RTDM.getConfig().enable_fast_mode = RTUTIL.getConfigValue<int32_t>(config_map, "-enable_fast_mode", 0);
   RTDM.getConfig().enable_lsa = RTUTIL.getConfigValue<int32_t>(config_map, "-enable_lsa", 0);
   /////////////////////////////////////////////
 }

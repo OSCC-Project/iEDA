@@ -1457,6 +1457,8 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.output_inter_result);
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "enable_timing");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.enable_timing);
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "enable_fast_mode");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.enable_fast_mode);
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "enable_lsa");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.enable_lsa);
   // **********        RT         ********** //

@@ -62,9 +62,10 @@ void DRCEngine::init()
 
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
 {
-#ifdef CCLOUD_WORKAROUND
-  return {};  // 云平台暂时取消drc
-#endif
+  int32_t enable_fast_mode = RTDM.getConfig().enable_fast_mode;
+  if (enable_fast_mode) {
+    return {};
+  }
   getViolationListByInterface(de_task);
   filterViolationList(de_task);
   checkViolationList(de_task);

@@ -110,7 +110,6 @@ void TrackAssigner::setTAComParam(TAModel& ta_model)
   int32_t cost_unit = RTDM.getOnlyPitch();
   double prefer_wire_unit = 1;
   double non_prefer_wire_unit = 2.5 * prefer_wire_unit;
-  double via_unit = cost_unit;
   double fixed_rect_unit = 10 * non_prefer_wire_unit * cost_unit;
   double routed_rect_unit = 2 * non_prefer_wire_unit * cost_unit;
   double violation_unit = 10 * non_prefer_wire_unit * cost_unit;
