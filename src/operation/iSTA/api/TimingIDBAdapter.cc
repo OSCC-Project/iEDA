@@ -117,7 +117,7 @@ IdbCoordinate<int32_t>* TimingIDBAdapter::idbLocation(
  * @return double Ω
  */
 double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
-                                       std::optional<double>& segment_width) {
+                                       std::optional<double> segment_width) {
   double segment_resistance = 0;
   IdbLayout* idb_layout = _idb_lef_service->get_layout();
   vector<IdbLayer*>& routing_layers =
@@ -145,6 +145,10 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
 
   segment_resistance = lef_resistance * segment_length / *segment_width;
 
+  // _debug_csv_file << lef_resistance << "," << segment_length << ","
+  //           << *segment_width << "," << num_layer << ","
+  //           << segment_resistance << "\n";
+
   return segment_resistance;
 }
 
@@ -158,7 +162,7 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
  * @return double cap unit is pf
  */
 double TimingIDBAdapter::getCapacitance(int num_layer, double segment_length,
-                                        std::optional<double>& segment_width) {
+                                        std::optional<double> segment_width) {
   double segment_capacitance = 0;
   IdbLayout* idb_layout = _idb_lef_service->get_layout();
   vector<IdbLayer*>& routing_layers =
