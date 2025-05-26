@@ -488,10 +488,22 @@ unsigned PowerEngine::buildPGNetWireTopo() {
   auto* idb_adapter =
       dynamic_cast<ista::TimingIDBAdapter*>(_timing_engine->get_db_adapter());
   auto* idb_builder = idb_adapter->get_idb();
+
+  // set layer name to id.
+  IdbLayout* idb_layout = idb_builder->get_lef_service()->get_layout();
+  vector<IdbLayer*>& routing_layers =
+      idb_layout->get_layers()->get_routing_layers();
+  for (int id = 1; auto* layer : routing_layers) {
+    auto layer_name = layer->get_name();
+    _pg_netlist_builder.setLayerNameToId(layer_name, id);
+    ++id;
+  }
+
   auto* special_net_list =
       idb_builder->get_def_service()->get_design()->get_special_net_list();
   auto* idb_design = idb_builder->get_def_service()->get_design();
   auto dbu = idb_design->get_units()->get_micron_dbu();
+  _pg_netlist_builder.set_dbu(dbu);
 
   std::function<double(unsigned, unsigned)> calc_resistance =
       [idb_adapter, dbu](unsigned layer_id, unsigned distance_dbu) -> double {
