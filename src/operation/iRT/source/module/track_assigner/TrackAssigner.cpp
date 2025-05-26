@@ -111,9 +111,9 @@ void TrackAssigner::setTAComParam(TAModel& ta_model)
   double prefer_wire_unit = 1;
   double non_prefer_wire_unit = 2.5 * prefer_wire_unit;
   double via_unit = cost_unit;
-  double fixed_rect_unit = 4 * non_prefer_wire_unit * cost_unit;
-  double routed_rect_unit = 2 * via_unit;
-  double violation_unit = 4 * non_prefer_wire_unit * cost_unit;
+  double fixed_rect_unit = 10 * non_prefer_wire_unit * cost_unit;
+  double routed_rect_unit = 2 * non_prefer_wire_unit * cost_unit;
+  double violation_unit = 10 * non_prefer_wire_unit * cost_unit;
   /**
    * prefer_wire_unit, schedule_interval, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times
    */
