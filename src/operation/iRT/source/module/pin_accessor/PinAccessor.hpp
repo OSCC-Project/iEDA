@@ -87,6 +87,7 @@ class PinAccessor
   void exemptPinShape(PABox& pa_box);
   void routePABox(PABox& pa_box);
   std::vector<PATask*> initTaskSchedule(PABox& pa_box);
+  void updateGraph(PABox& pa_box, PATask* pa_task);
   void routePATask(PABox& pa_box, PATask* pa_task);
   void initSingleRouteTask(PABox& pa_box, PATask* pa_task);
   bool isConnectedAllEnd(PABox& pa_box);
@@ -144,6 +145,8 @@ class PinAccessor
   void selectBestResult(PAModel& pa_model);
   void uploadBestResult(PAModel& pa_model);
   void uploadAccessPoint(PAModel& pa_model);
+  void uploadAccessResult(PAModel& pa_model);
+  void uploadAccessPatch(PAModel& pa_model);
 
 #if 1  // update env
   void updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
