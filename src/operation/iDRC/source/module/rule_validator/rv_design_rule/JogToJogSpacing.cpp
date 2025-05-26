@@ -39,6 +39,7 @@ void RuleValidator::verifyJogToJogSpacing(RVBox& rv_box)
     int32_t jogToJogSpacing;  // jog之间的间距
     int32_t jogWidth;         // jog宽度
     int32_t shortJogSpacing;  // 短jog间距
+    int32_t rows;             // 行数
 
     // 每个宽度规则的结构
     struct WidthRule
@@ -53,15 +54,16 @@ void RuleValidator::verifyJogToJogSpacing(RVBox& rv_box)
 
     std::vector<WidthRule> widthRules;
 
-    JogToJogSpacingRule(int32_t jts, int32_t jw, int32_t sjs) : jogToJogSpacing(jts), jogWidth(jw), shortJogSpacing(sjs) {}
+    JogToJogSpacingRule(int32_t jts, int32_t jw, int32_t sjs, int32_t rows) : jogToJogSpacing(jts), jogWidth(jw), shortJogSpacing(sjs), rows(rows) {}
     void addWidthRule(int32_t width, int32_t parLength, int32_t within, int32_t longJogSpacing)
     {
       widthRules.emplace_back(width, parLength, within, longJogSpacing);
     }
   };
 
-  JogToJogSpacingRule rule(600, 440, 120);
+  JogToJogSpacingRule rule(600, 440, 120, 4);
 
+  // rule.addWidthRule(500, 600, 580, 160);
   rule.addWidthRule(500, 600, 380, 200);
   rule.addWidthRule(940, 1000, 640, 260);
   rule.addWidthRule(1260, 1400, 680, 300);
@@ -132,7 +134,15 @@ void RuleValidator::verifyJogToJogSpacing(RVBox& rv_box)
     }
     return width_idx;
   };
-
+  auto getApplicableRule
+      = [](int32_t width, int32_t parallel_length, int32_t within, int32_t long_jog_spacing, int32_t short_jog_spacing, const JogToJogSpacingRule& rule) {
+          for (int32_t i = rule.widthRules.size() - 1; i >= 0; i--) {
+            if (width >= rule.widthRules[i].width && parallel_length > rule.widthRules[i].parallelLength && within < rule.widthRules[i].within) {
+              return i;
+            }
+          }
+          return -1;
+        };
   auto get_parallel_length = [](const PlanarRect& rect_a, const PlanarRect& rect_b) {
     int32_t parallel_length = 0;
     int32_t h_spacing = std::max(0, std::max(rect_a.get_ll_x() - rect_b.get_ur_x(), rect_b.get_ll_x() - rect_a.get_ur_x()));
@@ -196,17 +206,14 @@ void RuleValidator::verifyJogToJogSpacing(RVBox& rv_box)
         auto current_rect_width_orientation = current_rect_orientation.get_perpendicular();
         int current_rect_width = gtl::delta(current_gtl_rect, current_rect_width_orientation);
 
-        int width_idx = get_width_idx(current_rect_width, rule.widthRules);
-
         // 宽度不满足条件
-        if (width_idx == -1) {
+        if (current_rect_width < rule.widthRules[0].width) {
           continue;
         }
-        auto& applicable_rule = rule.widthRules[width_idx];
 
         auto checkFunction = [&](const gtl::orientation_2d& orientation) {
           GTLRectInt bloat_current_rect = current_gtl_rect;
-          gtl::bloat(bloat_current_rect, orientation, applicable_rule.within);
+          gtl::bloat(bloat_current_rect, orientation, rule.widthRules[rule.rows - 1].within - 1);
 
           std::vector<std::pair<BGRectInt, int32_t>> around_rect_result
               = queryRectbyRtreeWithIntersects(routing_layer_all_query_tree, routing_layer_idx, gtl::xl(bloat_current_rect), gtl::yl(bloat_current_rect),
@@ -225,17 +232,26 @@ void RuleValidator::verifyJogToJogSpacing(RVBox& rv_box)
             GTLRectInt spacing_gtl_rect = DRCUTIL.convertToGTLRectInt(spacing_planar_rect);
 
             int32_t spacing_within = gtl::delta(spacing_gtl_rect, current_rect_width_orientation);
-            int32_t spacing_prl = gtl::delta(spacing_gtl_rect, current_rect_width_orientation.get_perpendicular());
+            int32_t spacing_prl = gtl::delta(spacing_gtl_rect, current_rect_orientation);
 
-            if (spacing_within >= applicable_rule.within || spacing_prl <= applicable_rule.parallelLength) {
+            int32_t applicable_rule_idx = getApplicableRule(current_rect_width, spacing_prl, spacing_within, rule.jogToJogSpacing, rule.shortJogSpacing, rule);
+
+            if (applicable_rule_idx == -1) {
               continue;
             }
-            /// 查询
-            std::vector<std::pair<BGRectInt, int32_t>> rects_in_spacing_rect
-                = queryRectbyRtreeWithOverlaps(routing_layer_all_query_tree, routing_layer_idx, gtl::xl(spacing_gtl_rect), gtl::yl(spacing_gtl_rect),
-                                               gtl::xh(spacing_gtl_rect), gtl::yh(spacing_gtl_rect));
+
+            auto& applicable_rule = rule.widthRules[applicable_rule_idx];
+
             GTLPolySetInt check_region_all;
             check_region_all += spacing_gtl_rect;
+
+            gtl::shrink(spacing_gtl_rect, current_rect_width_orientation, 1);
+
+            /// 查询
+            std::vector<std::pair<BGRectInt, int32_t>> rects_in_spacing_rect
+                = queryRectbyRtreeWithIntersects(routing_layer_all_query_tree, routing_layer_idx, gtl::xl(spacing_gtl_rect), gtl::yl(spacing_gtl_rect),
+                                               gtl::xh(spacing_gtl_rect), gtl::yh(spacing_gtl_rect));
+
             for (auto& [jog_bg_rect, jog_net_idx] : rects_in_spacing_rect) {
               if (jog_net_idx != current_net_idx && jog_net_idx != around_rect_net_idx) {
                 continue;
