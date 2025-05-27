@@ -457,10 +457,10 @@ void IRPGNetlistBuilder::build(
   LOG_INFO << "total edge num: " << pg_netlist.getEdgeNum();
 
   // for debug.
-  // if (special_net_name == "VDD") {
-  //   pg_netlist.printToYaml(
-  //       "/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml");
-  // }
+//   if (special_net_name == "VDD") {
+//     pg_netlist.printToYaml(
+//         "/home/taosimin/iEDA24/iEDA/bin/aes_pg_netlist.yaml");
+//   }
 }
 
 /**
