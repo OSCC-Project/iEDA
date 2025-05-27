@@ -176,6 +176,7 @@ void IRPGNetlistBuilder::build(
   // Firstly, get the wire topo point in line segment.
   std::set<std::tuple<int64_t, int64_t, int64_t>> pg_points;
   std::map<int, std::set<IRPGNode*, IRNodeComparator>> segment_to_point;
+  std::map<int, int> intersect_segment_one_layer; // the segment one layer need connect.
   std::map<int, int> coordy_to_segment_id;  // coord y to segment id, for locate
                                             // instance pin segment.
   for (unsigned i = 0; i < line_segment_num; ++i) {
@@ -201,6 +202,7 @@ void IRPGNetlistBuilder::build(
 
         if ((the_result_left_layer_id == the_result_right_layer_id) &&
             (the_result_left_layer_id == the_line_seg_layer_id)) {
+          intersect_segment_one_layer[i] = r.second;
           continue;  // skip the segment intersect with itself.
         }
 
@@ -269,6 +271,32 @@ void IRPGNetlistBuilder::build(
 
       pg_last_node = pg_node;
     }
+  }
+
+  // for the segment intersect in one layer, we need connect the the point
+  // of the segment.
+  for (auto [seg_id1, seg_id2] : intersect_segment_one_layer) {
+    // connect the last point of seg_id1 and first point of seg_id2.
+    auto* node1 = *(segment_to_point[seg_id1].rbegin());  // Get last element of first segment
+    auto* node2 = *(segment_to_point[seg_id2].begin());  // Get first element of second segment
+
+    if (node1->get_coord().first == node2->get_coord().first) {
+      LOG_FATAL_IF(node1->get_coord().second > node2->get_coord().second)
+          << "node1 coord y should be less than node2 coord y.";
+    } else if (node1->get_coord().second == node2->get_coord().second) {
+      LOG_FATAL_IF(node1->get_coord().first > node2->get_coord().first)
+          << "node1 coord x should be less than node2 coord x.";
+    }
+    
+    // Add edge between intersecting segments
+    auto& pg_edge = pg_netlist.addEdge(node1, node2);
+    auto width_dbu = segment_widths[seg_id1];
+
+    double resistance =
+        calc_segment_resistance(node1, node2, width_dbu);
+    
+    double random_value = dis(gen);
+    pg_edge.set_resistance(resistance + random_value);
   }
 
   unsigned line_edge_num = pg_netlist.getEdgeNum();
@@ -469,10 +497,10 @@ void IRPGNetlistBuilder::build(
   LOG_INFO << "total edge num: " << pg_netlist.getEdgeNum();
 
   // for debug.
-  //   if (special_net_name == "VDD") {
-  //     pg_netlist.printToYaml(
-  //         "/home/taosimin/iEDA24/iEDA/bin/aes_pg_netlist.yaml");
-  //   }
+  // if (special_net_name == "VDD") {
+  //   pg_netlist.printToYaml(
+  //       "/home/taosimin/iEDA24/iEDA/bin/aes_pg_netlist_1.yaml");
+  // }
 }
 
 /**
