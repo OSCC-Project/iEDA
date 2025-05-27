@@ -4,7 +4,7 @@ range_from = { decimal_digits+ }
 range_to = { decimal_digits+ }
 bus_slice  = { "[" ~ range_from ~ ":" ~ range_to ~ "]" }
 
-scalar_constant = { "1'b0" | "1'b1" | "1'B0" | "1'B1" | "'b0" | "'b1" | "'B0" | "'B1" | "1" | "0" | "2'b00"}
+scalar_constant = { "1'b0" | "1'b1" | "1'h0" | "1'h1" | "1'B0" | "1'B1" | "'b0" | "'b1" | "'B0" | "'B1" | "1" | "0" | "2'b00"}
 
 line_comment      = _{ "//" ~ (!("\n") ~ ASCII)* ~ ("\n" | EOI) }
 multiline_comment = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
