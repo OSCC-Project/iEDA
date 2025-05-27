@@ -161,7 +161,6 @@ void RuleValidator::verifyEndOfLineSpacing(RVBox& rv_box)
     };
     std::map<Segment<PlanarCoord>, std::vector<std::pair<Segment<PlanarCoord>, Violation>>, SegmentLess> edge_vio_map;
     for (auto& [net_idx, gtl_hole_poly_list] : net_polygon_list) {
-      // for (GTLHolePolyInt& gtl_hole_poly : gtl_hole_poly_list) {
       for (int32_t gtl_hole_poly_idx = 0; gtl_hole_poly_idx < gtl_hole_poly_list.size(); gtl_hole_poly_idx++) {
         GTLHolePolyInt& gtl_hole_poly = gtl_hole_poly_list[gtl_hole_poly_idx];
         int32_t coord_size = static_cast<int32_t>(gtl_hole_poly.size());
@@ -220,7 +219,6 @@ void RuleValidator::verifyEndOfLineSpacing(RVBox& rv_box)
           if (direction != Direction::kHorizontal && direction != Direction::kVertical) {
             DRCLOG.error(Loc::current(), "get wrong direction!");
           }
-          PlanarRect eol_edge_rect = DRCUTIL.getBoundingBox({coord_list[eol_idx], coord_list[getIdx(eol_idx - 1, coord_size)]});
           PlanarRect pre_eol_coord_rect = DRCUTIL.getBoundingBox({coord_list[getIdx(eol_idx - 1, coord_size)]});
           PlanarRect eol_coord_rect = DRCUTIL.getBoundingBox({coord_list[eol_idx]});
           // 然后根据根据规则生成eol的查找区域，查找区域有两个：eol_spacing_rect 和 par_spacing_rect,par_spacing_rect 又分左边和右边
@@ -250,51 +248,51 @@ void RuleValidator::verifyEndOfLineSpacing(RVBox& rv_box)
             if (rotation == Rotation::kCounterclockwise) {
               switch (orientation) {
                 case Orientation::kWest:
-                  eol_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_edge_rect, eol_within, 0, eol_within, eol_spacing));
+                  eol_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_segment_rect, eol_within, 0, eol_within, eol_spacing));
                   par_spacing_left_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_coord_rect, par_space, par_within, 0, eol_within));
                   par_spacing_right_rect_list.push_back(DRCUTIL.getEnlargedRect(pre_eol_coord_rect, 0, par_within, par_space, eol_within));
-                  max_check_rect = DRCUTIL.getEnlargedRect(eol_edge_rect, std::max(max_eol_width, max_par_space), max_par_within,
+                  max_check_rect = DRCUTIL.getEnlargedRect(eol_segment_rect, std::max(max_eol_width, max_par_space), max_par_within,
                                                            std::max(max_eol_width, max_par_space), max_eol_spacing);
                   if (eol_rule.has_ete && eol_rule.ete_space != eol_spacing) {
-                    ete_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_edge_rect, eol_within, 0, eol_within, eol_rule.ete_space));
+                    ete_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_segment_rect, eol_within, 0, eol_within, eol_rule.ete_space));
                   } else {
-                    ete_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_edge_rect, eol_within, 0, eol_within, eol_spacing));
+                    ete_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_segment_rect, eol_within, 0, eol_within, eol_spacing));
                   }
                   break;
                 case Orientation::kEast:
-                  eol_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_edge_rect, eol_within, eol_spacing, eol_within, 0));
+                  eol_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_segment_rect, eol_within, eol_spacing, eol_within, 0));
                   par_spacing_left_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_coord_rect, 0, eol_within, par_space, par_within));
                   par_spacing_right_rect_list.push_back(DRCUTIL.getEnlargedRect(pre_eol_coord_rect, par_space, eol_within, 0, par_within));
-                  max_check_rect = DRCUTIL.getEnlargedRect(eol_edge_rect, std::max(max_eol_width, max_par_space), max_eol_spacing,
+                  max_check_rect = DRCUTIL.getEnlargedRect(eol_segment_rect, std::max(max_eol_width, max_par_space), max_eol_spacing,
                                                            std::max(max_eol_width, max_par_space), max_par_within);
                   if (eol_rule.has_ete && eol_rule.ete_space != eol_spacing) {
-                    ete_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_edge_rect, eol_within, eol_rule.ete_space, eol_within, 0));
+                    ete_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_segment_rect, eol_within, eol_rule.ete_space, eol_within, 0));
                   } else {
-                    ete_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_edge_rect, eol_within, eol_spacing, eol_within, 0));
+                    ete_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_segment_rect, eol_within, eol_spacing, eol_within, 0));
                   }
                   break;
                 case Orientation::kSouth:
-                  eol_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_edge_rect, eol_spacing, eol_within, 0, eol_within));
+                  eol_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_segment_rect, eol_spacing, eol_within, 0, eol_within));
                   par_spacing_left_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_coord_rect, eol_within, par_space, par_within, 0));
                   par_spacing_right_rect_list.push_back(DRCUTIL.getEnlargedRect(pre_eol_coord_rect, eol_within, 0, par_within, par_space));
-                  max_check_rect = DRCUTIL.getEnlargedRect(eol_edge_rect, max_eol_spacing, std::max(max_eol_width, max_par_space), max_par_within,
+                  max_check_rect = DRCUTIL.getEnlargedRect(eol_segment_rect, max_eol_spacing, std::max(max_eol_width, max_par_space), max_par_within,
                                                            std::max(max_eol_width, max_par_space));
                   if (eol_rule.has_ete && eol_rule.ete_space != eol_spacing) {
-                    ete_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_edge_rect, eol_rule.ete_space, eol_within, 0, eol_within));
+                    ete_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_segment_rect, eol_rule.ete_space, eol_within, 0, eol_within));
                   } else {
-                    ete_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_edge_rect, eol_spacing, eol_within, 0, eol_within));
+                    ete_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_segment_rect, eol_spacing, eol_within, 0, eol_within));
                   }
                   break;
                 case Orientation::kNorth:
-                  eol_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_edge_rect, 0, eol_within, eol_spacing, eol_within));
+                  eol_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_segment_rect, 0, eol_within, eol_spacing, eol_within));
                   par_spacing_left_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_coord_rect, par_within, 0, eol_within, par_space));
                   par_spacing_right_rect_list.push_back(DRCUTIL.getEnlargedRect(pre_eol_coord_rect, par_within, par_space, eol_within, 0));
-                  max_check_rect = DRCUTIL.getEnlargedRect(eol_edge_rect, max_par_within, std::max(max_eol_width, max_par_space), max_eol_spacing,
+                  max_check_rect = DRCUTIL.getEnlargedRect(eol_segment_rect, max_par_within, std::max(max_eol_width, max_par_space), max_eol_spacing,
                                                            std::max(max_eol_width, max_par_space));
                   if (eol_rule.has_ete && eol_rule.ete_space != eol_spacing) {
-                    ete_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_edge_rect, 0, eol_within, eol_rule.ete_space, eol_within));
+                    ete_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_segment_rect, 0, eol_within, eol_rule.ete_space, eol_within));
                   } else {
-                    ete_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_edge_rect, 0, eol_within, eol_spacing, eol_within));
+                    ete_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(eol_segment_rect, 0, eol_within, eol_spacing, eol_within));
                   }
                   break;
                 default:
@@ -489,7 +487,7 @@ void RuleValidator::verifyEndOfLineSpacing(RVBox& rv_box)
                   PlanarRect violation_rect = DRCUTIL.getSpacingRect(eol_segment_rect, env_segment_rect);
                   int32_t require_size = direction == Direction::kHorizontal ? eol_spacing_rect.getYSpan() : eol_spacing_rect.getXSpan();
                   if (!DRCUTIL.isOpenOverlap(eol_spacing_rect, env_segment_rect)) {
-                    break;  // 在这一级的距离不满足那么前一级的距离更不满足
+                    continue;  // 由于within不一样，所以需要往前
                   }
                   Violation violation;
                   violation.set_violation_type(ViolationType::kEndOfLineSpacing);
