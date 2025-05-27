@@ -109,8 +109,19 @@ unsigned iIR::solveIRDrop(const char* net_name) {
   double min_element = J_vector.minCoeff();
   LOG_INFO << "minimum element in J_vector: " << min_element;
 
-  IRLUSolver ir_solver;
-  auto grid_voltages = ir_solver(G_matrix, J_vector);
+  std::unique_ptr<IRSolver> ir_solver;
+  if (_solver_method == IRSolverMethod::kLUSolver) {
+    LOG_INFO << "Using LU solver";
+    ir_solver = std::make_unique<IRLUSolver>();
+  } else if (_solver_method == IRSolverMethod::kCGSolver) {
+    LOG_INFO << "Using CG solver";
+    ir_solver = std::make_unique<IRCGSolver>(_nominal_voltage);
+  } else {
+    LOG_ERROR << "unknown IR solver method";
+    return 0;
+  }
+
+  auto grid_voltages = (*ir_solver)(G_matrix, J_vector);
 
   std::optional<std::pair<std::string, double>> max_ir_drop;
   std::optional<std::pair<std::string, double>> min_ir_drop;

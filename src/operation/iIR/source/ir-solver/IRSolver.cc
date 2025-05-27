@@ -52,7 +52,7 @@ void PrintMatrix(Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
 
   LOG_INFO << "start write matrix, num nodes: " << num_nodes
            << ", base index: " << base_index;
-  std::ofstream out("/home/taosimin/iEDA24/iEDA/bin/matrix_spef.txt", std::ios::trunc);
+  std::ofstream out("/home/taosimin/iEDA24/iEDA/bin/matrix_fixed_via_1.txt", std::ios::trunc);
   for (Eigen::Index i = base_index; i < base_index + num_nodes; ++i) {
     for (Eigen::Index j = base_index; j < base_index + num_nodes; ++j) {
       // LOG_INFO << "matrix element at (" << i << ", " << j
@@ -232,7 +232,7 @@ Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A,
 
   int i = 0;
   int min_residual_iter = 0;
-  for (; i < x.size(); ++i) {
+  for (; i < max_iter; ++i) {
     LOG_INFO_EVERY_N(1) << "CG iteration num: " << i + 1
                           << " residual: " << sqrt(rsold);
     // LOG_INFO_EVERY_N(200) << "x:\n"<< x.transpose();
@@ -464,7 +464,7 @@ std::vector<double> IRCGSolver::operator()(
       double diag = A.coeff(i, i);
       if (diag != 0) {
           preconditioner.insert(i, i) = 1.0 / 1.0;
-          LOG_INFO << "Diagonal element at index " << i << " : " << diag;
+          // LOG_INFO << "Diagonal element at index " << i << " : " << diag;
       } else {
           preconditioner.insert(i, i) = 0.0; // Handle zero diagonal elements
       }
@@ -478,8 +478,9 @@ std::vector<double> IRCGSolver::operator()(
   // double condition_number = calculateConditionNumber(B);
   // LOG_INFO << "Condition number of matrix A: " << condition_number;
 
+  auto max_iter = std::max((int)X0.size(), _max_iteration);
   Eigen::VectorXd v_vector =
-      conjugateGradient(B, J_vector, preconditioner, X0, _tolerance, _max_iteration, _lambda);
+      conjugateGradient(B, J_vector, preconditioner, X0, _tolerance, max_iter, _lambda);
 
   v_vector = v_vector / scale;
 
@@ -491,7 +492,9 @@ std::vector<double> IRCGSolver::operator()(
   Eigen::SparseMatrix<double> A = G_matrix;
   Eigen::VectorXd X0 =
       Eigen::VectorXd::Constant(J_vector.size(), _nominal_voltage);
-  auto X = ir_cg_solver(A, J_vector, X0, _tolerance, _max_iteration, _lambda);
+
+  auto max_iter = std::max((int)X0.size(), _max_iteration);
+  auto X = ir_cg_solver(A, J_vector, X0, _tolerance, max_iter, _lambda);
   Eigen::VectorXd v_vector(X.size());
   for (decltype(X.size()) i = 0; i < X.size(); ++i) {
     v_vector(i) = X[i];

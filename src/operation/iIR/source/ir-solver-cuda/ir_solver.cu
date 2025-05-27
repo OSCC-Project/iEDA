@@ -196,9 +196,6 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
     // x = x + alpha * p
     cublasDaxpy(cublasHandle, num_rows, &alpha, d_p, 1, d_x, 1);
     
-    // Apply min constraints to x
-    c_wise_max(d_x, num_rows, x0(0) * 0.8); 
-
     // for debug
     // print_device_array(d_x, num_rows);
 
