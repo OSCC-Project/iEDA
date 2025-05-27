@@ -1935,10 +1935,11 @@ void PinAccessor::patchSingleViolation(PABox& pa_box)
       break;
     }
   }
-  if (!pa_box.get_curr_is_solved()) {
+  if (!pa_patch_list.empty() && !pa_box.get_curr_is_solved()) {
     buildSingleViolation(pa_box, pa_patch_list.front());
     updateSingleViolation(pa_box);
   }
+  updateTriedFixViolation(pa_box);
 }
 
 std::vector<PAPatch> PinAccessor::getCandidatePatchList(PABox& pa_box)
@@ -1967,6 +1968,9 @@ std::vector<PAPatch> PinAccessor::getCandidatePatchList(PABox& pa_box)
     std::vector<GTLPolyInt> gtl_poly_list;
     gtl_poly_set.get_polygons(gtl_poly_list);
     gtl_poly = gtl_poly_list.front();
+    if (min_area <= static_cast<int32_t>(gtl::area(gtl_poly))) {
+      return {};
+    }
   }
   PlanarRect h_cutting_rect;
   {
@@ -2115,6 +2119,10 @@ void PinAccessor::updateSingleViolation(PABox& pa_box)
 {
   pa_box.get_routing_patch_list().push_back(pa_box.get_curr_candidate_patch().get_patch());
   pa_box.set_patch_violation_list(pa_box.get_curr_patch_violation_list());
+}
+
+void PinAccessor::updateTriedFixViolation(PABox& pa_box)
+{
   pa_box.get_tried_fix_violation_set().insert(pa_box.get_curr_patch_violation());
 }
 

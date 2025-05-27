@@ -1495,10 +1495,11 @@ void DetailedRouter::patchSingleViolation(DRBox& dr_box)
       break;
     }
   }
-  if (!dr_box.get_curr_is_solved()) {
+  if (!dr_patch_list.empty() && !dr_box.get_curr_is_solved()) {
     buildSingleViolation(dr_box, dr_patch_list.front());
     updateSingleViolation(dr_box);
   }
+  updateTriedFixViolation(dr_box);
 }
 
 std::vector<DRPatch> DetailedRouter::getCandidatePatchList(DRBox& dr_box)
@@ -1527,6 +1528,9 @@ std::vector<DRPatch> DetailedRouter::getCandidatePatchList(DRBox& dr_box)
     std::vector<GTLPolyInt> gtl_poly_list;
     gtl_poly_set.get_polygons(gtl_poly_list);
     gtl_poly = gtl_poly_list.front();
+    if (min_area <= static_cast<int32_t>(gtl::area(gtl_poly))) {
+      return {};
+    }
   }
   PlanarRect h_cutting_rect;
   {
@@ -1675,6 +1679,10 @@ void DetailedRouter::updateSingleViolation(DRBox& dr_box)
 {
   dr_box.get_routing_patch_list().push_back(dr_box.get_curr_candidate_patch().get_patch());
   dr_box.set_patch_violation_list(dr_box.get_curr_patch_violation_list());
+}
+
+void DetailedRouter::updateTriedFixViolation(DRBox& dr_box)
+{
   dr_box.get_tried_fix_violation_set().insert(dr_box.get_curr_patch_violation());
 }
 
