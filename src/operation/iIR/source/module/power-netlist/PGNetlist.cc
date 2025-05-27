@@ -88,7 +88,7 @@ std::vector<BGSegment> IRPGNetlistBuilder::buildBGSegments(
   for (auto* idb_wire : idb_wires->get_wire_list()) {
     for (auto* idb_segment : idb_wire->get_segment_list()) {
       // line firstly process, we need know line intersect point first.
-      if (idb_segment->is_line()) {
+      if (!idb_segment->is_via()) {
         auto* coord_start = idb_segment->get_point_start();
         auto* coord_end = idb_segment->get_point_second();
         std::string layer_name = idb_segment->get_layer()->get_name();
@@ -171,7 +171,7 @@ void IRPGNetlistBuilder::build(
       buildBGSegments(special_net, line_segment_num, segment_widths);
 
   // FIXME(to taosimin), should not hard code the instance pin layer.
-  unsigned instance_pin_layer = 1;
+  unsigned instance_pin_layer = 2;
 
   // Firstly, get the wire topo point in line segment.
   std::set<std::tuple<int64_t, int64_t, int64_t>> pg_points;
