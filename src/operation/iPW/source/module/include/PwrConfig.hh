@@ -44,7 +44,7 @@ constexpr double c_default_period = 10;  // time unit: ns
 constexpr double c_default_toggle_relative_clk = 0.125;  // time unit: period
 
 // for estimate IR
-constexpr double c_resistance_coef = 0.5;
+constexpr double c_resistance_coef = 0.35;
 
 namespace ista {}
 using namespace ista;

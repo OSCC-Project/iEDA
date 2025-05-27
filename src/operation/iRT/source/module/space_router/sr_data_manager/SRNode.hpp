@@ -25,7 +25,7 @@
 namespace irt {
 
 #if 1  // astar
-enum class GRNodeState
+enum class SRNodeState
 {
   kNone = 0,
   kOpen = 1,
@@ -33,23 +33,23 @@ enum class GRNodeState
 };
 #endif
 
-class GRNode : public LayerCoord
+class SRNode : public LayerCoord
 {
  public:
-  GRNode() = default;
-  ~GRNode() = default;
+  SRNode() = default;
+  ~SRNode() = default;
   // getter
-  std::map<Orientation, GRNode*>& get_neighbor_node_map() { return _neighbor_node_map; }
+  std::map<Orientation, SRNode*>& get_neighbor_node_map() { return _neighbor_node_map; }
   std::map<Orientation, int32_t>& get_orient_supply_map() { return _orient_supply_map; }
   std::map<Orientation, std::set<int32_t>>& get_orient_demand_map() { return _orient_demand_map; }
   // setter
-  void set_neighbor_node_map(const std::map<Orientation, GRNode*>& neighbor_node_map) { _neighbor_node_map = neighbor_node_map; }
+  void set_neighbor_node_map(const std::map<Orientation, SRNode*>& neighbor_node_map) { _neighbor_node_map = neighbor_node_map; }
   void set_orient_supply_map(const std::map<Orientation, int32_t>& orient_supply_map) { _orient_supply_map = orient_supply_map; }
   void set_orient_demand_map(const std::map<Orientation, std::set<int32_t>>& orient_demand_map) { _orient_demand_map = orient_demand_map; }
   // function
-  GRNode* getNeighborNode(Orientation orientation)
+  SRNode* getNeighborNode(Orientation orientation)
   {
-    GRNode* neighbor_node = nullptr;
+    SRNode* neighbor_node = nullptr;
     if (RTUTIL.exist(_neighbor_node_map, orientation)) {
       neighbor_node = _neighbor_node_map[orientation];
     }
@@ -89,38 +89,38 @@ class GRNode : public LayerCoord
   }
 #if 1  // astar
   // single path
-  GRNodeState& get_state() { return _state; }
-  GRNode* get_parent_node() const { return _parent_node; }
+  SRNodeState& get_state() { return _state; }
+  SRNode* get_parent_node() const { return _parent_node; }
   double get_known_cost() const { return _known_cost; }
   double get_estimated_cost() const { return _estimated_cost; }
-  void set_state(GRNodeState state) { _state = state; }
-  void set_parent_node(GRNode* parent_node) { _parent_node = parent_node; }
+  void set_state(SRNodeState state) { _state = state; }
+  void set_parent_node(SRNode* parent_node) { _parent_node = parent_node; }
   void set_known_cost(const double known_cost) { _known_cost = known_cost; }
   void set_estimated_cost(const double estimated_cost) { _estimated_cost = estimated_cost; }
   // function
-  bool isNone() { return _state == GRNodeState::kNone; }
-  bool isOpen() { return _state == GRNodeState::kOpen; }
-  bool isClose() { return _state == GRNodeState::kClose; }
+  bool isNone() { return _state == SRNodeState::kNone; }
+  bool isOpen() { return _state == SRNodeState::kOpen; }
+  bool isClose() { return _state == SRNodeState::kClose; }
   double getTotalCost() { return (_known_cost + _estimated_cost); }
 #endif
 
  private:
-  std::map<Orientation, GRNode*> _neighbor_node_map;
+  std::map<Orientation, SRNode*> _neighbor_node_map;
   std::map<Orientation, int32_t> _orient_supply_map;
   std::map<Orientation, std::set<int32_t>> _orient_demand_map;
 #if 1  // astar
   // single path
-  GRNodeState _state = GRNodeState::kNone;
-  GRNode* _parent_node = nullptr;
+  SRNodeState _state = SRNodeState::kNone;
+  SRNode* _parent_node = nullptr;
   double _known_cost = 0.0;  // include curr
   double _estimated_cost = 0.0;
 #endif
 };
 
 #if 1  // astar
-struct CmpGRNodeCost
+struct CmpSRNodeCost
 {
-  bool operator()(GRNode* a, GRNode* b)
+  bool operator()(SRNode* a, SRNode* b)
   {
     if (RTUTIL.equalDoubleByError(a->getTotalCost(), b->getTotalCost(), RT_ERROR)) {
       if (RTUTIL.equalDoubleByError(a->get_estimated_cost(), b->get_estimated_cost(), RT_ERROR)) {

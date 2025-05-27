@@ -171,6 +171,8 @@ class IRPGNetlist {
     _node_id_to_name[node_id] = _net_name + ":" + std::to_string(node_id);
     one_node.set_node_name(_node_id_to_name[node_id].c_str());
 
+    _nodes_map[{coord, layer_id}] = &one_node;
+
     return one_node;
   }
   IRPGNode* findNode(IRNodeCoord coord, int layer_id) {
@@ -253,10 +255,10 @@ class IRPGNetlistBuilder {
   auto& get_rust_pg_netlists() { return _rust_pg_netlists; }
 
   std::vector<BGSegment> buildBGSegments(idb::IdbSpecialNet* special_net,
-                                         unsigned& line_segment_num);
+                                         unsigned& line_segment_num, std::vector<unsigned>& segment_widths);
 
   void build(idb::IdbSpecialNet* special_net, idb::IdbPin* io_pin,
-             std::function<double(unsigned, unsigned)> calc_resistance);
+             std::function<double(unsigned, unsigned, unsigned)> calc_resistance);
   void createRustPGNetlist();
   void createRustRCData();
 
@@ -302,8 +304,8 @@ class IRPGNetlistBuilder {
 
  private:
   bgi::rtree<BGValue, bgi::quadratic<16>> _rtree;
-  double _c_via_resistance = 0.001;
-  double _c_instance_row_resistance = 0.0001;
+  double _c_via_resistance = 0.01;
+  double _c_instance_row_resistance = 0.01;
   double _dbu = 2000; //!< The dbu for the design.
 
   std::map<std::string, unsigned> _layer_name_to_id; //!< The layer name to id map.

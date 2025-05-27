@@ -21,6 +21,7 @@
 #include "GDSPlotter.hpp"
 #include "Monitor.hpp"
 #include "RuleValidator.hpp"
+#include "feature_manager.h"
 #include "idm.h"
 
 namespace idrc {
@@ -80,9 +81,12 @@ void DRCInterface::initDRC(std::map<std::string, std::any> config_map, bool enab
 
 void DRCInterface::checkDef()
 {
-  std::vector<ids::Shape> ids_env_shape_list = buildEnvShapeList();
-  std::vector<ids::Shape> ids_result_shape_list = buildResultShapeList();
-  getViolationList(ids_env_shape_list, ids_result_shape_list);
+  std::map<std::string, std::vector<ids::Violation>> type_violation_map;
+  for (ids::Violation& ids_violation : getViolationList(buildEnvShapeList(), buildResultShapeList())) {
+    type_violation_map[ids_violation.violation_type].push_back(ids_violation);
+  }
+  printSummary(type_violation_map);
+  outputSummary(type_violation_map);
 }
 
 void DRCInterface::destroyDRC()
@@ -111,16 +115,17 @@ void DRCInterface::destroyDRC()
   Logger::destroyInst();
 }
 
-std::vector<ids::Violation> DRCInterface::getViolationList(std::vector<ids::Shape>& ids_env_shape_list, std::vector<ids::Shape>& ids_result_shape_list)
+std::vector<ids::Violation> DRCInterface::getViolationList(const std::vector<ids::Shape>& ids_env_shape_list,
+                                                           const std::vector<ids::Shape>& ids_result_shape_list)
 {
   std::vector<DRCShape> drc_env_shape_list;
   drc_env_shape_list.reserve(ids_env_shape_list.size());
-  for (ids::Shape& ids_env_shape : ids_env_shape_list) {
+  for (const ids::Shape& ids_env_shape : ids_env_shape_list) {
     drc_env_shape_list.push_back(convertToDRCShape(ids_env_shape));
   }
   std::vector<DRCShape> drc_result_shape_list;
   drc_result_shape_list.reserve(ids_result_shape_list.size());
-  for (ids::Shape& ids_result_shape : ids_result_shape_list) {
+  for (const ids::Shape& ids_result_shape : ids_result_shape_list) {
     drc_result_shape_list.push_back(convertToDRCShape(ids_result_shape));
   }
   std::vector<ids::Violation> ids_violation_list;
@@ -171,6 +176,7 @@ void DRCInterface::wrapDatabase()
   wrapMicronDBU();
   wrapManufactureGrid();
   wrapDie();
+  wrapPropertyDefinition();
   wrapLayerList();
   wrapLayerInfo();
 }
@@ -192,6 +198,24 @@ void DRCInterface::wrapDie()
   Die& die = DRCDM.getDatabase().get_die();
   die.set_ll(idb_die->get_llx(), idb_die->get_lly());
   die.set_ur(idb_die->get_urx(), idb_die->get_ury());
+}
+
+void DRCInterface::wrapPropertyDefinition()
+{
+  PropertyDefinition& property_definition = DRCDM.getDatabase().get_property_definition();
+  std::set<ViolationType>& exist_rule_set = DRCDM.getDatabase().get_exist_rule_set();
+
+  // max via stack
+  {
+    idb::IdbLayers* idb_layer_list = dmInst->get_idb_def_service()->get_layout()->get_layers();
+    idb::IdbMaxViaStack* idb_max_via_stack = dmInst->get_idb_lef_service()->get_layout()->get_max_via_stack();
+    if (idb_max_via_stack != nullptr) {
+      property_definition.set_max_via_stack_num(idb_max_via_stack->get_stacked_via_num());
+      property_definition.set_bottom_routing_layer_idx(idb_layer_list->find_layer(idb_max_via_stack->get_layer_bottom())->get_id());
+      property_definition.set_top_routing_layer_idx(idb_layer_list->find_layer(idb_max_via_stack->get_layer_top())->get_id());
+      exist_rule_set.insert(ViolationType::kMaxViaStack);
+    }
+  }
 }
 
 void DRCInterface::wrapLayerList()
@@ -237,6 +261,7 @@ void DRCInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLa
   // default
   {
     exist_rule_set.insert(ViolationType::kMetalShort);
+    exist_rule_set.insert(ViolationType::kOffGridOrWrongWay);
   }
   // min width
   {
@@ -246,7 +271,11 @@ void DRCInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLa
   }
   // max width
   {
-    routing_layer.set_max_width(idb_layer->get_max_width());
+    int32_t max_width = INT32_MAX;
+    if (idb_layer->get_max_width() != -1) {
+      max_width = idb_layer->get_max_width();
+    }
+    routing_layer.set_max_width(max_width);
     exist_rule_set.insert(ViolationType::kMaximumWidth);
   }
   // min area
@@ -279,11 +308,16 @@ void DRCInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLa
   }
   // notch
   {
-    idb::routinglayer::Lef58SpacingNotchlength* idb_notch = idb_layer->get_lef58_spacing_notchlength().get();
-    if (idb_notch != nullptr) {
-      routing_layer.set_notch_spacing(idb_notch->get_min_spacing());
-      routing_layer.set_notch_length(idb_notch->get_min_notch_length());
-      routing_layer.set_concave_ends(idb_notch->get_concave_ends_side_of_notch_width());
+    IdbLayerSpacingNotchLength& idb_notch = idb_layer->get_spacing_notchlength();
+    idb::routinglayer::Lef58SpacingNotchlength* idb_lef58_notch = idb_layer->get_lef58_spacing_notchlength().get();
+    if (idb_notch.exist()) {
+      routing_layer.set_notch_spacing(idb_notch.get_min_spacing());
+      routing_layer.set_notch_length(idb_notch.get_notch_length());
+      exist_rule_set.insert(ViolationType::kNotchSpacing);
+    } else if (idb_lef58_notch != nullptr) {
+      routing_layer.set_notch_spacing(idb_lef58_notch->get_min_spacing());
+      routing_layer.set_notch_length(idb_lef58_notch->get_min_notch_length());
+      routing_layer.set_concave_ends(idb_lef58_notch->get_concave_ends_side_of_notch_width());
       exist_rule_set.insert(ViolationType::kNotchSpacing);
     }
   }
@@ -332,6 +366,18 @@ void DRCInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLa
       exist_rule_set.insert(ViolationType::kEndOfLineSpacing);
     }
   }
+  // corner fill
+  {
+    idb::routinglayer::Lef58CornerFillSpacing* idb_corner_fill = idb_layer->get_lef58_corner_fill_spacing().get();
+    if (idb_corner_fill != nullptr) {
+      routing_layer.set_has_corner_fill(true);
+      routing_layer.set_corner_fill_spacing(idb_corner_fill->get_spacing());
+      routing_layer.set_edge_length_1(idb_corner_fill->get_edge_length1());
+      routing_layer.set_edge_length_2(idb_corner_fill->get_edge_length2());
+      routing_layer.set_adjacent_eol(idb_corner_fill->get_eol_width());
+      exist_rule_set.insert(ViolationType::kCornerFillSpacing);
+    }
+  }
 }
 
 void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_layer)
@@ -341,6 +387,7 @@ void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_
   // default
   {
     exist_rule_set.insert(ViolationType::kCutShort);
+    exist_rule_set.insert(ViolationType::kOffGridOrWrongWay);
   }
   // prl
   {
@@ -361,7 +408,7 @@ void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_
         idb::cutlayer::Lef58SpacingTable::CutSpacing cut_spacing = spacing_table->get_cutclass().get_cut_spacing(0, 0);
 
         int32_t curr_spacing = cut_spacing.get_cut_spacing1().value();
-        int32_t curr_prl = -1 * spacing_table->get_prl().value().get_prl();
+        int32_t curr_prl = spacing_table->get_prl().value().get_prl();
         int32_t curr_prl_spacing = cut_spacing.get_cut_spacing2().value();
         cut_layer.set_curr_spacing(curr_spacing);
         cut_layer.set_curr_prl(curr_prl);
@@ -376,7 +423,7 @@ void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_
       idb::cutlayer::Lef58EolSpacing* idb_eol_spacing = idb_layer->get_lef58_eol_spacing().get();
 
       int32_t curr_eol_spacing = idb_eol_spacing->get_cut_spacing1();
-      int32_t curr_eol_prl = -1 * idb_eol_spacing->get_prl();
+      int32_t curr_eol_prl = idb_eol_spacing->get_prl();
       int32_t curr_eol_prl_spacing = idb_eol_spacing->get_cut_spacing2();
       cut_layer.set_curr_eol_spacing(curr_eol_spacing);
       cut_layer.set_curr_eol_prl(curr_eol_prl);
@@ -398,7 +445,7 @@ void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_
         idb::cutlayer::Lef58SpacingTable::CutSpacing cut_spacing = spacing_table->get_cutclass().get_cut_spacing(0, 0);
 
         int32_t below_spacing = cut_spacing.get_cut_spacing1().value();
-        int32_t below_prl = -1 * spacing_table->get_prl().value().get_prl();
+        int32_t below_prl = spacing_table->get_prl().value().get_prl();
         int32_t below_prl_spacing = cut_spacing.get_cut_spacing2().value();
         cut_layer.set_below_spacing(below_spacing);
         cut_layer.set_below_prl(below_prl);
@@ -451,7 +498,7 @@ void DRCInterface::output()
 
 #endif
 
-#if 1  // form def
+#if 1  // check
 
 std::vector<ids::Shape> DRCInterface::buildEnvShapeList()
 {
@@ -792,11 +839,49 @@ std::vector<ids::Shape> DRCInterface::buildResultShapeList()
   return result_shape_list;
 }
 
-#endif
+void DRCInterface::printSummary(std::map<std::string, std::vector<ids::Violation>>& type_violation_map)
+{
+  std::string& golden_directory_path = DRCDM.getConfig().golden_directory_path;
+  if (golden_directory_path != "null") {
+    return;
+  }
+  int32_t total_violation_num = 0;
+  for (auto& [type, violation_list] : type_violation_map) {
+    total_violation_num += static_cast<int32_t>(violation_list.size());
+  }
+  fort::char_table type_violation_map_table;
+  {
+    type_violation_map_table.set_cell_text_align(fort::text_align::right);
+    type_violation_map_table << fort::header << "violation_type"
+                             << "violation_num" << "prop" << fort::endr;
+    for (auto& [type, violation_list] : type_violation_map) {
+      type_violation_map_table << type << violation_list.size() << DRCUTIL.getPercentage(violation_list.size(), total_violation_num) << fort::endr;
+    }
+    type_violation_map_table << fort::header << "Total" << total_violation_num << DRCUTIL.getPercentage(total_violation_num, total_violation_num) << fort::endr;
+  }
+  DRCUTIL.printTableList({type_violation_map_table});
+}
 
-#if 1  // form tool
+void DRCInterface::outputSummary(std::map<std::string, std::vector<ids::Violation>>& type_violation_map)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = DRCDM.getDatabase().get_cut_layer_list();
 
-DRCShape DRCInterface::convertToDRCShape(ids::Shape& ids_shape)
+  featureInst->get_type_layer_violation_map().clear();
+  for (auto& [type, violation_list] : type_violation_map) {
+    for (ids::Violation& violation : violation_list) {
+      std::string layer_name;
+      if (violation.is_routing) {
+        layer_name = routing_layer_list[violation.layer_idx].get_layer_name();
+      } else {
+        layer_name = cut_layer_list[violation.layer_idx].get_layer_name();
+      }
+      featureInst->get_type_layer_violation_map()[type][layer_name].push_back(violation);
+    }
+  }
+}
+
+DRCShape DRCInterface::convertToDRCShape(const ids::Shape& ids_shape)
 {
   DRCShape drc_shape;
   drc_shape.set_net_idx(ids_shape.net_idx);

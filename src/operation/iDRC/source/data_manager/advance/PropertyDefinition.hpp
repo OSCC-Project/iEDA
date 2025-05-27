@@ -16,28 +16,29 @@
 // ***************************************************************************************
 #pragma once
 
-#include <string>
-#include <vector>
+#include "DRCHeader.hpp"
 
-#include "EXTLayerRect.hpp"
-#include "LayerCoord.hpp"
-#include "Pin.hpp"
+namespace idrc {
 
-namespace irt {
-
-class GRPin : public Pin
+class PropertyDefinition
 {
  public:
-  GRPin() = default;
-  explicit GRPin(const Pin& pin) : Pin(pin) {}
-  ~GRPin() = default;
+  PropertyDefinition() = default;
+  ~PropertyDefinition() = default;
   // getter
-
+  int32_t get_max_via_stack_num() const { return _max_via_stack_num; }
+  int32_t get_bottom_routing_layer_idx() const { return _bottom_routing_layer_idx; }
+  int32_t get_top_routing_layer_idx() const { return _top_routing_layer_idx; }
   // setter
-
+  void set_max_via_stack_num(const int32_t max_via_stack_num) { _max_via_stack_num = max_via_stack_num; }
+  void set_bottom_routing_layer_idx(const int32_t bottom_routing_layer_idx) { _bottom_routing_layer_idx = bottom_routing_layer_idx; }
+  void set_top_routing_layer_idx(const int32_t top_routing_layer_idx) { _top_routing_layer_idx = top_routing_layer_idx; }
   // function
-
  private:
+  //  max via stack
+  int32_t _max_via_stack_num = -1;
+  int32_t _bottom_routing_layer_idx = -1;
+  int32_t _top_routing_layer_idx = -1;
 };
 
-}  // namespace irt
+}  // namespace idrc

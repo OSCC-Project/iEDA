@@ -61,20 +61,19 @@ class TopologyGenerator
   std::vector<Segment<PlanarCoord>> getRoutingSegmentListByStraight(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
   std::vector<Segment<PlanarCoord>> getRoutingSegmentListByLPattern(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
   double getNodeCost(TGModel& tg_model, std::vector<Segment<PlanarCoord>>& routing_segment_list);
-  MTree<LayerCoord> getCoordTree(TGNet* tg_net, std::vector<Segment<PlanarCoord>>& routing_segment_list);
-  void uploadNetResult(TGNet* tg_net, MTree<LayerCoord>& coord_tree);
+  MTree<PlanarCoord> getCoordTree(TGNet* tg_net, std::vector<Segment<PlanarCoord>>& routing_segment_list);
+  void uploadNetResult(TGNet* tg_net, MTree<PlanarCoord>& coord_tree);
 
 #if 1  // update env
-  void updateDemandToGraph(TGModel& tg_model, ChangeType change_type, MTree<LayerCoord>& coord_tree);
+  void updateDemandToGraph(TGModel& tg_model, ChangeType change_type, MTree<PlanarCoord>& coord_tree);
 #endif
 
 #if 1  // exhibit
   void updateSummary(TGModel& tg_model);
   void printSummary(TGModel& tg_model);
   void outputGuide(TGModel& tg_model);
-  void outputPlanarSupplyCSV(TGModel& tg_model);
-  void outputPlanarDemandCSV(TGModel& tg_model);
-  void outputPlanarOverflowCSV(TGModel& tg_model);
+  void outputDemandCSV(TGModel& tg_model);
+  void outputOverflowCSV(TGModel& tg_model);
 #endif
 
 #if 1  // debug

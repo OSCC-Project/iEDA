@@ -16,45 +16,24 @@
 // ***************************************************************************************
 #pragma once
 
-#include "RTHeader.hpp"
+#include "Direction.hpp"
+#include "LayerCoord.hpp"
 
 namespace irt {
 
-class VRBoxId
+class SRGroup
 {
  public:
-  VRBoxId() = default;
-  VRBoxId(const int32_t x, const int32_t y)
-  {
-    _x = x;
-    _y = y;
-  }
-  ~VRBoxId() = default;
-  bool operator==(const VRBoxId& other) { return this->_x == other._x && this->_y == other._y; }
-  bool operator!=(const VRBoxId& other) { return !((*this) == other); }
+  SRGroup() = default;
+  ~SRGroup() = default;
   // getter
-  int32_t get_x() const { return _x; }
-  int32_t get_y() const { return _y; }
+  std::vector<LayerCoord>& get_coord_list() { return _coord_list; }
   // setter
-  void set_x(const int32_t x) { _x = x; }
-  void set_y(const int32_t y) { _y = y; }
+  void set_coord_list(const std::vector<LayerCoord>& coord_list) { _coord_list = coord_list; }
   // function
 
  private:
-  int32_t _x = -1;
-  int32_t _y = -1;
-};
-
-struct CmpVRBoxId
-{
-  bool operator()(const VRBoxId& a, const VRBoxId& b) const
-  {
-    if (a.get_x() != b.get_x()) {
-      return a.get_x() < b.get_x();
-    } else {
-      return a.get_y() < b.get_y();
-    }
-  }
+  std::vector<LayerCoord> _coord_list;
 };
 
 }  // namespace irt
