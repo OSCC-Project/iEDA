@@ -17,6 +17,8 @@ else()
     target_compile_options(ir_solver PRIVATE -fPIC)
 endif()
 
+target_include_directories(ir_solver PRIVATE ${HOME_THIRDPARTY}/spectra/include)
+
 target_link_libraries(ir_solver PUBLIC usage)
 
 if (CUDA_IR_SOLVER)
