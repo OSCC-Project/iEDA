@@ -173,6 +173,8 @@ class IRPGNetlist {
     _node_id_to_name[node_id] = _net_name + ":" + std::to_string(node_id);
     one_node.set_node_name(_node_id_to_name[node_id].c_str());
 
+    _nodes_map[{coord, layer_id}] = &one_node;
+
     return one_node;
   }
   IRPGNode* findNode(IRNodeCoord coord, int layer_id) {

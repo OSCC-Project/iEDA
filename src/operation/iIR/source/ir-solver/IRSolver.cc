@@ -65,8 +65,6 @@ void PrintMatrix(Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
   out.close();
 
   LOG_INFO << "end write matrix";
-
-  exit(0);
 }
 
 /**
