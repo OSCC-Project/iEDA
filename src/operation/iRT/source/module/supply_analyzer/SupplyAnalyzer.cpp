@@ -171,6 +171,27 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
             }
           }
         }
+        for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(search_rect)) {
+          for (Segment<LayerCoord>* segment : segment_set) {
+            for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+              if (!net_shape.get_is_routing()) {
+                continue;
+              }
+              if (search_rect.get_layer_idx() != net_shape.get_layer_idx()) {
+                continue;
+              }
+              obs_rect_list.push_back(net_shape);
+            }
+          }
+        }
+        for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(search_rect)) {
+          for (EXTLayerRect* patch : patch_set) {
+            if (search_rect.get_layer_idx() != patch->get_layer_idx()) {
+              continue;
+            }
+            obs_rect_list.push_back(patch->get_real_rect());
+          }
+        }
       }
       std::vector<LayerRect> wire_list = getCrossingWireList(search_rect);
       for (LayerRect& wire : wire_list) {
