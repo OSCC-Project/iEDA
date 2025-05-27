@@ -80,7 +80,8 @@ void IRPGNetlist::printToYaml(std::string yaml_path) {
  * @return std::vector<BGSegment>
  */
 std::vector<BGSegment> IRPGNetlistBuilder::buildBGSegments(
-    idb::IdbSpecialNet* special_net, unsigned& line_segment_num, std::vector<unsigned>& segment_widths) {
+    idb::IdbSpecialNet* special_net, unsigned& line_segment_num,
+    std::vector<unsigned>& segment_widths) {
   std::vector<BGSegment> bg_segments;
   // build line segment.
   auto* idb_wires = special_net->get_wire_list();
@@ -129,13 +130,9 @@ std::vector<BGSegment> IRPGNetlistBuilder::buildBGSegments(
 
           auto via_path = BGSegment(via_start, via_end);
           bg_segments.emplace_back(std::move(via_path));
-        } else {
-          BGPoint via_start(coord->get_x(), coord->get_y(), top_layer_id);
-          BGPoint via_end(coord->get_x(), coord->get_y(), bottom_layer_id);
-
-          auto via_path = BGSegment(via_start, via_end);
-          bg_segments.emplace_back(std::move(via_path));
           segment_widths.emplace_back(0);  // via segment width is 0.
+        } else {
+          LOG_FATAL << "bottom layer id is larger than top layer id.";
         }
       }
     }
@@ -179,7 +176,8 @@ void IRPGNetlistBuilder::build(
   // Firstly, get the wire topo point in line segment.
   std::set<std::tuple<int64_t, int64_t, int64_t>> pg_points;
   std::map<int, std::set<IRPGNode*, IRNodeComparator>> segment_to_point;
-  std::map<int, int> coordy_to_segment_id;  // coord y to segment id, for locate instance pin segment.
+  std::map<int, int> coordy_to_segment_id;  // coord y to segment id, for locate
+                                            // instance pin segment.
   for (unsigned i = 0; i < line_segment_num; ++i) {
     // only get line segment intersect point with other segment.
     std::vector<BGValue> result_s;
@@ -194,9 +192,17 @@ void IRPGNetlistBuilder::build(
 
     // LOG_INFO << "bg segment " << bg::dsv(bg_rect);
 
+    int the_line_seg_layer_id = bg_segments[i].first.get<2>();
     for (const auto& r : result_s) {
+      int the_result_left_layer_id = r.first.min_corner().get<2>();
+      int the_result_right_layer_id = r.first.max_corner().get<2>();
       if (r.second > i) {
         // LOG_INFO << "intersect segment " << bg::dsv(r.first);
+
+        if ((the_result_left_layer_id == the_result_right_layer_id) &&
+            (the_result_left_layer_id == the_line_seg_layer_id)) {
+          continue;  // skip the segment intersect with itself.
+        }
 
         BGRect intersection_result;
         bg::intersection(bg_rect, r.first, intersection_result);
@@ -231,13 +237,15 @@ void IRPGNetlistBuilder::build(
   }
 
   // calc segment resistance.
-  auto calc_segment_resistance = [&calc_resistance](auto* node1,
-                                                    auto* node2, unsigned width_dbu) -> double {
+  auto calc_segment_resistance = [&calc_resistance](
+                                     auto* node1, auto* node2,
+                                     unsigned width_dbu) -> double {
     auto [x1, y1] = node1->get_coord();
     auto [x2, y2] = node2->get_coord();
     auto distance = std::abs(x1 - x2) + std::abs(y1 - y2);
     // pg node layer from one first, we need minus one.
-    double resistance = calc_resistance(node1->get_layer_id(), distance, width_dbu);
+    double resistance =
+        calc_resistance(node1->get_layer_id(), distance, width_dbu);
 
     return resistance;
   };
@@ -252,7 +260,8 @@ void IRPGNetlistBuilder::build(
 
         auto width_dbu = segment_widths[segment_id];
 
-        double resistance = calc_segment_resistance(pg_last_node, pg_node, width_dbu);
+        double resistance =
+            calc_segment_resistance(pg_last_node, pg_node, width_dbu);
 
         double random_value = dis(gen);
         pg_edge.set_resistance(resistance + random_value);
@@ -368,15 +377,17 @@ void IRPGNetlistBuilder::build(
             pg_netlist.addEdge(via_connected_node, instance_pin_node);
         // hard code the last instance resistance.
         double random_value = dis(gen);
-        
+
         int coord_y = via_connected_node->get_coord().second;
-        LOG_FATAL_IF(!coordy_to_segment_id.contains(coord_y)) << "not found the line segment id for coord y: "
-                                                              << coord_y;
+        LOG_FATAL_IF(!coordy_to_segment_id.contains(coord_y))
+            << "not found the line segment id for coord y: " << coord_y;
         int line_segment_id = coordy_to_segment_id[coord_y];
-        double width_dbu = segment_widths[line_segment_id]; // instance row width.
+        double width_dbu =
+            segment_widths[line_segment_id];  // instance row width.
         // random is to disturbance the value for LU decomposition.
 
-        double resistance = calc_segment_resistance(via_connected_node, instance_pin_node, width_dbu);
+        double resistance = calc_segment_resistance(
+            via_connected_node, instance_pin_node, width_dbu);
         pg_edge.set_resistance(resistance + random_value);
       }
 
@@ -434,7 +445,8 @@ void IRPGNetlistBuilder::build(
 
         auto width_dbu = segment_widths[segment_id];
 
-        double resistance = calc_segment_resistance(bump_node, pg_node, width_dbu);
+        double resistance =
+            calc_segment_resistance(bump_node, pg_node, width_dbu);
         pg_edge.set_resistance(resistance);
         is_found = true;
         break;
@@ -457,10 +469,10 @@ void IRPGNetlistBuilder::build(
   LOG_INFO << "total edge num: " << pg_netlist.getEdgeNum();
 
   // for debug.
-//   if (special_net_name == "VDD") {
-//     pg_netlist.printToYaml(
-//         "/home/taosimin/iEDA24/iEDA/bin/aes_pg_netlist.yaml");
-//   }
+  //   if (special_net_name == "VDD") {
+  //     pg_netlist.printToYaml(
+  //         "/home/taosimin/iEDA24/iEDA/bin/aes_pg_netlist.yaml");
+  //   }
 }
 
 /**
@@ -496,7 +508,7 @@ void IRPGNetlistBuilder::createRustRCData() {
 
 /**
  * @brief calc every node resistance from bump node.
- * 
+ *
  */
 void IRPGNetlistBuilder::calcResistanceFromBumpNode(std::string net_name) {
   // auto* pg_netlist = getPGNetlist(net_name);
