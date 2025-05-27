@@ -75,8 +75,8 @@ class IRCGSolver : public IRSolver {
   private:
   double _nominal_voltage;
 
-  double _tolerance = 1e-8;
-  int _max_iteration = 22000;
+  double _tolerance = 1e-15;
+  int _max_iteration = 1000;
 
   double _lambda = 0; //!< Regularization parameter.
 };
