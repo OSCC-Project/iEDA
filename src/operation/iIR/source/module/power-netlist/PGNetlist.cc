@@ -88,7 +88,7 @@ std::vector<BGSegment> IRPGNetlistBuilder::buildBGSegments(
   for (auto* idb_wire : idb_wires->get_wire_list()) {
     for (auto* idb_segment : idb_wire->get_segment_list()) {
       // line firstly process, we need know line intersect point first.
-      if (idb_segment->is_line()) {
+      if (!idb_segment->is_via()) {
         auto* coord_start = idb_segment->get_point_start();
         auto* coord_end = idb_segment->get_point_second();
         std::string layer_name = idb_segment->get_layer()->get_name();
