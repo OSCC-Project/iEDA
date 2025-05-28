@@ -4,7 +4,25 @@ set (CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_BUILD_TYPE "Release")
 
-find_package(ZLIB REQUIRED)
+if(BUILD_STATIC_LIB)
+  # This is a workaround on cmake 3.22.1, should ensure static libraries are used
+  # Note: There is a better approach in newer versions of CMake:
+  # set(ZLIB_USE_STATIC_LIBS ON CACHE BOOL "Use static zlib" FORCE)
+
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+
+  find_package(ZLIB REQUIRED)
+
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ${ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
+
+  if(ZLIB_LIBRARIES MATCHES "\\.so(\\.|$)")
+    message(FATAL_ERROR "Found dynamic zlib, but static required: ${ZLIB_LIBRARIES}")
+  endif()
+
+  message(STATUS "Linking static zlib: ${ZLIB_LIBRARIES}")
+else()
+  find_package(ZLIB REQUIRED)
+endif()
 
 aux_source_directory(./ SRC)
 
