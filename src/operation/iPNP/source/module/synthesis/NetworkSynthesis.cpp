@@ -97,14 +97,49 @@ void NetworkSynthesis::manualSetTemplates()
       for (int j = 0; j < ver_region_num; ++j) {
         if (use_horizontal) {
           // use horizontal template
-          _synthesized_network.set_single_template(layer_idx, i, j, horizontal_templates[0]);
+          _synthesized_network.set_single_template(layer_idx, i, j, horizontal_templates[1]);
+          if (layer_idx == 5 && i == 1 && j == 0) {
+            SingleTemplate tmp;
+            tmp.set_direction(StripeDirection::kHorizontal);
+            tmp.set_width(8000.0);
+            tmp.set_pg_offset(1600.0);
+            tmp.set_space(38400.0);
+            tmp.set_offset(27200.0);
+            _synthesized_network.set_single_template(layer_idx, i, j, tmp);
+          }
+          if (layer_idx == 5 && i == 1 && j == 1) {
+            SingleTemplate tmp;
+            tmp.set_direction(StripeDirection::kHorizontal);
+            tmp.set_width(8000.0);
+            tmp.set_pg_offset(1600.0);
+            tmp.set_space(38400.0);
+            tmp.set_offset(27200.0);
+            _synthesized_network.set_single_template(layer_idx, i, j, tmp);
+          }
         }
         else {
           // use vertical template
-          _synthesized_network.set_single_template(layer_idx, i, j, vertical_templates[0]);
+          _synthesized_network.set_single_template(layer_idx, i, j, vertical_templates[1]);
+          // M7层暂时特殊处理
           if (layer_idx == 2) {
-            _synthesized_network.set_single_template(layer_idx, i, j, vertical_templates[1]);
+            SingleTemplate template_m7;
+            template_m7.set_direction(StripeDirection::kVertical);
+            template_m7.set_width(900.0);
+            template_m7.set_pg_offset(1600.0);
+            template_m7.set_space(19200.0);
+            template_m7.set_offset(8000.0);
+            _synthesized_network.set_single_template(layer_idx, i, j, template_m7);
           }
+          if (layer_idx == 6 && i == 1 && j == 2) {
+            SingleTemplate tmp;
+            tmp.set_direction(StripeDirection::kVertical);
+            tmp.set_width(8000.0);
+            tmp.set_pg_offset(1600.0);
+            tmp.set_space(19200.0);
+            tmp.set_offset(8000.0);
+            _synthesized_network.set_single_template(layer_idx, i, j, tmp);
+          }
+          
         }
       }
     }

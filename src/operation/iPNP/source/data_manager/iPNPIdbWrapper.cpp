@@ -38,9 +38,21 @@ namespace ipnp {
 
   void iPNPIdbWrapper::saveToIdb(GridManager pnp_network)
   {
+    // clear VDD
+    auto* vdd_net = _idb_design->get_special_net_list()->find_net("VDD");
+    auto* vdd_wire_list = vdd_net->get_wire_list();
+    vdd_wire_list->reset();
+
+    // clear VSS
+    auto* vss_net = _idb_design->get_special_net_list()->find_net("VSS");
+    auto* vss_wire_list = vss_net->get_wire_list();
+    vss_wire_list->reset();
+
+    // add power/ground network to idb
     PowerRouter* power_router = new PowerRouter();
     power_router->addPowerNets(_idb_design, pnp_network);
 
+    // add via to idb
     PowerVia* power_via = new PowerVia();
     _idb_design = power_via->connectAllPowerLayers(pnp_network, _idb_design);
     

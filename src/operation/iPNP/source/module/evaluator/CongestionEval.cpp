@@ -51,6 +51,7 @@ namespace ipnp {
     ieval::CongestionAPI congestion_api;
     ieval::OverflowSummary overflow_summary;
 
+    // 这个字符串是没用的，只是这个接口要求返回一个字符串
     std::string temp = congestion_api.egrUnionMap(stage, map_path);
 
     overflow_summary = congestion_api.egrOverflow(stage, temp);

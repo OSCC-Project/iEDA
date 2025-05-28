@@ -32,9 +32,9 @@ namespace ipnp {
 
 void IREval::runIREval(idb::IdbBuilder* idb_builder)
 {
-  initIREval(idb_builder);
+  // initIREval(idb_builder);
+
   std::string power_net_name = "VDD";
-  std::map<ista::Instance::Coordinate, double> coord_ir_map;
 
   _power_engine->resetIRAnalysisData();
   _power_engine->buildPGNetWireTopo();
@@ -142,8 +142,8 @@ void IREval::initIREval(idb::IdbBuilder* idb_builder)
   // temp_wrapper.set_idb_design(idb_builder->get_def_service()->get_design());
   // temp_wrapper.writeIdbToDef("/home/sujianrong/iEDA/src/operation/iPNP/data/test/debug.def");
 
-  // _timing_engine->readDefDesign(def_file, lef_files);
-  _timing_engine->setDefDesignBuilder(idb_builder);
+  _timing_engine->readDefDesign(def_file, lef_files);
+  // _timing_engine->setDefDesignBuilder(idb_builder);
 
   _timing_engine->readSdc("/home/sujianrong/aes/aes.sdc");
 

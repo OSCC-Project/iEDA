@@ -66,7 +66,7 @@ void iPNP::runSynthesis()
 void iPNP::runOptimize()
 {
   PdnOptimizer pdn_optimizer;
-  pdn_optimizer.optimize(_initialized_network, _idb_wrapper.get_idb_builder());
+  pdn_optimizer.optimizeGlobal(_initialized_network, _idb_wrapper.get_idb_builder());
   _current_opt_network = pdn_optimizer.get_out_put_grid();
 }
 
@@ -110,27 +110,33 @@ void iPNP::run()
     
     runSynthesis();
 
-    FastPlacer fast_placer;
-    fast_placer.runFastPlacer(_idb_wrapper.get_idb_builder());
+    // FastPlacer fast_placer;
+    // fast_placer.runFastPlacer(_idb_wrapper.get_idb_builder());
 
-    // runOptimize();
     _current_opt_network = _initialized_network;
+
+    idb::IdbBuilder* idb_builder = _idb_wrapper.get_idb_builder();
 
     saveToIdb();
 
+    runOptimize();
+
     writeIdbToDef(_output_def_path);
 
-    CongestionEval cong_eval;
-    cong_eval.evalEGR(_idb_wrapper.get_idb_builder());
+    // CongestionEval cong_eval;
+    // cong_eval.evalEGR(_idb_wrapper.get_idb_builder());
     
     IREval ir_eval;
+    ir_eval.initIREval(_idb_wrapper.get_idb_builder());
     ir_eval.runIREval(_idb_wrapper.get_idb_builder());
-    // std::map<ista::Instance::Coordinate, double> coord_ir_map = ir_eval.get_Coord_IR_map();
-    // double max_ir_drop = ir_eval.getMaxIRDrop();
-    // double min_ir_drop = ir_eval.getMinIRDrop();
-    // std::cout << "Max IR Drop: " << max_ir_drop << std::endl;
-    // std::cout << "Min IR Drop: " << min_ir_drop << std::endl;
+    
+    // DefConverter def_converter;
+    // def_converter.runDefConverter("/home/sujianrong/iEDA/src/operation/iPNP/data/test/output.def",
+    //   "/home/sujianrong/iEDA/src/operation/iPNP/data/test/aes_no_pwr_with_PL.def",
+    //   "COMPONENTS 15826 ;",
+    //   "END COMPONENTS");
 
+    
   }
   else {
     std::cout << "Warning: idb design is empty!" << std::endl;

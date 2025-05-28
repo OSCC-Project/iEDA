@@ -51,22 +51,23 @@ class IREval
    IREval()=default;  
   ~IREval()=default;
 
+  void initIREval(idb::IdbBuilder* idb_builder);
   void runIREval(idb::IdbBuilder* idb_builder);
   
-  std::map<ista::Instance::Coordinate, double> get_Coord_IR_map() { return _coord_ir_map; }
+  // getter
   double getMaxIRDrop() const;
   double getMinIRDrop() const;
+  std::map<ista::Instance::Coordinate, double> get_Coord_IR_map() { return _coord_ir_map; }
+
   
 private:
   ista::TimingEngine* _timing_engine;
   ipower::PowerEngine* _power_engine;
-  
   Sta* _ista;
   ipower::Power* _ipower;
 
   std::map<ista::Instance::Coordinate, double> _coord_ir_map;
 
-  void initIREval(idb::IdbBuilder* idb_builder);
 };
 
 }  // namespace ipnp

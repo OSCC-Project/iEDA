@@ -75,6 +75,8 @@ namespace ipnp {
     idb::IdbDesign* connectNetworkLayers(GridManager& pnp_network, PowerType net_type, idb::IdbDesign* idb_design);
 
     idb::IdbDesign* connectLayers(std::string net_name, std::string top_layer_name, std::string bottom_layer_name, idb::IdbDesign* idb_design);
+    idb::IdbDesign* connect_M3_M2_M1_Layers(std::string net_name, std::string top_layer_name, std::string bottom_layer_name, idb::IdbDesign* idb_design);
+
 
     int32_t transUnitDB(double value, idb::IdbDesign* idb_design);
 
