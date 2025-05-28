@@ -1,0 +1,16 @@
+{
+    "INPUT": {
+        "tech_lef_path": "",
+        "lef_paths": "",
+        "def_path": "",
+        "verilog_path": "",
+        "lib_path": "",
+        "sdc_path": ""
+    },
+    "OUTPUT": {
+        "output_dir_path": "./result/"
+    },
+    "LayerSettings": {
+        "routing_layer_1st": "METAL2"
+    }
+}
