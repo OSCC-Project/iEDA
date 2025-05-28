@@ -69,8 +69,14 @@ using idb::IdbTerm;
  */
 class TimingIDBAdapter : public TimingDBAdapter {
  public:
-  explicit TimingIDBAdapter(Sta* ista) : TimingDBAdapter(ista) {}
-  ~TimingIDBAdapter() override = default;
+  explicit TimingIDBAdapter(Sta* ista) : TimingDBAdapter(ista) {
+    _debug_csv_file.open("debug_timing_idb.csv", std::ios_base::trunc);
+    _debug_csv_file << "lef_resistance,segment_length,segment_width,layer,segment_resistance"
+                    << std::endl;
+  }
+  ~TimingIDBAdapter() override {
+    _debug_csv_file.close();
+  }
 
   void set_idb(IdbBuilder* idb) {
     _idb = idb;
@@ -90,9 +96,9 @@ class TimingIDBAdapter : public TimingDBAdapter {
   IdbCoordinate<int32_t>* idbLocation(DesignObject* pin_or_port);
 
   double getResistance(int num_layer, double segment_length,
-                       std::optional<double>& segment_width);
+                       std::optional<double> segment_width);
   double getCapacitance(int num_layer, double segment_length,
-                        std::optional<double>& segment_width);
+                        std::optional<double> segment_width);
   double getAverageResistance(std::optional<double>& segment_width);
   double getAverageCapacitance(std::optional<double>& segment_width);
 
@@ -225,6 +231,8 @@ class TimingIDBAdapter : public TimingDBAdapter {
 
   FlatMap<IdbPin*, Pin*> _db2staPin;  // net: get instance_pin
   FlatMap<Pin*, IdbPin*> _sta2dbPin;
+
+  std::ofstream _debug_csv_file;
 };
 
 }  // namespace ista

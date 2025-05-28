@@ -94,6 +94,9 @@ unsigned iIR::solveIRDrop(const char* net_name) {
   auto one_net_matrix_data =
       build_one_net_conductance_matrix_data(_rc_data, net_name);
 
+  double sum_resistance = get_sum_resistance(_rc_data, net_name);
+  LOG_INFO << "sum resistance: " << sum_resistance;
+
   IRMatrix ir_matrix;
   auto G_matrix = ir_matrix.buildConductanceMatrix(one_net_matrix_data);
 
@@ -102,8 +105,23 @@ unsigned iIR::solveIRDrop(const char* net_name) {
   auto J_vector = ir_matrix.buildCurrentVector(current_rust_map,
                                                one_net_matrix_data.node_num);
 
-  IRCGSolver ir_solver(_nominal_voltage);
-  auto grid_voltages = ir_solver(G_matrix, J_vector);
+  // Get the minimum element of J_vector
+  double min_element = J_vector.minCoeff();
+  LOG_INFO << "minimum element in J_vector: " << min_element;
+
+  std::unique_ptr<IRSolver> ir_solver;
+  if (_solver_method == IRSolverMethod::kLUSolver) {
+    LOG_INFO << "Using LU solver";
+    ir_solver = std::make_unique<IRLUSolver>();
+  } else if (_solver_method == IRSolverMethod::kCGSolver) {
+    LOG_INFO << "Using CG solver";
+    ir_solver = std::make_unique<IRCGSolver>(_nominal_voltage);
+  } else {
+    LOG_ERROR << "unknown IR solver method";
+    return 0;
+  }
+
+  auto grid_voltages = (*ir_solver)(G_matrix, J_vector);
 
   std::optional<std::pair<std::string, double>> max_ir_drop;
   std::optional<std::pair<std::string, double>> min_ir_drop;

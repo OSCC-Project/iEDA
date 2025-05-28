@@ -10,6 +10,7 @@ endif()
 include_directories(${HOME_OPERATION}/iIR)
 include_directories(${HOME_OPERATION}/iIR/source)
 include_directories(${HOME_OPERATION}/iIR/source/module)
+include_directories(${HOME_THIRDPARTY}/spectra/include)
 
 if (USE_GPU)
   find_package(CUDAToolkit)

@@ -125,6 +125,7 @@ void DataManager::buildConfig()
 void DataManager::buildDatabase()
 {
   buildDie();
+  buildPropertyDefinition();
   buildLayerList();
   buildLayerInfo();
 }
@@ -149,6 +150,15 @@ void DataManager::checkDie()
   if ((die.get_ur_x() <= die.get_ll_x()) || (die.get_ur_y() <= die.get_ll_y())) {
     DRCLOG.error(Loc::current(), "The die '(", die.get_ll_x(), " , ", die.get_ll_y(), ") - (", die.get_ur_x(), " , ", die.get_ur_y(), ")' is wrong!");
   }
+}
+
+void DataManager::buildPropertyDefinition()
+{
+  std::map<int32_t, int32_t>& routing_idb_layer_id_to_idx_map = _database.get_routing_idb_layer_id_to_idx_map();
+  PropertyDefinition& property_definition = _database.get_property_definition();
+
+  property_definition.set_bottom_routing_layer_idx(routing_idb_layer_id_to_idx_map[property_definition.get_bottom_routing_layer_idx()]);
+  property_definition.set_top_routing_layer_idx(routing_idb_layer_id_to_idx_map[property_definition.get_top_routing_layer_idx()]);
 }
 
 void DataManager::buildLayerList()

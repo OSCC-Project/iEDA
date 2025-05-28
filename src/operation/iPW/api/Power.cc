@@ -22,11 +22,10 @@
  * @date 2023-01-02
  */
 
-#include "Power.hh"
-
 #include <array>
 #include <filesystem>
 
+#include "Power.hh"
 #include "ops/annotate_toggle_sp/AnnotateToggleSP.hh"
 #include "ops/build_graph/PwrBuildGraph.hh"
 #include "ops/calc_power/PwrCalcInternalPower.hh"
@@ -57,7 +56,7 @@ Power* Power::getOrCreatePower(StaGraph* sta_graph) {
   if (_power == nullptr) {
     if (_power == nullptr) {
       std::lock_guard<std::mutex> lock(mt);
-      _power = new Power(sta_graph);      
+      _power = new Power(sta_graph);
     }
   }
   return _power;
@@ -559,18 +558,20 @@ unsigned Power::reportInstancePower(const char* rpt_file_name,
   auto data_str = [](double data) { return Str::printf("%.3e", data); };
   // auto data_str_f = [](double data) { return Str::printf("%.3f", data); };
 
-  PwrGroupData* group_data;
-  FOREACH_PWR_GROUP_DATA(this, group_data) {
-    // net add to driver instance.
-    LOG_FATAL_IF(dynamic_cast<Net*>(group_data->get_obj()))
-        << "net power should add to driver instance";
+  auto instance_power_data_vec = getInstancePowerData();
+  std::sort(instance_power_data_vec.begin(), instance_power_data_vec.end(),
+            [](const IRInstancePower& a, const IRInstancePower& b) {
+              return a._total_power > b._total_power;
+            });
 
-    auto* inst = dynamic_cast<Instance*>(group_data->get_obj());
-    (*report_tbl) << inst->get_name()
-                  << data_str(group_data->get_internal_power())
-                  << data_str(group_data->get_switch_power())
-                  << data_str(group_data->get_leakage_power())
-                  << data_str(group_data->get_total_power()) << TABLE_ENDLINE;
+  for (auto instance_power_data : instance_power_data_vec) {
+    (*report_tbl) << instance_power_data._instance_name
+                  << instance_power_data._nominal_voltage
+                  << data_str(instance_power_data._internal_power)
+                  << data_str(instance_power_data._switch_power)
+                  << data_str(instance_power_data._leakage_power)
+                  << data_str(instance_power_data._total_power)
+                  << TABLE_ENDLINE;
   };
 
   LOG_INFO << "Instance Power Report: \n";
@@ -617,27 +618,30 @@ unsigned Power::reportInstancePowerCSV(const char* rpt_file_name) {
            << "Total Power"
            << "\n";
   auto data_str = [](double data) { return Str::printf("%.3e", data); };
-  PwrGroupData* group_data;
-  FOREACH_PWR_GROUP_DATA(this, group_data) {
-    if (dynamic_cast<Net*>(group_data->get_obj())) {
-      continue;
-    }
 
-    auto* inst = dynamic_cast<Instance*>(group_data->get_obj());
-    csv_file << inst->get_name() << "," << group_data->get_nom_voltage() << ","
-             << data_str(group_data->get_internal_power()) << ","
-             << data_str(group_data->get_switch_power()) << ","
-             << data_str(group_data->get_leakage_power()) << ","
-             << data_str(group_data->get_total_power()) << "\n";
-  }
+  auto instance_power_data_vec = getInstancePowerData();
+  std::sort(instance_power_data_vec.begin(), instance_power_data_vec.end(),
+            [](const IRInstancePower& a, const IRInstancePower& b) {
+              return a._total_power > b._total_power;
+            });
+
+  for (auto instance_power_data : instance_power_data_vec) {
+    csv_file << instance_power_data._instance_name << ","
+             << instance_power_data._nominal_voltage << ","
+             << data_str(instance_power_data._internal_power) << ","
+             << data_str(instance_power_data._switch_power) << ","
+             << data_str(instance_power_data._leakage_power) << ","
+             << data_str(instance_power_data._total_power) << "\n";
+  };
+
   csv_file.close();
   return 1;
 }
 
 /**
  * @brief get instance power data.
- * 
- * @return unsigned 
+ *
+ * @return unsigned
  */
 std::vector<IRInstancePower> Power::getInstancePowerData() {
   std::vector<IRInstancePower> instance_power_data;
@@ -665,13 +669,13 @@ std::vector<IRInstancePower> Power::getInstancePowerData() {
 
     instance_power_data.emplace_back(std::move(instance_power));
   }
-  
+
   return instance_power_data;
 }
 /**
  * @brief get instance power map.
- * 
- * @return std::map<Instance::Coordinate, double> 
+ *
+ * @return std::map<Instance::Coordinate, double>
  */
 std::map<Instance::Coordinate, double> Power::displayInstancePowerMap() {
   LOG_INFO << "display instance power map start";
@@ -685,7 +689,8 @@ std::map<Instance::Coordinate, double> Power::displayInstancePowerMap() {
     }
 
     auto* inst = dynamic_cast<Instance*>(group_data->get_obj());
-    instance_power_map[inst->get_coordinate().value()] = group_data->get_total_power();
+    instance_power_map[inst->get_coordinate().value()] =
+        group_data->get_total_power();
   }
 
   LOG_INFO << "display instance power map end";
@@ -809,14 +814,14 @@ void CopyFile(
     std::string output_dir, std::string file_to_be_copy) {
   auto base_name = std::filesystem::path(file_to_be_copy).stem().string();
   auto extension = std::filesystem::path(file_to_be_copy).extension().string();
-  
+
   // dest dir workspace and copy time stamp.
   auto copy_work_space = copy_design_work_space->first;
   auto copy_time = copy_design_work_space->second;
 
-  std::string dest_file_name = Str::printf(
-      "%s/%s_%s%s", copy_work_space.c_str(), base_name.c_str(),
-      copy_time.c_str(), extension.c_str());
+  std::string dest_file_name =
+      Str::printf("%s/%s_%s%s", copy_work_space.c_str(), base_name.c_str(),
+                  copy_time.c_str(), extension.c_str());
 
   std::string src_file =
       Str::printf("%s/%s", output_dir.c_str(), file_to_be_copy.c_str());
@@ -914,11 +919,12 @@ unsigned Power::runCompleteFlow() {
 
 /**
  * @brief get the toggle and vdd data of a net.
- * 
- * @param net_name 
- * @return std::pair<double, double> 
+ *
+ * @param net_name
+ * @return std::pair<double, double>
  */
-std::pair<double, double> Power::getNetToggleAndVoltageData(const char* net_name) {
+std::pair<double, double> Power::getNetToggleAndVoltageData(
+    const char* net_name) {
   auto* sta_graph = _power_graph.get_sta_graph();
   auto* nl = sta_graph->get_nl();
   auto* the_net = nl->findNet(net_name);
@@ -957,9 +963,9 @@ std::pair<double, double> Power::getNetToggleAndVoltageData(const char* net_name
 
 /**
  * @brief read pg spef file.
- * 
- * @param spef_file 
- * @return unsigned 
+ *
+ * @param spef_file
+ * @return unsigned
  */
 unsigned Power::readPGSpef(const char* spef_file) {
   LOG_INFO << "read pg spef start.";
@@ -971,9 +977,9 @@ unsigned Power::readPGSpef(const char* spef_file) {
 
 /**
  * @brief report IR Drop in csv file.
- * 
- * @param rpt_file_name 
- * @return unsigned 
+ *
+ * @param rpt_file_name
+ * @return unsigned
  */
 unsigned Power::reportIRDropCSV(const char* rpt_file_name) {
   std::ofstream csv_file(rpt_file_name);
@@ -985,9 +991,7 @@ unsigned Power::reportIRDropCSV(const char* rpt_file_name) {
   auto instance_to_ir_drop = getInstanceIRDrop();
 
   for (auto& [instance_name, ir_drop] : instance_to_ir_drop) {
-
-    csv_file << instance_name << ","
-             << data_str(ir_drop) << "\n";
+    csv_file << instance_name << "," << data_str(ir_drop) << "\n";
   }
 
   csv_file.close();
@@ -997,14 +1001,14 @@ unsigned Power::reportIRDropCSV(const char* rpt_file_name) {
 
 /**
  * @brief run ir analysis.
- * 
- * @return unsigned 
+ *
+ * @return unsigned
  */
 unsigned Power::runIRAnalysis(std::string power_net_name) {
   CPU_PROF_START(0);
   LOG_INFO << "run IR analysis start";
   // set power data.
-  std::vector<IRInstancePower> instance_power_data = getInstancePowerData();  
+  std::vector<IRInstancePower> instance_power_data = getInstancePowerData();
   _ir_analysis.setInstancePowerData(std::move(instance_power_data));
 
   // calc ir drop.
@@ -1019,8 +1023,8 @@ unsigned Power::runIRAnalysis(std::string power_net_name) {
 
 /**
  * @brief report ir analysis.
- * 
- * @return unsigned 
+ *
+ * @return unsigned
  */
 unsigned Power::reportIRAnalysis(bool is_copy) {
   LOG_INFO << "report IR analysis start";
@@ -1052,11 +1056,9 @@ unsigned Power::reportIRAnalysis(bool is_copy) {
   reportIRDropCSV(output_path.c_str());
 
   LOG_INFO << "output ir drop report: " << output_path;
-  
+
   LOG_INFO << "report IR analysis end";
   return 1;
 }
-
-
 
 }  // namespace ipower

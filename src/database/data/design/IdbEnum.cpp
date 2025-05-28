@@ -304,6 +304,18 @@ IdbConnectType IdbConnectProperty::get_type(string name)
   return result->first;
 }
 
+bool IdbConnectProperty::is_net(std::string name)
+{
+  auto type = get_type(name);
+  return type == IdbConnectType::kSignal || type == IdbConnectType::kClock;
+}
+
+bool IdbConnectProperty::is_pdn(std::string name)
+{
+  auto type = get_type(name);
+  return type == IdbConnectType::kPower || type == IdbConnectType::kGround;
+}
+
 string IdbConnectProperty::get_type_name(IdbConnectType type)
 {
   auto iter = _type_list.find(type);

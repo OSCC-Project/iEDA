@@ -18,6 +18,7 @@
 
 #include "DRCHeader.hpp"
 #include "Logger.hpp"
+#include "Orientation.hpp"
 #include "PlanarRect.hpp"
 #include "Rotation.hpp"
 #include "json.hpp"
@@ -42,9 +43,64 @@ class Utility
     return std::abs(start_coord.get_x() - end_coord.get_x()) + std::abs(start_coord.get_y() - end_coord.get_y());
   }
 
+  // 获得两个矩形的欧式距离
+  static double getEuclideanDistance(PlanarRect& a, PlanarRect& b)
+  {
+    int32_t x_spacing = std::max(b.get_ll_x() - a.get_ur_x(), a.get_ll_x() - b.get_ur_x());
+    int32_t y_spacing = std::max(b.get_ll_y() - a.get_ur_y(), a.get_ll_y() - b.get_ur_y());
+
+    if (x_spacing > 0 && y_spacing > 0) {
+      return std::sqrt((double) (x_spacing * x_spacing + y_spacing * y_spacing));
+    } else {
+      return std::max(std::max(x_spacing, y_spacing), 0);
+    }
+  }
+
+  static int32_t getParallelLength(PlanarRect& a, PlanarRect& b)
+  {
+    int32_t x_parallel_length = std::max(0, std::min(a.get_ur_x(), b.get_ur_x()) - std::max(a.get_ll_x(), b.get_ll_x()));
+    int32_t y_parallel_length = std::max(0, std::min(a.get_ur_y(), b.get_ur_y()) - std::max(a.get_ll_y(), b.get_ll_y()));
+    return std::max(x_parallel_length, y_parallel_length);
+  }
+
 #endif
 
 #if 1  // 方向方位计算
+
+  static std::vector<Orientation> getOrientationList(const PlanarCoord& start_coord, const PlanarCoord& end_coord,
+                                                     Orientation point_orientation = Orientation::kNone)
+  {
+    std::set<Orientation> orientation_set;
+    orientation_set.insert(getOrientation(start_coord, PlanarCoord(start_coord.get_x(), end_coord.get_y()), point_orientation));
+    orientation_set.insert(getOrientation(start_coord, PlanarCoord(end_coord.get_x(), start_coord.get_y()), point_orientation));
+    orientation_set.erase(Orientation::kNone);
+    return std::vector<Orientation>(orientation_set.begin(), orientation_set.end());
+  }
+
+  // 判断线段方向 从start到end
+  static Orientation getOrientation(const LayerCoord& start_coord, const LayerCoord& end_coord, Orientation point_orientation = Orientation::kNone)
+  {
+    Orientation orientation;
+
+    if (start_coord.get_layer_idx() == end_coord.get_layer_idx()) {
+      if (isProximal(start_coord, end_coord)) {
+        orientation = point_orientation;
+      } else if (isHorizontal(start_coord, end_coord)) {
+        orientation = (start_coord.get_x() - end_coord.get_x()) > 0 ? Orientation::kWest : Orientation::kEast;
+      } else if (isVertical(start_coord, end_coord)) {
+        orientation = (start_coord.get_y() - end_coord.get_y()) > 0 ? Orientation::kSouth : Orientation::kNorth;
+      } else {
+        orientation = Orientation::kOblique;
+      }
+    } else {
+      if (isProximal(start_coord, end_coord)) {
+        orientation = (start_coord.get_layer_idx() - end_coord.get_layer_idx()) > 0 ? Orientation::kBelow : Orientation::kAbove;
+      } else {
+        orientation = Orientation::kOblique;
+      }
+    }
+    return orientation;
+  }
 
   // 判断线段方向
   static Direction getDirection(PlanarCoord start_coord, PlanarCoord end_coord)
@@ -130,6 +186,12 @@ class Utility
       return (rect_ll_x <= coord_x && coord_x <= rect_ur_x) && (rect_ll_y <= coord_y && coord_y <= rect_ur_y);
     }
     return (rect_ll_x < coord_x && coord_x < rect_ur_x) && (rect_ll_y < coord_y && coord_y < rect_ur_y);
+  }
+
+  // 线段在矩形内
+  static bool isInside(const PlanarRect& master, const Segment<PlanarCoord>& seg)
+  {
+    return isInside(master, seg.get_first()) && isInside(master, seg.get_second());
   }
 
   /**
@@ -428,6 +490,12 @@ class Utility
   }
 
   // 扩大矩形
+  static PlanarRect getEnlargedRect(PlanarRect rect, int32_t x_enlarge_size, int32_t y_enlarge_size)
+  {
+    return getEnlargedRect(rect, x_enlarge_size, y_enlarge_size, x_enlarge_size, y_enlarge_size);
+  }
+
+  // 扩大矩形
   static PlanarRect getEnlargedRect(PlanarRect rect, int32_t ll_x_minus_offset, int32_t ll_y_minus_offset, int32_t ur_x_add_offset, int32_t ur_y_add_offset)
   {
     minusOffset(rect.get_ll(), ll_x_minus_offset, ll_y_minus_offset);
@@ -445,6 +513,36 @@ class Utility
   {
     coord.set_x(coord.get_x() + x_offset);
     coord.set_y(coord.get_y() + y_offset);
+  }
+
+  static PlanarRect getSpacingRect(PlanarRect a, PlanarRect b)
+  {
+    int32_t x_spacing = std::max(0, std::max(a.get_ll_x() - b.get_ur_x(), b.get_ll_x() - a.get_ur_x()));
+    int32_t y_spacing = std::max(0, std::max(a.get_ll_y() - b.get_ur_y(), b.get_ll_y() - a.get_ur_y()));
+    PlanarRect spacing_rect;
+    if (x_spacing > 0 && y_spacing > 0) {
+      if (a.get_ur_x() < b.get_ll_x()) {
+        spacing_rect.set_ll_x(a.get_ur_x());
+        spacing_rect.set_ur_x(b.get_ll_x());
+      } else {
+        spacing_rect.set_ll_x(b.get_ur_x());
+        spacing_rect.set_ur_x(a.get_ll_x());
+      }
+      if (a.get_ur_y() < b.get_ll_y()) {
+        spacing_rect.set_ll_y(a.get_ur_y());
+        spacing_rect.set_ur_y(b.get_ll_y());
+      } else {
+        spacing_rect.set_ll_y(b.get_ur_y());
+        spacing_rect.set_ur_y(a.get_ll_y());
+      }
+    } else {
+      if (x_spacing == 0) {
+        spacing_rect = getOverlap(getEnlargedRect(a, 0, y_spacing), getEnlargedRect(b, 0, y_spacing));
+      } else if (y_spacing == 0) {
+        spacing_rect = getOverlap(getEnlargedRect(a, x_spacing, 0), getEnlargedRect(b, x_spacing, 0));
+      }
+    }
+    return spacing_rect;
   }
 
   // 获得两个矩形的overlap矩形
@@ -496,6 +594,31 @@ class Utility
       ur_y = std::max(ur_y, rect_list[i].get_ur_y());
     }
     return PlanarRect(ll_x, ll_y, ur_x, ur_y);
+  }
+
+  // 获得坐标集合的外接矩形
+  static PlanarRect getBoundingBox(const std::vector<PlanarCoord>& coord_list)
+  {
+    PlanarRect bounding_box;
+    if (coord_list.empty()) {
+      DRCLOG.warn(Loc::current(), "The coord list size is empty!");
+    } else {
+      int32_t ll_x = INT32_MAX;
+      int32_t ll_y = INT32_MAX;
+      int32_t ur_x = INT32_MIN;
+      int32_t ur_y = INT32_MIN;
+      for (size_t i = 0; i < coord_list.size(); i++) {
+        const PlanarCoord& coord = coord_list[i];
+
+        ll_x = std::min(ll_x, coord.get_x());
+        ll_y = std::min(ll_y, coord.get_y());
+        ur_x = std::max(ur_x, coord.get_x());
+        ur_y = std::max(ur_y, coord.get_y());
+      }
+      bounding_box.set_ll(ll_x, ll_y);
+      bounding_box.set_ur(ur_x, ur_y);
+    }
+    return bounding_box;
   }
 
   // 获得两个矩形的overlap矩形

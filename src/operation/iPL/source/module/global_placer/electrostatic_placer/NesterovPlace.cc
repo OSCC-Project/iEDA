@@ -35,6 +35,7 @@
 #include <cmath>
 #include <random>
 
+#include "Log.hh"
 #include "ipl_io.h"
 #include "omp.h"
 #include "tool_manager.h"
@@ -1573,6 +1574,7 @@ namespace ipl {
     }
 
     if (_nes_database->_is_diverged) {
+      LOG_ERROR << "Detect divergence, The reason may be parameters setting.";
       exit(1);
     }
 

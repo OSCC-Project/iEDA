@@ -287,6 +287,9 @@ class IdbConnectProperty
   IdbWireShapeType get_wire_shape(std::string name);
   std::string get_wire_shape_name(IdbWireShapeType type);
 
+  bool is_net(std::string name);
+  bool is_pdn(std::string name);
+
  private:
   std::map<IdbConnectDirection, std::string> _direction_list;
   std::map<IdbConnectType, std::string> _type_list;

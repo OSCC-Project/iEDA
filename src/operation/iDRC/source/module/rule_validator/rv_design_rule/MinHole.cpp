@@ -41,9 +41,8 @@ void RuleValidator::verifyMinHole(RVBox& rv_box)
       std::vector<GTLHolePolyInt> gtl_hole_poly_list;
       gtl_poly_set.get(gtl_hole_poly_list);
       for (GTLHolePolyInt& gtl_hole_poly : gtl_hole_poly_list) {
-        for (GTLHolePolyInt::iterator_holes_type gtl_hole_poly_iter = gtl_hole_poly.begin_holes(); gtl_hole_poly_iter != gtl_hole_poly.end_holes();
-             gtl_hole_poly_iter++) {
-          GTLPolyInt gtl_poly = *gtl_hole_poly_iter;
+        for (auto iter = gtl_hole_poly.begin_holes(); iter != gtl_hole_poly.end_holes(); iter++) {
+          GTLPolyInt gtl_poly = *iter;
           if (gtl::area(gtl_poly) >= min_hole_area) {
             continue;
           }

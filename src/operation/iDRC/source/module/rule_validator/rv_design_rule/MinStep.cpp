@@ -21,7 +21,6 @@ namespace idrc {
 void RuleValidator::verifyMinStep(RVBox& rv_box)
 {
 #if 1  // 函数定义
-  auto getIdx = [](int32_t idx, int32_t coord_size) { return (idx + coord_size) % coord_size; };
   auto addRect = [](bgi::rtree<BGRectInt, bgi::quadratic<16>>& rtree, const BGRectInt& bg_rect) {
     std::vector<BGRectInt> result_rect_list;
     rtree.query(bgi::intersects(bg_rect), std::back_inserter(result_rect_list));
@@ -57,11 +56,20 @@ void RuleValidator::verifyMinStep(RVBox& rv_box)
     int32_t lef58_min_adjacent_length = routing_layer.get_lef58_min_adjacent_length();
     for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set_map) {
       std::vector<GTLHolePolyInt> gtl_hole_poly_list;
-      gtl_poly_set.get_polygons(gtl_hole_poly_list);
+      gtl_poly_set.get(gtl_hole_poly_list);
       for (GTLHolePolyInt& gtl_hole_poly : gtl_hole_poly_list) {
         int32_t coord_size = static_cast<int32_t>(gtl_hole_poly.size());
         if (coord_size < 4) {
           continue;
+        }
+        std::set<PlanarRect, CmpPlanarRectByXASC> hole_rect_set;
+        for (auto iter = gtl_hole_poly.begin_holes(); iter != gtl_hole_poly.end_holes(); iter++) {
+          GTLPolyInt gtl_poly = *iter;
+          GTLRectInt gtl_rect;
+          gtl::extents(gtl_rect, gtl_poly);
+          if (gtl::area(gtl_poly) == gtl::area(gtl_rect)) {
+            hole_rect_set.insert(DRCUTIL.convertToPlanarRect(gtl_rect));
+          }
         }
         std::vector<PlanarCoord> coord_list;
         for (auto iter = gtl_hole_poly.begin(); iter != gtl_hole_poly.end(); iter++) {
@@ -69,13 +77,12 @@ void RuleValidator::verifyMinStep(RVBox& rv_box)
         }
         std::vector<int32_t> edge_length_list;
         std::vector<bool> convex_corner_list;
-        Rotation rotation = DRCUTIL.getRotation(gtl_hole_poly);
         for (int32_t i = 0; i < coord_size; i++) {
           PlanarCoord& pre_coord = coord_list[getIdx(i - 1, coord_size)];
           PlanarCoord& curr_coord = coord_list[i];
           PlanarCoord& post_coord = coord_list[getIdx(i + 1, coord_size)];
           edge_length_list.push_back(DRCUTIL.getManhattanDistance(pre_coord, curr_coord));
-          convex_corner_list.push_back(DRCUTIL.isConvexCorner(rotation, pre_coord, curr_coord, post_coord));
+          convex_corner_list.push_back(DRCUTIL.isConvexCorner(DRCUTIL.getRotation(gtl_hole_poly), pre_coord, curr_coord, post_coord));
         }
         bgi::rtree<BGRectInt, bgi::quadratic<16>> rtree;
         for (int32_t i = 0; i < coord_size; i++) {
@@ -96,7 +103,7 @@ void RuleValidator::verifyMinStep(RVBox& rv_box)
                 violation_rect.set_ur_x(std::max(violation_rect.get_ur_x(), coord_list[j].get_x()));
                 violation_rect.set_ur_y(std::max(violation_rect.get_ur_y(), coord_list[j].get_y()));
               }
-              if (addRect(rtree, DRCUTIL.convertToBGRectInt(violation_rect))) {
+              if (!DRCUTIL.exist(hole_rect_set, violation_rect) && addRect(rtree, DRCUTIL.convertToBGRectInt(violation_rect))) {
                 Violation violation;
                 violation.set_violation_type(ViolationType::kMinStep);
                 violation.set_required_size(min_step);
@@ -115,7 +122,7 @@ void RuleValidator::verifyMinStep(RVBox& rv_box)
             if ((edge_length_list[i] < lef58_min_step && edge_length_list[post_i] < lef58_min_adjacent_length)
                 || (edge_length_list[i] < lef58_min_adjacent_length && edge_length_list[post_i] < lef58_min_step)) {
               PlanarRect violation_rect = DRCUTIL.getRect(coord_list[pre_i], coord_list[post_i]);
-              if (addRect(rtree, DRCUTIL.convertToBGRectInt(violation_rect))) {
+              if (!DRCUTIL.exist(hole_rect_set, violation_rect) && addRect(rtree, DRCUTIL.convertToBGRectInt(violation_rect))) {
                 Violation violation;
                 violation.set_violation_type(ViolationType::kMinStep);
                 violation.set_required_size(lef58_min_step);

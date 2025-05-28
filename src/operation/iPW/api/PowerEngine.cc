@@ -503,13 +503,15 @@ unsigned PowerEngine::buildPGNetWireTopo() {
       idb_builder->get_def_service()->get_design()->get_special_net_list();
   auto* idb_design = idb_builder->get_def_service()->get_design();
   auto dbu = idb_design->get_units()->get_micron_dbu();
+  _pg_netlist_builder.set_dbu(dbu);
 
-  std::function<double(unsigned, unsigned)> calc_resistance =
-      [idb_adapter, dbu](unsigned layer_id, unsigned distance_dbu) -> double {
-    std::optional<double> width = std::nullopt;
+  std::function<double(unsigned, unsigned, unsigned)> calc_resistance =
+      [idb_adapter, dbu](unsigned layer_id, unsigned distance_dbu, unsigned width_dbu) -> double {
     double wire_length = double(distance_dbu) / dbu;
+    double width = double(width_dbu) / dbu;
     double resistance = idb_adapter->getResistance(layer_id, wire_length, width);
     resistance *= c_resistance_coef;
+
     return resistance;
   };
 

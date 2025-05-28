@@ -177,6 +177,8 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
   double one = 1.0;
   double zero = 0.0;
   while (k < max_iter && sqrt(r_dot_r) > tol) {
+    // CUDA_LOG_INFO("CG iteration num : %d, residual: %f", k + 1 , sqrt(r_dot_r));
+
     // Ap = A * p + lambda * p (L2 regularization)
     cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one, matA, vecP,
                  &zero, vecAp, CUDA_R_64F, CUSPARSE_SPMV_ALG_DEFAULT, dBuffer);
@@ -194,9 +196,6 @@ std::vector<double> ir_cg_solver(Eigen::SparseMatrix<double> &A,
     // x = x + alpha * p
     cublasDaxpy(cublasHandle, num_rows, &alpha, d_p, 1, d_x, 1);
     
-    // Apply min constraints to x
-    c_wise_max(d_x, num_rows, x0(0) * 0.8); 
-
     // for debug
     // print_device_array(d_x, num_rows);
 
