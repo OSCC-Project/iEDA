@@ -46,6 +46,9 @@ bool LmGraphDataManager::buildGraphData()
         LOG_ERROR << "error node....";
       }
 
+      node1->set_real_coordinate(x1, y1);
+      node2->set_real_coordinate(x2, y2);
+
       return std::make_pair(node1, node2);
     } else {
       auto& grid1 = layout_layers.findLayoutLayer(layer1)->get_grid();
@@ -59,6 +62,9 @@ bool LmGraphDataManager::buildGraphData()
       if (node1 == nullptr || node1->get_node_data() == nullptr || node2 == nullptr || node2->get_node_data() == nullptr) {
         LOG_ERROR << "error node....";
       }
+
+      node1->set_real_coordinate(x1, y1);
+      node2->set_real_coordinate(x2, y2);
 
       return std::make_pair(node1, node2);
     }
