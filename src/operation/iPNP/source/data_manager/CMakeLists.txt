@@ -8,7 +8,6 @@ add_library(data_manager
 target_link_libraries(data_manager
     PUBLIC
     idb
-    idm
     synthesis
     
 )

@@ -17,7 +17,7 @@ include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/include)
 include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/data_manager)
 include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/module/evaluator)
 include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/module/optimizer)
-include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/module/placer_router)
+include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/module/router)
 include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/module/synthesis)
 include_directories(SYSTEM ${HOME_THIRDPARTY})
 
