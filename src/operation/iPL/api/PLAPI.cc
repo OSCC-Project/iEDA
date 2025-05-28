@@ -93,7 +93,7 @@ void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
   createPLDirectory();
 
   char config[] = "info_ipl_glog";
-  char* argv[] = {config};
+  char* argv[] = { config };
 
   std::string log_home_path = this->obtainTargetDir() + "/pl/log/";
   // std::string design_name = idb_builder->get_def_service()->get_design()->get_design_name();
@@ -132,6 +132,9 @@ void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
 void PLAPI::createPLDirectory()
 {
   std::string pl_dir = this->obtainTargetDir();
+  if (pl_dir == "") {
+    pl_dir = ".";
+  }
   // create log and report folder
   if (!std::filesystem::exists(pl_dir + "/pl/log")) {
     if (std::filesystem::create_directories(pl_dir + "/pl/log")) {
@@ -713,7 +716,11 @@ void PLAPI::writeBackSourceDataBase()
 
 std::string PLAPI::obtainTargetDir()
 {
-  return _external_api->obtainTargetDir();
+  auto target_dir = _external_api->obtainTargetDir();
+  if (target_dir == "") {
+    target_dir = ".";
+  }
+  return target_dir;
 }
 
 std::vector<Rectangle<int32_t>> PLAPI::obtainAvailableWhiteSpaceList(std::pair<int32_t, int32_t> row_range,
