@@ -20,6 +20,7 @@
 
 namespace python_interface {
 
+bool init_drc(const std::string& temp_directory_path, const int& thread_number, const std::string& golden_directory_path);
 bool run_drc(const std::string& config, const std::string& report);
 bool save_drc(const std::string& path);
 }  // namespace python_interface

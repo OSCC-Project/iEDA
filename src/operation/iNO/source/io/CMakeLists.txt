@@ -19,6 +19,7 @@ target_link_libraries(ino_io
         ino_api_external_libs
         ino_source
         idm
+        idb
 )
 
 target_include_directories(ino_io 

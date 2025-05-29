@@ -45,7 +45,6 @@
 #include "src/MapFiller.h"
 #include "timing_db.hh"
 #include "wirelength_db.h"
-
 namespace ipl {
 
 // NOLINTBEGIN
@@ -410,7 +409,7 @@ void PLAPI::runFlow()
   if (isSTAStarted()) {
     runPostGP();
   } else {
-    runDP();
+    // runDP(); // remove DP
   }
   // printHPWLInfo();
   // printTimingInfo();
@@ -808,9 +807,9 @@ void PLAPI::reportPLInfo()
   }
 
   // report congestion
-  if (PlacerDBInst.get_placer_config()->isCongestionEffort()) {
-    reportCongestionInfo(summary_stream);
-  }
+  // if (PlacerDBInst.get_placer_config()->isCongestionEffort()) {
+  //   reportCongestionInfo(summary_stream);
+  // }
   summary_stream.close();
 
   double time_delta = report_status.elapsedRunTime();

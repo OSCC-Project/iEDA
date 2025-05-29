@@ -79,7 +79,7 @@ class IdbBuilder
   void saveVerilog(std::string verilog_file_name, std::set<std::string>& exclude_cell_names, bool is_add_space_for_escape_name);
   bool saveGDSII(string file);
   bool saveJSON(string file, string options);
-
+  bool saveLef(string file);
   // Write layout
   void saveLayout(string folder);
   // Read layout

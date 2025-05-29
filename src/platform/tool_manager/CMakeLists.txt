@@ -23,7 +23,7 @@ target_link_libraries(tool_manager PUBLIC)
 target_link_libraries(tool_manager
     PUBLIC
         tool_api_icts
-        # tool_api_idrc
+        tool_api_idrc
         tool_api_ieval
         tool_api_ifp
         tool_api_ipdn

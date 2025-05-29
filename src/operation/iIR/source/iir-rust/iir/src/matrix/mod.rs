@@ -60,6 +60,7 @@ pub struct RustIRPGNode {
     node_id: i32,
     is_instance_pin: bool,
     is_bump: bool,
+    is_via: bool,
     node_name: *const c_char,
 }
 
@@ -228,6 +229,23 @@ pub extern "C" fn create_rc_data(c_pg_netlist_ptr: *const c_void, len: usize) ->
 
     let mv_rc_data = Box::new(rc_data);
     Box::into_raw(mv_rc_data) as *const c_void
+}
+
+#[no_mangle]
+pub extern "C" fn get_sum_resistance(c_rc_data: *const c_void,
+    c_net_name: *const c_char) -> f64 {
+    let rc_data = unsafe { &*(c_rc_data as *const RCData) };
+
+    let one_net_name = c_str_to_r_str(c_net_name);
+    if !(rc_data.is_contain_net_data(&one_net_name)) {
+        panic!("The net {} is not exist.", one_net_name);
+    }
+
+    let one_net_rc_data = rc_data.get_one_net_data(&one_net_name);
+    let resistances = one_net_rc_data.get_resistances();
+
+    let sum_resistance = resistances.iter().map(|x| x.resistance).sum::<f64>();
+    sum_resistance
 }
 
 #[no_mangle]

@@ -11,6 +11,8 @@ Do not modify this manually.
 #include <stdint.h>
 #include <stdlib.h>
 
+#define POWER_INNER_RESISTANCE 1e-3
+
 typedef struct HashMap_usize__f64 HashMap_usize__f64;
 
 /**
@@ -84,6 +86,8 @@ const void *create_pg_netlist(const char *c_power_net_name);
  * estimate all pg netlist rc data.
  */
 const void *create_rc_data(const void *c_pg_netlist_ptr, uintptr_t len);
+
+double get_sum_resistance(const void *c_rc_data, const char *c_net_name);
 
 struct RustNetConductanceData build_one_net_conductance_matrix_data(const void *c_rc_data,
                                                                     const char *c_net_name);

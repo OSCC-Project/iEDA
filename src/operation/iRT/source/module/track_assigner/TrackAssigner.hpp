@@ -51,13 +51,12 @@ class TrackAssigner
   TAModel initTAModel();
   std::vector<TANet> convertToTANetList(std::vector<Net>& net_list);
   TANet convertToTANet(Net& net);
-  void ignoreViolation(TAModel& ta_model);
   void setTAComParam(TAModel& ta_model);
   void initTAPanelMap(TAModel& ta_model);
   void buildPanelSchedule(TAModel& ta_model);
   void assignTAPanelMap(TAModel& ta_model);
-  void buildAccessResult(TAPanel& ta_panel);
   void buildNetResult(TAPanel& ta_panel);
+  void buildNetPatch(TAPanel& ta_panel);
   void initTATaskList(TAModel& ta_model, TAPanel& ta_panel);
   void buildViolation(TAPanel& ta_panel);
   bool needRouting(TAPanel& ta_panel);
@@ -87,16 +86,18 @@ class TrackAssigner
   void resetSingleTask(TAPanel& ta_panel);
   void pushToOpenList(TAPanel& ta_panel, TANode* curr_node);
   TANode* popFromOpenList(TAPanel& ta_panel);
-  double getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
+  double getKnownCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getNodeCost(TAPanel& ta_panel, TANode* curr_node, Orientation orientation);
-  double getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
-  double getKnowViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
+  double getKnownWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
+  double getKnownViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateCostToEnd(TAPanel& ta_panel, TANode* curr_node);
   double getEstimateCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   void updateViolationList(TAPanel& ta_panel);
-  std::vector<Violation> getAmongNetViolationList(TAPanel& ta_panel);
+  std::vector<Violation> getViolationList(TAPanel& ta_panel);
+  std::vector<Violation> getViolationListByShort(TAPanel& ta_panel, std::map<int32_t, std::vector<PlanarRect>>& env_net_rect_map,
+                                                 std::map<int32_t, std::vector<PlanarRect>>& result_net_rect_map);
   void updateTaskSchedule(TAPanel& ta_panel, std::vector<TATask*>& routing_task_list);
   void routeTAPanelByInterface(TAPanel& ta_panel);
   void uploadNetResult(TAPanel& ta_panel);

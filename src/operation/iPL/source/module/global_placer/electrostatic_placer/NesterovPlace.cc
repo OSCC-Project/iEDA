@@ -23,6 +23,8 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/global_placer/electrostatic_placer/NesterovPlace.cc
  * Contact : https://github.com/sjchanson
  */
+#include <boost/polygon/polygon.hpp>
+#include <boost/geometry.hpp>
 
 #include "NesterovPlace.hh"
 
@@ -33,13 +35,13 @@
 #include <cmath>
 #include <random>
 
+#include "Log.hh"
 #include "ipl_io.h"
 #include "omp.h"
 #include "tool_manager.h"
 #include "usage/usage.hh"
 #include "PLAPI.hh"
-#include <boost/polygon/polygon.hpp>
-#include <boost/geometry.hpp>
+
 
 #ifdef BUILD_QT
 #include "utility/Image.hh"
@@ -1572,6 +1574,7 @@ namespace ipl {
     }
 
     if (_nes_database->_is_diverged) {
+      LOG_ERROR << "Detect divergence, The reason may be parameters setting.";
       exit(1);
     }
 

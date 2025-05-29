@@ -20,6 +20,8 @@
  */
 #include "CtsNet.hh"
 
+#include <set>
+
 #include "log/Log.hh"
 namespace icts {
 class CtsInstance;
@@ -76,9 +78,14 @@ std::vector<CtsInstance*> CtsNet::get_instances() const
 std::vector<CtsPin*> CtsNet::get_load_pins() const
 {
   std::vector<CtsPin*> load_pins;
-
+  // std::set<std::string> unique_insts;
   for (auto* pin : _pins) {
     if (pin->get_pin_type() != CtsPinType::kOut && !pin->is_io()) {
+      // if (unique_insts.count(pin->get_instance()->get_name()) == 0) {
+      //   unique_insts.insert(pin->get_instance()->get_name());
+      // } else {
+      //   continue;
+      // }
       load_pins.push_back(pin);
     }
   }

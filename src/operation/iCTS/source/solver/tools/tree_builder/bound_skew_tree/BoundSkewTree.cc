@@ -156,7 +156,10 @@ double BoundSkewTree::mergeCost(Area* left, Area* right) const
   Pt l_pt, r_pt;
   for (auto left_pt : left_mr) {
     for (auto right_pt : right_mr) {
-      min_dist = std::min(min_dist, Geom::distance(left_pt, right_pt));
+      if (Geom::distance(left_pt, right_pt) >= min_dist) {
+        continue;
+      }
+      min_dist = Geom::distance(left_pt, right_pt);
       l_pt = left_pt;
       r_pt = right_pt;
     }

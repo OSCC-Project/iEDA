@@ -46,6 +46,15 @@ struct IRInstancePower {
 };
 
 /**
+ * @brief The ir solver method enum.
+ * 
+ */
+enum class IRSolverMethod {
+  kLUSolver,  // LU solver
+  kCGSolver,  // Conjugate Gradient solver
+};
+
+/**
  * @brief The IR top interface.
  * 
  */
@@ -53,6 +62,9 @@ class iIR {
  public:
   void set_rc_data(const void* rust_rc_data) { _rc_data = rust_rc_data; }
   auto* get_rc_data() { return _rc_data; }
+
+  void set_nominal_voltage(double nominal_voltage) { _nominal_voltage = nominal_voltage; }
+  double get_nominal_voltage() { return _nominal_voltage; }
 
   auto& get_instance_to_ir_drop() { return _instance_to_ir_drop; }
 
@@ -67,6 +79,10 @@ class iIR {
   const void* _rc_data = nullptr;
   const void* _power_data = nullptr;
 
+  double _nominal_voltage = 0.0;
+
   std::map<std::string, double> _instance_to_ir_drop;
+
+  IRSolverMethod _solver_method = IRSolverMethod::kCGSolver;  //!< The IR solver method.
 };
 }  // namespace iir

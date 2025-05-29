@@ -117,7 +117,7 @@ IdbCoordinate<int32_t>* TimingIDBAdapter::idbLocation(
  * @return double Ω
  */
 double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
-                                       std::optional<double>& segment_width) {
+                                       std::optional<double> segment_width) {
   double segment_resistance = 0;
   IdbLayout* idb_layout = _idb_lef_service->get_layout();
   vector<IdbLayer*>& routing_layers =
@@ -145,6 +145,10 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
 
   segment_resistance = lef_resistance * segment_length / *segment_width;
 
+  // _debug_csv_file << lef_resistance << "," << segment_length << ","
+  //           << *segment_width << "," << num_layer << ","
+  //           << segment_resistance << "\n";
+
   return segment_resistance;
 }
 
@@ -158,7 +162,7 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
  * @return double cap unit is pf
  */
 double TimingIDBAdapter::getCapacitance(int num_layer, double segment_length,
-                                        std::optional<double>& segment_width) {
+                                        std::optional<double> segment_width) {
   double segment_capacitance = 0;
   IdbLayout* idb_layout = _idb_lef_service->get_layout();
   vector<IdbLayer*>& routing_layers =
@@ -841,16 +845,15 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
 
   auto build_nets = [this, &design_netlist]() {
     // build nets
-    auto db_net_list = _idb_design->get_net_list()->get_net_list();
-    for (auto* db_net : db_net_list) {
+
+    auto process_net = [this, &design_netlist]<typename T>(T* db_net) {
+      std::string raw_name = db_net->get_net_name();
       if ((db_net->get_connect_type() == IdbConnectType::kPower) ||
           (db_net->get_connect_type() == IdbConnectType::kGround)) {
-        continue;
+        return;
       }
 
-      std::string raw_name = db_net->get_net_name();
-
-      std::regex re(R"(\\)");
+      std::regex re(R"(\\)"); 
       std::string net_name = std::regex_replace(raw_name, re, "");
       Net* sta_net = design_netlist.findNet(net_name.c_str());
 
@@ -902,6 +905,16 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
 
       LOG_INFO_EVERY_N(10000)
           << "build net num: " << design_netlist.getNetNum();
+    };
+
+    auto db_net_list = _idb_design->get_net_list()->get_net_list();
+    for (auto* db_net : db_net_list) {
+      process_net(db_net);
+    }
+
+    auto db_special_nets = _idb_design->get_special_net_list()->get_net_list();
+    for (auto* db_special_net : db_special_nets) {
+      process_net(db_special_net);
     }
   };
 

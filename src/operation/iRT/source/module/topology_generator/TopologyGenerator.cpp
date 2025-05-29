@@ -64,9 +64,8 @@ void TopologyGenerator::generate()
   updateSummary(tg_model);
   printSummary(tg_model);
   outputGuide(tg_model);
-  outputPlanarSupplyCSV(tg_model);
-  outputPlanarDemandCSV(tg_model);
-  outputPlanarOverflowCSV(tg_model);
+  outputDemandCSV(tg_model);
+  outputOverflowCSV(tg_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -109,7 +108,9 @@ TGNet TopologyGenerator::convertToTGNet(Net& net)
 void TopologyGenerator::setTGComParam(TGModel& tg_model)
 {
   int32_t topo_spilt_length = 10;
-  double overflow_unit = 2;
+  double prefer_wire_unit = 1;
+  double non_prefer_wire_unit = 2.5 * prefer_wire_unit;
+  double overflow_unit = 4 * non_prefer_wire_unit;
   /**
    * topo_spilt_length, overflow_unit
    */
@@ -232,7 +233,7 @@ void TopologyGenerator::routeTGNet(TGModel& tg_model, TGNet* tg_net)
       routing_segment_list.push_back(routing_segment);
     }
   }
-  MTree<LayerCoord> coord_tree = getCoordTree(tg_net, routing_segment_list);
+  MTree<PlanarCoord> coord_tree = getCoordTree(tg_net, routing_segment_list);
   updateDemandToGraph(tg_model, ChangeType::kAdd, coord_tree);
   uploadNetResult(tg_net, coord_tree);
 }
@@ -397,43 +398,39 @@ double TopologyGenerator::getNodeCost(TGModel& tg_model, std::vector<Segment<Pla
   return node_cost;
 }
 
-MTree<LayerCoord> TopologyGenerator::getCoordTree(TGNet* tg_net, std::vector<Segment<PlanarCoord>>& planar_routing_segment_list)
+MTree<PlanarCoord> TopologyGenerator::getCoordTree(TGNet* tg_net, std::vector<Segment<PlanarCoord>>& routing_segment_list)
 {
-  std::vector<Segment<LayerCoord>> routing_segment_list;
-  for (Segment<PlanarCoord>& planar_routing_segment : planar_routing_segment_list) {
-    routing_segment_list.emplace_back(LayerCoord(planar_routing_segment.get_first(), 0), LayerCoord(planar_routing_segment.get_second(), 0));
-  }
-  std::vector<LayerCoord> candidate_root_coord_list;
-  std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
+  std::vector<PlanarCoord> candidate_root_coord_list;
+  std::map<PlanarCoord, std::set<int32_t>, CmpPlanarCoordByXASC> key_coord_pin_map;
   std::vector<TGPin>& tg_pin_list = tg_net->get_tg_pin_list();
   for (size_t i = 0; i < tg_pin_list.size(); i++) {
-    LayerCoord coord(tg_pin_list[i].get_access_point().get_grid_coord(), 0);
+    PlanarCoord coord = tg_pin_list[i].get_access_point().get_grid_coord();
     candidate_root_coord_list.push_back(coord);
     key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
   }
   return RTUTIL.getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
 }
 
-void TopologyGenerator::uploadNetResult(TGNet* tg_net, MTree<LayerCoord>& coord_tree)
+void TopologyGenerator::uploadNetResult(TGNet* tg_net, MTree<PlanarCoord>& coord_tree)
 {
-  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
-    Segment<LayerCoord>* segment = new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value());
+  for (Segment<TNode<PlanarCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
+    Segment<LayerCoord>* segment = new Segment<LayerCoord>({coord_segment.get_first()->value(), 0}, {coord_segment.get_second()->value(), 0});
     RTDM.updateNetGlobalResultToGCellMap(ChangeType::kAdd, tg_net->get_net_idx(), segment);
   }
 }
 
 #if 1  // update env
 
-void TopologyGenerator::updateDemandToGraph(TGModel& tg_model, ChangeType change_type, MTree<LayerCoord>& coord_tree)
+void TopologyGenerator::updateDemandToGraph(TGModel& tg_model, ChangeType change_type, MTree<PlanarCoord>& coord_tree)
 {
-  std::vector<Segment<LayerCoord>> routing_segment_list;
-  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
+  std::vector<Segment<PlanarCoord>> routing_segment_list;
+  for (Segment<TNode<PlanarCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
     routing_segment_list.emplace_back(coord_segment.get_first()->value(), coord_segment.get_second()->value());
   }
-  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> usage_map;
-  for (Segment<LayerCoord>& coord_segment : routing_segment_list) {
-    LayerCoord& first_coord = coord_segment.get_first();
-    LayerCoord& second_coord = coord_segment.get_second();
+  std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> usage_map;
+  for (Segment<PlanarCoord>& coord_segment : routing_segment_list) {
+    PlanarCoord& first_coord = coord_segment.get_first();
+    PlanarCoord& second_coord = coord_segment.get_second();
 
     Orientation orientation = RTUTIL.getOrientation(first_coord, second_coord);
     if (orientation == Orientation::kNone || orientation == Orientation::kOblique) {
@@ -443,24 +440,19 @@ void TopologyGenerator::updateDemandToGraph(TGModel& tg_model, ChangeType change
 
     int32_t first_x = first_coord.get_x();
     int32_t first_y = first_coord.get_y();
-    int32_t first_layer_idx = first_coord.get_layer_idx();
     int32_t second_x = second_coord.get_x();
     int32_t second_y = second_coord.get_y();
-    int32_t second_layer_idx = second_coord.get_layer_idx();
     RTUTIL.swapByASC(first_x, second_x);
     RTUTIL.swapByASC(first_y, second_y);
-    RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
 
     for (int32_t x = first_x; x <= second_x; x++) {
       for (int32_t y = first_y; y <= second_y; y++) {
-        for (int32_t layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
-          LayerCoord coord(x, y, layer_idx);
-          if (coord != first_coord) {
-            usage_map[coord].insert(opposite_orientation);
-          }
-          if (coord != second_coord) {
-            usage_map[coord].insert(orientation);
-          }
+        PlanarCoord coord(x, y);
+        if (coord != first_coord) {
+          usage_map[coord].insert(opposite_orientation);
+        }
+        if (coord != second_coord) {
+          usage_map[coord].insert(orientation);
         }
       }
     }
@@ -678,29 +670,7 @@ void TopologyGenerator::outputGuide(TGModel& tg_model)
   RTUTIL.closeFileStream(guide_file_stream);
 }
 
-void TopologyGenerator::outputPlanarSupplyCSV(TGModel& tg_model)
-{
-  std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
-  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
-  if (!output_inter_result) {
-    return;
-  }
-  std::ofstream* supply_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(tg_temp_directory_path, "supply_map_planar.csv"));
-  GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
-  for (int32_t y = tg_node_map.get_y_size() - 1; y >= 0; y--) {
-    for (int32_t x = 0; x < tg_node_map.get_x_size(); x++) {
-      std::map<Orientation, int32_t>& orient_supply_map = tg_node_map[x][y].get_orient_supply_map();
-      int32_t total_supply = 0;
-      total_supply = (orient_supply_map[Orientation::kEast] + orient_supply_map[Orientation::kWest] + orient_supply_map[Orientation::kSouth]
-                      + orient_supply_map[Orientation::kNorth]);
-      RTUTIL.pushStream(supply_csv_file, total_supply, ",");
-    }
-    RTUTIL.pushStream(supply_csv_file, "\n");
-  }
-  RTUTIL.closeFileStream(supply_csv_file);
-}
-
-void TopologyGenerator::outputPlanarDemandCSV(TGModel& tg_model)
+void TopologyGenerator::outputDemandCSV(TGModel& tg_model)
 {
   std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
   int32_t output_inter_result = RTDM.getConfig().output_inter_result;
@@ -722,7 +692,7 @@ void TopologyGenerator::outputPlanarDemandCSV(TGModel& tg_model)
   RTUTIL.closeFileStream(demand_csv_file);
 }
 
-void TopologyGenerator::outputPlanarOverflowCSV(TGModel& tg_model)
+void TopologyGenerator::outputOverflowCSV(TGModel& tg_model)
 {
   std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
   int32_t output_inter_result = RTDM.getConfig().output_inter_result;

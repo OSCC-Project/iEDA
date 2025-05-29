@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <tuple>
+
 #include "congestion_db.h"
 #include "map"
 
@@ -73,6 +75,14 @@ class CongestionEval
   int32_t findBBoxLy(std::string net_name);
   int32_t findBBoxUx(std::string net_name);
   int32_t findBBoxUy(std::string net_name);
+  double findXEntropy(std::string net_name);
+  double findYEntropy(std::string net_name);
+  double findAvgXNNDistance(std::string net_name);
+  double findStdXNNDistance(std::string net_name);
+  double findRatioXNNDistance(std::string net_name);
+  double findAvgYNNDistance(std::string net_name);
+  double findStdYNNDistance(std::string net_name);
+  double findRatioYNNDistance(std::string net_name);
 
   int32_t getRowHeight();
   std::string getEGRDirPath();
@@ -92,6 +102,14 @@ class CongestionEval
   std::map<std::string, int32_t> _name_bbox_ly;
   std::map<std::string, int32_t> _name_bbox_ux;
   std::map<std::string, int32_t> _name_bbox_uy;
+  std::map<std::string, double> _name_x_entropy;
+  std::map<std::string, double> _name_y_entropy;
+  std::map<std::string, double> _name_avg_x_nn_distance;
+  std::map<std::string, double> _name_std_x_nn_distance;
+  std::map<std::string, double> _name_ratio_x_nn_distance;
+  std::map<std::string, double> _name_avg_y_nn_distance;
+  std::map<std::string, double> _name_std_y_nn_distance;
+  std::map<std::string, double> _name_ratio_y_nn_distance;
 
   string evalEGR(string rt_dir_path, string egr_type, string output_filename);
   string evalRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size, string rudy_type, string output_filename);
@@ -107,5 +125,7 @@ class CongestionEval
   float evalAvgOverflow(string stage, string rt_dir_path, string overflow_type);
   float evalMaxUtilization(string stage, string rudy_dir_path, string utilization_type, bool use_lut = false);
   float evalAvgUtilization(string stage, string rudy_dir_path, string utilization_type, bool use_lut = false);
+  double calculateEntropy(const std::vector<int32_t>& coords, int bin_count);
+  std::tuple<double, double, double> calculateNearestNeighborStats(const std::vector<int32_t>& coords);
 };
 }  // namespace ieval

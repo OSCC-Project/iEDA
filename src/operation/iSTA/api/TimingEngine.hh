@@ -102,6 +102,7 @@ class TimingEngine {
   }
 
   TimingEngine &readDefDesign(std::string def_file, std::vector<std::string>& lef_files);
+  TimingEngine &setDefDesignBuilder(void* db_builder);
 
   TimingEngine &readSdc(const char *sdc_file) {
     _ista->resetConstraint();

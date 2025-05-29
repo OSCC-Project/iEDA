@@ -46,8 +46,11 @@ target_link_libraries(timing_app
     PRIVATE
     eval_timing_api
     idm
-    ipl-api
-    ipl-external_api
+    -u_ZN3ipl17SteinerWirelength25updateAllNetWorkPointPairEv
+    -u_ZN3ipl13NesterovPlace21printNesterovDatabaseEv
+    -u_ZN3ito3iTO5runTOEv
+    -u_ZN3idm11DataManager7saveDefENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+    -u_ZN4icts9GDSPloter10plotDesignERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
 )
 
 target_include_directories(timing_app
@@ -80,11 +83,11 @@ add_executable(union_app
 
 target_link_libraries(union_app
     PRIVATE
+    idm
     eval_wirelength_api
     eval_timing_api
     eval_congestion_api
     eval_union_api
-    idm
 )
 
 target_include_directories(union_app

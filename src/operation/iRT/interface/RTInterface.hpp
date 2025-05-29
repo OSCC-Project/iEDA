@@ -102,6 +102,7 @@ class RTInterface
   void wrapLayerInfo();
   void wrapLayerViaMasterList();
   void wrapObstacleList();
+  void wrapNetInfo();
   void wrapNetList();
   bool isSkipping(idb::IdbNet* idb_net, bool with_log);
   void wrapPinList(Net& net, idb::IdbNet* idb_net);
@@ -133,7 +134,7 @@ class RTInterface
   void destroyIDRC();
   std::vector<Violation> getViolationList(std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
                                           std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
-                                          std::map<int32_t, std::vector<Segment<LayerCoord>*>>& net_routing_result_map,
+                                          std::map<int32_t, std::vector<Segment<LayerCoord>*>>& net_result_map,
                                           std::map<int32_t, std::vector<EXTLayerRect*>>& net_patch_map);
   ids::Shape getIDSShape(int32_t net_idx, LayerRect layer_rect, bool is_routing);
 #endif

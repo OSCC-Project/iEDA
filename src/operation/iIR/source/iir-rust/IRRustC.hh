@@ -56,6 +56,8 @@ const void *read_inst_pwr_csv(const char *file_path);
  */
 void *set_instance_power_data(struct RustVec c_instance_power_data);
 
+double get_sum_resistance(const void *c_rc_data, const char *c_net_name);
+
 struct RustNetConductanceData build_one_net_conductance_matrix_data(
     const void *c_rc_data, const char *c_net_name);
 

@@ -32,7 +32,7 @@ class Config
   std::string golden_directory_path;   // optional
   /////////////////////////////////////////////
   // **********        DRC         ********** //
-  std::string log_file_path;            // building
+  std::string log_file_path;           // building
   // **********   RuleValidator    ********** //
   std::string rv_temp_directory_path;  // building
   // **********     GDSPlotter     ********** //
