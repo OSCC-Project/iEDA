@@ -41,11 +41,11 @@ class LANode : public LayerCoord
   // getter
   std::map<Orientation, LANode*>& get_neighbor_node_map() { return _neighbor_node_map; }
   std::map<Orientation, int32_t>& get_orient_supply_map() { return _orient_supply_map; }
-  std::map<Orientation, int32_t>& get_orient_demand_map() { return _orient_demand_map; }
+  std::map<Orientation, std::set<int32_t>>& get_orient_demand_map() { return _orient_demand_map; }
   // setter
   void set_neighbor_node_map(const std::map<Orientation, LANode*>& neighbor_node_map) { _neighbor_node_map = neighbor_node_map; }
   void set_orient_supply_map(const std::map<Orientation, int32_t>& orient_supply_map) { _orient_supply_map = orient_supply_map; }
-  void set_orient_demand_map(const std::map<Orientation, int32_t>& orient_demand_map) { _orient_demand_map = orient_demand_map; }
+  void set_orient_demand_map(const std::map<Orientation, std::set<int32_t>>& orient_demand_map) { _orient_demand_map = orient_demand_map; }
   // function
   LANode* getNeighborNode(Orientation orientation)
   {
@@ -55,39 +55,35 @@ class LANode : public LayerCoord
     }
     return neighbor_node;
   }
-  double getOverflowCost(Orientation orientation, double overflow_cost)
+  double getOverflowCost(int32_t net_idx, Orientation orientation, double overflow_cost)
   {
     double cost = 0;
     if (orientation != Orientation::kAbove && orientation != Orientation::kBelow) {
       int32_t node_demand = 0;
       if (RTUTIL.exist(_orient_demand_map, orientation)) {
-        node_demand = _orient_demand_map[orientation];
+        std::set<int32_t>& net_set = _orient_demand_map[orientation];
+        node_demand = static_cast<int32_t>(net_set.size());
+        if (RTUTIL.exist(net_set, net_idx)) {
+          node_demand--;
+        }
       }
       int32_t node_supply = 0;
       if (RTUTIL.exist(_orient_supply_map, orientation)) {
         node_supply = _orient_supply_map[orientation];
       }
-      cost += (calcCost(node_demand + 1, node_supply) * overflow_cost);
+      cost += (std::max(0, node_demand + 1 - node_supply) * overflow_cost);
     }
     return cost;
   }
-  double calcCost(double demand, double supply)
-  {
-    double cost = 0;
-    if (demand == supply) {
-      cost = 1;
-    } else if (demand > supply) {
-      cost = std::pow(demand - supply + 1, 2);
-    } else if (demand < supply) {
-      cost = std::pow(demand / supply, 2);
-    }
-    return cost;
-  }
-  void updateDemand(std::set<Orientation> orient_set, ChangeType change_type)
+  void updateDemand(int32_t net_idx, std::set<Orientation> orient_set, ChangeType change_type)
   {
     for (const Orientation& orient : orient_set) {
       if (orient == Orientation::kEast || orient == Orientation::kWest || orient == Orientation::kSouth || orient == Orientation::kNorth) {
-        _orient_demand_map[orient] += (change_type == ChangeType::kAdd ? 1 : -1);
+        if (change_type == ChangeType::kAdd) {
+          _orient_demand_map[orient].insert(net_idx);
+        } else {
+          _orient_demand_map[orient].erase(net_idx);
+        }
       }
     }
   }
@@ -111,7 +107,7 @@ class LANode : public LayerCoord
  private:
   std::map<Orientation, LANode*> _neighbor_node_map;
   std::map<Orientation, int32_t> _orient_supply_map;
-  std::map<Orientation, int32_t> _orient_demand_map;
+  std::map<Orientation, std::set<int32_t>> _orient_demand_map;
 #if 1  // astar
   // single path
   LANodeState _state = LANodeState::kNone;
