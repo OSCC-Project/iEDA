@@ -6,6 +6,13 @@
 	path = src/third_party/LSAssigner4iEDA
 	url = https://gitee.com/li-jinyuan/LSAssigner4iEDA
 	branch = main
+
 [submodule "src/third_party/spectra"]
 	path = src/third_party/spectra
 	url = https://github.com/yixuan/spectra.git
+	branch = master
+
+[submodule "scripts/foundry/ihp130"]
+	path = scripts/foundry/ihp130
+	url = https://github.com/IHP-GmbH/IHP-Open-PDK.git
+	branch = main
