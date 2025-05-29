@@ -171,7 +171,7 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
   }
 
   // first check that slew and constrain_slew_or_load are within the table
-  // ranges (检查值是否在表格范围内)
+  // ranges 
   auto check_val = [this](auto axis_index, auto val) {
     auto num_val = getAxis(axis_index).get_axis_size();
     auto min_val = getAxis(axis_index)[0];
@@ -184,7 +184,8 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
     return num_val;
   };
 
-  //在轴上找到插值区间, 返回插值所需的两个端点值和左边的索引值
+  // Find the interpolation interval on the axis, 
+  // and return the two endpoint values required for interpolation and the left index value.
   auto get_axis_region = [this](auto axis_index, auto num_val, auto val) {
     auto x2 = 0.0;
     unsigned int val_index = 0;
@@ -207,7 +208,6 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
     return std::make_tuple(x1, x2, val_index);
   };
 
-  // 获取表格中的值
   auto get_table_value = [this](auto index) {
     auto& table_values = get_table_values();
     LOG_FATAL_IF(index >= table_values.size()) << "index " << index << " beyond table value size " << table_values.size();
@@ -215,7 +215,7 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
   };
 
   if (1 == get_axes().size()) {
-    //在单一变量的情况下使用线性插值（LinearInterpolate）
+    // Use linear interpolation (LinearInterpolate) in the case of a single variable
     auto num_val1 = check_val(0, val1);
     auto [x1, x2, val1_index] = get_axis_region(0, num_val1, val1);
     unsigned int x1_table_val = get_table_value(val1_index);
@@ -225,7 +225,7 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
     return result;
 
   } else {
-    //在有两个变量的情况下使用双线性插值（BilinearInterpolation）
+    // Use bilinear interpolation in the case of two variables (BilinearInterpolation)
     auto num_val1 = check_val(0, val1);
     auto num_val2 = check_val(1, val2);
 
@@ -1684,7 +1684,8 @@ const std::map<std::string_view, LibLutTableTemplate::Variable> LibLutTableTempl
        {"output_voltage", LibLutTableTemplate::Variable::OUTPUT_VOLTAGE},
        {"input_noise_height", LibLutTableTemplate::Variable::INPUT_NOISE_HEIGHT},
        {"input_noise_width", LibLutTableTemplate::Variable::INPUT_NOISE_WIDTH},
-       {"normalized_voltage", LibLutTableTemplate::Variable::NORMALIZED_VOLTAGE}};
+       {"normalized_voltage", LibLutTableTemplate::Variable::NORMALIZED_VOLTAGE},
+       {"equal_or_opposite_output_net_capacitance", LibLutTableTemplate::Variable::EQUAL_OR_OPPOSITE_OUTPUT_NET_CAPACITANCE}};
 
 LibCurrentTemplate::LibCurrentTemplate(const char* template_name) : LibLutTableTemplate(template_name)
 {
