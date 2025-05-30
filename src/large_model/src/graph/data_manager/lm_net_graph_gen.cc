@@ -92,7 +92,6 @@ bool LmNetGraphGenerator::isCornerCase(idb::IdbNet* idb_net) const
     return true;
   }
 
-
   return false;
 }
 WireGraph LmNetGraphGenerator::buildCornerCaseGraph(idb::IdbNet* idb_net) const
@@ -133,12 +132,13 @@ TopoGraph LmNetGraphGenerator::buildTopoGraph(idb::IdbNet* idb_net) const
 
   TopoGraph graph;
   // Build Instances' pins and IO pins
+  auto* driver_pin = idb_net->get_driving_pin();
   std::vector<idb::IdbPin*> pins;
   std::ranges::copy(idb_net->get_instance_pin_list()->get_pin_list(), std::back_inserter(pins));
   std::ranges::copy(idb_net->get_io_pins()->get_pin_list(), std::back_inserter(pins));
   std::ranges::for_each(pins, [&](auto* idb_pin) -> void {
     auto vertex = boost::add_vertex(graph);
-    auto* layout_pin = new LayoutPin();
+    auto* layout_pin = new LayoutPin(idb_net->get_net_name(), idb_pin->get_pin_name(), idb_pin == driver_pin);
     graph[vertex].content = layout_pin;
     for (auto* layer_shape : idb_pin->get_port_box_list()) {
       auto layer_name = layer_shape->get_layer()->get_name();
@@ -464,6 +464,7 @@ WireGraph LmNetGraphGenerator::buildWireGraph(const TopoGraph& graph) const
   markPinVertex(graph, wire_graph);
   reduceWireGraph(wire_graph);
   checkConnectivity(wire_graph);
+  checkDriverIsTreeRoot(graph, wire_graph);
   return wire_graph;
 }
 std::vector<WireGraphVertex> LmNetGraphGenerator::canonicalizeCycle(const std::vector<WireGraphVertex>& cycle) const
@@ -691,13 +692,13 @@ void LmNetGraphGenerator::buildVirtualWire(const TopoGraph& graph, WireGraph& wi
     auto* content = graph[v].content;
     auto* pin = static_cast<LayoutPin*>(content);
     // only save the points in the shapes
+    auto shape_manager = LayoutShapeManager();
+    for (size_t i = 0; i < pin->pin_shapes.size(); ++i) {
+      shape_manager.addShape(pin->pin_shapes[i], i);
+    }
     auto is_in_shapes = [&](const LayoutDefPoint& point) -> bool {
-      for (const auto& shape : pin->pin_shapes) {
-        if (bg::intersects(shape, point)) {
-          return true;
-        }
-      }
-      return false;
+      auto intersections = shape_manager.findIntersections(point);
+      return !intersections.empty();
     };
     // divide pin's shape by layer
     std::unordered_map<int, std::vector<LayoutDefRect>> shapes_by_layer;
@@ -1014,21 +1015,65 @@ bool LmNetGraphGenerator::checkConnectivity(const WireGraph& graph) const
   // toPy(graph, "/home/liweiguo/temp/file/temp_net.py");
   return true;
 }
+bool LmNetGraphGenerator::checkDriverIsTreeRoot(const TopoGraph& topo_graph, const WireGraph& wire_graph) const
+{
+  // build rtree for driver pin shapes
+  auto shape_manager = LayoutShapeManager();
+  auto [v_iter, v_end] = boost::vertices(topo_graph);
+  for (; v_iter != v_end; ++v_iter) {
+    auto v = *v_iter;
+    auto* content = topo_graph[v].content;
+    if (content->is_pin()) {
+      auto* pin = static_cast<LayoutPin*>(content);
+      if (!pin->is_driver_pin) {
+        continue;
+      }
+      auto pin_shapes = pin->pin_shapes;
+      for (size_t i = 0; i < pin_shapes.size(); ++i) {
+        shape_manager.addShape(pin_shapes[i], i);
+      }
+    }
+  }
+  // check leaf vertices in wire graph whether is in the driver pin shapes
+  size_t connected_point_count = 0;
+  auto [w_iter, w_end] = boost::vertices(wire_graph);
+  for (; w_iter != w_end; ++w_iter) {
+    auto v = *w_iter;
+    auto x = wire_graph[v].x;
+    auto y = wire_graph[v].y;
+    auto layer_id = wire_graph[v].layer_id;
+    auto point = LayoutDefPoint(x, y, layer_id);
+    auto intersections = shape_manager.findIntersections(point);
+    if (intersections.empty()) {
+      continue;
+    }
+    ++connected_point_count;
+  }
+  if (connected_point_count > 1) {
+    // LOG_ERROR << "Multiple connections to driver pin are not allowed, please check the design";
+    // toPy(topo_graph, "/home/liweiguo/temp/file/temp_topo.py");
+    // toPy(wire_graph, "/home/liweiguo/temp/file/temp_wire.py");
+    return false;
+  }
+  return true;
+}
 std::vector<std::vector<LayoutDefPoint>> LmNetGraphGenerator::generateShortestPath(const std::vector<LayoutDefPoint>& points,
                                                                                    const std::vector<LayoutDefRect>& regions) const
 {
   using PointSet = std::unordered_set<LayoutDefPoint, LayoutDefPointHash, LayoutDefPointEqual>;
   PointSet path_point_set(points.begin(), points.end());
 
-  auto rtree = bgi::rtree<LayoutDefRect, bgi::quadratic<16>>();
-  std::ranges::for_each(regions, [&](const LayoutDefRect& rect) -> void { rtree.insert(rect); });
+  auto shape_manager = LayoutShapeManager();
+  for (size_t i = 0; i < regions.size(); ++i) {
+    shape_manager.addShape(regions[i], i);
+  }
 
   // 1. generate seg pivot between regions
   std::ranges::for_each(regions, [&](const LayoutDefRect& rect) -> void {
-    std::vector<LayoutDefRect> intersections;
-    rtree.query(bgi::intersects(rect), std::back_inserter(intersections));
+    auto intersections = shape_manager.findIntersections(rect);
     std::vector<LayoutDefSeg> segs;
-    std::ranges::for_each(intersections, [&](const LayoutDefRect& other) -> void {
+    std::ranges::for_each(intersections, [&](const size_t& idx) -> void {
+      auto other = regions[idx];
       if (boost::geometry::equals(rect, other)) {
         return;
       }
@@ -1048,17 +1093,17 @@ std::vector<std::vector<LayoutDefPoint>> LmNetGraphGenerator::generateShortestPa
   // 2. generate crossroads points between points and regions
   PointSet add_point_set;
   std::ranges::for_each(points, [&](const LayoutDefPoint& point) -> void {
-    std::vector<LayoutDefRect> intersections;
-    rtree.query(bgi::intersects(point), std::back_inserter(intersections));
-    std::ranges::for_each(intersections, [&](const LayoutDefRect& rect) -> void {
+    auto intersections = shape_manager.findIntersections(point);
+    std::ranges::for_each(intersections, [&](const size_t& idx) -> void {
+      auto rect = regions[idx];
       auto crossroads = generateCrossroadsPoints(point, rect);
       std::ranges::for_each(crossroads, [&](const LayoutDefPoint& crossroad) -> void { add_point_set.insert(crossroad); });
     });
   });
   std::ranges::for_each(add_point_set, [&](const LayoutDefPoint& point) -> void {
-    std::vector<LayoutDefRect> intersections;
-    rtree.query(bgi::intersects(point), std::back_inserter(intersections));
-    std::ranges::for_each(intersections, [&](const LayoutDefRect& rect) -> void {
+    auto intersections = shape_manager.findIntersections(point);
+    std::ranges::for_each(intersections, [&](const size_t& idx) -> void {
+      auto rect = regions[idx];
       auto pivot = generatePointPivot(point, rect);
       path_point_set.insert(pivot);
     });
@@ -1332,7 +1377,8 @@ void LmNetGraphGenerator::toPy(const TopoGraph& graph, const std::string& path) 
       auto* pin = static_cast<LayoutPin*>(content);
       size_t via_pin_shape_count = 0;
       size_t via_cut_count = 0;
-
+      auto pin_name = pin->net_name + "/" + pin->pin_name;
+      auto rgb_color = pin->is_driver_pin ? "rgb(255,0,0)" : "rgb(255, 255, 0)";
       for (auto& pin_shape : pin->pin_shapes) {
         // plot pin shapes
         file << "fig.add_trace(go.Scatter3d(\n";
@@ -1343,8 +1389,8 @@ void LmNetGraphGenerator::toPy(const TopoGraph& graph, const std::string& path) 
         file << "    z=[" << getLowZ(pin_shape) << ", " << getLowZ(pin_shape) << ", " << getLowZ(pin_shape) << ", " << getLowZ(pin_shape)
              << ", " << getLowZ(pin_shape) << "],\n";
         file << "    mode='lines',\n";
-        file << "    line=dict(color='rgb(255,255,0)', width=4),\n";
-        file << "    name='Pin " << pin_count << " Shape " << via_pin_shape_count++ << "'\n";
+        file << "    line=dict(color='" << rgb_color << "', width=4),\n";
+        file << "    name='Pin " << pin_name << " Id " << pin_count << " Shape " << via_pin_shape_count++ << "'\n";
         file << "))\n";
       }
 
@@ -1356,8 +1402,8 @@ void LmNetGraphGenerator::toPy(const TopoGraph& graph, const std::string& path) 
         file << "    y=[" << getY(center) << ", " << getY(center) << "],\n";
         file << "    z=[" << getLowZ(via_cut) << ", " << getHighZ(via_cut) << "],\n";
         file << "    mode='lines',\n";
-        file << "    line=dict(color='rgb(255,255,0)', width=4),\n";
-        file << "    name='Pin " << pin_count << " Via Cut " << via_cut_count++ << "'\n";
+        file << "    line=dict(color='" << rgb_color << "', width=4),\n";
+        file << "    name='Pin " << pin_name << " Id " << pin_count << " Via Cut " << via_cut_count++ << "'\n";
         file << "))\n";
       }
       pin_count++;

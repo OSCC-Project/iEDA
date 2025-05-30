@@ -179,6 +179,10 @@ struct LayoutPin : public LayoutBase
 {
  public:
   LayoutPin() : LayoutBase{LayoutPropertyType::kPin} {}
+  LayoutPin(const std::string& net_name, const std::string& pin_name, const bool is_driver_pin)
+      : LayoutBase{LayoutPropertyType::kPin}, net_name(net_name), pin_name(pin_name), is_driver_pin(is_driver_pin)
+  {
+  }
   void addPinShape(idb::IdbRect* r, int layer_id)
   {
     LayoutDefPoint low(r->get_low_x(), r->get_low_y(), layer_id);
@@ -191,6 +195,9 @@ struct LayoutPin : public LayoutBase
     LayoutDefPoint high(r->get_high_x(), r->get_high_y(), layer_id + 1);
     via_cuts.push_back(LayoutDefRect(low, high));
   }
+  std::string net_name = "";
+  std::string pin_name = "";
+  bool is_driver_pin = false;
   std::vector<LayoutDefRect> pin_shapes;
   std::vector<LayoutDefRect> via_cuts;
 };
@@ -304,6 +311,7 @@ class LmNetGraphGenerator
   bool hasCycleUtil(const WireGraph& graph, WireGraphVertex v, std::vector<bool>& visited, WireGraphVertex parent) const;
   bool hasCycle(const WireGraph& graph) const;
   bool checkConnectivity(const WireGraph& graph) const;
+  bool checkDriverIsTreeRoot(const TopoGraph& topo_graph, const WireGraph& wire_graph) const;
   std::vector<std::vector<LayoutDefPoint>> generateShortestPath(const std::vector<LayoutDefPoint>& points,
                                                                 const std::vector<LayoutDefRect>& regions) const;
   std::vector<std::vector<LayoutDefPoint>> findByDijkstra(const std::vector<LayoutDefPoint>& points,
