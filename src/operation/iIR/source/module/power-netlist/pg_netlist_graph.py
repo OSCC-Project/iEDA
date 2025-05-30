@@ -123,6 +123,35 @@ class Graph:
         
         return path
 
+    def _dfs(self, start_id: int, visited: set) -> None:
+        """Helper method for DFS traversal"""
+        visited.add(start_id)
+        for edge in self.nodes[start_id].edges:
+            next_id = edge.node1 if edge.node2 == start_id else edge.node2
+            if next_id not in visited:
+                self._dfs(next_id, visited)
+
+    def is_connected(self) -> Tuple[bool, Optional[List[int]]]:
+        """Check if the graph is connected
+        Returns:
+            Tuple[bool, Optional[List[int]]]: (is_connected, disconnected_nodes)
+            - is_connected: True if graph is connected
+            - disconnected_nodes: List of node IDs that are not reachable from start node
+        """
+        if not self.nodes:
+            return True, None
+            
+        # Start DFS from first node
+        start_id = next(iter(self.nodes))
+        visited = set()
+        self._dfs(start_id, visited)
+        
+        # Check if all nodes were visited
+        all_nodes = set(self.nodes.keys())
+        disconnected = all_nodes - visited
+        
+        return len(disconnected) == 0, list(disconnected) if disconnected else None
+
 def parse_input(data: str) -> Graph:
     """Parse input data to construct graph"""
     graph = Graph()
@@ -146,11 +175,17 @@ def parse_input(data: str) -> Graph:
         resistance = float(match.group(4))
         graph.add_edge(edge_id, node1_id, node2_id, resistance)
     
+    # Check graph connectivity after parsing
+    is_connected, disconnected_nodes = graph.is_connected()
+    if not is_connected:
+        print(f"Warning: Graph is not fully connected!")
+        print(f"Disconnected nodes: {[graph.id_to_name[nid] for nid in disconnected_nodes]}")
+    
     return graph
 
 # Example usage
 if __name__ == "__main__":
-    with open('/home/taosimin/iEDA24/iEDA/bin/aes_pg_netlist.yaml', 'r', encoding='utf-8') as file:
+    with open('/home/taosimin/iEDA24/iEDA/bin/aes_m9_m7.yaml', 'r', encoding='utf-8') as file:
         input_data = file.read()
 
         graph = parse_input(input_data)
