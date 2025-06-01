@@ -37,6 +37,7 @@ class SRBox
   EXTPlanarRect& get_box_rect() { return _box_rect; }
   SRBoxId& get_sr_box_id() { return _sr_box_id; }
   SRIterParam* get_sr_iter_param() { return _sr_iter_param; }
+  bool get_initial_routing() const { return _initial_routing; }
   std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_net_task_global_result_map() { return _net_task_global_result_map; }
   std::vector<SRTask*>& get_sr_task_list() { return _sr_task_list; }
   double get_total_overflow() const { return _total_overflow; }
@@ -49,6 +50,7 @@ class SRBox
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
   void set_sr_box_id(const SRBoxId& sr_box_id) { _sr_box_id = sr_box_id; }
   void set_sr_iter_param(SRIterParam* sr_iter_param) { _sr_iter_param = sr_iter_param; }
+  void set_initial_routing(const bool initial_routing) { _initial_routing = initial_routing; }
   void set_net_task_global_result_map(const std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_task_global_result_map)
   {
     _net_task_global_result_map = net_task_global_result_map;
@@ -99,6 +101,7 @@ class SRBox
   EXTPlanarRect _box_rect;
   SRBoxId _sr_box_id;
   SRIterParam* _sr_iter_param = nullptr;
+  bool _initial_routing = true;
   std::map<int32_t, std::vector<Segment<LayerCoord>>> _net_task_global_result_map;
   std::vector<SRTask*> _sr_task_list;
   double _total_overflow = 0;

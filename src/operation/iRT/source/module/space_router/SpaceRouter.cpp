@@ -183,12 +183,14 @@ void SpaceRouter::routeSRModel(SRModel& sr_model)
   sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 30, 3, overflow_unit, 3);
   sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 60, 3, overflow_unit, 3);
   // clang-format on
+  initRoutingState(sr_model);
   for (int32_t i = 0, iter = 1; i < static_cast<int32_t>(sr_iter_param_list.size()); i++, iter++) {
     Monitor iter_monitor;
     RTLOG.info(Loc::current(), "***** Begin iteration ", iter, "/", sr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, sr_iter_param_list.size()),
                ") *****");
     setSRIterParam(sr_model, iter, sr_iter_param_list[i]);
     initSRBoxMap(sr_model);
+    resetRoutingState(sr_model);
     buildBoxSchedule(sr_model);
     splitNetResult(sr_model);
     routeSRBoxMap(sr_model);
@@ -207,6 +209,11 @@ void SpaceRouter::routeSRModel(SRModel& sr_model)
     }
   }
   selectBestResult(sr_model);
+}
+
+void SpaceRouter::initRoutingState(SRModel& sr_model)
+{
+  sr_model.set_initial_routing(true);
 }
 
 void SpaceRouter::setSRIterParam(SRModel& sr_model, int32_t iter, SRIterParam& sr_iter_param)
@@ -266,8 +273,14 @@ void SpaceRouter::initSRBoxMap(SRModel& sr_model)
       sr_box_id.set_y(y);
       sr_box.set_sr_box_id(sr_box_id);
       sr_box.set_sr_iter_param(&sr_iter_param);
+      sr_box.set_initial_routing(sr_model.get_initial_routing());
     }
   }
+}
+
+void SpaceRouter::resetRoutingState(SRModel& sr_model)
+{
+  sr_model.set_initial_routing(false);
 }
 
 void SpaceRouter::buildBoxSchedule(SRModel& sr_model)
@@ -579,7 +592,7 @@ bool SpaceRouter::needRouting(SRModel& sr_model, SRBox& sr_box)
   if (sr_box.get_sr_task_list().empty()) {
     return false;
   }
-  if (sr_box.get_total_overflow() <= 0) {
+  if (sr_box.get_initial_routing() == false && sr_box.get_total_overflow() <= 0) {
     return false;
   }
   return true;
@@ -742,8 +755,16 @@ void SpaceRouter::routeSRBox(SRBox& sr_box)
 
 std::vector<SRTask*> SpaceRouter::initTaskSchedule(SRBox& sr_box)
 {
+  bool initial_routing = sr_box.get_initial_routing();
+
   std::vector<SRTask*> routing_task_list;
-  updateTaskSchedule(sr_box, routing_task_list);
+  if (initial_routing) {
+    for (SRTask* sr_task : sr_box.get_sr_task_list()) {
+      routing_task_list.push_back(sr_task);
+    }
+  } else {
+    updateTaskSchedule(sr_box, routing_task_list);
+  }
   return routing_task_list;
 }
 

@@ -53,8 +53,10 @@ class SpaceRouter
   void buildOrientSupply(SRModel& sr_model);
   void reviseNodeDemand(SRModel& sr_model);
   void routeSRModel(SRModel& sr_model);
+  void initRoutingState(SRModel& sr_model);
   void setSRIterParam(SRModel& sr_model, int32_t iter, SRIterParam& sr_iter_param);
   void initSRBoxMap(SRModel& sr_model);
+  void resetRoutingState(SRModel& sr_model);
   void buildBoxSchedule(SRModel& sr_model);
   void splitNetResult(SRModel& sr_model);
   void routeSRBoxMap(SRModel& sr_model);
