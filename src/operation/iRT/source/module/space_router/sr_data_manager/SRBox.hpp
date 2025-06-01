@@ -39,12 +39,12 @@ class SRBox
   SRIterParam* get_sr_iter_param() { return _sr_iter_param; }
   std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_net_task_global_result_map() { return _net_task_global_result_map; }
   std::vector<SRTask*>& get_sr_task_list() { return _sr_task_list; }
-  int32_t get_total_overflow() const { return _total_overflow; }
+  double get_total_overflow() const { return _total_overflow; }
   std::vector<std::set<int32_t>>& get_overflow_net_set_list() { return _overflow_net_set_list; }
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
   std::vector<GridMap<SRNode>>& get_layer_node_map() { return _layer_node_map; }
   std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_best_net_task_global_result_map() { return _best_net_task_global_result_map; }
-  int32_t get_best_total_overflow() const { return _best_total_overflow; }
+  double get_best_total_overflow() const { return _best_total_overflow; }
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
   void set_sr_box_id(const SRBoxId& sr_box_id) { _sr_box_id = sr_box_id; }
@@ -54,7 +54,7 @@ class SRBox
     _net_task_global_result_map = net_task_global_result_map;
   }
   void set_sr_task_list(const std::vector<SRTask*>& sr_task_list) { _sr_task_list = sr_task_list; }
-  void set_total_overflow(const int32_t total_overflow) { _total_overflow = total_overflow; }
+  void set_total_overflow(const double total_overflow) { _total_overflow = total_overflow; }
   void set_overflow_net_set_list(const std::vector<std::set<int32_t>>& overflow_net_set_list) { _overflow_net_set_list = overflow_net_set_list; }
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
   void set_layer_node_map(const std::vector<GridMap<SRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
@@ -62,7 +62,7 @@ class SRBox
   {
     _best_net_task_global_result_map = best_net_task_global_result_map;
   }
-  void set_best_total_overflow(const int32_t best_total_overflow) { _best_total_overflow = best_total_overflow; }
+  void set_best_total_overflow(const double best_total_overflow) { _best_total_overflow = best_total_overflow; }
   // function
 #if 1  // astar
   // single task
@@ -101,12 +101,12 @@ class SRBox
   SRIterParam* _sr_iter_param = nullptr;
   std::map<int32_t, std::vector<Segment<LayerCoord>>> _net_task_global_result_map;
   std::vector<SRTask*> _sr_task_list;
-  int32_t _total_overflow = 0;
+  double _total_overflow = 0;
   std::vector<std::set<int32_t>> _overflow_net_set_list;
   ScaleAxis _box_track_axis;
   std::vector<GridMap<SRNode>> _layer_node_map;
   std::map<int32_t, std::vector<Segment<LayerCoord>>> _best_net_task_global_result_map;
-  int32_t _best_total_overflow = 0;
+  double _best_total_overflow = 0;
 #if 1  // astar
   // single task
   SRTask* _curr_sr_task = nullptr;

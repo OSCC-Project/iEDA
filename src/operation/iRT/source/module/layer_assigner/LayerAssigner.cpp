@@ -157,6 +157,9 @@ void LayerAssigner::buildLayerNodeMap(LAModel& la_model)
         LANode& la_node = la_node_map[x][y];
         la_node.set_coord(x, y);
         la_node.set_layer_idx(layer_idx);
+        la_node.set_boundary_wire_unit(gcell_map[x][y].get_boundary_wire_unit());
+        la_node.set_internal_wire_unit(gcell_map[x][y].get_internal_wire_unit());
+        la_node.set_internal_via_unit(gcell_map[x][y].get_internal_via_unit());
       }
     }
   }
@@ -910,15 +913,14 @@ void LayerAssigner::updateSummary(LAModel& la_model)
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   Die& die = RTDM.getDatabase().get_die();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
   Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
 
-  std::map<int32_t, int32_t>& routing_demand_map = summary.la_summary.routing_demand_map;
-  int32_t& total_demand = summary.la_summary.total_demand;
-  std::map<int32_t, int32_t>& routing_overflow_map = summary.la_summary.routing_overflow_map;
-  int32_t& total_overflow = summary.la_summary.total_overflow;
+  std::map<int32_t, double>& routing_demand_map = summary.la_summary.routing_demand_map;
+  double& total_demand = summary.la_summary.total_demand;
+  std::map<int32_t, double>& routing_overflow_map = summary.la_summary.routing_overflow_map;
+  double& total_overflow = summary.la_summary.total_overflow;
   std::map<int32_t, double>& routing_wire_length_map = summary.la_summary.routing_wire_length_map;
   double& total_wire_length = summary.la_summary.total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.la_summary.cut_via_num_map;
@@ -944,21 +946,8 @@ void LayerAssigner::updateSummary(LAModel& la_model)
     GridMap<LANode>& la_node_map = layer_node_map[layer_idx];
     for (int32_t x = 0; x < la_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < la_node_map.get_y_size(); y++) {
-        std::map<Orientation, int32_t>& orient_supply_map = la_node_map[x][y].get_orient_supply_map();
-        std::map<Orientation, std::set<int32_t>>& orient_demand_map = la_node_map[x][y].get_orient_demand_map();
-        int32_t node_demand = 0;
-        int32_t node_overflow = 0;
-        if (routing_layer_list[layer_idx].isPreferH()) {
-          node_demand
-              = (static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) + static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()));
-          node_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
-                          + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
-        } else {
-          node_demand
-              = (static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) + static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()));
-          node_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
-                          + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
-        }
+        double node_demand = la_node_map[x][y].getDemand();
+        double node_overflow = la_node_map[x][y].getOverflow();
         routing_demand_map[layer_idx] += node_demand;
         total_demand += node_demand;
         routing_overflow_map[layer_idx] += node_overflow;
@@ -1021,10 +1010,10 @@ void LayerAssigner::printSummary(LAModel& la_model)
   Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
 
-  std::map<int32_t, int32_t>& routing_demand_map = summary.la_summary.routing_demand_map;
-  int32_t& total_demand = summary.la_summary.total_demand;
-  std::map<int32_t, int32_t>& routing_overflow_map = summary.la_summary.routing_overflow_map;
-  int32_t& total_overflow = summary.la_summary.total_overflow;
+  std::map<int32_t, double>& routing_demand_map = summary.la_summary.routing_demand_map;
+  double& total_demand = summary.la_summary.total_demand;
+  std::map<int32_t, double>& routing_overflow_map = summary.la_summary.routing_overflow_map;
+  double& total_overflow = summary.la_summary.total_overflow;
   std::map<int32_t, double>& routing_wire_length_map = summary.la_summary.routing_wire_length_map;
   double& total_wire_length = summary.la_summary.total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.la_summary.cut_via_num_map;
@@ -1198,16 +1187,7 @@ void LayerAssigner::outputDemandCSV(LAModel& la_model)
     GridMap<LANode>& la_node_map = layer_node_map[routing_layer.get_layer_idx()];
     for (int32_t y = la_node_map.get_y_size() - 1; y >= 0; y--) {
       for (int32_t x = 0; x < la_node_map.get_x_size(); x++) {
-        std::map<Orientation, std::set<int32_t>>& orient_demand_map = la_node_map[x][y].get_orient_demand_map();
-        int32_t total_demand = 0;
-        if (routing_layer.isPreferH()) {
-          total_demand
-              = (static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) + static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()));
-        } else {
-          total_demand
-              = (static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) + static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()));
-        }
-        RTUTIL.pushStream(demand_csv_file, total_demand, ",");
+        RTUTIL.pushStream(demand_csv_file, la_node_map[x][y].getDemand(), ",");
       }
       RTUTIL.pushStream(demand_csv_file, "\n");
     }
@@ -1231,17 +1211,7 @@ void LayerAssigner::outputOverflowCSV(LAModel& la_model)
     GridMap<LANode>& la_node_map = layer_node_map[routing_layer.get_layer_idx()];
     for (int32_t y = la_node_map.get_y_size() - 1; y >= 0; y--) {
       for (int32_t x = 0; x < la_node_map.get_x_size(); x++) {
-        std::map<Orientation, int32_t>& orient_supply_map = la_node_map[x][y].get_orient_supply_map();
-        std::map<Orientation, std::set<int32_t>>& orient_demand_map = la_node_map[x][y].get_orient_demand_map();
-        int32_t total_overflow = 0;
-        if (routing_layer.isPreferH()) {
-          total_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
-                           + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
-        } else {
-          total_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
-                           + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
-        }
-        RTUTIL.pushStream(overflow_csv_file, total_overflow, ",");
+        RTUTIL.pushStream(overflow_csv_file, la_node_map[x][y].getOverflow(), ",");
       }
       RTUTIL.pushStream(overflow_csv_file, "\n");
     }

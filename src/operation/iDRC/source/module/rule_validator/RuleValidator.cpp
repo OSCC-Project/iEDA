@@ -142,7 +142,7 @@ void RuleValidator::buildRVModel(RVModel& rv_model)
     for (int32_t grid_x = grid_ll_x; grid_x <= grid_ur_x; grid_x++) {
       for (int32_t grid_y = grid_ll_y; grid_y <= grid_ur_y; grid_y++) {
         int32_t box_idx = grid_x + grid_y * grid_x_size;
-        if (rv_box_list.size() <= box_idx) {
+        if (static_cast<int32_t>(rv_box_list.size()) <= box_idx) {
           DRCLOG.error(Loc::current(), "rv_box_list.size() <= box_idx!");
         }
         rv_box_list[box_idx].get_drc_env_shape_list().push_back(&drc_env_shape);
@@ -159,7 +159,7 @@ void RuleValidator::buildRVModel(RVModel& rv_model)
     for (int32_t grid_x = grid_ll_x; grid_x <= grid_ur_x; grid_x++) {
       for (int32_t grid_y = grid_ll_y; grid_y <= grid_ur_y; grid_y++) {
         int32_t box_idx = grid_x + grid_y * grid_x_size;
-        if (rv_box_list.size() <= box_idx) {
+        if (static_cast<int32_t>(rv_box_list.size()) <= box_idx) {
           DRCLOG.error(Loc::current(), "rv_box_list.size() <= box_idx!");
         }
         rv_box_list[box_idx].get_drc_result_shape_list().push_back(&drc_result_shape);

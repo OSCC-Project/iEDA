@@ -36,7 +36,7 @@ class SRModel
   GridMap<SRBox>& get_sr_box_map() { return _sr_box_map; }
   std::vector<std::vector<SRBoxId>>& get_sr_box_id_list_list() { return _sr_box_id_list_list; }
   std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_best_net_task_global_result_map() { return _best_net_task_global_result_map; }
-  int32_t get_best_overflow() const { return _best_overflow; }
+  double get_best_overflow() const { return _best_overflow; }
   // setter
   void set_sr_net_list(const std::vector<SRNet>& sr_net_list) { _sr_net_list = sr_net_list; }
   void set_layer_node_map(const std::vector<GridMap<SRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
@@ -48,7 +48,7 @@ class SRModel
   {
     _best_net_task_global_result_map = best_net_task_global_result_map;
   }
-  void set_best_overflow(const int32_t best_overflow) { _best_overflow = best_overflow; }
+  void set_best_overflow(const double best_overflow) { _best_overflow = best_overflow; }
 
  private:
   std::vector<SRNet> _sr_net_list;
@@ -58,7 +58,7 @@ class SRModel
   GridMap<SRBox> _sr_box_map;
   std::vector<std::vector<SRBoxId>> _sr_box_id_list_list;
   std::map<int32_t, std::vector<Segment<LayerCoord>>> _best_net_task_global_result_map;
-  int32_t _best_overflow = 0;
+  double _best_overflow = 0;
 };
 
 }  // namespace irt

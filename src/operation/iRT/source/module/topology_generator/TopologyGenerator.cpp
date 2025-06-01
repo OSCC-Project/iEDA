@@ -146,6 +146,9 @@ void TopologyGenerator::buildTGNodeMap(TGModel& tg_model)
     for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
       TGNode& tg_node = tg_node_map[x][y];
       tg_node.set_coord(x, y);
+      tg_node.set_boundary_wire_unit(gcell_map[x][y].get_boundary_wire_unit());
+      tg_node.set_internal_wire_unit(gcell_map[x][y].get_internal_wire_unit());
+      tg_node.set_internal_via_unit(gcell_map[x][y].get_internal_via_unit());
     }
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -492,8 +495,8 @@ void TopologyGenerator::updateSummary(TGModel& tg_model)
   Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
 
-  int32_t& total_demand = summary.tg_summary.total_demand;
-  int32_t& total_overflow = summary.tg_summary.total_overflow;
+  double& total_demand = summary.tg_summary.total_demand;
+  double& total_overflow = summary.tg_summary.total_overflow;
   double& total_wire_length = summary.tg_summary.total_wire_length;
   std::map<std::string, std::map<std::string, double>>& clock_timing = summary.tg_summary.clock_timing;
   std::map<std::string, double>& power_map = summary.tg_summary.power_map;
@@ -509,17 +512,8 @@ void TopologyGenerator::updateSummary(TGModel& tg_model)
 
   for (int32_t x = 0; x < tg_node_map.get_x_size(); x++) {
     for (int32_t y = 0; y < tg_node_map.get_y_size(); y++) {
-      std::map<Orientation, int32_t>& orient_supply_map = tg_node_map[x][y].get_orient_supply_map();
-      std::map<Orientation, std::set<int32_t>>& orient_demand_map = tg_node_map[x][y].get_orient_demand_map();
-      int32_t node_demand = 0;
-      int32_t node_overflow = 0;
-      node_demand
-          = (static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) + static_cast<int32_t>(orient_demand_map[Orientation::kWest].size())
-             + static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) + static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()));
-      node_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
-                      + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest])
-                      + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
-                      + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
+      double node_demand = tg_node_map[x][y].getDemand();
+      double node_overflow = tg_node_map[x][y].getOverflow();
       total_demand += node_demand;
       total_overflow += node_overflow;
     }
@@ -571,8 +565,8 @@ void TopologyGenerator::printSummary(TGModel& tg_model)
   Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
 
-  int32_t& total_demand = summary.tg_summary.total_demand;
-  int32_t& total_overflow = summary.tg_summary.total_overflow;
+  double& total_demand = summary.tg_summary.total_demand;
+  double& total_overflow = summary.tg_summary.total_overflow;
   double& total_wire_length = summary.tg_summary.total_wire_length;
   std::map<std::string, std::map<std::string, double>>& clock_timing = summary.tg_summary.clock_timing;
   std::map<std::string, double>& power_map = summary.tg_summary.power_map;
@@ -697,12 +691,7 @@ void TopologyGenerator::outputDemandCSV(TGModel& tg_model)
   GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
   for (int32_t y = tg_node_map.get_y_size() - 1; y >= 0; y--) {
     for (int32_t x = 0; x < tg_node_map.get_x_size(); x++) {
-      std::map<Orientation, std::set<int32_t>>& orient_demand_map = tg_node_map[x][y].get_orient_demand_map();
-      int32_t total_demand = 0;
-      total_demand
-          = (static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) + static_cast<int32_t>(orient_demand_map[Orientation::kWest].size())
-             + static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) + static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()));
-      RTUTIL.pushStream(demand_csv_file, total_demand, ",");
+      RTUTIL.pushStream(demand_csv_file, tg_node_map[x][y].getDemand(), ",");
     }
     RTUTIL.pushStream(demand_csv_file, "\n");
   }
@@ -720,14 +709,7 @@ void TopologyGenerator::outputOverflowCSV(TGModel& tg_model)
   GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
   for (int32_t y = tg_node_map.get_y_size() - 1; y >= 0; y--) {
     for (int32_t x = 0; x < tg_node_map.get_x_size(); x++) {
-      std::map<Orientation, int32_t>& orient_supply_map = tg_node_map[x][y].get_orient_supply_map();
-      std::map<Orientation, std::set<int32_t>>& orient_demand_map = tg_node_map[x][y].get_orient_demand_map();
-      int32_t total_overflow = 0;
-      total_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
-                       + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest])
-                       + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
-                       + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
-      RTUTIL.pushStream(overflow_csv_file, total_overflow, ",");
+      RTUTIL.pushStream(overflow_csv_file, tg_node_map[x][y].getOverflow(), ",");
     }
     RTUTIL.pushStream(overflow_csv_file, "\n");
   }

@@ -22,15 +22,15 @@ class SAComParam
 {
  public:
   SAComParam() = default;
-  SAComParam(int32_t supply_reduction) { _supply_reduction = supply_reduction; }
+  SAComParam(double supply_reduction) { _supply_reduction = supply_reduction; }
   ~SAComParam() = default;
   // getter
-  int32_t get_supply_reduction() const { return _supply_reduction; }
+  double get_supply_reduction() const { return _supply_reduction; }
   // setter
-  void set_supply_reduction(const int32_t supply_reduction) { _supply_reduction = supply_reduction; }
+  void set_supply_reduction(const double supply_reduction) { _supply_reduction = supply_reduction; }
 
  private:
-  int32_t _supply_reduction = 0;
+  double _supply_reduction = 0;
 };
 
 }  // namespace irt
