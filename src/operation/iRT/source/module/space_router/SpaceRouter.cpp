@@ -169,7 +169,7 @@ void SpaceRouter::routeSRModel(SRModel& sr_model)
 {
   double prefer_wire_unit = 1;
   double non_prefer_wire_unit = 2.5 * prefer_wire_unit;
-  double via_unit = 1;
+  double via_unit = 2 * non_prefer_wire_unit;
   double overflow_unit = 4 * non_prefer_wire_unit;
   /**
    * prefer_wire_unit, via_unit, size, offset, schedule_interval, overflow_unit, max_routed_times
