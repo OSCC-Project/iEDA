@@ -265,6 +265,7 @@ struct WireGraphVertexProperty
   int y;
   int layer_id;
   bool is_pin = false;
+  bool is_driver_pin = false;
 };
 
 struct WireGraphEdgeProperty

@@ -220,6 +220,39 @@ bool LmLayoutFileIO::saveJsonNets()
           json_wires.push_back(json_wire);
         }
         json_net["wires"] = json_wires;
+
+        // routing graph
+        auto routing_graph = lm_net.get_routing_graph();
+        json json_routing_graph = {};
+        json json_routing_graph_vertices = json::array();
+        json json_routing_graph_edges = json::array();
+        std::ranges::for_each(routing_graph.vertices, [&](const NetRoutingVertex& vertex) {
+          json json_vertex;
+          json_vertex["id"] = vertex.id;
+          json_vertex["is_pin"] = vertex.is_pin ? 1 : 0;  // 1: pin, 0: non-pin
+          json_vertex["is_driver_pin"] = vertex.is_driver_pin ? 1 : 0;  // 1: driver pin, 0: load pin
+          json_vertex["x"] = vertex.point.x;
+          json_vertex["y"] = vertex.point.y;
+          json_vertex["layer_id"] = vertex.point.layer_id;
+          json_routing_graph_vertices.push_back(json_vertex);
+        });
+        std::ranges::for_each(routing_graph.edges, [&](const NetRoutingEdge& edge) {
+          json json_edge;
+          json_edge["source_id"] = edge.source_id;
+          json_edge["target_id"] = edge.target_id;
+          json_edge["path"] = json::array();
+          std::ranges::for_each(edge.path, [&](const NetRoutingPoint& point) {
+            json json_point;
+            json_point["x"] = point.x;
+            json_point["y"] = point.y;
+            json_point["layer_id"] = point.layer_id;
+            json_edge["path"].push_back(json_point);
+          });
+          json_routing_graph_edges.push_back(json_edge);
+        });
+        json_routing_graph["vertices"] = json_routing_graph_vertices;
+        json_routing_graph["edges"] = json_routing_graph_edges;
+        json_net["routing_graph"] = json_routing_graph;
       }
 
       // 将结果添加到本地批次中，存储net_id和对应的json数据

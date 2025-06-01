@@ -779,11 +779,22 @@ void LmNetGraphGenerator::buildVirtualWire(const TopoGraph& graph, WireGraph& wi
 }
 void LmNetGraphGenerator::markPinVertex(const TopoGraph& graph, WireGraph& wire_graph) const
 {
-  auto shape_manager = buildShapeManager(graph);
+  auto shape_manager = LayoutShapeManager();
+  auto [v_topo_iter, v_topo_end] = boost::vertices(graph);
+  for (; v_topo_iter != v_topo_end; ++v_topo_iter) {
+    auto v = *v_topo_iter;
+    auto* content = graph[v].content;
+    if (content->is_pin()) {
+      auto* pin = static_cast<LayoutPin*>(content);
+      for (auto& pin_shape : pin->pin_shapes) {
+        shape_manager.addShape(pin_shape, v);
+      }
+    }
+  }
   // for each node in wire graph, if it's located in the pin shape, mark it as pin
-  auto [v_iter, v_end] = boost::vertices(wire_graph);
-  for (; v_iter != v_end; ++v_iter) {
-    auto v = *v_iter;
+  auto [v_wire_iter, v_wire_end] = boost::vertices(wire_graph);
+  for (; v_wire_iter != v_wire_end; ++v_wire_iter) {
+    auto v = *v_wire_iter;
     auto x = wire_graph[v].x;
     auto y = wire_graph[v].y;
     auto layer_id = wire_graph[v].layer_id;
@@ -792,11 +803,16 @@ void LmNetGraphGenerator::markPinVertex(const TopoGraph& graph, WireGraph& wire_
     if (intersections.empty()) {
       continue;
     }
-    auto is_pin = std::ranges::any_of(intersections, [&](size_t i) -> bool {
+    auto is_driver_pin = std::ranges::any_of(intersections, [&](size_t i) -> bool {
       auto* content = graph[i].content;
-      return content->is_pin();
+      if (content->is_pin()){
+        auto* pin = static_cast<LayoutPin*>(content);
+        return pin->is_driver_pin;
+      }
+      return false;
     });
-    wire_graph[v].is_pin = is_pin;
+    wire_graph[v].is_pin = true;
+    wire_graph[v].is_driver_pin = is_driver_pin;
   }
 }
 void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph, const bool& retain_pin) const
