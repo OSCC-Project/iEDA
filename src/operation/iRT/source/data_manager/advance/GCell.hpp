@@ -85,9 +85,9 @@ class GCell : public PlanarRect
   // access routing patch
   std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>> _net_pin_access_patch_map;
   // global demand unit
-  double _boundary_wire_unit = 1;
-  double _internal_wire_unit = 1;
-  double _internal_via_unit = 0.4;
+  double _boundary_wire_unit = -1;
+  double _internal_wire_unit = -1;
+  double _internal_via_unit = -1;
   // global supply
   std::map<int32_t, std::map<Orientation, int32_t>> _routing_orient_supply_map;
   // global routing result

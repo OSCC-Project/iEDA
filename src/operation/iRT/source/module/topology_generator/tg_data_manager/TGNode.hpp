@@ -56,7 +56,7 @@ class TGNode : public PlanarCoord
   }
   double getOverflowCost(int32_t net_idx, Orientation orientation, double overflow_unit)
   {
-    if (_boundary_wire_unit <= 0 || _internal_wire_unit <= 0 || _internal_via_unit <= 0) {
+    if (!validDemandUnit()) {
       RTLOG.error(Loc::current(), "The demand unit is error!");
     }
     double boundary_overflow = 0;
@@ -102,6 +102,19 @@ class TGNode : public PlanarCoord
     cost += (overflow_unit * (boundary_overflow + internal_overflow));
     return cost;
   }
+  bool validDemandUnit()
+  {
+    if (_boundary_wire_unit <= 0) {
+      return false;
+    }
+    if (_internal_wire_unit <= 0) {
+      return false;
+    }
+    if (_internal_via_unit <= 0) {
+      return false;
+    }
+    return true;
+  }
   double calcCost(double demand, double supply)
   {
     double cost = 0;
@@ -116,7 +129,7 @@ class TGNode : public PlanarCoord
   }
   double getDemand()
   {
-    if (_boundary_wire_unit <= 0 || _internal_wire_unit <= 0 || _internal_via_unit <= 0) {
+    if (!validDemandUnit()) {
       RTLOG.error(Loc::current(), "The demand unit is error!");
     }
     double boundary_demand = 0;
@@ -132,7 +145,7 @@ class TGNode : public PlanarCoord
   }
   double getOverflow()
   {
-    if (_boundary_wire_unit <= 0 || _internal_wire_unit <= 0 || _internal_via_unit <= 0) {
+    if (!validDemandUnit()) {
       RTLOG.error(Loc::current(), "The demand unit is error!");
     }
     double boundary_overflow = 0;

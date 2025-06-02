@@ -59,6 +59,7 @@ void SupplyAnalyzer::analyze()
   buildSupplySchedule(sa_model);
   analyzeSupply(sa_model);
   replenishPinSupply(sa_model);
+  analyzeDemandUnit(sa_model);
   // debugPlotSAModel(sa_model);
   updateSummary(sa_model);
   printSummary(sa_model);
@@ -325,6 +326,20 @@ void SupplyAnalyzer::replenishPinSupply(SAModel& sa_model)
           supply = std::max(supply, min_supply);
         }
       }
+    }
+  }
+}
+
+void SupplyAnalyzer::analyzeDemandUnit(SAModel& sa_model)
+{
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+
+  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+      GCell& gcell = gcell_map[x][y];
+      gcell.set_boundary_wire_unit(1);
+      gcell.set_internal_wire_unit(1);
+      gcell.set_internal_via_unit(0.4);
     }
   }
 }

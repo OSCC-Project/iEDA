@@ -157,6 +157,7 @@ void SpaceRouter::reviseNodeDemand(SRModel& sr_model)
     for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
       for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
         layer_node_map[layer_idx][x][y].get_orient_demand_map().clear();
+        layer_node_map[layer_idx][x][y].get_via_net_set().clear();
       }
     }
   }
@@ -734,6 +735,7 @@ void SpaceRouter::buildOrientDemand(SRModel& sr_model, SRBox& sr_box)
       for (int32_t y = 0; y < sr_node_map.get_y_size(); y++) {
         SRNode& sr_node = sr_node_map[x][y];
         sr_node.set_orient_demand_map(top_sr_node_map[sr_node.get_x()][sr_node.get_y()].get_orient_demand_map());
+        sr_node.set_via_net_set(top_sr_node_map[sr_node.get_x()][sr_node.get_y()].get_via_net_set());
       }
     }
   }
