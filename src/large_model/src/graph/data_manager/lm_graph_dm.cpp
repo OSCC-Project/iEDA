@@ -92,17 +92,17 @@ bool LmGraphDataManager::buildGraphData()
       auto source = boost::source(e, wire_graph);
       auto target = boost::target(e, wire_graph);
       std::vector<std::pair<LayoutDefPoint, LayoutDefPoint>> wire_path = wire_graph[e].path;
-      std::vector<NetRoutingPoint> path;
       // convert wire_path to path
-      if (path.empty()) {
+      if (wire_path.empty()) {
         LOG_WARNING << "Empty path for edge: " << source << " -> " << target;
         continue;
       }
+      std::vector<NetRoutingPoint> path;
       std::ranges::for_each(wire_path, [&](const std::pair<LayoutDefPoint, LayoutDefPoint>& point_pair) -> void {
         path.emplace_back(NetRoutingPoint{bg::get<0>(point_pair.first), bg::get<1>(point_pair.first), bg::get<2>(point_pair.first)});
       });
-      path.emplace_back(NetRoutingPoint{bg::get<0>(wire_path.back().second), bg::get<1>(wire_path.back().second),
-        bg::get<2>(wire_path.back().second)});
+      path.emplace_back(
+          NetRoutingPoint{bg::get<0>(wire_path.back().second), bg::get<1>(wire_path.back().second), bg::get<2>(wire_path.back().second)});
       NetRoutingEdge edge{
           .source_id = source,
           .target_id = target,
@@ -129,7 +129,7 @@ bool LmGraphDataManager::buildGraphData()
   // auto* vdd_net = special_net_list->find_net("VDD");
   // gen.buildTopoGraph(vdd_net);
 
-// #pragma omp parallel for schedule(dynamic)
+  // #pragma omp parallel for schedule(dynamic)
   for (size_t net_id = 0; net_id < idb_nets.size(); ++net_id) {
     auto* idb_net = idb_nets[net_id];
     /// ignore net if pin number < 2
