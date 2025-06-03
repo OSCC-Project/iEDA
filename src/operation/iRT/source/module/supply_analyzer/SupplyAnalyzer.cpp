@@ -78,7 +78,7 @@ SAModel SupplyAnalyzer::initSAModel()
 
 void SupplyAnalyzer::setSAComParam(SAModel& sa_model)
 {
-  int32_t supply_reduction = 0;
+  int32_t supply_reduction = 4;
   /**
    * supply_reduction
    */

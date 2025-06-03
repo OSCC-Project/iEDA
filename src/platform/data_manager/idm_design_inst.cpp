@@ -284,7 +284,13 @@ IdbInstance* DataManager::insertIOFiller(string inst_name, string cell_master_na
  */
 bool DataManager::placeInst(string inst_name, int32_t x, int32_t y, string orient_name, string cell_master_name, string source)
 {
-  IdbCellMaster* cellmaster = _layout->get_cell_master_list()->find_cell_master(cell_master_name);
+  IdbCellMaster* cellmaster;
+  if (cell_master_name == "") {
+    auto inst = _design->get_instance_list()->find_instance(inst_name);
+    cellmaster = inst->get_cell_master();
+  } else {
+    cellmaster = _layout->get_cell_master_list()->find_cell_master(cell_master_name);
+  }
 
   IdbOrient orient = IdbEnum::GetInstance()->get_site_property()->get_orient_value(orient_name);
   if (cellmaster == nullptr || orient == IdbOrient::kNone) {

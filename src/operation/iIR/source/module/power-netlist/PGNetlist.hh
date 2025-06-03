@@ -302,6 +302,8 @@ class IRPGNetlistBuilder {
 
   void calcResistanceFromBumpNode(std::string net_name);
 
+  double getViaResistance(unsigned bottom_layer_id);
+
  private:
   bgi::rtree<BGValue, bgi::quadratic<16>> _rtree;
   double _c_via_resistance = 0.01;

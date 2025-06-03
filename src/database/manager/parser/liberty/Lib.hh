@@ -1238,7 +1238,8 @@ class LibLutTableTemplate : public LibObject
     OUTPUT_VOLTAGE,
     INPUT_NOISE_HEIGHT,
     INPUT_NOISE_WIDTH,
-    NORMALIZED_VOLTAGE
+    NORMALIZED_VOLTAGE,
+    EQUAL_OR_OPPOSITE_OUTPUT_NET_CAPACITANCE
   };
 
   explicit LibLutTableTemplate(const char* template_name);

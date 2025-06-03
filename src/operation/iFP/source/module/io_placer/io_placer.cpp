@@ -93,9 +93,11 @@ bool IoPlacer::autoPlacePins(std::string layer_name, int width, int height)
   /// calculate all the location
   int pin_num = pin_list.size();
   int edge_num = pin_num % 4 == 0 ? pin_num / 4 : pin_num / 4 + 1;
+  int manufacture_grid = dmInst->get_idb_lef_service()->get_layout()->get_munufacture_grid();
   int width_step = idb_core->get_bounding_box()->get_width() / (edge_num + 1);
   int height_step = idb_core->get_bounding_box()->get_height() / (edge_num + 1);
-
+  width_step = width_step / manufacture_grid * manufacture_grid;
+  height_step = height_step / manufacture_grid * manufacture_grid;
   int pin_index = 0;
   /// left
   for (int i = 0; i < edge_num; ++i) {
@@ -114,7 +116,16 @@ bool IoPlacer::autoPlacePins(std::string layer_name, int width, int height)
     auto port = io_term->add_port(nullptr);
     auto shape = port->add_layer_shape();
     shape->set_type_rect();
-    shape->add_rect(-(width / 2), -(height / 2), width / 2, height / 2);
+    
+    // Calculate shape coordinates with left-bottom corner aligned to manufacture_grid
+    int shape_llx = x - width / 2;
+    int shape_lly = y - height / 2;
+    shape_llx = (shape_llx / manufacture_grid) * manufacture_grid;
+    shape_lly = (shape_lly / manufacture_grid) * manufacture_grid;
+    int shape_urx = shape_llx + width;
+    int shape_ury = shape_lly + height;
+    
+    shape->add_rect(shape_llx - x, shape_lly - y, shape_urx - x, shape_ury - y);
     shape->set_layer(layer);
   }
 
@@ -135,7 +146,16 @@ bool IoPlacer::autoPlacePins(std::string layer_name, int width, int height)
     auto port = io_term->add_port(nullptr);
     auto shape = port->add_layer_shape();
     shape->set_type_rect();
-    shape->add_rect(-(width / 2), -(height / 2), width / 2, height / 2);
+    
+    // Calculate shape coordinates with left-bottom corner aligned to manufacture_grid
+    int shape_llx = x - width / 2;
+    int shape_lly = y - height / 2;
+    shape_llx = (shape_llx / manufacture_grid) * manufacture_grid;
+    shape_lly = (shape_lly / manufacture_grid) * manufacture_grid;
+    int shape_urx = shape_llx + width;
+    int shape_ury = shape_lly + height;
+    
+    shape->add_rect(shape_llx - x, shape_lly - y, shape_urx - x, shape_ury - y);
     shape->set_layer(layer);
   }
 
@@ -156,7 +176,16 @@ bool IoPlacer::autoPlacePins(std::string layer_name, int width, int height)
     auto port = io_term->add_port(nullptr);
     auto shape = port->add_layer_shape();
     shape->set_type_rect();
-    shape->add_rect(-(width / 2), -(height / 2), width / 2, height / 2);
+    
+    // Calculate shape coordinates with left-bottom corner aligned to manufacture_grid
+    int shape_llx = x - width / 2;
+    int shape_lly = y - height / 2;
+    shape_llx = (shape_llx / manufacture_grid) * manufacture_grid;
+    shape_lly = (shape_lly / manufacture_grid) * manufacture_grid;
+    int shape_urx = shape_llx + width;
+    int shape_ury = shape_lly + height;
+    
+    shape->add_rect(shape_llx - x, shape_lly - y, shape_urx - x, shape_ury - y);
     shape->set_layer(layer);
   }
 
@@ -177,7 +206,16 @@ bool IoPlacer::autoPlacePins(std::string layer_name, int width, int height)
     auto port = io_term->add_port(nullptr);
     auto shape = port->add_layer_shape();
     shape->set_type_rect();
-    shape->add_rect(-(width / 2), -(height / 2), width / 2, height / 2);
+    
+    // Calculate shape coordinates with left-bottom corner aligned to manufacture_grid
+    int shape_llx = x - width / 2;
+    int shape_lly = y - height / 2;
+    shape_llx = (shape_llx / manufacture_grid) * manufacture_grid;
+    shape_lly = (shape_lly / manufacture_grid) * manufacture_grid;
+    int shape_urx = shape_llx + width;
+    int shape_ury = shape_lly + height;
+    
+    shape->add_rect(shape_llx - x, shape_lly - y, shape_urx - x, shape_ury - y);
     shape->set_layer(layer);
   }
 
@@ -325,34 +363,34 @@ void IoPlacer::placeIOFiller(std::vector<idb::IdbCellMaster*>& fillers, const st
 
 void IoPlacer::fillInterval(Interval interval, std::vector<idb::IdbCellMaster*> fillers, const std::string prefix, PadCoordinate coord)
 {
-  auto chooseFillerIndex = [](int32_t length, std::vector<idb::IdbCellMaster*> fillers) ->idb::IdbCellMaster* {
+  auto chooseFillerIndex = [](int32_t length, std::vector<idb::IdbCellMaster*> fillers) -> idb::IdbCellMaster* {
     for (size_t i = 0; i != fillers.size(); ++i) {
-        if ((ssize_t) (fillers[i]->get_width()) <= (ssize_t) length) {
-          return fillers[i];
-        }
+      if ((ssize_t) (fillers[i]->get_width()) <= (ssize_t) length) {
+        return fillers[i];
+      }
     }
 
     return nullptr;
   };
 
-  auto build_inst_name = [](const std::string prefix, PadCoordinate coord, int idx){
+  auto build_inst_name = [](const std::string prefix, PadCoordinate coord, int idx) {
     string inst_name = "";
 
-    switch(coord.orient){
-        case IdbOrient::kN_R0:
-            inst_name = prefix + "_" + "S" + "_" + to_string(idx);
-            break;
-        case IdbOrient::kS_R180:
-            inst_name = prefix + "_" + "N" + "_" + to_string(idx);
-            break;
-        case IdbOrient::kW_R90:
-            inst_name = prefix + "_" + "E" + "_" + to_string(idx);
-            break;
-        case IdbOrient::kE_R270:
-            inst_name = prefix + "_" + "W" + "_" + to_string(idx);
-            break;
-        default:
-            inst_name = inst_name.substr(0, inst_name.length() - 2);
+    switch (coord.orient) {
+      case IdbOrient::kN_R0:
+        inst_name = prefix + "_" + "S" + "_" + to_string(idx);
+        break;
+      case IdbOrient::kS_R180:
+        inst_name = prefix + "_" + "N" + "_" + to_string(idx);
+        break;
+      case IdbOrient::kW_R90:
+        inst_name = prefix + "_" + "E" + "_" + to_string(idx);
+        break;
+      case IdbOrient::kE_R270:
+        inst_name = prefix + "_" + "W" + "_" + to_string(idx);
+        break;
+      default:
+        inst_name = inst_name.substr(0, inst_name.length() - 2);
     }
 
     return inst_name;
@@ -539,7 +577,7 @@ bool IoPlacer::autoIOFiller(std::vector<std::string> filler_name_list, std::stri
   auto* idb_design = dmInst->get_idb_design();
   auto* idb_layout = idb_design->get_layout();
   auto* idb_cell_masters = idb_layout->get_cell_master_list();
-  if(idb_cell_masters == nullptr){
+  if (idb_cell_masters == nullptr) {
     std::cout << "Error : cell master not exist!" << std::endl;
     return false;
   }

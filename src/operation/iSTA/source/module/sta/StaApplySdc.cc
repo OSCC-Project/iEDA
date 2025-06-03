@@ -280,6 +280,10 @@ unsigned StaApplySdc::setupIOConstrain(
       {"set_input_transition",
        std::bind(&StaApplySdc::setupInputTransition, this,
                  std::placeholders::_1, std::placeholders::_2)},
+      // set_clock_transition share the same function with set_input_transition
+      {"set_clock_transition",
+                  std::bind(&StaApplySdc::setupInputTransition, this,
+                            std::placeholders::_1, std::placeholders::_2)},
       {"set_load", std::bind(&StaApplySdc::setupOutputLoad, this,
                              std::placeholders::_1, std::placeholders::_2)},
       {"set_input_delay",
