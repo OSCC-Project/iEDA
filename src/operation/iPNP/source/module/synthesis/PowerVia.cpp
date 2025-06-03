@@ -50,17 +50,9 @@ namespace ipnp {
 
     // 连接VDD网络的所有层
     idb_design = connectNetworkLayers(pnp_network, PowerType::kVDD, idb_design);
-    if (!idb_design) {
-      LOG_INFO << "Error : Failed to connect VDD layers";
-      return nullptr;
-    }
 
     // 连接VSS网络的所有层
     idb_design = connectNetworkLayers(pnp_network, PowerType::kVSS, idb_design);
-    if (!idb_design) {
-      LOG_INFO << "Error : Failed to connect VSS layers";
-      return nullptr;
-    }
 
     LOG_INFO << "Success : Connected all power layers";
     return idb_design;
@@ -90,8 +82,16 @@ namespace ipnp {
       idb_design = connectLayers(net_name, top_layer, bottom_layer, idb_design);
     }
 
-    idb_design = connectLayers(net_name, "M" + std::to_string(power_layers[layer_count - 1]), "M2", idb_design);
+    // idb_design = connectLayers(net_name, "M" + std::to_string(power_layers[layer_count - 1]), "M2", idb_design);
     // idb_design = connect_M3_M2_M1_Layers(net_name, "M3", "M2", idb_design);
+    
+    // 获取电源网格的最底层金属层
+    std::string bottom_power_layer = "M" + std::to_string(power_layers[layer_count - 1]);
+
+    idb_design = connect_Layer_Row(net_name, bottom_power_layer, "M2", idb_design);
+
+    // 连接最底层电源网格到标准单元层(M2和M1)
+    // idb_design = connectToStandardLayers(net_name, bottom_power_layer, idb_design);
     
     LOG_INFO << "Success : Connected all layers for " << net_name;
     return idb_design;
@@ -473,13 +473,13 @@ namespace ipnp {
         }
       }
     }
-    
 
     LOG_INFO << "Success : connectLayers " << top_layer_name << " & " << bottom_layer_name;
     return idb_design;
   }
 
-  idb::IdbDesign* PowerVia::connect_M3_M2_M1_Layers(std::string net_name, std::string top_layer_name, std::string bottom_layer_name, idb::IdbDesign* idb_design)
+  
+  idb::IdbDesign* PowerVia::connect_Layer_Row(std::string net_name, std::string top_layer_name, std::string bottom_layer_name, idb::IdbDesign* idb_design)
   {
     if (!idb_design) {
       LOG_INFO << "Error : Invalid IDB design object";
