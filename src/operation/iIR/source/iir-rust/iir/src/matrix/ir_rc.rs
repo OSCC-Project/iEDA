@@ -9,7 +9,7 @@ use std::io::Write;
 use super::c_str_to_r_str;
 use super::RustIRPGNetlist;
 
-pub const POWER_INNER_RESISTANCE: f64 = 1e-9;
+pub const POWER_INNER_RESISTANCE: f64 = 1e-3;
 
 /// RC node of the spef network.
 pub struct RCNode {

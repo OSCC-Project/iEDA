@@ -16,8 +16,10 @@
 // ***************************************************************************************
 #include "gtest/gtest.h"
 #include "log/Log.hh"
+#include "sta/Sta.hh"
 
 using namespace ieda;
+using namespace ista;
 
 namespace {
 
@@ -30,6 +32,16 @@ class VerilogParserTest : public testing::Test {
   void TearDown() { Log::end(); }
 };
 
-TEST_F(VerilogParserTest, read) {}
+TEST_F(VerilogParserTest, read) {
+  Sta* ista = Sta::getOrCreateSta();
+
+  const char* verilog_file_name =
+        "/home/taosimin/ysyx_test25/2025-05-27/test.v";
+  unsigned ret = ista->readVerilogWithRustParser(verilog_file_name);
+
+  LOG_INFO << "Read Verilog file: " << verilog_file_name
+           << ", return code: " << ret;
+
+}
 
 }  // namespace
