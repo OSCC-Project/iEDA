@@ -236,9 +236,9 @@ class Utility
   static Rotation getRotation(GTLPolyInt& gtl_poly)
   {
     gtl::direction_1d gtl_rotation = gtl::winding(gtl_poly);
-    if (gtl::direction_1d_enum::CLOCKWISE == gtl_rotation) {
+    if (gtl::direction_1d(gtl::direction_1d_enum::CLOCKWISE) == gtl_rotation) {
       return Rotation::kClockwise;
-    } else if (gtl::direction_1d_enum::COUNTERCLOCKWISE == gtl_rotation) {
+    } else if (gtl::direction_1d(gtl::direction_1d_enum::COUNTERCLOCKWISE) == gtl_rotation) {
       return Rotation::kCounterclockwise;
     } else {
       return Rotation::kNone;
@@ -248,9 +248,9 @@ class Utility
   static Rotation getRotation(GTLHolePolyInt& gtl_holy_poly)
   {
     gtl::direction_1d gtl_rotation = gtl::winding(gtl_holy_poly);
-    if (gtl::direction_1d_enum::CLOCKWISE == gtl_rotation) {
+    if (gtl::direction_1d(gtl::direction_1d_enum::CLOCKWISE) == gtl_rotation) {
       return Rotation::kClockwise;
-    } else if (gtl::direction_1d_enum::COUNTERCLOCKWISE == gtl_rotation) {
+    } else if (gtl::direction_1d(gtl::direction_1d_enum::COUNTERCLOCKWISE) == gtl_rotation) {
       return Rotation::kCounterclockwise;
     } else {
       return Rotation::kNone;
