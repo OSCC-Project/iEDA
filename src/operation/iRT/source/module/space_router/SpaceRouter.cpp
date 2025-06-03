@@ -177,12 +177,16 @@ void SpaceRouter::routeSRModel(SRModel& sr_model)
    */
   std::vector<SRIterParam> sr_iter_param_list;
   // clang-format off
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 0, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 30, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 60, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 0, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 30, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 60, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 0, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 20, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 40, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 60, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 80, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 0, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 20, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 40, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 60, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 80, 3, overflow_unit, 3);
   // clang-format on
   initRoutingState(sr_model);
   for (int32_t i = 0, iter = 1; i < static_cast<int32_t>(sr_iter_param_list.size()); i++, iter++) {
