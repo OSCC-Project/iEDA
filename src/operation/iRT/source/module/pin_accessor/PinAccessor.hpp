@@ -125,6 +125,7 @@ class PinAccessor
   std::vector<PAPatch> getCandidatePatchList(PABox& pa_box);
   void buildSingleViolation(PABox& pa_box, PAPatch& pa_patch);
   void updateSingleViolation(PABox& pa_box);
+  void updateTriedFixViolation(PABox& pa_box);
   void resetSingleViolation(PABox& pa_box);
   void clearViolationShadow(PABox& pa_box);
   void updateTaskPatch(PABox& pa_box);

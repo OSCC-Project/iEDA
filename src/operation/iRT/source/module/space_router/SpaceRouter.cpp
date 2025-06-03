@@ -115,6 +115,9 @@ void SpaceRouter::buildLayerNodeMap(SRModel& sr_model)
         SRNode& sr_node = sr_node_map[x][y];
         sr_node.set_coord(x, y);
         sr_node.set_layer_idx(layer_idx);
+        sr_node.set_boundary_wire_unit(gcell_map[x][y].get_boundary_wire_unit());
+        sr_node.set_internal_wire_unit(gcell_map[x][y].get_internal_wire_unit());
+        sr_node.set_internal_via_unit(gcell_map[x][y].get_internal_via_unit());
       }
     }
   }
@@ -154,6 +157,7 @@ void SpaceRouter::reviseNodeDemand(SRModel& sr_model)
     for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
       for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
         layer_node_map[layer_idx][x][y].get_orient_demand_map().clear();
+        layer_node_map[layer_idx][x][y].get_via_net_set().clear();
       }
     }
   }
@@ -166,26 +170,32 @@ void SpaceRouter::routeSRModel(SRModel& sr_model)
 {
   double prefer_wire_unit = 1;
   double non_prefer_wire_unit = 2.5 * prefer_wire_unit;
-  double via_unit = 1;
+  double via_unit = 2 * non_prefer_wire_unit;
   double overflow_unit = 4 * non_prefer_wire_unit;
   /**
    * prefer_wire_unit, via_unit, size, offset, schedule_interval, overflow_unit, max_routed_times
    */
   std::vector<SRIterParam> sr_iter_param_list;
   // clang-format off
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 0, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 30, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 60, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 0, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 30, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 90, 60, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 0, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 20, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 40, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 60, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 80, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 0, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 20, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 40, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 60, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 80, 3, overflow_unit, 3);
   // clang-format on
+  initRoutingState(sr_model);
   for (int32_t i = 0, iter = 1; i < static_cast<int32_t>(sr_iter_param_list.size()); i++, iter++) {
     Monitor iter_monitor;
     RTLOG.info(Loc::current(), "***** Begin iteration ", iter, "/", sr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, sr_iter_param_list.size()),
                ") *****");
     setSRIterParam(sr_model, iter, sr_iter_param_list[i]);
     initSRBoxMap(sr_model);
+    resetRoutingState(sr_model);
     buildBoxSchedule(sr_model);
     splitNetResult(sr_model);
     routeSRBoxMap(sr_model);
@@ -204,6 +214,11 @@ void SpaceRouter::routeSRModel(SRModel& sr_model)
     }
   }
   selectBestResult(sr_model);
+}
+
+void SpaceRouter::initRoutingState(SRModel& sr_model)
+{
+  sr_model.set_initial_routing(true);
 }
 
 void SpaceRouter::setSRIterParam(SRModel& sr_model, int32_t iter, SRIterParam& sr_iter_param)
@@ -263,8 +278,14 @@ void SpaceRouter::initSRBoxMap(SRModel& sr_model)
       sr_box_id.set_y(y);
       sr_box.set_sr_box_id(sr_box_id);
       sr_box.set_sr_iter_param(&sr_iter_param);
+      sr_box.set_initial_routing(sr_model.get_initial_routing());
     }
   }
+}
+
+void SpaceRouter::resetRoutingState(SRModel& sr_model)
+{
+  sr_model.set_initial_routing(false);
 }
 
 void SpaceRouter::buildBoxSchedule(SRModel& sr_model)
@@ -409,7 +430,7 @@ void SpaceRouter::routeSRBoxMap(SRModel& sr_model)
       buildOverflow(sr_model, sr_box);
       if (needRouting(sr_model, sr_box)) {
         buildBoxTrackAxis(sr_box);
-        buildLayerNodeMap(sr_box);
+        buildLayerNodeMap(sr_model, sr_box);
         buildSRNodeNeighbor(sr_box);
         buildOrientSupply(sr_model, sr_box);
         buildOrientDemand(sr_model, sr_box);
@@ -542,32 +563,27 @@ void SpaceRouter::initSRTaskList(SRModel& sr_model, SRBox& sr_box)
 
 void SpaceRouter::buildOverflow(SRModel& sr_model, SRBox& sr_box)
 {
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<GridMap<SRNode>>& layer_node_map = sr_model.get_layer_node_map();
 
   EXTPlanarRect& box_rect = sr_box.get_box_rect();
 
-  int32_t total_overflow = 0;
+  double total_overflow = 0;
   std::vector<std::set<int32_t>> overflow_net_set_list;
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
     GridMap<SRNode>& sr_node_map = layer_node_map[layer_idx];
     for (int32_t x = box_rect.get_grid_ll_x(); x <= box_rect.get_grid_ur_x(); x++) {
       for (int32_t y = box_rect.get_grid_ll_y(); y <= box_rect.get_grid_ur_y(); y++) {
-        std::map<Orientation, int32_t>& orient_supply_map = sr_node_map[x][y].get_orient_supply_map();
-        std::map<Orientation, std::set<int32_t>>& orient_demand_map = sr_node_map[x][y].get_orient_demand_map();
-        int32_t node_overflow = 0;
-        if (routing_layer_list[layer_idx].isPreferH()) {
-          node_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
-                          + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
-        } else {
-          node_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
-                          + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
-        }
+        double node_overflow = sr_node_map[x][y].getOverflow();
         total_overflow += node_overflow;
         if (node_overflow > 0) {
-          for (auto& [orient, net_set] : orient_demand_map) {
-            overflow_net_set_list.push_back(net_set);
+          std::set<int32_t> overflow_net_set;
+          for (auto& [orient, net_set] : sr_node_map[x][y].get_orient_demand_map()) {
+            overflow_net_set.insert(net_set.begin(), net_set.end());
           }
+          for (int32_t net_idx : sr_node_map[x][y].get_via_net_set()) {
+            overflow_net_set.insert(net_idx);
+          }
+          overflow_net_set_list.push_back(overflow_net_set);
         }
       }
     }
@@ -581,7 +597,7 @@ bool SpaceRouter::needRouting(SRModel& sr_model, SRBox& sr_box)
   if (sr_box.get_sr_task_list().empty()) {
     return false;
   }
-  if (sr_box.get_total_overflow() <= 0) {
+  if (sr_box.get_initial_routing() == false && sr_box.get_total_overflow() <= 0) {
     return false;
   }
   return true;
@@ -618,7 +634,7 @@ void SpaceRouter::buildBoxTrackAxis(SRBox& sr_box)
   box_track_axis.set_y_grid_list(RTUTIL.makeScaleGridList(y_scale_list));
 }
 
-void SpaceRouter::buildLayerNodeMap(SRBox& sr_box)
+void SpaceRouter::buildLayerNodeMap(SRModel& sr_model, SRBox& sr_box)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
 
@@ -628,9 +644,11 @@ void SpaceRouter::buildLayerNodeMap(SRBox& sr_box)
   std::vector<int32_t> x_list = RTUTIL.getScaleList(grid_ll.get_x(), grid_ur.get_x(), box_track_axis.get_x_grid_list());
   std::vector<int32_t> y_list = RTUTIL.getScaleList(grid_ll.get_y(), grid_ur.get_y(), box_track_axis.get_y_grid_list());
 
+  std::vector<GridMap<SRNode>>& top_layer_node_map = sr_model.get_layer_node_map();
   std::vector<GridMap<SRNode>>& layer_node_map = sr_box.get_layer_node_map();
   layer_node_map.resize(routing_layer_list.size());
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
+    GridMap<SRNode>& top_sr_node_map = top_layer_node_map[layer_idx];
     GridMap<SRNode>& sr_node_map = layer_node_map[layer_idx];
     sr_node_map.init(x_list.size(), y_list.size());
     for (size_t x = 0; x < x_list.size(); x++) {
@@ -639,6 +657,9 @@ void SpaceRouter::buildLayerNodeMap(SRBox& sr_box)
         sr_node.set_x(x_list[x]);
         sr_node.set_y(y_list[y]);
         sr_node.set_layer_idx(layer_idx);
+        sr_node.set_boundary_wire_unit(top_sr_node_map[sr_node.get_x()][sr_node.get_y()].get_boundary_wire_unit());
+        sr_node.set_internal_wire_unit(top_sr_node_map[sr_node.get_x()][sr_node.get_y()].get_internal_wire_unit());
+        sr_node.set_internal_via_unit(top_sr_node_map[sr_node.get_x()][sr_node.get_y()].get_internal_via_unit());
       }
     }
   }
@@ -718,6 +739,7 @@ void SpaceRouter::buildOrientDemand(SRModel& sr_model, SRBox& sr_box)
       for (int32_t y = 0; y < sr_node_map.get_y_size(); y++) {
         SRNode& sr_node = sr_node_map[x][y];
         sr_node.set_orient_demand_map(top_sr_node_map[sr_node.get_x()][sr_node.get_y()].get_orient_demand_map());
+        sr_node.set_via_net_set(top_sr_node_map[sr_node.get_x()][sr_node.get_y()].get_via_net_set());
       }
     }
   }
@@ -739,8 +761,16 @@ void SpaceRouter::routeSRBox(SRBox& sr_box)
 
 std::vector<SRTask*> SpaceRouter::initTaskSchedule(SRBox& sr_box)
 {
+  bool initial_routing = sr_box.get_initial_routing();
+
   std::vector<SRTask*> routing_task_list;
-  updateTaskSchedule(sr_box, routing_task_list);
+  if (initial_routing) {
+    for (SRTask* sr_task : sr_box.get_sr_task_list()) {
+      routing_task_list.push_back(sr_task);
+    }
+  } else {
+    updateTaskSchedule(sr_box, routing_task_list);
+  }
   return routing_task_list;
 }
 
@@ -1133,31 +1163,25 @@ double SpaceRouter::getEstimateViaCost(SRBox& sr_box, SRNode* start_node, SRNode
 
 void SpaceRouter::updateOverflow(SRBox& sr_box)
 {
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-
   std::vector<GridMap<SRNode>>& layer_node_map = sr_box.get_layer_node_map();
 
-  int32_t total_overflow = 0;
+  double total_overflow = 0;
   std::vector<std::set<int32_t>> overflow_net_set_list;
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
     GridMap<SRNode>& sr_node_map = layer_node_map[layer_idx];
     for (int32_t x = 0; x < sr_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < sr_node_map.get_y_size(); y++) {
-        std::map<Orientation, int32_t>& orient_supply_map = sr_node_map[x][y].get_orient_supply_map();
-        std::map<Orientation, std::set<int32_t>>& orient_demand_map = sr_node_map[x][y].get_orient_demand_map();
-        int32_t node_overflow = 0;
-        if (routing_layer_list[layer_idx].isPreferH()) {
-          node_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
-                          + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
-        } else {
-          node_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
-                          + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
-        }
+        double node_overflow = sr_node_map[x][y].getOverflow();
         total_overflow += node_overflow;
         if (node_overflow > 0) {
-          for (auto& [orient, net_set] : orient_demand_map) {
-            overflow_net_set_list.push_back(net_set);
+          std::set<int32_t> overflow_net_set;
+          for (auto& [orient, net_set] : sr_node_map[x][y].get_orient_demand_map()) {
+            overflow_net_set.insert(net_set.begin(), net_set.end());
           }
+          for (int32_t net_idx : sr_node_map[x][y].get_via_net_set()) {
+            overflow_net_set.insert(net_idx);
+          }
+          overflow_net_set_list.push_back(overflow_net_set);
         }
       }
     }
@@ -1169,9 +1193,9 @@ void SpaceRouter::updateOverflow(SRBox& sr_box)
 void SpaceRouter::updateBestResult(SRBox& sr_box)
 {
   std::map<int32_t, std::vector<Segment<LayerCoord>>>& best_net_task_global_result_map = sr_box.get_best_net_task_global_result_map();
-  int32_t best_total_overflow = sr_box.get_best_total_overflow();
+  double best_total_overflow = sr_box.get_best_total_overflow();
 
-  int32_t curr_total_overflow = sr_box.get_total_overflow();
+  double curr_total_overflow = sr_box.get_total_overflow();
   if (!best_net_task_global_result_map.empty()) {
     if (best_total_overflow < curr_total_overflow) {
       return;
@@ -1238,28 +1262,16 @@ void SpaceRouter::freeSRBox(SRBox& sr_box)
   sr_box.get_layer_node_map().clear();
 }
 
-int32_t SpaceRouter::getOverflow(SRModel& sr_model)
+double SpaceRouter::getOverflow(SRModel& sr_model)
 {
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-
   std::vector<GridMap<SRNode>>& layer_node_map = sr_model.get_layer_node_map();
 
-  int32_t total_overflow = 0;
+  double total_overflow = 0;
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
     GridMap<SRNode>& sr_node_map = layer_node_map[layer_idx];
     for (int32_t x = 0; x < sr_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < sr_node_map.get_y_size(); y++) {
-        std::map<Orientation, int32_t>& orient_supply_map = sr_node_map[x][y].get_orient_supply_map();
-        std::map<Orientation, std::set<int32_t>>& orient_demand_map = sr_node_map[x][y].get_orient_demand_map();
-        int32_t node_overflow = 0;
-        if (routing_layer_list[layer_idx].isPreferH()) {
-          node_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
-                          + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
-        } else {
-          node_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
-                          + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
-        }
-        total_overflow += node_overflow;
+        total_overflow += sr_node_map[x][y].getOverflow();
       }
     }
   }
@@ -1314,9 +1326,9 @@ void SpaceRouter::updateBestResult(SRModel& sr_model)
   Die& die = RTDM.getDatabase().get_die();
 
   std::map<int32_t, std::vector<Segment<LayerCoord>>>& best_net_task_global_result_map = sr_model.get_best_net_task_global_result_map();
-  int32_t best_overflow = sr_model.get_best_overflow();
+  double best_overflow = sr_model.get_best_overflow();
 
-  int32_t curr_overflow = getOverflow(sr_model);
+  double curr_overflow = getOverflow(sr_model);
   if (!best_net_task_global_result_map.empty()) {
     if (best_overflow < curr_overflow) {
       return;
@@ -1478,15 +1490,14 @@ void SpaceRouter::updateSummary(SRModel& sr_model)
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   Die& die = RTDM.getDatabase().get_die();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
   Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
 
-  std::map<int32_t, int32_t>& routing_demand_map = summary.iter_sr_summary_map[sr_model.get_iter()].routing_demand_map;
-  int32_t& total_demand = summary.iter_sr_summary_map[sr_model.get_iter()].total_demand;
-  std::map<int32_t, int32_t>& routing_overflow_map = summary.iter_sr_summary_map[sr_model.get_iter()].routing_overflow_map;
-  int32_t& total_overflow = summary.iter_sr_summary_map[sr_model.get_iter()].total_overflow;
+  std::map<int32_t, double>& routing_demand_map = summary.iter_sr_summary_map[sr_model.get_iter()].routing_demand_map;
+  double& total_demand = summary.iter_sr_summary_map[sr_model.get_iter()].total_demand;
+  std::map<int32_t, double>& routing_overflow_map = summary.iter_sr_summary_map[sr_model.get_iter()].routing_overflow_map;
+  double& total_overflow = summary.iter_sr_summary_map[sr_model.get_iter()].total_overflow;
   std::map<int32_t, double>& routing_wire_length_map = summary.iter_sr_summary_map[sr_model.get_iter()].routing_wire_length_map;
   double& total_wire_length = summary.iter_sr_summary_map[sr_model.get_iter()].total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.iter_sr_summary_map[sr_model.get_iter()].cut_via_num_map;
@@ -1512,19 +1523,8 @@ void SpaceRouter::updateSummary(SRModel& sr_model)
     GridMap<SRNode>& sr_node_map = layer_node_map[layer_idx];
     for (int32_t x = 0; x < sr_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < sr_node_map.get_y_size(); y++) {
-        std::map<Orientation, int32_t>& orient_supply_map = sr_node_map[x][y].get_orient_supply_map();
-        std::map<Orientation, std::set<int32_t>>& orient_demand_map = sr_node_map[x][y].get_orient_demand_map();
-        int32_t node_demand = 0;
-        int32_t node_overflow = 0;
-        if (routing_layer_list[layer_idx].isPreferH()) {
-          node_demand = static_cast<int32_t>(orient_demand_map[Orientation::kEast].size() + orient_demand_map[Orientation::kWest].size());
-          node_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
-                          + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
-        } else {
-          node_demand = static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size() + orient_demand_map[Orientation::kNorth].size());
-          node_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
-                          + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
-        }
+        double node_demand = sr_node_map[x][y].getDemand();
+        double node_overflow = sr_node_map[x][y].getOverflow();
         routing_demand_map[layer_idx] += node_demand;
         total_demand += node_demand;
         routing_overflow_map[layer_idx] += node_overflow;
@@ -1587,10 +1587,10 @@ void SpaceRouter::printSummary(SRModel& sr_model)
   Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
 
-  std::map<int32_t, int32_t>& routing_demand_map = summary.iter_sr_summary_map[sr_model.get_iter()].routing_demand_map;
-  int32_t& total_demand = summary.iter_sr_summary_map[sr_model.get_iter()].total_demand;
-  std::map<int32_t, int32_t>& routing_overflow_map = summary.iter_sr_summary_map[sr_model.get_iter()].routing_overflow_map;
-  int32_t& total_overflow = summary.iter_sr_summary_map[sr_model.get_iter()].total_overflow;
+  std::map<int32_t, double>& routing_demand_map = summary.iter_sr_summary_map[sr_model.get_iter()].routing_demand_map;
+  double& total_demand = summary.iter_sr_summary_map[sr_model.get_iter()].total_demand;
+  std::map<int32_t, double>& routing_overflow_map = summary.iter_sr_summary_map[sr_model.get_iter()].routing_overflow_map;
+  double& total_overflow = summary.iter_sr_summary_map[sr_model.get_iter()].total_overflow;
   std::map<int32_t, double>& routing_wire_length_map = summary.iter_sr_summary_map[sr_model.get_iter()].routing_wire_length_map;
   double& total_wire_length = summary.iter_sr_summary_map[sr_model.get_iter()].total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.iter_sr_summary_map[sr_model.get_iter()].cut_via_num_map;
@@ -1764,14 +1764,7 @@ void SpaceRouter::outputDemandCSV(SRModel& sr_model)
     GridMap<SRNode>& sr_node_map = layer_node_map[routing_layer.get_layer_idx()];
     for (int32_t y = sr_node_map.get_y_size() - 1; y >= 0; y--) {
       for (int32_t x = 0; x < sr_node_map.get_x_size(); x++) {
-        std::map<Orientation, std::set<int32_t>>& orient_demand_map = sr_node_map[x][y].get_orient_demand_map();
-        int32_t total_demand = 0;
-        if (routing_layer.isPreferH()) {
-          total_demand = static_cast<int32_t>(orient_demand_map[Orientation::kEast].size() + orient_demand_map[Orientation::kWest].size());
-        } else {
-          total_demand = static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size() + orient_demand_map[Orientation::kNorth].size());
-        }
-        RTUTIL.pushStream(demand_csv_file, total_demand, ",");
+        RTUTIL.pushStream(demand_csv_file, sr_node_map[x][y].getDemand(), ",");
       }
       RTUTIL.pushStream(demand_csv_file, "\n");
     }
@@ -1795,17 +1788,7 @@ void SpaceRouter::outputOverflowCSV(SRModel& sr_model)
     GridMap<SRNode>& sr_node_map = layer_node_map[routing_layer.get_layer_idx()];
     for (int32_t y = sr_node_map.get_y_size() - 1; y >= 0; y--) {
       for (int32_t x = 0; x < sr_node_map.get_x_size(); x++) {
-        std::map<Orientation, int32_t>& orient_supply_map = sr_node_map[x][y].get_orient_supply_map();
-        std::map<Orientation, std::set<int32_t>>& orient_demand_map = sr_node_map[x][y].get_orient_demand_map();
-        int32_t total_overflow = 0;
-        if (routing_layer.isPreferH()) {
-          total_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
-                           + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
-        } else {
-          total_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
-                           + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
-        }
-        RTUTIL.pushStream(overflow_csv_file, total_overflow, ",");
+        RTUTIL.pushStream(overflow_csv_file, sr_node_map[x][y].getOverflow(), ",");
       }
       RTUTIL.pushStream(overflow_csv_file, "\n");
     }

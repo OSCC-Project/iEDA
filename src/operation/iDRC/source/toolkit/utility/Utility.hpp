@@ -483,6 +483,20 @@ class Utility
     return regular_rect;
   }
 
+  static PlanarRect getEnlargedRect(PlanarCoord center_coord, int32_t enlarge_size)
+  {
+    return getEnlargedRect(center_coord, enlarge_size, enlarge_size, enlarge_size, enlarge_size);
+  }
+
+  static PlanarRect getEnlargedRect(PlanarCoord center_coord, int32_t ll_x_minus_offset, int32_t ll_y_minus_offset, int32_t ur_x_add_offset,
+                                    int32_t ur_y_add_offset)
+  {
+    PlanarRect rect(center_coord, center_coord);
+    minusOffset(rect.get_ll(), ll_x_minus_offset, ll_y_minus_offset);
+    addOffset(rect.get_ur(), ur_x_add_offset, ur_y_add_offset);
+    return rect;
+  }
+
   // 扩大矩形
   static PlanarRect getEnlargedRect(PlanarRect rect, int32_t enlarge_size)
   {

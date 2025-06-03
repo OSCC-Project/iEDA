@@ -105,22 +105,26 @@ void DetailedRouter::routeDRModel(DRModel& dr_model)
   int32_t cost_unit = RTDM.getOnlyPitch();
   double prefer_wire_unit = 1;
   double non_prefer_wire_unit = 2.5 * prefer_wire_unit;
-  double via_unit = cost_unit;
-  double fixed_rect_unit = 10 * non_prefer_wire_unit * cost_unit;
+  double via_unit = 2 * non_prefer_wire_unit * cost_unit;
+  double fixed_rect_unit = 4 * non_prefer_wire_unit * cost_unit;
   double routed_rect_unit = 2 * non_prefer_wire_unit * cost_unit;
-  double violation_unit = 10 * non_prefer_wire_unit * cost_unit;
+  double violation_unit = 4 * non_prefer_wire_unit * cost_unit;
   /**
    * prefer_wire_unit, non_prefer_wire_unit, via_unit, size, offset, schedule_interval, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times,
    * max_candidate_patch_num
    */
   std::vector<DRIterParam> dr_iter_param_list;
   // clang-format off
-  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
-  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
-  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
-  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
-  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
-  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
+  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
+  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
+  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
+  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 3, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
+  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 4, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
+  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
+  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
+  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
+  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 3, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
+  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 4, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
   // clang-format on
   initRoutingState(dr_model);
   for (int32_t i = 0, iter = 1; i < static_cast<int32_t>(dr_iter_param_list.size()); i++, iter++) {
@@ -1495,10 +1499,11 @@ void DetailedRouter::patchSingleViolation(DRBox& dr_box)
       break;
     }
   }
-  if (!dr_box.get_curr_is_solved()) {
+  if (!dr_patch_list.empty() && !dr_box.get_curr_is_solved()) {
     buildSingleViolation(dr_box, dr_patch_list.front());
     updateSingleViolation(dr_box);
   }
+  updateTriedFixViolation(dr_box);
 }
 
 std::vector<DRPatch> DetailedRouter::getCandidatePatchList(DRBox& dr_box)
@@ -1527,6 +1532,9 @@ std::vector<DRPatch> DetailedRouter::getCandidatePatchList(DRBox& dr_box)
     std::vector<GTLPolyInt> gtl_poly_list;
     gtl_poly_set.get_polygons(gtl_poly_list);
     gtl_poly = gtl_poly_list.front();
+    if (min_area <= static_cast<int32_t>(gtl::area(gtl_poly))) {
+      return {};
+    }
   }
   PlanarRect h_cutting_rect;
   {
@@ -1675,6 +1683,10 @@ void DetailedRouter::updateSingleViolation(DRBox& dr_box)
 {
   dr_box.get_routing_patch_list().push_back(dr_box.get_curr_candidate_patch().get_patch());
   dr_box.set_patch_violation_list(dr_box.get_curr_patch_violation_list());
+}
+
+void DetailedRouter::updateTriedFixViolation(DRBox& dr_box)
+{
   dr_box.get_tried_fix_violation_set().insert(dr_box.get_curr_patch_violation());
 }
 

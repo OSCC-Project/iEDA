@@ -51,8 +51,8 @@ class TGSummary
  public:
   TGSummary() = default;
   ~TGSummary() = default;
-  int32_t total_demand = 0;
-  int32_t total_overflow = 0;
+  double total_demand = 0;
+  double total_overflow = 0;
   double total_wire_length = 0;
   std::map<std::string, std::map<std::string, double>> clock_timing;
   std::map<std::string, double> power_map;
@@ -63,10 +63,10 @@ class LASummary
  public:
   LASummary() = default;
   ~LASummary() = default;
-  std::map<int32_t, int32_t> routing_demand_map;
-  int32_t total_demand = 0;
-  std::map<int32_t, int32_t> routing_overflow_map;
-  int32_t total_overflow = 0;
+  std::map<int32_t, double> routing_demand_map;
+  double total_demand = 0;
+  std::map<int32_t, double> routing_overflow_map;
+  double total_overflow = 0;
   std::map<int32_t, double> routing_wire_length_map;
   double total_wire_length = 0;
   std::map<int32_t, int32_t> cut_via_num_map;
@@ -80,10 +80,10 @@ class SRSummary
  public:
   SRSummary() = default;
   ~SRSummary() = default;
-  std::map<int32_t, int32_t> routing_demand_map;
-  int32_t total_demand = 0;
-  std::map<int32_t, int32_t> routing_overflow_map;
-  int32_t total_overflow = 0;
+  std::map<int32_t, double> routing_demand_map;
+  double total_demand = 0;
+  std::map<int32_t, double> routing_overflow_map;
+  double total_overflow = 0;
   std::map<int32_t, double> routing_wire_length_map;
   double total_wire_length = 0;
   std::map<int32_t, int32_t> cut_via_num_map;
