@@ -52,7 +52,7 @@ namespace ipnp {
     GridManager best_solution = current_solution;
     _ir_eval.initIREval(idb_builder);
 
-    CostResult current_result = evaluateCost(current_solution, idb_builder);
+    CostResult current_result = evaluateCost(current_solution, current_solution, idb_builder);
     double current_cost = current_result.cost;
     double best_cost = current_cost;
 
@@ -69,29 +69,36 @@ namespace ipnp {
     int no_improvement_count = 0;
     int total_iterations = 0;
 
-    // 主循环
+    // 外循环
     while (!shouldTerminate(total_iterations, temperature, no_improvement_count)) {
+      // 内循环
       for (int i = 0; i < _iterations_per_temp; i++) {
         // 生成邻域解
         GridManager new_solution = generateNeighbor(current_solution);
 
         // 评估新解
-        CostResult new_result = evaluateCost(new_solution, idb_builder);
+        CostResult new_result = evaluateCost(new_solution, current_solution, idb_builder);
         double new_cost = new_result.cost;
 
         // 打印每个邻域解的详细信息（所有CostResult字段）
-        LOG_INFO << "Iter[" << total_iterations << "] Temp[" << temperature << "]" << std::endl
-          << "  IR Drop: " << new_result.ir_drop
-          << ", Normalized IR: " << new_result.normalized_ir_drop << std::endl
-          << "  Overflow: " << new_result.overflow
-          << ", Normalized OF: " << new_result.normalized_overflow << std::endl
-          << "  Total Cost: " << new_cost
-          << " (IR权重:" << _ir_drop_weight << ", OF权重:" << _overflow_weight << ")" << std::endl;
+        LOG_INFO << "Iter[" << total_iterations << "] Temp[" << temperature << "]";
+        LOG_INFO << "  IR Drop: " << new_result.ir_drop;
+        LOG_INFO << "  Normalized IR: " << new_result.normalized_ir_drop;
+        LOG_INFO << "  Overflow: " << new_result.overflow;
+        LOG_INFO << "  Normalized OF: " << new_result.normalized_overflow;
+        LOG_INFO << "  Total Cost: " << new_cost;
+        LOG_INFO << "  IR权重:" << _ir_drop_weight << ", OF权重:" << _overflow_weight;
 
         // 接受准则
         if (acceptSolution(current_cost, new_cost, temperature)) {
           current_solution = new_solution;
           current_cost = new_cost;
+
+          // 只有接受解后才保存到IDB
+          iPNPIdbWrapper wrapper;
+          wrapper.set_idb_design(idb_builder->get_def_service()->get_design());
+          wrapper.set_idb_builder(idb_builder);
+          wrapper.saveToIdb(current_solution);
 
           LOG_INFO << "  Solution ACCEPTED! New current cost: " << current_cost << std::endl;
 
@@ -100,9 +107,9 @@ namespace ipnp {
             best_solution = new_solution;
             best_cost = new_cost;
             no_improvement_count = 0;
-            LOG_INFO << "  NEW BEST SOLUTION! Cost: " << best_cost
-              << ", IR Drop: " << new_result.ir_drop
-              << ", Overflow: " << new_result.overflow << std::endl;
+            LOG_INFO << "  NEW BEST SOLUTION! Cost: " << best_cost << std::endl;
+            LOG_INFO << "  IR Drop: " << new_result.ir_drop << std::endl;
+            LOG_INFO << "  Overflow: " << new_result.overflow << std::endl;
           }
           else {
             LOG_INFO << "  Solution accepted but not better than best. No change to best solution." << current_cost << std::endl;
@@ -213,7 +220,7 @@ namespace ipnp {
     GridManager neighbor = current;
 
     // 随机选择一个层 - 只选择M6-M3 (对应layer索引3-6)
-    std::uniform_int_distribution<int> layer_dist(3, 6); // 只修改M6-M3层
+    std::uniform_int_distribution<int> layer_dist(3, current.get_layer_count() - 1); // 只修改M6-M3层
     std::uniform_int_distribution<int> row_dist(0, current.get_ho_region_num() - 1);
     std::uniform_int_distribution<int> col_dist(0, current.get_ver_region_num() - 1);
 
@@ -336,14 +343,14 @@ namespace ipnp {
     return neighbor;
   }
 
-  CostResult SimulatedAnnealing::evaluateCost(const GridManager& solution, idb::IdbBuilder* idb_builder)
+  CostResult SimulatedAnnealing::evaluateCost(const GridManager& new_solution, const GridManager& current_solution, idb::IdbBuilder* idb_builder)
   {
 
     iPNPIdbWrapper temp_wrapper;
     temp_wrapper.set_idb_design(idb_builder->get_def_service()->get_design());
     temp_wrapper.set_idb_builder(idb_builder);
-    temp_wrapper.saveToIdb(solution);
-    temp_wrapper.writeIdbToDef("/home/sujianrong/iEDA/src/operation/iPNP/data/test/debug.def");
+    temp_wrapper.saveToIdb(new_solution);
+    // temp_wrapper.writeIdbToDef("/home/sujianrong/iEDA/src/operation/iPNP/data/test/debug.def");
 
     _cong_eval.evalEGR(idb_builder);
     int32_t overflow = _cong_eval.get_total_overflow_union();
@@ -351,13 +358,14 @@ namespace ipnp {
     _ir_eval.runIREval(idb_builder);
     double max_ir_drop = _ir_eval.getMaxIRDrop();
     double min_ir_drop = _ir_eval.getMinIRDrop();
+    double avg_ir_drop = _ir_eval.getAvgIRDrop();
 
-    // 归一化并加权
-    double normalized_ir_drop = normalizeIRDrop(max_ir_drop, min_ir_drop);
+    double normalized_ir_drop = normalizeIRDrop(max_ir_drop, min_ir_drop, avg_ir_drop);
     double normalized_overflow = normalizeOverflow(overflow);
-
     double cost = _ir_drop_weight * normalized_ir_drop + _overflow_weight * normalized_overflow;
 
+    // 新解还未接受，需要恢复当前解
+    temp_wrapper.saveToIdb(current_solution);
 
     return { cost, max_ir_drop, overflow, normalized_ir_drop, normalized_overflow };
   }
@@ -489,7 +497,7 @@ namespace ipnp {
     return template_data;
   }
 
-  double SimulatedAnnealing::normalizeIRDrop(double max_ir_drop, double min_ir_drop)
+  double SimulatedAnnealing::normalizeIRDrop(double max_ir_drop, double min_ir_drop, double avg_ir_drop)
   {
     // 更新历史最值
     _max_ir_drop = std::max(_max_ir_drop, max_ir_drop);
@@ -499,7 +507,7 @@ namespace ipnp {
     if (_max_ir_drop - _min_ir_drop < 1e-10) {
       return 0.0; // 避免除以接近0的值
     }
-    return (max_ir_drop - _min_ir_drop) / (_max_ir_drop - _min_ir_drop);
+    return (avg_ir_drop - _min_ir_drop) / (_max_ir_drop - _min_ir_drop);
   }
 
   double SimulatedAnnealing::normalizeOverflow(int32_t overflow)
@@ -516,7 +524,7 @@ namespace ipnp {
       }
       return 0; // 避免除以接近0的值
     }
-    return (overflow - _min_overflow) / (_max_overflow - _min_overflow);
+    return static_cast<double>(overflow - _min_overflow) / static_cast<double>(_max_overflow - _min_overflow);
   }
 
   bool SimulatedAnnealing::isSameTemplate(const SingleTemplate& t1, const SingleTemplate& t2)

@@ -277,6 +277,15 @@ void PowerRouter::addPowerStripesToDie(idb::IdbSpecialNet* power_net, GridManage
     // 将 wire 添加到 wire_list 中
     wire_list->add_wire(wire, idb::IdbWiringStatement::kRouted);
   }
+
+  // 补齐 wire_list 其他层
+  int wire_need_to_add = power_layers[0] - pnp_network.get_layer_count() - 2;
+  while (wire_need_to_add > 0) {
+    idb::IdbSpecialWire* wire = new idb::IdbSpecialWire();
+    wire->set_wire_state(idb::IdbWiringStatement::kRouted);
+    wire_list->add_wire(wire, idb::IdbWiringStatement::kRouted);
+    wire_need_to_add--;
+  }
 }
 
 void PowerRouter::addPowerFollowPin(idb::IdbDesign* idb_design, idb::IdbSpecialNet* power_net)

@@ -57,6 +57,7 @@ class IREval
   // getter
   double getMaxIRDrop() const;
   double getMinIRDrop() const;
+  double getAvgIRDrop() const;
   std::map<ista::Instance::Coordinate, double> get_Coord_IR_map() { return _coord_ir_map; }
 
   

@@ -201,4 +201,21 @@ double IREval::getMinIRDrop() const
   return min_ir_drop;
 }
 
+double IREval::getAvgIRDrop() const
+{
+  if (_coord_ir_map.empty()) {
+    return 0.0;  // 如果映射为空，返回0
+  }
+
+  double sum_ir_drop = 0.0;
+  int count = 0;
+  
+  for (auto it = _coord_ir_map.begin(); it != _coord_ir_map.end(); ++it) {
+    sum_ir_drop += it->second;
+    count++;
+  }
+
+  return sum_ir_drop / count;
+}
+
 }  // namespace ipnp

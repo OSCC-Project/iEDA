@@ -81,7 +81,7 @@ namespace ipnp {
     void setWeights(double ir_drop_weight, double overflow_weight);
 
     // 评估解的质量 - 返回加权的成本值
-    CostResult evaluateCost(const GridManager& solution, idb::IdbBuilder* idb_builder);
+    CostResult evaluateCost(const GridManager& new_solution, const GridManager& current_solution, idb::IdbBuilder* idb_builder);
 
     // 获取所有区域评估数据
     std::vector<std::vector<std::vector<RegionData>>> evaluateAllRegions(const GridManager& grid);
@@ -137,7 +137,7 @@ namespace ipnp {
     SingleTemplate selectDenseTemplate(bool is_horizontal);
 
     // 归一化IR drop值
-    double normalizeIRDrop(double max_ir_drop, double min_ir_drop);
+    double normalizeIRDrop(double max_ir_drop, double min_ir_drop, double avg_ir_drop);
 
     // 归一化overflow值
     double normalizeOverflow(int32_t overflow);

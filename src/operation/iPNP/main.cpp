@@ -116,6 +116,8 @@ int main(int argc, char** argv)
     "/home/sujianrong/T28/lef/ts1n28hpcplvtb8192x64m8sw_180a.lef" };
 
   std::string def_path = "/home/sujianrong/iEDA/src/operation/iPNP/data/test/aes_no_pwr_with_PL.def";
+  // std::string def_path = "/home/sujianrong/iEDA/src/operation/iPNP/data/test/output.def";
+
   // std::string def_path = "/home/sujianrong/aes/aes.def";
 
 

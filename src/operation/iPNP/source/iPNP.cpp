@@ -115,19 +115,18 @@ void iPNP::run()
 
     _current_opt_network = _initialized_network;
 
-    idb::IdbBuilder* idb_builder = _idb_wrapper.get_idb_builder();
-
     saveToIdb();
 
     runOptimize();
 
+    saveToIdb();
     writeIdbToDef(_output_def_path);
 
     // CongestionEval cong_eval;
     // cong_eval.evalEGR(_idb_wrapper.get_idb_builder());
     
     IREval ir_eval;
-    ir_eval.initIREval(_idb_wrapper.get_idb_builder());
+    // ir_eval.initIREval(_idb_wrapper.get_idb_builder());
     ir_eval.runIREval(_idb_wrapper.get_idb_builder());
     
     // DefConverter def_converter;
