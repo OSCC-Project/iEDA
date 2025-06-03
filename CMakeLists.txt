@@ -54,7 +54,7 @@ endif()
 if (BUILD_STATIC_LIB)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "Disable shared libs" FORCE)
     set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
-    add_compile_options(-static-libstdc++ -static-libgcc)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libstdc++ -static-libgcc")
 endif()
 
 if(NOT COMPATIBILITY_MODE)

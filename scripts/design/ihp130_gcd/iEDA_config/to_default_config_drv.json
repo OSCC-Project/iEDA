@@ -1,0 +1,49 @@
+{
+    "file_path": {
+        "design_work_space": "./to",
+        "sdc_file": "",
+        "lib_files": "",
+        "lef_files": "",
+        "def_file": "path",
+        "output_def": "./to/ito_result.def",
+        "report_file": "./to/report.txt",
+        "gds_file": "./to/to.gds"
+    },
+    "specific_prefix": {
+        "drv": {
+            "make_buffer": "drv_buffer_",
+            "make_net": "drv_net_"
+        },
+        "hold": {
+            "make_buffer": "hold_buffer_",
+            "make_net": "hold_net_"
+        },
+        "setup": {
+            "make_buffer": "setup_buffer_",
+            "make_net": "setup_net_"
+        }
+    },
+    "routing_tree": "flute",
+    "setup_target_slack": 0.0,
+    "hold_target_slack": 0.4,
+    "max_insert_instance_percent": 0.2,
+    "max_core_utilization": 0.8,
+    "fix_fanout": false,
+    "optimize_drv": true,
+    "optimize_hold": false,
+    "optimize_setup": false,
+    "DRV_insert_buffers": [
+        "sky130_fd_sc_hs__buf_8"
+    ],
+    "setup_insert_buffers": [
+        "sky130_fd_sc_hs__buf_8"
+    ],
+    "hold_insert_buffers": [
+        "sky130_fd_sc_hs__buf_8"
+    ],
+    "number_of_decreasing_slack_iter": 5,
+    "max_allowed_buffering_fanout": 20,
+    "min_divide_fanout": 8,
+    "optimize_endpoints_percent": 1.0,
+    "drv_optimize_iter_number": 5
+}

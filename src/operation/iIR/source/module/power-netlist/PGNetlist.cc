@@ -88,7 +88,7 @@ std::vector<BGSegment> IRPGNetlistBuilder::buildBGSegments(
   for (auto* idb_wire : idb_wires->get_wire_list()) {
     for (auto* idb_segment : idb_wire->get_segment_list()) {
       // line firstly process, we need know line intersect point first.
-      if (idb_segment->is_line()) {
+      if (!idb_segment->is_via()) {
         auto* coord_start = idb_segment->get_point_start();
         auto* coord_end = idb_segment->get_point_second();
         std::string layer_name = idb_segment->get_layer()->get_name();
@@ -326,16 +326,19 @@ void IRPGNetlistBuilder::build(
       via_end_node->set_is_via();
     }
 
-    if (bg_start.get<2>() == instance_pin_layer) {
+    auto via_bottom_layer = bg_start.get<2>();
+
+    if (via_bottom_layer == instance_pin_layer) {
       coordy_to_via_segment_nodes[via_start_node->get_coord().second].insert(
           via_start_node);
     }
 
     auto& pg_edge = pg_netlist.addEdge(via_start_node, via_end_node);
+    double random_value = dis(gen);
     // TODO(to taosimin), hard code the via resistance, need know the resistance
     // of via.
-    double random_value = dis(gen);
-    pg_edge.set_resistance(_c_via_resistance + random_value);
+    double via_resistance = getViaResistance(via_bottom_layer);
+    pg_edge.set_resistance(via_resistance + random_value);
   }
 
   unsigned via_edge_num = pg_netlist.getEdgeNum() - line_edge_num;
@@ -543,6 +546,36 @@ void IRPGNetlistBuilder::calcResistanceFromBumpNode(std::string net_name) {
 
   // TODO(to taosimin), need to calc the resistance from bump node to all
   // segment node.
+}
+
+/**
+ * @brief get the via resistance, maybe need calc by layer shape.
+ * 
+ * @param bottom_layer_id 
+ * @return double 
+ */
+double IRPGNetlistBuilder::getViaResistance(unsigned bottom_layer_id) {
+  double via_resistance = _c_via_resistance;
+
+  if  (bottom_layer_id == 1) {
+    via_resistance = 7.597;
+  } else if ( bottom_layer_id == 2) {
+    via_resistance = 3.799;
+  } else if ( bottom_layer_id == 3) {
+    via_resistance = 3.799;
+  } else if ( bottom_layer_id == 4) {
+    via_resistance = 3.799;
+  } else if ( bottom_layer_id == 5) {
+    via_resistance = 3.799;
+  } else if ( bottom_layer_id == 6) {
+    via_resistance = 3.7997;
+  } else if ( bottom_layer_id == 7) {
+    via_resistance = 0.085;
+  } else if ( bottom_layer_id == 8) {
+    via_resistance = 0.017;
+  } 
+
+  return via_resistance;
 }
 
 }  // namespace iir

@@ -63,6 +63,8 @@ using idb::IdbPin;
 using idb::IdbPlacementStatus;
 using idb::IdbTerm;
 
+#define DEBUG_TIMING_IDB 0
+
 /**
  * @brief The adapter for iDB converted from/to ista netlist.
  *
@@ -70,12 +72,16 @@ using idb::IdbTerm;
 class TimingIDBAdapter : public TimingDBAdapter {
  public:
   explicit TimingIDBAdapter(Sta* ista) : TimingDBAdapter(ista) {
+#if DEBUG_TIMING_IDB
     _debug_csv_file.open("debug_timing_idb.csv", std::ios_base::trunc);
     _debug_csv_file << "lef_resistance,segment_length,segment_width,layer,segment_resistance"
                     << std::endl;
+#endif
   }
   ~TimingIDBAdapter() override {
+#if DEBUG_TIMING_IDB
     _debug_csv_file.close();
+#endif
   }
 
   void set_idb(IdbBuilder* idb) {
@@ -231,8 +237,9 @@ class TimingIDBAdapter : public TimingDBAdapter {
 
   FlatMap<IdbPin*, Pin*> _db2staPin;  // net: get instance_pin
   FlatMap<Pin*, IdbPin*> _sta2dbPin;
-
+#if DEBUG_TIMING_IDB
   std::ofstream _debug_csv_file;
+#endif
 };
 
 }  // namespace ista

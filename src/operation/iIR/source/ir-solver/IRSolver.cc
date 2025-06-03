@@ -52,7 +52,7 @@ void PrintMatrix(Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
 
   LOG_INFO << "start write matrix, num nodes: " << num_nodes
            << ", base index: " << base_index;
-  std::ofstream out("/home/taosimin/iEDA24/iEDA/bin/matrix_fixed_via_1.txt", std::ios::trunc);
+  std::ofstream out("/home/taosimin/iEDA24/iEDA/bin/matrix_m9_m7.txt", std::ios::trunc);
   for (Eigen::Index i = base_index; i < base_index + num_nodes; ++i) {
     for (Eigen::Index j = base_index; j < base_index + num_nodes; ++j) {
       // LOG_INFO << "matrix element at (" << i << ", " << j
@@ -175,7 +175,7 @@ std::vector<double> IRLUSolver::operator()(
 
   auto ret_value = solver.info();
   if (ret_value != Eigen::Success) {
-    // PrintMatrix(G_matrix, 0);
+    // PrintMatrix(G_matrix, 0, G_matrix.rows());
     LOG_FATAL << "LU solver error " << ret_value;
   }
 
@@ -233,7 +233,7 @@ Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A,
   int i = 0;
   int min_residual_iter = 0;
   for (; i < max_iter; ++i) {
-    LOG_INFO_EVERY_N(1) << "CG iteration num: " << i + 1
+    LOG_INFO_EVERY_N(1000) << "CG iteration num: " << i + 1
                           << " residual: " << sqrt(rsold);
     // LOG_INFO_EVERY_N(200) << "x:\n"<< x.transpose();
 
@@ -273,7 +273,7 @@ Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A,
       min_residual_iter = i;
     }
 
-    LOG_INFO << "current residual: " << sqrt(rsnew);
+    // LOG_INFO << "current residual: " << sqrt(rsnew);
 
     if (sqrt(rsnew) < tol) {
       rsold =  rsnew;

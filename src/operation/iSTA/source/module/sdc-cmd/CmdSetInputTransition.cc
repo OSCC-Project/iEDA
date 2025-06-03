@@ -123,6 +123,15 @@ unsigned CmdSetInputTransition::exec() {
                                              [&pin_ports](auto* input_port) {
                                                pin_ports.insert(input_port);
                                              });
+                     } else if (sdc_obj->isClock()) {
+                       auto* sdc_clock = dynamic_cast<SdcClock*>(sdc_obj);
+                       auto& clock_source_pins = sdc_clock->get_objs();
+                       std::ranges::for_each(clock_source_pins,
+                                             [&pin_ports](auto* design_obj) {
+                                               pin_ports.insert(design_obj);
+                                             });
+                     } else {
+                       LOG_FATAL << "The SDC command object is not supported.";
                      }
                    },
                    [&pin_ports](DesignObject* design_obj) {
