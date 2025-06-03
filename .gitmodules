@@ -8,4 +8,4 @@
 	branch = main
 [submodule "src/third_party/spectra"]
 	path = src/third_party/spectra
-	url = git@github.com:yixuan/spectra.git
+	url = https://github.com/yixuan/spectra.git
