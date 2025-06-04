@@ -36,7 +36,6 @@ class PATask
   PAPin* get_pa_pin() { return _pa_pin; }
   ConnectType& get_connect_type() { return _connect_type; }
   std::vector<PAGroup>& get_pa_group_list() { return _pa_group_list; }
-  std::vector<LayerCoord>& get_target_coord_list() { return _target_coord_list; }
   PlanarRect& get_bounding_box() { return _bounding_box; }
   int32_t get_routed_times() { return _routed_times; }
   // const getter
@@ -49,7 +48,6 @@ class PATask
   void set_pa_pin(PAPin* pa_pin) { _pa_pin = pa_pin; }
   void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
   void set_pa_group_list(const std::vector<PAGroup>& pa_group_list) { _pa_group_list = pa_group_list; }
-  void set_target_coord_list(const std::vector<LayerCoord>& target_coord_list) { _target_coord_list = target_coord_list; }
   void set_bounding_box(const PlanarRect& bounding_box) { _bounding_box = bounding_box; }
   void set_routed_times(const int32_t routed_times) { _routed_times = routed_times; }
   // function
@@ -61,7 +59,6 @@ class PATask
   PAPin* _pa_pin = nullptr;
   ConnectType _connect_type = ConnectType::kNone;
   std::vector<PAGroup> _pa_group_list;
-  std::vector<LayerCoord> _target_coord_list;
   PlanarRect _bounding_box;
   int32_t _routed_times = 0;
 };
