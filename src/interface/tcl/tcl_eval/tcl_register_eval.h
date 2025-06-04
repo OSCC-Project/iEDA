@@ -34,6 +34,7 @@ namespace tcl {
 int registerCmdEval()
 {
   registerTclCmd(CmdEvalInit, "init_cong_eval");
+  registerTclCmd(CmdEvalTimingRun, "run_timing_eval");
 
   return EXIT_SUCCESS;
 }

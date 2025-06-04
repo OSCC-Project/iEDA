@@ -1,6 +1,11 @@
+include_directories(
+    ${CMAKE_SOURCE_DIR}/src/evaluation/src/module/eval_io
+    ${CMAKE_SOURCE_DIR}/src/evaluation/src/module/timing
+)
+
 AUX_SOURCE_DIRECTORY(./ TCL_EVAL_SRC)
 
-add_library(tcl_eval
+add_library(tcl_eval STATIC
     ${TCL_EVAL_SRC}
 )
 
@@ -12,6 +17,7 @@ target_link_libraries(tcl_eval
         eval_congestion_api
         eval_density_api
         eval_timing_api
+        eval_io
         idm
         idb
 )
