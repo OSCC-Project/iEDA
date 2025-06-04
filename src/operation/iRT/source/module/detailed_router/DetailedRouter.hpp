@@ -118,6 +118,7 @@ class DetailedRouter
   std::vector<DRPatch> getCandidatePatchList(DRBox& dr_box);
   void buildSingleViolation(DRBox& dr_box, DRPatch& dr_patch);
   void updateSingleViolation(DRBox& dr_box);
+  void updateTriedFixViolation(DRBox& dr_box);
   void resetSingleViolation(DRBox& dr_box);
   void clearViolationShadow(DRBox& dr_box);
   void updateTaskPatch(DRBox& dr_box);

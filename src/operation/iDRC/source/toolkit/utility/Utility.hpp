@@ -236,9 +236,9 @@ class Utility
   static Rotation getRotation(GTLPolyInt& gtl_poly)
   {
     gtl::direction_1d gtl_rotation = gtl::winding(gtl_poly);
-    if (gtl::direction_1d_enum::CLOCKWISE == gtl_rotation) {
+    if (gtl::direction_1d(gtl::direction_1d_enum::CLOCKWISE) == gtl_rotation) {
       return Rotation::kClockwise;
-    } else if (gtl::direction_1d_enum::COUNTERCLOCKWISE == gtl_rotation) {
+    } else if (gtl::direction_1d(gtl::direction_1d_enum::COUNTERCLOCKWISE) == gtl_rotation) {
       return Rotation::kCounterclockwise;
     } else {
       return Rotation::kNone;
@@ -248,9 +248,9 @@ class Utility
   static Rotation getRotation(GTLHolePolyInt& gtl_holy_poly)
   {
     gtl::direction_1d gtl_rotation = gtl::winding(gtl_holy_poly);
-    if (gtl::direction_1d_enum::CLOCKWISE == gtl_rotation) {
+    if (gtl::direction_1d(gtl::direction_1d_enum::CLOCKWISE) == gtl_rotation) {
       return Rotation::kClockwise;
-    } else if (gtl::direction_1d_enum::COUNTERCLOCKWISE == gtl_rotation) {
+    } else if (gtl::direction_1d(gtl::direction_1d_enum::COUNTERCLOCKWISE) == gtl_rotation) {
       return Rotation::kCounterclockwise;
     } else {
       return Rotation::kNone;
@@ -481,6 +481,20 @@ class Utility
     regular_rect.set_ll(std::max(rect.get_ll_x(), border.get_ll_x()), std::max(rect.get_ll_y(), border.get_ll_y()));
     regular_rect.set_ur(std::min(rect.get_ur_x(), border.get_ur_x()), std::min(rect.get_ur_y(), border.get_ur_y()));
     return regular_rect;
+  }
+
+  static PlanarRect getEnlargedRect(PlanarCoord center_coord, int32_t enlarge_size)
+  {
+    return getEnlargedRect(center_coord, enlarge_size, enlarge_size, enlarge_size, enlarge_size);
+  }
+
+  static PlanarRect getEnlargedRect(PlanarCoord center_coord, int32_t ll_x_minus_offset, int32_t ll_y_minus_offset, int32_t ur_x_add_offset,
+                                    int32_t ur_y_add_offset)
+  {
+    PlanarRect rect(center_coord, center_coord);
+    minusOffset(rect.get_ll(), ll_x_minus_offset, ll_y_minus_offset);
+    addOffset(rect.get_ur(), ur_x_add_offset, ur_y_add_offset);
+    return rect;
   }
 
   // 扩大矩形

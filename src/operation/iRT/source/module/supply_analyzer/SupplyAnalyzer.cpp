@@ -58,6 +58,8 @@ void SupplyAnalyzer::analyze()
   setSAComParam(sa_model);
   buildSupplySchedule(sa_model);
   analyzeSupply(sa_model);
+  replenishPinSupply(sa_model);
+  analyzeDemandUnit(sa_model);
   // debugPlotSAModel(sa_model);
   updateSummary(sa_model);
   printSummary(sa_model);
@@ -78,14 +80,18 @@ SAModel SupplyAnalyzer::initSAModel()
 
 void SupplyAnalyzer::setSAComParam(SAModel& sa_model)
 {
-  int32_t supply_reduction = 4;
+  double supply_reduction = 0.2;
+  double wire_unit = 1;
+  double via_unit = 0.5;
   /**
-   * supply_reduction
+   * supply_reduction, wire_unit, via_unit
    */
   // clang-format off
-  SAComParam sa_com_param(supply_reduction);
+  SAComParam sa_com_param(supply_reduction, wire_unit, via_unit);
   // clang-format on
   RTLOG.info(Loc::current(), "supply_reduction: ", sa_com_param.get_supply_reduction());
+  RTLOG.info(Loc::current(), "wire_unit: ", sa_com_param.get_wire_unit());
+  RTLOG.info(Loc::current(), "via_unit: ", sa_com_param.get_via_unit());
   sa_model.set_sa_com_param(sa_com_param);
 }
 
@@ -130,7 +136,7 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
   RTLOG.info(Loc::current(), "Starting...");
 
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
-  int32_t supply_reduction = sa_model.get_sa_com_param().get_supply_reduction();
+  double supply_reduction = sa_model.get_sa_com_param().get_supply_reduction();
 
   size_t total_pair_num = 0;
   for (std::vector<std::pair<LayerCoord, LayerCoord>>& grid_pair_list : sa_model.get_grid_pair_list_list()) {
@@ -171,6 +177,27 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
             }
           }
         }
+        for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(search_rect)) {
+          for (Segment<LayerCoord>* segment : segment_set) {
+            for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+              if (!net_shape.get_is_routing()) {
+                continue;
+              }
+              if (search_rect.get_layer_idx() != net_shape.get_layer_idx()) {
+                continue;
+              }
+              obs_rect_list.push_back(net_shape);
+            }
+          }
+        }
+        for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(search_rect)) {
+          for (EXTLayerRect* patch : patch_set) {
+            if (search_rect.get_layer_idx() != patch->get_layer_idx()) {
+              continue;
+            }
+            obs_rect_list.push_back(patch->get_real_rect());
+          }
+        }
       }
       std::vector<LayerRect> wire_list = getCrossingWireList(search_rect);
       for (LayerRect& wire : wire_list) {
@@ -179,7 +206,7 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
           second_orient_supply_map[second_orientation]++;
         }
       }
-      int32_t max_supply = std::max(0, static_cast<int32_t>(wire_list.size()) - supply_reduction);
+      int32_t max_supply = std::max(0, static_cast<int32_t>(std::round(static_cast<double>(wire_list.size()) * (1 - supply_reduction))));
       for (auto& [orient, supply] : first_orient_supply_map) {
         supply = std::min(supply, max_supply);
       }
@@ -248,6 +275,79 @@ bool SupplyAnalyzer::isAccess(LayerRect& wire, std::vector<PlanarRect>& obs_rect
     }
   }
   return true;
+}
+
+void SupplyAnalyzer::replenishPinSupply(SAModel& sa_model)
+{
+  Die& die = RTDM.getDatabase().get_die();
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
+  int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
+
+  std::map<PlanarCoord, std::map<int32_t, std::set<int32_t>>, CmpPlanarCoordByXASC> coord_routing_net_map;
+  for (auto& [net_idx, access_point_set] : RTDM.getNetAccessPointMap(die)) {
+    for (AccessPoint* access_point : access_point_set) {
+      coord_routing_net_map[access_point->get_grid_coord()][access_point->get_layer_idx()].insert(net_idx);
+    }
+  }
+  for (auto& [grid_coord, routing_net_map] : coord_routing_net_map) {
+    std::map<int32_t, int32_t> routing_min_supply_map;
+    {
+      std::set<int32_t> bottom_net_idx_set;
+      for (int32_t routing_layer_idx = 0; routing_layer_idx <= bottom_routing_layer_idx; routing_layer_idx++) {
+        if (RTUTIL.exist(routing_net_map, routing_layer_idx)) {
+          bottom_net_idx_set.insert(routing_net_map[routing_layer_idx].begin(), routing_net_map[routing_layer_idx].end());
+        }
+        routing_min_supply_map[routing_layer_idx] = static_cast<int32_t>(bottom_net_idx_set.size());
+      }
+      std::set<int32_t> top_net_idx_set;
+      for (int32_t routing_layer_idx = static_cast<int32_t>(routing_layer_list.size()) - 1; top_routing_layer_idx <= routing_layer_idx; routing_layer_idx--) {
+        if (RTUTIL.exist(routing_net_map, routing_layer_idx)) {
+          top_net_idx_set.insert(routing_net_map[routing_layer_idx].begin(), routing_net_map[routing_layer_idx].end());
+        }
+        routing_min_supply_map[routing_layer_idx] = static_cast<int32_t>(top_net_idx_set.size());
+      }
+      for (int32_t routing_layer_idx = bottom_routing_layer_idx + 1; routing_layer_idx < top_routing_layer_idx; routing_layer_idx++) {
+        if (RTUTIL.exist(routing_net_map, routing_layer_idx)) {
+          routing_min_supply_map[routing_layer_idx] = static_cast<int32_t>(routing_net_map[routing_layer_idx].size());
+        }
+      }
+    }
+    GCell& gcell = gcell_map[grid_coord.get_x()][grid_coord.get_y()];
+    for (auto& [routing_layer_idx, min_supply] : routing_min_supply_map) {
+      if (min_supply <= 0) {
+        continue;
+      }
+      if (routing_layer_list[routing_layer_idx].isPreferH()) {
+        for (Orientation orientation : {Orientation::kEast, Orientation::kWest}) {
+          int32_t& supply = gcell.get_routing_orient_supply_map()[routing_layer_idx][orientation];
+          supply = std::max(supply, min_supply);
+        }
+      } else {
+        for (Orientation orientation : {Orientation::kSouth, Orientation::kNorth}) {
+          int32_t& supply = gcell.get_routing_orient_supply_map()[routing_layer_idx][orientation];
+          supply = std::max(supply, min_supply);
+        }
+      }
+    }
+  }
+}
+
+void SupplyAnalyzer::analyzeDemandUnit(SAModel& sa_model)
+{
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+  double wire_unit = sa_model.get_sa_com_param().get_wire_unit();
+  double via_unit = sa_model.get_sa_com_param().get_via_unit();
+
+  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+      GCell& gcell = gcell_map[x][y];
+      gcell.set_boundary_wire_unit(wire_unit);
+      gcell.set_internal_wire_unit(wire_unit);
+      gcell.set_internal_via_unit(via_unit);
+    }
+  }
 }
 
 #if 1  // exhibit
