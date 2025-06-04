@@ -304,6 +304,10 @@ class IRPGNetlistBuilder {
 
   double getViaResistance(unsigned bottom_layer_id);
 
+  void clearRTree() {
+        _rtree.clear();  // Clear all data in rtree
+    }
+
  private:
   bgi::rtree<BGValue, bgi::quadratic<16>> _rtree;
   double _c_via_resistance = 0.01;
