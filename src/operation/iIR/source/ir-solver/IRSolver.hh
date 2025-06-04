@@ -42,6 +42,9 @@ void PrintMatrix(Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
  */
 class IRSolver {
  public:
+  IRSolver() = default;
+  virtual ~IRSolver() = default;
+
   virtual std::vector<double> operator()(
       Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
       Eigen::VectorXd& J_vector) = 0;
@@ -55,6 +58,9 @@ class IRSolver {
  */
 class IRLUSolver : public IRSolver {
  public:
+  IRLUSolver() = default;
+  ~IRLUSolver() override = default;
+
   std::vector<double> operator()(
       Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
       Eigen::VectorXd& J_vector) override;
@@ -67,7 +73,7 @@ class IRLUSolver : public IRSolver {
 class IRCGSolver : public IRSolver {
  public:
  IRCGSolver(double nominal_voltage) : _nominal_voltage(nominal_voltage) {}
- ~IRCGSolver() = default;
+ ~IRCGSolver() override = default;
   std::vector<double> operator()(
       Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
       Eigen::VectorXd& J_vector) override;
