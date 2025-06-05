@@ -552,6 +552,8 @@ unsigned PowerEngine::buildPGNetWireTopo() {
  * 
  */
 void PowerEngine::resetIRAnalysisData() {
+  _pg_netlist_builder.clearRTree();
+  
   IRPGNetlistBuilder pg_netlist_builder;
   _pg_netlist_builder = std::move(pg_netlist_builder);
 

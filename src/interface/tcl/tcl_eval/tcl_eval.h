@@ -27,12 +27,13 @@
 #include <iostream>
 
 #include "ScriptEngine.hh"
+#include "timing_io.h"
 #include "tcl_definition.h"
 
 using ieda::TclCmd;
+using ieda::TclIntOption;
 using ieda::TclOption;
 using ieda::TclStringOption;
-using ieda::TclIntOption;
 
 namespace tcl {
 
@@ -48,6 +49,16 @@ class CmdEvalInit : public TclCmd
  private:
   // private function
   // private data
+};
+
+class CmdEvalTimingRun final : public TclCmd
+{
+ public:
+  explicit CmdEvalTimingRun(const char* cmd_name);
+  ~CmdEvalTimingRun() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
 };
 
 }  // namespace tcl
