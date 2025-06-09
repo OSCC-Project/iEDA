@@ -497,27 +497,22 @@ void TrackAssigner::buildOrientNetMap(TAPanel& ta_panel)
 
 void TrackAssigner::exemptPinShape(TAPanel& ta_panel)
 {
-  std::map<EXTLayerRect*, std::set<Orientation>> pin_shape_orient_map;
+  std::set<EXTLayerRect*> pin_shape_set;
   for (auto& [net_idx, fixed_rect_set] : ta_panel.get_net_fixed_rect_map()) {
     if (net_idx == -1) {
       continue;
     }
-    for (auto& fixed_rect : fixed_rect_set) {
-      pin_shape_orient_map[fixed_rect] = {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth};
-    }
+    pin_shape_set.insert(fixed_rect_set.begin(), fixed_rect_set.end());
   }
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
   for (int32_t x = 0; x < ta_node_map.get_x_size(); x++) {
     for (int32_t y = 0; y < ta_node_map.get_y_size(); y++) {
       TANode& ta_node = ta_node_map[x][y];
-      for (auto& [pin_shape, orient_set] : pin_shape_orient_map) {
+      for (auto& pin_shape : pin_shape_set) {
         if (!RTUTIL.isInside(pin_shape->get_real_rect(), ta_node.get_planar_coord())) {
           continue;
         }
         for (auto& [orient, net_set] : ta_node.get_orient_fixed_rect_map()) {
-          if (!RTUTIL.exist(orient_set, orient)) {
-            continue;
-          }
           net_set.erase(-1);
           TANode* neighbor_node = ta_node.getNeighborNode(orient);
           if (neighbor_node == nullptr) {
