@@ -120,18 +120,11 @@ DesignObject* Net::getDriver() {
  * @return std::vector<DesignObject*>
  */
 std::vector<DesignObject*> Net::getLoads() {
+  auto driver = getDriver();
   std::vector<DesignObject*> loads;
   for (auto* obj : _pin_ports) {
-    if (obj->isPort()) {
-      auto* port = static_cast<Port*>(obj);
-      if (port->isOutput()) {
-        loads.push_back(obj);
-      }
-    } else {  // for pin.
-      auto* pin = static_cast<Pin*>(obj);
-      if (pin->isInput()) {
-        loads.push_back(obj);
-      }
+    if (obj != driver) {
+      loads.push_back(obj);
     }
   }
 
