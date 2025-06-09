@@ -244,14 +244,23 @@ std::vector<std::vector<Inst*>> BalanceClustering::iterClustering(const std::vec
     cluster_num = insts.size() - 1;
   }
   auto clusters = kMeansPlus(insts, cluster_num);
+  int max_fanout_t = max_fanout;
+  if(cluster_num > clusters.size()) {
+    cluster_num = clusters.size();
+    max_fanout_t = std::ceil(1.0 * insts.size() / cluster_num);
+  }else{
+    max_fanout_t = max_fanout;
+  }
   size_t kmeans_num
       = std::accumulate(clusters.begin(), clusters.end(), 0, [](size_t sum, const std::vector<Inst*>& c) { return sum + c.size(); });
   LOG_FATAL_IF(kmeans_num != insts.size()) << "num of insts is not equal to num of clusters (kmeans insts num: " << kmeans_num
                                            << ", insts num: " << insts.size() << ")";
-  LOG_WARNING_IF(max_fanout * clusters.size() < insts.size())
+  LOG_WARNING_IF(max_fanout_t * clusters.size() < insts.size())
       << "multiply max_fanout by num of clusters is less than num of insts, "
-      << "max_fanout: " << max_fanout << ", clusters num: " << clusters.size() << ", insts num: " << insts.size();
+      << "max_fanout: " << max_fanout_t << ", clusters num: " << clusters.size() << ", insts num: " << insts.size();
   LOG_INFO_IF(log) << "initial clusters: " << clusters.size();
+  LOG_FATAL_IF(cluster_num != clusters.size()) << "num of cluster num and clusters.size(), cluster_num : " << cluster_num
+                                           << ", clusters.size(): " << clusters.size() << ")";
   if (clusters.size() == 1) {
     return clusters;
   }
@@ -274,7 +283,7 @@ std::vector<std::vector<Inst*>> BalanceClustering::iterClustering(const std::vec
     MinCostFlow<Inst*> mcf;
     std::ranges::for_each(insts, [&mcf](Inst* inst) { mcf.add_node(inst->get_location().x(), inst->get_location().y(), inst); });
     std::ranges::for_each(buffers, [&mcf](const Point& buffer) { mcf.add_center(buffer.x(), buffer.y()); });
-    clusters = mcf.run(max_fanout);
+    clusters = mcf.run(max_fanout_t);
     size_t mcf_num
         = std::accumulate(clusters.begin(), clusters.end(), 0, [](size_t sum, const std::vector<Inst*>& c) { return sum + c.size(); });
     LOG_FATAL_IF(mcf_num != insts.size()) << "num of insts is not equal to num of min-cost-flow result (mcf insts num: " << mcf_num
