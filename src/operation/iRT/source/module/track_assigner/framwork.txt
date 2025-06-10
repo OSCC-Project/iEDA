@@ -11,7 +11,6 @@ assignTAPanelMap:
     buildTANodeMap:构建Panel的Graph,只有节点,其他信息后续构建
     buildTANodeNeighbor:将所有节点连接
     buildOrientNetMap:构建Graph的cost,fix_rect从Panel中得到
-    exemptPinShape:排除掉pin_shape上的障碍cost
     routeTAPanel:
         initTaskSchedule:初始化task布线调度表
         routeTATask:给task布线,在此函数末尾,布线结果从graph中删除,再加入新的结果
