@@ -448,10 +448,10 @@ void RuleValidator::verifyEndOfLineSpacing(RVBox& rv_box)
                       bool post_right = false;
                       if (DRCUTIL.isOpenOverlap(post_env_segment_rect, par_spacing_left_rect_list[eol_rule_idx])
                           && DRCUTIL.getParallelLength(post_env_segment_rect, par_spacing_left_rect_list[eol_rule_idx]) < par_within) {
-                        pre_left = true;
+                        post_left = true;
                       } else if (DRCUTIL.isOpenOverlap(post_env_segment_rect, par_spacing_right_rect_list[eol_rule_idx])
                                  && DRCUTIL.getParallelLength(post_env_segment_rect, par_spacing_right_rect_list[eol_rule_idx]) < par_within) {
-                        pre_right = true;
+                        post_right = true;
                       }
                       if (cur_rule.has_two_edges) {
                         if (!(pre_left && post_right) && !(pre_right && post_left)) {
@@ -496,7 +496,6 @@ void RuleValidator::verifyEndOfLineSpacing(RVBox& rv_box)
                   violation.set_violation_net_set({net_idx, env_net_idx});
                   violation.set_layer_idx(routing_layer_idx);
                   violation.set_rect(violation_rect);
-                  // rv_box.get_violation_list().push_back(violation);
                   edge_vio_map[edge_list[eol_idx]].push_back(std::make_pair(env_net_segment_list[env_segment_idx], violation));
                   break;  // 满足这一级，直接break
                 }
