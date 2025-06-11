@@ -46,9 +46,10 @@ void RuleValidator::verifySameLayerCutSpacing(RVBox& rv_box)
       routing_layer_idx = *std::min_element(routing_layer_idx_list.begin(), routing_layer_idx_list.end());
     }
     CutLayer& cut_layer = cut_layer_list[cut_layer_idx];
-    int32_t curr_spacing = cut_layer.get_curr_spacing();
-    int32_t curr_prl_spacing = cut_layer.get_curr_prl_spacing();
-    int32_t curr_prl = -1 * cut_layer.get_curr_prl();
+    SameLayerCutSpacingRule& same_layer_cut_spacing_rule = cut_layer.get_same_layer_cut_spacing_rule();
+    int32_t curr_spacing = same_layer_cut_spacing_rule.curr_spacing;
+    int32_t curr_prl_spacing = same_layer_cut_spacing_rule.curr_prl_spacing;
+    int32_t curr_prl = -1 * same_layer_cut_spacing_rule.curr_prl;
     for (auto& [net_idx, rect_list] : net_rect_map) {
       for (PlanarRect& rect : rect_list) {
         GTLPolySetInt curr_spacing_poly_set;

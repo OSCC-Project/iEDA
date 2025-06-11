@@ -297,8 +297,8 @@ void RuleValidator::verifyEnclosureEdge(RVBox& rv_box)
             continue;
           }
 
-          //根据Above字段豁免
-          if(cut_layer_idx==1&&routing_layer_idx==0&&rule_index!=enclosure_edge_rules1.size()-1){
+          // 根据Above字段豁免
+          if (cut_layer_idx == 1 && routing_layer_idx == 0 && rule_index != enclosure_edge_rules1.size() - 1) {
             continue;
           }
 

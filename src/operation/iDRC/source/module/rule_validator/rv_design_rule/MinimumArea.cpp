@@ -36,7 +36,7 @@ void RuleValidator::verifyMinimumArea(RVBox& rv_box)
     routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
   }
   for (auto& [routing_layer_idx, net_gtl_poly_set_map] : routing_net_gtl_poly_set_map) {
-    int32_t min_area = routing_layer_list[routing_layer_idx].get_min_area();
+    int32_t min_area = routing_layer_list[routing_layer_idx].get_minimum_area_rule().min_area;
     for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set_map) {
       std::vector<GTLPolyInt> gtl_poly_list;
       gtl_poly_set.get_polygons(gtl_poly_list);

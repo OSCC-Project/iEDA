@@ -37,9 +37,10 @@ void RuleValidator::verifyNotchSpacing(RVBox& rv_box)
   }
   for (auto& [routing_layer_idx, net_gtl_poly_set_map] : routing_net_gtl_poly_set_map) {
     RoutingLayer& routing_layer = routing_layer_list[routing_layer_idx];
-    int32_t notch_spacing = routing_layer.get_notch_spacing();
-    int32_t notch_length = routing_layer.get_notch_length();
-    std::optional<int32_t> concave_ends = routing_layer.get_concave_ends();
+    NotchSpacingRule& notch_spacing_rule = routing_layer.get_notch_spacing_rule();
+    int32_t notch_spacing = notch_spacing_rule.notch_spacing;
+    int32_t notch_length = notch_spacing_rule.notch_length;
+    std::optional<int32_t> concave_ends = notch_spacing_rule.concave_ends;
     for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set_map) {
       std::vector<GTLHolePolyInt> origin_hole_poly_list;
       gtl_poly_set.get(origin_hole_poly_list);

@@ -20,7 +20,7 @@ namespace idrc {
 
 void RuleValidator::verifyMaxViaStack(RVBox& rv_box)
 {
-  PropertyDefinition& property_definition = DRCDM.getDatabase().get_property_definition();
+  MaxViaStackRule& max_via_stack_rule = DRCDM.getDatabase().get_max_via_stack_rule();
   std::map<int32_t, std::vector<int32_t>>& routing_to_adjacent_cut_map = DRCDM.getDatabase().get_routing_to_adjacent_cut_map();
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = DRCDM.getDatabase().get_cut_to_adjacent_routing_map();
 
@@ -40,15 +40,15 @@ void RuleValidator::verifyMaxViaStack(RVBox& rv_box)
     cut_net_rect_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()].push_back(drc_shape->get_rect());
     cut_bg_rtree_map[drc_shape->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(drc_shape->get_rect()), drc_shape->get_net_idx()));
   }
-  int32_t max_via_stack_num = property_definition.get_max_via_stack_num();
+  int32_t max_via_stack_num = max_via_stack_rule.max_via_stack_num;
   int32_t bottom_cut_layer_idx = -1;
   {
-    std::vector<int32_t>& cut_layer_idx_list = routing_to_adjacent_cut_map[property_definition.get_bottom_routing_layer_idx()];
+    std::vector<int32_t>& cut_layer_idx_list = routing_to_adjacent_cut_map[max_via_stack_rule.bottom_routing_layer_idx];
     bottom_cut_layer_idx = *std::max_element(cut_layer_idx_list.begin(), cut_layer_idx_list.end());
   }
   int32_t top_cut_layer_idx = -1;
   {
-    std::vector<int32_t>& cut_layer_idx_list = routing_to_adjacent_cut_map[property_definition.get_top_routing_layer_idx()];
+    std::vector<int32_t>& cut_layer_idx_list = routing_to_adjacent_cut_map[max_via_stack_rule.top_routing_layer_idx];
     top_cut_layer_idx = *std::min_element(cut_layer_idx_list.begin(), cut_layer_idx_list.end());
   }
   for (auto& [cut_layer_idx, net_rect_map] : cut_net_rect_map) {

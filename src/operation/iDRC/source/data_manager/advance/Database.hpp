@@ -18,7 +18,8 @@
 
 #include "CutLayer.hpp"
 #include "Die.hpp"
-#include "PropertyDefinition.hpp"
+#include "MaxViaStackRule.hpp"
+#include "OffGridOrWrongWayRule.hpp"
 #include "RoutingLayer.hpp"
 #include "ViolationType.hpp"
 
@@ -31,9 +32,9 @@ class Database
   ~Database() = default;
   // getter
   int32_t get_micron_dbu() const { return _micron_dbu; }
-  int32_t get_manufacture_grid() const { return _manufacture_grid; }
   Die& get_die() { return _die; }
-  PropertyDefinition& get_property_definition() { return _property_definition; }
+  MaxViaStackRule& get_max_via_stack_rule() { return _max_via_stack_rule; }
+  OffGridOrWrongWayRule& get_off_grid_or_wrong_way_rule() { return _off_grid_or_wrong_way_rule; }
   std::vector<RoutingLayer>& get_routing_layer_list() { return _routing_layer_list; }
   std::vector<CutLayer>& get_cut_layer_list() { return _cut_layer_list; }
   std::set<ViolationType>& get_exist_rule_set() { return _exist_rule_set; }
@@ -45,14 +46,13 @@ class Database
   std::map<int32_t, std::vector<int32_t>>& get_cut_to_adjacent_routing_map() { return _cut_to_adjacent_routing_map; }
   // setter
   void set_micron_dbu(const int32_t micron_dbu) { _micron_dbu = micron_dbu; }
-  void set_manufacture_grid(const int32_t manufacture_grid) { _manufacture_grid = manufacture_grid; }
   // function
 
  private:
   int32_t _micron_dbu = -1;
-  int32_t _manufacture_grid = -1;
   Die _die;
-  PropertyDefinition _property_definition;
+  MaxViaStackRule _max_via_stack_rule;
+  OffGridOrWrongWayRule _off_grid_or_wrong_way_rule;
   std::vector<RoutingLayer> _routing_layer_list;
   std::vector<CutLayer> _cut_layer_list;
   std::set<ViolationType> _exist_rule_set;

@@ -729,7 +729,7 @@ void RuleValidator::debugVerifyRVModelByGolden(RVModel& rv_model)
 void RuleValidator::debugVerifyRVBoxByGolden(RVBox& rv_box)
 {
   int32_t micron_dbu = DRCDM.getDatabase().get_micron_dbu();
-  int32_t manufacture_grid = DRCDM.getDatabase().get_manufacture_grid();
+  int32_t manufacture_grid = DRCDM.getDatabase().get_off_grid_or_wrong_way_rule().manufacture_grid;
   Die& die = DRCDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DRCDM.getDatabase().get_cut_layer_list();
