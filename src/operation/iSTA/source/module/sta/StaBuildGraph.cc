@@ -39,7 +39,7 @@ unsigned StaBuildGraph::buildPort(StaGraph* the_graph, Port* port) {
   the_vertex->set_is_port();
 
   if (port->isInout()) {
-    // for inout pin, we set input as main, output as assistant.
+    // for inout port, we set input as main, output as assistant.
     the_vertex->set_is_start();
     the_vertex->set_is_bidirection();
     the_graph->addStartVertex(the_vertex.get());
