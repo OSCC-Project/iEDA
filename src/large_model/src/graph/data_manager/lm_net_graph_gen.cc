@@ -805,7 +805,7 @@ void LmNetGraphGenerator::markPinVertex(const TopoGraph& graph, WireGraph& wire_
     }
     auto is_driver_pin = std::ranges::any_of(intersections, [&](size_t i) -> bool {
       auto* content = graph[i].content;
-      if (content->is_pin()){
+      if (content->is_pin()) {
         auto* pin = static_cast<LayoutPin*>(content);
         return pin->is_driver_pin;
       }
@@ -1632,5 +1632,240 @@ void LmNetGraphGenerator::toQt(const WireGraph& graph) const
 
   app.exec();
 #endif
+}
+void LmNetGraphGenerator::toJs(const std::vector<TopoGraph>& graphs, const std::string& path) const
+{
+  std::ofstream file(path);
+  file << "{\n";
+  file << "  \"shapes\": [\n";
+
+  bool first_shape = true;
+
+  for (size_t graph_idx = 0; graph_idx < graphs.size(); ++graph_idx) {
+    const auto& graph = graphs[graph_idx];
+
+    // Calculate connected components for this graph to determine colors
+    std::vector<int> component(boost::num_vertices(graph));
+    auto num_components = boost::connected_components(graph, component.data());
+
+    // Counters for naming shapes within this graph
+    size_t patch_count = 0;
+    size_t wire_count = 0;
+    size_t via_count = 0;
+    size_t pin_count = 0;
+
+    auto [v_iter, v_end] = boost::vertices(graph);
+    for (; v_iter != v_end; ++v_iter) {
+      auto v = *v_iter;
+      auto* content = graph[v].content;
+
+      if (content->is_patch()) {
+        auto* patch = static_cast<LayoutPatch*>(content);
+
+        if (!first_shape)
+          file << ",\n";
+        first_shape = false;
+
+        file << "    {\n";
+        file << "      \"type\": \"Rect\",\n";
+        file << "      \"x1\": " << getLowX(patch->rect) << ",\n";
+        file << "      \"y1\": " << getLowY(patch->rect) << ",\n";
+        file << "      \"z1\": " << getLowZ(patch->rect) << ",\n";
+        file << "      \"x2\": " << getHighX(patch->rect) << ",\n";
+        file << "      \"y2\": " << getHighY(patch->rect) << ",\n";
+        file << "      \"z2\": " << getLowZ(patch->rect) << ",\n";
+        file << "      \"comment\": \"Graph " << graph_idx << " Patch " << patch_count << "\",\n";
+        file << "      \"shapeClass\": \"Graph" << graph_idx << "_Patches\",\n";
+        file << "      \"color\": { \"r\": 0, \"g\": 0.5, \"b\": 0 }\n";
+        file << "    }";
+
+        patch_count++;
+
+      } else if (content->is_wire()) {
+        auto* wire = static_cast<LayoutWire*>(content);
+
+        if (!first_shape)
+          file << ",\n";
+        first_shape = false;
+
+        // Generate color based on component ID (use tab10 colormap approximation)
+        double hue = (component[v] % 10) / 10.0;
+        double r = 0.5 + 0.5 * std::sin(hue * 6.28);
+        double g = 0.5 + 0.5 * std::sin((hue + 0.33) * 6.28);
+        double b = 0.5 + 0.5 * std::sin((hue + 0.66) * 6.28);
+
+        file << "    {\n";
+        file << "      \"type\": \"Wire\",\n";
+        file << "      \"x1\": " << getX(wire->start) << ",\n";
+        file << "      \"y1\": " << getY(wire->start) << ",\n";
+        file << "      \"z1\": " << getZ(wire->start) << ",\n";
+        file << "      \"x2\": " << getX(wire->end) << ",\n";
+        file << "      \"y2\": " << getY(wire->end) << ",\n";
+        file << "      \"z2\": " << getZ(wire->end) << ",\n";
+        file << "      \"comment\": \"Graph " << graph_idx << " Wire " << wire_count << " Component " << component[v] << "\",\n";
+        if (graph_idx == 102) {
+          file << "      \"shapeClass\": \"Graph " << graph_idx << " Wire " << wire_count << " Component " << component[v] << "\",\n";
+        } else {
+          file << "      \"shapeClass\": \"Graph" << graph_idx << "_Wires_Comp" << component[v] << "\",\n";
+        }
+        // file << "      \"shapeClass\": \"Graph" << graph_idx << "_Wires_Comp" << component[v] << "\",\n";
+        file << "      \"color\": { \"r\": " << r << ", \"g\": " << g << ", \"b\": " << b << " }\n";
+        file << "    }";
+
+        wire_count++;
+
+      } else if (content->is_via()) {
+        auto* via = static_cast<LayoutVia*>(content);
+
+        // Generate color based on component ID
+        double hue = (component[v] % 10) / 10.0;
+        double r = 0.5 + 0.5 * std::sin(hue * 6.28);
+        double g = 0.5 + 0.5 * std::sin((hue + 0.33) * 6.28);
+        double b = 0.5 + 0.5 * std::sin((hue + 0.66) * 6.28);
+
+        // Add cut path as a via
+        if (!first_shape)
+          file << ",\n";
+        first_shape = false;
+
+        file << "    {\n";
+        file << "      \"type\": \"Via\",\n";
+        file << "      \"x1\": " << getStartX(via->cut_path) << ",\n";
+        file << "      \"y1\": " << getStartY(via->cut_path) << ",\n";
+        file << "      \"z1\": " << getStartZ(via->cut_path) << ",\n";
+        file << "      \"x2\": " << getEndX(via->cut_path) << ",\n";
+        file << "      \"y2\": " << getEndY(via->cut_path) << ",\n";
+        file << "      \"z2\": " << getEndZ(via->cut_path) << ",\n";
+        file << "      \"comment\": \"Graph " << graph_idx << " Via " << via_count << " Cut Path\",\n";
+        if (graph_idx == 102) {
+          file << "      \"shapeClass\": \"Graph " << graph_idx << " Via " << via_count << " Cut Path Component " << component[v]
+               << "\",\n";
+        } else {
+          file << "      \"shapeClass\": \"Graph" << graph_idx << "_Vias_Comp" << component[v] << "\",\n";
+        }
+        // file << "      \"shapeClass\": \"Graph" << graph_idx << "_Vias_Comp" << component[v] << "\",\n";
+        file << "      \"color\": { \"r\": " << r << ", \"g\": " << g << ", \"b\": " << b << " }\n";
+        file << "    }";
+
+        // Add bottom shapes as rectangles
+        size_t bottom_count = 0;
+        for (auto& bottom_shape : via->bottom_shapes) {
+          if (!first_shape)
+            file << ",\n";
+          first_shape = false;
+
+          file << "    {\n";
+          file << "      \"type\": \"Rect\",\n";
+          file << "      \"x1\": " << getLowX(bottom_shape) << ",\n";
+          file << "      \"y1\": " << getLowY(bottom_shape) << ",\n";
+          file << "      \"z1\": " << getLowZ(bottom_shape) << ",\n";
+          file << "      \"x2\": " << getHighX(bottom_shape) << ",\n";
+          file << "      \"y2\": " << getHighY(bottom_shape) << ",\n";
+          file << "      \"z2\": " << getLowZ(bottom_shape) << ",\n";
+          file << "      \"comment\": \"Graph " << graph_idx << " Via " << via_count << " Bottom " << bottom_count << "\",\n";
+          if (graph_idx == 102) {
+            file << "      \"shapeClass\": \"Graph " << graph_idx << " Via " << via_count << " Bottoms Component " << component[v]
+                 << "\",\n";
+          } else {
+            file << "      \"shapeClass\": \"Graph" << graph_idx << "_ViaBottoms\",\n";
+          }
+          // file << "      \"shapeClass\": \"Graph" << graph_idx << "_ViaBottoms\",\n";
+          file << "      \"color\": { \"r\": 0.5, \"g\": 0.5, \"b\": 0.5 }\n";
+          file << "    }";
+          bottom_count++;
+        }
+
+        // Add top shapes as rectangles
+        size_t top_count = 0;
+        for (auto& top_shape : via->top_shapes) {
+          if (!first_shape)
+            file << ",\n";
+          first_shape = false;
+
+          file << "    {\n";
+          file << "      \"type\": \"Rect\",\n";
+          file << "      \"x1\": " << getLowX(top_shape) << ",\n";
+          file << "      \"y1\": " << getLowY(top_shape) << ",\n";
+          file << "      \"z1\": " << getLowZ(top_shape) << ",\n";
+          file << "      \"x2\": " << getHighX(top_shape) << ",\n";
+          file << "      \"y2\": " << getHighY(top_shape) << ",\n";
+          file << "      \"z2\": " << getLowZ(top_shape) << ",\n";
+          file << "      \"comment\": \"Graph " << graph_idx << " Via " << via_count << " Top " << top_count << "\",\n";
+          if (graph_idx == 102) {
+            file << "      \"shapeClass\": \"Graph " << graph_idx << " Via " << via_count << " Tops Component " << component[v] << "\",\n";
+          } else {
+            file << "      \"shapeClass\": \"Graph" << graph_idx << "_ViaTops\",\n";
+          }
+          // file << "      \"shapeClass\": \"Graph" << graph_idx << "_ViaTops\",\n";
+          file << "      \"color\": { \"r\": 0.5, \"g\": 0.5, \"b\": 0.5 }\n";
+          file << "    }";
+          top_count++;
+        }
+
+        via_count++;
+
+      } else if (content->is_pin()) {
+        auto* pin = static_cast<LayoutPin*>(content);
+        auto pin_name = pin->net_name + "/" + pin->pin_name;
+
+        // Pin color: red for driver pins, yellow for non-driver pins
+        double r = pin->is_driver_pin ? 1.0 : 1.0;
+        double g = pin->is_driver_pin ? 0.0 : 1.0;
+        double b = 0.0;
+        std::string pin_class = pin->is_driver_pin ? "DriverPins" : "ReceiverPins";
+
+        // Add pin shapes as rectangles
+        size_t pin_shape_count = 0;
+        for (auto& pin_shape : pin->pin_shapes) {
+          if (!first_shape)
+            file << ",\n";
+          first_shape = false;
+
+          file << "    {\n";
+          file << "      \"type\": \"Rect\",\n";
+          file << "      \"x1\": " << getLowX(pin_shape) << ",\n";
+          file << "      \"y1\": " << getLowY(pin_shape) << ",\n";
+          file << "      \"z1\": " << getLowZ(pin_shape) << ",\n";
+          file << "      \"x2\": " << getHighX(pin_shape) << ",\n";
+          file << "      \"y2\": " << getHighY(pin_shape) << ",\n";
+          file << "      \"z2\": " << getLowZ(pin_shape) << ",\n";
+          file << "      \"comment\": \"Graph " << graph_idx << " Pin " << pin_name << " Shape " << pin_shape_count << "\",\n";
+          file << "      \"shapeClass\": \"Graph" << graph_idx << "_" << pin_class << "\",\n";
+          file << "      \"color\": { \"r\": " << r << ", \"g\": " << g << ", \"b\": " << b << " }\n";
+          file << "    }";
+          pin_shape_count++;
+        }
+
+        // Add via cuts as vias
+        size_t via_cut_count = 0;
+        for (auto& via_cut : pin->via_cuts) {
+          auto center = getCenter(via_cut);
+
+          if (!first_shape)
+            file << ",\n";
+          first_shape = false;
+
+          file << "    {\n";
+          file << "      \"type\": \"Via\",\n";
+          file << "      \"x1\": " << getX(center) << ",\n";
+          file << "      \"y1\": " << getY(center) << ",\n";
+          file << "      \"z1\": " << getLowZ(via_cut) << ",\n";
+          file << "      \"x2\": " << getX(center) << ",\n";
+          file << "      \"y2\": " << getY(center) << ",\n";
+          file << "      \"z2\": " << getHighZ(via_cut) << ",\n";
+          file << "      \"comment\": \"Graph " << graph_idx << " Pin " << pin_name << " Via Cut " << via_cut_count << "\",\n";
+          file << "      \"shapeClass\": \"Graph" << graph_idx << "_" << pin_class << "_Vias\",\n";
+          file << "      \"color\": { \"r\": " << r << ", \"g\": " << g << ", \"b\": " << b << " }\n";
+          file << "    }";
+          via_cut_count++;
+        }
+
+        pin_count++;
+      }
+    }
+  }
+
+  file << "\n  ]\n";
+  file << "}\n";
 }
 }  // namespace ilm

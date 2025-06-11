@@ -25,13 +25,13 @@
 #include "lm_graph_gui.hh"
 
 #include <QColorDialog>
+#include <QDesktopWidget>
 #include <QHBoxLayout>
 #include <QHelpEvent>
 #include <QRect>
 #include <QStandardItem>
 #include <QToolTip>
 #include <QVBoxLayout>
-#include <QDesktopWidget>
 
 #include "lm_net_graph_gen.hh"
 namespace ilm {
@@ -342,7 +342,7 @@ void LmGraphWidget::autoScale()
   }
   float dx = max_x - min_x;
   float dy = max_y - min_y;
-  float dz = max_z - min_z;
+  float dz = (max_z - min_z) * 10.0f;
   if ((dx < 1e-6f) || (dy < 1e-6f) || (dz < 1e-6f)) {
     return;
   }
@@ -401,7 +401,7 @@ void LmGraphWidget::initView()
   _pan_y = -center_y;
   float dx = max_x - min_x;
   float dy = max_y - min_y;
-  float dz = max_z - min_z;
+  float dz = (max_z - min_z) * 10.0f;
   float radius = std::sqrt(dx * dx + dy * dy + dz * dz) * 0.5f;
   float fov_rad = 45.0f * 3.14159265f / 180.0f;
   float d = radius / std::tan(fov_rad / 2.0f);
