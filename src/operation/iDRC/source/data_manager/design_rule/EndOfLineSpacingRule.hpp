@@ -26,8 +26,27 @@ class EndOfLineSpacingRule
   EndOfLineSpacingRule() = default;
   ~EndOfLineSpacingRule() = default;
   int32_t eol_spacing = -1;
-  int32_t eol_ete = -1;
+  int32_t eol_width = -1;
   int32_t eol_within = -1;
+
+  bool has_ete = false;
+  /**/ int32_t ete_spacing = -1;
+
+  bool has_par = false;
+  /**/ bool has_subtrace_eol_width = false;
+  /**/ int32_t par_spacing = -1;
+  /**/ int32_t par_within = -1;
+  /**/ bool has_two_edges = false;
+  /**/ bool has_min_length = false;
+  /**/ /**/ int32_t min_length = -1;
+  /**/ bool has_same_metal = false;
+
+  bool has_enclose_cut = false;
+  /**/ bool has_below = false;
+  /**/ bool has_above = false;
+  /**/ int32_t enclosed_dist = -1;
+  /**/ int32_t cut_to_metal_spacing = -1;
+  /**/ bool has_all_cuts = false;
 };
 
 }  // namespace idrc

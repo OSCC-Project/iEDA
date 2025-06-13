@@ -44,7 +44,7 @@ class RoutingLayer
   Direction& get_prefer_direction() { return _prefer_direction; }
   int32_t get_pitch() const { return _pitch; }
   CornerFillSpacingRule& get_corner_fill_spacing_rule() { return _corner_fill_spacing_rule; }
-  EndOfLineSpacingRule& get_end_of_line_spacing_rule() { return _end_of_line_spacing_rule; }
+  std::vector<EndOfLineSpacingRule>& get_end_of_line_spacing_rule_list() { return _end_of_line_spacing_rule_list; }
   MaximumWidthRule& get_maximum_width_rule() { return _maximum_width_rule; }
   MinHoleRule& get_min_hole_rule() { return _min_hole_rule; }
   MinimumAreaRule& get_minimum_area_rule() { return _minimum_area_rule; }
@@ -69,7 +69,7 @@ class RoutingLayer
   Direction _prefer_direction = Direction::kNone;
   int32_t _pitch = -1;
   CornerFillSpacingRule _corner_fill_spacing_rule;
-  EndOfLineSpacingRule _end_of_line_spacing_rule;
+  std::vector<EndOfLineSpacingRule> _end_of_line_spacing_rule_list;
   MaximumWidthRule _maximum_width_rule;
   MinHoleRule _min_hole_rule;
   MinimumAreaRule _minimum_area_rule;
