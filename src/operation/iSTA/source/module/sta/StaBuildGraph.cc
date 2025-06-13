@@ -259,7 +259,7 @@ unsigned StaBuildGraph::buildNet(StaGraph* the_graph, Net* net) {
     // FIXME disable the power gate arc.
     if (auto* vertex_own_cell = (*driver_vertex)->getOwnCell();
         vertex_own_cell && vertex_own_cell->isSequentialCell() &&
-        !vertex_own_cell->isICG()) {
+        !vertex_own_cell->isICG() && !vertex_own_cell->isMacroCell()) {
       if ((*load_vertex)->is_clock()) {
         net_arc->set_is_disable_arc(true);
       }
