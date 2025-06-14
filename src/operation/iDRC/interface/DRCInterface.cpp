@@ -282,170 +282,42 @@ void DRCInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLa
   // EndOfLineSpacingRule
   {
     std::vector<EndOfLineSpacingRule>& end_of_line_spacing_rule_list = routing_layer.get_end_of_line_spacing_rule_list();
-    if (0) {
-      if (!idb_layer->get_lef58_spacing_eol_list().empty()) {
-        for (std::shared_ptr<idb::routinglayer::Lef58SpacingEol> idb_spacing_eol : idb_layer->get_lef58_spacing_eol_list()) {
-          EndOfLineSpacingRule end_of_line_spacing_rule;
+    if (!idb_layer->get_lef58_spacing_eol_list().empty()) {
+      for (std::shared_ptr<idb::routinglayer::Lef58SpacingEol> idb_spacing_eol : idb_layer->get_lef58_spacing_eol_list()) {
+        EndOfLineSpacingRule end_of_line_spacing_rule;
 
-          end_of_line_spacing_rule.eol_spacing = idb_spacing_eol.get()->get_eol_space();
-          end_of_line_spacing_rule.eol_width = idb_spacing_eol.get()->get_eol_width();
-          end_of_line_spacing_rule.eol_within = idb_spacing_eol.get()->get_eol_within().value();
+        end_of_line_spacing_rule.eol_spacing = idb_spacing_eol.get()->get_eol_space();
+        end_of_line_spacing_rule.eol_width = idb_spacing_eol.get()->get_eol_width();
+        end_of_line_spacing_rule.eol_within = idb_spacing_eol.get()->get_eol_within().value();
 
-          end_of_line_spacing_rule.has_ete = idb_spacing_eol.get()->get_end_to_end().has_value();
-          if (idb_spacing_eol.get()->get_end_to_end().has_value()) {
-            end_of_line_spacing_rule.ete_spacing = idb_spacing_eol.get()->get_end_to_end().value().get_end_to_end_space();
-          }
-
-          end_of_line_spacing_rule.has_par = idb_spacing_eol.get()->get_parallel_edge().has_value();
-          if (idb_spacing_eol.get()->get_parallel_edge().has_value()) {
-            end_of_line_spacing_rule.has_subtrace_eol_width = idb_spacing_eol.get()->get_parallel_edge().value().is_subtract_eol_width();
-            end_of_line_spacing_rule.par_spacing = idb_spacing_eol.get()->get_parallel_edge().value().get_par_space();
-            end_of_line_spacing_rule.par_within = idb_spacing_eol.get()->get_parallel_edge().value().get_par_within();
-            end_of_line_spacing_rule.has_two_edges = idb_spacing_eol.get()->get_parallel_edge().value().is_two_edges();
-            end_of_line_spacing_rule.has_min_length = idb_spacing_eol.get()->get_parallel_edge().value().get_min_length().has_value();
-            if (idb_spacing_eol.get()->get_parallel_edge().value().get_min_length().has_value()) {
-              end_of_line_spacing_rule.min_length = idb_spacing_eol.get()->get_parallel_edge().value().get_min_length().value();
-            }
-            end_of_line_spacing_rule.has_same_metal = idb_spacing_eol.get()->get_parallel_edge().value().is_same_metal();
-          }
-
-          end_of_line_spacing_rule.has_enclose_cut = idb_spacing_eol.get()->get_enclose_cut().has_value();
-          if (idb_spacing_eol.get()->get_enclose_cut().has_value()) {
-            end_of_line_spacing_rule.has_below
-                = idb_spacing_eol.get()->get_enclose_cut().value().get_direction() == idb::routinglayer::Lef58SpacingEol::Direction::kBelow;
-            end_of_line_spacing_rule.has_above
-                = idb_spacing_eol.get()->get_enclose_cut().value().get_direction() == idb::routinglayer::Lef58SpacingEol::Direction::kAbove;
-            end_of_line_spacing_rule.enclosed_dist = idb_spacing_eol.get()->get_enclose_cut().value().get_enclose_dist();
-            end_of_line_spacing_rule.cut_to_metal_spacing = idb_spacing_eol.get()->get_enclose_cut().value().get_cut_to_metal_space();
-            end_of_line_spacing_rule.has_all_cuts = idb_spacing_eol.get()->get_enclose_cut().value().is_all_cuts();
-          }
-          end_of_line_spacing_rule_list.push_back(end_of_line_spacing_rule);
+        end_of_line_spacing_rule.has_ete = idb_spacing_eol.get()->get_end_to_end().has_value();
+        if (idb_spacing_eol.get()->get_end_to_end().has_value()) {
+          end_of_line_spacing_rule.ete_spacing = idb_spacing_eol.get()->get_end_to_end().value().get_end_to_end_space();
         }
-        exist_rule_set.insert(ViolationType::kEndOfLineSpacing);
-      }
-    } else {
-      {
-        // eol_rule_list.push_back({/*eol spacing*/ 140, /*eol width*/ 140, /*eol within*/ 50, /*ete*/ true, 160,
-        //                          /*has par*/ false, /*sub_eol*/ false, /*par space*/ 0, /*par within*/ 0, /* two egde*/ false, /*min length*/ false, 0,
-        //                          /*enclose cut*/ false, /*below */ false, /*above */ false, /*enclose dist */ 0, /*cut to metal space*/ 0, /*all cuts*/
-        //                          false,
-        //                          /*same metal*/ false});
-        EndOfLineSpacingRule end_of_line_spacing_rule;
-        end_of_line_spacing_rule.eol_spacing = 140;
-        end_of_line_spacing_rule.eol_width = 140;
-        end_of_line_spacing_rule.eol_within = 50;
 
-        end_of_line_spacing_rule.has_ete = true;
-        end_of_line_spacing_rule.ete_spacing = 160;
+        end_of_line_spacing_rule.has_par = idb_spacing_eol.get()->get_parallel_edge().has_value();
+        if (idb_spacing_eol.get()->get_parallel_edge().has_value()) {
+          end_of_line_spacing_rule.has_subtrace_eol_width = idb_spacing_eol.get()->get_parallel_edge().value().is_subtract_eol_width();
+          end_of_line_spacing_rule.par_spacing = idb_spacing_eol.get()->get_parallel_edge().value().get_par_space();
+          end_of_line_spacing_rule.par_within = idb_spacing_eol.get()->get_parallel_edge().value().get_par_within();
+          end_of_line_spacing_rule.has_two_edges = idb_spacing_eol.get()->get_parallel_edge().value().is_two_edges();
+          end_of_line_spacing_rule.has_min_length = idb_spacing_eol.get()->get_parallel_edge().value().get_min_length().has_value();
+          if (idb_spacing_eol.get()->get_parallel_edge().value().get_min_length().has_value()) {
+            end_of_line_spacing_rule.min_length = idb_spacing_eol.get()->get_parallel_edge().value().get_min_length().value();
+          }
+          end_of_line_spacing_rule.has_same_metal = idb_spacing_eol.get()->get_parallel_edge().value().is_same_metal();
+        }
 
-        end_of_line_spacing_rule.has_par = false;
-        end_of_line_spacing_rule.has_subtrace_eol_width = false;
-        end_of_line_spacing_rule.par_spacing = 0;
-        end_of_line_spacing_rule.par_within = 0;
-        end_of_line_spacing_rule.has_two_edges = false;
-        end_of_line_spacing_rule.has_min_length = false;
-        end_of_line_spacing_rule.min_length = 0;
-        end_of_line_spacing_rule.has_same_metal = false;
-
-        end_of_line_spacing_rule.has_enclose_cut = false;
-        end_of_line_spacing_rule.has_below = false;
-        end_of_line_spacing_rule.has_above = false;
-        end_of_line_spacing_rule.enclosed_dist = 0;
-        end_of_line_spacing_rule.cut_to_metal_spacing = 0;
-        end_of_line_spacing_rule.has_all_cuts = false;
-        end_of_line_spacing_rule_list.push_back(end_of_line_spacing_rule);
-      }
-      {
-        // eol_rule_list.push_back({/*eol spacing*/ 160, /*eol width*/ 140, /*eol within*/ 50, /*ete*/ true, 160,
-        //                          /*has par*/ true, /*sub_eol*/ true, /*par space*/ 230, /*par within*/ 140, /* two egde*/ false, /*min length*/ true, 100,
-        //                          /*enclose cut*/ false, /*below */ false, /*above */ false, /*enclose dist */ 0, /*cut to metal space*/ 0, /*all cuts*/
-        //                          false,
-        //                          /*same metal*/ false});
-        EndOfLineSpacingRule end_of_line_spacing_rule;
-        end_of_line_spacing_rule.eol_spacing = 160;
-        end_of_line_spacing_rule.eol_width = 140;
-        end_of_line_spacing_rule.eol_within = 50;
-
-        end_of_line_spacing_rule.has_ete = true;
-        end_of_line_spacing_rule.ete_spacing = 160;
-
-        end_of_line_spacing_rule.has_par = true;
-        end_of_line_spacing_rule.has_subtrace_eol_width = true;
-        end_of_line_spacing_rule.par_spacing = 230;
-        end_of_line_spacing_rule.par_within = 140;
-        end_of_line_spacing_rule.has_two_edges = false;
-        end_of_line_spacing_rule.has_min_length = true;
-        end_of_line_spacing_rule.min_length = 100;
-        end_of_line_spacing_rule.has_same_metal = false;
-
-        end_of_line_spacing_rule.has_enclose_cut = false;
-        end_of_line_spacing_rule.has_below = false;
-        end_of_line_spacing_rule.has_above = false;
-        end_of_line_spacing_rule.enclosed_dist = 0;
-        end_of_line_spacing_rule.cut_to_metal_spacing = 0;
-        end_of_line_spacing_rule.has_all_cuts = false;
-        end_of_line_spacing_rule_list.push_back(end_of_line_spacing_rule);
-      }
-      {
-        // eol_rule_list.push_back({/*eol spacing*/ 200, /*eol width*/ 140, /*eol within*/ 50, /*ete*/ true, 160,
-        //                          /*has par*/ true, /*sub_eol*/ true, /*par space*/ 230, /*par within*/ 140, /* two egde*/ false, /*min length*/ true, 100,
-        //                          /*enclose cut*/ true, /*below */ true, /*above */ false, /*enclose dist */ 100, /*cut to metal space*/ 290, /*all cuts*/
-        //                          true,
-        //                          /*same metal*/ false});
-        EndOfLineSpacingRule end_of_line_spacing_rule;
-        end_of_line_spacing_rule.eol_spacing = 200;
-        end_of_line_spacing_rule.eol_width = 140;
-        end_of_line_spacing_rule.eol_within = 50;
-
-        end_of_line_spacing_rule.has_ete = true;
-        end_of_line_spacing_rule.ete_spacing = 160;
-
-        end_of_line_spacing_rule.has_par = true;
-        end_of_line_spacing_rule.has_subtrace_eol_width = true;
-        end_of_line_spacing_rule.par_spacing = 230;
-        end_of_line_spacing_rule.par_within = 140;
-        end_of_line_spacing_rule.has_two_edges = false;
-        end_of_line_spacing_rule.has_min_length = true;
-        end_of_line_spacing_rule.min_length = 100;
-        end_of_line_spacing_rule.has_same_metal = false;
-
-        end_of_line_spacing_rule.has_enclose_cut = true;
-        end_of_line_spacing_rule.has_below = true;
-        end_of_line_spacing_rule.has_above = false;
-        end_of_line_spacing_rule.enclosed_dist = 100;
-        end_of_line_spacing_rule.cut_to_metal_spacing = 290;
-        end_of_line_spacing_rule.has_all_cuts = true;
-        end_of_line_spacing_rule_list.push_back(end_of_line_spacing_rule);
-      }
-      {
-        // eol_rule_list.push_back({/*eol spacing*/ 230, /*eol width*/ 110, /*eol within*/ 0, /*ete*/ false, 0,
-        //                          /*has par*/ true, /*sub_eol*/ false, /*par space*/ 120, /*par within*/ 240, /* two egde*/ true, /*min length*/ true, 300,
-        //                          /*enclose cut*/ false, /*below */ false, /*above */ false, /*enclose dist */ 0, /*cut to metal space*/ 0, /*all cuts*/
-        //                          false,
-        //                          /*same metal*/ true});
-        EndOfLineSpacingRule end_of_line_spacing_rule;
-        end_of_line_spacing_rule.eol_spacing = 230;
-        end_of_line_spacing_rule.eol_width = 110;
-        end_of_line_spacing_rule.eol_within = 0;
-
-        end_of_line_spacing_rule.has_ete = false;
-        end_of_line_spacing_rule.ete_spacing = 0;
-
-        end_of_line_spacing_rule.has_par = true;
-        end_of_line_spacing_rule.has_subtrace_eol_width = false;
-        end_of_line_spacing_rule.par_spacing = 120;
-        end_of_line_spacing_rule.par_within = 240;
-        end_of_line_spacing_rule.has_two_edges = true;
-        end_of_line_spacing_rule.has_min_length = true;
-        end_of_line_spacing_rule.min_length = 300;
-        end_of_line_spacing_rule.has_same_metal = true;
-
-        end_of_line_spacing_rule.has_enclose_cut = false;
-        end_of_line_spacing_rule.has_below = false;
-        end_of_line_spacing_rule.has_above = false;
-        end_of_line_spacing_rule.enclosed_dist = 0;
-        end_of_line_spacing_rule.cut_to_metal_spacing = 0;
-        end_of_line_spacing_rule.has_all_cuts = false;
+        end_of_line_spacing_rule.has_enclose_cut = idb_spacing_eol.get()->get_enclose_cut().has_value();
+        if (idb_spacing_eol.get()->get_enclose_cut().has_value()) {
+          end_of_line_spacing_rule.has_below
+              = idb_spacing_eol.get()->get_enclose_cut().value().get_direction() == idb::routinglayer::Lef58SpacingEol::Direction::kBelow;
+          end_of_line_spacing_rule.has_above
+              = idb_spacing_eol.get()->get_enclose_cut().value().get_direction() == idb::routinglayer::Lef58SpacingEol::Direction::kAbove;
+          end_of_line_spacing_rule.enclosed_dist = idb_spacing_eol.get()->get_enclose_cut().value().get_enclose_dist();
+          end_of_line_spacing_rule.cut_to_metal_spacing = idb_spacing_eol.get()->get_enclose_cut().value().get_cut_to_metal_space();
+          end_of_line_spacing_rule.has_all_cuts = idb_spacing_eol.get()->get_enclose_cut().value().is_all_cuts();
+        }
         end_of_line_spacing_rule_list.push_back(end_of_line_spacing_rule);
       }
       exist_rule_set.insert(ViolationType::kEndOfLineSpacing);
