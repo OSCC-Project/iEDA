@@ -147,7 +147,7 @@ std::string DensityEval::evalDensity(DensityCells cells, DensityRegion region, i
     }
   }
 
-  std::string output_path = createDirPath("density_map") + "/" + output_filename;
+  std::string output_path = createDirPath("/density_map") + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
   for (size_t row_index = density_grid.size(); row_index-- > 0;) {
@@ -229,9 +229,9 @@ std::string DensityEval::evalPinDensity(DensityPins pins, DensityRegion region, 
 
   std::string output_path;
   if (neighbor) {
-    output_path = createDirPath("density_map") + "/" + "neighbor_" + output_filename;
+    output_path = createDirPath("/density_map") + "/" + "neighbor_" + output_filename;
   } else {
-    output_path = createDirPath("density_map") + "/" + output_filename;
+    output_path = createDirPath("/density_map") + "/" + output_filename;
   }
 
   std::ofstream csv_file(output_path);
@@ -301,7 +301,7 @@ std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, 
         neighbor_net_count[row][col] = sum;
       }
     }
-    output_path = createDirPath("density_map") + "/" + "neighbor_" + output_filename;
+    output_path = createDirPath("/density_map") + "/" + "neighbor_" + output_filename;
     std::ofstream csv_file(output_path);
     for (int32_t row = grid_rows - 1; row >= 0; --row) {
       for (int32_t col = 0; col < grid_cols; ++col) {
@@ -316,7 +316,7 @@ std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, 
   }
 
   else {
-    output_path = createDirPath("density_map") + "/" + output_filename;
+    output_path = createDirPath("/density_map") + "/" + output_filename;
     std::ofstream csv_file(output_path);
     for (int32_t row = grid_rows - 1; row >= 0; --row) {
       for (int32_t col = 0; col < grid_cols; ++col) {

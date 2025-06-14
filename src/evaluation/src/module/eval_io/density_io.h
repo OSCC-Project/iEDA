@@ -15,40 +15,34 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file timing_io.h
+ * @file density_io.cpp
  * @author qiming chu (me@emin.chat)
- * @brief Timing evaluation IO for tcl interface.
+ * @brief Density evaluation IO for tcl interface.
  * @version 0.1
- * @date 2025-06-02
+ * @date 2025-06-14
  */
 
-#ifndef EVALTIMING_H
-#define EVALTIMING_H
+#ifndef DENSITY_IO_H
+#define DENSITY_IO_H
 
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <string>
 
-#include "idm.h"
-
 namespace ieval {
-class EvalTiming
+class EvalDensity
 {
  public:
-  static bool runTimingEval(const std::string& routing_type = "FLUTE");
-
-  static void printTimingResult();
-
-  static void getConfig(idm::DataConfig& config) { config = dmInst->get_config(); }
+  static bool runDensityEvalAndOutput(int grid_size, const std::string& stage);
 
   static void setOutputPath(const std::string& path);
 
  private:
-  EvalTiming();
-  ~EvalTiming();
-  std::string _routing_type;
+  EvalDensity();
+  ~EvalDensity();
+  std::string _db_config_path;
   static std::string _output_path;
 };
 }  // namespace ieval
-
-#endif  // EVALTIMING_H
+#endif  // DENSITY_IO_H
