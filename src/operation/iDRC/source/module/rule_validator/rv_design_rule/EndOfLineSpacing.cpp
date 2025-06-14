@@ -260,69 +260,79 @@ void RuleValidator::verifyEndOfLineSpacing(RVBox& rv_box)
           std::vector<bool> left_par(end_of_line_spacing_rule_list.size(), false);
           std::vector<bool> right_par(end_of_line_spacing_rule_list.size(), false);
 
-          for (auto& [env_net_idx, env_poly_idx_set] : env_net_polygon_map) {
-            for (const int32_t& env_poly_idx : env_poly_idx_set) {
-              if (env_net_idx == net_idx && env_poly_idx == poly_info.poly_info_idx) {
-                continue;  // 同一个polygon不参与par,这里存疑
-              }
-              PolyInfo& env_poly_info = routing_net_poly_info_map[routing_layer_idx][env_net_idx][env_poly_idx];
+          for (int32_t eol_rule_idx = 0; eol_rule_idx < end_of_line_spacing_rule_list.size(); eol_rule_idx++) {
+            // 不存在par规则的直接跳过 same metal后边再判断
+            if (end_of_line_spacing_rule_list[eol_rule_idx].has_par == false || end_of_line_spacing_rule_list[eol_rule_idx].has_same_metal) {
+              continue;
+            }
 
-              for (auto& env_segment : env_poly_info.edge_list) {
-                Direction env_direction = DRCUTIL.getDirection(env_segment.get_first(), env_segment.get_second());
-                if (env_direction == direction) {
-                  continue;  // par的segment必须与eol边垂直
+            for (auto& [env_net_idx, env_poly_idx_set] : env_net_polygon_map) {
+              if (left_par[eol_rule_idx] && right_par[eol_rule_idx]) {
+                continue;
+              }
+              for (const int32_t& env_poly_idx : env_poly_idx_set) {
+                if (env_net_idx == net_idx && env_poly_idx == poly_info.poly_info_idx) {
+                  continue;  // 同一个polygon不参与par,这里存疑
                 }
-                PlanarRect env_segment_rect = DRCUTIL.getBoundingBox({env_segment.get_first(), env_segment.get_second()});
-                for (int32_t eol_rule_idx = 0; eol_rule_idx < end_of_line_spacing_rule_list.size(); eol_rule_idx++) {
-                  // 不存在par规则的直接跳过 same metal后边再判断
-                  if (end_of_line_spacing_rule_list[eol_rule_idx].has_par == false || end_of_line_spacing_rule_list[eol_rule_idx].has_same_metal) {
-                    continue;
-                  }
-                  // 在left par rect
-                  if (DRCUTIL.isOpenOverlap(env_segment_rect, left_par_spacing_rect_list[eol_rule_idx])) {
-                    left_par[eol_rule_idx] = true;
-                  }
-                  // 在right par rect
-                  if (DRCUTIL.isOpenOverlap(env_segment_rect, right_par_spacing_rect_list[eol_rule_idx])) {
-                    right_par[eol_rule_idx] = true;
-                  }
+                PolyInfo& env_poly_info = routing_net_poly_info_map[routing_layer_idx][env_net_idx][env_poly_idx];
+                // 在left par rect
+                if (gtl::area(env_poly_info.gtl_hole_poly & DRCUTIL.convertToGTLRectInt(left_par_spacing_rect_list[eol_rule_idx])) > 0) {
+                  left_par[eol_rule_idx] = true;
+                }
+                // 在right par rect
+                if (gtl::area(env_poly_info.gtl_hole_poly & DRCUTIL.convertToGTLRectInt(right_par_spacing_rect_list[eol_rule_idx])) > 0) {
+                  right_par[eol_rule_idx] = true;
                 }
               }
             }
           }
+
           PlanarCoord post_coord = poly_info.coord_list[getIdx(eol_edge_idx + 1, poly_info.coord_size)];
           PlanarRect eol_segment_max_rect = DRCUTIL.getBoundingBox({pre_coord, post_coord});
-          for (auto& [env_net_idx, env_poly_idx_set] : env_net_polygon_map) {
-            if (env_net_idx == -1 && net_idx == -1) {
-              continue;
+
+          for (int32_t eol_rule_idx = end_of_line_spacing_rule_list.size() - 1; eol_rule_idx >= 0; eol_rule_idx--) {
+            EndOfLineSpacingRule cur_rule = end_of_line_spacing_rule_list[eol_rule_idx];
+            // eol width , min length ,没有same metal 的par,这三个可以在最外层判断掉
+            if (poly_info.edge_length_list[eol_edge_idx] >= cur_rule.eol_width) {
+              continue;  // 不满足eol width
             }
-
-            for (const int32_t& env_poly_idx : env_poly_idx_set) {
-              PolyInfo& env_poly_info = routing_net_poly_info_map[routing_layer_idx][env_net_idx][env_poly_idx];
-              for (int32_t env_segment_idx = 0; env_segment_idx < env_poly_info.edge_list.size(); env_segment_idx++) {
-                Segment<PlanarCoord>& env_segment = env_poly_info.edge_list[env_segment_idx];
-                // eol 的另一条边满足direction相同，orirntation不同
-                Direction env_direction = DRCUTIL.getDirection(env_segment.get_first(), env_segment.get_second());
-                Orientation env_orientation = DRCUTIL.getOrientation(env_segment.get_first(), env_segment.get_second());
-                if (!(env_direction == direction && env_orientation != orientation)) {
-                  continue;
+            // 如果有min length判断min length
+            if (cur_rule.has_min_length) {
+              int32_t min_length = cur_rule.min_length;
+              if (poly_info.edge_length_list[getIdx(eol_edge_idx - 1, poly_info.coord_size)] < min_length
+                  && poly_info.edge_length_list[getIdx(eol_edge_idx + 1, poly_info.coord_size)] < min_length) {
+                continue;  // 不满足min length
+              }
+            }
+            // 如果有par判断par
+            if (cur_rule.has_par && cur_rule.has_same_metal == false) {
+              if (cur_rule.has_two_edges) {
+                if (!(left_par[eol_rule_idx] && right_par[eol_rule_idx])) {
+                  continue;  // 两边都需要满足
                 }
-                PlanarRect env_segment_rect = DRCUTIL.getBoundingBox({env_segment.get_first(), env_segment.get_second()});
-                // 然后逐条规则进行匹配 从后往前
-                for (int32_t eol_rule_idx = end_of_line_spacing_rule_list.size() - 1; eol_rule_idx >= 0; eol_rule_idx--) {
-                  EndOfLineSpacingRule cur_rule = end_of_line_spacing_rule_list[eol_rule_idx];
-                  if (poly_info.edge_length_list[eol_edge_idx] >= cur_rule.eol_width) {
-                    continue;  // 不满足eol width
-                  }
-                  // 如果有min length判断min length
-                  if (cur_rule.has_min_length) {
-                    int32_t min_length = cur_rule.min_length;
-                    if (poly_info.edge_length_list[getIdx(eol_edge_idx - 1, poly_info.coord_size)] < min_length
-                        && poly_info.edge_length_list[getIdx(eol_edge_idx + 1, poly_info.coord_size)] < min_length) {
-                      continue;  // 不满足min length
-                    }
-                  }
+              } else {
+                if (!(left_par[eol_rule_idx] || right_par[eol_rule_idx])) {
+                  continue;  // 至少一边满足
+                }
+              }
+            }
+            for (auto& [env_net_idx, env_poly_idx_set] : env_net_polygon_map) {
+              if (env_net_idx == -1 && net_idx == -1) {
+                continue;
+              }
 
+              for (const int32_t& env_poly_idx : env_poly_idx_set) {
+                PolyInfo& env_poly_info = routing_net_poly_info_map[routing_layer_idx][env_net_idx][env_poly_idx];
+                for (int32_t env_segment_idx = 0; env_segment_idx < env_poly_info.edge_list.size(); env_segment_idx++) {
+                  Segment<PlanarCoord>& env_segment = env_poly_info.edge_list[env_segment_idx];
+                  // eol 的另一条边满足direction相同，orirntation不同
+                  Direction env_direction = DRCUTIL.getDirection(env_segment.get_first(), env_segment.get_second());
+                  Orientation env_orientation = DRCUTIL.getOrientation(env_segment.get_first(), env_segment.get_second());
+                  if (!(env_direction == direction && env_orientation != orientation)) {
+                    continue;
+                  }
+                  PlanarRect env_segment_rect = DRCUTIL.getBoundingBox({env_segment.get_first(), env_segment.get_second()});
+                  // 下面的是与env segment相关的rule,必须放到segment粒度
                   // 如果有cut相关的判断cut的规则 cut不满足直接跳出
                   if (cur_rule.has_enclose_cut) {
                     int32_t enclosed_dist = cur_rule.enclosed_dist;
@@ -345,52 +355,39 @@ void RuleValidator::verifyEndOfLineSpacing(RVBox& rv_box)
                     }
                   }
 
-                  // 如果有par判断par
-                  if (cur_rule.has_par) {
-                    // same metal的单独判断
-                    if (cur_rule.has_same_metal) {
-                      int32_t par_within = cur_rule.par_within;
-                      Segment<PlanarCoord> pre_env_segment = env_poly_info.edge_list[getIdx(env_segment_idx - 1, env_poly_info.edge_list.size())];
-                      Segment<PlanarCoord> post_env_segment = env_poly_info.edge_list[getIdx(env_segment_idx + 1, env_poly_info.edge_list.size())];
-                      PlanarRect pre_env_segment_rect = DRCUTIL.getBoundingBox({pre_env_segment.get_first(), pre_env_segment.get_second()});
-                      PlanarRect post_env_segment_rect = DRCUTIL.getBoundingBox({post_env_segment.get_first(), post_env_segment.get_second()});
-                      bool pre_left = false;
-                      bool pre_right = false;
-                      if (DRCUTIL.isOpenOverlap(pre_env_segment_rect, left_par_spacing_rect_list[eol_rule_idx])
-                          && DRCUTIL.getParallelLength(pre_env_segment_rect, left_par_spacing_rect_list[eol_rule_idx]) < par_within) {
-                        pre_left = true;
-                      } else if (DRCUTIL.isOpenOverlap(pre_env_segment_rect, right_par_spacing_rect_list[eol_rule_idx])
-                                 && DRCUTIL.getParallelLength(pre_env_segment_rect, right_par_spacing_rect_list[eol_rule_idx]) < par_within) {
-                        pre_right = true;
-                      }
+                  // same metal的单独判断
+                  if (cur_rule.has_same_metal) {
+                    int32_t par_within = cur_rule.par_within;
+                    Segment<PlanarCoord> pre_env_segment = env_poly_info.edge_list[getIdx(env_segment_idx - 1, env_poly_info.edge_list.size())];
+                    Segment<PlanarCoord> post_env_segment = env_poly_info.edge_list[getIdx(env_segment_idx + 1, env_poly_info.edge_list.size())];
+                    PlanarRect pre_env_segment_rect = DRCUTIL.getBoundingBox({pre_env_segment.get_first(), pre_env_segment.get_second()});
+                    PlanarRect post_env_segment_rect = DRCUTIL.getBoundingBox({post_env_segment.get_first(), post_env_segment.get_second()});
+                    bool pre_left = false;
+                    bool pre_right = false;
+                    if (DRCUTIL.isOpenOverlap(pre_env_segment_rect, left_par_spacing_rect_list[eol_rule_idx])
+                        && DRCUTIL.getParallelLength(pre_env_segment_rect, left_par_spacing_rect_list[eol_rule_idx]) < par_within) {
+                      pre_left = true;
+                    } else if (DRCUTIL.isOpenOverlap(pre_env_segment_rect, right_par_spacing_rect_list[eol_rule_idx])
+                               && DRCUTIL.getParallelLength(pre_env_segment_rect, right_par_spacing_rect_list[eol_rule_idx]) < par_within) {
+                      pre_right = true;
+                    }
 
-                      bool post_left = false;
-                      bool post_right = false;
-                      if (DRCUTIL.isOpenOverlap(post_env_segment_rect, left_par_spacing_rect_list[eol_rule_idx])
-                          && DRCUTIL.getParallelLength(post_env_segment_rect, left_par_spacing_rect_list[eol_rule_idx]) < par_within) {
-                        post_left = true;
-                      } else if (DRCUTIL.isOpenOverlap(post_env_segment_rect, right_par_spacing_rect_list[eol_rule_idx])
-                                 && DRCUTIL.getParallelLength(post_env_segment_rect, right_par_spacing_rect_list[eol_rule_idx]) < par_within) {
-                        post_right = true;
-                      }
-                      if (cur_rule.has_two_edges) {
-                        if (!(pre_left && post_right) && !(pre_right && post_left)) {
-                          continue;  // 两边都需要满足
-                        }
-                      } else {
-                        if (!(pre_left || pre_right) && !(post_left || post_right)) {
-                          continue;  // 至少一边满足
-                        }
+                    bool post_left = false;
+                    bool post_right = false;
+                    if (DRCUTIL.isOpenOverlap(post_env_segment_rect, left_par_spacing_rect_list[eol_rule_idx])
+                        && DRCUTIL.getParallelLength(post_env_segment_rect, left_par_spacing_rect_list[eol_rule_idx]) < par_within) {
+                      post_left = true;
+                    } else if (DRCUTIL.isOpenOverlap(post_env_segment_rect, right_par_spacing_rect_list[eol_rule_idx])
+                               && DRCUTIL.getParallelLength(post_env_segment_rect, right_par_spacing_rect_list[eol_rule_idx]) < par_within) {
+                      post_right = true;
+                    }
+                    if (cur_rule.has_two_edges) {
+                      if (!(pre_left && post_right) && !(pre_right && post_left)) {
+                        continue;  // 两边都需要满足
                       }
                     } else {
-                      if (cur_rule.has_two_edges) {
-                        if (!(left_par[eol_rule_idx] && right_par[eol_rule_idx])) {
-                          continue;  // 两边都需要满足
-                        }
-                      } else {
-                        if (!(left_par[eol_rule_idx] || right_par[eol_rule_idx])) {
-                          continue;  // 至少一边满足
-                        }
+                      if (!(pre_left || pre_right) && !(post_left || post_right)) {
+                        continue;  // 至少一边满足
                       }
                     }
                   }
@@ -418,10 +415,10 @@ void RuleValidator::verifyEndOfLineSpacing(RVBox& rv_box)
                   violation.set_layer_idx(routing_layer_idx);
                   violation.set_rect(violation_rect);
                   edge_violation_map[poly_info.edge_list[eol_edge_idx]].push_back(std::make_pair(env_poly_info.edge_list[env_segment_idx], violation));
-                  break;  // 满足这一级，直接break
                 }
               }
             }
+            // rule
           }
           // eol edge
         }
