@@ -203,6 +203,11 @@ class Utility
    */
   static bool isOpenOverlap(const PlanarRect& a, const PlanarRect& b) { return isOverlap(a, b, false); }
 
+  static bool isOpenOverlap(const PlanarCoord& start_coord, const PlanarCoord& end_coord, const PlanarRect& rect)
+  {
+    return isOverlap(getRect(start_coord, end_coord), rect, false);
+  }
+
   /**
    *  ！在检测DRC中
    *  如果a与b中有膨胀矩形,那么则用isOpenOverlap
