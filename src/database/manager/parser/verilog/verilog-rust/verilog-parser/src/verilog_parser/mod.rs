@@ -189,10 +189,6 @@ fn process_assign_declaration(
     pair: Pair<Rule>,
 ) -> Result<Box<dyn verilog_data::VerilogVirtualBaseStmt>, pest::error::Error<Rule>> {
     let line_no = pair.line_col().0;
-    if line_no == 809 {
-        println!("Debug");
-    }
-
     let pair_clone = pair.clone();
     match pair.as_rule() {
         Rule::assign_declaration => {
