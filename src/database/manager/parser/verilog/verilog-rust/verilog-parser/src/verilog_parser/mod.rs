@@ -889,7 +889,7 @@ pub fn parse_verilog_file(verilog_file_path: &str) -> verilog_data::VerilogFile 
         }
         Err(err) => {
             // Handle parsing error
-            println!("Error: {}", err);
+            panic!("Fatal: {}", err);
         }
     }
 
