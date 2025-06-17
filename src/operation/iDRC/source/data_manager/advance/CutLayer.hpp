@@ -19,6 +19,7 @@
 #include "CutEOLSpacingRule.hpp"
 #include "DRCHeader.hpp"
 #include "DifferentLayerCutSpacingRule.hpp"
+#include "EnclosureEdgeRule.hpp"
 #include "PlanarRect.hpp"
 #include "SameLayerCutSpacingRule.hpp"
 
@@ -35,6 +36,7 @@ class CutLayer
   std::string& get_layer_name() { return _layer_name; }
   CutEOLSpacingRule& get_cut_eol_spacing_rule() { return _cut_eol_spacing_rule; }
   DifferentLayerCutSpacingRule& get_different_layer_cut_spacing_rule() { return _different_layer_cut_spacing_rule; }
+  std::vector<EnclosureEdgeRule>& get_enclosure_edge_rule_list() { return _enclosure_edge_rule_list; }
   SameLayerCutSpacingRule& get_same_layer_cut_spacing_rule() { return _same_layer_cut_spacing_rule; }
   // setter
   void set_layer_idx(const int32_t layer_idx) { _layer_idx = layer_idx; }
@@ -47,6 +49,7 @@ class CutLayer
   std::string _layer_name;
   CutEOLSpacingRule _cut_eol_spacing_rule;
   DifferentLayerCutSpacingRule _different_layer_cut_spacing_rule;
+  std::vector<EnclosureEdgeRule> _enclosure_edge_rule_list;
   SameLayerCutSpacingRule _same_layer_cut_spacing_rule;
 };
 

@@ -161,14 +161,9 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
     int32_t backward_ext = cut_layer.get_cut_eol_spacing_rule().backward_ext;
     int32_t span_length = cut_layer.get_cut_eol_spacing_rule().span_length;
 
-    int32_t min_width = routing_layer_list[routing_layer_idx].get_minimum_width_rule().min_width;
-
     std::vector<GTLHolePolyInt> gtl_hole_poly_list;
     gtl_poly_set.get(gtl_hole_poly_list);
-
-    // polyset -> polygon -> maxrect -> cut
     for (GTLHolePolyInt& gtl_hole_poly : gtl_hole_poly_list) {
-      // 获得polygon 的信息
       int32_t coord_size = static_cast<int32_t>(gtl_hole_poly.size());
       if (coord_size < 4) {
         continue;
@@ -178,15 +173,15 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
         coord_list.push_back(DRCUTIL.convertToPlanarCoord(*iter));
       }
       std::vector<bool> convex_corner_list;
-      std::vector<int32_t> edge_length_list;
       std::vector<Segment<PlanarCoord>> edge_list;
+      std::vector<int32_t> edge_length_list;
       for (int32_t i = 0; i < coord_size; i++) {
         PlanarCoord& pre_coord = coord_list[getIdx(i - 1, coord_size)];
         PlanarCoord& curr_coord = coord_list[i];
         PlanarCoord& post_coord = coord_list[getIdx(i + 1, coord_size)];
         convex_corner_list.push_back(DRCUTIL.isConvexCorner(DRCUTIL.getRotation(gtl_hole_poly), pre_coord, curr_coord, post_coord));
-        edge_length_list.push_back(DRCUTIL.getManhattanDistance(pre_coord, curr_coord));
         edge_list.push_back(Segment<PlanarCoord>(pre_coord, curr_coord));
+        edge_length_list.push_back(DRCUTIL.getManhattanDistance(pre_coord, curr_coord));
       }
       std::set<int32_t> eol_edge_idx_set;
       for (int32_t i = 0; i < coord_size; i++) {
@@ -194,17 +189,16 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
           eol_edge_idx_set.insert(i);
         }
       }
-
       // 获得cut
       // net_idx -> map(rect,overhang_segment)
-      std::map<int32_t, std::map<PlanarRect, std::vector<Segment<PlanarCoord>>, CmpPlanarRectByXASC>> net_cut_overhang_list;  // 记录overhang
-      std::map<int32_t, std::map<PlanarRect, std::vector<PlanarRect>, CmpPlanarRectByXASC>> net_cut_metal_rect_list;  // 记录cut的metal rect  --和span rect open overlap
-      std::map<int32_t, std::map<PlanarRect, std::vector<PlanarRect>, CmpPlanarRectByXASC>> net_cut_span_rect_list;   // cut 用来算span的rect --和cut open overlap
+      std::map<int32_t, std::map<PlanarRect, std::vector<Segment<PlanarCoord>>, CmpPlanarRectByXASC>> net_cut_overhang_list;
+      // cut 用来算span的rect --和cut open overlap
+      std::map<int32_t, std::map<PlanarRect, std::vector<PlanarRect>, CmpPlanarRectByXASC>> net_cut_span_rect_list;
       std::vector<GTLRectInt> polygon_rect_list;
       gtl::get_max_rectangles(polygon_rect_list, gtl_hole_poly);
       for (GTLRectInt& gtl_polygon_rect : polygon_rect_list) {
         PlanarRect polygon_rect = DRCUTIL.convertToPlanarRect(gtl_polygon_rect);
-        if (polygon_rect.getWidth() < min_width) {
+        if (polygon_rect.getWidth() < routing_layer_list[routing_layer_idx].get_minimum_width_rule().min_width) {
           continue;
         }
         // 查出所有的cut
@@ -221,6 +215,9 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
           }
         }
       }
+
+      std::map<int32_t, std::map<PlanarRect, std::vector<PlanarRect>, CmpPlanarRectByXASC>>
+          net_cut_metal_rect_list;  // 记录cut的metal rect  --和span rect open overlap
 
       // 根据overhang进行cut spacing的检查
       for (auto& [net_idx, cut_overhang_list] : net_cut_overhang_list) {

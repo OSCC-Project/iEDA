@@ -471,6 +471,27 @@ void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_
       }
     }
   }
+  // EnclosureEdgeRule
+  {
+    std::vector<EnclosureEdgeRule>& enclosure_edge_rule_list = cut_layer.get_enclosure_edge_rule_list();
+    if (!idb_layer->get_lef58_enclosure_edge_list().empty()) {
+      for (std::shared_ptr<idb::cutlayer::Lef58EnclosureEdge>& idb_enclosure_edge : idb_layer->get_lef58_enclosure_edge_list()) {
+        if (idb_enclosure_edge.get()->get_convex_corners().has_value()) {
+          continue;
+        }
+        EnclosureEdgeRule enclosure_edge_rule;
+        enclosure_edge_rule.has_above = (idb_enclosure_edge.get()->get_direction() == idb::cutlayer::Lef58EnclosureEdge::Direction::kAbove);
+        enclosure_edge_rule.has_below = (idb_enclosure_edge.get()->get_direction() == idb::cutlayer::Lef58EnclosureEdge::Direction::kBelow);
+        enclosure_edge_rule.overhang = idb_enclosure_edge.get()->get_overhang();
+        enclosure_edge_rule.min_width = idb_enclosure_edge.get()->get_min_width().value();
+        enclosure_edge_rule.par_length = idb_enclosure_edge.get()->get_par_length().value();
+        enclosure_edge_rule.par_within = idb_enclosure_edge.get()->get_par_within().value();
+        enclosure_edge_rule.has_except_two_edges = idb_enclosure_edge.get()->has_except_twoedges();
+        enclosure_edge_rule_list.push_back(enclosure_edge_rule);
+      }
+      exist_rule_set.insert(ViolationType::kEnclosureEdge);
+    }
+  }
   // SameLayerCutSpacingRule
   {
     SameLayerCutSpacingRule& same_layer_cut_spacing_rule = cut_layer.get_same_layer_cut_spacing_rule();
