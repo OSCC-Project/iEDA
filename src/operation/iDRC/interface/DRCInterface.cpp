@@ -435,13 +435,15 @@ void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_
     CutEOLSpacingRule& cut_eol_spacing_rule = cut_layer.get_cut_eol_spacing_rule();
     if (idb_layer->get_lef58_eol_spacing().get() != nullptr) {
       idb::cutlayer::Lef58EolSpacing* idb_eol_spacing = idb_layer->get_lef58_eol_spacing().get();
-
-      int32_t curr_eol_spacing = idb_eol_spacing->get_cut_spacing1();
-      int32_t curr_eol_prl = idb_eol_spacing->get_prl();
-      int32_t curr_eol_prl_spacing = idb_eol_spacing->get_cut_spacing2();
-      cut_eol_spacing_rule.curr_eol_spacing = curr_eol_spacing;
-      cut_eol_spacing_rule.curr_eol_prl = curr_eol_prl;
-      cut_eol_spacing_rule.curr_eol_prl_spacing = curr_eol_prl_spacing;
+      cut_eol_spacing_rule.eol_spacing = idb_eol_spacing->get_cut_spacing1();
+      cut_eol_spacing_rule.eol_prl = idb_eol_spacing->get_prl();
+      cut_eol_spacing_rule.eol_prl_spacing = idb_eol_spacing->get_cut_spacing2();
+      cut_eol_spacing_rule.eol_width = idb_eol_spacing->get_eol_width();
+      cut_eol_spacing_rule.smaller_overhang = idb_eol_spacing->get_smaller_overhang();
+      cut_eol_spacing_rule.equal_overhang = idb_eol_spacing->get_equal_overhang();
+      cut_eol_spacing_rule.side_ext = idb_eol_spacing->get_side_ext();
+      cut_eol_spacing_rule.backward_ext = idb_eol_spacing->get_backward_ext();
+      cut_eol_spacing_rule.span_length = idb_eol_spacing->get_span_length();
       exist_rule_set.insert(ViolationType::kCutEOLSpacing);
     }
   }

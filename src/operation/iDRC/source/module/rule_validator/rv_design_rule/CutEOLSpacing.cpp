@@ -19,29 +19,6 @@
 namespace idrc {
 void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
 {
-  /*
-  对应的规则如下：
-      PROPERTY LEF58_EOLSPACING "
-      EOLSPACING 0.08 0.09 CUTCLASS VSINGLECUT TO VDOUBLECUT 0.085 0.09 ENDWIDTH 0.07 PRL -0.04
-      ENCLOSURE 0.04 0.00
-      EXTENSION 0.065 0.12 SPANLENGTH 0.055 ; " ;
-  */
-  // 规则定义
-  int32_t cut_spacing_a = 80 * 2;
-  int32_t cut_spacing_b = 90 * 2;
-
-  int32_t signle_double_cut_spacing_a = 85 * 2;  // double cut暂时不考虑
-  int32_t signle_double_cut_spacing_b = 90 * 2;  // double cut暂时不考虑
-
-  int32_t eol_width = 70 * 2;         // EOL edge的长度 要小于这个值
-  int32_t prl = -1 * 40 * 2;          // spacing的prl
-  int32_t smaller_overhang = 40 * 2;  // 有一个overhang小于这个值
-  int32_t equal_overhang = 0;         // 正交边(相邻边)的overhang等于这个值
-
-  int32_t side_ext = 65 * 2;       //
-  int32_t backward_ext = 120 * 2;  //
-  int32_t span_length = 55 * 2;    //
-
 #if 1
   auto update_cut_overhang = [](std::vector<Segment<PlanarCoord>>& overhang_list, PlanarRect& polygon_rect) {
     PlanarCoord ll = polygon_rect.get_ll();
@@ -86,7 +63,7 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
     return gtl::area(polygon_set) > 0;
   };
 
-  auto gen_eol_search_rect = [&](PlanarRect& cut_wire_rect, int egde_dir) {
+  auto gen_eol_search_rect = [&](PlanarRect& cut_wire_rect, int egde_dir, CutLayer& cut_layer) {
     std::vector<PlanarRect> search_rect_list;  // 0
     int32_t wire_llx = cut_wire_rect.get_ll_x();
     int32_t wire_lly = cut_wire_rect.get_ll_y();
@@ -94,20 +71,28 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
     int32_t wire_ury = cut_wire_rect.get_ur_y();
     switch (egde_dir) {
       case 0:
-        return std::vector<PlanarRect>{PlanarRect(wire_urx - backward_ext, wire_ury, wire_urx, wire_ury + side_ext),
-                                       PlanarRect(wire_urx - backward_ext, wire_lly - side_ext, wire_urx, wire_lly)};
+        return std::vector<PlanarRect>{PlanarRect(wire_urx - cut_layer.get_cut_eol_spacing_rule().backward_ext, wire_ury, wire_urx,
+                                                  wire_ury + cut_layer.get_cut_eol_spacing_rule().side_ext),
+                                       PlanarRect(wire_urx - cut_layer.get_cut_eol_spacing_rule().backward_ext,
+                                                  wire_lly - cut_layer.get_cut_eol_spacing_rule().side_ext, wire_urx, wire_lly)};
         break;
       case 1:
-        return std::vector<PlanarRect>{PlanarRect(wire_urx, wire_lly, wire_urx + side_ext, wire_lly + backward_ext),
-                                       PlanarRect(wire_llx - side_ext, wire_lly, wire_llx, wire_lly + backward_ext)};
+        return std::vector<PlanarRect>{PlanarRect(wire_urx, wire_lly, wire_urx + cut_layer.get_cut_eol_spacing_rule().side_ext,
+                                                  wire_lly + cut_layer.get_cut_eol_spacing_rule().backward_ext),
+                                       PlanarRect(wire_llx - cut_layer.get_cut_eol_spacing_rule().side_ext, wire_lly, wire_llx,
+                                                  wire_lly + cut_layer.get_cut_eol_spacing_rule().backward_ext)};
         break;
       case 2:
-        return std::vector<PlanarRect>{PlanarRect(wire_llx, wire_lly - side_ext, wire_llx + backward_ext, wire_lly),
-                                       PlanarRect(wire_llx, wire_ury, wire_llx + backward_ext, wire_ury + side_ext)};
+        return std::vector<PlanarRect>{PlanarRect(wire_llx, wire_lly - cut_layer.get_cut_eol_spacing_rule().side_ext,
+                                                  wire_llx + cut_layer.get_cut_eol_spacing_rule().backward_ext, wire_lly),
+                                       PlanarRect(wire_llx, wire_ury, wire_llx + cut_layer.get_cut_eol_spacing_rule().backward_ext,
+                                                  wire_ury + cut_layer.get_cut_eol_spacing_rule().side_ext)};
         break;
       case 3:
-        return std::vector<PlanarRect>{PlanarRect(wire_llx - side_ext, wire_ury - backward_ext, wire_llx, wire_ury),
-                                       PlanarRect(wire_urx, wire_ury - backward_ext, wire_urx + side_ext, wire_ury)};
+        return std::vector<PlanarRect>{PlanarRect(wire_llx - cut_layer.get_cut_eol_spacing_rule().side_ext,
+                                                  wire_ury - cut_layer.get_cut_eol_spacing_rule().backward_ext, wire_llx, wire_ury),
+                                       PlanarRect(wire_urx, wire_ury - cut_layer.get_cut_eol_spacing_rule().backward_ext,
+                                                  wire_urx + cut_layer.get_cut_eol_spacing_rule().side_ext, wire_ury)};
         break;
       default:
         break;
@@ -116,58 +101,65 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
   };
 #endif
 
-  std::vector<int32_t> cut_eol_spacing_layers = {1, 2, 3, 4, 5, 6};
-  // 基础数据
-  std::vector<Violation>& violation_list = rv_box.get_violation_list();
   std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DRCDM.getDatabase().get_cut_layer_list();
+  std::map<int32_t, std::vector<int32_t>>& routing_to_adjacent_cut_map = DRCDM.getDatabase().get_routing_to_adjacent_cut_map();
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = DRCDM.getDatabase().get_cut_to_adjacent_routing_map();
 
-  std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> cut_layer_all_query_tree;
-
-  std::map<int32_t, bgi::rtree<BGRectInt, bgi::quadratic<16>>> routing_layer_query_tree;  // 所有的shape都融合在一起
-  std::map<int32_t, GTLPolySetInt> routing_layer_gtl_poly_set;
-
-  for (DRCShape* rect : rv_box.get_drc_env_shape_list()) {
-    if (rect->get_is_routing()) {
-      int32_t layer_idx = rect->get_layer_idx();
-      int32_t net_idx = rect->get_net_idx();
-      routing_layer_gtl_poly_set[layer_idx] += DRCUTIL.convertToGTLRectInt(rect->get_rect());
-    } else {
-      cut_layer_all_query_tree[rect->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(rect->get_rect()), rect->get_net_idx()));
+  std::map<int32_t, GTLPolySetInt> routing_gtl_poly_set_map;
+  {
+    for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+      if (drc_shape->get_is_routing()) {
+        routing_gtl_poly_set_map[drc_shape->get_layer_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
+      }
+    }
+    for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+      if (drc_shape->get_is_routing()) {
+        routing_gtl_poly_set_map[drc_shape->get_layer_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
+      }
+    }
+  }
+  std::map<int32_t, bgi::rtree<BGRectInt, bgi::quadratic<16>>> routing_bg_rtree_map;
+  for (auto& [routing_layer_idx, gtl_poly_set] : routing_gtl_poly_set_map) {
+    std::vector<GTLRectInt> gtl_rect_list;
+    gtl::get_max_rectangles(gtl_rect_list, gtl_poly_set);
+    for (GTLRectInt& gtl_rect : gtl_rect_list) {
+      routing_bg_rtree_map[routing_layer_idx].insert(DRCUTIL.convertToBGRectInt(gtl_rect));
+    }
+  }
+  std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> cut_bg_rtree_map;
+  {
+    for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+      if (!drc_shape->get_is_routing()) {
+        cut_bg_rtree_map[drc_shape->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(drc_shape->get_rect()), drc_shape->get_net_idx()));
+      }
+    }
+    for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+      if (!drc_shape->get_is_routing()) {
+        cut_bg_rtree_map[drc_shape->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(drc_shape->get_rect()), drc_shape->get_net_idx()));
+      }
     }
   }
 
-  for (DRCShape* rect : rv_box.get_drc_result_shape_list()) {
-    if (rect->get_is_routing()) {
-      int32_t layer_idx = rect->get_layer_idx();
-      int32_t net_idx = rect->get_net_idx();
-      routing_layer_gtl_poly_set[layer_idx] += DRCUTIL.convertToGTLRectInt(rect->get_rect());
-    } else {
-      cut_layer_all_query_tree[rect->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(rect->get_rect()), rect->get_net_idx()));
-    }
-  }
-
-  // 用max rect作为被查找的
-  for (auto& [routing_layer_idx, gtl_poly_set] : routing_layer_gtl_poly_set) {
-    std::vector<GTLRectInt> rect_list;
-    gtl::get_max_rectangles(rect_list, gtl_poly_set);
-    for (GTLRectInt& rect : rect_list) {
-      routing_layer_query_tree[routing_layer_idx].insert(DRCUTIL.convertToBGRectInt(rect));
-    }
-  }
-
-  for (auto& [routing_layer_idx, gtl_poly_set] : routing_layer_gtl_poly_set) {
-    int32_t cut_layer_idx = routing_layer_idx;  // 对应routing layer底层的cut layer的idx
-
-    int32_t violation_routing_layer_idx = -1;
+  for (auto& [routing_layer_idx, gtl_poly_set] : routing_gtl_poly_set_map) {
+    int32_t cut_layer_idx = -1;
     {
-      std::vector<int32_t>& routing_layer_idx_list = cut_to_adjacent_routing_map[cut_layer_idx];
-      violation_routing_layer_idx = *std::min_element(routing_layer_idx_list.begin(), routing_layer_idx_list.end());
+      std::vector<int32_t>& cut_layer_idx_list = routing_to_adjacent_cut_map[routing_layer_idx];
+      cut_layer_idx = *std::min_element(cut_layer_idx_list.begin(), cut_layer_idx_list.end());
     }
-    if (DRCUTIL.exist(cut_eol_spacing_layers, cut_layer_idx) == false) {
-      continue;  // 没有对应的cut layer  此时routing_layer_idx 刚好对应其下一层的cut layer idx
+    if (cut_to_adjacent_routing_map[cut_layer_idx].size() < 2) {
+      continue;
     }
+    CutLayer& cut_layer = cut_layer_list[cut_layer_idx];
+    int32_t eol_spacing = cut_layer.get_cut_eol_spacing_rule().eol_spacing;
+    int32_t eol_prl = cut_layer.get_cut_eol_spacing_rule().eol_prl;
+    int32_t eol_prl_spacing = cut_layer.get_cut_eol_spacing_rule().eol_prl_spacing;
+    int32_t eol_width = cut_layer.get_cut_eol_spacing_rule().eol_width;
+    int32_t smaller_overhang = cut_layer.get_cut_eol_spacing_rule().smaller_overhang;
+    int32_t equal_overhang = cut_layer.get_cut_eol_spacing_rule().equal_overhang;
+    int32_t side_ext = cut_layer.get_cut_eol_spacing_rule().side_ext;
+    int32_t backward_ext = cut_layer.get_cut_eol_spacing_rule().backward_ext;
+    int32_t span_length = cut_layer.get_cut_eol_spacing_rule().span_length;
 
     int32_t min_width = routing_layer_list[routing_layer_idx].get_minimum_width_rule().min_width;
 
@@ -205,23 +197,9 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
 
       // 获得cut
       // net_idx -> map(rect,overhang_segment)
-      struct RectCompare  //  cut rect 作为key
-      {
-        bool operator()(const PlanarRect& a, const PlanarRect& b) const
-        {
-          if (a.get_ll_x() != b.get_ll_x()) {
-            return a.get_ll_x() < b.get_ll_x();
-          } else if (a.get_ll_y() != b.get_ll_y()) {
-            return a.get_ll_y() < b.get_ll_y();
-          } else if (a.get_ur_x() != b.get_ur_x()) {
-            return a.get_ur_x() < b.get_ur_x();
-          }
-          return a.get_ur_y() < b.get_ur_y();
-        }
-      };
-      std::map<int32_t, std::map<PlanarRect, std::vector<Segment<PlanarCoord>>, RectCompare>> net_cut_overhang_list;  // 记录overhang
-      std::map<int32_t, std::map<PlanarRect, std::vector<PlanarRect>, RectCompare>> net_cut_metal_rect_list;  // 记录cut的metal rect  --和span rect open overlap
-      std::map<int32_t, std::map<PlanarRect, std::vector<PlanarRect>, RectCompare>> net_cut_span_rect_list;   // cut 用来算span的rect --和cut open overlap
+      std::map<int32_t, std::map<PlanarRect, std::vector<Segment<PlanarCoord>>, CmpPlanarRectByXASC>> net_cut_overhang_list;  // 记录overhang
+      std::map<int32_t, std::map<PlanarRect, std::vector<PlanarRect>, CmpPlanarRectByXASC>> net_cut_metal_rect_list;  // 记录cut的metal rect  --和span rect open overlap
+      std::map<int32_t, std::map<PlanarRect, std::vector<PlanarRect>, CmpPlanarRectByXASC>> net_cut_span_rect_list;   // cut 用来算span的rect --和cut open overlap
       std::vector<GTLRectInt> polygon_rect_list;
       gtl::get_max_rectangles(polygon_rect_list, gtl_hole_poly);
       for (GTLRectInt& gtl_polygon_rect : polygon_rect_list) {
@@ -231,7 +209,7 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
         }
         // 查出所有的cut
         std::vector<std::pair<BGRectInt, int32_t>> bg_cut_result;
-        cut_layer_all_query_tree[cut_layer_idx].query(bgi::intersects(DRCUTIL.convertToBGRectInt(polygon_rect)), std::back_inserter(bg_cut_result));
+        cut_bg_rtree_map[cut_layer_idx].query(bgi::intersects(DRCUTIL.convertToBGRectInt(polygon_rect)), std::back_inserter(bg_cut_result));
         for (auto& [bg_cut, net_idx] : bg_cut_result) {
           PlanarRect cut_rect = DRCUTIL.convertToPlanarRect(bg_cut);
           if (DRCUTIL.isOpenOverlap(cut_rect, polygon_rect)) {
@@ -319,7 +297,7 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
               overhang_coord_list.push_back(overhang_segment.get_second());
             }
             PlanarRect check_rect = DRCUTIL.getEnlargedRect(DRCUTIL.getBoundingBox(overhang_coord_list), side_ext);
-            routing_layer_query_tree[cut_layer_idx].query(bgi::intersects(DRCUTIL.convertToBGRectInt(check_rect)), std::back_inserter(bg_env_rect_list));
+            routing_bg_rtree_map[cut_layer_idx].query(bgi::intersects(DRCUTIL.convertToBGRectInt(check_rect)), std::back_inserter(bg_env_rect_list));
           }
 
           GTLPolySetInt env_gtl_poly_set;  // 周围env的环境
@@ -349,7 +327,7 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
               // 两条对边启用距离规则
               PlanarRect wire_rect = DRCUTIL.getBoundingBox(
                   {overhang_list[i].get_first(), overhang_list[i].get_second(), overhang_list[pre_idx].get_first(), overhang_list[pre_idx].get_second()});
-              std::vector<PlanarRect> eol_ext_rect_list = gen_eol_search_rect(wire_rect, i);
+              std::vector<PlanarRect> eol_ext_rect_list = gen_eol_search_rect(wire_rect, i, cut_layer);
               bool is_overlap_pre = is_rect_interact_polygon(DRCUTIL.convertToGTLRectInt(eol_ext_rect_list[0]), env_gtl_poly_set, false);
               bool is_overlap_post = is_rect_interact_polygon(DRCUTIL.convertToGTLRectInt(eol_ext_rect_list[1]), env_gtl_poly_set, false);
               if (is_span_length && is_overlap_pre || (!is_span_length && is_overlap_pre && !is_overlap_post && is_eol_edge_list[i])) {
@@ -363,7 +341,7 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
               // 两条对边启用距离规则
               PlanarRect wire_rect = DRCUTIL.getBoundingBox(
                   {overhang_list[i].get_first(), overhang_list[i].get_second(), overhang_list[post_idx].get_first(), overhang_list[post_idx].get_second()});
-              std::vector<PlanarRect> eol_ext_rect_list = gen_eol_search_rect(wire_rect, i);
+              std::vector<PlanarRect> eol_ext_rect_list = gen_eol_search_rect(wire_rect, i, cut_layer);
               bool is_overlap_pre = is_rect_interact_polygon(DRCUTIL.convertToGTLRectInt(eol_ext_rect_list[0]), env_gtl_poly_set, false);
               bool is_overlap_post = is_rect_interact_polygon(DRCUTIL.convertToGTLRectInt(eol_ext_rect_list[1]), env_gtl_poly_set, false);
               if (is_span_length && is_overlap_post || (!is_span_length && is_overlap_post && !is_overlap_pre && is_eol_edge_list[i])) {
@@ -388,20 +366,20 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
           std::vector<PlanarRect> cut_spacing_rect_list;
           std::vector<PlanarRect> cut_spacing_b_rect_list;
           if (is_use_spacing_list[0]) {
-            cut_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(cut_east_segment_rect, 0, cut_spacing_b, cut_spacing_b, cut_spacing_b));
-            cut_spacing_b_rect_list.push_back(DRCUTIL.getEnlargedRect(cut_east_segment_rect, 0, -1 * prl, cut_spacing_b, -1 * prl));
+            cut_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(cut_east_segment_rect, 0, eol_prl_spacing, eol_prl_spacing, eol_prl_spacing));
+            cut_spacing_b_rect_list.push_back(DRCUTIL.getEnlargedRect(cut_east_segment_rect, 0, -1 * eol_prl, eol_prl_spacing, -1 * eol_prl));
           }
           if (is_use_spacing_list[1]) {
-            cut_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(cut_south_segment_rect, cut_spacing_b, cut_spacing_b, cut_spacing_b, 0));
-            cut_spacing_b_rect_list.push_back(DRCUTIL.getEnlargedRect(cut_south_segment_rect, -1 * prl, cut_spacing_b, -1 * prl, 0));
+            cut_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(cut_south_segment_rect, eol_prl_spacing, eol_prl_spacing, eol_prl_spacing, 0));
+            cut_spacing_b_rect_list.push_back(DRCUTIL.getEnlargedRect(cut_south_segment_rect, -1 * eol_prl, eol_prl_spacing, -1 * eol_prl, 0));
           }
           if (is_use_spacing_list[2]) {
-            cut_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(cut_west_segment_rect, cut_spacing_b, cut_spacing_b, 0, cut_spacing_b));
-            cut_spacing_b_rect_list.push_back(DRCUTIL.getEnlargedRect(cut_west_segment_rect, cut_spacing_b, -1 * prl, 0, -1 * prl));
+            cut_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(cut_west_segment_rect, eol_prl_spacing, eol_prl_spacing, 0, eol_prl_spacing));
+            cut_spacing_b_rect_list.push_back(DRCUTIL.getEnlargedRect(cut_west_segment_rect, eol_prl_spacing, -1 * eol_prl, 0, -1 * eol_prl));
           }
           if (is_use_spacing_list[3]) {
-            cut_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(cut_north_segment_rect, cut_spacing_b, 0, cut_spacing_b, cut_spacing_b));
-            cut_spacing_b_rect_list.push_back(DRCUTIL.getEnlargedRect(cut_north_segment_rect, -1 * prl, 0, -1 * prl, cut_spacing_b));
+            cut_spacing_rect_list.push_back(DRCUTIL.getEnlargedRect(cut_north_segment_rect, eol_prl_spacing, 0, eol_prl_spacing, eol_prl_spacing));
+            cut_spacing_b_rect_list.push_back(DRCUTIL.getEnlargedRect(cut_north_segment_rect, -1 * eol_prl, 0, -1 * eol_prl, eol_prl_spacing));
           }
           if (cut_spacing_rect_list.empty()) {
             continue;  // 没有需要的spacing区域,跳过
@@ -418,9 +396,8 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
           // 查找周围的cut rect
           std::vector<std::pair<BGRectInt, int32_t>> bg_env_cut_net_pair_list;
           {
-            PlanarRect check_rect = DRCUTIL.getEnlargedRect(cut, cut_spacing_b);
-            cut_layer_all_query_tree[cut_layer_idx].query(bgi::intersects(DRCUTIL.convertToBGRectInt(check_rect)),
-                                                          std::back_inserter(bg_env_cut_net_pair_list));
+            PlanarRect check_rect = DRCUTIL.getEnlargedRect(cut, eol_prl_spacing);
+            cut_bg_rtree_map[cut_layer_idx].query(bgi::intersects(DRCUTIL.convertToBGRectInt(check_rect)), std::back_inserter(bg_env_cut_net_pair_list));
           }
 
           // 和周围的cut逐个判断
@@ -434,13 +411,13 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
             if (env_cut == ori_cut) {
               continue;  // 自己和自己不算
             }
-            int32_t required_size = cut_spacing_a;
+            int32_t required_size = eol_spacing;
             int32_t real_spacing = DRCUTIL.getEuclideanDistance(env_cut, ori_cut);
             // 是否在spacing b区域
             if (is_rect_interact_polygon(DRCUTIL.convertToGTLRectInt(env_cut), cut_spacing_b_region, true)) {
-              required_size = cut_spacing_b;
+              required_size = eol_prl_spacing;
             } else if (is_rect_interact_polygon(DRCUTIL.convertToGTLRectInt(env_cut), cut_spacing_a_region, true)) {
-              required_size = cut_spacing_a;
+              required_size = eol_spacing;
             } else {
               continue;  // 不在spacing区域
             }
@@ -456,6 +433,12 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
               violation_rect = DRCUTIL.getSpacingRect(env_cut, cut);
             }
 
+            int32_t violation_routing_layer_idx = -1;
+            {
+              std::vector<int32_t>& routing_layer_idx_list = cut_to_adjacent_routing_map[cut_layer_idx];
+              violation_routing_layer_idx = *std::min_element(routing_layer_idx_list.begin(), routing_layer_idx_list.end());
+            }
+
             Violation violation;
             violation.set_violation_type(ViolationType::kCutEOLSpacing);
             violation.set_is_routing(true);
@@ -463,7 +446,7 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
             violation.set_layer_idx(violation_routing_layer_idx);
             violation.set_rect(violation_rect);
             violation.set_required_size(required_size);
-            violation_list.push_back(violation);
+            rv_box.get_violation_list().push_back(violation);
             //  env_cut
           }
         }
