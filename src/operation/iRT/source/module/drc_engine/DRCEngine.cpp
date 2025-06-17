@@ -275,7 +275,7 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
         layer_routing_list = expandLayer(violation, {-1, 0, +1});
         break;
       case ViolationType::kMinHole:
-        new_real_rect = enlargeRect(new_real_rect, static_cast<int32_t>(std::sqrt(violation.get_required_size())));
+        new_real_rect = enlargeRect(new_real_rect, 0);
         layer_routing_list = expandLayer(violation, {-1, 0, +1});
         break;
       case ViolationType::kMinimumArea:

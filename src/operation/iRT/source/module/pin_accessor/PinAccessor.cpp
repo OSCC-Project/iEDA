@@ -1156,63 +1156,26 @@ void PinAccessor::buildNetShadowMap(PABox& pa_box)
 
 void PinAccessor::exemptPinShape(PABox& pa_box)
 {
-  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
-
-  std::map<int32_t, std::map<EXTLayerRect*, std::set<Orientation>>> routing_layer_pin_shape_orient_map;
-  for (auto& [is_routing, layer_net_fixed_rect_map] : pa_box.get_type_layer_net_fixed_rect_map()) {
-    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
-      std::map<int32_t, std::set<Orientation>> routing_layer_orient_map;
-      if (is_routing) {
-        routing_layer_orient_map[layer_idx].insert(Orientation::kEast);
-        routing_layer_orient_map[layer_idx].insert(Orientation::kWest);
-        routing_layer_orient_map[layer_idx].insert(Orientation::kSouth);
-        routing_layer_orient_map[layer_idx].insert(Orientation::kNorth);
-        routing_layer_orient_map[layer_idx].insert(Orientation::kAbove);
-        routing_layer_orient_map[layer_idx].insert(Orientation::kBelow);
-      } else {
-        if (cut_to_adjacent_routing_map[layer_idx].size() < 2) {
-          continue;
-        }
-        int32_t below_routing_layer_idx = cut_to_adjacent_routing_map[layer_idx].front();
-        int32_t above_routing_layer_idx = cut_to_adjacent_routing_map[layer_idx].back();
-        RTUTIL.swapByASC(below_routing_layer_idx, above_routing_layer_idx);
-        routing_layer_orient_map[below_routing_layer_idx].insert(Orientation::kAbove);
-        routing_layer_orient_map[above_routing_layer_idx].insert(Orientation::kBelow);
-      }
-      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-        if (net_idx == -1) {
-          continue;
-        }
-        for (auto& fixed_rect : fixed_rect_set) {
-          for (auto& [routing_layer_idx, orient_set] : routing_layer_orient_map) {
-            routing_layer_pin_shape_orient_map[routing_layer_idx][fixed_rect] = orient_set;
-          }
-        }
-      }
-    }
-  }
+  ScaleAxis& box_track_axis = pa_box.get_box_track_axis();
   std::vector<GridMap<PANode>>& layer_node_map = pa_box.get_layer_node_map();
-  for (GridMap<PANode>& pa_node_map : layer_node_map) {
-    for (int32_t x = 0; x < pa_node_map.get_x_size(); x++) {
-      for (int32_t y = 0; y < pa_node_map.get_y_size(); y++) {
-        PANode& pa_node = pa_node_map[x][y];
-        for (auto& [pin_shape, orient_set] : routing_layer_pin_shape_orient_map[pa_node.get_layer_idx()]) {
-          if (!RTUTIL.isInside(pin_shape->get_real_rect(), pa_node.get_planar_coord())) {
+
+  for (auto& [net_idx, access_point_set] : pa_box.get_net_access_point_map()) {
+    for (AccessPoint* access_point : access_point_set) {
+      if (!RTUTIL.existTrackGrid(access_point->get_real_coord(), box_track_axis)) {
+        continue;
+      }
+      PlanarCoord grid_coord = RTUTIL.getTrackGrid(access_point->get_real_coord(), box_track_axis);
+      PANode& pa_node = layer_node_map[access_point->get_layer_idx()][grid_coord.get_x()][grid_coord.get_y()];
+      for (auto& [orient, net_set] : pa_node.get_orient_fixed_rect_map()) {
+        if (orient == Orientation::kAbove || orient == Orientation::kBelow) {
+          net_set.erase(-1);
+          PANode* neighbor_node = pa_node.getNeighborNode(orient);
+          if (neighbor_node == nullptr) {
             continue;
           }
-          for (auto& [orient, net_set] : pa_node.get_orient_fixed_rect_map()) {
-            if (!RTUTIL.exist(orient_set, orient)) {
-              continue;
-            }
-            net_set.erase(-1);
-            PANode* neighbor_node = pa_node.getNeighborNode(orient);
-            if (neighbor_node == nullptr) {
-              continue;
-            }
-            Orientation oppo_orientation = RTUTIL.getOppositeOrientation(orient);
-            if (RTUTIL.exist(neighbor_node->get_orient_fixed_rect_map(), oppo_orientation)) {
-              neighbor_node->get_orient_fixed_rect_map()[oppo_orientation].erase(-1);
-            }
+          Orientation oppo_orientation = RTUTIL.getOppositeOrientation(orient);
+          if (RTUTIL.exist(neighbor_node->get_orient_fixed_rect_map(), oppo_orientation)) {
+            neighbor_node->get_orient_fixed_rect_map()[oppo_orientation].erase(-1);
           }
         }
       }
@@ -1625,21 +1588,29 @@ double PinAccessor::getKnownViaCost(PABox& pa_box, PANode* start_node, PANode* e
 double PinAccessor::getKnownSelfCost(PABox& pa_box, PANode* start_node, PANode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  double non_prefer_wire_unit = pa_box.get_pa_iter_param()->get_non_prefer_wire_unit();
+  double routed_rect_unit = pa_box.get_pa_iter_param()->get_routed_rect_unit();
 
-  double self_cost = 0;
+  bool nonprefer_and_segment_end = false;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
     RoutingLayer& routing_layer = routing_layer_list[start_node->get_layer_idx()];
     if (routing_layer.get_prefer_direction() != RTUTIL.getDirection(*start_node, *end_node)) {
-      return self_cost;
+      for (std::vector<PANode*>& end_node_list : pa_box.get_end_node_list_list()) {
+        if (RTUTIL.exist(end_node_list, end_node)) {
+          nonprefer_and_segment_end = true;
+          break;
+        }
+      }
+      if (!nonprefer_and_segment_end) {
+        return 0;
+      }
     }
   }
+  RoutingLayer& routing_layer = routing_layer_list[start_node->get_layer_idx()];
+  int32_t wire_width = routing_layer.get_min_width();
+  int32_t target_wire_length = std::max(routing_layer.getPRLSpacing(wire_width), routing_layer.get_notch_spacing()) + wire_width;
+
   int32_t non_prefer_wire_length = 0;
   {
-    RoutingLayer& routing_layer = routing_layer_list[start_node->get_layer_idx()];
-    int32_t wire_width = routing_layer.get_min_width();
-    int32_t target_wire_length = std::max(routing_layer.getPRLSpacing(wire_width), routing_layer.get_notch_spacing()) + wire_width;
-
     PANode* curr_node = start_node;
     PANode* pre_node = curr_node->get_parent_node();
     while (pre_node != nullptr) {
@@ -1653,10 +1624,13 @@ double PinAccessor::getKnownSelfCost(PABox& pa_box, PANode* start_node, PANode* 
       curr_node = pre_node;
       pre_node = curr_node->get_parent_node();
     }
-    if (non_prefer_wire_length > 0) {
-      self_cost += std::max(0, target_wire_length - non_prefer_wire_length);
-      self_cost *= non_prefer_wire_unit;
+    if (nonprefer_and_segment_end) {
+      non_prefer_wire_length += RTUTIL.getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
     }
+  }
+  double self_cost = 0;
+  if (0 < non_prefer_wire_length && non_prefer_wire_length < target_wire_length) {
+    self_cost += routed_rect_unit;
   }
   return self_cost;
 }

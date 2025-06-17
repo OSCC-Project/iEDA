@@ -38,7 +38,7 @@ void RuleValidator::verifyMaximumWidth(RVBox& rv_box)
     routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
   }
   for (auto& [routing_layer_idx, net_gtl_poly_set_map] : routing_net_gtl_poly_set_map) {
-    int32_t max_width = routing_layer_list[routing_layer_idx].get_max_width();
+    int32_t max_width = routing_layer_list[routing_layer_idx].get_maximum_width_rule().max_width;
     for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set_map) {
       std::vector<GTLRectInt> gtl_rect_list;
       gtl::get_max_rectangles(gtl_rect_list, gtl_poly_set);
