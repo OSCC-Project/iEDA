@@ -310,7 +310,7 @@ void RuleValidator::verifyEndOfLineSpacing(RVBox& rv_box)
                   if (DRCUTIL.exist(skip_rule_idx_set, eol_rule_idx)) {
                     continue;
                   }
-                  auto curr_rule = end_of_line_spacing_rule_list[eol_rule_idx];
+                  EndOfLineSpacingRule& curr_rule = end_of_line_spacing_rule_list[eol_rule_idx];
                   // has_enclose_cut
                   if (curr_rule.has_enclose_cut) {
                     bool is_cut_require = false;
