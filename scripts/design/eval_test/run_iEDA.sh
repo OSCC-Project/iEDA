@@ -12,7 +12,7 @@ DESIGN_NAME="$1"
 
 # Support only specific designs
 case "$DESIGN_NAME" in
-    "gcd"|"aes"|"picorv32a")
+    "gcd"|"aes_cipher_top"|"picorv32a")
         echo "Running iEDA flow for design: $DESIGN_NAME"
         ;;
     *)
@@ -28,8 +28,8 @@ export WORKSPACE=$(cd "$(dirname "$0")";pwd)
 export RESULT_DIR=$WORKSPACE/result
 export FOUNDRY_DIR=$WORKSPACE/../../foundry/ihp130
 export IEDA_CONFIG_DIR=$WORKSPACE/../ihp130_gcd/iEDA_config # use the same config as ihp130_gcd
-export IEDA_TCL_SCRIPT_DIR=$WORKSPACE/script
-export TCL_SCRIPT_DIR=$WORKSPACE/script
+export IEDA_TCL_SCRIPT_DIR=$WORKSPACE/../ihp130_gcd/script
+export TCL_SCRIPT_DIR=$WORKSPACE/../ihp130_gcd/script
 export DEF_DIR=$WORKSPACE/result
 
 # Set configuration by design name
@@ -47,7 +47,7 @@ case "$DESIGN_NAME" in
         export DIE_AREA="0.0  0.0 150 150"
         export CORE_AREA="20 20 130 130"
         ;;
-    "aes")
+    "aes_cipher_top")
         export DIE_AREA="0 0 547.1137448407128 547.1137448407128"
         export CORE_AREA="10 10 537.1137448407128 537.1137448407128"
         ;;
@@ -64,6 +64,10 @@ echo "  SDC_FILE: $SDC_FILE"
 echo "  DIE_AREA: $DIE_AREA"
 echo "  CORE_AREA: $CORE_AREA"
 echo ""
+
+echo "Replacing iEDA TCL scripts with the ones from the workspace..."
+mv "$TCL_SCRIPT_DIR"/iPL_script/run_iPL_filler.tcl "$TCL_SCRIPT_DIR"/iPL_script/run_iPL_filler.tcl.bak || true
+cp "$WORKSPACE"/script/iPL_script/run_iPL_filler.tcl "$TCL_SCRIPT_DIR"/iPL_script/run_iPL_filler.tcl
 
 TCL_SCRIPTS="iFP_script/run_iFP.tcl
 iNO_script/run_iNO_fix_fanout.tcl
