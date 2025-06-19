@@ -1012,6 +1012,9 @@ unsigned Power::reportIRDropTable(const char* rpt_file_name) {
                  net_bump_node_loc.second.c_str());
   }
 
+  double nominal_voltage = getNominalVoltage();
+  std::fprintf(f.get(), "Nominal Voltage: %.3f V\n", nominal_voltage);
+  
   auto data_str = [](double data) { return Str::printf("%.3e", data); };
   auto net_to_instance_ir_drop = getNetInstanceIRDrop();
 

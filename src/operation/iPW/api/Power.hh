@@ -142,6 +142,10 @@ class Power {
     _rust_pg_rc_data = nullptr;
   }
 
+  double getNominalVoltage() {
+    return _ir_analysis.get_nominal_voltage();
+  }
+
   auto& getNetInstanceIRDrop() {
     return _ir_analysis.get_net_to_instance_ir_drop();
   }
