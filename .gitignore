@@ -25,4 +25,3 @@ rpt*/
 target/
 *-stamp/
 tmp/
-node_modules
