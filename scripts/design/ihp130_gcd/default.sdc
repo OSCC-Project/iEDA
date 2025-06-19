@@ -1,5 +1,3 @@
-#current_design gcd
-
 set clk_name  core_clock
 set clk_port_name clk
 set clk_expect_freq_mhz 200
