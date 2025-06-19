@@ -991,40 +991,47 @@ unsigned Power::reportIRDropTable(const char* rpt_file_name) {
   (*report_tbl)[0][1] = "IR Drop";
   (*report_tbl) << TABLE_ENDLINE;
 
-  auto data_str = [](double data) { return Str::printf("%.3e", data); };
-  auto instance_to_ir_drop = getInstanceIRDrop();
-
-  // sort
-  std::vector<std::pair<std::string, double>> ir_drop_vec(instance_to_ir_drop.begin(), instance_to_ir_drop.end());
-  std::sort(ir_drop_vec.begin(), ir_drop_vec.end(),
-      [](const auto& a, const auto& b) {
-          return a.second > b.second; // descending order
-      });
-
-  for (auto& [instance_name, ir_drop] : ir_drop_vec) {
-    (*report_tbl) << instance_name << data_str(ir_drop) << TABLE_ENDLINE;
-  }
-
   auto close_file = [](std::FILE* fp) { std::fclose(fp); };
 
   std::unique_ptr<std::FILE, decltype(close_file)> f(
       std::fopen(rpt_file_name, "w"), close_file);
 
-  std::fprintf(f.get(), "Generate the report at %s\n\n", Time::getNowWallTime());
+  std::fprintf(f.get(), "Generate the report at %s\n\n",
+               Time::getNowWallTime());
 
   auto pg_net_bump_node_loc = _ir_analysis.get_net_bump_node_locs();
   for (auto [pg_net_name, net_bump_node_loc] : pg_net_bump_node_loc) {
-    std::fprintf(f.get(), "PG Net %s bump node loc: (%ld %ld %s)\n", pg_net_name.c_str(),
-                 net_bump_node_loc.first.first, net_bump_node_loc.first.second,
+    std::fprintf(f.get(), "PG Net %s bump node loc: (%ld %ld %s)\n",
+                 pg_net_name.c_str(), net_bump_node_loc.first.first,
+                 net_bump_node_loc.first.second,
                  net_bump_node_loc.second.c_str());
   }
 
-  std::fprintf(f.get(), "\nMax IR Drop: %s %f V\n", ir_drop_vec.front().first.c_str(),
-               ir_drop_vec.front().second);
-  std::fprintf(f.get(), "Min IR Drop: %s %f V\n", ir_drop_vec.back().first.c_str(), ir_drop_vec.back().second);
+  auto data_str = [](double data) { return Str::printf("%.3e", data); };
+  auto net_to_instance_ir_drop = getNetInstanceIRDrop();
 
-  std::fprintf(f.get(), "Report : IR Drop Report, Unit V\n");
-  std::fprintf(f.get(), "%s\n", report_tbl->c_str());
+  for (auto [net_name, instance_to_ir_drop] : net_to_instance_ir_drop) {
+    // sort
+    std::vector<std::pair<std::string, double>> ir_drop_vec(
+        instance_to_ir_drop.begin(), instance_to_ir_drop.end());
+    std::sort(ir_drop_vec.begin(), ir_drop_vec.end(),
+              [](const auto& a, const auto& b) {
+                return a.second > b.second;  // descending order
+              });
+
+    for (auto& [instance_name, ir_drop] : ir_drop_vec) {
+      (*report_tbl) << instance_name << data_str(ir_drop) << TABLE_ENDLINE;
+    }
+
+    std::fprintf(f.get(), "\nNet %s max IR Drop: %s %f V\n", net_name.c_str(),
+                 ir_drop_vec.front().first.c_str(), ir_drop_vec.front().second);
+    std::fprintf(f.get(), "Net %s min IR Drop: %s %f V\n", net_name.c_str(),
+                 ir_drop_vec.back().first.c_str(), ir_drop_vec.back().second);
+
+    std::fprintf(f.get(), "Report : Net %s IR Drop Report, Unit V\n",
+                 net_name.c_str());
+    std::fprintf(f.get(), "%s\n", report_tbl->c_str());
+  }
 
   return 1;
 }
@@ -1035,14 +1042,16 @@ unsigned Power::reportIRDropTable(const char* rpt_file_name) {
  * @param rpt_file_name
  * @return unsigned
  */
-unsigned Power::reportIRDropCSV(const char* rpt_file_name) {
+unsigned Power::reportIRDropCSV(const char* rpt_file_name,
+                                std::string net_name) {
   std::ofstream csv_file(rpt_file_name);
   csv_file << "Instance Name"
            << ","
            << "IR Drop"
            << "\n";
   auto data_str = [](double data) { return Str::printf("%.3e", data); };
-  auto instance_to_ir_drop = getInstanceIRDrop();
+  auto net_to_instance_ir_drop = getNetInstanceIRDrop();
+  auto instance_to_ir_drop = net_to_instance_ir_drop[net_name];
 
   for (auto& [instance_name, ir_drop] : instance_to_ir_drop) {
     csv_file << instance_name << "," << data_str(ir_drop) << "\n";
@@ -1113,11 +1122,14 @@ unsigned Power::reportIRAnalysis(bool is_copy) {
 
     LOG_INFO << "output ir drop report: " << output_path;
   }
-  
-  // report csv file.
-  {
+
+  auto net_to_instance_ir_drop = getNetInstanceIRDrop();
+  for (auto [net_name, instance_ir_drop] : net_to_instance_ir_drop) {
+    // report csv file.
+
     std::string csv_file_name =
-        Str::printf("%s_%s.csv", ista->get_design_name().c_str(), "ir_drop");
+        Str::printf("%s_%s_%s.csv", ista->get_design_name().c_str(),
+                    net_name.c_str(), "ir_drop");
 
     if (is_copy) {
       if (!_backup_work_dir) {
@@ -1130,7 +1142,7 @@ unsigned Power::reportIRAnalysis(bool is_copy) {
     std::string output_path = output_dir + "/" + csv_file_name;
 
     // report in IR drop csv.
-    reportIRDropCSV(output_path.c_str());
+    reportIRDropCSV(output_path.c_str(), net_name);
 
     LOG_INFO << "output ir drop csv report: " << output_path;
   }

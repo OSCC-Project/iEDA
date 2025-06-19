@@ -69,7 +69,7 @@ class iIR {
   void set_nominal_voltage(double nominal_voltage) { _nominal_voltage = nominal_voltage; }
   double get_nominal_voltage() { return _nominal_voltage; }
 
-  auto& get_instance_to_ir_drop() { return _instance_to_ir_drop; }
+  auto& get_net_to_instance_ir_drop() { return _net_to_instance_ir_drop; }
 
   unsigned init();
   unsigned readSpef(std::string_view spef_file_path);
@@ -93,7 +93,7 @@ class iIR {
 
   double _nominal_voltage = 0.0;
 
-  std::map<std::string, double> _instance_to_ir_drop;
+  std::map<std::string, std::map<std::string, double>> _net_to_instance_ir_drop;
 
   std::map<std::string, IRNodeLoc> _net_bump_node_locs; //!< The net bump node locs.
 

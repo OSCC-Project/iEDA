@@ -95,7 +95,7 @@ class PowerEngine {
     }
     return _ipower->runIRAnalysis(power_net_name);
   }
-  std::map<ista::Instance*, double> getInstanceIRDrop();
+  std::map<ista::Instance*, double> getInstanceIRDrop(std::string power_net_name = "VDD");
 
   std::map<ista::Instance::Coordinate, double> displayPowerMap() {
     return _ipower->displayInstancePowerMap();
