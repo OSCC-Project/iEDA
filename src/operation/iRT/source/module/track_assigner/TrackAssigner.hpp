@@ -65,7 +65,6 @@ class TrackAssigner
   void buildTANodeMap(TAPanel& ta_panel);
   void buildTANodeNeighbor(TAPanel& ta_panel);
   void buildOrientNetMap(TAPanel& ta_panel);
-  void exemptPinShape(TAPanel& ta_panel);
   void routeTAPanel(TAPanel& ta_panel);
   void routeTAPanelBySelf(TAPanel& ta_panel);
   std::vector<TATask*> initTaskSchedule(TAPanel& ta_panel);

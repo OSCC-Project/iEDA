@@ -18,6 +18,13 @@
 
 namespace idrc {
 
+void RuleValidator::verifyJogToJogSpacing(RVBox& rv_box)
+{
+}
+
+#if 0
+// 由于与prl有重叠,暂时关闭
+
 /*
 思路：
 1. 取max_rectangles,获得宽线；
@@ -250,7 +257,7 @@ void RuleValidator::verifyJogToJogSpacing(RVBox& rv_box)
             /// 查询
             std::vector<std::pair<BGRectInt, int32_t>> rects_in_spacing_rect
                 = queryRectbyRtreeWithIntersects(routing_layer_all_query_tree, routing_layer_idx, gtl::xl(spacing_gtl_rect), gtl::yl(spacing_gtl_rect),
-                                               gtl::xh(spacing_gtl_rect), gtl::yh(spacing_gtl_rect));
+                                                 gtl::xh(spacing_gtl_rect), gtl::yh(spacing_gtl_rect));
 
             for (auto& [jog_bg_rect, jog_net_idx] : rects_in_spacing_rect) {
               if (jog_net_idx != current_net_idx && jog_net_idx != around_rect_net_idx) {
@@ -291,4 +298,6 @@ void RuleValidator::verifyJogToJogSpacing(RVBox& rv_box)
 #endif
   }
 }
+#endif
+
 }  // namespace idrc

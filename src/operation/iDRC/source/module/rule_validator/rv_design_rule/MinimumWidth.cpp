@@ -37,7 +37,7 @@ void RuleValidator::verifyMinimumWidth(RVBox& rv_box)
     routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
   }
   for (auto& [routing_layer_idx, net_gtl_poly_set_map] : routing_net_gtl_poly_set_map) {
-    int32_t min_width = routing_layer_list[routing_layer_idx].get_min_width();
+    int32_t min_width = routing_layer_list[routing_layer_idx].get_minimum_width_rule().min_width;
     for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set_map) {
       GTLPolySetInt violation_gtl_poly_set;
       for (gtl::orientation_2d_enum gtl_orient : {gtl::HORIZONTAL, gtl::VERTICAL}) {

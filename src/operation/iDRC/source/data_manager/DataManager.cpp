@@ -125,7 +125,7 @@ void DataManager::buildConfig()
 void DataManager::buildDatabase()
 {
   buildDie();
-  buildPropertyDefinition();
+  buildDesignRule();
   buildLayerList();
   buildLayerInfo();
 }
@@ -152,13 +152,12 @@ void DataManager::checkDie()
   }
 }
 
-void DataManager::buildPropertyDefinition()
+void DataManager::buildDesignRule()
 {
   std::map<int32_t, int32_t>& routing_idb_layer_id_to_idx_map = _database.get_routing_idb_layer_id_to_idx_map();
-  PropertyDefinition& property_definition = _database.get_property_definition();
-
-  property_definition.set_bottom_routing_layer_idx(routing_idb_layer_id_to_idx_map[property_definition.get_bottom_routing_layer_idx()]);
-  property_definition.set_top_routing_layer_idx(routing_idb_layer_id_to_idx_map[property_definition.get_top_routing_layer_idx()]);
+  MaxViaStackRule& max_via_stack_rule = _database.get_max_via_stack_rule();
+  max_via_stack_rule.bottom_routing_layer_idx = routing_idb_layer_id_to_idx_map[max_via_stack_rule.bottom_routing_layer_idx];
+  max_via_stack_rule.top_routing_layer_idx = routing_idb_layer_id_to_idx_map[max_via_stack_rule.top_routing_layer_idx];
 }
 
 void DataManager::buildLayerList()
@@ -227,15 +226,15 @@ void DataManager::makeCutLayerList()
   std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
 
   for (size_t i = 1; i < cut_layer_list.size(); i++) {
-    CutLayer& pre_cut_layer = cut_layer_list[i - 1];
-    CutLayer& curr_cut_layer = cut_layer_list[i];
-    pre_cut_layer.set_above_spacing(curr_cut_layer.get_below_spacing());
-    pre_cut_layer.set_above_prl(curr_cut_layer.get_below_prl());
-    pre_cut_layer.set_above_prl_spacing(curr_cut_layer.get_below_prl_spacing());
+    DifferentLayerCutSpacingRule& pre_different_layer_cut_spacing_rule = cut_layer_list[i - 1].get_different_layer_cut_spacing_rule();
+    DifferentLayerCutSpacingRule& curr_different_layer_cut_spacing_rule = cut_layer_list[i].get_different_layer_cut_spacing_rule();
+    pre_different_layer_cut_spacing_rule.above_spacing = curr_different_layer_cut_spacing_rule.below_spacing;
+    pre_different_layer_cut_spacing_rule.above_prl = curr_different_layer_cut_spacing_rule.below_prl;
+    pre_different_layer_cut_spacing_rule.above_prl_spacing = curr_different_layer_cut_spacing_rule.below_prl_spacing;
   }
-  cut_layer_list.back().set_above_spacing(0);
-  cut_layer_list.back().set_above_prl(0);
-  cut_layer_list.back().set_above_prl_spacing(0);
+  cut_layer_list.back().get_different_layer_cut_spacing_rule().above_spacing = 0;
+  cut_layer_list.back().get_different_layer_cut_spacing_rule().above_prl = 0;
+  cut_layer_list.back().get_different_layer_cut_spacing_rule().above_prl_spacing = 0;
 }
 
 void DataManager::checkLayerList()
@@ -327,9 +326,6 @@ void DataManager::printDatabase()
   // **********     MicronDBU     ********** //
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "micron_dbu");
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _database.get_micron_dbu());
-  // ********** ManufactureGrid ********** //
-  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "manufacture_grid");
-  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _database.get_manufacture_grid());
   // **********        Die        ********** //
   Die& die = _database.get_die();
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "die");

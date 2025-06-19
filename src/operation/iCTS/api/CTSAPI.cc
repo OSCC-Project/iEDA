@@ -103,6 +103,7 @@ void CTSAPI::writeGDS()
   GDSPloter::plotDesign();
   GDSPloter::plotFlyLine();
   GDSPloter::writePyDesign();
+  GDSPloter::writeJsonDesign();
   GDSPloter::writePyFlyLine();
 }
 

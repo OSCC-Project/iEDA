@@ -49,11 +49,11 @@ class Segment
 
 struct SortSegmentInnerXASC
 {
-  void operator()(Segment<LayerCoord>& a) const
+  void operator()(Segment<PlanarCoord>& a) const
   {
-    LayerCoord& first_coord = a.get_first();
-    LayerCoord& second_coord = a.get_second();
-    if (CmpLayerCoordByXASC()(first_coord, second_coord)) {
+    PlanarCoord& first_coord = a.get_first();
+    PlanarCoord& second_coord = a.get_second();
+    if (CmpPlanarCoordByXASC()(first_coord, second_coord)) {
       return;
     }
     std::swap(first_coord, second_coord);
@@ -62,24 +62,11 @@ struct SortSegmentInnerXASC
 
 struct SortSegmentInnerYASC
 {
-  void operator()(Segment<LayerCoord>& a) const
+  void operator()(Segment<PlanarCoord>& a) const
   {
-    LayerCoord& first_coord = a.get_first();
-    LayerCoord& second_coord = a.get_second();
-    if (CmpLayerCoordByYASC()(first_coord, second_coord)) {
-      return;
-    }
-    std::swap(first_coord, second_coord);
-  }
-};
-
-struct SortSegmentInnerLayerASC
-{
-  void operator()(Segment<LayerCoord>& a) const
-  {
-    LayerCoord& first_coord = a.get_first();
-    LayerCoord& second_coord = a.get_second();
-    if (CmpLayerCoordByLayerASC()(first_coord, second_coord)) {
+    PlanarCoord& first_coord = a.get_first();
+    PlanarCoord& second_coord = a.get_second();
+    if (CmpPlanarCoordByYASC()(first_coord, second_coord)) {
       return;
     }
     std::swap(first_coord, second_coord);
@@ -88,36 +75,24 @@ struct SortSegmentInnerLayerASC
 
 struct CmpSegmentXASC
 {
-  bool operator()(Segment<LayerCoord>& a, Segment<LayerCoord>& b) const
+  bool operator()(const Segment<PlanarCoord>& a, const Segment<PlanarCoord>& b) const
   {
     if (a.get_first() != b.get_first()) {
-      return CmpLayerCoordByXASC()(a.get_first(), b.get_first());
+      return CmpPlanarCoordByXASC()(a.get_first(), b.get_first());
     } else {
-      return CmpLayerCoordByXASC()(a.get_second(), b.get_second());
+      return CmpPlanarCoordByXASC()(a.get_second(), b.get_second());
     }
   }
 };
 
 struct CmpSegmentYASC
 {
-  bool operator()(Segment<LayerCoord>& a, Segment<LayerCoord>& b) const
+  bool operator()(const Segment<PlanarCoord>& a, const Segment<PlanarCoord>& b) const
   {
     if (a.get_first() != b.get_first()) {
-      return CmpLayerCoordByYASC()(a.get_first(), b.get_first());
+      return CmpPlanarCoordByYASC()(a.get_first(), b.get_first());
     } else {
-      return CmpLayerCoordByYASC()(a.get_second(), b.get_second());
-    }
-  }
-};
-
-struct CmpSegmentLayerASC
-{
-  bool operator()(Segment<LayerCoord>& a, Segment<LayerCoord>& b) const
-  {
-    if (a.get_first() != b.get_first()) {
-      return CmpLayerCoordByLayerASC()(a.get_first(), b.get_first());
-    } else {
-      return CmpLayerCoordByLayerASC()(a.get_second(), b.get_second());
+      return CmpPlanarCoordByYASC()(a.get_second(), b.get_second());
     }
   }
 };

@@ -20,7 +20,7 @@ namespace idrc {
 
 void RuleValidator::verifyOffGridOrWrongWay(RVBox& rv_box)
 {
-  int32_t manufacture_grid = DRCDM.getDatabase().get_manufacture_grid();
+  int32_t manufacture_grid = DRCDM.getDatabase().get_off_grid_or_wrong_way_rule().manufacture_grid;
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = DRCDM.getDatabase().get_cut_to_adjacent_routing_map();
 
   std::map<int32_t, std::map<int32_t, GTLPolySetInt>> routing_net_gtl_poly_set_map;

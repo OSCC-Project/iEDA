@@ -47,13 +47,14 @@ void RuleValidator::verifyCornerFillSpacing(RVBox& rv_box)
   }
   for (auto& [routing_layer_idx, net_gtl_poly_set_map] : routing_net_gtl_poly_set_map) {
     RoutingLayer& routing_layer = routing_layer_list[routing_layer_idx];
-    if (!routing_layer.get_has_corner_fill()) {
+    CornerFillSpacingRule& corner_fill_spacing_rule = routing_layer.get_corner_fill_spacing_rule();
+    if (!corner_fill_spacing_rule.has_corner_fill) {
       continue;
     }
-    int32_t corner_fill_spacing = routing_layer.get_corner_fill_spacing();
-    int32_t edge_length_1 = routing_layer.get_edge_length_1();
-    int32_t edge_length_2 = routing_layer.get_edge_length_2();
-    int32_t adjacent_eol = routing_layer.get_adjacent_eol();
+    int32_t corner_fill_spacing = corner_fill_spacing_rule.corner_fill_spacing;
+    int32_t edge_length_1 = corner_fill_spacing_rule.edge_length_1;
+    int32_t edge_length_2 = corner_fill_spacing_rule.edge_length_2;
+    int32_t adjacent_eol = corner_fill_spacing_rule.adjacent_eol;
     std::map<std::set<int32_t>, GTLPolySetInt> net_violation_poly_set_map;
     for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set_map) {
       std::vector<GTLHolePolyInt> gtl_hole_poly_list;
