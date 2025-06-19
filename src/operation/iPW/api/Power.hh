@@ -134,7 +134,7 @@ class Power {
 
   unsigned runCompleteFlow();
 
-  // for IR analysis.
+  // Below for IR analysis API.
   unsigned readPGSpef(const char* spef_file);
   void resetIRAnalysisData() {
     iIR ir_analysis;
@@ -145,8 +145,13 @@ class Power {
   auto& getInstanceIRDrop() {
     return _ir_analysis.get_instance_to_ir_drop();
   }
-  
+
+  void setBumpNodeLocs(
+      const std::map<std::string, IRNodeLoc>& net_bump_node_locs) {
+    _ir_analysis.set_net_bump_node_locs(net_bump_node_locs);
+  }  
   unsigned runIRAnalysis(std::string power_net_name);
+  unsigned reportIRDropTable(const char* rpt_file_name);
   unsigned reportIRDropCSV(const char* rpt_file_name);
   unsigned reportIRAnalysis(bool is_copy = true);
 

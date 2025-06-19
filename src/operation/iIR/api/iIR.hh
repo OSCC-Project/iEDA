@@ -54,6 +54,9 @@ enum class IRSolverMethod {
   kCGSolver,  // Conjugate Gradient solver
 };
 
+using IRNodeCoord = std::pair<int64_t, int64_t>;
+using IRNodeLoc = std::pair<IRNodeCoord, std::string>;
+
 /**
  * @brief The IR top interface.
  * 
@@ -73,6 +76,15 @@ class iIR {
   unsigned readInstancePowerDB(std::string_view instance_power_file_path);
   unsigned setInstancePowerData(std::vector<IRInstancePower> instance_power_data);
 
+  void set_net_bump_node_locs(
+      const std::map<std::string, IRNodeLoc>& net_bump_node_locs) {
+        _net_bump_node_locs = net_bump_node_locs;
+  }
+
+  auto& get_net_bump_node_locs() const {
+    return _net_bump_node_locs;
+  }
+
   unsigned solveIRDrop(const char* net_name);
 
  private:
@@ -83,6 +95,8 @@ class iIR {
 
   std::map<std::string, double> _instance_to_ir_drop;
 
-  IRSolverMethod _solver_method = IRSolverMethod::kCGSolver;  //!< The IR solver method.
+  std::map<std::string, IRNodeLoc> _net_bump_node_locs; //!< The net bump node locs.
+
+  IRSolverMethod _solver_method = IRSolverMethod::kLUSolver;  //!< The IR solver method.
 };
 }  // namespace iir
