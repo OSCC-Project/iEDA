@@ -983,13 +983,18 @@ unsigned Power::readPGSpef(const char* spef_file) {
  * @return unsigned
  */
 unsigned Power::reportIRDropTable(const char* rpt_file_name) {
-  auto report_tbl = std::make_unique<PwrReportInstanceTable>("IR Drop Report");
+  auto create_report_table = [](const char* title) {
+    auto report_tbl =
+        std::make_unique<PwrReportInstanceTable>(title);
 
-  (*report_tbl) << TABLE_HEAD;
-  /* Fill each cell with operator[] */
-  (*report_tbl)[0][0] = "Instance Name";
-  (*report_tbl)[0][1] = "IR Drop";
-  (*report_tbl) << TABLE_ENDLINE;
+    (*report_tbl) << TABLE_HEAD;
+    /* Fill each cell with operator[] */
+    (*report_tbl)[0][0] = "Instance Name";
+    (*report_tbl)[0][1] = "IR Drop";
+    (*report_tbl) << TABLE_ENDLINE;
+
+    return report_tbl;
+  };
 
   auto close_file = [](std::FILE* fp) { std::fclose(fp); };
 
@@ -1011,6 +1016,8 @@ unsigned Power::reportIRDropTable(const char* rpt_file_name) {
   auto net_to_instance_ir_drop = getNetInstanceIRDrop();
 
   for (auto [net_name, instance_to_ir_drop] : net_to_instance_ir_drop) {
+    auto report_tbl = create_report_table(
+        Str::printf("Net %s IR Drop Report", net_name.c_str()));
     // sort
     std::vector<std::pair<std::string, double>> ir_drop_vec(
         instance_to_ir_drop.begin(), instance_to_ir_drop.end());

@@ -72,10 +72,13 @@ bool read_pg_spef(std::string pg_spef_file) {
  * @param power_net_name 
  * @return unsigned 
  */
-unsigned report_ir_drop(std::string power_net_name) {
+unsigned report_ir_drop(std::vector<std::string> power_nets) {
   auto* power_engine = ipower::PowerEngine::getOrCreatePowerEngine();
 
-  power_engine->runIRAnalysis(power_net_name);
+  for (auto power_net_name : power_nets) {
+    power_engine->runIRAnalysis(power_net_name);
+  }
+
   power_engine->reportIRAnalysis();
 
   return 1;
