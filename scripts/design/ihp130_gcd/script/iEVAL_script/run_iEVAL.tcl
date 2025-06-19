@@ -70,4 +70,4 @@ run_density_eval -eval_output_path $RESULT_DIR -grid_size 2000 -stage placement
 #===========================================================
 ##   Exit
 #===========================================================
-# flow_exiw
+flow_exit
