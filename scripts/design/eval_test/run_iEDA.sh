@@ -66,10 +66,16 @@ echo "  CORE_AREA: $CORE_AREA"
 echo ""
 
 echo "Replacing iEDA TCL scripts with the ones from the workspace..."
-mv "$TCL_SCRIPT_DIR"/iPL_script/run_iPL_filler.tcl "$TCL_SCRIPT_DIR"/iPL_script/run_iPL_filler.tcl.bak || true
-cp "$WORKSPACE"/script/iPL_script/run_iPL_filler.tcl "$TCL_SCRIPT_DIR"/iPL_script/run_iPL_filler.tcl
+mkdir -p "$TCL_SCRIPT_DIR"/iEVAL_script
+cp "$WORKSPACE"/script/iEVAL_script/run_iEVAL.tcl "$TCL_SCRIPT_DIR"/
+
+export INPUT_DEF="$WORKSPACE/result/iFP_result.def"
+export INPUT_VERILOG="$WORKSPACE/result/verilog/${DESIGN_NAME}_nl.v"
+export OUTPUT_DEF="$WORKSPACE/result/${DESIGN_NAME}_nl.def"
+export USE_VERILOG="true"
 
 TCL_SCRIPTS="iFP_script/run_iFP.tcl
+iEVAL_script/run_iEVAL.tcl
 iNO_script/run_iNO_fix_fanout.tcl
 iPL_script/run_iPL.tcl
 iCTS_script/run_iCTS.tcl
