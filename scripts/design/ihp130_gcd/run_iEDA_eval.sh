@@ -27,9 +27,9 @@ export WORKSPACE=$(cd "$(dirname "$0")";pwd)
 # (fixed) iEDA setting
 export RESULT_DIR=$WORKSPACE/result
 export FOUNDRY_DIR=$WORKSPACE/../../foundry/ihp130
-export IEDA_CONFIG_DIR=$WORKSPACE/../ihp130_gcd/iEDA_config # use the same config as ihp130_gcd
-export IEDA_TCL_SCRIPT_DIR=$WORKSPACE/../ihp130_gcd/script
-export TCL_SCRIPT_DIR=$WORKSPACE/../ihp130_gcd/script
+export IEDA_CONFIG_DIR=$WORKSPACE/iEDA_config
+export IEDA_TCL_SCRIPT_DIR=$WORKSPACE/script
+export TCL_SCRIPT_DIR=$WORKSPACE/script
 export DEF_DIR=$WORKSPACE/result
 
 # Set configuration by design name
@@ -64,10 +64,6 @@ echo "  SDC_FILE: $SDC_FILE"
 echo "  DIE_AREA: $DIE_AREA"
 echo "  CORE_AREA: $CORE_AREA"
 echo ""
-
-echo "Replacing iEDA TCL scripts with the ones from the workspace..."
-mkdir -p "$TCL_SCRIPT_DIR"/iEVAL_script
-cp "$WORKSPACE"/script/iEVAL_script/run_iEVAL.tcl "$TCL_SCRIPT_DIR"/
 
 export INPUT_DEF="$WORKSPACE/result/iFP_result.def"
 export INPUT_VERILOG="$WORKSPACE/result/verilog/${DESIGN_NAME}_nl.v"
