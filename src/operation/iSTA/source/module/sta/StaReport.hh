@@ -27,7 +27,6 @@
 #include <memory>
 
 #include "StaPathData.hh"
-#include "json/json.hpp"
 #include "report/ReportTable.hh"
 
 namespace ista {
