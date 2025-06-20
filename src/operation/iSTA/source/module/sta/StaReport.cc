@@ -85,6 +85,7 @@ unsigned StaReportPathSummary::operator()(StaSeqPathData* seq_path_data) {
   unsigned is_ok = 1;
   Sta* ista = Sta::getOrCreateSta();
   auto& report_tbl_summary = ista->get_report_tbl_summary();
+  auto& report_json = ista->getSummaryJsonReport();
 
   auto* capture_clock = seq_path_data->get_capture_clock();
 
@@ -132,11 +133,33 @@ unsigned StaReportPathSummary::operator()(StaSeqPathData* seq_path_data) {
                           << capture_clock->get_clock_name() << delay_type_str
                           << arrive_time_str << req_time_str << cppr_str
                           << slack_str << freq_str << TABLE_ENDLINE;
+
+    if (_json_report_enabled) {
+      report_json.push_back({{"endpoint", endpoint->getName()},
+                             {"clock_group", capture_clock->get_clock_name()},
+                             {"delay_type", delay_type_str},
+                             {"path_delay", arrive_time_str},
+                             {"path_required", req_time_str},
+                             {"cppr", cppr_str},
+                             {"slack", slack_str},
+                             {"freq", freq_str}});
+    }
   } else {
     const char* capture_clock_str = "**clock_gating_default**";
     (*report_tbl_summary) << endpoint->getName() << capture_clock_str
                           << delay_type_str << arrive_time_str << req_time_str
                           << cppr_str << slack_str << "NA" << TABLE_ENDLINE;
+
+    if (_json_report_enabled) {
+      report_json.push_back({{"endpoint", endpoint->getName()},
+                             {"clock_group", capture_clock_str},
+                             {"delay_type", delay_type_str},
+                             {"path_delay", arrive_time_str},
+                             {"path_required", req_time_str},
+                             {"cppr", cppr_str},
+                             {"slack", slack_str},
+                             {"freq", "NA"}});
+    }
   }
 
   return is_ok;
@@ -239,6 +262,17 @@ unsigned StaReportClockTNS::operator()(StaSeqPathData* seq_path_data) {
 
   (*report_tbl_TNS) << capture_clock->get_clock_name() << delay_type_str
                     << fix_point_str(TNS) << TABLE_ENDLINE;
+
+  if (isJsonReportEnabled()) {
+    auto& report_json = ista->getSlackJsonReport();
+    auto WNS = ista->getWNS(capture_clock_name, delay_type);
+
+    report_json.push_back({{"clock", capture_clock->get_clock_name()},
+                           {"delay_type", delay_type_str},
+                           {"TNS", fix_point_str(TNS)},
+                           {"WNS", fix_point_str(WNS)}});
+  }
+
   return is_ok;
 }
 

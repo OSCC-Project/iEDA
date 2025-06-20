@@ -58,6 +58,9 @@ CmdReportTiming::CmdReportTiming(const char* cmd_name) : TclCmd(cmd_name) {
 
   auto* help_option = new TclSwitchOption("-help");
   addOption(help_option);
+
+  auto *json_path_option = new TclStringOption("-json", 0, nullptr);
+  addOption(json_path_option);
 }
 
 unsigned CmdReportTiming::check() { return 1; }
@@ -90,6 +93,8 @@ unsigned CmdReportTiming::printHelp() {
     [-through <string list list>] : Specify the timing path through points.
                                     example: report_timing -through {dpath/a_reg/_55_:Q dpath/a_reg/_39_:A} -through {dpath/a_reg/_39_:B}
 
+    [-json <file>]                : Output report in JSON format to specified file.
+                                    example: report_timing -json timing_report.json
   
   )";
 
@@ -175,6 +180,12 @@ unsigned CmdReportTiming::exec() {
 
     ista->setReportSpec(std::move(from_list), std::move(through_list_list),
                         std::move(to_list));
+  }
+
+  auto* json_path_option = getOptionOrArg("-json");
+  if (json_path_option) {
+    const auto *json_path = json_path_option->getStringVal();
+    ista->setJsonReportPath(json_path);
   }
 
   ista->buildGraph();
