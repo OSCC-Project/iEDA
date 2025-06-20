@@ -1710,8 +1710,7 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
     dump_json["summary"] = _summary_json_report;
     dump_json["slack"] = _slack_json_report;
 
-    const auto *design_work_space = get_design_work_space();
-    std::string report_path = Str::printf("%s/%s", design_work_space, _json_report_path);
+    auto *report_path = Str::printf("%s.json", rpt_file_name);
 
     std::ofstream out_file(report_path);
     if (out_file.is_open()) {

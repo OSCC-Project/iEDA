@@ -618,11 +618,9 @@ class Sta {
   std::map<Instance::Coordinate, double> displayTransitionMap(
       AnalysisMode analysis_mode);
 
-  void setJsonReportPath(const char* json_path) {
-    _json_report_path = json_path;
-  }
+  void enableJsonReport() { _is_json_report_enabled = true; }
 
-  bool isJsonReportEnabled() const { return _json_report_path != nullptr; }
+  bool isJsonReportEnabled() const { return _is_json_report_enabled; }
 
   nlohmann::json& getSummaryJsonReport() { return _summary_json_report; }
   nlohmann::json& getSlackJsonReport() { return _slack_json_report; }
@@ -708,9 +706,11 @@ class Sta {
   // Singleton sta.
   static Sta* _sta;
 
-  const char* _json_report_path = nullptr;  //!< The path to dump json file.
-  nlohmann::json _summary_json_report = nlohmann::json::array();  //!< The json data
-  nlohmann::json _slack_json_report = nlohmann::json::array();  //!< The json data
+  bool _is_json_report_enabled = false;  //!< The json report enable flag.
+  nlohmann::json _summary_json_report =
+      nlohmann::json::array();  //!< The json data
+  nlohmann::json _slack_json_report =
+      nlohmann::json::array();  //!< The json data
 
 #if CUDA_PROPAGATION
   std::vector<GPU_Vertex> _gpu_vertices;  //!< gpu flatten vertex, arc data.
