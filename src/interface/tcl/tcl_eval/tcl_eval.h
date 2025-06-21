@@ -61,4 +61,24 @@ class CmdEvalTimingRun final : public TclCmd
   unsigned exec() override;
 };
 
+class CmdEvalWirelengthRun : public TclCmd
+{
+ public:
+  explicit CmdEvalWirelengthRun(const char* cmd_name);
+  ~CmdEvalWirelengthRun() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+};
+
+class CmdEvalDensityRun : public TclCmd
+{
+public:
+  explicit CmdEvalDensityRun(const char* cmd_name);
+  ~CmdEvalDensityRun() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+};
+
 }  // namespace tcl
