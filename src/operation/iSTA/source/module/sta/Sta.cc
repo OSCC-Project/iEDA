@@ -2139,8 +2139,11 @@ double Sta::getWNS(const char *clock_name, AnalysisMode mode) {
       FOREACH_PATH_END_DATA(path_end, mode, path_data) {
         seq_data_queue.push(path_data);
       }
-      auto *worst_seq_data = seq_data_queue.top();
-      WNS = FS_TO_NS(worst_seq_data->getSlack());
+
+      if (!seq_data_queue.empty()) {
+        auto *worst_seq_data = seq_data_queue.top();
+        WNS = FS_TO_NS(worst_seq_data->getSlack());
+      }
       break;
     }
   }
