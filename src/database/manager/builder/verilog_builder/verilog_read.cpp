@@ -354,17 +354,17 @@ int32_t RustVerilogRead::build_nets()
         auto bus_range = std::make_pair(dcl_range.start, dcl_range.end);
         for (int index = bus_range.second; index <= bus_range.first; index++) {
           // for port or wire bus, we split to one bye one port.
-          const char* one_name = ieda::Str::printf("%s[%d]", dcl_name, index);
+          const char* one_name = ieda::Str::printf("%s[%d]", net_name.c_str(), index);
           auto idb_net = add_wire_net(one_name);
           if (index == bus_range.second) {
-            IdbBus io_pin_bus(dcl_name, bus_range.first, bus_range.second);
+            IdbBus io_pin_bus(net_name, bus_range.first, bus_range.second);
             io_pin_bus.set_type(IdbBus::kBusType::kBusNet);
             io_pin_bus.addNet(idb_net);
 
             idb_design->get_bus_list()->addBusObject(std::move(io_pin_bus));
 
           } else {
-            std::string bus_name = dcl_name;
+            std::string bus_name = net_name;
             auto found_pin_bus = idb_design->get_bus_list()->findBus(bus_name);
             assert(found_pin_bus);
             (*found_pin_bus).get().addNet(idb_net);
