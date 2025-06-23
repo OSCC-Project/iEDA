@@ -26,6 +26,15 @@
 #include "log/Log.hh"
 namespace icts {
 
+JsonParser::JsonParser()
+{
+  char program_name[] = "JsonParser";
+  char* argv[] = {program_name};
+  // We need to initialize the log system here, because JsonParser() may be called in pybind,
+  // which does not have a main function to initialize the log system.
+  Log::init(argv, "/tmp/icts_logs/");
+}
+
 JsonParser& JsonParser::getInstance()
 {
   static JsonParser parser;
