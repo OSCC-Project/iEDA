@@ -42,6 +42,7 @@
 #include "Type.hh"
 #include "aocv/AocvParser.hh"
 #include "delay/ElmoreDelayCalc.hh"
+#include "json/json.hpp"
 #include "liberty/Lib.hh"
 #include "liberty/LibClassifyCell.hh"
 #include "netlist/Netlist.hh"
@@ -617,6 +618,13 @@ class Sta {
   std::map<Instance::Coordinate, double> displayTransitionMap(
       AnalysisMode analysis_mode);
 
+  void enableJsonReport() { _is_json_report_enabled = true; }
+
+  bool isJsonReportEnabled() const { return _is_json_report_enabled; }
+
+  nlohmann::json& getSummaryJsonReport() { return _summary_json_report; }
+  nlohmann::json& getSlackJsonReport() { return _slack_json_report; }
+
  private:
   Sta();
   ~Sta();
@@ -697,6 +705,12 @@ class Sta {
   std::shared_mutex _rw_mutex;  //!< For rc net.
   // Singleton sta.
   static Sta* _sta;
+
+  bool _is_json_report_enabled = false;  //!< The json report enable flag.
+  nlohmann::json _summary_json_report =
+      nlohmann::json::array();  //!< The json data
+  nlohmann::json _slack_json_report =
+      nlohmann::json::array();  //!< The json data
 
 #if CUDA_PROPAGATION
   std::vector<GPU_Vertex> _gpu_vertices;  //!< gpu flatten vertex, arc data.

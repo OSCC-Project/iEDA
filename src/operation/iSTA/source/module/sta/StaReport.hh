@@ -71,6 +71,9 @@ class StaReportPathSummary {
     _significant_digits = significant_digits;
   }
 
+  void enableJsonReport(bool enable) { _json_report_enabled = enable; }
+  bool isJsonReportEnabled() const { return _json_report_enabled; }
+
   static std::unique_ptr<StaReportTable> createReportTable(
       const char* tbl_name);
 
@@ -82,6 +85,7 @@ class StaReportPathSummary {
   AnalysisMode _analysis_mode;       //!< The max/min analysis mode.
   unsigned _n_worst;                 //!< The top n path num.
   unsigned _significant_digits = 3;  //!< The significant digits.
+  bool _json_report_enabled = false; //!< The flag to dump json file.
 };
 
 /**
