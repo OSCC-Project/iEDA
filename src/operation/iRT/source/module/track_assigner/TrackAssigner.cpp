@@ -110,9 +110,9 @@ void TrackAssigner::setTAComParam(TAModel& ta_model)
   int32_t cost_unit = RTDM.getOnlyPitch();
   double prefer_wire_unit = 1;
   double non_prefer_wire_unit = 2.5 * prefer_wire_unit;
-  double fixed_rect_unit = 10 * non_prefer_wire_unit * cost_unit;
+  double fixed_rect_unit = 4 * non_prefer_wire_unit * cost_unit;
   double routed_rect_unit = 2 * non_prefer_wire_unit * cost_unit;
-  double violation_unit = 10 * non_prefer_wire_unit * cost_unit;
+  double violation_unit = 4 * non_prefer_wire_unit * cost_unit;
   /**
    * prefer_wire_unit, schedule_interval, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times
    */
@@ -225,7 +225,6 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
         buildTANodeMap(ta_panel);
         buildTANodeNeighbor(ta_panel);
         buildOrientNetMap(ta_panel);
-        exemptPinShape(ta_panel);
         // debugCheckTAPanel(ta_panel);
         // debugPlotTAPanel(ta_panel, "before");
         routeTAPanel(ta_panel);
@@ -492,44 +491,6 @@ void TrackAssigner::buildOrientNetMap(TAPanel& ta_panel)
   }
   for (Violation& violation : ta_panel.get_violation_list()) {
     addViolationToGraph(ta_panel, violation);
-  }
-}
-
-void TrackAssigner::exemptPinShape(TAPanel& ta_panel)
-{
-  std::map<EXTLayerRect*, std::set<Orientation>> pin_shape_orient_map;
-  for (auto& [net_idx, fixed_rect_set] : ta_panel.get_net_fixed_rect_map()) {
-    if (net_idx == -1) {
-      continue;
-    }
-    for (auto& fixed_rect : fixed_rect_set) {
-      pin_shape_orient_map[fixed_rect] = {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth};
-    }
-  }
-  GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
-  for (int32_t x = 0; x < ta_node_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < ta_node_map.get_y_size(); y++) {
-      TANode& ta_node = ta_node_map[x][y];
-      for (auto& [pin_shape, orient_set] : pin_shape_orient_map) {
-        if (!RTUTIL.isInside(pin_shape->get_real_rect(), ta_node.get_planar_coord())) {
-          continue;
-        }
-        for (auto& [orient, net_set] : ta_node.get_orient_fixed_rect_map()) {
-          if (!RTUTIL.exist(orient_set, orient)) {
-            continue;
-          }
-          net_set.erase(-1);
-          TANode* neighbor_node = ta_node.getNeighborNode(orient);
-          if (neighbor_node == nullptr) {
-            continue;
-          }
-          Orientation oppo_orientation = RTUTIL.getOppositeOrientation(orient);
-          if (RTUTIL.exist(neighbor_node->get_orient_fixed_rect_map(), oppo_orientation)) {
-            neighbor_node->get_orient_fixed_rect_map()[oppo_orientation].erase(-1);
-          }
-        }
-      }
-    }
   }
 }
 

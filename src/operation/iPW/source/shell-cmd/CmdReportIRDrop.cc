@@ -28,7 +28,7 @@
 namespace ipower {
 
 CmdReportIRDrop::CmdReportIRDrop(const char* cmd_name) : TclCmd(cmd_name) {
-    auto* net_name_option = new TclStringOption("-net_name", 0, nullptr);
+    auto* net_name_option = new ieda::TclStringListOption("-net_name", 0);
     addOption(net_name_option);
 }
 
@@ -44,13 +44,16 @@ unsigned CmdReportIRDrop::exec() {
   }
 
   TclOption* net_name_option = getOptionOrArg("-net_name");
-  auto* power_net_name = net_name_option->getStringVal();
-  if (!power_net_name) {
+  auto power_nets = net_name_option->getStringList();
+  if (power_nets.empty()) {
     LOG_FATAL << "net name should be specified";
   }
 
   PowerEngine* power_engine = PowerEngine::getOrCreatePowerEngine();
-  power_engine->runIRAnalysis(power_net_name);
+  for (auto power_net_name : power_nets) {
+    power_engine->runIRAnalysis(power_net_name);
+  }
+  
   power_engine->reportIRAnalysis();
 
   return 1;

@@ -22,15 +22,26 @@ class SAComParam
 {
  public:
   SAComParam() = default;
-  SAComParam(int32_t supply_reduction) { _supply_reduction = supply_reduction; }
+  SAComParam(double supply_reduction, double wire_unit, double via_unit)
+  {
+    _supply_reduction = supply_reduction;
+    _wire_unit = wire_unit;
+    _via_unit = via_unit;
+  }
   ~SAComParam() = default;
   // getter
-  int32_t get_supply_reduction() const { return _supply_reduction; }
+  double get_supply_reduction() const { return _supply_reduction; }
+  double get_wire_unit() const { return _wire_unit; }
+  double get_via_unit() const { return _via_unit; }
   // setter
-  void set_supply_reduction(const int32_t supply_reduction) { _supply_reduction = supply_reduction; }
+  void set_supply_reduction(const double supply_reduction) { _supply_reduction = supply_reduction; }
+  void set_wire_unit(const double wire_unit) { _wire_unit = wire_unit; }
+  void set_via_unit(const double via_unit) { _via_unit = via_unit; }
 
  private:
-  int32_t _supply_reduction = 0;
+  double _supply_reduction = -1;
+  double _wire_unit = -1;
+  double _via_unit = -1;
 };
 
 }  // namespace irt

@@ -475,12 +475,42 @@ class Utility
     return rect;
   }
 
+  static PlanarRect getEnlargedRect(PlanarCoord start_coord, PlanarCoord end_coord, int32_t ll_x_minus_offset, int32_t ll_y_minus_offset,
+                                    int32_t ur_x_add_offset, int32_t ur_y_add_offset)
+  {
+    if (!CmpPlanarCoordByXASC()(start_coord, end_coord)) {
+      std::swap(start_coord, end_coord);
+    }
+    PlanarRect rect(start_coord, end_coord);
+
+    if (isRightAngled(start_coord, end_coord)) {
+      rect = getEnlargedRect(rect, ll_x_minus_offset, ll_y_minus_offset, ur_x_add_offset, ur_y_add_offset);
+    } else {
+      DRCLOG.error(Loc::current(), "The segment is oblique!");
+    }
+    return rect;
+  }
+
   static PlanarRect getRegularRect(PlanarRect rect, PlanarRect border)
   {
     PlanarRect regular_rect;
     regular_rect.set_ll(std::max(rect.get_ll_x(), border.get_ll_x()), std::max(rect.get_ll_y(), border.get_ll_y()));
     regular_rect.set_ur(std::min(rect.get_ur_x(), border.get_ur_x()), std::min(rect.get_ur_y(), border.get_ur_y()));
     return regular_rect;
+  }
+
+  static PlanarRect getEnlargedRect(PlanarCoord center_coord, int32_t enlarge_size)
+  {
+    return getEnlargedRect(center_coord, enlarge_size, enlarge_size, enlarge_size, enlarge_size);
+  }
+
+  static PlanarRect getEnlargedRect(PlanarCoord center_coord, int32_t ll_x_minus_offset, int32_t ll_y_minus_offset, int32_t ur_x_add_offset,
+                                    int32_t ur_y_add_offset)
+  {
+    PlanarRect rect(center_coord, center_coord);
+    minusOffset(rect.get_ll(), ll_x_minus_offset, ll_y_minus_offset);
+    addOffset(rect.get_ur(), ur_x_add_offset, ur_y_add_offset);
+    return rect;
   }
 
   // 扩大矩形

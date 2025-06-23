@@ -495,6 +495,9 @@ void IRPGNetlistBuilder::build(
            << " bump node location: " << middle_point.get_x() / _dbu << " "
            << middle_point.get_y() / _dbu << " " << getLayerName(layer_id);
 
+  IRNodeLoc bump_node_loc{{middle_point.get_x(), middle_point.get_y()}, getLayerName(layer_id)};
+  _net_bump_node_locs[special_net_name] = bump_node_loc;
+
   LOG_INFO << "instance pin edge num: "
            << pg_netlist.getEdgeNum() - via_edge_num - line_edge_num;
   LOG_INFO << "total edge num: " << pg_netlist.getEdgeNum();

@@ -37,7 +37,7 @@ void RuleValidator::verifyNonsufficientMetalOverlap(RVBox& rv_box)
   }
   for (auto& [routing_layer_idx, net_rect_map] : routing_net_rect_map) {
     RoutingLayer& routing_layer = routing_layer_list[routing_layer_idx];
-    int32_t min_width = routing_layer.get_min_width();
+    int32_t min_width = routing_layer.get_nonsufficient_metal_overlap_rule().min_width;
     int32_t half_width = min_width / 2;
     for (auto& [net_idx, rect_list] : net_rect_map) {
       std::map<int32_t, GTLPolySetInt> scale_gtl_poly_set_map;

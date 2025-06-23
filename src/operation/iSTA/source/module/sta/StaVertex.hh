@@ -299,8 +299,8 @@ class StaVertex {
                                      TransType trans_type);
 
   StaClock* getPropClock() {
-    return dynamic_cast<StaClockData*>(_clock_bucket.frontData())
-        ->get_prop_clock();
+    auto clock_data = dynamic_cast<StaClockData*>(_clock_bucket.frontData());
+    return clock_data ? clock_data->get_prop_clock() : nullptr;
   }
   StaClock* isHavePropClock() {
     if (!_clock_bucket.frontData()) {

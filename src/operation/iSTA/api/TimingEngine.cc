@@ -616,10 +616,14 @@ bool TimingEngine::isPropagatedClock(const char* clock_name) {
 StaClock* TimingEngine::getPropClockOfNet(Net* clock_net) {
   auto* driver = clock_net->getDriver();
   auto* driver_vertex = _ista->findVertex(driver);
-  if (driver->isInout()) {
-    driver_vertex = _ista->get_graph().getAssistant(driver_vertex);
-  }
   auto* prop_clock = driver_vertex->getPropClock();
+  if (driver->isInout() && !prop_clock) {
+    auto* driver_assistant_vertex = _ista->get_graph().getAssistant(driver_vertex);
+    prop_clock = driver_assistant_vertex->getPropClock();
+  }
+  
+  LOG_FATAL_IF(!prop_clock) << "No propagated clock found for net: "
+                            << clock_net->get_name();
   return prop_clock;
 }
 

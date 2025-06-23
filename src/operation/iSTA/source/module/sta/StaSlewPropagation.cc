@@ -85,9 +85,11 @@ unsigned StaSlewPropagation::operator()(StaArc* the_arc) {
   }
 
   auto* the_pin = dynamic_cast<Pin*>(obj);
-  LOG_FATAL_IF(!the_pin);
+  LOG_FATAL_IF(!the_pin) << "obj " << obj->getFullName()
+                << " is not a pin";
   auto* the_net = the_pin->get_net();
-  LOG_FATAL_IF(!the_net);
+  LOG_FATAL_IF(!the_net) << "The pin " << the_pin->getFullName()
+                << " has not connect net.";
 
   StaData* slew_data;
   FOREACH_SLEW_DATA(src_vertex, slew_data) {

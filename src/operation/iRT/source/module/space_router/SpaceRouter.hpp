@@ -53,8 +53,10 @@ class SpaceRouter
   void buildOrientSupply(SRModel& sr_model);
   void reviseNodeDemand(SRModel& sr_model);
   void routeSRModel(SRModel& sr_model);
+  void initRoutingState(SRModel& sr_model);
   void setSRIterParam(SRModel& sr_model, int32_t iter, SRIterParam& sr_iter_param);
   void initSRBoxMap(SRModel& sr_model);
+  void resetRoutingState(SRModel& sr_model);
   void buildBoxSchedule(SRModel& sr_model);
   void splitNetResult(SRModel& sr_model);
   void routeSRBoxMap(SRModel& sr_model);
@@ -63,7 +65,7 @@ class SpaceRouter
   void buildOverflow(SRModel& sr_model, SRBox& sr_box);
   bool needRouting(SRModel& sr_model, SRBox& sr_box);
   void buildBoxTrackAxis(SRBox& sr_box);
-  void buildLayerNodeMap(SRBox& sr_box);
+  void buildLayerNodeMap(SRModel& sr_model, SRBox& sr_box);
   void buildSRNodeNeighbor(SRBox& sr_box);
   void buildOrientSupply(SRModel& sr_model, SRBox& sr_box);
   void buildOrientDemand(SRModel& sr_model, SRBox& sr_box);
@@ -100,7 +102,7 @@ class SpaceRouter
   void selectBestResult(SRBox& sr_box);
   void uploadBestResult(SRBox& sr_box);
   void freeSRBox(SRBox& sr_box);
-  int32_t getOverflow(SRModel& sr_model);
+  double getOverflow(SRModel& sr_model);
   void uploadNetResult(SRModel& sr_model);
   void updateBestResult(SRModel& sr_model);
   bool stopIteration(SRModel& sr_model);

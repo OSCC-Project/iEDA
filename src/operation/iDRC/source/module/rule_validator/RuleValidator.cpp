@@ -142,7 +142,7 @@ void RuleValidator::buildRVModel(RVModel& rv_model)
     for (int32_t grid_x = grid_ll_x; grid_x <= grid_ur_x; grid_x++) {
       for (int32_t grid_y = grid_ll_y; grid_y <= grid_ur_y; grid_y++) {
         int32_t box_idx = grid_x + grid_y * grid_x_size;
-        if (rv_box_list.size() <= box_idx) {
+        if (static_cast<int32_t>(rv_box_list.size()) <= box_idx) {
           DRCLOG.error(Loc::current(), "rv_box_list.size() <= box_idx!");
         }
         rv_box_list[box_idx].get_drc_env_shape_list().push_back(&drc_env_shape);
@@ -159,7 +159,7 @@ void RuleValidator::buildRVModel(RVModel& rv_model)
     for (int32_t grid_x = grid_ll_x; grid_x <= grid_ur_x; grid_x++) {
       for (int32_t grid_y = grid_ll_y; grid_y <= grid_ur_y; grid_y++) {
         int32_t box_idx = grid_x + grid_y * grid_x_size;
-        if (rv_box_list.size() <= box_idx) {
+        if (static_cast<int32_t>(rv_box_list.size()) <= box_idx) {
           DRCLOG.error(Loc::current(), "rv_box_list.size() <= box_idx!");
         }
         rv_box_list[box_idx].get_drc_result_shape_list().push_back(&drc_result_shape);
@@ -729,7 +729,7 @@ void RuleValidator::debugVerifyRVModelByGolden(RVModel& rv_model)
 void RuleValidator::debugVerifyRVBoxByGolden(RVBox& rv_box)
 {
   int32_t micron_dbu = DRCDM.getDatabase().get_micron_dbu();
-  int32_t manufacture_grid = DRCDM.getDatabase().get_manufacture_grid();
+  int32_t manufacture_grid = DRCDM.getDatabase().get_off_grid_or_wrong_way_rule().manufacture_grid;
   Die& die = DRCDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DRCDM.getDatabase().get_cut_layer_list();

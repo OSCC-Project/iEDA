@@ -6,5 +6,5 @@ buildLANodeNeighbor:构建graph的邻居
 buildOrientSupply:从supply_analyzer获取supply的access
 buildTopoTree：从顶层拿取topo树
 routeLAModel:
-    routeLANet:一个接一个的la_net进行布线
+    routeLATask:一个接一个的la_net进行布线
 updateLAModel:将结果更新到顶层
