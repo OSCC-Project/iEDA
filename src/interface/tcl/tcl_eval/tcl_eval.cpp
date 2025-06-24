@@ -144,9 +144,8 @@ unsigned CmdEvalWirelengthRun::exec()
   std::cout << "[Evaluate Wirelength] path = " << path << std::endl;
   std::cout << "[Evaluate Wirelength] output_path = " << output_path << std::endl;
 
-  // EvalWirelength::setOutputPath(output_path);
-  // return EvalWirelength::runWirelengthEvalAndOutput();
-  return 1;
+  EvalWirelength::setOutputPath(output_path);
+  return EvalWirelength::runWirelengthEvalAndOutput();
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -196,8 +195,7 @@ unsigned CmdEvalDensityRun::exec()
   std::cout << "[Evaluate Density] grid_size = " << grid_size << std::endl;
   std::cout << "[Evaluate Density] stage = " << stage << std::endl;
 
-  // EvalDensity::setOutputPath(output_path);
-  // return EvalDensity::runDensityEvalAndOutput(grid_size, stage);
-  return 1;
+  EvalDensity::setOutputPath(output_path);
+  return EvalDensity::runDensityEvalAndOutput(grid_size, stage);
 }
 }  // namespace tcl
