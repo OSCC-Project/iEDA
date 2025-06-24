@@ -34,6 +34,8 @@ using std::string;
 
 namespace ieda {
 
+bool Log::_is_init = false;
+
 /**
  * @brief The SIGSEGV signal handle.
  *
@@ -57,14 +59,11 @@ void SignalHandle(const char* data, int size)
 void Log::init(char* argv[], std::string log_dir)
 {
   // Check if glog is already initialized
-  if (google::IsGoogleLoggingInitialized()) {
+  if (isInit()) {
     LOG_WARNING << "Google logging is already initialized, skipping re-initialization.";
     return;
   }
 
-  // set the log to stdout
-  FLAGS_logtostdout = true;
-  FLAGS_colorlogtostdout = true;
 
   /*init google logging.*/
   google::InitGoogleLogging(argv[0]);
@@ -81,11 +80,16 @@ void Log::init(char* argv[], std::string log_dir)
   string fatal_log = log_dir + "fatal_";
   google::SetLogDestination(google::FATAL, fatal_log.c_str());
 
+  FLAGS_alsologtostderr = 1;
+  FLAGS_colorlogtostderr = true;
+
   /*print stack trace when received SIGSEGV signal. */
   google::InstallFailureSignalHandler();
 
   /*print core dump SIGSEGV signal*/
   google::InstallFailureWriter(&SignalHandle);
+
+  set_is_init();
 }
 
 /**

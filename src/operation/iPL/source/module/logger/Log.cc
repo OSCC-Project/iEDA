@@ -58,13 +58,13 @@ void SignalHandle(const char* data, int size)
 void Log::init(char* argv[], std::string home_path)
 {
   // Check if glog is already initialized
-  if (google::IsGoogleLoggingInitialized()) {
-    LOG_WARNING << "Google logging is already initialized, skipping re-initialization.";
-    return;
-  }
+  // if (google::IsGoogleLoggingInitialized()) {
+  //   LOG_WARNING << "Google logging is already initialized, skipping re-initialization.";
+  //   return;
+  // }
 
-  FLAGS_logtostdout = true;
-  FLAGS_colorlogtostdout = true;
+  // FLAGS_logtostdout = true;
+  // FLAGS_colorlogtostdout = true;
 
   /*init google logging.*/
   google::InitGoogleLogging(argv[0]);
