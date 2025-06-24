@@ -33,6 +33,9 @@ option(BUILD_GUI "Enable GUI components (default OFF)" OFF)
 option(USE_GPU "Enable GPU acceleration (default OFF)" OFF)
 option(COMPATIBILITY_MODE "Enable compatibility mode (disable aggressive optimizations)" ON)
 
+# Define GLOG_USE_GLOG_EXPORT for glog 0.7.1+ compatibility
+add_definitions(-DGLOG_USE_GLOG_EXPORT)
+
 if(NOT DEFINED CMD_BUILD)
     set(SANITIZER OFF)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)

@@ -92,6 +92,12 @@ Sta::Sta()
       _analysis_mode(AnalysisMode::kMaxMin),
       _graph(&_netlist),
       _clock_groups(sta_clock_cmp) {
+  char config[] = "iSTA";
+  char *argv[] = {config, nullptr};
+  // We need to initialize the log system here, because Sta() may be called in pybind,
+  // which does not have a main function to initialize the log system.
+  Log::init(argv);
+
   _report_tbl_summary = StaReportPathSummary::createReportTable("sta");
   _report_tbl_TNS = StaReportClockTNS::createReportTable("TNS");
 }

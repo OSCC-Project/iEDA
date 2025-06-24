@@ -39,7 +39,7 @@ class JsonParser {
   void parse(const string &json_file, CtsConfig *config) const;
 
  private:
-  JsonParser() = default;
+  JsonParser();
   JsonParser(const JsonParser &parser) = delete;
   std::string resolvePath(const std::string& path) const;
   JsonParser &operator=(const JsonParser &) = default;

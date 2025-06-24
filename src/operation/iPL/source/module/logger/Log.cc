@@ -57,6 +57,15 @@ void SignalHandle(const char* data, int size)
  */
 void Log::init(char* argv[], std::string home_path)
 {
+  // Check if glog is already initialized
+  // if (google::IsGoogleLoggingInitialized()) {
+  //   LOG_WARNING << "Google logging is already initialized, skipping re-initialization.";
+  //   return;
+  // }
+
+  // FLAGS_logtostdout = true;
+  // FLAGS_colorlogtostdout = true;
+
   /*init google logging.*/
   google::InitGoogleLogging(argv[0]);
 
@@ -76,9 +85,6 @@ void Log::init(char* argv[], std::string home_path)
 
   std::string fatal_log = home + "fatal_";
   google::SetLogDestination(google::FATAL, fatal_log.c_str());
-
-  FLAGS_alsologtostderr = 1;
-  FLAGS_colorlogtostderr = true;
 
   /*print stack trace when received SIGSEGV signal. */
   google::InstallFailureSignalHandler();

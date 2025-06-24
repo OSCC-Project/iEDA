@@ -86,6 +86,11 @@ std::vector<BGSegment> IRPGNetlistBuilder::buildBGSegments(
   // build line segment.
   auto* idb_wires = special_net->get_wire_list();
   for (auto* idb_wire : idb_wires->get_wire_list()) {
+    if (!idb_wire->get_shiled_name().empty()) {
+      // skip the shield wire.
+      continue;
+    }
+    
     for (auto* idb_segment : idb_wire->get_segment_list()) {
       // line firstly process, we need know line intersect point first.
       if (!idb_segment->is_via()) {
@@ -495,7 +500,7 @@ void IRPGNetlistBuilder::build(
            << " bump node location: " << middle_point.get_x() / _dbu << " "
            << middle_point.get_y() / _dbu << " " << getLayerName(layer_id);
 
-  IRNodeLoc bump_node_loc{{middle_point.get_x(), middle_point.get_y()}, getLayerName(layer_id)};
+  IRNodeLoc bump_node_loc{{middle_point.get_x() / _dbu, middle_point.get_y() / _dbu}, getLayerName(layer_id)};
   _net_bump_node_locs[special_net_name] = bump_node_loc;
 
   LOG_INFO << "instance pin edge num: "
@@ -505,7 +510,7 @@ void IRPGNetlistBuilder::build(
   // for debug.
   // if (special_net_name == "VDD") {
   //   pg_netlist.printToYaml(
-  //       "/home/taosimin/iEDA24/iEDA/bin/aes_pg_netlist_1.yaml");
+  //       "/home/taosimin/iEDA24/iEDA/bin/aes_pg_netlist_06_23.yaml");
   // }
 }
 
