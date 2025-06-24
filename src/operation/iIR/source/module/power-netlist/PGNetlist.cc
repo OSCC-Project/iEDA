@@ -86,6 +86,11 @@ std::vector<BGSegment> IRPGNetlistBuilder::buildBGSegments(
   // build line segment.
   auto* idb_wires = special_net->get_wire_list();
   for (auto* idb_wire : idb_wires->get_wire_list()) {
+    if (!idb_wire->get_shiled_name().empty()) {
+      // skip the shield wire.
+      continue;
+    }
+    
     for (auto* idb_segment : idb_wire->get_segment_list()) {
       // line firstly process, we need know line intersect point first.
       if (!idb_segment->is_via()) {
