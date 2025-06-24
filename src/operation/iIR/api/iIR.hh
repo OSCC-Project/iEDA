@@ -54,8 +54,7 @@ enum class IRSolverMethod {
   kCGSolver,  // Conjugate Gradient solver
 };
 
-using IRNodeCoord = std::pair<int64_t, int64_t>;
-using IRNodeLoc = std::pair<IRNodeCoord, std::string>;
+using IRNodeLoc = std::pair<std::pair<double, double>, std::string>;
 
 /**
  * @brief The IR top interface.
