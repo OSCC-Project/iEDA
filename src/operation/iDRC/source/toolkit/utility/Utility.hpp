@@ -44,7 +44,7 @@ class Utility
   }
 
   // 获得两个矩形的欧式距离
-  static double getEuclideanDistance(PlanarRect& a, PlanarRect& b)
+  static double getEuclideanDistance(const PlanarRect& a, const PlanarRect& b)
   {
     int32_t x_spacing = std::max(b.get_ll_x() - a.get_ur_x(), a.get_ll_x() - b.get_ur_x());
     int32_t y_spacing = std::max(b.get_ll_y() - a.get_ur_y(), a.get_ll_y() - b.get_ur_y());
@@ -194,6 +194,13 @@ class Utility
     return isInside(master, seg.get_first()) && isInside(master, seg.get_second());
   }
 
+  // 线段在线段内
+  static bool isInside(const Segment<PlanarCoord>& master, const Segment<PlanarCoord>& seg)
+  {
+    PlanarRect rect = getRect(master.get_first(), master.get_second());
+    return isInside(rect, seg.get_first()) && isInside(rect, seg.get_second());
+  }
+
   /**
    *  ！在检测DRC中
    *  如果a与b中有膨胀矩形,那么则用isOpenOverlap
@@ -312,6 +319,24 @@ class Utility
 
     boost_box.max_corner().set<0>(boost_box.max_corner().x() + coord.get_x());
     boost_box.max_corner().set<1>(boost_box.max_corner().y() + coord.get_y());
+  }
+
+  static bool isOverlap(GTLPolySetInt& a, GTLRectInt& b, bool consider_edge = true)
+  {
+    GTLPolySetInt poly;
+    poly += b;
+    return isOverlap(a, poly);
+  }
+
+  static bool isOverlap(GTLPolySetInt& a, GTLPolySetInt& b, bool consider_edge = true)
+  {
+    GTLPolySetInt overlap_poly = a;
+    if (consider_edge) {
+      overlap_poly.interact(b);
+    } else {
+      overlap_poly &= b;
+    }
+    return gtl::area(overlap_poly) > 0;
   }
 
   static bool isOverlap(BGRectInt& a, BGRectInt& b, bool consider_edge = true)
