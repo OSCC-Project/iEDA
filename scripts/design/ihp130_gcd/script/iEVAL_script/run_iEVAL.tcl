@@ -4,20 +4,16 @@
 set RESULT_DIR          "./result"
 
 if { [info exists ::env(USE_VERILOG)] && [string tolower $::env(USE_VERILOG)] == "true" } {
-    set USE_VERILOG    true
-    set TOP_NAME            "$::env(TOP_NAME)"
-    set INPUT_VERILOG       "$::env(INPUT_VERILOG)"
+    set USE_VERILOG              true
+    set TOP_NAME                 "$::env(TOP_NAME)"
+    set EVAL_INPUT_VERILOG       "$::env(EVAL_INPUT_VERILOG)"
 } else {
-    set USE_VERILOG         false
-    set INPUT_DEF           "$::env(INPUT_DEF)"
+    set USE_VERILOG              false
+    set EVAL_INPUT_DEF           "$::env(EVAL_INPUT_DEF)"
 }
 
 # Create result directory if it doesn't exist
 file mkdir $RESULT_DIR
-
-# input files
-# set INPUT_DEF           "$RESULT_DIR/iNO_fix_fanout_result.def"
-set INPUT_DEF           "$::env(INPUT_DEF)"
 
 # script path
 set IEDA_CONFIG_DIR     "$::env(IEDA_CONFIG_DIR)"
@@ -27,11 +23,6 @@ set IEDA_TCL_SCRIPT_DIR "$::env(IEDA_TCL_SCRIPT_DIR)"
 #   override variables from env setup
 #===========================================================
 source $IEDA_TCL_SCRIPT_DIR/DB_script/env_var_setup.tcl
-
-#===========================================================
-##   init flow config
-#===========================================================
-# flow_init -config $IEDA_CONFIG_DIR/flow_config.json
 
 #===========================================================
 ##   read db config
@@ -51,21 +42,30 @@ source $IEDA_TCL_SCRIPT_DIR/DB_script/db_init_lef.tcl
 #===========================================================
 ##   read verilog/def
 #===========================================================
+set_design_workspace $RESULT_DIR/eval_sta/$::env(STEP_NAME)
+read_liberty $LIB_PATH
+
 if { $USE_VERILOG } {
-    verilog_init -path $INPUT_VERILOG -top $TOP_NAME
+    read_netlist $EVAL_INPUT_VERILOG
 } else {
-    def_init -path $INPUT_DEF
+    # Collect all LEF files from both tech and standard cell directories
+    set LEF_FILES [glob -nocomplain $TECH_LEF_PATH/*.lef]
+    foreach file [glob -nocomplain $LEF_PATH/*.lef] {
+        lappend LEF_FILES $file
+    }
+
+    if {[llength $LEF_FILES] == 0} {
+        puts stderr "Error: No LEF files found in $TECH_LEF_PATH or $LEF_PATH"
+        flow_exit
+    }
+    read_lef_def -lef $LEF_FILES -def $EVAL_INPUT_DEF
 }
 
-#===========================================================
-##   run Evaluation
-#===========================================================
-source $::env(TCL_SCRIPT_DIR)/DB_script/db_init_lib.tcl
-source $::env(TCL_SCRIPT_DIR)/DB_script/db_init_sdc.tcl
+link_design $TOP_NAME
+read_sdc  $SDC_FILE
 
-run_timing_eval -eval_output_path $RESULT_DIR -routing_type FLUTE
-run_wirelength_eval -eval_output_path $RESULT_DIR
-run_density_eval -eval_output_path $RESULT_DIR -grid_size 2000 -stage placement
+report_timing -json -max_path 5
+report_power -json -toggle 0.1
 
 #===========================================================
 ##   Exit
