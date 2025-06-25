@@ -191,7 +191,7 @@ void Router::synthesisNet(Net* net)
   // It's a new insert buffer net
   std::ranges::for_each(net->get_pins(), [&](Pin* pin) {
     auto* cts_pin = design->findPin(pin->get_name());
-    LOG_FATAL_IF(!cts_pin) << "Can't found pin in net: " << net->get_name();
+    LOG_FATAL_IF(!cts_pin) << "Can't found pin " << pin->get_name() << " in net " << net->get_name();
     if (cts_pin->is_io()) {
       return;
     }
