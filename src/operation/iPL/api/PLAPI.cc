@@ -98,6 +98,7 @@ void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
   // std::string design_name = idb_builder->get_def_service()->get_design()->get_design_name();
   // std::string home_path = "./evaluation_task/benchmark/" + design_name + "/pl_reports/";
 
+  Log::makeSureDirectoryExist(log_home_path);
   Log::init(argv, log_home_path);
   IDBWrapper* idb_wrapper = new IDBWrapper(idb_builder);
   PlacerDBInst.initPlacerDB(pl_json_path, idb_wrapper);
