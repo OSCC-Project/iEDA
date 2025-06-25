@@ -321,22 +321,16 @@ class Utility
     boost_box.max_corner().set<1>(boost_box.max_corner().y() + coord.get_y());
   }
 
-  static bool isOverlap(GTLPolySetInt& a, GTLRectInt& b, bool consider_edge = true)
+  static bool isOverlap(GTLPolySetInt a, GTLRectInt b, bool consider_edge = true)
   {
-    GTLPolySetInt poly;
-    poly += b;
-    return isOverlap(a, poly);
-  }
-
-  static bool isOverlap(GTLPolySetInt& a, GTLPolySetInt& b, bool consider_edge = true)
-  {
-    GTLPolySetInt overlap_poly = a;
+    GTLPolySetInt gtl_poly_set;
+    gtl_poly_set += b;
     if (consider_edge) {
-      overlap_poly.interact(b);
+      a.interact(gtl_poly_set);
     } else {
-      overlap_poly &= b;
+      a &= gtl_poly_set;
     }
-    return gtl::area(overlap_poly) > 0;
+    return gtl::area(a) > 0;
   }
 
   static bool isOverlap(BGRectInt& a, BGRectInt& b, bool consider_edge = true)
