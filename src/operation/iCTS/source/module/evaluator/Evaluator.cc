@@ -426,7 +426,7 @@ void Evaluator::plotPath(const string& inst_name, const string& file) const
         }
       }
       auto driver_inst = driver_pin->get_instance();
-      GDSPloter::insertWire(ofs, driver_inst->get_location(), path_inst->get_location());
+      GDSPloter::insertWire(ofs, driver_pin->get_location(), before_load_pin->get_location());
       path_inst = driver_inst;
     } else {
       break;

@@ -110,7 +110,6 @@ void Router::routing(CtsNet* clk_net)
   auto net_name = clk_net->get_net_name();
   // total topology
   auto solver = Solver(net_name, clk_net->get_driver_pin(), pins);
-  solver.set_max_thread(1);
   solver.run();
   auto clk_nets = solver.get_solver_nets();
   if (clk_nets.empty()) {

@@ -743,9 +743,7 @@ Inst* TreeBuilder::defaultTree(const std::string& net_name, const std::vector<Pi
     directConnectTree(buf->get_driver_pin(), loads.front());
     return buf;
   }
-  std::vector<Inst*> load_insts;
-  std::ranges::transform(loads, std::back_inserter(load_insts), [&](Pin* pin) { return pin->get_inst(); });
-  auto* buf = genBufInst(net_name, guide_loc.value_or(BalanceClustering::calcCentroid(load_insts)));
+  auto* buf = genBufInst(net_name, guide_loc.value_or(BalanceClustering::calcCentroid(loads)));
   auto* driver_pin = buf->get_driver_pin();
   std::vector<Pin*> pins{driver_pin};
   std::ranges::copy(loads, std::back_inserter(pins));
@@ -1032,14 +1030,14 @@ std::vector<SkewTreeFunc> TreeBuilder::getSkewTreeFuncs()
   return {boundSkewTree, bstSaltTree, cbsTree};
 }
 /**
- * @brief local place, if location is repeated, then move the inst to the feasible location
+ * @brief local place, if location is repeated, then move the driver_pin (and inst) to the feasible location
  *
- * @param inst
+ * @param driver_pin
  * @param load_pins
  */
-void TreeBuilder::localPlace(Inst* inst, const std::vector<Pin*>& load_pins)
+void TreeBuilder::localPlace(Pin* driver_pin, const std::vector<Pin*>& load_pins)
 {
-  LocalLegalization(inst, load_pins);
+  LocalLegalization(driver_pin, load_pins);
 }
 void TreeBuilder::localPlace(std::vector<Pin*>& pins)
 {

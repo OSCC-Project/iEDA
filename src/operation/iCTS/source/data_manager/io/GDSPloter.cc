@@ -140,10 +140,11 @@ void GDSPloter::plotFlyLine(const std::string& path)
 
   for (auto& clk_net : clk_nets) {
     auto* driver = clk_net->get_driver_inst();
+    auto* driver_pin = clk_net->get_driver_pin();
     size_t wire_id = 0;
-    for (auto* load : clk_net->get_load_insts()) {
+    for (auto* load_pin : clk_net->get_load_pins()) {
       auto wire_name = "WIRE_" + clk_net->get_net_name() + "_" + std::to_string(wire_id++);
-      insertWire(ofs, driver->get_location(), load->get_location(), wire_name, driver->get_level());
+      insertWire(ofs, driver_pin->get_location(), load_pin->get_location(), wire_name, driver->get_level());
     }
   }
 
@@ -367,9 +368,9 @@ void GDSPloter::writePyFlyLine(const std::string& path)
       continue;
     }
     auto level = driver->get_level();
-    for (auto load : clk_net->get_load_insts()) {
-      py_ofs << "plt.plot([" << clk_net->get_driver_inst()->get_location().x() << "," << load->get_location().x() << "],["
-             << clk_net->get_driver_inst()->get_location().y() << "," << load->get_location().y() << "],color=colors[" << level
+    for (auto load_pin : clk_net->get_load_pins()) {
+      py_ofs << "plt.plot([" << clk_net->get_driver_pin()->get_location().x() << "," << load_pin->get_location().x() << "],["
+             << clk_net->get_driver_pin()->get_location().y() << "," << load_pin->get_location().y() << "],color=colors[" << level
              << "],linewidth=line_width[" << level << "],zorder=" << level << ")" << std::endl;
     }
   }
@@ -435,6 +436,7 @@ void GDSPloter::writeJsonDesign(const std::string& path)
   nlohmann::json nets = nlohmann::json::array();
   for (auto& clk_nets = design->get_nets(); auto& clk_net : clk_nets) {
     auto* driver = clk_net->get_driver_inst();
+    auto* driver_pin = clk_net->get_driver_pin();
     if (driver->get_location() == Point(-1, -1)) {
       continue;
     }
@@ -442,8 +444,8 @@ void GDSPloter::writeJsonDesign(const std::string& path)
     nlohmann::json net;
     net["name"] = clk_net->get_net_name();
     net["driver_level"] = driver->get_level();
-    net["driver_location"]["x"] = driver->get_location().x();
-    net["driver_location"]["y"] = driver->get_location().y();
+    net["driver_location"]["x"] = driver_pin->get_location().x();
+    net["driver_location"]["y"] = driver_pin->get_location().y();
 
     // Add signal wires
     nlohmann::json wires = nlohmann::json::array();

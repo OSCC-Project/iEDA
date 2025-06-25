@@ -6,13 +6,6 @@ else()
   set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-if(PY_MODEL)
-  # Python test
-  add_executable(icts_py_test ${ICTS_TEST}/PyTest.cc)
-  target_link_libraries(icts_py_test PUBLIC icts_source icts_test_external_libs
-                                            gtest_main)
-endif()
-
 # TreeBuilderTest
 add_executable(icts_tree_builder_test ${ICTS_TEST}/TreeBuilderTest.cc)
 target_link_libraries(
