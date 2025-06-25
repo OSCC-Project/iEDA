@@ -25,6 +25,7 @@
 #include "Log.hh"
 
 #include <cstddef>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -110,6 +111,11 @@ void Log::end()
 void Log::setVerboseLogLevel(const char* module_name, int level)
 {
   google::SetVLOGLevel(module_name, level);
+}
+
+void Log::makeSureDirectoryExist(std::string directory_path)
+{
+  std::filesystem::create_directories(directory_path.c_str());
 }
 
 }  // namespace ieda
