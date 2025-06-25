@@ -32,17 +32,22 @@
 #include "iPNPCommon.hh"
 
 namespace ipnp {
+
+class PNPConfig;
+
 class CongestionEval
 {
  public:
-  CongestionEval() = default;
+  CongestionEval() : _config(nullptr), _total_overflow_union(0) {}
   ~CongestionEval() = default;
 
   void evalEGR(idb::IdbBuilder* idb_builder);
   int32_t get_total_overflow_union() { return _total_overflow_union; }
   
-private:
+  void set_config(PNPConfig* config) { _config = config; }
   
+private:
+  PNPConfig* _config;
   int32_t _total_overflow_union;
 };
 

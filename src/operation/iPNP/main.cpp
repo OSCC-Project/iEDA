@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
     if (result.count("config")) {
       config_file_path = result["config"].as<std::string>();
     }else {
-      config_file_path = "/home/sujianrong/iEDA/src/operation/iPNP/example/pnp_config.json";
+      config_file_path = "../src/operation/iPNP/example/pnp_config.json";
       LOG_INFO << "Using default configuration file: " << config_file_path << std::endl;
     }
 
