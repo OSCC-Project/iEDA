@@ -4,8 +4,7 @@
 
 iPNP是一个平衡拥塞和电压降的芯片电源网络布局工具，基于模拟退火算法实现，它支持电源网络生成、IR降分析和拥塞评估等功能。
 
-![iPNP introduction_01](../images/iPNP_introduction.png)
-
+![输入图片说明](iPNP%20introduction.png)
 ## 目前支持的功能
 
 1. 读入 def/lef 文件，构建 idb_builder，在 builder 中添加电源线和通孔，输出结果 def 文件
@@ -71,8 +70,7 @@ cd bin/
 ./iPNP -h
 ```
 
-![iPNP_help](../images/iPNP_help.png)
-
+![输入图片说明](iPNP_help.png)
 
 
 ### TCL命令
@@ -160,8 +158,7 @@ run_pnp -config /path/to/pnp_config.json
 }
 ```
 
-![template_info](../images/template_info.png)
-
+![输入图片说明](template_info.png)
 ### simulated_annealing - 模拟退火算法参数
 
 ```json
