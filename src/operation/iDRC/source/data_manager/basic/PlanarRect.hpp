@@ -69,7 +69,7 @@ class PlanarRect
   inline int32_t getPerimeter() const;
   inline double getArea() const;
   inline std::vector<Segment<PlanarCoord>> getEdgeList() const;
-  inline Segment<PlanarCoord> geOrientEdge(Orientation orient) const;
+  inline Segment<PlanarCoord> getOrientEdge(Orientation orient) const;
   inline PlanarCoord getMidPoint() const;
   inline bool isIncorrect() const;
 
@@ -151,7 +151,7 @@ inline std::vector<Segment<PlanarCoord>> PlanarRect::getEdgeList() const
   return segment_list;
 }
 
-inline Segment<PlanarCoord> PlanarRect::geOrientEdge(Orientation orient) const
+inline Segment<PlanarCoord> PlanarRect::getOrientEdge(Orientation orient) const
 {
   int32_t ll_x = _ll.get_x();
   int32_t ll_y = _ll.get_y();

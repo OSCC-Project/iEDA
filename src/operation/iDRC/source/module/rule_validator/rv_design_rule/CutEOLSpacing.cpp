@@ -125,10 +125,10 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
             PlanarRect cut_rect = DRCUTIL.convertToPlanarRect(bg_env_rect);
             if (DRCUTIL.isInside(routing_rect, cut_rect)) {
               std::vector<Segment<PlanarCoord>>& overhang_list = net_cut_rect_overhang_map[env_net_idx][cut_rect];
-              Segment<PlanarCoord> east_segment = routing_rect.geOrientEdge(Orientation::kEast);
-              Segment<PlanarCoord> south_segment = routing_rect.geOrientEdge(Orientation::kSouth);
-              Segment<PlanarCoord> west_segment = routing_rect.geOrientEdge(Orientation::kWest);
-              Segment<PlanarCoord> north_segment = routing_rect.geOrientEdge(Orientation::kNorth);
+              Segment<PlanarCoord> east_segment = routing_rect.getOrientEdge(Orientation::kEast);
+              Segment<PlanarCoord> south_segment = routing_rect.getOrientEdge(Orientation::kSouth);
+              Segment<PlanarCoord> west_segment = routing_rect.getOrientEdge(Orientation::kWest);
+              Segment<PlanarCoord> north_segment = routing_rect.getOrientEdge(Orientation::kNorth);
               if (overhang_list.empty()) {
                 overhang_list.push_back(east_segment);
                 overhang_list.push_back(south_segment);
@@ -261,25 +261,25 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
           GTLPolySetInt cut_spacing_b_region;
           {
             if (need_spacing_list[0]) {
-              Segment<PlanarCoord> segment = cut_rect.geOrientEdge(Orientation::kEast);
+              Segment<PlanarCoord> segment = cut_rect.getOrientEdge(Orientation::kEast);
               PlanarRect segment_rect = DRCUTIL.getOffsetRect(DRCUTIL.getRect(segment.get_first(), segment.get_second()), PlanarCoord(1, 0));
               cut_spacing_a_region += DRCUTIL.convertToGTLRectInt(DRCUTIL.getEnlargedRect(segment_rect, 0, -1 * eol_prl, eol_prl_spacing, -1 * eol_prl));
               cut_spacing_b_region += DRCUTIL.convertToGTLRectInt(DRCUTIL.getEnlargedRect(segment_rect, 0, eol_prl_spacing, eol_prl_spacing, eol_prl_spacing));
             }
             if (need_spacing_list[1]) {
-              Segment<PlanarCoord> segment = cut_rect.geOrientEdge(Orientation::kSouth);
+              Segment<PlanarCoord> segment = cut_rect.getOrientEdge(Orientation::kSouth);
               PlanarRect segment_rect = DRCUTIL.getOffsetRect(DRCUTIL.getRect(segment.get_first(), segment.get_second()), PlanarCoord(0, -1));
               cut_spacing_a_region += DRCUTIL.convertToGTLRectInt(DRCUTIL.getEnlargedRect(segment_rect, -1 * eol_prl, eol_prl_spacing, -1 * eol_prl, 0));
               cut_spacing_b_region += DRCUTIL.convertToGTLRectInt(DRCUTIL.getEnlargedRect(segment_rect, eol_prl_spacing, eol_prl_spacing, eol_prl_spacing, 0));
             }
             if (need_spacing_list[2]) {
-              Segment<PlanarCoord> segment = cut_rect.geOrientEdge(Orientation::kWest);
+              Segment<PlanarCoord> segment = cut_rect.getOrientEdge(Orientation::kWest);
               PlanarRect segment_rect = DRCUTIL.getOffsetRect(DRCUTIL.getRect(segment.get_first(), segment.get_second()), PlanarCoord(-1, 0));
               cut_spacing_a_region += DRCUTIL.convertToGTLRectInt(DRCUTIL.getEnlargedRect(segment_rect, eol_prl_spacing, -1 * eol_prl, 0, -1 * eol_prl));
               cut_spacing_b_region += DRCUTIL.convertToGTLRectInt(DRCUTIL.getEnlargedRect(segment_rect, eol_prl_spacing, eol_prl_spacing, 0, eol_prl_spacing));
             }
             if (need_spacing_list[3]) {
-              Segment<PlanarCoord> segment = cut_rect.geOrientEdge(Orientation::kNorth);
+              Segment<PlanarCoord> segment = cut_rect.getOrientEdge(Orientation::kNorth);
               PlanarRect segment_rect = DRCUTIL.getOffsetRect(DRCUTIL.getRect(segment.get_first(), segment.get_second()), PlanarCoord(0, 1));
               cut_spacing_a_region += DRCUTIL.convertToGTLRectInt(DRCUTIL.getEnlargedRect(segment_rect, -1 * eol_prl, 0, -1 * eol_prl, eol_prl_spacing));
               cut_spacing_b_region += DRCUTIL.convertToGTLRectInt(DRCUTIL.getEnlargedRect(segment_rect, eol_prl_spacing, 0, eol_prl_spacing, eol_prl_spacing));
