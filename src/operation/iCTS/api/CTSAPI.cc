@@ -813,8 +813,8 @@ void CTSAPI::buildRCTree(const icts::EvalNet& eval_net)
     if (parent == nullptr) {
       return;
     }
-    auto parent_name = parent->isPin() ? dynamic_cast<Pin*>(parent)->get_inst()->get_name() : parent->get_name();
-    auto child_name = node->isPin() ? dynamic_cast<Pin*>(node)->get_inst()->get_name() : node->get_name();
+    auto parent_name = parent->get_name();  // pin_full_name or node's 'steriner_{id}' name
+    auto child_name = node->get_name();
     ista::RctNode* front_node = makeRCTreeNode(eval_net, parent_name);
     ista::RctNode* back_node = makeRCTreeNode(eval_net, child_name);
     double len = TimingPropagator::calcLen(parent, node);
@@ -913,10 +913,7 @@ void CTSAPI::latencySkewLog() const
       ista::StaPathEnd* path_end;
       ista::StaPathData* path_data;
       FOREACH_PATH_GROUP_END(seq_path_group.get(), path_end)
-      FOREACH_PATH_END_DATA(path_end, mode, path_data)
-      {
-        seq_data_queue.push(path_data);
-      }
+      FOREACH_PATH_END_DATA(path_end, mode, path_data) { seq_data_queue.push(path_data); }
       auto* worst_seq_data = seq_data_queue.top();
       auto* launch_clock_data = worst_seq_data->get_launch_clock_data();
       auto* capture_clock_data = worst_seq_data->get_capture_clock_data();
@@ -1062,22 +1059,16 @@ void CTSAPI::readSTAFile()
 ista::RctNode* CTSAPI::makeRCTreeNode(const icts::EvalNet& eval_net, const std::string& name)
 {
   auto* sta_net = findStaNet(eval_net);
-  auto* inst = eval_net.get_instance(name);
-  if (inst == nullptr) {
+  auto* cts_pin = _design->findPin(name);
+  if (cts_pin == nullptr) {
     std::vector<std::string> string_list = splitString(name, '_');
     if (string_list.size() == 2 && (string_list[0] == "steiner")) {
       return _timing_engine->makeOrFindRCTreeNode(sta_net, std::stoi(string_list[1]));
     } else {
       LOG_FATAL << "Unknown pin name: " << name;
     }
-  } else {
-    for (auto pin : eval_net.get_pins()) {
-      if (pin->get_instance() == inst) {
-        return makePinRCTreeNode(pin);
-      }
-    }
   }
-  return nullptr;
+  return makePinRCTreeNode(cts_pin);
 }
 
 ista::RctNode* CTSAPI::makePinRCTreeNode(icts::CtsPin* pin)
