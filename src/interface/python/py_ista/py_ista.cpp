@@ -94,6 +94,68 @@ bool readSdc(const std::string& file_name)
   return ista->readSdc(file_name.c_str());
 }
 
+bool makeRCTreeInnerNode(const std::string& net_name, int id, float cap)
+{
+  auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+  auto* ista = ista::Sta::getOrCreateSta();
+  auto* the_net = ista->get_netlist()->findNet(net_name.c_str());
+  auto* rc_node = timing_engine->makeOrFindRCTreeNode(the_net, id);
+  rc_node->setCap(cap);
+
+  return true;
+}
+
+bool makeRCTreeObjNode(const std::string& pin_port_name, float cap) {
+  auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+  auto* ista = ista::Sta::getOrCreateSta();
+
+  auto the_pin_ports = ista->get_netlist()->findObj(pin_port_name.c_str(), false, false);
+  assert(the_pin_ports.size() == 1);
+
+  auto* rc_node = timing_engine->makeOrFindRCTreeNode(the_pin_ports.front());
+  rc_node->setCap(cap);
+
+  return true;
+}
+
+bool makeRCTreeEdge(const std::string& net_name, std::string& node1, std::string& node2, float res) {
+  auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+  auto* ista = ista::Sta::getOrCreateSta();
+  auto* the_net = ista->get_netlist()->findNet(net_name.c_str());
+  auto* rc_node1 = timing_engine->findRCTreeNode(the_net, node1);
+  auto* rc_node2 = timing_engine->findRCTreeNode(the_net, node2);
+
+  timing_engine->makeResistor(the_net, rc_node1, rc_node2, res);
+
+  return true;
+}
+
+bool updateRCTreeInfo(const std::string& net_name) {
+  auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+  auto* ista = ista::Sta::getOrCreateSta();
+  auto* the_net = ista->get_netlist()->findNet(net_name.c_str());
+  timing_engine->updateRCTreeInfo(the_net);
+
+  return true;
+}
+
+
+bool updateTiming()
+{
+  auto* ista = ista::Sta::getOrCreateSta();
+  ista->updateTiming();
+  return true;
+}
+
+bool reportSta()
+{
+  auto* ista = ista::Sta::getOrCreateSta();
+  ista->reportTiming();
+  return true;
+}
+
+
+
 bool reportTiming(int digits, const std::string& delay_type, std::set<std::string> exclude_cell_names, bool derate)
 {
   auto* ista = ista::Sta::getOrCreateSta();

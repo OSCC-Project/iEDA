@@ -445,6 +445,21 @@ RctNode* TimingEngine::makeOrFindRCTreeNode(DesignObject* pin_or_port) {
   return node;
 }
 
+/**
+ * @brief find the exist rc tree node.
+ * 
+ * @param net 
+ * @param node_name 
+ * @return RctNode* 
+ */
+RctNode* TimingEngine::findRCTreeNode(Net *net, std::string& node_name) {
+  auto* rc_net = _timing_engine->get_ista()->getRcNet(net);
+  LOG_FATAL_IF(!rc_net) << net->get_name() << " rc net is not found.";
+  auto* rc_tree = rc_net->rct();
+
+  return rc_tree->node(node_name);
+}
+
 void TimingEngine::incrCap(RctNode* node, double cap, bool is_incremental) {
   is_incremental ? node->incrCap(cap) : node->setCap(cap);
 }
