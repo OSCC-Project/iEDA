@@ -1006,7 +1006,7 @@ unsigned Power::reportIRDropTable(const char* rpt_file_name) {
 
   auto pg_net_bump_node_loc = _ir_analysis.get_net_bump_node_locs();
   for (auto [pg_net_name, net_bump_node_loc] : pg_net_bump_node_loc) {
-    std::fprintf(f.get(), "PG Net %s bump node loc: (%ld %ld %s)\n",
+    std::fprintf(f.get(), "PG Net %s bump node loc: (%.3f %.3f %s)\n",
                  pg_net_name.c_str(), net_bump_node_loc.first.first,
                  net_bump_node_loc.first.second,
                  net_bump_node_loc.second.c_str());

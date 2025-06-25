@@ -123,11 +123,9 @@ std::vector<CtsSignalWire>& CtsNet::get_signal_wires()
       }
     }
     LOG_FATAL_IF(driver_pin == nullptr) << "No driver pin found for net " << _net_name;
-    auto* driver_inst = driver_pin->get_instance();
-    Endpoint first = {driver_inst->get_name(), driver_inst->get_location()};
+    Endpoint first = {driver_pin->get_full_name(), driver_pin->get_location()};
     for (auto* load_pin : get_load_pins()) {
-      auto* load_inst = load_pin->get_instance();
-      Endpoint second = {load_inst->get_name(), load_inst->get_location()};
+      Endpoint second = {load_pin->get_full_name(), load_pin->get_location()};
       add_signal_wire(CtsSignalWire(first, second));
     }
   }

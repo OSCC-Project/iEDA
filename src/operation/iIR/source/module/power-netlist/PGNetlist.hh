@@ -233,7 +233,7 @@ class IRPGNetlist {
   std::string _net_name;
 };
 
-using IRNodeLoc = std::pair<IRNodeCoord, std::string>;  //!< The node location type, coord and layer id.
+using IRNodeLoc = std::pair<std::pair<double, double>, std::string>;  //!< The node location type, coord and layer id.
 
 /**
  * @brief The pg netlist builder.

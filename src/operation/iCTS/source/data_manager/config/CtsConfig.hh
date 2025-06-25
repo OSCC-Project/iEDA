@@ -61,9 +61,6 @@ class CtsConfig
   ~CtsConfig() = default;
   // algorithm
   bool get_use_skew_tree_alg() const { return _use_skew_tree_alg; }
-  const std::string& get_router_type() const { return _router_type; }
-  const std::string& get_delay_type() const { return _delay_type; }
-  const std::string& get_cluster_type() const { return _cluster_type; }
   double get_skew_bound() const { return _skew_bound; }
   double get_max_buf_tran() const { return _max_buf_tran; }
   double get_max_sink_tran() const { return _max_sink_tran; }
@@ -71,8 +68,6 @@ class CtsConfig
   int get_max_fanout() const { return _max_fanout; }
   double get_min_length() const { return _min_length; }
   double get_max_length() const { return _max_length; }
-  int get_scale_size() const { return _scale_size; }
-  int get_cluster_size() const { return _cluster_size; }
   const int& get_h_layer() const { return _h_layer; }
   const int& get_v_layer() const { return _v_layer; }
   std::vector<int> get_routing_layers() const { return _routing_layers; }
@@ -99,13 +94,9 @@ class CtsConfig
   const std::string& get_use_netlist_string() const { return _gds_file; }
   bool is_use_netlist() { return _use_netlist == "ON" ? true : false; }
   const std::vector<std::pair<std::string, std::string>> get_clock_netlist() const { return _net_list; }
-  const std::vector<std::pair<std::string, std::string>> get_external_models() const { return _external_models; }
 
   // algorithm
   void set_use_skew_tree_alg(const bool& use_skew_tree_alg) { _use_skew_tree_alg = use_skew_tree_alg; }
-  void set_router_type(const std::string& router_type) { _router_type = router_type; }
-  void set_delay_type(const std::string& delay_type) { _delay_type = delay_type; }
-  void set_cluster_type(const std::string& cluster_type) { _cluster_type = cluster_type; }
   void set_skew_bound(double skew_bound) { _skew_bound = skew_bound; }
   void set_max_buf_tran(double max_buf_tran) { _max_buf_tran = max_buf_tran; }
   void set_max_sink_tran(double max_sink_tran) { _max_sink_tran = max_sink_tran; }
@@ -113,8 +104,6 @@ class CtsConfig
   void set_max_fanout(int max_fanout) { _max_fanout = max_fanout; }
   void set_min_length(double min_length) { _min_length = min_length; }
   void set_max_length(double max_length) { _max_length = max_length; }
-  void set_scale_size(int scale_size) { _scale_size = scale_size; }
-  void set_cluster_size(int size) { _cluster_size = size; }
   void set_h_layer(const int& h_layer) { _h_layer = h_layer; }
   void set_v_layer(const int& v_layer) { _v_layer = v_layer; }
   void set_routing_layers(const std::vector<int>& routing_layers) { _routing_layers = routing_layers; }
@@ -141,7 +130,6 @@ class CtsConfig
   void set_gds_file(const std::string& file) { _gds_file = file; }
   void set_use_netlist(const std::string& use_netlist) { _use_netlist = use_netlist; }
   void set_netlist(const std::vector<std::pair<std::string, std::string>>& net_list) { _net_list = net_list; }
-  void set_external_models(const std::vector<std::pair<std::string, std::string>>& external_models) { _external_models = external_models; }
 
   // query
   Assign query_assign(const int& level) const
@@ -216,9 +204,6 @@ class CtsConfig
  private:
   // algorithm
   bool _use_skew_tree_alg = false;
-  std::string _router_type = "GOCA";
-  std::string _delay_type = "elmore";
-  std::string _cluster_type = "kmeans";
   double _skew_bound = 0.04;
   double _max_buf_tran = 1.5;
   double _max_sink_tran = 1.5;
@@ -226,8 +211,6 @@ class CtsConfig
   int _max_fanout = 32;
   double _min_length = 50;
   double _max_length = 300;
-  int _scale_size = 50;
-  int _cluster_size = 32;
   int _h_layer = 1;
   int _v_layer = 1;
   std::vector<int> _routing_layers;
@@ -255,6 +238,5 @@ class CtsConfig
 
   std::string _use_netlist = "OFF";
   std::vector<std::pair<std::string, std::string>> _net_list;
-  std::vector<std::pair<std::string, std::string>> _external_models;
 };
 }  // namespace icts
