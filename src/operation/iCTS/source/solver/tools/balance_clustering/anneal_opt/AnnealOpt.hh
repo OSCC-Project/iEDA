@@ -24,7 +24,7 @@
 #include <random>
 #include <ranges>
 
-#include "Inst.hh"
+#include "Pin.hh"
 
 namespace icts {
 enum class AnnealOptType
@@ -36,7 +36,7 @@ struct Operation
 {
   size_t cluster_id;
   size_t neighbor_id;
-  size_t inst_id;
+  size_t pin_id;
   double from_cost;
   double to_cost;
 };
@@ -71,7 +71,7 @@ struct ClusterStateCompare
 class AnnealOptInterface
 {
  public:
-  AnnealOptInterface(const std::vector<std::vector<Inst*>>& clusters) : _cur_solution(clusters){};
+  AnnealOptInterface(const std::vector<std::vector<Pin*>>& clusters) : _cur_solution(clusters){};
   ~AnnealOptInterface() = default;
   void initParameter(const size_t& max_iter, const double& cooling_rate, const double& temperature)
   {
@@ -81,52 +81,52 @@ class AnnealOptInterface
   }
   // run
   void automaticTemperature();
-  std::vector<std::vector<Inst*>> run(const bool& log = false);
+  std::vector<std::vector<Pin*>> run(const bool& log = false);
 
   double get_best_cost() const { return _best_cost; };
   double get_improve() const { return _improve; };
 
  protected:
-  void updateSolution(const std::vector<std::vector<Inst*>>& new_solution, const Operation& op);
+  void updateSolution(const std::vector<std::vector<Pin*>>& new_solution, const Operation& op);
   /**
    * @brief random operation
    *
    */
 
-  std::vector<std::vector<Inst*>> commitOperation(Operation& op);
+  std::vector<std::vector<Pin*>> commitOperation(Operation& op);
 
-  std::vector<std::vector<Inst*>> randomSwap(const std::vector<std::vector<Inst*>>& clusters);
+  std::vector<std::vector<Pin*>> randomSwap(const std::vector<std::vector<Pin*>>& clusters);
 
-  Operation randomMove(const std::vector<std::vector<Inst*>>& clusters);
+  Operation randomMove(const std::vector<std::vector<Pin*>>& clusters);
 
-  size_t randomChooseCluster(const std::vector<std::vector<Inst*>>& clusters, const double& ratio);
+  size_t randomChooseCluster(const std::vector<std::vector<Pin*>>& clusters, const double& ratio);
 
-  size_t randomChooseInst(const std::vector<Inst*>& cluster);
+  size_t randomChoosePin(const std::vector<Pin*>& cluster);
 
-  size_t randomChooseNeighbor(const std::vector<std::vector<Inst*>>& clusters, const size_t& cluster_id, const size_t& inst_id);
+  size_t randomChooseNeighbor(const std::vector<std::vector<Pin*>>& clusters, const size_t& cluster_id, const size_t& pin_id);
 
-  std::vector<size_t> findBoundId(const std::vector<Inst*>& clusters);
+  std::vector<size_t> findBoundId(const std::vector<Pin*>& clusters);
   /**
    * @brief cost function
    *
    */
   void initCostMap();
   void updateCostMap(const Operation& op);
-  Point center(const std::vector<Inst*>& cluster);
+  Point center(const std::vector<Pin*>& cluster);
 
   /**
    * @brief Net builder
    *
    */
-  Net* buildNet(const std::vector<Inst*>& cluster);
-  std::vector<Net*> buildNets(const std::vector<std::vector<Inst*>>& clusters);
+  Net* buildNet(const std::vector<Pin*>& cluster);
+  std::vector<Net*> buildNets(const std::vector<std::vector<Pin*>>& clusters);
 
   virtual double cost(Net* net) = 0;
   /**
    * @brief Database and parameters
    *
    */
-  std::vector<std::vector<Inst*>> _cur_solution;
+  std::vector<std::vector<Pin*>> _cur_solution;
 
   std::multimap<ClusterState, size_t, ClusterStateCompare> _sorted_cluster_id_map;
 
@@ -150,9 +150,9 @@ class AnnealOptInterface
 class LatAnnealOpt : public AnnealOptInterface
 {
  public:
-  LatAnnealOpt(const std::vector<std::vector<Inst*>>& clusters) : AnnealOptInterface(clusters) { initCostMap(); };
+  LatAnnealOpt(const std::vector<std::vector<Pin*>>& clusters) : AnnealOptInterface(clusters) { initCostMap(); };
   ~LatAnnealOpt() = default;
-  std::vector<std::vector<Inst*>> run(const bool& log = false)
+  std::vector<std::vector<Pin*>> run(const bool& log = false)
   {
     LOG_INFO_IF(log) << "Begin Anneal Optimization By [Latency Cost]";
     return AnnealOptInterface::run(log);
@@ -165,14 +165,14 @@ class LatAnnealOpt : public AnnealOptInterface
 class VioAnnealOpt : public AnnealOptInterface
 {
  public:
-  VioAnnealOpt(const std::vector<std::vector<Inst*>>& clusters) : AnnealOptInterface(clusters){};
+  VioAnnealOpt(const std::vector<std::vector<Pin*>>& clusters) : AnnealOptInterface(clusters){};
   ~VioAnnealOpt() = default;
   // init parameters
   void initParameter(const size_t& max_iter, const double& cooling_rate, const double& temperature);
   void initParameter(const size_t& max_iter, const double& cooling_rate, const double& temperature, const int& max_fanout,
                      const double& max_cap, const double& max_net_len, const double& skew_bound);
 
-  std::vector<std::vector<Inst*>> run(const bool& log = false)
+  std::vector<std::vector<Pin*>> run(const bool& log = false)
   {
     LOG_INFO_IF(log) << "Begin Anneal Optimization By [Violation Cost]";
     return AnnealOptInterface::run(log);

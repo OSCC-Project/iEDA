@@ -94,7 +94,7 @@ namespace icts {
     static std::vector<SteinerTreeFunc> getSteinerTreeFuncs();
     static std::vector<SkewTreeFunc> getSkewTreeFuncs();
 
-    static void localPlace(Inst* inst, const std::vector<Pin*>& load_pins);
+    static void localPlace(Pin* driver_pin, const std::vector<Pin*>& load_pins);
     static void localPlace(std::vector<Pin*>& pins);
     static void localPlace(std::vector<Point>& variable_locs, const std::vector<Point>& fixed_locs);
 

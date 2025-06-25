@@ -26,12 +26,6 @@ CmdCTSConfig::CmdCTSConfig(const char* cmd_name) : TclCmd(cmd_name)
 {
     // config_json_path string      required
     _config_list.push_back(std::make_pair("-config_json_path", ValueType::kString));
-    // router_type
-    _config_list.push_back(std::make_pair("-router_type", ValueType::kString));
-    // delay_type
-    _config_list.push_back(std::make_pair("-delay_type", ValueType::kString));
-    // cluster_type
-    _config_list.push_back(std::make_pair("-cluster_type", ValueType::kString));
     // skew_bound
     _config_list.push_back(std::make_pair("-skew_bound", ValueType::kDouble));
     // max_buf_tran

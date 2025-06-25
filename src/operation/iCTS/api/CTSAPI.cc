@@ -47,13 +47,8 @@
 #include "idm.h"
 #include "log/Log.hh"
 #include "model/ModelFactory.hh"
-#include "model/mplHelper/MplHelper.hh"
-#include "model/python/PyToolBase.hh"
 #include "report/CtsReport.hh"
 #include "usage/usage.hh"
-#ifdef PY_MODEL
-#include "PyModel.h"
-#endif
 namespace icts {
 #define DBCONFIG (dmInst->get_config())
 
@@ -219,13 +214,6 @@ void CTSAPI::init(const std::string& config_file, const std::string& work_dir)
 
   _evaluator = new Evaluator();
   _model_factory = new ModelFactory();
-#if (defined PY_MODEL) && (defined USE_EXTERNAL_MODEL)
-  auto external_models = _config->get_external_models();
-  for (auto [net_name, model_path] : external_models) {
-    auto* model = _model_factory->pyLoad(model_path);
-    _libs->insertModel(net_name, model);
-  }
-#endif
   startDbSta();
   TimingPropagator::init();
 }
@@ -620,12 +608,6 @@ icts::CtsCellLib* CTSAPI::getCellLib(const std::string& cell_master, const std::
   std::vector<std::vector<double>> x_slew = {x_cap_out};
   lib->set_slew_coef(_model_factory->cppLinearModel(x_slew, y_slew));
 
-#ifdef PY_MODEL
-  auto* delay_lib_model = _model_factory->pyFit(x_delay, y_delay, icts::FitType::kCatBoost);
-  lib->set_delay_lib_model(delay_lib_model);
-  auto* slew_lib_model = _model_factory->pyFit(x_slew, y_slew, icts::FitType::kCatBoost);
-  lib->set_slew_lib_model(slew_lib_model);
-#endif
   _libs->insertLib(cell_master, lib);
   return lib;
 }
@@ -1056,29 +1038,6 @@ void CTSAPI::toPyArray(const icts::Point& point, const std::string& label)
 {
   CTSAPIInst.saveToLog(label, "=[[", point.x(), ",", point.y(), "]]");
 }
-
-// python API
-#ifdef PY_MODEL
-
-#ifdef USE_EXTERNAL_MODEL
-icts::ModelBase* CTSAPI::findExternalModel(const std::string& net_name)
-{
-  return _libs->findModel(net_name);
-}
-#endif
-
-/**
- * @brief Python interface for plot
- *
- * @param x
- * @param y
- */
-icts::ModelBase* CTSAPI::fitPyModel(const std::vector<std::vector<double>>& x, const std::vector<double>& y, const icts::FitType& fit_type)
-{
-  return _model_factory->pyFit(x, y, fit_type);
-}
-
-#endif
 
 // private STA
 void CTSAPI::readSTAFile()
