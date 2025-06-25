@@ -19,6 +19,7 @@ include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/module/evaluator)
 include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/module/optimizer)
 include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/module/router)
 include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/module/synthesis)
+include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/module)
 include_directories(SYSTEM ${HOME_THIRDPARTY})
 
 include(${HOME_CMAKE}/operation/idb.cmake)
@@ -34,4 +35,4 @@ add_subdirectory(test)
 
 add_executable(iPNP main.cpp)
 
-target_link_libraries(iPNP pnp)
+target_link_libraries(iPNP pnp iPNPApi)

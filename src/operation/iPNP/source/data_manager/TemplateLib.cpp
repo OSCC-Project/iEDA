@@ -16,13 +16,14 @@
 // ***************************************************************************************
 /**
  * @file TemplateLib.cpp
- * @author Xinhao li
+ * @author Jianrong Su
  * @brief Implementation of TemplateLib class
- * @version 0.1
- * @date 2024-07-15
+ * @version 1.0
+ * @date 2025-06-23
  */
 
 #include "TemplateLib.hh"
+#include "log/Log.hh"
 
 namespace ipnp {
 
@@ -39,16 +40,67 @@ SingleTemplate TemplateLib::gen_single_template(StripeDirection direction,
 void TemplateLib::gen_template_libs()
 {
   // Horizontal direction templates
-  _horizontal_templates.push_back(gen_single_template(StripeDirection::kHorizontal, 8000.0, 1600.0, 19200.0, 8000.0));  // 5组
-  _horizontal_templates.push_back(gen_single_template(StripeDirection::kHorizontal, 8000.0, 1600.0, 38400.0, 8000.0));  // 3组
-  _horizontal_templates.push_back(gen_single_template(StripeDirection::kHorizontal, 8000.0, 1600.0, 38400.0, 27200.0)); // 2组
+  _horizontal_templates.push_back(gen_single_template(StripeDirection::kHorizontal, 8000.0, 1600.0, 19200.0, 8000.0));
+  _horizontal_templates.push_back(gen_single_template(StripeDirection::kHorizontal, 8000.0, 1600.0, 38400.0, 8000.0));
+  _horizontal_templates.push_back(gen_single_template(StripeDirection::kHorizontal, 8000.0, 1600.0, 38400.0, 27200.0));
 
   // Vertical direction templates
-  _vertical_templates.push_back(gen_single_template(StripeDirection::kVertical, 8000.0, 1600.0, 19200.0, 8000.0));  // 5组
-  _vertical_templates.push_back(gen_single_template(StripeDirection::kVertical, 8000.0, 1600.0, 38400.0, 8000.0));  // 3组
-  _vertical_templates.push_back(gen_single_template(StripeDirection::kVertical, 8000.0, 1600.0, 38400.0, 27200.0));  // 2组
-  // _vertical_templates.push_back(gen_single_template(StripeDirection::kVertical, 900.0, 1600.0, 19200.0, 8000.0));  // M7特殊层
-  
+  _vertical_templates.push_back(gen_single_template(StripeDirection::kVertical, 8000.0, 1600.0, 19200.0, 8000.0));
+  _vertical_templates.push_back(gen_single_template(StripeDirection::kVertical, 8000.0, 1600.0, 38400.0, 8000.0));
+  _vertical_templates.push_back(gen_single_template(StripeDirection::kVertical, 8000.0, 1600.0, 38400.0, 27200.0));
+}
+
+void TemplateLib::gen_template_libs_from_config(const PNPConfig* config)
+{
+  if (!config) {
+    LOG_WARNING << "PNPConfig is null, using default hardcoded templates." << std::endl;
+    gen_template_libs();
+    return;
+  }
+
+  // Clear existing templates
+  _horizontal_templates.clear();
+  _vertical_templates.clear();
+
+  // Get templates from config
+  const auto& horizontal_templates = config->get_horizontal_templates();
+  const auto& vertical_templates = config->get_vertical_templates();
+
+  // Check if both template vectors are empty
+  if (horizontal_templates.empty() && vertical_templates.empty()) {
+    LOG_WARNING << "No templates found in configuration, using default hardcoded templates." << std::endl;
+    gen_template_libs();
+    return;
+  }
+
+  // Process horizontal templates
+  for (const auto& template_config : horizontal_templates) {
+    _horizontal_templates.push_back(
+      gen_single_template(
+        StripeDirection::kHorizontal,
+        template_config.width,
+        template_config.pg_offset,
+        template_config.space,
+        template_config.offset
+      )
+    );
+  }
+
+  // Process vertical templates
+  for (const auto& template_config : vertical_templates) {
+    _vertical_templates.push_back(
+      gen_single_template(
+        StripeDirection::kVertical,
+        template_config.width,
+        template_config.pg_offset,
+        template_config.space,
+        template_config.offset
+      )
+    );
+  }
+
+  LOG_INFO << "Generated " << _horizontal_templates.size() << " horizontal templates and "
+           << _vertical_templates.size() << " vertical templates from configuration." << std::endl;
 }
 
 }  // namespace ipnp 

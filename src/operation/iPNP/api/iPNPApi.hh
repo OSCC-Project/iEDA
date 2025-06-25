@@ -16,56 +16,35 @@
 // ***************************************************************************************
 /**
  * @file iPNPApi.hh
- * @author Xinhao li
+ * @author Jianrong Su
  * @brief
- * @version 0.1
- * @date 2024-07-15
+ * @version 1.0
+ * @date 2025-06-23
  */
+
+#ifndef IPNP_API_HH
+#define IPNP_API_HH
 
 #pragma once
 #include <iostream>
 #include <string>
+#include <filesystem>
 
-#include "iPNP.hh"
+#include "log/Log.hh"
 
-#define pnpApiInst ipnp::iPNPApi::getInstance()
 namespace ipnp {
 
-class iPNPApi
-{
- public:
-  iPNPApi() = default;
-  iPNPApi(const std::string& config_file_path);
-  ~iPNPApi() = default;
+class iPNP;
 
-  static iPNPApi* getInstance()
-  {
-    if (!_instance) {
-      _instance = new iPNPApi;
-    }
-    return _instance;
-  }
+class iPNPApi {
+public:
+    static void setInstance(iPNP* ipnp);
+    static iPNP* getInstance();
 
-  static void destroyInst()
-  {
-    if (_instance != nullptr) {
-      delete _instance;
-      _instance = nullptr;
-    }
-  }
-
-  void initializeiPNP(std::string config_file) { _ipnp = new iPNP(config_file); }
-  void readDeftoiPNP(std::vector<std::string> lef_files, std::string def_path) { _ipnp->readDef(lef_files, def_path); }
-  void setIdbtoiPNP(idb::IdbDesign* idb_design) { _ipnp->setIdb(idb_design); }
-
-  auto* get_ipnp() { return _ipnp; }
-
-  void runiPNP() { _ipnp->run(); }
-
- private:
-  std::string _config_file_path;
-  iPNP* _ipnp;
-  static iPNPApi* _instance;
+private:
+    static iPNP* _ipnp_instance;
 };
 
 }  // namespace ipnp
+
+#endif // IPNP_API_HH

@@ -18,8 +18,8 @@
  * @file SingleTemplate.cpp
  * @author Jianrong Su
  * @brief Implementation of SingleTemplate class
- * @version 0.1
- * @date 2025-03-11
+ * @version 1.0
+ * @date 2025-06-23
  */
 
 #include "SingleTemplate.hh"
@@ -29,13 +29,12 @@ namespace ipnp {
 SingleTemplate::SingleTemplate(StripeDirection direction, PowerType first_stripe_power_type, 
                                double width, double pg_offset, double space, double offset)
     : _direction(direction),
-      // _first_stripe_power_type(first_stripe_power_type),
       _width(width),
       _pg_offset(pg_offset),
       _space(space),
       _offset(offset)
 {
-    // Constructor implementation
+
 }
 
 }  // namespace ipnp 

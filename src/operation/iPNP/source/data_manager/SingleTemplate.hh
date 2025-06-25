@@ -18,8 +18,8 @@
  * @file SingleTemplate.hh
  * @author Jianrong Su
  * @brief Definition of SingleTemplate class and related enums
- * @version 0.1
- * @date 2025-03-11
+ * @version 1.0
+ * @date 2025-06-23
  */
 
 #pragma once

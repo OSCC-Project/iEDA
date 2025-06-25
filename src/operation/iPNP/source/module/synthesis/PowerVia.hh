@@ -17,9 +17,9 @@
 /**
  * @file PowerVia.hh
  * @author Jianrong Su
- * @brief 处理电源网络中的通孔连接
- * @version 0.1
- * @date 2025-03-12
+ * @brief 
+ * @version 1.0
+ * @date 2025-06-23
  */
 
 #pragma once
@@ -57,11 +57,6 @@ namespace idb {
 
 namespace ipnp {
 
-  /**
-   * @brief 处理电源网络中的通孔连接
-   *
-   * 该类负责在电源线交叉处添加通孔，连接不同金属层的电源线
-   */
   class PowerVia
   {
   public:

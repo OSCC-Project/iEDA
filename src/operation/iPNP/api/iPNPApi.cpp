@@ -15,21 +15,27 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file iPNPApi.cpp
- * @author Xinhao li
+ * @file iPNPApi.hh
+ * @author Jianrong Su
  * @brief
- * @version 0.1
- * @date 2024-07-15
+ * @version 1.0
+ * @date 2025-06-23
  */
 
 #include "iPNPApi.hh"
 
+#include "iPNP.hh"
+
 namespace ipnp {
 
-iPNPApi* iPNPApi::_instance = nullptr;
+iPNP* iPNPApi::_ipnp_instance = nullptr;
 
-iPNPApi::iPNPApi(const std::string& config_file_path) : _config_file_path(config_file_path)
-{
+void iPNPApi::setInstance(iPNP* ipnp) {
+    _ipnp_instance = ipnp;
 }
 
-}  // namespace ipnp
+iPNP* iPNPApi::getInstance() {
+    return _ipnp_instance;
+}
+
+} // namespace ipnp 

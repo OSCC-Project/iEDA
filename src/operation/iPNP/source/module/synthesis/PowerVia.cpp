@@ -17,9 +17,9 @@
 /**
  * @file PowerVia.cpp
  * @author Jianrong Su
- * @brief 处理电源网络中的通孔连接
- * @version 0.1
- * @date 2025-03-12
+ * @brief 
+ * @version 1.0
+ * @date 2025-06-23
  */
 
 #include "PowerVia.hh"
@@ -34,13 +34,6 @@
 
 namespace ipnp {
 
-  /**
-   * @brief 连接电源网络中的所有层
-   *
-   * @param pnp_network 电源网格管理器
-   * @param idb_design IDB设计对象
-   * @return idb::IdbDesign* 修改后的IDB设计对象
-   */
   idb::IdbDesign* PowerVia::connectAllPowerLayers(GridManager& pnp_network, idb::IdbDesign* idb_design)
   {
     if (!idb_design) {
@@ -48,62 +41,36 @@ namespace ipnp {
       return nullptr;
     }
 
-    // 连接VDD网络的所有层
     idb_design = connectNetworkLayers(pnp_network, PowerType::kVDD, idb_design);
 
-    // 连接VSS网络的所有层
     idb_design = connectNetworkLayers(pnp_network, PowerType::kVSS, idb_design);
 
     LOG_INFO << "Success : Connected all power layers";
     return idb_design;
   }
 
-  /**
-   * @brief 连接指定网络的所有层
-   *
-   * @param pnp_network 电源网格管理器
-   * @param net_type 网络类型(VDD/VSS)
-   * @param idb_design IDB设计对象
-   * @return idb::IdbDesign* 修改后的IDB设计对象
-   */
   idb::IdbDesign* PowerVia::connectNetworkLayers(GridManager& pnp_network, PowerType net_type, idb::IdbDesign* idb_design)
   {
     std::string net_name = (net_type == PowerType::kVDD) ? "VDD" : "VSS";
 
-    // 获取电源层列表
     auto power_layers = pnp_network.get_power_layers();
     int layer_count = pnp_network.get_layer_count();
 
-    // 连接相邻层
+    // Connect power layers
     for (int i = 0; i < layer_count - 1; i++) {
       std::string top_layer = "M" + std::to_string(power_layers[i]);
       std::string bottom_layer = "M" + std::to_string(power_layers[i + 1]);
-
       idb_design = connectLayers(net_name, top_layer, bottom_layer, idb_design);
     }
 
-    // idb_design = connectLayers(net_name, "M" + std::to_string(power_layers[layer_count - 1]), "M2", idb_design);
-    // idb_design = connect_M3_M2_M1_Layers(net_name, "M3", "M2", idb_design);
-    
-    // 获取电源网格的最底层金属层
+    // Connect power layer to M2 and M1 layer rows
     std::string bottom_power_layer = "M" + std::to_string(power_layers[layer_count - 1]);
-
     idb_design = connect_Layer_Row(net_name, bottom_power_layer, "M2", idb_design);
-
-    // 连接最底层电源网格到标准单元层(M2和M1)
-    // idb_design = connectToStandardLayers(net_name, bottom_power_layer, idb_design);
     
     LOG_INFO << "Success : Connected all layers for " << net_name;
     return idb_design;
   }
 
-  /**
-   * @brief 将浮点值转换为数据库单位
-   *
-   * @param value 浮点值
-   * @param idb_design IDB设计对象
-   * @return int32_t 数据库单位值
-   */
   int32_t PowerVia::transUnitDB(double value, idb::IdbDesign* idb_design)
   {
     if (!idb_design) return -1;
@@ -111,27 +78,18 @@ namespace ipnp {
     return idb_layout != nullptr ? idb_layout->transUnitDB(value) : -1;
   }
 
-  /**
-   * @brief 查找或创建通孔
-   *
-   * @param layer_cut 切割层
-   * @param width_design 宽度
-   * @param height_design 高度
-   * @param idb_design IDB设计对象
-   * @return idb::IdbVia* 通孔对象
-   */
   idb::IdbVia* PowerVia::findVia(idb::IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design, idb::IdbDesign* idb_design)
   {
     if (!idb_design) return nullptr;
     auto via_list = idb_design->get_via_list();
 
-    // 通孔名称格式: 切割层名称_宽度x高度
+    // Via name format: cut_layer_name_widthxheight
     std::string via_name = layer_cut->get_name() + "_" + std::to_string(width_design) + "x" + std::to_string(height_design);
 
-    // 查找已有通孔
+    // Search for existing via
     idb::IdbVia* via_find = via_list->find_via(via_name);
 
-    // 如果找不到，创建新通孔
+    // If not found, create a new via
     if (via_find == nullptr) {
       via_find = createVia(layer_cut, width_design, height_design, via_name, idb_design);
     }
@@ -139,129 +97,86 @@ namespace ipnp {
     return via_find;
   }
 
-  /**
-   * @brief 创建通孔
-   *
-   * @param layer_cut 切割层
-   * @param width_design 宽度
-   * @param height_design 高度
-   * @param via_name 通孔名称
-   * @param idb_design IDB设计对象
-   * @return idb::IdbVia* 通孔对象
-   */
   idb::IdbVia* PowerVia::createVia(idb::IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design, std::string via_name, idb::IdbDesign* idb_design)
   {
     if (!idb_design) return nullptr;
     auto via_list = idb_design->get_via_list();
 
-    // 确保通孔名称格式正确
+    // Ensure via name is correctly formatted
     via_name = layer_cut->get_name() + "_" + std::to_string(width_design) + "x" + std::to_string(height_design);
 
-    // 创建通孔
+    // Create via
     idb::IdbVia* via = via_list->createVia(via_name, layer_cut, width_design, height_design);
 
-    // 调试信息
+    // Debug information
     LOG_INFO << "Created via: " << via_name << ", via_list size: " << via_list->get_via_list().size();
 
     return via;
   }
 
-  /**
-   * @brief 创建通孔线段
-   *
-   * @param layer 层
-   * @param route_width 路由宽度
-   * @param wire_shape_type 线形状类型
-   * @param coord 坐标
-   * @param via 通孔
-   * @return idb::IdbSpecialWireSegment* 线段对象
-   */
   idb::IdbSpecialWireSegment* PowerVia::createSpecialWireVia(idb::IdbLayer* layer, int32_t route_width,
     idb::IdbWireShapeType wire_shape_type,
     idb::IdbCoordinate<int32_t>* coord,
     idb::IdbVia* via)
   {
-    // 创建特殊线段
+    // Create special wire segment
     idb::IdbSpecialWireSegment* segment_via = new idb::IdbSpecialWireSegment();
 
-    // 设置为通孔类型
+    // Set as via type
     segment_via->set_is_via(true);
 
-    // 添加坐标点
+    // Add coordinate point
     segment_via->add_point(coord->get_x(), coord->get_y());
 
-    // 设置层信息
+    // Set layer information
     segment_via->set_layer(layer);
 
-    // 设置形状类型
+    // Set shape type
     segment_via->set_shape_type(idb::IdbWireShapeType::kStripe);
 
-    // 标记为新层
+    // Mark as new layer
     segment_via->set_layer_as_new();
 
-    // 设置路由宽度
+    // Set route width
     segment_via->set_route_width(0);
 
-    // 复制通孔并设置坐标
+    // Copy via and set coordinates
     idb::IdbVia* via_new = segment_via->copy_via(via);
     if (via_new != nullptr) {
       via_new->set_coordinate(coord);
     }
 
-    // 设置边界框
+    // Set bounding box
     segment_via->set_bounding_box();
 
     return segment_via;
   }
 
-  /**
-   * @brief 计算两个线段的交叉区域
-   *
-   * @param segment_top 顶层线段
-   * @param segment_bottom 底层线段
-   * @param intersection_rect 输出交叉区域
-   * @return true 有交叉
-   * @return false 无交叉
-   */
   bool PowerVia::getIntersectCoordinate(idb::IdbSpecialWireSegment* segment_top,
     idb::IdbSpecialWireSegment* segment_bottom,
     idb::IdbRect& intersection_rect)
   {
-    // 获取线段的边界框
+    // Get segment bounding boxes
     idb::IdbRect* top_bbox = segment_top->get_bounding_box();
     idb::IdbRect* bottom_bbox = segment_bottom->get_bounding_box();
 
-    // 检查是否有交叉
+    // Check if there is intersection
     if (!top_bbox->isIntersection(bottom_bbox)) {
       return false;
     }
 
-    // 计算交叉区域
+    // Calculate intersection area
     int32_t ll_x = std::max(top_bbox->get_low_x(), bottom_bbox->get_low_x());
     int32_t ll_y = std::max(top_bbox->get_low_y(), bottom_bbox->get_low_y());
     int32_t ur_x = std::min(top_bbox->get_high_x(), bottom_bbox->get_high_x());
     int32_t ur_y = std::min(top_bbox->get_high_y(), bottom_bbox->get_high_y());
 
-    // 设置交叉区域
+    // Set intersection rectangle
     intersection_rect.set_rect(ll_x, ll_y, ur_x, ur_y);
 
     return true;
   }
 
-  /**
-   * @brief 在指定位置添加单个通孔
-   *
-   * @param net_name 网络名称
-   * @param top_layer 顶层
-   * @param bottom_layer 底层
-   * @param x 坐标x
-   * @param y 坐标y
-   * @param width 宽度
-   * @param height 高度
-   * @param idb_design IDB设计对象
-   * @return true 添加成功
-   * @return false 添加失败
-   */
   bool PowerVia::addSingleVia(std::string net_name,
     std::string top_layer,
     std::string bottom_layer,
@@ -275,14 +190,14 @@ namespace ipnp {
     auto idb_layer_list = idb_layout->get_layers();
     auto idb_pdn_list = idb_design->get_special_net_list();
 
-    // 找到网络
+    // Find network
     idb::IdbSpecialNet* net = idb_pdn_list->find_net(net_name);
     if (net == nullptr) {
       LOG_INFO << "Error: Cannot find net " << net_name;
       return false;
     }
 
-    // 获取线
+    // Get wire
     idb::IdbSpecialWire* wire = nullptr;
     if (net->get_wire_list()->get_num() > 0) {
       wire = net->get_wire_list()->find_wire(0);
@@ -296,7 +211,7 @@ namespace ipnp {
       return false;
     }
 
-    // 找到所有的切割层
+    // Find all cut layers
     std::vector<idb::IdbLayerCut*> cut_layer_list =
       idb_layer_list->find_cut_layer_list(top_layer, bottom_layer);
 
@@ -305,47 +220,38 @@ namespace ipnp {
       return false;
     }
 
-    // 转换坐标为数据库单位
+    // Convert coordinates to database units
     int32_t dbu_x = transUnitDB(x, idb_design);
     int32_t dbu_y = transUnitDB(y, idb_design);
 
-    // 为每个切割层添加通孔
+    // Add via for each cut layer
     for (auto layer_cut : cut_layer_list) {
       if (!layer_cut->is_cut()) continue;
 
-      // 查找或创建通孔
+      // Find or create via
       idb::IdbVia* via = findVia(layer_cut, width, height, idb_design);
       if (via == nullptr) {
         LOG_INFO << "Error: Failed to create via for " << layer_cut->get_name();
         continue;
       }
 
-      // 获取通孔顶层
+      // Get via top layer
       idb::IdbLayer* via_top_layer = via->get_top_layer_shape().get_layer();
 
-      // 创建坐标
+      // Create coordinate
       idb::IdbCoordinate<int32_t>* coord = new idb::IdbCoordinate<int32_t>(dbu_x, dbu_y);
 
-      // 创建通孔线段
+      // Create via segment
       idb::IdbSpecialWireSegment* segment_via = createSpecialWireVia(
         via_top_layer, 0, idb::IdbWireShapeType::kStripe, coord, via);
 
-      // 添加到线中
+      // Add to wire
       wire->add_segment(segment_via);
     }
 
     return true;
   }
 
-  /**
-   * @brief 连接两个指定层之间的电源线
-   *
-   * @param net_name 网络名称
-   * @param top_layer_name 顶层名称
-   * @param bottom_layer_name 底层名称
-   * @param idb_design IDB设计对象
-   * @return idb::IdbDesign* 修改后的IDB设计对象
-   */
   idb::IdbDesign* PowerVia::connectLayers(std::string net_name, std::string top_layer_name, std::string bottom_layer_name, idb::IdbDesign* idb_design)
   {
     if (!idb_design) {
@@ -357,38 +263,38 @@ namespace ipnp {
     auto idb_layer_list = idb_layout->get_layers();
     auto idb_pdn_list = idb_design->get_special_net_list();
 
-    // 获取层信息
+    // Get layer information
     idb::IdbLayerRouting* layer_bottom = dynamic_cast<idb::IdbLayerRouting*>(
       idb_layer_list->find_layer(bottom_layer_name));
     idb::IdbLayerRouting* layer_top = dynamic_cast<idb::IdbLayerRouting*>(
       idb_layer_list->find_layer(top_layer_name));
 
-    // 确保层存在且不相同
+    // Ensure layers exist and are different
     if (layer_bottom == nullptr || layer_top == nullptr || layer_bottom == layer_top) {
       LOG_INFO << "Error : layers not exist or same layer.";
       return nullptr;
     }
 
-    // 确保bottom层在top层下面
+    // Ensure bottom layer is below top layer
     if (layer_top->get_order() < layer_bottom->get_order()) {
       std::swap(layer_top, layer_bottom);
     }
 
-    // 不支持同方向的两层
+    // Don't support two layers with the same direction
     if ((layer_top->is_horizontal() && layer_bottom->is_horizontal()) ||
       (layer_top->is_vertical() && layer_bottom->is_vertical())) {
       LOG_INFO << "Error : layers have the same direction.";
       return nullptr;
     }
 
-    // 获取网络
+    // Get network
     idb::IdbSpecialNet* net = idb_pdn_list->find_net(net_name);
     if (net == nullptr) {
       LOG_INFO << "Error : can't find the net " << net_name;
       return nullptr;
     }
 
-    // 获取网络的线列表
+    // Get network wire list
     idb::IdbSpecialWireList* wire_list = net->get_wire_list();
     if (wire_list == nullptr) {
       LOG_INFO << "Error : not wire in Special net " << net_name;
@@ -399,7 +305,7 @@ namespace ipnp {
     std::vector<idb::IdbSpecialWireSegment*> segment_list_bottom;
     idb::IdbSpecialWire* wire_top = nullptr;
 
-    // 收集顶层和底层的线段
+    // Collect top and bottom layer segments
     for (idb::IdbSpecialWire* wire : wire_list->get_wire_list()) {
       for (idb::IdbSpecialWireSegment* segment : wire->get_segment_list()) {
         if (segment->is_tripe() || segment->is_follow_pin()) {
@@ -417,23 +323,23 @@ namespace ipnp {
       }
     }
     
-    // 对每个顶层线段
+    // For each top layer segment
     for (idb::IdbSpecialWireSegment* segment_top : segment_list_top) {
-      // 对每个底层线段
+      // For each bottom layer segment
       for (idb::IdbSpecialWireSegment* segment_bottom : segment_list_bottom) {
-        // 计算交叉区域
+        // Calculate intersection area
         idb::IdbRect intersection_rect;
         if (getIntersectCoordinate(segment_top, segment_bottom, intersection_rect)) {
-          // 调试信息
+          // Debug information
           // LOG_INFO << "Found intersection at (" << intersection_rect.get_middle_point().get_x()
           //   << ", " << intersection_rect.get_middle_point().get_y()
           //   << ") with size " << intersection_rect.get_width() << "x" << intersection_rect.get_height();
 
-          // 对每个中间层添加通孔
+          // Add via for each intermediate layer
           for (int32_t layer_order = layer_bottom->get_order();
             layer_order <= (layer_top->get_order() - 2);)
           {
-            // 获取切割层
+            // Get cut layer
             idb::IdbLayerCut* layer_cut_find = dynamic_cast<idb::IdbLayerCut*>(
               idb_layer_list->find_layer_by_order(layer_order + 1));
 
@@ -442,7 +348,7 @@ namespace ipnp {
               return nullptr;
             }
 
-            // 查找或创建通孔
+            // Find or create via
             idb::IdbVia* via_find = findVia(layer_cut_find,
               intersection_rect.get_width(),
               intersection_rect.get_height(),
@@ -453,21 +359,21 @@ namespace ipnp {
               continue;
             }
 
-            // 获取通孔顶层
+            // Get via top layer
             idb::IdbLayer* layer_top_via = via_find->get_top_layer_shape().get_layer();
 
-            // 创建坐标
+            // Create coordinate
             idb::IdbCoordinate<int32_t> middle = intersection_rect.get_middle_point();
             idb::IdbCoordinate<int32_t>* middle_ptr = new idb::IdbCoordinate<int32_t>(middle.get_x(), middle.get_y());
 
-            // 创建通孔线段
+            // Create via segment
             idb::IdbSpecialWireSegment* segment_via = createSpecialWireVia(
               layer_top_via, 0, idb::IdbWireShapeType::kStripe, middle_ptr, via_find);
 
-            // 添加到线中
+            // Add to wire
             wire_top->add_segment(segment_via);
 
-            // 移动到下一个切割层
+            // Move to next cut layer
             layer_order += 2;
           }
         }
@@ -485,7 +391,7 @@ namespace ipnp {
     auto idb_layer_list = idb_layout->get_layers();
     auto idb_pdn_list = idb_design->get_special_net_list();
 
-    // 获取层信息
+    // Get layer information
     idb::IdbLayerRouting* layer_M2 = dynamic_cast<idb::IdbLayerRouting*>(
       idb_layer_list->find_layer(bottom_layer_name));
     idb::IdbLayerRouting* layer_top = dynamic_cast<idb::IdbLayerRouting*>(
@@ -493,32 +399,32 @@ namespace ipnp {
     idb::IdbLayerRouting* layer_M9 = dynamic_cast<idb::IdbLayerRouting*>(
       idb_layer_list->find_layer("M9"));
 
-    // 确保层存在且不相同
+    // Ensure layers exist and are different
     if (layer_M2 == nullptr || layer_top == nullptr || layer_M2 == layer_top) {
       LOG_INFO << "Error : layers not exist or same layer.";
       return nullptr;
     }
 
-    // 确保bottom层在top层下面
+    // Ensure bottom layer is below top layer
     if (layer_top->get_order() < layer_M2->get_order()) {
       std::swap(layer_top, layer_M2);
     }
 
-    // 不支持同方向的两层
+    // Don't support two layers with the same direction
     if ((layer_top->is_horizontal() && layer_M2->is_horizontal()) ||
       (layer_top->is_vertical() && layer_M2->is_vertical())) {
       LOG_INFO << "Error : layers have the same direction.";
       return nullptr;
     }
 
-    // 获取网络
+    // Get network
     idb::IdbSpecialNet* net = idb_pdn_list->find_net(net_name);
     if (net == nullptr) {
       LOG_INFO << "Error : can't find the net " << net_name;
       return nullptr;
     }
 
-    // 获取网络的线列表
+    // Get network wire list
     idb::IdbSpecialWireList* wire_list = net->get_wire_list();
     if (wire_list == nullptr) {
       LOG_INFO << "Error : not wire in Special net " << net_name;
@@ -529,7 +435,7 @@ namespace ipnp {
     std::vector<idb::IdbSpecialWireSegment*> segment_list_bottom;
     idb::IdbSpecialWire* wire_top = nullptr;
 
-    // 收集顶层和底层的线段
+    // Collect top and bottom layer segments
     for (idb::IdbSpecialWire* wire : wire_list->get_wire_list()) {
       for (idb::IdbSpecialWireSegment* segment : wire->get_segment_list()) {
         if (segment->is_tripe() || segment->is_follow_pin()) {
@@ -546,30 +452,30 @@ namespace ipnp {
       }
     }
 
-    // 对每个顶层线段
+    // For each top layer segment
     for (idb::IdbSpecialWireSegment* segment_top : segment_list_top) {
-      // 对每个底层线段
+      // For each bottom layer segment
       for (idb::IdbSpecialWireSegment* segment_bottom : segment_list_bottom) {
-        // 计算交叉区域
+        // Calculate intersection area
         idb::IdbRect intersection_rect;
         if (getIntersectCoordinate(segment_top, segment_bottom, intersection_rect)) {
           
           int32_t layer_order_M2 = layer_M2->get_order();
           int32_t layer_order_top = layer_top->get_order();
 
-          // 创建坐标
+          // Create coordinate
           idb::IdbCoordinate<int32_t> middle = intersection_rect.get_middle_point();
           idb::IdbCoordinate<int32_t>* middle_ptr = new idb::IdbCoordinate<int32_t>(middle.get_x(), middle.get_y());
 
           int wire_top_index = (layer_top->get_order() - layer_M9->get_order()) / (-2);
           
-          // 循环处理每个切割层
+          // Process each cut layer
           for (int layer_cut_order = layer_order_top - 1;
             layer_cut_order > layer_order_M2 - 2; layer_cut_order -= 2) {
 
             wire_top = wire_list->find_wire(wire_top_index);
 
-            // 获取切割层
+            // Get cut layer
             idb::IdbLayerCut* layer_cut = dynamic_cast<idb::IdbLayerCut*>(
               idb_layer_list->find_layer_by_order(layer_cut_order));
 
@@ -578,7 +484,7 @@ namespace ipnp {
               continue;
             }
 
-            // 查找或创建通孔
+            // Find or create via
             idb::IdbVia* via_find = findVia(layer_cut,
               intersection_rect.get_width(),
               intersection_rect.get_height(),
@@ -589,14 +495,14 @@ namespace ipnp {
               continue;
             }
 
-            // 获取通孔顶层
+            // Get via top layer
             idb::IdbLayer* layer_top_via = via_find->get_top_layer_shape().get_layer();
 
-            // 创建通孔线段
+            // Create via segment
             idb::IdbSpecialWireSegment* segment_via = createSpecialWireVia(
               layer_top_via, 0, idb::IdbWireShapeType::kStripe, middle_ptr, via_find);
 
-            // 添加到线中
+            // Add to wire
             wire_top->add_segment(segment_via);
             wire_top_index++;
           }

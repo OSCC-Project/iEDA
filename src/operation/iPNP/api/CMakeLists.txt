@@ -4,7 +4,7 @@ iPNPApi.cpp
 
 target_link_libraries(iPNPApi 
     PUBLIC
-
+    pnp
 )
 
 target_include_directories(iPNPApi

@@ -16,10 +16,10 @@
 // ***************************************************************************************
 /**
  * @file iPNPIdbWrapper.hh
- * @author Xinhao li
+ * @author Jianrong Su
  * @brief
- * @version 0.1
- * @date 2024-07-15
+ * @version 1.0
+ * @date 2025-06-23
  */
 
 #pragma once
@@ -31,7 +31,6 @@
 
 #include "GridManager.hh"
 #include "PowerRouter.hh"
-#include "iPNPCommon.hh"
 
 namespace idb {
 class IdbDesign;

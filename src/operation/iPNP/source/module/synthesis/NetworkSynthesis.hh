@@ -16,11 +16,11 @@
 // ***************************************************************************************
 /**
  * @file NetworkSynthesis.hh
- * @author Xinhao li
+ * @author Jianrong Su
  * @brief Synthesize the whole PDN consisting of 3D Template and write DEF file. It doesn't include the function of deciding which template
  * to place in which location. This is determined by the optimizer, or randomly, etc.
- * @version 0.1
- * @date 2024-07-15
+ * @version 1.0
+ * @date 2025-06-23
  */
 
 #pragma once

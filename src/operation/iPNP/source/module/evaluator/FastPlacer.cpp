@@ -18,47 +18,37 @@
  * @file FastPlacer.cpp
  * @author Jianrong Su
  * @brief
- * @version 0.1
- * @date 2024-07-15
+ * @version 1.0
+ * @date 2025-06-23
  */
 
 #include "FastPlacer.hh"
 #include "PLAPI.hh"
 #include "log/Log.hh"
-
+#include "PNPConfig.hh"
 
 namespace ipnp {
 
 void FastPlacer::runFastPlacer(idb::IdbBuilder* idb_builder)
 {
-  std::string pl_json_file = "/home/sujianrong/iEDA/src/operation/iPNP/api/pl_default_config.json";
+  std::string pl_json_file;
+  
+  PNPConfig* temp_config = new PNPConfig();
+  if (!temp_config->get_pl_default_config_path().empty()) {
+    pl_json_file = temp_config->get_pl_default_config_path();
+  }
+  else {
+    pl_json_file = "/home/sujianrong/iEDA/src/operation/iPNP/example/pl_default_config.json";
+  }
+  delete temp_config;
   
   ipl::PLAPI& plapi = ipl::PLAPI::getInst();
 
   plapi.initAPI(pl_json_file, idb_builder);
-
-  // // 只运行全局布局和合法化
-  // plapi.runGP();
-  // plapi.runLG();
-
-  // // 输出HPWL信息
-  // plapi.printHPWLInfo();
-
-  // // 如果启用了时序分析，则输出时序信息
-  // if (plapi.isSTAStarted()) {
-  //   plapi.printTimingInfo();
-  // }
-
-  // // 生成报告
-  // plapi.reportPLInfo();
-  // LOG_INFO << "Log has been writed to dir: ./result/pl/log/";
-
-  // // 写回数据库
-  // plapi.writeBackSourceDataBase();
-
-  plapi.runFlow();
-
-  // 释放资源
+  plapi.runGP();
+  plapi.runLG();
+  plapi.writeBackSourceDataBase();
+  // plapi.runFlow();
   plapi.destoryInst();
 }
 

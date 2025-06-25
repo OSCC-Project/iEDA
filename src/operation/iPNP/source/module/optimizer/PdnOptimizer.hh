@@ -16,10 +16,10 @@
 // ***************************************************************************************
 /**
  * @file PdnOptimizer.hh
- * @author Xinhao li
+ * @author Jianrong Su
  * @brief
- * @version 0.1
- * @date 2024-07-15
+ * @version 1.0
+ * @date 2025-06-23
  */
 
 #pragma once
@@ -75,42 +75,31 @@ namespace ipnp {
     PdnOptimizer();
     ~PdnOptimizer();
 
+    // getter
     GridManager get_out_put_grid() { return _output_pdn_grid; }
     double get_opt_score() const { return _opt_score; }
 
-    // 获取区域评估数据
-    // std::vector<std::vector<std::vector<RegionData>>> get_region_data() const { return _region_data; }
-
-    // 优化网络 - 两阶段方法（先全局，再区域）
     void optimize(GridManager initial_pdn, idb::IdbBuilder* idb_builder);
 
-    // 仅全局优化
     void optimizeGlobal(GridManager initial_pdn, idb::IdbBuilder* idb_builder);
 
-    // 仅区域化优化
     void optimizeByRegion(GridManager initial_pdn, idb::IdbBuilder* idb_builder);
 
-    // 设置权重
     void setWeights(double ir_drop_weight, double overflow_weight);
 
-    // 设置模拟退火参数
     void setAnnealingParams(double initial_temp, double cooling_rate, double min_temp, int iterations_per_temp);
 
   private:
     GridManager _input_pdn_grid;
     GridManager _output_pdn_grid;
     double _opt_score;
-
-    // 区域评估数据
     std::vector<std::vector<std::vector<RegionData>>> _region_data;
 
-    // 模拟退火算法参数
     double _initial_temp;
     double _cooling_rate;
     double _min_temp;
     int _iterations_per_temp;
 
-    // 权重
     double _ir_drop_weight;
     double _overflow_weight;
   };

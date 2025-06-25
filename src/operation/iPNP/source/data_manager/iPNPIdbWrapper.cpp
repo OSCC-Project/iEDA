@@ -16,10 +16,10 @@
 // ***************************************************************************************
 /**
  * @file iPNPIdbWrapper.cpp
- * @author Xinhao li
+ * @author Jianrong Su 
  * @brief
- * @version 0.1
- * @date 2024-07-15
+ * @version 1.0
+ * @date 2025-06-23
  */
 
 #include "iPNPIdbWrapper.hh"
@@ -94,12 +94,10 @@ namespace ipnp {
     bool success = db_builder->saveDef(def_file_path);
     if (!success) {
       std::cout << "Successfully wrote DEF file to: " << def_file_path << std::endl;
-    } // saveDef的返回值本来就写反了
+    } 
     else {
       std::cerr << "Error: Failed to save DEF file to: " << def_file_path << std::endl;
     }
-
-    // delete db_builder;
 
     auto* temp = get_idb_builder();
 

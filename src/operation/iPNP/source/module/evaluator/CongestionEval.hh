@@ -16,10 +16,10 @@
 // ***************************************************************************************
 /**
  * @file CongestionEval.hh
- * @author Xinhao li
+ * @author Jianrong Su
  * @brief
- * @version 0.1
- * @date 2024-07-15
+ * @version 1.0
+ * @date 2025-06-23
  */
 
 #pragma once
@@ -29,7 +29,6 @@
 #include <string>
 #include <vector>
 
-// #include "EvalAPI.hpp"
 #include "iPNPCommon.hh"
 
 namespace ipnp {
@@ -39,16 +38,11 @@ class CongestionEval
   CongestionEval() = default;
   ~CongestionEval() = default;
 
-  // std::vector<std::vector<double>> get_map_overflow() { return _map_overflow; }
-  // auto get_cong_rudy_value() { return _net_cong_rudy; }
-
-  // void evalRudyRouting();
   void evalEGR(idb::IdbBuilder* idb_builder);
   int32_t get_total_overflow_union() { return _total_overflow_union; }
   
 private:
-  // std::vector<std::vector<double>> _map_overflow;
-  // std::vector<float> _net_cong_rudy;
+  
   int32_t _total_overflow_union;
 };
 

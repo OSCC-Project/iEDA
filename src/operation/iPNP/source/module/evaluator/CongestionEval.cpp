@@ -16,28 +16,18 @@
 // ***************************************************************************************
 /**
  * @file CongestionEval.cpp
- * @author Xinhao li
+ * @author Jianrong Su
  * @brief
- * @version 0.1
- * @date 2024-07-15
+ * @version 1.0
+ * @date 2025-06-23
  */
 
 #include "CongestionEval.hh"
 #include "idm.h"
 #include "congestion_api.h"
+#include "PNPConfig.hh"
 
 namespace ipnp {
-  // void CongestionEval::evalRudyRouting()
-  // {
-  //   // auto& eval_api = eval::EvalAPI::initInst();
-
-  //   int32_t bin_cnt_x = 512;  // Grid size
-  //   int32_t bin_cnt_y = 512;
-  //   // eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
-
-  //   string eval_method = "RUDY";
-  //   // _net_cong_rudy = eval_api.evalNetCong(eval_method);  // using RUDY
-  // }
 
   void CongestionEval::evalEGR(idb::IdbBuilder* idb_builder)
   {
@@ -45,15 +35,22 @@ namespace ipnp {
     dmInst->set_idb_def_service(idb_builder->get_def_service());
     dmInst->set_idb_lef_service(idb_builder->get_lef_service());
 
-    std::string map_path = "/home/sujianrong/iEDA/src/operation/iPNP/data";
+    std::string map_path;
     std::string stage = "place";
+
+    PNPConfig* temp_config = new PNPConfig();
+    if (!temp_config->get_egr_map_path().empty()) {
+      map_path = temp_config->get_egr_map_path();
+    }
+    else{
+      map_path = "/home/sujianrong/iEDA/src/operation/iPNP/data";
+    }
+    delete temp_config;
 
     ieval::CongestionAPI congestion_api;
     ieval::OverflowSummary overflow_summary;
 
-    // 这个字符串是没用的，只是这个接口要求返回一个字符串
     std::string temp = congestion_api.egrUnionMap(stage, map_path);
-
     overflow_summary = congestion_api.egrOverflow(stage, temp);
     _total_overflow_union = overflow_summary.total_overflow_union;
 

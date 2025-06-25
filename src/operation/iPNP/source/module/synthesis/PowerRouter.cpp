@@ -19,7 +19,7 @@
  * @author Jianrong Su
  * @brief
  * @version 0.1
- * @date 2025-03-28
+ * @date 2025-06-23
  */
 
 #include "PowerRouter.hh"
@@ -33,7 +33,6 @@ namespace ipnp {
 
 void PowerRouter::addPowerStripesToCore(idb::IdbSpecialNet* power_net, GridManager pnp_network)
 {
-  // 判断 power_net 的类型
   std::string net_name;
   if (power_net->is_vdd()) {
     net_name = "VDD";
@@ -42,7 +41,6 @@ void PowerRouter::addPowerStripesToCore(idb::IdbSpecialNet* power_net, GridManag
     net_name = "VSS";
   }
 
-  // 获取 power_net 的 wire_list
   idb::IdbSpecialWireList* wire_list = power_net->get_wire_list();
 
   auto grid_data = pnp_network.get_grid_data();
@@ -150,14 +148,12 @@ void PowerRouter::addPowerStripesToCore(idb::IdbSpecialNet* power_net, GridManag
       x_base = pnp_network.get_core_llx();
       y_base += grid_data[layer_idx][i][0].get_height();
     }
-    // 将 wire 添加到 wire_list 中
     wire_list->add_wire(wire, idb::IdbWiringStatement::kRouted);
   }
 }
 
 void PowerRouter::addPowerStripesToDie(idb::IdbSpecialNet* power_net, GridManager pnp_network)
 {
-  // 判断 power_net 的类型
   std::string net_name;
   if (power_net->is_vdd()) {
     net_name = "VDD";
@@ -166,7 +162,6 @@ void PowerRouter::addPowerStripesToDie(idb::IdbSpecialNet* power_net, GridManage
     net_name = "VSS";
   }
 
-  // 获取 power_net 的 wire_list
   idb::IdbSpecialWireList* wire_list = power_net->get_wire_list();
 
   auto grid_data = pnp_network.get_grid_data();
@@ -274,11 +269,9 @@ void PowerRouter::addPowerStripesToDie(idb::IdbSpecialNet* power_net, GridManage
       x_base = 0.0;
       y_base += grid_data[layer_idx][i][0].get_height();
     }
-    // 将 wire 添加到 wire_list 中
     wire_list->add_wire(wire, idb::IdbWiringStatement::kRouted);
   }
 
-  // 补齐 wire_list 其他层
   int wire_need_to_add = power_layers[0] - pnp_network.get_layer_count() - 2;
   while (wire_need_to_add > 0) {
     idb::IdbSpecialWire* wire = new idb::IdbSpecialWire();
@@ -397,7 +390,6 @@ void PowerRouter::addPowerPort(idb::IdbDesign* idb_design, GridManager pnp_netwo
   double y_base = 0.0;
 
   if (template_data[2][0][0].get_direction() == StripeDirection::kHorizontal) {
-    // 在die的左边打port，M7层，所以用[2][i][0]
     for (int i = 0; i < pnp_network.get_ho_region_num(); i++) {
       SingleTemplate& single_template = template_data[2][i][0];
       double width = single_template.get_width();
@@ -454,7 +446,6 @@ void PowerRouter::addPowerPort(idb::IdbDesign* idb_design, GridManager pnp_netwo
     }
   } // vertical
   else {
-    // 在die的下边打port，M7层，所以用[2][0][j]
     for (int j = 0;j < pnp_network.get_ver_region_num();j++) {
       SingleTemplate& single_template = template_data[2][0][j];
       double width = single_template.get_width();
@@ -510,10 +501,6 @@ void PowerRouter::addPowerPort(idb::IdbDesign* idb_design, GridManager pnp_netwo
       x_base += grid_data[2][0][j].get_width();
     }
   }
-
-
-  
-  
 }
 
 void PowerRouter::addVSSNet(idb::IdbDesign* idb_design, GridManager pnp_network)
@@ -521,7 +508,6 @@ void PowerRouter::addVSSNet(idb::IdbDesign* idb_design, GridManager pnp_network)
   idb::IdbSpecialNet* vss_net = idb_design->get_special_net_list()->find_net("VSS");
 
   if (vss_net == nullptr) {
-    // 创建 VSS 网络
     idb::IdbSpecialNet* power_net = new idb::IdbSpecialNet();
     power_net->set_net_name("VSS");
     power_net->set_connect_type(idb::IdbConnectType::kGround);
@@ -548,7 +534,6 @@ void PowerRouter::addVDDNet(idb::IdbDesign* idb_design, GridManager pnp_network)
   idb::IdbSpecialNet* vdd_net = idb_design->get_special_net_list()->find_net("VDD");
 
   if (vdd_net == nullptr) {
-    // 创建 VDD 网络
     idb::IdbSpecialNet* power_net = new idb::IdbSpecialNet();
     power_net->set_net_name("VDD");
     power_net->set_connect_type(idb::IdbConnectType::kPower);

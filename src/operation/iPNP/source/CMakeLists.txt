@@ -1,18 +1,18 @@
 add_subdirectory(config)
 add_subdirectory(data_manager)
 add_subdirectory(module)
-add_subdirectory(utility)
 
 add_library(pnp iPNP.cpp)
 
 target_link_libraries(
   pnp
+  pnp-cmd
   optimizer
   fast_router
   evaluator
   synthesis
   data_manager
-  utility
+  config
   idb
   tcl
   log

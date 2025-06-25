@@ -16,61 +16,82 @@
 // ***************************************************************************************
 /**
  * @file iPNP.cpp
- * @author Xinhao li
+ * @author Jianrong Su
  * @brief
- * @version 0.1
- * @date 2024-07-15
+ * @version 1.0
+ * @date 2025-06-23
  */
 
 #include "iPNP.hh"
 
 #include "FastPlacer.hh"
-#include "CongestionEval.hh"
 #include "NetworkSynthesis.hh"
 #include "PdnOptimizer.hh"
 #include "iPNPIdbWrapper.hh"
+#include "CongestionEval.hh"
 #include "IREval.hh"
-#include "utility/DefConverter.hh"
+#include "PNPConfig.hh"
+#include "log/Log.hh"
 
 namespace ipnp {
 
-iPNP::iPNP(){}
-
-iPNP::iPNP(const std::string& config_file)
-{
-  /**
-   * @todo add config
-   * @brief need json module
-   */
-  
-  // _pnp_config = new PNPConfig;
-  // JsonParser* json = JsonParser::get_json_parser();
-  // json->parse(config_file, _pnp_config);
-
+iPNP::iPNP() {
+  _pnp_config = new PNPConfig();
 }
 
-/**
- * @brief Generate initial solution. Decide which region to place, and place templates on regions randomly.
- * @attention Version_1.0 only consider rectangular grid region.
- */
+iPNP::iPNP(const std::string& config_file) {
+  _pnp_config = new PNPConfig();
+  if (!loadConfigFromJson(config_file, _pnp_config)) {
+    LOG_WARNING << "Initializing iPNP with default configuration" << std::endl;
+  }
+  
+  // If LEF and DEF file paths are specified in the configuration, read the DEF file
+  if (!_pnp_config->get_lef_files().empty() && !_pnp_config->get_def_path().empty()) {
+    readLefDef(_pnp_config->get_lef_files(), _pnp_config->get_def_path());
+    LOG_INFO << "DEF file read: " << _pnp_config->get_def_path() << std::endl;
+  } else {
+    LOG_WARNING << "LEF files or DEF file path not specified in configuration" << std::endl;
+  }
+  
+  // Set output DEF file path
+  if (!_pnp_config->get_output_def_path().empty()) {
+    _output_def_path = _pnp_config->get_output_def_path();
+  }
+  else {
+    _output_def_path = "./output.def";
+  }
+}
+
+iPNP::~iPNP() {
+  if (_pnp_config) {
+    delete _pnp_config;
+    _pnp_config = nullptr;
+  }
+}
+
 void iPNP::runSynthesis()
 {
   NetworkSynthesis network_synthesizer(SysnType::kDefault, _input_network);
-
   network_synthesizer.synthesizeNetwork();
-
   _initialized_network = network_synthesizer.get_network();
-
+  _current_opt_network = _initialized_network;
 }
 
 void iPNP::runOptimize()
 {
+  saveToIdb();
   PdnOptimizer pdn_optimizer;
   pdn_optimizer.optimizeGlobal(_initialized_network, _idb_wrapper.get_idb_builder());
   _current_opt_network = pdn_optimizer.get_out_put_grid();
 }
 
-void iPNP::readDef(std::vector<std::string> lef_files, std::string def_path)
+void iPNP::runFastPlacer()
+{
+  FastPlacer fast_placer;
+  fast_placer.runFastPlacer(_idb_wrapper.get_idb_builder());
+}
+
+void iPNP::readLefDef(std::vector<std::string> lef_files, std::string def_path)
 {
   auto* db_builder = new idb::IdbBuilder();
   db_builder->buildLef(lef_files);
@@ -86,20 +107,44 @@ void iPNP::init()
 {
   // Initialize the input network
   _input_network = GridManager();
-  _input_network.set_power_layers({ 9,8,7,6,5,4,3 });
+  if (_pnp_config) {
+    _input_network.set_power_layers(_pnp_config->get_power_layers());
+    _input_network.set_ho_region_num(_pnp_config->get_ho_region_num());
+    _input_network.set_ver_region_num(_pnp_config->get_ver_region_num());
+  }
+  else {
+    _input_network.set_power_layers({ 9,8,7,6,5,4,3 });
+    _input_network.set_ho_region_num(2);
+    _input_network.set_ver_region_num(2);
+  }
   _input_network.set_layer_count(_input_network.get_power_layers().size());
-  _input_network.set_ho_region_num(3);
-  _input_network.set_ver_region_num(3);
-  _input_network.set_core_width(_idb_wrapper.get_input_core_width());
-  _input_network.set_core_height(_idb_wrapper.get_input_core_height());
   _input_network.set_die_width(_idb_wrapper.get_input_die_width());
   _input_network.set_die_height(_idb_wrapper.get_input_die_height());
-  _input_network.set_core_llx(_idb_wrapper.get_input_core_lx());
-  _input_network.set_core_lly(_idb_wrapper.get_input_core_ly());
-  _input_network.set_core_urx(_idb_wrapper.get_input_core_hx());
-  _input_network.set_core_ury(_idb_wrapper.get_input_core_hy());
-  _input_network.init_GridManager_data();
   
+  // Initialize with configuration-based templates if available
+  if (_pnp_config) {
+    _input_network.init_GridManager_data(_pnp_config);
+  } else {
+    _input_network.init_GridManager_data();
+  }
+
+  // Initialize IREval
+  _ir_eval.initIREval(_idb_wrapper.get_idb_builder(), _pnp_config);
+}
+
+void iPNP::runAnalysis()
+{
+  saveToIdb();
+  _cong_eval.evalEGR(_idb_wrapper.get_idb_builder());
+  writeIdbToDef("/home/sujianrong/iEDA/src/operation/iPNP/data/test/debug.def");
+  _ir_eval.runIREval(_idb_wrapper.get_idb_builder());
+}
+
+void iPNP::outputDef()
+{
+  readLefDef(_pnp_config->get_lef_files(), _pnp_config->get_def_path());
+  saveToIdb();
+  writeIdbToDef(_output_def_path);
 }
 
 void iPNP::run()
@@ -107,38 +152,18 @@ void iPNP::run()
   if (_idb_wrapper.get_idb_design()) {
 
     init();
-    
     runSynthesis();
-
-    // FastPlacer fast_placer;
-    // fast_placer.runFastPlacer(_idb_wrapper.get_idb_builder());
-
-    _current_opt_network = _initialized_network;
-
-    saveToIdb();
-
-    runOptimize();
-
-    saveToIdb();
-    writeIdbToDef(_output_def_path);
-
-    // CongestionEval cong_eval;
-    // cong_eval.evalEGR(_idb_wrapper.get_idb_builder());
+    runFastPlacer();
+    // runOptimize();
+    runAnalysis();
+    outputDef();
     
-    IREval ir_eval;
-    // ir_eval.initIREval(_idb_wrapper.get_idb_builder());
-    ir_eval.runIREval(_idb_wrapper.get_idb_builder());
-    
-    // DefConverter def_converter;
-    // def_converter.runDefConverter("/home/sujianrong/iEDA/src/operation/iPNP/data/test/output.def",
-    //   "/home/sujianrong/iEDA/src/operation/iPNP/data/test/aes_no_pwr_with_PL.def",
-    //   "COMPONENTS 15826 ;",
-    //   "END COMPONENTS");
 
-    
+    LOG_INFO << "Output written to DEF file: " << _output_def_path << std::endl;
+  
   }
   else {
-    std::cout << "Warning: idb design is empty!" << std::endl;
+    LOG_ERROR << "Warning: idb design is empty!" << std::endl;
   }
 }
 

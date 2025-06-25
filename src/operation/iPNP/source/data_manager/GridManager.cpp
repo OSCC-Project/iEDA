@@ -16,13 +16,14 @@
 // ***************************************************************************************
 /**
  * @file GridManager.cpp
- * @author Xinhao li
+ * @author Jianrong Su
  * @brief
- * @version 0.1
- * @date 2024-07-15
+ * @version 1.0
+ * @date 2025-06-23
  */
 
 #include "GridManager.hh"
+#include "PNPConfig.hh"
 
 namespace ipnp {
 
@@ -30,13 +31,28 @@ PDNGridRegion::PDNGridRegion() : _shape(GridRegionShape::kRectangle)
 {
 }
 
-PDNRectanGridRegion::PDNRectanGridRegion() : _x_left_bottom(10.0), _y_left_bottom(10.0), _x_right_top(40.0), _y_right_top(40.0)
+PDNRectanGridRegion::PDNRectanGridRegion() 
+: _x_left_bottom(), 
+_y_left_bottom(), 
+_x_right_top(),
+_y_right_top()
 {
 }
 
 void GridManager::init_GridManager_data()
 {
   _template_libs.gen_template_libs();
+  initialize_grid_data(_die_width, _die_height);
+}
+
+void GridManager::init_GridManager_data(const PNPConfig* config)
+{
+  if (config) {
+    _template_libs.gen_template_libs_from_config(config);
+  } else {
+    _template_libs.gen_template_libs();
+  }
+  
   initialize_grid_data(_die_width, _die_height);
 }
 

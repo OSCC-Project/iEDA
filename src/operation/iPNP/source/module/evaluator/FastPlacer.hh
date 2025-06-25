@@ -16,10 +16,10 @@
 // ***************************************************************************************
 /**
  * @file FastPlacer.hh
- * @author Xinhao li
+ * @author Jianrong Su
  * @brief
- * @version 0.1
- * @date 2024-07-15
+ * @version 1.0
+ * @date 2025-06-23
  */
 
 #pragma once

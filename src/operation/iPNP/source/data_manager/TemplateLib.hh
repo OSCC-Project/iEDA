@@ -16,16 +16,17 @@
 // ***************************************************************************************
 /**
  * @file TemplateLib.hh
- * @author Xinhao li
- * @brief Generate template blocks. Upper interface is GenPdnTemplate.py
- * @version 0.1
- * @date 2024-07-15
+ * @author Jianrong Su
+ * @brief Generate template blocks.
+ * @version 1.0
+ * @date 2025-06-23
  */
 
 #pragma once
 
 #include <vector>
 #include "SingleTemplate.hh"
+#include "PNPConfig.hh"
 
 namespace ipnp {
 
@@ -44,7 +45,11 @@ class TemplateLib
     double space,
     double offset);
 
+  // Generate template libraries using hardcoded values (legacy method)
   void gen_template_libs();
+  
+  // Generate template libraries from configuration
+  void gen_template_libs_from_config(const PNPConfig* config);
 
   const std::vector<SingleTemplate>& get_horizontal_templates() const { return _horizontal_templates; }  
   const std::vector<SingleTemplate>& get_vertical_templates() const { return _vertical_templates; }

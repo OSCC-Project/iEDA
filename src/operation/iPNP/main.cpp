@@ -25,108 +25,130 @@
 #include <iostream>
 #include <string>
 #include <filesystem>
+#include <fstream>
+#include <set>
+#include <nlohmann/json.hpp>
 
 #include "iPNP.hh"
-#include "api/iPNPApi.hh"
+#include "iPNPApi.hh"
+#include "log/Log.hh"
+#include "cxxopts.hpp"
+#include "PNPConfig.hh"
+#include <ctime>
+#include "tcl/UserShell.hh"
+#include "tcl-cmd/ShellCmd.hh"
 
-using namespace ipnp;
 using namespace idb;
+using namespace ipnp;
 
-// int registerCommands() {
-//   registerTclCmd(CmdSetDesignWorkSpace, "set_design_workspace");
-//   registerTclCmd(CmdReadVerilog, "read_netlist");
-//   registerTclCmd(CmdReadLefDef, "read_lef_def");
-//   registerTclCmd(CmdReadLiberty, "read_liberty");
-//   registerTclCmd(CmdLinkDesign, "link_design");
-//   registerTclCmd(CmdReadSpef, "read_spef");
-//   registerTclCmd(CmdReadSdc, "read_sdc");
-//   registerTclCmd(CmdReportTiming, "report_timing");
-//   registerTclCmd(CmdReportConstraint, "report_constraint");
-//   registerTclCmd(CmdDefToVerilog, "def_to_verilog");
-//   registerTclCmd(CmdVerilogToDef, "verilog_to_def");
+int registerCommands() {
+  registerTclCmd(CmdRunPnp, "run_pnp");
+  
+  return EXIT_SUCCESS;
+}
 
-//   return EXIT_SUCCESS;
-// }
+int main(int argc, char** argv) {
 
-int main(int argc, char** argv)
-{
-  std::vector<std::string> lef_files{
-    "/home/sujianrong/T28/tlef/tsmcn28_9lm6X2ZUTRDL.tlef",
-    "/home/sujianrong/T28/lef/PLLTS28HPMLAINT.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140opplvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140lvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140uhvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140hvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140oppuhvt.lef",
-    "/home/sujianrong/T28/lef/ts5n28hpcplvta256x32m4fw_130a.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140cg.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140oppuhvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140mbhvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140ulvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140uhvt.lef",
-    "/home/sujianrong/T28/lef/ts5n28hpcplvta64x100m2fw_130a.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140hvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140oppulvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140mb.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140cgcwhvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140lvt.lef",
-    "/home/sujianrong/T28/lef/tpbn28v_9lm.lef",
-    "/home/sujianrong/T28/lef/ts5n28hpcplvta64x128m2f_130a.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140uhvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140mblvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140cgcw.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140mbhvt.lef",
-    "/home/sujianrong/T28/lef/tpbn28v.lef",
-    "/home/sujianrong/T28/lef/ts5n28hpcplvta64x128m2fw_130a.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140lvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140ulvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140opphvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140cgehvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140mb.lef",
-    "/home/sujianrong/T28/lef/tphn28hpcpgv18_9lm.lef",
-    "/home/sujianrong/T28/lef/ts5n28hpcplvta64x88m2fw_130a.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140mb.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140cghvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140opp.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140cghvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140oppehvt.lef",
-    "/home/sujianrong/T28/lef/ts1n28hpcplvtb2048x48m8sw_180a.lef",
-    "/home/sujianrong/T28/lef/ts5n28hpcplvta64x92m2fw_130a.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140mblvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140cg.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140opplvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140cg.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140opphvt.lef",
-    "/home/sujianrong/T28/lef/ts1n28hpcplvtb512x128m4sw_180a.lef",
-    "/home/sujianrong/T28/lef/ts5n28hpcplvta64x96m2fw_130a.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140opphvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140hvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140oppuhvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140cguhvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140opp.lef",
-    "/home/sujianrong/T28/lef/ts1n28hpcplvtb512x64m4sw_180a.lef",
-    "/home/sujianrong/T28/lef/ts6n28hpcplvta2048x32m8sw_130a.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140opp.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140oppulvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140ehvt.lef",
-    "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140opplvt.lef",
-    "/home/sujianrong/T28/lef/ts1n28hpcplvtb8192x64m8sw_180a.lef" };
+  std::string hello_info =
+      "\033[49;32m***************************\n"
+      "    _ ____  _   ______  \n"
+      "   (_) __ \\/ | / / __ \\ \n"
+      "  / / /_/ /  |/ / /_/ / \n"
+      " / / ____/ /|  / ____/  \n"
+      "/_/_/   /_/ |_/_/       \n"
+      "                       \n"
+      "***************************\n"
+      "WELCOME TO iPNP interface. \e[0m";
 
-  std::string def_path = "/home/sujianrong/iEDA/src/operation/iPNP/data/test/aes_no_pwr_with_PL.def";
-  // std::string def_path = "/home/sujianrong/iEDA/src/operation/iPNP/data/test/output.def";
+  std::cout << hello_info << std::endl;
 
-  // std::string def_path = "/home/sujianrong/aes/aes.def";
+  auto shell = ieda::UserShell::getShell();
+  
+  shell->set_init_func(registerCommands);
 
+  cxxopts::Options options("iPNP", "iPNP command line help.");
+  options.add_options()
+    ("c,config", "JSON configuration file", cxxopts::value<std::string>())
+    ("o,output", "Output DEF file path", cxxopts::value<std::string>())
+    ("i,interactive", "Run in interactive TCL shell mode", cxxopts::value<bool>()->default_value("false"))
+    ("s,script", "TCL script file to run", cxxopts::value<std::string>())
+    ("v,version", "Print version")
+    ("h,help", "Print help");
 
-  pnpApiInst->initializeiPNP("");
-  pnpApiInst->readDeftoiPNP(lef_files, def_path);
+  try {
+    auto result = options.parse(argc, argv);
 
-  iPNP* ipnp = pnpApiInst->get_ipnp();
-  ipnp->set_output_def_path("/home/sujianrong/iEDA/src/operation/iPNP/data/test/output.def");
-  ipnp->run();
+    if (result.count("help")) {
+      std::cout << options.help() << std::endl;
+      return 0;
+    }
+
+    if (result.count("version")) {
+      std::cout << "iPNP Version 1.0" << std::endl;
+      return 0;
+    }
+
+    // Get configuration file path
+    std::string config_file_path;
+    if (result.count("config")) {
+      config_file_path = result["config"].as<std::string>();
+    }else {
+      config_file_path = "/home/sujianrong/iEDA/src/operation/iPNP/example/pnp_config.json";
+      LOG_INFO << "Using default configuration file: " << config_file_path << std::endl;
+    }
+
+    // Check if configuration file exists
+    if (!std::filesystem::exists(config_file_path)) {
+      LOG_ERROR << "Configuration file does not exist: " << config_file_path << std::endl;
+      return 1;
+    }
+
+    // Check if running in interactive mode
+    bool interactive_mode = result["interactive"].as<bool>();
+    
+    // Check if running script file
+    bool script_mode = result.count("script");
+    std::string script_file;
+    if (script_mode) {
+      script_file = result["script"].as<std::string>();
+      if (!std::filesystem::exists(script_file)) {
+        LOG_ERROR << "Script file does not exist: " << script_file << std::endl;
+        return 1;
+      }
+    }
+
+    if (interactive_mode) {
+      // Run interactive TCL shell
+      shell->userMain(argc, argv);
+    } else if (script_mode) {
+      // Run TCL script file
+      auto tcl_argc = argc - 1;
+      auto tcl_argv = argv + 1;
+      shell->userMain(tcl_argc, tcl_argv);
+    }
+    else {
+      // Create iPNP instance
+      ipnp::iPNP ipnp(config_file_path);
+      ipnp::iPNPApi::setInstance(&ipnp);
+
+      // Override output DEF file path from command line (if provided)
+      if (result.count("output")) {
+        ipnp.set_output_def_path(result["output"].as<std::string>());
+      }
+
+      // Run iPNP
+      LOG_INFO << "Running iPNP..." << std::endl;
+      ipnp.run();
+      LOG_INFO << "iPNP completed successfully" << std::endl;
+    }
+
+  } catch (const cxxopts::exceptions::exception& e) {
+    std::cerr << "Error parsing options: " << e.what() << std::endl;
+    return 1;
+  } catch (const std::exception& e) {
+    std::cerr << "Error: " << e.what() << std::endl;
+    return 1;
+  }
 
   return 0;
 }

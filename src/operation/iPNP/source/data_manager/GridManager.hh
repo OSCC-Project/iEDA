@@ -16,10 +16,10 @@
 // ***************************************************************************************
 /**
  * @file GridManager.hh
- * @author Xinhao li
+ * @author Jianrong Su
  * @brief Grid manager for PDN
- * @version 0.1
- * @date 2024-07-15
+ * @version 1.0
+ * @date 2025-06-23
  */
 
 #pragma once
@@ -32,6 +32,8 @@
 #include "TemplateLib.hh"
 
 namespace ipnp {
+
+class PNPConfig;  // Forward declaration
 
 enum class GridRegionShape
 {
@@ -129,7 +131,6 @@ class GridManager
   void set_power_layers(std::vector<int> power_layers){
     _power_layers = power_layers;
     _layer_count = power_layers.size();
-    // initialize_grid_data();
   }
   void set_layer_count(int layer_count) { _layer_count = layer_count; }
   void set_ho_region_num(int ho_region_num) { _ho_region_num = ho_region_num; }
@@ -145,7 +146,11 @@ class GridManager
   void set_grid_data(std::vector<std::vector<std::vector<PDNRectanGridRegion>>> grid_data) { _grid_data = grid_data; }
   void set_single_template(int layer_idx, int row, int col, const SingleTemplate& single_template) { _template_data[layer_idx][row][col] = single_template; }
 
+  // Initialize with default templates
   void init_GridManager_data();
+  
+  // Initialize with templates from configuration
+  void init_GridManager_data(const PNPConfig* config);
   
 private:
   std::vector<int> _power_layers;   // layers that have power nets

@@ -30,45 +30,48 @@
 #include <string>
 #include <memory>
 #include <limits>
+#include <utility>
 
 #include "api/PowerEngine.hh"
 #include "api/TimingEngine.hh"
 #include "api/Power.hh"
+#include "PNPConfig.hh"
 
 namespace idb {
-class IdbDesign;
-} 
+  class IdbDesign;
+  class IdbBuilder;
+}
 
 namespace ipower {
   class PowerEngine;
 }
 
 namespace ipnp {
-class IREval
-{
- public:
+  class IREval
+  {
+  public:
 
-   IREval()=default;  
-  ~IREval()=default;
+    IREval() = default;
+    ~IREval() = default;
 
-  void initIREval(idb::IdbBuilder* idb_builder);
-  void runIREval(idb::IdbBuilder* idb_builder);
-  
-  // getter
-  double getMaxIRDrop() const;
-  double getMinIRDrop() const;
-  double getAvgIRDrop() const;
-  std::map<ista::Instance::Coordinate, double> get_Coord_IR_map() { return _coord_ir_map; }
+    void initIREval(idb::IdbBuilder* idb_builder, PNPConfig* pnp_config = nullptr);
+    void runIREval(idb::IdbBuilder* idb_builder);
 
-  
-private:
-  ista::TimingEngine* _timing_engine;
-  ipower::PowerEngine* _power_engine;
-  Sta* _ista;
-  ipower::Power* _ipower;
+    // getter
+    double getMaxIRDrop() const;
+    double getMinIRDrop() const;
+    double getAvgIRDrop() const;
+    std::map<ista::Instance::Coordinate, double> get_Coord_IR_map() { return _coord_ir_map; }
 
-  std::map<ista::Instance::Coordinate, double> _coord_ir_map;
 
-};
+  private:
+    ista::TimingEngine* _timing_engine;
+    ipower::PowerEngine* _power_engine;
+    Sta* _ista;
+    ipower::Power* _ipower;
+
+    std::map<ista::Instance::Coordinate, double> _coord_ir_map;
+
+  };
 
 }  // namespace ipnp
