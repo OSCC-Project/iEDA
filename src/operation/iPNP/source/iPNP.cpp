@@ -81,9 +81,6 @@ void iPNP::runOptimize()
 {
   saveToIdb();
 
-  // Initialize IREval
-  _ir_eval.initIREval(_idb_wrapper.get_idb_builder(), _pnp_config);
-
   PdnOptimizer pdn_optimizer;
   pdn_optimizer.optimizeGlobal(_initialized_network, _idb_wrapper.get_idb_builder());
   _current_opt_network = pdn_optimizer.get_out_put_grid();
@@ -143,8 +140,11 @@ void iPNP::initIRAnalysis() {
 void iPNP::runAnalysis()
 {
   saveToIdb();
+
   _cong_eval.set_config(_pnp_config);
   _cong_eval.evalEGR(_idb_wrapper.get_idb_builder());
+  
+  initIRAnalysis();
   _ir_eval.runIREval(_idb_wrapper.get_idb_builder());
 }
 
@@ -162,10 +162,7 @@ void iPNP::run()
     init();
     runSynthesis();
     runFastPlacer();
-    initIRAnalysis();
-    
     runOptimize();
-    
     runAnalysis();
     
     outputDef();
