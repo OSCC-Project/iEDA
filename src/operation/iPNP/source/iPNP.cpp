@@ -135,8 +135,8 @@ void iPNP::init()
 void iPNP::runAnalysis()
 {
   saveToIdb();
+  _cong_eval.set_config(_pnp_config);
   _cong_eval.evalEGR(_idb_wrapper.get_idb_builder());
-  writeIdbToDef("/home/sujianrong/iEDA/src/operation/iPNP/data/test/debug.def");
   _ir_eval.runIREval(_idb_wrapper.get_idb_builder());
 }
 

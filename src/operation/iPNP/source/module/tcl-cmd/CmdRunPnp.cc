@@ -32,7 +32,7 @@ namespace ipnp {
 
 CmdRunPnp::CmdRunPnp(const char* cmd_name) : TclCmd(cmd_name) {
 
-  auto* config_option = new TclStringOption("-config", 0, "/home/sujianrong/iEDA/src/operation/iPNP/example/pnp_config.json");
+  auto* config_option = new TclStringOption("-config", 0, "../src/operation/iPNP/example/pnp_config.json");
   addOption(config_option);
 
 }

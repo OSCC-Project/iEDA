@@ -38,14 +38,11 @@ namespace ipnp {
     std::string map_path;
     std::string stage = "place";
 
-    PNPConfig* temp_config = new PNPConfig();
-    if (!temp_config->get_egr_map_path().empty()) {
-      map_path = temp_config->get_egr_map_path();
+    if (_config != nullptr && !_config->get_egr_map_path().empty()) {
+      map_path = _config->get_egr_map_path();
+    } else {
+      map_path = "../src/operation/iPNP/example";
     }
-    else{
-      map_path = "/home/sujianrong/iEDA/src/operation/iPNP/data";
-    }
-    delete temp_config;
 
     ieval::CongestionAPI congestion_api;
     ieval::OverflowSummary overflow_summary;

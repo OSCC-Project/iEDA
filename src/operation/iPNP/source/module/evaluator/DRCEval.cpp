@@ -28,7 +28,7 @@ void ipnp::DRCEval::runDRC()
   idrc::DRCInterface& drc_interface = idrc::DRCInterface::getInst();
 
   std::map<std::string, std::any> drc_config;
-  drc_config["-temp_directory_path"] = std::string("/home/sujianrong/iEDA/src/operation/iPNP/data/drc");
+  drc_config["-temp_directory_path"] = std::string("../src/operation/iPNP/example/drc");
   drc_config["-thread_number"] = 8;
 
   drc_interface.initDRC(drc_config, false);
