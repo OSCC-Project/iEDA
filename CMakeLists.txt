@@ -25,8 +25,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall -Werror=return-type")
 set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb -Werror=return-type")
 set(CMAKE_BUILD_TYPE "Release")
 
-option(BUILD_STATIC_LIB "Build static library (default ON)" OFF)
-option(BUILD_PYTHON "Build Python bindings (default OFF)" ON)
+option(BUILD_STATIC_LIB "Build static library (default ON)" ON)
+option(BUILD_PYTHON "Build Python bindings (default OFF)" OFF)
 option(USE_PROFILER "Enable performance profiling (default OFF)" OFF)
 option(SANITIZER "Enable address sanitizer (default OFF)" OFF)
 option(BUILD_GUI "Enable GUI components (default OFF)" OFF)
@@ -97,11 +97,6 @@ if (USE_GPU)
     add_definitions(-DUSE_GPU)
     include(cmake/cuda.cmake)
 endif()
-
-set(CMAKE_BUILD_TYPE "Debug")
-
-set(BUILD_PYTHON ON)
-
 
 include(cmake/setting.cmake)
 include(cmake/third_party.cmake)
