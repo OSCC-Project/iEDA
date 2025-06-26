@@ -70,7 +70,9 @@ namespace ipnp {
     idb::IdbDesign* connectNetworkLayers(GridManager& pnp_network, PowerType net_type, idb::IdbDesign* idb_design);
     idb::IdbDesign* connectLayers(std::string net_name, std::string top_layer_name, std::string bottom_layer_name, idb::IdbDesign* idb_design);
     idb::IdbDesign* connect_Layer_Row(std::string net_name, std::string top_layer_name, std::string bottom_layer_name, idb::IdbDesign* idb_design);
+    idb::IdbDesign* connect_M2_M1(std::string net_name, idb::IdbDesign* idb_design);
 
+    
     int32_t transUnitDB(double value, idb::IdbDesign* idb_design);
 
     idb::IdbVia* findVia(idb::IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design, idb::IdbDesign* idb_design);

@@ -95,7 +95,6 @@ namespace ipnp {
           wrapper.set_idb_design(idb_builder->get_def_service()->get_design());
           wrapper.set_idb_builder(idb_builder);
           wrapper.saveToIdb(current_solution);
-          wrapper.writeIdbToDef("/home/sujianrong/iEDA/src/operation/iPNP/data/test/debug.def");
 
           LOG_INFO << "  Solution ACCEPTED! New current cost: " << current_cost << std::endl;
 
@@ -248,7 +247,6 @@ namespace ipnp {
     temp_wrapper.set_idb_design(idb_builder->get_def_service()->get_design());
     temp_wrapper.set_idb_builder(idb_builder);
     temp_wrapper.saveToIdb(new_solution);
-    // temp_wrapper.writeIdbToDef("/home/sujianrong/iEDA/src/operation/iPNP/data/test/debug.def");
 
     _cong_eval.evalEGR(idb_builder);
     int32_t overflow = _cong_eval.get_total_overflow_union();

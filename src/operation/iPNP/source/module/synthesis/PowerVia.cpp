@@ -514,5 +514,34 @@ namespace ipnp {
     LOG_INFO << "Success : connectLayers " << top_layer_name << " & " << bottom_layer_name;
     return idb_design;
   }
+
+  idb::IdbDesign* PowerVia::connect_M2_M1(std::string net_name, idb::IdbDesign* idb_design)
+  {
+    auto idb_layout = idb_design->get_layout();
+    auto idb_layer_list = idb_layout->get_layers();
+    auto idb_pdn_list = idb_design->get_special_net_list();
+
+    // Get layer information
+    idb::IdbLayerRouting* layer_M3 = dynamic_cast<idb::IdbLayerRouting*>(
+      idb_layer_list->find_layer("M3"));
+    idb::IdbLayerRouting* layer_M2 = dynamic_cast<idb::IdbLayerRouting*>(
+      idb_layer_list->find_layer("M2"));
+
+    // Get network
+    idb::IdbSpecialNet* net = idb_pdn_list->find_net(net_name);
+    if (net == nullptr) {
+      LOG_INFO << "Error : can't find the net " << net_name;
+      return nullptr;
+    }
+
+    // Get network wire list
+    idb::IdbSpecialWireList* wire_list = net->get_wire_list();
+    if (wire_list == nullptr) {
+      LOG_INFO << "Error : not wire in Special net " << net_name;
+      return nullptr;
+    }
+
+    return idb_design;
+  }
   
 }  // namespace ipnp 

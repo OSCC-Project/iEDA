@@ -66,7 +66,7 @@
       "/home/sujianrong/T28/lef/ts1n28hpcplvtb8192x64m8sw_180a.lef"
     ],
     "def_file": "/home/sujianrong/iEDA/src/operation/iPNP/data/test/aes_no_pwr.def",
-    "output_def_file": "/home/sujianrong/iEDA/src/operation/iPNP/data/test/output.def",
+    "output_def_file": "/home/sujianrong/iEDA/src/operation/iPNP/example/result/output.def",
     "sdc_file": "/home/sujianrong/aes/aes.sdc"
   },
   "lib": {
@@ -81,13 +81,13 @@
     ]
   },
   "timing": {
-    "design_workspace": "/home/sujianrong/iEDA/src/operation/iPNP/data/ir/ir_temp_directory"
+    "design_workspace": "/home/sujianrong/iEDA/src/operation/iPNP/example/result/ir"
   },
   "power": {
     "power_net_name": "VDD"
   },
   "egr":{
-    "map_path":"/home/sujianrong/iEDA/src/operation/iPNP/data"
+    "map_path":"/home/sujianrong/iEDA/src/operation/iPNP/example/result"
   },
   "grid": {
     "power_layers": [9,8,7,6,5,4,3],

@@ -38,7 +38,7 @@ void FastPlacer::runFastPlacer(idb::IdbBuilder* idb_builder)
     pl_json_file = temp_config->get_pl_default_config_path();
   }
   else {
-    pl_json_file = "/home/sujianrong/iEDA/src/operation/iPNP/example/pl_default_config.json";
+    pl_json_file = "../src/operation/iPNP/example/pl_default_config.json";
   }
   delete temp_config;
   
@@ -48,7 +48,6 @@ void FastPlacer::runFastPlacer(idb::IdbBuilder* idb_builder)
   plapi.runGP();
   plapi.runLG();
   plapi.writeBackSourceDataBase();
-  // plapi.runFlow();
   plapi.destoryInst();
 }
 

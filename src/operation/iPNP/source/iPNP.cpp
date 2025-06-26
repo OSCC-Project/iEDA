@@ -80,6 +80,10 @@ void iPNP::runSynthesis()
 void iPNP::runOptimize()
 {
   saveToIdb();
+
+  // Initialize IREval
+  _ir_eval.initIREval(_idb_wrapper.get_idb_builder(), _pnp_config);
+
   PdnOptimizer pdn_optimizer;
   pdn_optimizer.optimizeGlobal(_initialized_network, _idb_wrapper.get_idb_builder());
   _current_opt_network = pdn_optimizer.get_out_put_grid();
@@ -127,9 +131,6 @@ void iPNP::init()
   } else {
     _input_network.init_GridManager_data();
   }
-
-  // Initialize IREval
-  _ir_eval.initIREval(_idb_wrapper.get_idb_builder(), _pnp_config);
 }
 
 void iPNP::runAnalysis()
@@ -154,11 +155,11 @@ void iPNP::run()
     init();
     runSynthesis();
     runFastPlacer();
-    // runOptimize();
+    runOptimize();
     runAnalysis();
+    
     outputDef();
     
-
     LOG_INFO << "Output written to DEF file: " << _output_def_path << std::endl;
   
   }
