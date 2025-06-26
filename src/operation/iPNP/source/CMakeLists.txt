@@ -8,7 +8,6 @@ target_link_libraries(
   pnp
   pnp-cmd
   optimizer
-  fast_router
   evaluator
   synthesis
   data_manager

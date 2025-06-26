@@ -32,7 +32,9 @@ JsonParser::JsonParser()
   char* argv[] = {program_name};
   // We need to initialize the log system here, because JsonParser() may be called in pybind,
   // which does not have a main function to initialize the log system.
-  Log::init(argv, "/tmp/icts_logs/");
+  const std::string log_dir = "/tmp/icts_logs/";
+  Log::makeSureDirectoryExist(log_dir);
+  Log::init(argv, log_dir);
 }
 
 JsonParser& JsonParser::getInstance()

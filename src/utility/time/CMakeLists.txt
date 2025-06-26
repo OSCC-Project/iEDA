@@ -3,11 +3,7 @@ SET (CMAKE_CXX_STANDARD 20)
 
 aux_source_directory(./ SRC)
 
-if(BUILD_STATIC_LIB)
-    add_library(time STATIC ${SRC})
-else()
-    add_library(time SHARED ${SRC})
-endif()
+add_library(time STATIC ${SRC})
 
 target_link_libraries(time absl::time)
 

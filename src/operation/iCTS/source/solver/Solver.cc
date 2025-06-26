@@ -48,18 +48,19 @@ void Solver::init()
   auto* driver_inst = _cts_driver->get_instance();
   auto* inst = new Inst(driver_inst->get_name(), driver_inst->get_location(), InstType::kBuffer);
   _driver = inst->get_driver_pin();
-  _driver->set_name(_cts_driver->get_full_name());
+  _driver->set_name(_cts_driver->is_io() ? _cts_driver->get_pin_name() : _cts_driver->get_full_name());
+  LOG_INFO << "Driver pin: " << _driver->get_name();
   _driver->set_location(_cts_driver->get_location());
 
-  std::ranges::for_each(_cts_pins, [&](CtsPin* pin) {
-    auto* cts_inst = pin->get_instance();
+  std::ranges::for_each(_cts_pins, [&](CtsPin* cts_pin) {
+    auto* cts_inst = cts_pin->get_instance();
     auto type = cts_inst->get_type() == CtsInstanceType::kSink
                     ? InstType::kSink
                     : cts_inst->get_type() == CtsInstanceType::kMux ? InstType::kBuffer : InstType::kBuffer;
     auto* inst = new Inst(cts_inst->get_name(), cts_inst->get_location(), type);
     auto* load_pin = inst->get_load_pin();
-    load_pin->set_name(pin->get_full_name());
-    load_pin->set_location(pin->get_location());
+    load_pin->set_name(cts_pin->is_io() ? cts_pin->get_pin_name() : cts_pin->get_full_name());
+    load_pin->set_location(cts_pin->get_location());
 
     // update load pin cap
     if (inst->isSink()) {

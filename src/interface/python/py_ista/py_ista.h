@@ -40,6 +40,14 @@ bool linkDesign(const std::string& cell_name);
 bool readSpef(const std::string& file_name);
 
 bool readSdc(const std::string& file_name);
+
+bool makeRCTreeInnerNode(const std::string& net_name, int id, float cap);
+bool makeRCTreeObjNode(const std::string& pin_port_name, float cap);
+bool makeRCTreeEdge(const std::string& net_name, std::string& node1, std::string& node2, float res);
+bool updateRCTreeInfo(const std::string& net_name);
+bool updateTiming();
+bool reportSta();
+
 bool reportTiming(int digits, const std::string& delay_type, std::set<std::string> exclude_cell_names, bool derate);
 
 std::vector<std::string> get_used_libs();
