@@ -49,6 +49,7 @@ void FastPlacer::runFastPlacer(idb::IdbBuilder* idb_builder)
   plapi.runLG();
   plapi.writeBackSourceDataBase();
   // plapi.runFlow();
+
   plapi.destoryInst();
 }
 

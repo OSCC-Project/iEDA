@@ -88,21 +88,6 @@ int main(int argc, char** argv) {
       return 0;
     }
 
-    // Get configuration file path
-    std::string config_file_path;
-    if (result.count("config")) {
-      config_file_path = result["config"].as<std::string>();
-    }else {
-      config_file_path = "../src/operation/iPNP/example/pnp_config.json";
-      LOG_INFO << "Using default configuration file: " << config_file_path << std::endl;
-    }
-
-    // Check if configuration file exists
-    if (!std::filesystem::exists(config_file_path)) {
-      LOG_ERROR << "Configuration file does not exist: " << config_file_path << std::endl;
-      return 1;
-    }
-
     // Check if running in interactive mode
     bool interactive_mode = result["interactive"].as<bool>();
     
@@ -127,6 +112,21 @@ int main(int argc, char** argv) {
       shell->userMain(tcl_argc, tcl_argv);
     }
     else {
+      // Get configuration file path
+      std::string config_file_path;
+      if (result.count("config")) {
+        config_file_path = result["config"].as<std::string>();
+      }else {
+        config_file_path = "../src/operation/iPNP/example/pnp_config.json";
+        LOG_INFO << "Using default configuration file: " << config_file_path << std::endl;
+      }
+  
+      // Check if configuration file exists
+      if (!std::filesystem::exists(config_file_path)) {
+        LOG_ERROR << "Configuration file does not exist: " << config_file_path << std::endl;
+        return 1;
+      }
+
       // Create iPNP instance
       ipnp::iPNP ipnp(config_file_path);
       ipnp::iPNPApi::setInstance(&ipnp);

@@ -78,6 +78,7 @@ namespace ipnp {
     void setIdb(idb::IdbDesign* input_idb_design) { _idb_wrapper.set_idb_design(input_idb_design); }
 
     void init();
+    void initIRAnalysis();
     void runSynthesis();
     void runOptimize();  // including calling Evaluator and modify PDN
     void runFastPlacer();

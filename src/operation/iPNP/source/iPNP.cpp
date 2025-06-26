@@ -128,8 +128,12 @@ void iPNP::init()
     _input_network.init_GridManager_data();
   }
 
-  // Initialize IREval
-  _ir_eval.initIREval(_idb_wrapper.get_idb_builder(), _pnp_config);
+}
+
+void iPNP::initIRAnalysis() {
+    // Initialize IREval
+    _ir_eval.initIREval(_idb_wrapper.get_idb_builder(), _pnp_config);
+
 }
 
 void iPNP::runAnalysis()
@@ -154,7 +158,10 @@ void iPNP::run()
     init();
     runSynthesis();
     runFastPlacer();
+    initIRAnalysis();
+    
     // runOptimize();
+    
     runAnalysis();
     outputDef();
     
