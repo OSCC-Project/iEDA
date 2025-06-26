@@ -99,7 +99,6 @@ namespace ipnp {
       std::cerr << "Error: Failed to save DEF file to: " << def_file_path << std::endl;
     }
 
-    auto* temp = get_idb_builder();
 
   }
 
