@@ -624,6 +624,7 @@ class Sta {
 
   nlohmann::json& getSummaryJsonReport() { return _summary_json_report; }
   nlohmann::json& getSlackJsonReport() { return _slack_json_report; }
+  nlohmann::json& getDetailJsonReport() { return _detail_json_report; }
 
  private:
   Sta();
@@ -711,6 +712,8 @@ class Sta {
       nlohmann::json::array();  //!< The json data
   nlohmann::json _slack_json_report =
       nlohmann::json::array();  //!< The json data
+  nlohmann::json _detail_json_report = 
+      nlohmann::json::array();  //!< The json data for detailed report.
 
 #if CUDA_PROPAGATION
   std::vector<GPU_Vertex> _gpu_vertices;  //!< gpu flatten vertex, arc data.

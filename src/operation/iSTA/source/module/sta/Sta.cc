@@ -1672,11 +1672,18 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
         report_funcs.emplace_back(&report_path_dump);
       }
 
+      StaReportPathDetailJson report_path_detail_json(rpt_file_name, mode,
+                                                      n_worst, is_derate);
+
+      if (isJsonReportEnabled()) {
+        report_funcs.emplace_back(&report_path_detail_json);
+      }
+
       for (auto *report_fun : report_funcs) {
         is_ok = report_path(*report_fun);
       }
     }
-
+    
     return is_ok;
   };
 
@@ -1709,6 +1716,7 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
     nlohmann::json dump_json;
     dump_json["summary"] = _summary_json_report;
     dump_json["slack"] = _slack_json_report;
+    dump_json["detail"] = _detail_json_report;
 
     auto *report_path = Str::printf("%s.json", rpt_file_name);
 

@@ -753,6 +753,102 @@ unsigned StaReportPathDetail::operator()(StaSeqPathData* seq_path_data) {
   return is_ok;
 }
 
+StaReportPathDetailJson::StaReportPathDetailJson(const char* rpt_file_name,
+                                                 AnalysisMode analysis_mode,
+                                                 unsigned n_worst,
+                                                 bool is_derate)
+    : StaReportPathDetail(rpt_file_name, analysis_mode, n_worst, is_derate) {}
+
+/**
+ * @brief Report seq path detail information in json format.
+ *
+ * @param seq_path_data
+ * @return unsigned
+ */
+unsigned StaReportPathDetailJson::operator()(StaSeqPathData* seq_path_data) {
+  unsigned is_ok = 1;
+  auto* ista = Sta::getOrCreateSta();
+  auto& report_json = ista->getDetailJsonReport();
+  std::string fix_str = "%." + std::to_string(get_significant_digits()) + "f";
+  auto fix_point_str = [fix_str](double data) {
+    return Str::printf(fix_str.c_str(), data);
+  };
+
+  auto print_path_data = [&](auto& path_stack, auto clock_path_arrive_time,
+                             nlohmann::json& path_json) {
+    double last_arrive_time = 0;
+    StaVertex* last_vertex = nullptr;
+
+    auto& detail_json = path_json["detail"];
+
+    while (!path_stack.empty()) {
+      auto* path_delay_data = path_stack.top();
+      std::string path_delay_index_str;
+
+      auto* own_vertex = path_delay_data->get_own_vertex();
+      auto trans_type = path_delay_data->get_trans_type();
+
+      auto arrive_time = FS_TO_NS(path_delay_data->get_arrive_time());
+
+      // if vertex is clock, use trigger type to report.
+      if (own_vertex->is_clock()) {
+        trans_type = own_vertex->isRisingTriggered() ? TransType::kRise
+                                                     : TransType::kFall;
+      }
+
+      const char* trans_type_str = (trans_type == TransType::kRise) ? "r" : "f";
+      auto incr_time = arrive_time - last_arrive_time;
+      last_arrive_time = arrive_time;
+
+      detail_json.push_back(
+          {{"name", own_vertex->getNameWithCellName()},
+           {"incr_delay", fix_point_str(incr_time)},
+           {"path_delay",
+            std::string(fix_point_str(arrive_time + clock_path_arrive_time)) +
+                trans_type_str}});
+
+      last_vertex = own_vertex;
+      path_stack.pop();
+    }
+
+    path_json["end_point"] = last_vertex->getNameWithCellName();
+  };
+
+  // The arrive time
+  std::stack<StaPathDelayData*> path_stack = seq_path_data->getPathDelayData();
+
+  nlohmann::json path_json = nlohmann::json::object();
+
+  // Set the clock domain
+  auto* capture_clock = seq_path_data->get_capture_clock();
+  path_json["clock_field"] = capture_clock->get_clock_name();
+
+  // Determain the delay type
+  auto* check_arc = seq_path_data->get_check_arc();
+  path_json["type"] = check_arc->isSetupArc() ? "setup" : "hold";
+
+  // Set the path delay
+  auto slack = seq_path_data->getSlack();
+  path_json["slack"] = fix_point_str(FS_TO_NS(slack));
+
+  // Set the starting point of the timing path
+  auto* start_end = path_stack.top();
+  path_json["start_point"] = start_end->get_own_vertex()->getNameWithCellName();
+
+  // Calculate the total clock path arrival time
+  auto* path_delay_data = path_stack.top();
+  auto* launch_clock_data = path_delay_data->get_launch_clock_data();
+  auto launch_network_time = FS_TO_NS(launch_clock_data->get_arrive_time());
+  double launch_edge = FS_TO_NS(seq_path_data->getLaunchEdge());
+  double clock_path_arrive_time = launch_edge + launch_network_time;
+
+  // Populate detailed path information
+  print_path_data(path_stack, clock_path_arrive_time, path_json);
+
+  report_json.push_back(path_json);
+  return is_ok;
+}
+
 StaReportPathDump::StaReportPathDump(const char* rpt_file_name,
                                      AnalysisMode analysis_mode,
                                      unsigned n_worst)

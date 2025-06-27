@@ -131,6 +131,19 @@ class StaReportPathDetail : public StaReportPathSummary {
 };
 
 /**
+ * @brief The report path detail information in JSON format.
+ *
+ */
+class StaReportPathDetailJson : public StaReportPathDetail {
+ public:
+  StaReportPathDetailJson(const char* rpt_file_name, AnalysisMode analysis_mode,
+                          unsigned n_worst, bool is_derate);
+  ~StaReportPathDetailJson() override = default;
+
+  unsigned operator()(StaSeqPathData* seq_path_data) override;
+};
+
+/**
  * @brief The report path dump inner data information.
  *
  */
