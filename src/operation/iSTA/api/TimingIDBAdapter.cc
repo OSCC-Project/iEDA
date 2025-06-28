@@ -112,8 +112,8 @@ IdbCoordinate<int32_t>* TimingIDBAdapter::idbLocation(
  *
  * @param num_layer layer number = target routing layer id - first routing layer
  * id by data config
- * @param segment_length
- * @param segment_width
+ * @param segment_length unit is um (micro meter)
+ * @param segment_width unit is um (micro meter)
  * @return double Ω
  */
 double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
