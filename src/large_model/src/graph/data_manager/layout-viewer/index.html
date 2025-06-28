@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Layout Viewer</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+
+<body>
+    <div id="container">
+        <div id="control-panel">
+            <div class="panel-section">
+                <h3>View Controls</h3>
+                <button id="rotation-mode" class="control-btn">Rotation Mode (Off)</button>
+                <button id="reset-view" class="control-btn">Reset View</button>
+                <button id="show-axes" class="control-btn">Toggle Axes</button>
+            </div>
+
+            <div class="panel-section">
+                <h3>Data Import</h3>
+                <input type="file" id="file-input" accept=".json" style="display: none;">
+                <button id="import-btn" class="control-btn">Import JSON</button>
+                <div id="file-status"></div>
+            </div>
+
+            <div class="panel-section">
+                <h3>Filter & Search</h3>
+                <input type="text" id="search-input" placeholder="Search filter..." />
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="regex-filter"> Regex</label>
+                    <label><input type="checkbox" id="hide-all"> Hide All</label>
+                    <label><input type="checkbox" id="show-all"> Show All</label>
+                </div>
+                <div class="control-buttons">
+                    <button id="unified-color" class="rainbow-btn" title="Set unified color"></button>
+                    <button id="group-filtered" class="control-btn">Group</button>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>Data Filtering</h3>
+                <div id="class-table">
+                    <div class="table-header">
+                        <span>Class</span>
+                        <span>Visible</span>
+                        <span>Color</span>
+                        <span>Group</span>
+                    </div>
+                    <div id="class-list"></div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>Groups</h3>
+                <div id="groups-container">
+                    <div id="groups-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="viewport">
+            <canvas id="canvas"></canvas>
+            <div id="tooltip" class="tooltip"></div>
+        </div>
+    </div>
+
+    <!-- Color Picker Modal -->
+    <div id="color-picker-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Color Picker</h3>
+                <span class="close-btn">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="color-picker-container">
+                    <input type="color" id="color-picker" value="#ff0000">
+                    <div class="color-preview" id="color-preview"></div>
+                </div>
+                <div class="rgb-inputs">
+                    <label>R: <input type="number" id="red-input" min="0" max="255" value="255"></label>
+                    <label>G: <input type="number" id="green-input" min="0" max="255" value="0"></label>
+                    <label>B: <input type="number" id="blue-input" min="0" max="255" value="0"></label>
+                </div>
+                <div class="modal-buttons">
+                    <button id="apply-color" class="control-btn">Apply</button>
+                    <button id="cancel-color" class="control-btn">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Assignment Modal -->
+    <div id="group-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Assign to Group</h3>
+                <span class="close-btn">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="group-selection">
+                    <label>Select Group:</label>
+                    <select id="group-select">
+                        <option value="">-- Select Group --</option>
+                    </select>
+                </div>
+                <div class="new-group">
+                    <label>Or create new group:</label>
+                    <input type="text" id="new-group-name" placeholder="Enter group name">
+                </div>
+                <div class="modal-buttons">
+                    <button id="assign-group" class="control-btn">Assign</button>
+                    <button id="cancel-group" class="control-btn">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/data-manager.js"></script>
+    <script src="js/scene-manager.js"></script>
+    <script src="js/controls-manager.js"></script>
+    <script src="js/main.js"></script>
+</body>
+
+</html>

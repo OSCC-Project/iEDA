@@ -121,6 +121,33 @@ struct LmPin
   bool is_driver = false;
 };
 
+
+struct NetRoutingPoint {
+  int x;
+  int y;
+  int layer_id;
+};
+
+struct NetRoutingVertex {
+  size_t id;
+  bool is_pin;
+  bool is_driver_pin;
+  NetRoutingPoint point;
+};
+
+struct NetRoutingEdge {
+  size_t source_id;
+  size_t target_id;
+
+  std::vector<NetRoutingPoint> path;
+};
+
+struct NetRoutingGraph {
+  std::vector<NetRoutingVertex> vertices;
+  std::vector<NetRoutingEdge> edges;
+};
+
+
 class LmNet
 {
  public:
@@ -133,8 +160,10 @@ class LmNet
   std::vector<int>& get_pin_ids() { return _pin_ids; }
   LmNetFeature* get_feature(bool b_create = false);
   std::map<int, LmPin>& get_pin_list() { return _pin_list; }
+  NetRoutingGraph get_routing_graph() { return _routing_graph; }
   // setter
   void set_net_id(int net_id) { _net_id = net_id; }
+  void set_routing_graph(const NetRoutingGraph& routing_graph) { _routing_graph = routing_graph; }
 
   // operator
   void addWire(LmNetWire wire);
@@ -149,6 +178,7 @@ class LmNet
   std::vector<int> _pin_ids;
   std::map<int, LmPin> _pin_list;
   LmNetFeature* _feature = nullptr;
+  NetRoutingGraph _routing_graph;
 };
 
 class LmGraph

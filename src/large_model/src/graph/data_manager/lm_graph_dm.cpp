@@ -46,6 +46,9 @@ bool LmGraphDataManager::buildGraphData()
         LOG_ERROR << "error node....";
       }
 
+      node1->set_real_coordinate(x1, y1);
+      node2->set_real_coordinate(x2, y2);
+
       return std::make_pair(node1, node2);
     } else {
       auto& grid1 = layout_layers.findLayoutLayer(layer1)->get_grid();
@@ -60,8 +63,54 @@ bool LmGraphDataManager::buildGraphData()
         LOG_ERROR << "error node....";
       }
 
+      node1->set_real_coordinate(x1, y1);
+      node2->set_real_coordinate(x2, y2);
+
       return std::make_pair(node1, node2);
     }
+  };
+
+  auto convert_to_routing_graph = [&](const WireGraph& wire_graph) -> NetRoutingGraph {
+    NetRoutingGraph routing_graph;
+    auto [v_iter, v_end] = boost::vertices(wire_graph);
+    for (; v_iter != v_end; ++v_iter) {
+      auto v = *v_iter;
+      auto x = wire_graph[v].x;
+      auto y = wire_graph[v].y;
+      auto layer_id = wire_graph[v].layer_id;
+      NetRoutingVertex vertex{
+          .id = v,
+          .is_pin = wire_graph[v].is_pin,
+          .is_driver_pin = wire_graph[v].is_driver_pin,
+          .point = {x, y, layer_id},
+      };
+      routing_graph.vertices.emplace_back(vertex);
+    }
+    auto [e_iter, e_end] = boost::edges(wire_graph);
+    for (; e_iter != e_end; ++e_iter) {
+      auto e = *e_iter;
+      auto source = boost::source(e, wire_graph);
+      auto target = boost::target(e, wire_graph);
+      std::vector<std::pair<LayoutDefPoint, LayoutDefPoint>> wire_path = wire_graph[e].path;
+      // convert wire_path to path
+      if (wire_path.empty()) {
+        LOG_WARNING << "Empty path for edge: " << source << " -> " << target;
+        continue;
+      }
+      std::vector<NetRoutingPoint> path;
+      std::ranges::for_each(wire_path, [&](const std::pair<LayoutDefPoint, LayoutDefPoint>& point_pair) -> void {
+        path.emplace_back(NetRoutingPoint{bg::get<0>(point_pair.first), bg::get<1>(point_pair.first), bg::get<2>(point_pair.first)});
+      });
+      path.emplace_back(
+          NetRoutingPoint{bg::get<0>(wire_path.back().second), bg::get<1>(wire_path.back().second), bg::get<2>(wire_path.back().second)});
+      NetRoutingEdge edge{
+          .source_id = source,
+          .target_id = target,
+          .path = path,
+      };
+      routing_graph.edges.emplace_back(edge);
+    }
+    return routing_graph;
   };
 
   ieda::Stats stats;
@@ -80,7 +129,7 @@ bool LmGraphDataManager::buildGraphData()
   // auto* vdd_net = special_net_list->find_net("VDD");
   // gen.buildTopoGraph(vdd_net);
 
-#pragma omp parallel for schedule(dynamic)
+  // #pragma omp parallel for schedule(dynamic)
   for (size_t net_id = 0; net_id < idb_nets.size(); ++net_id) {
     auto* idb_net = idb_nets[net_id];
     /// ignore net if pin number < 2
@@ -91,8 +140,10 @@ bool LmGraphDataManager::buildGraphData()
       continue;
     }
     auto wire_graph = gen.buildGraph(idb_net);
+    auto routing_graph = convert_to_routing_graph(wire_graph);
     auto* lm_net = layout_graph.get_net(net_id);
     lm_net->clearWire();
+    lm_net->set_routing_graph(routing_graph);
 #if debug_error
     std::set<int> pin_ids_wires;
     std::set<int> pin_ids_paths;
