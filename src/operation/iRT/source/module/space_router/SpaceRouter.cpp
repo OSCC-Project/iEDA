@@ -156,8 +156,8 @@ void SpaceRouter::reviseNodeDemand(SRModel& sr_model)
   for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
     for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
       for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
-        layer_node_map[layer_idx][x][y].get_orient_demand_map().clear();
-        layer_node_map[layer_idx][x][y].get_via_net_set().clear();
+        layer_node_map[layer_idx][x][y].get_orient_net_map().clear();
+        layer_node_map[layer_idx][x][y].get_net_orient_map().clear();
       }
     }
   }
@@ -577,10 +577,10 @@ void SpaceRouter::buildOverflow(SRModel& sr_model, SRBox& sr_box)
         total_overflow += node_overflow;
         if (node_overflow > 0) {
           std::set<int32_t> overflow_net_set;
-          for (auto& [orient, net_set] : sr_node_map[x][y].get_orient_demand_map()) {
+          for (auto& [orient, net_set] : sr_node_map[x][y].get_orient_net_map()) {
             overflow_net_set.insert(net_set.begin(), net_set.end());
           }
-          for (int32_t net_idx : sr_node_map[x][y].get_via_net_set()) {
+          for (auto& [net_idx, orient_set] : sr_node_map[x][y].get_net_orient_map()) {
             overflow_net_set.insert(net_idx);
           }
           overflow_net_set_list.push_back(overflow_net_set);
@@ -738,8 +738,8 @@ void SpaceRouter::buildOrientDemand(SRModel& sr_model, SRBox& sr_box)
     for (int32_t x = 0; x < sr_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < sr_node_map.get_y_size(); y++) {
         SRNode& sr_node = sr_node_map[x][y];
-        sr_node.set_orient_demand_map(top_sr_node_map[sr_node.get_x()][sr_node.get_y()].get_orient_demand_map());
-        sr_node.set_via_net_set(top_sr_node_map[sr_node.get_x()][sr_node.get_y()].get_via_net_set());
+        sr_node.set_orient_net_map(top_sr_node_map[sr_node.get_x()][sr_node.get_y()].get_orient_net_map());
+        sr_node.set_net_orient_map(top_sr_node_map[sr_node.get_x()][sr_node.get_y()].get_net_orient_map());
       }
     }
   }
@@ -1175,10 +1175,10 @@ void SpaceRouter::updateOverflow(SRBox& sr_box)
         total_overflow += node_overflow;
         if (node_overflow > 0) {
           std::set<int32_t> overflow_net_set;
-          for (auto& [orient, net_set] : sr_node_map[x][y].get_orient_demand_map()) {
+          for (auto& [orient, net_set] : sr_node_map[x][y].get_orient_net_map()) {
             overflow_net_set.insert(net_set.begin(), net_set.end());
           }
-          for (int32_t net_idx : sr_node_map[x][y].get_via_net_set()) {
+          for (auto& [net_idx, orient_set] : sr_node_map[x][y].get_net_orient_map()) {
             overflow_net_set.insert(net_idx);
           }
           overflow_net_set_list.push_back(overflow_net_set);
