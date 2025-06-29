@@ -5,6 +5,9 @@ AUX_SOURCE_DIRECTORY(./ SRC)
 
 SET(LINK_unwind "unwind")
 
+# Define GLOG_USE_GLOG_EXPORT for glog 0.7.1+ compatibility
+add_definitions(-DGLOG_USE_GLOG_EXPORT)
+
 if(BUILD_STATIC_LIB)
   SET(LINK_glog   "libglog.a")
   SET(LINK_gflags "libgflags.a")

@@ -23,194 +23,90 @@ void RuleValidator::verifyEnclosureEdge(RVBox& rv_box)
   /*
   规则：
   PROPERTY LEF58_ENCLOSUREEDGE "
+      VIA1
+      ENCLOSUREEDGE CUTCLASS VSINGLECUT 0.015000 WIDTH 0.160500 PARALLEL 0.100000 WITHIN 0.130000 ;
+      ENCLOSUREEDGE CUTCLASS VSINGLECUT ABOVE 0.010000 WIDTH 0.070500 PARALLEL 0.100000 WITHIN 0.100000 ;
+      ENCLOSUREEDGE CUTCLASS VSINGLECUT ABOVE 0.005000 WIDTH 0.055500 PARALLEL 0.100000 WITHIN 0.065000 ;
+      ENCLOSUREEDGE CUTCLASS VSINGLECUT ABOVE 0.005000 WIDTH 0.050500 PARALLEL 0.100000 WITHIN 0.060000 EXCEPTTWOEDGES ;
+      ENCLOSUREEDGE CUTCLASS VSINGLECUT ABOVE 0.01 CONVEXCORNERS 0.120 0.060 PARALLEL 0.051 LENGTH 0.1  ;
+
+      VIA2-6
       ENCLOSUREEDGE CUTCLASS VSINGLECUT 0.015000 WIDTH 0.160500 PARALLEL 0.100000 WITHIN 0.130000 ;
       ENCLOSUREEDGE CUTCLASS VSINGLECUT  0.010000 WIDTH 0.070500 PARALLEL 0.100000 WITHIN 0.100000 ;
       ENCLOSUREEDGE CUTCLASS VSINGLECUT  0.005000 WIDTH 0.055500 PARALLEL 0.100000 WITHIN 0.065000 ;
+      ENCLOSUREEDGE CUTCLASS VSINGLECUT  0.005000 WIDTH 0.050500 PARALLEL 0.100000 WITHIN 0.060000 EXCEPTTWOEDGES ;
       ENCLOSUREEDGE CUTCLASS VSINGLECUT ABOVE 0.01 CONVEXCORNERS 0.120 0.060 PARALLEL 0.051 LENGTH 0.1  ;
-      前三条规则视为rule1,第四条规则为rule2
+      前四条可以看做是一种 rule1
+      最后一条是一种      rule2目前没有违例，所以暂时不能确定
   */
-
-/// ENCLOSUREEDGE规则构造：
-#if 1
-  struct EnclosureEdgeRule1
+  struct enclosure_edge_rule
   {
-    int _overhang;   // overhang value
-    int _minwidth;   // WIDTH value  ≥
-    int _parlength;  // PARALLEL value  ＞
-    int _within;     // WITHIN value     ＜
-    bool _isabove;
-    bool _issinglecut;
-    bool _excepttwoedges;
+    bool has_above;
+    bool has_below;  // below | above要么只会出现一个，要么都不出现
+    int overhang;
 
-    // 构造函数
-    EnclosureEdgeRule1(int enc, int w, int prl, int wth, bool ia, bool isc, bool etd)
-        : _overhang(enc), _minwidth(w), _parlength(prl), _within(wth), _isabove(ia), _issinglecut(isc), _excepttwoedges(etd)
-    {
-    }
+    // 这条和下一条应该是同级互斥的 |
+    int min_width;   // >=
+    int par_length;  // >
+    bool has_par_within;
+    int par_within;             // <
+    bool has_except_two_edges;  // 两边都要 这下面还有一个可选参数，t28没有就没有加了
+
+    // 和上面一条是 |
+    bool has_convex_corners;
+    int convex_length;      //<=
+    int adjacent_length;    //<=
+    int convex_par_within;  //<  lef文档中这个也叫做par_within
+    int length;             //>=
   };
 
-  struct EnclosureEdgeRule2
-  {
-    int _overhang;  // overhang value
-    int _convexlength;
-    int _adjacentlength;
-    int _parWithin;
-    int _length;
-    bool _isabove;
-    bool _issinglecut;
+  std::map<int, std::vector<enclosure_edge_rule>> layer_enclosure_edge_rule_list;
+  // t28在V1-V6有该规则，每层的规则是一个列表
+  // V1和V2-V6有些许不同 v2-v6的前几项没有above
+  for (int i = 1; i <= 6; i++) {
+    std::vector<enclosure_edge_rule> enclosure_edge_rule_list;
+    enclosure_edge_rule_list.push_back({/*above below*/ false, false, /*overhang*/ 30, /*case1 */ 321, 200, true, 260, /*two edge*/ false,
+                                        /*has_convex_corners*/ false, 0, 0, 0, 0});
+    enclosure_edge_rule_list.push_back({/*above below*/ i == 1 ? true : false, false, /*overhang*/ 20, /*case1 */ 141, 200, true, 200, /*two edge*/ false,
+                                        /*has_convex_corners*/ false, 0, 0, 0, 0});
+    enclosure_edge_rule_list.push_back({/*above below*/ i == 1 ? true : false, false, /*overhang*/ 10, /*case1 */ 111, 200, true, 130, /*two edge*/ false,
+                                        /*has_convex_corners*/ false, 0, 0, 0, 0});
+    enclosure_edge_rule_list.push_back({/*above below*/ i == 1 ? true : false, false, /*overhang*/ 10, /*case1 */ 101, 200, true, 120, /*two edge*/ true,
+                                        /*has_convex_corners*/ false, 0, 0, 0, 0});
+    enclosure_edge_rule_list.push_back({/*above below*/ true, false, /*overhang*/ 20, /*case1 */ 0, 0, false, 0, /*two edge*/ false,
+                                        /*has_convex_corners*/ true, 240, 120, 102, 200});
+    layer_enclosure_edge_rule_list[i] = enclosure_edge_rule_list;
+  }
 
-    // 构造函数
-    EnclosureEdgeRule2(int oh, int cl, int al, int pw, int l, bool is, bool isc)
-        : _overhang(oh), _convexlength(cl), _adjacentlength(al), _parWithin(pw), _length(l), _isabove(is), _issinglecut(isc)
-    {
-    }
-  };
-
-  // 存储所有规则的容器
-  std::vector<EnclosureEdgeRule1> enclosure_edge_rules1
-      = {EnclosureEdgeRule1(10, 110, 200, 120, false, true, true), EnclosureEdgeRule1(10, 111, 200, 130, false, true, false),
-         EnclosureEdgeRule1(20, 141, 200, 200, false, true, false), EnclosureEdgeRule1(30, 321, 200, 260, false, true, false)};
-
-  EnclosureEdgeRule2 enclosure_edge_rule2(20, 240, 120, 102, 200, false, true);
-
-#endif
-
-// 工具类函数 Rtree
+// 工具类函数
 #if 1
-  auto addRectToRtree
-      = [](std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>>& _query_tree, GTLRectInt rect, int32_t layer_idx, int32_t net_idx) {
-          BGRectInt rtree_rect(BGPointInt(xl(rect), yl(rect)), BGPointInt(xh(rect), yh(rect)));
-          _query_tree[layer_idx].insert(std::make_pair(rtree_rect, net_idx));
-        };
-
-  auto queryRectbyRtreeWithIntersects = [](std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>>& _query_tree, int32_t layer_idx,
-                                           int32_t llx, int32_t lly, int32_t urx, int32_t ury) {
-    std::set<int32_t> net_ids;
-    std::vector<std::pair<BGRectInt, int32_t>> result;
-    BGRectInt rect(BGPointInt(llx, lly), BGPointInt(urx, ury));
-    _query_tree[layer_idx].query(bgi::intersects(rect), std::back_inserter(result));
-    return result;
-  };
-
-  auto queryRectbyRtreeWithWithin = [](std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>>& _query_tree, int32_t layer_idx,
-                                       int32_t llx, int32_t lly, int32_t urx, int32_t ury) {
-    std::set<int32_t> net_ids;
-    std::vector<std::pair<BGRectInt, int32_t>> result;
-    BGRectInt rect(BGPointInt(llx, lly), BGPointInt(urx, ury));
-    _query_tree[layer_idx].query(bgi::within(rect), std::back_inserter(result));
-    return result;
-  };
-
-  auto queryRectbyRtreeWithOverlaps = [](std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>>& _query_tree, int32_t layer_idx,
-                                         int32_t llx, int32_t lly, int32_t urx, int32_t ury) {
-    std::set<int32_t> net_ids;
-    std::vector<std::pair<BGRectInt, int32_t>> result;
-    BGRectInt rect(BGPointInt(llx, lly), BGPointInt(urx, ury));
-    _query_tree[layer_idx].query(bgi::overlaps(rect), std::back_inserter(result));
-    return result;
-  };
-
-  /// 允许边界重叠
-  auto queryRectbyRtreeWithCoveredBy = [](std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>>& _query_tree, int32_t layer_idx,
-                                          int32_t llx, int32_t lly, int32_t urx, int32_t ury) {
-    std::set<int32_t> net_ids;
-    std::vector<std::pair<BGRectInt, int32_t>> result;
-    BGRectInt rect(BGPointInt(llx, lly), BGPointInt(urx, ury));
-    _query_tree[layer_idx].query(bgi::covered_by(rect), std::back_inserter(result));
-    return result;
-  };
-
-  auto queryRectbyRtreeWithCovers = [](std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>>& _query_tree, int32_t layer_idx,
-                                       int32_t llx, int32_t lly, int32_t urx, int32_t ury) {
-    std::set<int32_t> net_ids;
-    std::vector<std::pair<BGRectInt, int32_t>> result;
-    BGRectInt rect(BGPointInt(llx, lly), BGPointInt(urx, ury));
-    _query_tree[layer_idx].query(bgi::covers(rect), std::back_inserter(result));
-    return result;
-  };
-
-  auto getOppositeDirection = [](gtl::direction_2d direction) {
-    if (direction == gtl::NORTH) {
-      return gtl::SOUTH;
-    } else if (direction == gtl::SOUTH) {
-      return gtl::NORTH;
-    } else if (direction == gtl::EAST) {
-      return gtl::WEST;
-    } else {
-      return gtl::EAST;
+  auto get_overhang = [](const PlanarRect& cut_rect, const Segment<PlanarCoord>& metal_egde) {
+    Orientation orientation = DRCUTIL.getOrientation(metal_egde.get_first(), metal_egde.get_second());
+    int32_t overhang = 0;
+    if (orientation == Orientation::kWest) {
+      overhang = std::abs(cut_rect.get_ur_y() - metal_egde.get_first().get_y());
+    } else if (orientation == Orientation::kEast) {
+      overhang = std::abs(cut_rect.get_ll_y() - metal_egde.get_first().get_y());
+    } else if (orientation == Orientation::kNorth) {
+      overhang = std::abs(cut_rect.get_ur_x() - metal_egde.get_first().get_x());
+    } else if (orientation == Orientation::kSouth) {
+      overhang = std::abs(cut_rect.get_ll_x() - metal_egde.get_first().get_x());
     }
+    return overhang;
   };
-
-  auto getEdgeSegmentRect = [](const GTLRectInt& current_gtl_rect, gtl::direction_2d bloating_direction) {
-    GTLRectInt segment_rect;
-    if (bloating_direction == gtl::WEST) {
-      segment_rect = GTLRectInt(gtl::xl(current_gtl_rect), gtl::yl(current_gtl_rect), gtl::xl(current_gtl_rect), gtl::yh(current_gtl_rect));
-    } else if (bloating_direction == gtl::EAST) {
-      segment_rect = GTLRectInt(gtl::xh(current_gtl_rect), gtl::yl(current_gtl_rect), gtl::xh(current_gtl_rect), gtl::yh(current_gtl_rect));
-    } else if (bloating_direction == gtl::NORTH) {
-      segment_rect = GTLRectInt(gtl::xl(current_gtl_rect), gtl::yh(current_gtl_rect), gtl::xh(current_gtl_rect), gtl::yh(current_gtl_rect));
-    } else {
-      segment_rect = GTLRectInt(gtl::xl(current_gtl_rect), gtl::yl(current_gtl_rect), gtl::xh(current_gtl_rect), gtl::yl(current_gtl_rect));
+  auto get_convex_rule_check_rect = [](const PlanarRect& cut_rect, const Segment<PlanarCoord>& metal_egde, int32_t enlarge_size) {
+    Orientation orientation = DRCUTIL.getOrientation(metal_egde.get_first(), metal_egde.get_second());
+    PlanarRect check_rect;
+    if (orientation == Orientation::kWest) {  // 往北
+      check_rect = DRCUTIL.getEnlargedRect(cut_rect.get_ur(), cut_rect.getXSpan(), 0, 0, enlarge_size);
+    } else if (orientation == Orientation::kEast) {  // 往南
+      check_rect = DRCUTIL.getEnlargedRect(cut_rect.get_ll(), 0, enlarge_size, cut_rect.getXSpan(), 0);
+    } else if (orientation == Orientation::kNorth) {  // 往东
+      check_rect = DRCUTIL.getEnlargedRect(cut_rect.get_ur(), 0, cut_rect.getYSpan(), enlarge_size, 0);
+    } else if (orientation == Orientation::kSouth) {  // 往西
+      check_rect = DRCUTIL.getEnlargedRect(cut_rect.get_ll(), enlarge_size, 0, 0, cut_rect.getYSpan());
     }
-    return segment_rect;
-  };
-
-  // 检查within和parallel字段是否满足规则
-  auto checkParallelWithinCondition
-      = [&](std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>>& _query_tree, int32_t layer_idx, GTLRectInt current_gtl_rect,
-            int32_t current_rect_net_idx, gtl::direction_2d direction, EnclosureEdgeRule1 applicable_rule) -> std::pair<bool, int32_t> {
-    int rule_within_value = applicable_rule._within;
-    int rule_parlength_value = applicable_rule._parlength;
-    auto current_planar_rect = DRCUTIL.convertToPlanarRect(current_gtl_rect);
-    auto current_rect_orientation = gtl::guess_orientation(current_gtl_rect);
-    auto current_rect_width_orientation = current_rect_orientation.get_perpendicular();
-    int current_rect_width = gtl::delta(current_gtl_rect, current_rect_width_orientation);
-    auto bloat_current_rect = current_gtl_rect;
-    gtl::bloat(bloat_current_rect, direction, rule_within_value);
-    std::vector<std::pair<BGRectInt, int32_t>> around_rect_result = queryRectbyRtreeWithOverlaps(
-        _query_tree, layer_idx, gtl::xl(bloat_current_rect), gtl::yl(bloat_current_rect), gtl::xh(bloat_current_rect), gtl::yh(bloat_current_rect));
-    for (auto& [around_bg_rect, around_rect_net_idx] : around_rect_result) {
-      PlanarRect around_planar_rect = DRCUTIL.convertToPlanarRect(around_bg_rect);
-      // 跳过重叠矩形
-      if (DRCUTIL.isClosedOverlap(current_planar_rect, around_planar_rect)) {
-        continue;
-      }
-      PlanarRect spacing_planar_rect = DRCUTIL.getSpacingRect(current_planar_rect, around_planar_rect);
-      auto spacing_gtl_rect = DRCUTIL.convertToGTLRectInt(spacing_planar_rect);
-      int32_t within_value = gtl::delta(spacing_gtl_rect, current_rect_width_orientation);
-      int32_t parallel_value = gtl::delta(spacing_gtl_rect, current_rect_orientation);
-      if (within_value < rule_within_value && parallel_value > rule_parlength_value) {
-        return {true, around_rect_net_idx};
-      }
-    }
-    return {false, -1};
-  };
-  /*
-判断within和parallel字段是否满足规则
-  */
-
-  auto checkRule2Condiction = [](PlanarRect a, PlanarRect b, gtl::direction_2d direction, int rule_whthin_value, int rule_parallel_value) {
-    int within_value;
-    int parallel_value;
-
-    // 利用方向枚举的规律简化计算
-    // WEST=0, EAST=1 - 水平方向；SOUTH=2, NORTH=3 - 垂直方向
-    bool is_vertical = direction.to_int() >= 2;
-    bool is_positive = direction.to_int() & 1;  // EAST=1, NORTH=3 是正方向
-
-    if (is_vertical) {
-      // 垂直方向 - SOUTH/NORTH
-      within_value = is_positive ? (b.get_ll_y() - a.get_ur_y()) :  // NORTH
-                         (a.get_ll_y() - b.get_ur_y());             // SOUTH
-      parallel_value = std::min(a.get_ur_x(), b.get_ur_x()) - std::max(a.get_ll_x(), b.get_ll_x());
-    } else {
-      // 水平方向 - WEST/EAST
-      within_value = is_positive ? (b.get_ll_x() - a.get_ur_x()) :  // EAST
-                         (a.get_ll_x() - b.get_ur_x());             // WEST
-      parallel_value = std::min(a.get_ur_y(), b.get_ur_y()) - std::max(a.get_ll_y(), b.get_ll_y());
-    }
-
-    return (within_value < rule_whthin_value && parallel_value > rule_parallel_value);
+    return check_rect;
   };
 #endif
   // 得到基础数据
@@ -218,43 +114,49 @@ void RuleValidator::verifyEnclosureEdge(RVBox& rv_box)
   std::map<int32_t, std::vector<int32_t>>& routing_to_adjacent_cut_map = DRCDM.getDatabase().get_routing_to_adjacent_cut_map();
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = DRCDM.getDatabase().get_cut_to_adjacent_routing_map();
   // 使用R树查询检测
-  std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> routing_layer_all_query_tree;
-  std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> cut_layer_all_query_tree;
+  std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> cut_bg_rtree_map;
 
-  std::map<int32_t, std::map<int32_t, GTLPolySetInt>> routing_layer_net_gtl_all_poly_set;
-  std::map<int32_t, std::map<int32_t, std::vector<GTLRectInt>>> routing_layer_net_gtl_all_maxrect_list;
-  std::map<int32_t, std::map<int32_t, std::vector<GTLRectInt>>> cut_layer_net_gtl_res_maxrect_list;
-  std::map<int32_t, std::vector<GTLRectInt>> cut_layer_via_list;
+  std::map<int32_t, std::map<int32_t, GTLPolySetInt>> routing_net_gtl_poly_set_map;
+  std::map<int32_t, std::vector<PlanarRect>> cut_layer_via_list;
 
-  std::map<int32_t, std::map<int32_t, int32_t>> routing_layer_net_rect_width;
-
-  {
-    for (DRCShape* rect : rv_box.get_drc_result_shape_list()) {
-      if (rect->get_net_idx() == -1) {
-        continue;
+  std::map<int32_t, std::map<int32_t, std::vector<PlanarRect>>> routing_net_rect_map;
+  for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+    if (!drc_shape->get_is_routing()) {
+      // cut_layer_via_list[drc_shape->get_layer_idx()].push_back(drc_shape->get_rect()); env_cut貌似不检测，原因未知
+      cut_bg_rtree_map[drc_shape->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(drc_shape->get_rect()), drc_shape->get_net_idx()));
+    } else {
+      routing_net_rect_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()].push_back(drc_shape->get_rect());
+    }
+  }
+  for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+    if (!drc_shape->get_is_routing()) {
+      cut_layer_via_list[drc_shape->get_layer_idx()].push_back(drc_shape->get_rect());
+      cut_bg_rtree_map[drc_shape->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(drc_shape->get_rect()), drc_shape->get_net_idx()));
+    } else {
+      routing_net_rect_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()].push_back(drc_shape->get_rect());
+    }
+  }
+  for (auto& [routing_layer_idx, net_rect_map] : routing_net_rect_map) {
+    for (auto& [net_idx, rect_list] : net_rect_map) {
+      GTLPolySetInt gtl_poly_set;
+      for (PlanarRect& rect : rect_list) {
+        gtl_poly_set += DRCUTIL.convertToGTLRectInt(rect);
       }
-      if (rect->get_is_routing() == false) {
-        cut_layer_via_list[rect->get_layer_idx()].push_back(GTLRectInt(rect->get_ll_x(), rect->get_ll_y(), rect->get_ur_x(), rect->get_ur_y()));
-        cut_layer_net_gtl_res_maxrect_list[rect->get_layer_idx()][rect->get_net_idx()].push_back(
-            GTLRectInt(rect->get_ll_x(), rect->get_ll_y(), rect->get_ur_x(), rect->get_ur_y()));
-        addRectToRtree(cut_layer_all_query_tree, GTLRectInt(rect->get_ll_x(), rect->get_ll_y(), rect->get_ur_x(), rect->get_ur_y()), rect->get_layer_idx(),
-                       rect->get_net_idx());
-      } else {
-        int32_t layer_idx = rect->get_layer_idx();
-        int32_t net_idx = rect->get_net_idx();
-        routing_layer_net_gtl_all_poly_set[layer_idx][net_idx] += DRCUTIL.convertToGTLRectInt(rect->get_rect());
+      routing_net_gtl_poly_set_map[routing_layer_idx][net_idx] = gtl_poly_set;
+      rect_list.clear();
+      std::vector<GTLRectInt> gtl_rect_list;
+      gtl::get_max_rectangles(gtl_rect_list, gtl_poly_set);
+      for (GTLRectInt& gtl_rect : gtl_rect_list) {
+        rect_list.push_back(DRCUTIL.convertToPlanarRect(gtl_rect));
       }
     }
+  }
 
-    // 用max rect作为被查找的
-    for (auto& [routing_layer_idx, net_all_gtl_poly_set] : routing_layer_net_gtl_all_poly_set) {
-      for (auto& [net_idx, res_all_poly_set] : net_all_gtl_poly_set) {
-        std::vector<GTLRectInt> rect_list;
-        gtl::get_max_rectangles(rect_list, res_all_poly_set);
-        for (GTLRectInt& rect : rect_list) {
-          routing_layer_net_gtl_all_maxrect_list[routing_layer_idx][net_idx].push_back(rect);
-          addRectToRtree(routing_layer_all_query_tree, rect, routing_layer_idx, net_idx);
-        }
+  std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> routing_bg_rtree_map;
+  for (auto& [routing_layer_idx, net_rect_map] : routing_net_rect_map) {
+    for (auto& [net_idx, rect_list] : net_rect_map) {
+      for (PlanarRect& rect : rect_list) {
+        routing_bg_rtree_map[routing_layer_idx].insert(std::make_pair(DRCUTIL.convertToBGRectInt(rect), net_idx));
       }
     }
   }
@@ -265,114 +167,172 @@ void RuleValidator::verifyEnclosureEdge(RVBox& rv_box)
   2.用metal rect去搜索via
   发现用第一种方案效果好
   */
-// rule1
-#if 1
+  /// rule1
   for (auto& [cut_layer_idx, via_list] : cut_layer_via_list) {
+    if (cut_layer_idx < 1 || cut_layer_idx > 6) {
+      continue;  // 只处理V1-V6  layer CO也有该规则，先不管
+    }
+
+    std::vector<enclosure_edge_rule> enclosure_edge_rule_list = layer_enclosure_edge_rule_list[cut_layer_idx];
     std::vector<int32_t>& routing_layer_idx_list = cut_to_adjacent_routing_map[cut_layer_idx];
-    for (auto& via_gtl_rect : via_list) {
-      PlanarRect via_planar_rect = DRCUTIL.convertToPlanarRect(via_gtl_rect);
+    int32_t above_routing_layer_idx = *std::max_element(routing_layer_idx_list.begin(), routing_layer_idx_list.end());
+    int32_t below_routing_layer_idx = *std::min_element(routing_layer_idx_list.begin(), routing_layer_idx_list.end());
+    // 处理rule1
+    for (auto& cut_rect : via_list) {
       for (int32_t routing_layer_idx : routing_layer_idx_list) {
-        std::vector<std::pair<BGRectInt, int32_t>> metal_rect_result = queryRectbyRtreeWithIntersects(
-            routing_layer_all_query_tree, routing_layer_idx, gtl::xl(via_gtl_rect), gtl::yl(via_gtl_rect), gtl::xh(via_gtl_rect), gtl::yh(via_gtl_rect));
-
+        // query所有metal rect
+        std::vector<std::pair<BGRectInt, int32_t>> metal_rect_result;
+        routing_bg_rtree_map[routing_layer_idx].query(bgi::intersects(DRCUTIL.convertToBGRectInt(cut_rect)), std::back_inserter(metal_rect_result));
+        // 用所有的metal rect更新当前的overhang
+        int32_t west_overhang = 0;
+        int32_t east_overhang = 0;
+        int32_t north_overhang = 0;
+        int32_t south_overhang = 0;
         for (auto& [metal_bg_rect, metal_net_idx] : metal_rect_result) {
-          PlanarRect current_planar_rect = DRCUTIL.convertToPlanarRect(metal_bg_rect);
-          GTLRectInt current_gtl_rect = DRCUTIL.convertToGTLRectInt(metal_bg_rect);
-          if (DRCUTIL.isOpenOverlap(via_planar_rect, current_planar_rect) == false) {
+          PlanarRect metal_rect = DRCUTIL.convertToPlanarRect(metal_bg_rect);
+          if (DRCUTIL.isClosedOverlap(metal_rect, cut_rect) == false) {
             continue;
           }
-          auto current_rect_orientation = gtl::guess_orientation(current_gtl_rect);
-          auto current_rect_width_orientation = current_rect_orientation.get_perpendicular();
-          int current_rect_width = gtl::delta(current_gtl_rect, current_rect_width_orientation);
-
-          // 根据width找到第一个适用的规则
-          int rule_index = -1;
-          for (int i = enclosure_edge_rules1.size() - 1; i >= 0; i--) {
-            if (current_rect_width >= enclosure_edge_rules1[i]._minwidth) {
-              rule_index = i;
-              break;
-            }
-          }
-          if (rule_index == -1) {
+          if (metal_rect.get_ll_x() <= cut_rect.get_ll_x())
+            west_overhang = std::max(west_overhang, std::abs(cut_rect.get_ll_x() - metal_rect.get_ll_x()));
+          if (metal_rect.get_ur_x() >= cut_rect.get_ur_x())
+            east_overhang = std::max(east_overhang, std::abs(cut_rect.get_ur_x() - metal_rect.get_ur_x()));
+          if (metal_rect.get_ur_y() >= cut_rect.get_ur_y())
+            north_overhang = std::max(north_overhang, std::abs(cut_rect.get_ur_y() - metal_rect.get_ur_y()));
+          if (metal_rect.get_ll_y() <= cut_rect.get_ll_y())
+            south_overhang = std::max(south_overhang, std::abs(cut_rect.get_ll_y() - metal_rect.get_ll_y()));
+        }
+        for (auto& [metal_bg_rect, metal_net_idx] : metal_rect_result) {
+          PlanarRect metal_rect = DRCUTIL.convertToPlanarRect(metal_bg_rect);
+          if (DRCUTIL.isClosedOverlap(metal_rect, cut_rect) == false) {
             continue;
           }
-
-          //根据Above字段豁免
-          if(cut_layer_idx==1&&routing_layer_idx==0&&rule_index!=enclosure_edge_rules1.size()-1){
-            continue;
-          }
-
-          // 使用找到的规则
-          auto& applicable_rule = enclosure_edge_rules1[rule_index];
-          auto checkWithDirection = [&](const gtl::direction_2d& direction) {
-            // 检查 within 和 parallel
-            auto check_condition_result
-                = checkParallelWithinCondition(routing_layer_all_query_tree, routing_layer_idx, current_gtl_rect, metal_net_idx, direction, applicable_rule);
-            if (check_condition_result.first == true) {
-              // 判断是否豁免
-              auto opposite_direction = getOppositeDirection(direction);
-              if (applicable_rule._excepttwoedges == true
-                  && checkParallelWithinCondition(routing_layer_all_query_tree, routing_layer_idx, current_gtl_rect, metal_net_idx, opposite_direction,
-                                                  applicable_rule)
-                             .first
-                         == true) {
-                return;
-              }
-              /// 符合条件，检测上面的通孔
-              GTLRectInt edge_rect = getEdgeSegmentRect(current_gtl_rect, direction);
-              PlanarRect edge_rect_planar = DRCUTIL.convertToPlanarRect(edge_rect);
-              auto check_overhang_rect = DRCUTIL.getSpacingRect(via_planar_rect, edge_rect_planar);
-              auto check_overhang_gtl_rect = DRCUTIL.convertToGTLRectInt(check_overhang_rect);
-              if (gtl::delta(check_overhang_gtl_rect, current_rect_width_orientation) < applicable_rule._overhang) {
-                Violation violation;
-                violation.set_violation_type(ViolationType::kEnclosureEdge);
-                violation.set_is_routing(true);
-                violation.set_violation_net_set({metal_net_idx, check_condition_result.second});
-                violation.set_layer_idx(cut_layer_idx - 1);
-                violation.set_rect(via_planar_rect);
-                violation.set_required_size(applicable_rule._overhang);
-                rv_box.get_violation_list().push_back(violation);
+          for (const Direction& metal_direction : {Direction::kHorizontal, Direction::kVertical}) {  // 两边都需要check
+            int metal_rect_width = metal_direction == Direction::kHorizontal ? metal_rect.getYSpan() : metal_rect.getXSpan();
+            // 根据width找到第一个适用的规则,这里取决于width的排列顺序 t28 tlef是从大到小的
+            // 这里先不检测第二个规则的  !enclosure_edge_rule_list[i].has_convex_corners
+            int rule_index = -1;
+            for (int i = 0; i < enclosure_edge_rule_list.size(); i++) {
+              if ((!enclosure_edge_rule_list[i].has_convex_corners) && metal_rect_width >= enclosure_edge_rule_list[i].min_width) {
+                rule_index = i;
+                break;
               }
             }
-          };
-
-          // 根据矩形方向选择检查方向
-          if (current_rect_width_orientation == gtl::HORIZONTAL) {
-            for (auto& check_direction : {gtl::WEST, gtl::EAST}) {
-              checkWithDirection(check_direction);
+            if (rule_index == -1) {
+              continue;
             }
-          } else {
-            for (auto& check_direction : {gtl::NORTH, gtl::SOUTH}) {
-              checkWithDirection(check_direction);
+
+            enclosure_edge_rule& cur_rule = enclosure_edge_rule_list[rule_index];
+            // 判断当前是下层还是上层,有above则豁免下层，有below则豁免上层，否则就检查
+            bool is_above = (routing_layer_idx == above_routing_layer_idx);
+            if ((cur_rule.has_above && !is_above) || (cur_rule.has_below && is_above)) {
+              continue;
+            }
+            std::vector<std::pair<BGRectInt, int32_t>> env_bg_rect_net_pair_list;
+            {
+              PlanarRect check_rect;  // 用于查找周围的矩形
+              if (metal_direction == Direction::kHorizontal) {
+                check_rect = DRCUTIL.getEnlargedRect(metal_rect, 0, cur_rule.par_within);
+              } else {
+                check_rect = DRCUTIL.getEnlargedRect(metal_rect, cur_rule.par_within, 0);
+              }
+              routing_bg_rtree_map[routing_layer_idx].query(bgi::intersects(DRCUTIL.convertToBGRectInt(check_rect)),
+                                                            std::back_inserter(env_bg_rect_net_pair_list));
+            }
+            // 检测两个par区域
+            PlanarRect left_par_rect;
+            PlanarRect right_par_rect;
+            std::set<int> left_par_net_list;
+            std::set<int> right_par_net_list;
+            if (metal_direction == Direction::kHorizontal) {
+              left_par_rect = DRCUTIL.getEnlargedRect(metal_rect.get_ll(), 0, cur_rule.par_within, metal_rect.getXSpan(), 0);   // 往south
+              right_par_rect = DRCUTIL.getEnlargedRect(metal_rect.get_ur(), metal_rect.getXSpan(), 0, 0, cur_rule.par_within);  // 往north
+            } else {
+              left_par_rect = DRCUTIL.getEnlargedRect(metal_rect.get_ll(), cur_rule.par_within, 0, 0, metal_rect.getYSpan());   // 往west
+              right_par_rect = DRCUTIL.getEnlargedRect(metal_rect.get_ur(), 0, metal_rect.getYSpan(), cur_rule.par_within, 0);  // 往east
+            }
+            for (auto& [env_bg_rect, env_metal_net_idx] : env_bg_rect_net_pair_list) {
+              PlanarRect env_metal_rect = DRCUTIL.convertToPlanarRect(env_bg_rect);
+              // 跳过重叠矩形
+              if (DRCUTIL.isClosedOverlap(metal_rect, env_metal_rect)) {
+                continue;
+              }
+              PlanarRect env_rect = DRCUTIL.convertToPlanarRect(env_bg_rect);
+              // within是小于,par是大于
+              if (DRCUTIL.isOpenOverlap(env_rect, left_par_rect) && DRCUTIL.getParallelLength(env_rect, left_par_rect) > cur_rule.par_length) {
+                left_par_net_list.insert(env_metal_net_idx);
+              }
+              if (DRCUTIL.isOpenOverlap(env_rect, right_par_rect) && DRCUTIL.getParallelLength(env_rect, right_par_rect) > cur_rule.par_length) {
+                right_par_net_list.insert(env_metal_net_idx);
+              }
+            }
+            // two edges
+            if (cur_rule.has_except_two_edges && (!left_par_net_list.empty() && !right_par_net_list.empty())) {
+              // 如果满足了两个区域的条件，则不需要继续检查
+              continue;
+            }
+
+            std::set<std::pair<int32_t, int32_t>> violation_net_set;
+            // check south west的overhang是否满足条件
+            if ((metal_direction == Direction::kHorizontal && south_overhang < cur_rule.overhang)
+                || (metal_direction == Direction::kVertical && west_overhang < cur_rule.overhang)) {
+              for (int32_t net_idx : left_par_net_list) {
+                violation_net_set.insert(std::make_pair(net_idx, metal_net_idx));
+              }
+            }
+
+            // check north east的overhang是否满足条件
+            if (metal_direction == Direction::kHorizontal && north_overhang < cur_rule.overhang
+                || metal_direction == Direction::kVertical && east_overhang < cur_rule.overhang) {
+              for (int32_t net_idx : right_par_net_list) {
+                violation_net_set.insert(std::make_pair(net_idx, metal_net_idx));
+              }
+            }
+            for (const auto& [env_metal_net_idx, metal_net_idx] : violation_net_set) {
+              Violation violation;
+              violation.set_violation_type(ViolationType::kEnclosureEdge);
+              violation.set_is_routing(true);
+              violation.set_violation_net_set({env_metal_net_idx, metal_net_idx});
+              violation.set_layer_idx(below_routing_layer_idx);
+              violation.set_rect(cut_rect);
+              violation.set_required_size(cur_rule.overhang);
+              rv_box.get_violation_list().push_back(violation);
             }
           }
         }
       }
     }
   }
-#endif
 
-/// rule2
-#if 1
-  for (auto& [routing_layer_idx, net_gtl_poly_set_map] : routing_layer_net_gtl_all_poly_set) {
+  /// rule2
+  for (auto& [routing_layer_idx, net_gtl_poly_set_map] : routing_net_gtl_poly_set_map) {
     std::vector<int32_t>& cut_layer_idx_list = routing_to_adjacent_cut_map[routing_layer_idx];
-    for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set_map) {
-      std::vector<GTLHolePolyInt> gtl_hole_poly_list;
-      std::vector<gtl::polygon_with_holes_data<int32_t>> view_poly_list;
-      gtl_poly_set.get(gtl_hole_poly_list);
-      gtl_poly_set.get(view_poly_list);
+    int32_t above_cuting_layer_idx = *std::max_element(cut_layer_idx_list.begin(), cut_layer_idx_list.end());
+    int32_t below_cuting_layer_idx = *std::min_element(cut_layer_idx_list.begin(), cut_layer_idx_list.end());
+    // TODO 这里需要处理底层和顶层的情况 0和6的情况
+    std::vector<enclosure_edge_rule> enclosure_edge_rule_list = layer_enclosure_edge_rule_list[below_cuting_layer_idx];  // 目前只支持below的,也就是cut的above
+    if (routing_layer_idx <= 0 || routing_layer_idx > 6) {  // 目前只care M2-M7 // 所以第一层的metal跳过
+      continue;
+    }
+    for (enclosure_edge_rule& cur_rule : enclosure_edge_rule_list) {
+      if (!cur_rule.has_convex_corners) {
+        continue;
+      }
+      for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set_map) {
+        std::vector<GTLHolePolyInt> gtl_hole_poly_list;
+        gtl_poly_set.get(gtl_hole_poly_list);
 
-      for (GTLHolePolyInt& gtl_hole_poly : gtl_hole_poly_list) {
-        int32_t coord_size = static_cast<int32_t>(gtl_hole_poly.size());
-        if (coord_size < 4) {
-          continue;
-        }
+        for (GTLHolePolyInt& gtl_hole_poly : gtl_hole_poly_list) {
+          int32_t coord_size = static_cast<int32_t>(gtl_hole_poly.size());
+          if (coord_size < 4) {
+            continue;
+          }
 
-        std::vector<PlanarCoord> coord_list;
-        std::vector<int32_t> edge_length_list;
-        std::vector<bool> convex_corner_list;
+          std::vector<PlanarCoord> coord_list;
+          std::vector<int32_t> edge_length_list;
+          std::vector<bool> convex_corner_list;
+          std::vector<Segment<PlanarCoord>> edge_list;
 
-        {
           for (auto iter = gtl_hole_poly.begin(); iter != gtl_hole_poly.end(); iter++) {
             coord_list.push_back(DRCUTIL.convertToPlanarCoord(*iter));
           }
@@ -382,177 +342,118 @@ void RuleValidator::verifyEnclosureEdge(RVBox& rv_box)
             PlanarCoord& post_coord = coord_list[getIdx(i + 1, coord_size)];
             edge_length_list.push_back(DRCUTIL.getManhattanDistance(pre_coord, curr_coord));
             convex_corner_list.push_back(DRCUTIL.isConvexCorner(DRCUTIL.getRotation(gtl_hole_poly), pre_coord, curr_coord, post_coord));
+            edge_list.emplace_back(pre_coord, curr_coord);
           }
-        }
-        for (int32_t i = 0; i < coord_size; i++) {
-          int32_t pre_i = getIdx(i - 1, coord_size);
-          int32_t pre_pre_i = getIdx(i - 2, coord_size);
-          int32_t post_i = getIdx(i + 1, coord_size);
-          auto edge_direction = DRCUTIL.getDirection(coord_list[i], coord_list[i - 1]);
-          // 第一级条件：当前边的边长小于等于convexLength，并且当前边两个顶点是凸角
-          // 第二级条件：当前边的一条相邻边，边长小于等于adjacentLength，并且相邻边的两个顶点是凸角；当前边的另一条相邻边，边长大于等于length
-          if (edge_length_list[i] <= enclosure_edge_rule2._convexlength && convex_corner_list[i] == true && convex_corner_list[pre_i] == true) {
-            if ((edge_length_list[pre_i] <= enclosure_edge_rule2._adjacentlength && convex_corner_list[pre_pre_i] == true
-                 && edge_length_list[post_i] >= enclosure_edge_rule2._length)
-                || (edge_length_list[post_i] <= enclosure_edge_rule2._adjacentlength && convex_corner_list[post_i] == true
-                    && edge_length_list[pre_i] >= enclosure_edge_rule2._length)) {
-              // 获取当前边的起点、终点、中点
-              PlanarCoord edge_start_point = coord_list[pre_i];
-              PlanarCoord edge_end_point = coord_list[i];
-              PlanarCoord edge_middle_point(edge_start_point.get_x() + (edge_end_point.get_x() - edge_start_point.get_x()) / 2,
-                                            edge_start_point.get_y() + (edge_end_point.get_y() - edge_start_point.get_y()) / 2);
 
-              // 获取相邻边(长度较短的)的长度和方向
-              bool use_prev_edge = edge_length_list[pre_i] <= edge_length_list[post_i];
-              int adjacent_length = use_prev_edge ? edge_length_list[pre_i] : edge_length_list[post_i];
-              PlanarCoord adjacent_start_point, adjacent_end_point;
-
-              if (use_prev_edge) {
-                adjacent_start_point = coord_list[pre_pre_i];
-                adjacent_end_point = coord_list[pre_i];
-              } else {
-                adjacent_start_point = coord_list[i];
-                adjacent_end_point = coord_list[post_i];
+          for (int32_t i = 0; i < coord_size; i++) {
+            // 出现连续的三个凸角时才会满足条件
+            if (!convex_corner_list[i] || !convex_corner_list[getIdx(i + 1, coord_size)] || !convex_corner_list[getIdx(i + 2, coord_size)]) {
+              continue;
+            }
+            // 此时会有两种情况
+            /**
+             * 三凸角
+             *
+             *           i                                         i(length_edge)
+             *      o---------o                               o---------o                               o
+             *      |            o                            |                                         |            o
+             *  i+1 |            | i+3                    i+1 |                                     i+1 |            | i+3
+             *      |            |              (convex_edge) |                              (adj_edge) |            | (length_edge)
+             *      o------------o                            o------------o                            o------------o
+             *           i+2                                     i+2(adj_edge)                           i+2(convex_edge)
+             *
+             */
+            for (auto [convex_edge_idx, adj_edge_idx, length_edge_idx] :
+                 {std::tuple(getIdx(i + 1, coord_size), getIdx(i + 2, coord_size), i),
+                  std::tuple(getIdx(i + 2, coord_size), getIdx(i + 1, coord_size), getIdx(i + 3, coord_size))}) {
+              int32_t convex_edge_length = edge_length_list[convex_edge_idx];
+              int32_t adj_edge_length = edge_length_list[adj_edge_idx];
+              int32_t length_edge_length = edge_length_list[length_edge_idx];
+              if (!(cur_rule.convex_length <= convex_edge_length && cur_rule.adjacent_length <= adj_edge_length && cur_rule.length >= length_edge_length)) {
+                continue;  // 不满足规则
               }
+              // 满足长度规则，那么此时convex_edge将作为cut的overhang
+              // 用convex边和短边构成矩形
+              Segment<PlanarCoord>& short_edge = adj_edge_length < convex_edge_length ? edge_list[adj_edge_idx] : edge_list[convex_edge_idx];
+              PlanarRect metal_rect = DRCUTIL.getBoundingBox(
+                  {short_edge.get_first(), short_edge.get_second(), edge_list[convex_edge_idx].get_first(), edge_list[convex_edge_idx].get_second()});
+              // 查询下面的cut,没有cut就跳过,理论上来说需要考虑above和below,这里为了方便先只考虑below也就是t28的情况
+              std::vector<std::pair<BGRectInt, int32_t>> cut_bg_rect_net_pair_list;
+              cut_bg_rtree_map[below_cuting_layer_idx].query(bgi::intersects(DRCUTIL.convertToBGRectInt(metal_rect)),
+                                                             std::back_inserter(cut_bg_rect_net_pair_list));
+              // 没有cut就跳过
+              if (cut_bg_rect_net_pair_list.empty()) {
+                continue;
+              }
+              // 拿到convex edge和adj edge的方向,这个方向依赖于boost对hole polygon的逆时针遍历,不然可能导致出错
+              Orientation convex_edge_orientation = DRCUTIL.getOrientation(edge_list[convex_edge_idx].get_first(), edge_list[convex_edge_idx].get_second());
+              Orientation adj_edge_orientation = DRCUTIL.getOrientation(edge_list[adj_edge_idx].get_first(), edge_list[adj_edge_idx].get_second());
 
-              // 以当前边和相邻边构造矩形
-              int ll_x, ll_y, ur_x, ur_y;
-              gtl::direction_2d bloating_direction_1;  // 第一个膨胀搜索方向
-              gtl::direction_2d bloating_direction_2;  // 第二个膨胀搜索方向
-              int32_t adjacent_net_idx = -1;
-              {
-                if (edge_direction == Direction::kHorizontal) {
-                  // 当前边是水平的，相邻边是垂直的
-                  ll_x = std::min(edge_start_point.get_x(), edge_end_point.get_x());
-                  ur_x = std::max(edge_start_point.get_x(), edge_end_point.get_x());
-
-                  // 确定垂直方向的延伸
-                  bool extend_down = (coord_list[pre_pre_i].get_y() < edge_start_point.get_y()) || (coord_list[post_i].get_y() < edge_end_point.get_y());
-
-                  if (extend_down) {
-                    ur_y = edge_start_point.get_y();
-                    ll_y = ur_y - adjacent_length;
-                    bloating_direction_1 = gtl::NORTH;  // 矩形向下延伸，膨胀方向是向上
-                  } else {
-                    ll_y = edge_start_point.get_y();
-                    ur_y = ll_y + adjacent_length;
-                    bloating_direction_1 = gtl::SOUTH;  // 矩形向上延伸，膨胀方向是向下
+              int32_t require_overhang = cur_rule.overhang;
+              for (auto& [cut_bg_rect, cut_net_idx] : cut_bg_rect_net_pair_list) {
+                PlanarRect cut_rect = DRCUTIL.convertToPlanarRect(cut_bg_rect);
+                if (DRCUTIL.isInside(cut_rect, metal_rect) == false) {
+                  continue;  // cut_rect不在metal_rect内
+                }
+                // 判断convex overhang是否满足，不满足跳过
+                int32_t convex_overhang = get_overhang(cut_rect, edge_list[convex_edge_idx]);
+                if (convex_overhang >= require_overhang) {
+                  continue;  // overhang满足要求
+                }
+                int32_t adj_overhang = get_overhang(cut_rect, short_edge);  // 用来从cut往外扩展得到查询区域的
+                // 因为要求与cut的prl不为0,所以从cut生成区域往外查
+                PlanarRect convex_edge_check_rect
+                    = get_convex_rule_check_rect(cut_rect, edge_list[convex_edge_idx], cur_rule.convex_par_within + convex_overhang);
+                PlanarRect adj_edge_check_rect = get_convex_rule_check_rect(cut_rect, edge_list[adj_edge_idx], cur_rule.convex_par_within + adj_overhang);
+                bool is_convex_edge_fulfilled = false;
+                bool is_adj_edge_fulfilled = false;
+                PlanarRect check_rect = DRCUTIL.getBoundingBox(
+                    {adj_edge_check_rect.get_ll(), adj_edge_check_rect.get_ur(), convex_edge_check_rect.get_ll(), convex_edge_check_rect.get_ur()});
+                std::vector<std::pair<BGRectInt, int32_t>> env_metal_bg_rect_net_pair_list;
+                routing_bg_rtree_map[routing_layer_idx].query(bgi::intersects(DRCUTIL.convertToBGRectInt(check_rect)),
+                                                              std::back_inserter(env_metal_bg_rect_net_pair_list));
+                std::set<int32_t> env_metal_net_set;
+                for (auto& [env_metal_bg_rect, env_metal_net_idx] : env_metal_bg_rect_net_pair_list) {
+                  PlanarRect env_metal_rect = DRCUTIL.convertToPlanarRect(env_metal_bg_rect);
+                  if (DRCUTIL.isClosedOverlap(env_metal_rect, metal_rect)) {
+                    continue;  // 重叠的矩形不参与检查
                   }
-
-                  // 确定第二个膨胀方向 - 根据相邻边在当前边上的投影
-                  if (adjacent_start_point.get_x() < edge_middle_point.get_x()) {
-                    bloating_direction_2 = gtl::EAST;
-                  } else {
-                    bloating_direction_2 = gtl::WEST;
+                  if (DRCUTIL.isOpenOverlap(env_metal_rect, convex_edge_check_rect)) {
+                    is_convex_edge_fulfilled = true;  // convex edge的par满足
+                    env_metal_net_set.insert(env_metal_net_idx);
                   }
-                } else {
-                  // 当前边是垂直的，相邻边是水平的
-                  ll_y = std::min(edge_start_point.get_y(), edge_end_point.get_y());
-                  ur_y = std::max(edge_start_point.get_y(), edge_end_point.get_y());
-
-                  // 确定水平方向的延伸
-                  bool extend_left = (coord_list[pre_pre_i].get_x() < edge_start_point.get_x()) || (coord_list[post_i].get_x() < edge_end_point.get_x());
-
-                  if (extend_left) {
-                    ur_x = edge_start_point.get_x();
-                    ll_x = ur_x - adjacent_length;
-                    bloating_direction_1 = gtl::EAST;  // 矩形向左延伸，膨胀方向是向右
-                  } else {
-                    ll_x = edge_start_point.get_x();
-                    ur_x = ll_x + adjacent_length;
-                    bloating_direction_1 = gtl::WEST;  // 矩形向右延伸，膨胀方向是向左
-                  }
-
-                  // 确定第二个膨胀方向 - 根据相邻边在当前边上的投影
-                  if (adjacent_start_point.get_y() < edge_middle_point.get_y()) {
-                    bloating_direction_2 = gtl::NORTH;
-                  } else {
-                    bloating_direction_2 = gtl::SOUTH;
+                  if (DRCUTIL.isOpenOverlap(env_metal_rect, adj_edge_check_rect)) {
+                    is_adj_edge_fulfilled = true;  // adj edge的par满足
+                    env_metal_net_set.insert(env_metal_net_idx);
                   }
                 }
-              }
-
-              PlanarRect query_planar_rect(ll_x, ll_y, ur_x, ur_y);
-              GTLRectInt query_gtl_rect = DRCUTIL.convertToGTLRectInt(query_planar_rect);
-
-              for (int32_t cut_layer_idx : cut_layer_idx_list) {
-                // 判断rule2的ABOVE字段
-                if (routing_layer_idx == 1 && cut_layer_idx == 0) {
+                if (!is_convex_edge_fulfilled || !is_adj_edge_fulfilled) {
+                  // 两个有一个不满足都跳出
                   continue;
                 }
-                // 搜索当前矩形内的via，无via则提前返回
-                std::vector<std::pair<BGRectInt, int32_t>> vias_in_current_rect
-                    = queryRectbyRtreeWithWithin(cut_layer_all_query_tree, cut_layer_idx, gtl::xl(query_gtl_rect), gtl::yl(query_gtl_rect),
-                                                 gtl::xh(query_gtl_rect), gtl::yh(query_gtl_rect));
-                if (vias_in_current_rect.empty()) {
-                  continue;
+                for (int32_t env_net_idx : env_metal_net_set) {
+                  // 生成违例
+                  Violation violation;
+                  violation.set_violation_type(ViolationType::kEnclosureEdge);
+                  violation.set_is_routing(true);
+                  violation.set_violation_net_set({env_net_idx, cut_net_idx});
+                  violation.set_layer_idx(below_cuting_layer_idx - 1);
+                  violation.set_rect(cut_rect);
+                  violation.set_required_size(100);
+                  rv_box.get_violation_list().push_back(violation);
                 }
-
-                // 检查特定方向的相邻shape
-                auto checkParallelWithinCondition = [&](gtl::direction_2d direction) -> std::pair<bool, int32_t> {
-                  GTLRectInt bloated_rect = query_gtl_rect;
-                  gtl::bloat(bloated_rect, direction, enclosure_edge_rule2._parWithin);
-
-                  std::vector<std::pair<BGRectInt, int32_t>> around_results
-                      = queryRectbyRtreeWithIntersects(routing_layer_all_query_tree, routing_layer_idx, gtl::xl(bloated_rect), gtl::yl(bloated_rect),
-                                                       gtl::xh(bloated_rect), gtl::yh(bloated_rect));
-
-                  for (auto& [around_bg_rect, around_rect_net_idx] : around_results) {
-                    PlanarRect around_planar_rect = DRCUTIL.convertToPlanarRect(around_bg_rect);
-
-                    // 跳过同网络或重叠的矩形
-                    if (net_idx == around_rect_net_idx || DRCUTIL.isClosedOverlap(query_planar_rect, around_planar_rect)) {
-                      continue;
-                    }
-
-                    // 检查规则条件
-                    if (checkRule2Condiction(query_planar_rect, around_planar_rect, direction, enclosure_edge_rule2._parWithin, 0)) {
-                      return {true, around_rect_net_idx};
-                    }
-                  }
-
-                  return {false, -1};
-                };
-
-                // 检查规则的overhang字段
-                auto isViaViolating = [&](const PlanarRect& via_rect) -> bool {
-                  return (bloating_direction_1 == gtl::NORTH && abs(query_planar_rect.get_ur_y() - via_rect.get_ur_y()) < enclosure_edge_rule2._overhang)
-                         || (bloating_direction_1 == gtl::SOUTH && abs(via_rect.get_ll_y() - query_planar_rect.get_ll_y()) < enclosure_edge_rule2._overhang)
-                         || (bloating_direction_1 == gtl::EAST && abs(query_planar_rect.get_ur_x() - via_rect.get_ur_x()) < enclosure_edge_rule2._overhang)
-                         || (bloating_direction_1 == gtl::WEST && abs(via_rect.get_ll_x() - query_planar_rect.get_ll_x()) < enclosure_edge_rule2._overhang);
-                };
-
-                // 检查两个方向
-                auto [check_condition1, _] = checkParallelWithinCondition(bloating_direction_1);
-                if (check_condition1) {
-                  auto [check_condition2, adjacent_net_idx] = checkParallelWithinCondition(bloating_direction_2);
-
-                  if (check_condition2) {
-                    // 检查所有vias是否违反规则
-                    for (auto& via_in_current_rect : vias_in_current_rect) {
-                      PlanarRect via_planar_Rect = DRCUTIL.convertToPlanarRect(via_in_current_rect.first);
-
-                      if (isViaViolating(via_planar_Rect)) {
-                        Violation violation;
-                        violation.set_violation_type(ViolationType::kEnclosureEdge);
-                        violation.set_is_routing(true);
-                        violation.set_violation_net_set({net_idx, adjacent_net_idx});
-                        violation.set_layer_idx(cut_layer_idx - 1);
-                        violation.set_rect(via_planar_Rect);
-                        violation.set_required_size(enclosure_edge_rule2._overhang);
-                        rv_box.get_violation_list().push_back(violation);
-                      }
-                    }
-                  }
-                }
+                // cut
               }
             }
+            // coord
           }
+          // polygon
         }
+        // polygonset
       }
+      // rule
     }
   }
-#endif
 }
 
 }  // namespace idrc

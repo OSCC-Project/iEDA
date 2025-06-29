@@ -25,13 +25,11 @@
 #ifndef EVALTIMING_H
 #define EVALTIMING_H
 
+#include <filesystem>
+#include <fstream>
 #include <string>
 
-#include "log/Log.hh"
 #include "idm.h"
-#include "json/json.hpp"
-#include "idm.h"
-#include "timing_api.hh"
 
 namespace ieval {
 class EvalTiming
@@ -41,10 +39,7 @@ class EvalTiming
 
   static void printTimingResult();
 
-  static void getConfig(idm::DataConfig& config)
-  {
-    config = dmInst->get_config();
-  }
+  static void getConfig(idm::DataConfig& config) { config = dmInst->get_config(); }
 
   static void setOutputPath(const std::string& path);
 

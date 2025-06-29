@@ -141,7 +141,7 @@ class Power {
 
   unsigned runCompleteFlow();
 
-  // for IR analysis.
+  // Below for IR analysis API.
   unsigned readPGSpef(const char* spef_file);
   void resetIRAnalysisData() {
     iIR ir_analysis;
@@ -149,12 +149,25 @@ class Power {
     _rust_pg_rc_data = nullptr;
   }
 
-  auto& getInstanceIRDrop() {
-    return _ir_analysis.get_instance_to_ir_drop();
+  double getNominalVoltage() {
+    return _ir_analysis.get_nominal_voltage();
   }
-  
+
+  auto& getNetInstanceIRDrop() {
+    return _ir_analysis.get_net_to_instance_ir_drop();
+  }
+  auto getInstanceIRDrop(std::string power_net_name) {
+    auto& net_to_instance_ir_drop = _ir_analysis.get_net_to_instance_ir_drop();
+    return net_to_instance_ir_drop.at(power_net_name);
+  }
+
+  void setBumpNodeLocs(
+      const std::map<std::string, IRNodeLoc>& net_bump_node_locs) {
+    _ir_analysis.set_net_bump_node_locs(net_bump_node_locs);
+  }  
   unsigned runIRAnalysis(std::string power_net_name);
-  unsigned reportIRDropCSV(const char* rpt_file_name);
+  unsigned reportIRDropTable(const char* rpt_file_name);
+  unsigned reportIRDropCSV(const char* rpt_file_name, std::string net_name);
   unsigned reportIRAnalysis(bool is_copy = true);
 
   std::pair<double, double> getNetToggleAndVoltageData(const char* net_name);

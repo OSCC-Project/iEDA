@@ -565,10 +565,10 @@ void PowerEngine::resetIRAnalysisData() {
  * 
  * @return std::map<Instance*, double> 
  */
-std::map<Instance*, double> PowerEngine::getInstanceIRDrop() {
+std::map<Instance*, double> PowerEngine::getInstanceIRDrop(std::string power_net_name) {
   std::map<Instance*, double> instance_to_ir_drop;
 
-  auto& instance_pin_to_ir_drop = _ipower->getInstanceIRDrop();
+  auto instance_pin_to_ir_drop = _ipower->getInstanceIRDrop(power_net_name);
   auto sta_netlist = _timing_engine->get_netlist();
 
   for (auto& [instance_pin_name, inst_ir_drop] : instance_pin_to_ir_drop) {

@@ -59,15 +59,17 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
   }
   for (auto& [routing_layer_idx, net_rect_map] : routing_net_rect_map) {
     RoutingLayer& routing_layer = routing_layer_list[routing_layer_idx];
+    int32_t min_width = routing_layer.get_minimum_width_rule().min_width;
+    ParallelRunLengthSpacingRule& parallel_run_length_spacing_rule = routing_layer.get_parallel_run_length_spacing_rule();
     std::map<std::set<int32_t>, std::map<int32_t, std::vector<PlanarRect>>> net_required_violation_rect_map;
     for (auto& [net_idx, rect_list] : net_rect_map) {
       for (PlanarRect& rect : rect_list) {
-        if (rect.getWidth() < routing_layer.get_min_width()) {
+        if (rect.getWidth() < min_width) {
           continue;
         }
         std::vector<std::pair<BGRectInt, int32_t>> bg_rect_net_pair_list;
         {
-          PlanarRect check_rect = DRCUTIL.getEnlargedRect(rect, routing_layer.getMaxSpacing());
+          PlanarRect check_rect = DRCUTIL.getEnlargedRect(rect, parallel_run_length_spacing_rule.getMaxSpacing());
           routing_bg_rtree_map[routing_layer_idx].query(bgi::intersects(DRCUTIL.convertToBGRectInt(check_rect)), std::back_inserter(bg_rect_net_pair_list));
         }
         for (auto& [bg_env_rect, env_net_idx] : bg_rect_net_pair_list) {
@@ -75,13 +77,14 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
             continue;
           }
           PlanarRect env_rect = DRCUTIL.convertToPlanarRect(bg_env_rect);
-          if (env_rect.getWidth() < routing_layer.get_min_width()) {
+          if (env_rect.getWidth() < min_width) {
             continue;
           }
           if (DRCUTIL.isClosedOverlap(rect, env_rect)) {
             continue;
           }
-          int32_t required_size = routing_layer.getSpacing(std::max(rect.getWidth(), env_rect.getWidth()), DRCUTIL.getParallelLength(rect, env_rect));
+          int32_t required_size
+              = parallel_run_length_spacing_rule.getSpacing(std::max(rect.getWidth(), env_rect.getWidth()), DRCUTIL.getParallelLength(rect, env_rect));
           if (required_size <= DRCUTIL.getEuclideanDistance(rect, env_rect)) {
             continue;
           }

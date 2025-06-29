@@ -169,7 +169,7 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
       continue;  // 没有对应的cut layer  此时routing_layer_idx 刚好对应其下一层的cut layer idx
     }
 
-    int32_t min_width = routing_layer_list[routing_layer_idx].get_min_width();
+    int32_t min_width = routing_layer_list[routing_layer_idx].get_minimum_width_rule().min_width;
 
     std::vector<GTLHolePolyInt> gtl_hole_poly_list;
     gtl_poly_set.get(gtl_hole_poly_list);

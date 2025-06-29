@@ -51,7 +51,6 @@ class Solver
 
   ~Solver() = default;
   // run
-  void set_max_thread(const uint8_t& max_thread) { _max_thread = max_thread; }
   void run();
   // get
   std::vector<Net*> get_solver_nets() const { return _nets; }
@@ -60,30 +59,29 @@ class Solver
   // flow
   void init();
   void resolveSinks();
-  std::vector<Inst*> levelProcess(const std::vector<std::vector<Inst*>>& clusters, const std::vector<Point> guide_locs,
-                                  const Assign& assign);
+  std::vector<Pin*> levelProcess(const std::vector<std::vector<Pin*>>& clusters, const std::vector<Point> guide_locs, const Assign& assign);
   void breakLongWire();
   Assign get_level_assign(const int& level) const;
-  std::vector<Inst*> assignApply(const std::vector<Inst*>& insts, const Assign& assign);
-  std::vector<Inst*> topGuide(const std::vector<Inst*>& insts, const Assign& assign);
-  Inst* netAssign(const std::vector<Inst*>& insts, const Assign& assign, const Point& guide_center, const bool& shift = true);
-  Net* saltOpt(const std::vector<Inst*>& insts, const Assign& assign);
-  void higherDelayOpt(std::vector<std::vector<Inst*>>& clusters, std::vector<Point>& guide_centers, std::vector<Inst*>& level_insts) const;
+  std::vector<Pin*> assignApply(const std::vector<Pin*>& load_pins, const Assign& assign);
+  std::vector<Pin*> topGuide(const std::vector<Pin*>& load_pins, const Assign& assign);
+  Pin* netAssign(const std::vector<Pin*>& load_pins, const Assign& assign, const Point& guide_center, const bool& shift = true);
+  Net* saltOpt(const std::vector<Pin*>& load_pins, const Assign& assign);
+  void higherDelayOpt(std::vector<std::vector<Pin*>>& clusters, std::vector<Point>& guide_centers,
+                      std::vector<Pin*>& next_level_load_pins) const;
   // report
   void writeNetPy(Pin* root, const std::string& save_name = "net") const;
   void levelReport() const;
-  void pinCapDistReport(const std::vector<Inst*>& insts) const;
+  void pinCapDistReport(const std::vector<Pin*>& load_pins) const;
   // member
   std::string _net_name;
   CtsPin* _cts_driver;
   std::vector<CtsPin*> _cts_pins;
-  std::vector<std::vector<Inst*>> _level_insts;
+  std::vector<std::vector<Pin*>> _level_load_pins;
   std::vector<Pin*> _sink_pins;
   std::vector<Pin*> _top_pins;
   Pin* _driver = nullptr;
   std::vector<Net*> _nets;
   int _level = 1;
-  uint8_t _max_thread = 1;
   // config
   bool _root_buffer_required = true;
   bool _inherit_root = true;

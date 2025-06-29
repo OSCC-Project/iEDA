@@ -24,6 +24,7 @@
 
 #include "TimingEngine.hh"
 
+#include <cassert>
 #include <iostream>
 #include <optional>
 
@@ -35,6 +36,7 @@
 #include "netlist/Instance.hh"
 #include "netlist/Netlist.hh"
 #include "sdc-cmd/Cmd.hh"
+#include "sdc/SdcSetLoad.hh"
 #include "sta/Sta.hh"
 #include "sta/StaAnalyze.hh"
 #include "sta/StaApplySdc.hh"
@@ -104,10 +106,10 @@ void TimingEngine::set_db_adapter(std::unique_ptr<TimingDBAdapter> db_adapter) {
 
 /**
  * @brief read def design for construct netlist db.
- * 
- * @param def_file 
- * @param lef_files 
- * @return TimingEngine& 
+ *
+ * @param def_file
+ * @param lef_files
+ * @return TimingEngine&
  */
 TimingEngine& TimingEngine::readDefDesign(std::string def_file,
                                           std::vector<std::string>& lef_files) {
@@ -126,9 +128,9 @@ TimingEngine& TimingEngine::readDefDesign(std::string def_file,
 
 /**
  * @brief set the db builder which has read def design.
- * 
- * @param db_builder 
- * @return TimingEngine& 
+ *
+ * @param db_builder
+ * @return TimingEngine&
  */
 TimingEngine& TimingEngine::setDefDesignBuilder(void* db_builder) {
   auto db_adapter = std::make_unique<TimingIDBAdapter>(get_ista());
@@ -445,6 +447,21 @@ RctNode* TimingEngine::makeOrFindRCTreeNode(DesignObject* pin_or_port) {
   return node;
 }
 
+/**
+ * @brief find the exist rc tree node.
+ * 
+ * @param net 
+ * @param node_name 
+ * @return RctNode* 
+ */
+RctNode* TimingEngine::findRCTreeNode(Net *net, std::string& node_name) {
+  auto* rc_net = _timing_engine->get_ista()->getRcNet(net);
+  LOG_FATAL_IF(!rc_net) << net->get_name() << " rc net is not found.";
+  auto* rc_tree = rc_net->rct();
+
+  return rc_tree->node(node_name);
+}
+
 void TimingEngine::incrCap(RctNode* node, double cap, bool is_incremental) {
   is_incremental ? node->incrCap(cap) : node->setCap(cap);
 }
@@ -467,9 +484,8 @@ void TimingEngine::makeResistor(Net* net, RctNode* from_node, RctNode* to_node,
   auto from_fanouts = from_node->get_fanout();
 
   // judge whether the edge is already exist.
-  auto found = std::ranges::find_if(from_fanouts, [&](auto* edge) {
-    return &(edge->get_to()) == to_node;
-  });
+  auto found = std::ranges::find_if(
+      from_fanouts, [&](auto* edge) { return &(edge->get_to()) == to_node; });
 
   if (found != from_fanouts.end()) {
     return;
@@ -495,10 +511,9 @@ void TimingEngine::updateRCTreeInfo(Net* net) {
   }
 }
 
-
 /**
  * @brief update all rc tree elmore delay use gpu speedup.
- * 
+ *
  */
 void TimingEngine::updateAllRCTree() {
 #if CUDA_DELAY
@@ -506,7 +521,6 @@ void TimingEngine::updateAllRCTree() {
   calc_rc_timing(all_rc_nets);
 #endif
 }
-
 
 /**
  * @brief build balanced rc tree of the net and update rc tree info.
@@ -616,10 +630,15 @@ bool TimingEngine::isPropagatedClock(const char* clock_name) {
 StaClock* TimingEngine::getPropClockOfNet(Net* clock_net) {
   auto* driver = clock_net->getDriver();
   auto* driver_vertex = _ista->findVertex(driver);
-  if (driver->isInout()) {
-    driver_vertex = _ista->get_graph().getAssistant(driver_vertex);
-  }
   auto* prop_clock = driver_vertex->getPropClock();
+  if (driver->isInout() && !prop_clock) {
+    auto* driver_assistant_vertex =
+        _ista->get_graph().getAssistant(driver_vertex);
+    prop_clock = driver_assistant_vertex->getPropClock();
+  }
+
+  LOG_FATAL_IF(!prop_clock)
+      << "No propagated clock found for net: " << clock_net->get_name();
   return prop_clock;
 }
 
@@ -1474,6 +1493,12 @@ double TimingEngine::getInstPinCapacitance(const char* pin_name) {
   auto* design_netlist = ista->get_netlist();
   std::vector<DesignObject*> match_pins =
       design_netlist->findPin(pin_name, false, false);
+  if (match_pins.empty()) {
+    auto* port = design_netlist->findPort(pin_name);
+    assert(port);
+    return port->cap();
+  }
+
   auto* pin = match_pins.front();
   auto* pin1 = dynamic_cast<Pin*>(pin);
   double cap = pin1->cap();

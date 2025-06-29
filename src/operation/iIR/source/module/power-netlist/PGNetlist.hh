@@ -233,6 +233,8 @@ class IRPGNetlist {
   std::string _net_name;
 };
 
+using IRNodeLoc = std::pair<std::pair<double, double>, std::string>;  //!< The node location type, coord and layer id.
+
 /**
  * @brief The pg netlist builder.
  *
@@ -308,6 +310,8 @@ class IRPGNetlistBuilder {
         _rtree.clear();  // Clear all data in rtree
     }
 
+  auto& get_net_bump_node_locs() { return _net_bump_node_locs; }
+
  private:
   bgi::rtree<BGValue, bgi::quadratic<16>> _rtree;
   double _c_via_resistance = 0.01;
@@ -321,6 +325,8 @@ class IRPGNetlistBuilder {
   std::list<IRPGNetlist> _pg_netlists; //!< The builded pg netlist.
   std::vector<const void*> _rust_pg_netlists; //!< The rust pg netlist.
   const void* _rust_rc_data = nullptr;
+
+  std::map<std::string, IRNodeLoc> _net_bump_node_locs; //!< The net bump node locs.
 };
 
 }  // namespace iir

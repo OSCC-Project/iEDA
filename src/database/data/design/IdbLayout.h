@@ -91,7 +91,7 @@ class IdbLayout
   void set_max_via_stack(IdbMaxViaStack* max_via_stack) { _max_via_stack = max_via_stack; }
   // operator
   int32_t transAreaDB(double value) { return std::round(std::pow(_units->get_micron_dbu(), 2) * value); }
-  int32_t transUnitDB(double value) { return std::round(_units->get_micron_dbu() * value); }
+  int32_t transUnitDB(double value) { return std::round(_units->get_micron_dbu() * value); }      // get (class IdbUnits -> (int32) _micron_dbu) * value
 
  private:
   int32_t _manufacture_grid;  //<---------tbd---------------

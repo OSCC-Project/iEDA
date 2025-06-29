@@ -50,10 +50,11 @@ void RuleValidator::verifyMinStep(RVBox& rv_box)
   }
   for (auto& [routing_layer_idx, net_gtl_poly_set_map] : routing_net_gtl_poly_set_map) {
     RoutingLayer& routing_layer = routing_layer_list[routing_layer_idx];
-    int32_t min_step = routing_layer.get_min_step();
-    int32_t max_edges = routing_layer.get_max_edges();
-    int32_t lef58_min_step = routing_layer.get_lef58_min_step();
-    int32_t lef58_min_adjacent_length = routing_layer.get_lef58_min_adjacent_length();
+    MinStepRule& min_step_rule = routing_layer.get_min_step_rule();
+    int32_t min_step = min_step_rule.min_step;
+    int32_t max_edges = min_step_rule.max_edges;
+    int32_t lef58_min_step = min_step_rule.lef58_min_step;
+    int32_t lef58_min_adjacent_length = min_step_rule.lef58_min_adjacent_length;
     for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set_map) {
       std::vector<GTLHolePolyInt> gtl_hole_poly_list;
       gtl_poly_set.get(gtl_hole_poly_list);
