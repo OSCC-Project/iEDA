@@ -492,6 +492,29 @@ void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_
       exist_rule_set.insert(ViolationType::kEnclosureEdge);
     }
   }
+  // EnclosureParallelRule
+  {
+    EnclosureParallelRule& enclosure_parallel_rule = cut_layer.get_enclosure_parallel_rule();
+    if (idb_layer->get_lef58_eol_enclosure().get() != nullptr) {
+      idb::cutlayer::Lef58EolEnclosure* idb_eol_enclosure = idb_layer->get_lef58_eol_enclosure().get();
+      enclosure_parallel_rule.eol_width = idb_eol_enclosure->get_eol_width();
+      enclosure_parallel_rule.has_above = (idb_eol_enclosure->get_direction() == idb::cutlayer::Lef58EolEnclosure::Direction::kAbove);
+      enclosure_parallel_rule.has_below = (idb_eol_enclosure->get_direction() == idb::cutlayer::Lef58EolEnclosure::Direction::kBelow);
+      enclosure_parallel_rule.overhang = idb_eol_enclosure->get_overhang();
+      if (idb_eol_enclosure->get_par_space().has_value()) {
+        enclosure_parallel_rule.par_spacing = idb_eol_enclosure->get_par_space().value();
+      }
+      if (idb_eol_enclosure->get_extension().has_value()) {
+        enclosure_parallel_rule.backward_ext = idb_eol_enclosure->get_extension().value().get_backward_ext();
+        enclosure_parallel_rule.forward_ext = idb_eol_enclosure->get_extension().value().get_forward_ext();
+      }
+      enclosure_parallel_rule.has_min_length = idb_eol_enclosure->get_min_length().has_value();
+      if (idb_eol_enclosure->get_min_length().has_value()) {
+        enclosure_parallel_rule.min_length = idb_eol_enclosure->get_min_length().value();
+      }
+      exist_rule_set.insert(ViolationType::kEnclosureParallel);
+    }
+  }
   // SameLayerCutSpacingRule
   {
     SameLayerCutSpacingRule& same_layer_cut_spacing_rule = cut_layer.get_same_layer_cut_spacing_rule();

@@ -20,6 +20,7 @@
 #include "DRCHeader.hpp"
 #include "DifferentLayerCutSpacingRule.hpp"
 #include "EnclosureEdgeRule.hpp"
+#include "EnclosureParallelRule.hpp"
 #include "PlanarRect.hpp"
 #include "SameLayerCutSpacingRule.hpp"
 
@@ -38,6 +39,7 @@ class CutLayer
   DifferentLayerCutSpacingRule& get_different_layer_cut_spacing_rule() { return _different_layer_cut_spacing_rule; }
   std::vector<EnclosureEdgeRule>& get_enclosure_edge_rule_list() { return _enclosure_edge_rule_list; }
   SameLayerCutSpacingRule& get_same_layer_cut_spacing_rule() { return _same_layer_cut_spacing_rule; }
+  EnclosureParallelRule& get_enclosure_parallel_rule() { return _enclosure_parallel_rule; }
   // setter
   void set_layer_idx(const int32_t layer_idx) { _layer_idx = layer_idx; }
   void set_layer_order(const int32_t layer_order) { _layer_order = layer_order; }
@@ -51,6 +53,7 @@ class CutLayer
   DifferentLayerCutSpacingRule _different_layer_cut_spacing_rule;
   std::vector<EnclosureEdgeRule> _enclosure_edge_rule_list;
   SameLayerCutSpacingRule _same_layer_cut_spacing_rule;
+  EnclosureParallelRule _enclosure_parallel_rule;
 };
 
 }  // namespace idrc

@@ -118,27 +118,29 @@ void RuleValidator::verifyEnclosureEdge(RVBox& rv_box)
             if (curr_rule.has_below && (routing_layer_idx != below_routing_layer_idx)) {
               continue;
             }
-            PlanarRect left_par_rect;
-            PlanarRect right_par_rect;
-            if (curr_direction == Direction::kHorizontal) {
-              left_par_rect = DRCUTIL.getEnlargedRect(routing_rect.get_ll(), 0, curr_rule.par_within, routing_rect.getXSpan(), 0);
-              right_par_rect = DRCUTIL.getEnlargedRect(routing_rect.get_ur(), routing_rect.getXSpan(), 0, 0, curr_rule.par_within);
-            } else {
-              left_par_rect = DRCUTIL.getEnlargedRect(routing_rect.get_ll(), curr_rule.par_within, 0, 0, routing_rect.getYSpan());
-              right_par_rect = DRCUTIL.getEnlargedRect(routing_rect.get_ur(), 0, routing_rect.getYSpan(), curr_rule.par_within, 0);
-            }
             std::set<int32_t> left_par_net_idx_set;
             std::set<int32_t> right_par_net_idx_set;
             {
-              PlanarRect check_rect;
+              PlanarRect left_par_rect;
+              PlanarRect right_par_rect;
               if (curr_direction == Direction::kHorizontal) {
-                check_rect = DRCUTIL.getEnlargedRect(routing_rect, 0, curr_rule.par_within);
+                left_par_rect = DRCUTIL.getEnlargedRect(routing_rect.get_ll(), 0, curr_rule.par_within, routing_rect.getXSpan(), 0);
+                right_par_rect = DRCUTIL.getEnlargedRect(routing_rect.get_ur(), routing_rect.getXSpan(), 0, 0, curr_rule.par_within);
               } else {
-                check_rect = DRCUTIL.getEnlargedRect(routing_rect, curr_rule.par_within, 0);
+                left_par_rect = DRCUTIL.getEnlargedRect(routing_rect.get_ll(), curr_rule.par_within, 0, 0, routing_rect.getYSpan());
+                right_par_rect = DRCUTIL.getEnlargedRect(routing_rect.get_ur(), 0, routing_rect.getYSpan(), curr_rule.par_within, 0);
               }
               std::vector<std::pair<BGRectInt, int32_t>> env_bg_rect_net_pair_list;
-              routing_bg_rtree_map[routing_layer_idx].query(bgi::intersects(DRCUTIL.convertToBGRectInt(check_rect)),
-                                                            std::back_inserter(env_bg_rect_net_pair_list));
+              {
+                PlanarRect check_rect;
+                if (curr_direction == Direction::kHorizontal) {
+                  check_rect = DRCUTIL.getEnlargedRect(routing_rect, 0, curr_rule.par_within);
+                } else {
+                  check_rect = DRCUTIL.getEnlargedRect(routing_rect, curr_rule.par_within, 0);
+                }
+                routing_bg_rtree_map[routing_layer_idx].query(bgi::intersects(DRCUTIL.convertToBGRectInt(check_rect)),
+                                                              std::back_inserter(env_bg_rect_net_pair_list));
+              }
               for (auto& [bg_env_rect, env_net_idx] : env_bg_rect_net_pair_list) {
                 PlanarRect env_routing_rect = DRCUTIL.convertToPlanarRect(bg_env_rect);
                 if (DRCUTIL.isClosedOverlap(routing_rect, env_routing_rect)) {
@@ -160,16 +162,18 @@ void RuleValidator::verifyEnclosureEdge(RVBox& rv_box)
               continue;
             }
             std::set<std::set<int32_t>> violation_net_set_set;
-            if ((curr_direction == Direction::kHorizontal && orient_overhang_map[Orientation::kSouth] < curr_rule.overhang)
-                || (curr_direction == Direction::kVertical && orient_overhang_map[Orientation::kWest] < curr_rule.overhang)) {
-              for (int32_t left_par_net_idx : left_par_net_idx_set) {
-                violation_net_set_set.insert({left_par_net_idx, net_idx});
+            {
+              if ((curr_direction == Direction::kHorizontal && orient_overhang_map[Orientation::kSouth] < curr_rule.overhang)
+                  || (curr_direction == Direction::kVertical && orient_overhang_map[Orientation::kWest] < curr_rule.overhang)) {
+                for (int32_t left_par_net_idx : left_par_net_idx_set) {
+                  violation_net_set_set.insert({left_par_net_idx, net_idx});
+                }
               }
-            }
-            if ((curr_direction == Direction::kHorizontal && orient_overhang_map[Orientation::kNorth] < curr_rule.overhang)
-                || (curr_direction == Direction::kVertical && orient_overhang_map[Orientation::kEast] < curr_rule.overhang)) {
-              for (int32_t right_par_net_idx : right_par_net_idx_set) {
-                violation_net_set_set.insert({right_par_net_idx, net_idx});
+              if ((curr_direction == Direction::kHorizontal && orient_overhang_map[Orientation::kNorth] < curr_rule.overhang)
+                  || (curr_direction == Direction::kVertical && orient_overhang_map[Orientation::kEast] < curr_rule.overhang)) {
+                for (int32_t right_par_net_idx : right_par_net_idx_set) {
+                  violation_net_set_set.insert({right_par_net_idx, net_idx});
+                }
               }
             }
             for (const std::set<int32_t>& violation_net_set : violation_net_set_set) {

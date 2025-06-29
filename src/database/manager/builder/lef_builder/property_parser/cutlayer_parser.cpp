@@ -180,6 +180,7 @@ bool CutLayerParser::parse_lef58_eolenclosure(const std::string& value, IdbLayer
       cutlayer::Lef58EolEnclosure::Extension ext;
       ext.set_backward_ext(transUnitDB(overhang._backward_ext.value()));
       ext.set_forward_ext(transUnitDB(overhang._forward_ext.value()));
+      enclosure->set_extension(ext);
     }
     if (overhang._min_length) {
       enclosure->set_min_length(transUnitDB(overhang._min_length.value()));

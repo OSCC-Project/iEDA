@@ -197,6 +197,9 @@ class Utility
   // 线段在线段内
   static bool isInside(const Segment<PlanarCoord>& master, const Segment<PlanarCoord>& seg)
   {
+    if (!isRightAngled(master.get_first(), master.get_second()) || !isRightAngled(seg.get_first(), seg.get_second())) {
+      DRCLOG.error(Loc::current(), "The segment is error!");
+    }
     PlanarRect rect = getRect(master.get_first(), master.get_second());
     return isInside(rect, seg.get_first()) && isInside(rect, seg.get_second());
   }
