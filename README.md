@@ -72,7 +72,7 @@
 
 ---
 
-## **Papers and Presentations**  [[See more](https://ieda.oscc.cc/en/research/achieves/papers.html)]
+## **Papers and Presentations**  [[See more](https://ieda.oscc.cc/en/research/papers/)]
 - iRT: Net Resource Allocation: A Desirable Initial Routing Step, DAC, 2024
 - iCTS: Toward Controllable Hierarchical Clock Tree Synthesis with Skew-Latency-Load Tree, DAC, 2024
 - AiEDA: An Open-source AI-native EDA Library, ISEDA, 2024
