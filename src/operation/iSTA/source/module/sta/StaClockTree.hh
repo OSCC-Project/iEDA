@@ -208,7 +208,8 @@ class StaClockTree {
   std::vector<int> getLevelNodeCnt();
   void getChildNodeCnt(std::vector<StaClockTreeNode*> child_nodes,
                        std::vector<int>& child_node_size);
-  void printInstGraphViz(const char* file_path);
+  void printInstGraphViz(const char* file_path, bool show_port_suffix = true);
+  void printInstJson(const char* file_path, bool show_port_suffix = true);
 
  private:
   StaClock* _clock;  //!< The tree own clock.
