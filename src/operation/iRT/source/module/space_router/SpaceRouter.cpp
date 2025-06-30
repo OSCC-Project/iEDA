@@ -207,6 +207,8 @@ void SpaceRouter::routeSRModel(SRModel& sr_model)
     outputGuide(sr_model);
     outputNetCSV(sr_model);
     outputOverflowCSV(sr_model);
+    outputNetJson(sr_model);
+    outputOverflowJson(sr_model);
     RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", sr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, sr_iter_param_list.size()), ")",
                iter_monitor.getStatsInfo(), "*****");
     if (stopIteration(sr_model)) {
@@ -1367,6 +1369,8 @@ void SpaceRouter::selectBestResult(SRModel& sr_model)
   outputGuide(sr_model);
   outputNetCSV(sr_model);
   outputOverflowCSV(sr_model);
+  outputNetJson(sr_model);
+  outputOverflowJson(sr_model);
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -1793,6 +1797,69 @@ void SpaceRouter::outputOverflowCSV(SRModel& sr_model)
     }
     RTUTIL.closeFileStream(overflow_csv_file);
   }
+}
+
+void SpaceRouter::outputNetJson(SRModel& sr_model)
+{
+  Die& die = RTDM.getDatabase().get_die();
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
+  std::string& sr_temp_directory_path = RTDM.getConfig().sr_temp_directory_path;
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
+    return;
+  }
+  std::vector<nlohmann::json> net_json_list;
+  net_json_list.resize(net_list.size());
+  for (Net& net : net_list) {
+    net_json_list[net.get_net_idx()]["net_name"] = net.get_net_name();
+  }
+  for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      PlanarRect first_gcell = RTUTIL.getRealRectByGCell(segment->get_first(), gcell_axis);
+      PlanarRect second_gcell = RTUTIL.getRealRectByGCell(segment->get_second(), gcell_axis);
+      if (segment->get_first().get_layer_idx() != segment->get_second().get_layer_idx()) {
+        net_json_list[net_idx]["result"].push_back({first_gcell.get_ll_x(), first_gcell.get_ll_y(), first_gcell.get_ur_x(), first_gcell.get_ur_y(),
+                                                    routing_layer_list[segment->get_first().get_layer_idx()].get_layer_name()});
+        net_json_list[net_idx]["result"].push_back({second_gcell.get_ll_x(), second_gcell.get_ll_y(), second_gcell.get_ur_x(), second_gcell.get_ur_y(),
+                                                    routing_layer_list[segment->get_second().get_layer_idx()].get_layer_name()});
+      } else {
+        PlanarRect gcell = RTUTIL.getBoundingBox({first_gcell, second_gcell});
+        net_json_list[net_idx]["result"].push_back({gcell.get_ll_x(), gcell.get_ll_y(), gcell.get_ur_x(), gcell.get_ur_y(),
+                                                    routing_layer_list[segment->get_first().get_layer_idx()].get_layer_name()});
+      }
+    }
+  }
+  std::ofstream* net_json_file = RTUTIL.getOutputFileStream(RTUTIL.getString(sr_temp_directory_path, "net_map_", sr_model.get_iter(), ".json"));
+  (*net_json_file) << net_json_list;
+  RTUTIL.closeFileStream(net_json_file);
+}
+
+void SpaceRouter::outputOverflowJson(SRModel& sr_model)
+{
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::string& sr_temp_directory_path = RTDM.getConfig().sr_temp_directory_path;
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
+    return;
+  }
+  std::vector<GridMap<SRNode>>& layer_node_map = sr_model.get_layer_node_map();
+  std::vector<nlohmann::json> overflow_json_list;
+  for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
+    GridMap<SRNode>& sr_node_map = layer_node_map[layer_idx];
+    for (int32_t x = 0; x < sr_node_map.get_x_size(); x++) {
+      for (int32_t y = 0; y < sr_node_map.get_y_size(); y++) {
+        PlanarRect gcell = RTUTIL.getRealRectByGCell(PlanarCoord(x, y), gcell_axis);
+        overflow_json_list.push_back({gcell.get_ll_x(), gcell.get_ll_y(), gcell.get_ur_x(), gcell.get_ur_y(), routing_layer_list[layer_idx].get_layer_name(),
+                                      sr_node_map[x][y].getOverflow()});
+      }
+    }
+  }
+  std::ofstream* overflow_json_file = RTUTIL.getOutputFileStream(RTUTIL.getString(sr_temp_directory_path, "overflow_map_", sr_model.get_iter(), ".json"));
+  (*overflow_json_file) << overflow_json_list;
+  RTUTIL.closeFileStream(overflow_json_file);
 }
 
 #endif

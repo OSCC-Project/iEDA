@@ -86,6 +86,7 @@ void DRCInterface::checkDef()
     type_violation_map[ids_violation.violation_type].push_back(ids_violation);
   }
   printSummary(type_violation_map);
+  outputViolationJson(type_violation_map);
   outputSummary(type_violation_map);
 }
 
@@ -950,6 +951,38 @@ void DRCInterface::printSummary(std::map<std::string, std::vector<ids::Violation
     type_violation_map_table << fort::header << "Total" << total_violation_num << DRCUTIL.getPercentage(total_violation_num, total_violation_num) << fort::endr;
   }
   DRCUTIL.printTableList({type_violation_map_table});
+}
+
+void DRCInterface::outputViolationJson(std::map<std::string, std::vector<ids::Violation>>& type_violation_map)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = DRCDM.getDatabase().get_cut_layer_list();
+  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = DRCDM.getDatabase().get_cut_to_adjacent_routing_map();
+  std::string& temp_directory_path = DRCDM.getConfig().temp_directory_path;
+
+  std::vector<idb::IdbNet*>& idb_net_list = dmInst->get_idb_def_service()->get_design()->get_net_list()->get_net_list();
+
+  std::vector<nlohmann::json> violation_json_list;
+  for (auto& [type, violation_list] : type_violation_map) {
+    for (ids::Violation& violation : violation_list) {
+      nlohmann::json violation_json;
+      violation_json["type"] = violation.violation_type;
+
+      int32_t layer_idx = violation.layer_idx;
+      if (!violation.is_routing) {
+        std::vector<int32_t>& routing_layer_idx_list = cut_to_adjacent_routing_map[layer_idx];
+        layer_idx = *std::min_element(routing_layer_idx_list.begin(), routing_layer_idx_list.end());
+      }
+      violation_json["shape"] = {violation.ll_x, violation.ll_y, violation.ur_x, violation.ur_y, routing_layer_list[layer_idx].get_layer_name()};
+      for (int32_t net_idx : violation.violation_net_set) {
+        violation_json["net"].push_back(idb_net_list[net_idx]->get_net_name());
+      }
+      violation_json_list.push_back(violation_json);
+    }
+  }
+  std::ofstream* violation_json_file = DRCUTIL.getOutputFileStream(DRCUTIL.getString(temp_directory_path, "violation_map.json"));
+  (*violation_json_file) << violation_json_list;
+  DRCUTIL.closeFileStream(violation_json_file);
 }
 
 void DRCInterface::outputSummary(std::map<std::string, std::vector<ids::Violation>>& type_violation_map)
