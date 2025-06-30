@@ -32,6 +32,7 @@
 #include "ops/read_vcd/RustVCDParserWrapper.hh"
 #include "iIR/api/iIR.hh"
 #include "iIR/source/module/power-netlist/PGNetlist.hh"
+#include "json/json.hpp"
 
 using namespace iir;
 
@@ -55,6 +56,9 @@ class Power {
 
   void set_default_toggle(double default_toggle) { _default_toggle = default_toggle; }
   double get_default_toggle() { return _default_toggle; }
+
+  void enableJsonReport() { _is_json_report_enabled = true; }
+  bool isJsonReportEnabled() const { return _is_json_report_enabled; }
 
   auto& get_fastest_clock() { return _power_graph.get_fastest_clock(); }
   void setFastestClock(const char* clock_name, double clock_period_ns) {
@@ -124,9 +128,12 @@ class Power {
 
   unsigned reportSummaryPower(const char* rpt_file_name,
                               PwrAnalysisMode pwr_analysis_mode);
+  unsigned reportSummaryPowerJSON(const char* rpt_file_name,
+                                  PwrAnalysisMode pwr_analysis_mode);
   unsigned reportInstancePower(const char* rpt_file_name,
                                PwrAnalysisMode pwr_analysis_mode);
   unsigned reportInstancePowerCSV(const char* rpt_file_name);
+  unsigned reportInstancePowerJSON(const char* rpt_file_name);
 
   unsigned reportPower(bool is_copy = true);
 
@@ -190,6 +197,8 @@ class Power {
 
   iIR _ir_analysis; //!< The IR Drop analysis top.
   const void* _rust_pg_rc_data = nullptr; //!< The rust power/ground rc data.
+
+  bool _is_json_report_enabled = false;  //!< Whether to enable json report.
 
   static Power* _power;
   FORBIDDEN_COPY(Power);
