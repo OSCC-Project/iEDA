@@ -85,10 +85,13 @@ unsigned report_power() {
  * @param power_net_name 
  * @return unsigned 
  */
-unsigned report_ir_drop(std::string power_net_name) {
+unsigned report_ir_drop(std::vector<std::string> power_nets) {
   PowerEngine* power_engine = PowerEngine::getOrCreatePowerEngine();
 
-  power_engine->runIRAnalysis(power_net_name);
+  for (auto& power_net_name : power_nets) {
+    power_engine->runIRAnalysis(power_net_name);
+  }
+
   power_engine->reportIRAnalysis();
 
   return 1;

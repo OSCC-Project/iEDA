@@ -24,7 +24,7 @@ class IRMatrix {
  public:
   Eigen::Map<Eigen::SparseMatrix<double>> buildConductanceMatrix(
       RustNetConductanceData& one_net_matrix_data);
-  Eigen::VectorXd buildCurrentVector(void* instance_current_map, std::size_t node_num);
+  Eigen::VectorXd buildCurrentVector(void* instance_current_map, std::size_t node_num, std::string net_name);
 
 private:
   std::unique_ptr<Eigen::SparseMatrix<double>> _mat;

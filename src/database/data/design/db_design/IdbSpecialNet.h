@@ -127,6 +127,10 @@ class IdbSpecialNet
 
   void set_source_type(string type);
   void set_weight(int32_t weight) { _weight = weight; }
+  /**
+   * @brief Add function set_wire_list()
+   */
+  void set_wire_list(IdbSpecialWireList* wire_list) { _wire_list = wire_list; }
 
   void add_io_pin(IdbPin* io_pin);
   auto* get_io_pins() { return _io_pin_list; }
@@ -155,8 +159,8 @@ class IdbSpecialNet
   IdbInstanceType _source_type;
   int32_t _weight;
 
-  IdbPins* _io_pin_list;
-  IdbPins* _instance_pin_list;
+  IdbPins* _io_pin_list;        // Pins around the chip
+  IdbPins* _instance_pin_list;  // Pins around the Macro
   IdbInstanceList* _instance_list;
   IdbSpecialWireList* _wire_list;
 

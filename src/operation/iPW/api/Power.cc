@@ -22,10 +22,13 @@
  * @date 2023-01-02
  */
 
+#include "Power.hh"
+
 #include <array>
 #include <filesystem>
 
 #include "Power.hh"
+#include "json/json.hpp"
 #include "ops/annotate_toggle_sp/AnnotateToggleSP.hh"
 #include "ops/build_graph/PwrBuildGraph.hh"
 #include "ops/calc_power/PwrCalcInternalPower.hh"
@@ -542,6 +545,95 @@ unsigned Power::reportSummaryPower(const char* rpt_file_name,
 };
 
 /**
+ * @brief report json file
+ *
+ * @param rpt_file_name
+ * @return unsigned
+ */
+unsigned Power::reportSummaryPowerJSON(const char* rpt_file_name,
+                                       PwrAnalysisMode pwr_analysis_mode) {
+  PwrReportPowerSummary report_power("", pwr_analysis_mode);
+  report_power(this);
+  auto& report_summary_data = report_power.get_report_summary_data();
+  nlohmann::json json_report = nlohmann::json::object();
+
+  // lambda for print power data float to string.
+  auto data_str = [](double data) { return Str::printf("%.3e", data); };
+  auto data_str_f = [](double data) { return Str::printf("%.3f", data); };
+
+  std::map<PwrGroupData::PwrGroupType, std::string> group_type_to_string = {
+      {PwrGroupData::PwrGroupType::kIOPad, "io_pad"},
+      {PwrGroupData::PwrGroupType::kMemory, "memory"},
+      {PwrGroupData::PwrGroupType::kBlackBox, "black_box"},
+      {PwrGroupData::PwrGroupType::kClockNetwork, "clock_network"},
+      {PwrGroupData::PwrGroupType::kRegister, "register"},
+      {PwrGroupData::PwrGroupType::kComb, "combinational"},
+      {PwrGroupData::PwrGroupType::kSeq, "sequential"}};
+
+  double total_power = report_summary_data.get_total_power();
+
+  PwrReportGroupSummaryData* report_group_data;
+  FOREACH_REPORT_GROUP_DATA(&report_summary_data, report_group_data) {
+    double group_total_power = report_group_data->get_total_power();
+    // calc percentage
+    double percentage = CalcPercentage(group_total_power / total_power);
+
+    std::string str_percentage =
+        std::string("(") + data_str_f(percentage) + std::string("%)");
+
+    json_report["groups"].push_back({
+        {"group_type",
+         group_type_to_string[report_group_data->get_group_type()]},
+        {"internal_power", data_str(report_group_data->get_internal_power())},
+        {"switch_power", data_str(report_group_data->get_switch_power())},
+        {"leakage_power", data_str(report_group_data->get_leakage_power())},
+        {"total_power", data_str(report_group_data->get_total_power())},
+        {"percentage", data_str_f(percentage)},
+    });
+  }
+
+  // Get switch power
+  double summary_switch_power = report_summary_data.get_net_switching_power();
+  std::string summary_switch_power_percentage = data_str_f(CalcPercentage(
+      report_summary_data.get_net_switching_power() / total_power));
+
+  json_report["net_switch_power"] = data_str(summary_switch_power);
+  json_report["net_switch_power_percentage"] = summary_switch_power_percentage;
+
+  // Get internal power
+  double summary_internal_power = report_summary_data.get_cell_internal_power();
+  std::string summary_internal_power_percentage = data_str_f(CalcPercentage(
+      report_summary_data.get_cell_internal_power() / total_power));
+
+  json_report["cell_internal_power"] = data_str(summary_internal_power);
+  json_report["cell_internal_power_percentage"] =
+      summary_internal_power_percentage;
+
+  // Get leakage power
+  double summary_leakage_power = report_summary_data.get_cell_leakage_power();
+  std::string summary_leakage_power_percentage = data_str_f(CalcPercentage(
+      report_summary_data.get_cell_leakage_power() / total_power));
+
+  json_report["cell_leakage_power"] = data_str(summary_leakage_power);
+  json_report["cell_leakage_power_percentage"] =
+      summary_leakage_power_percentage;
+
+  // Get total power
+  json_report["total_power"] = data_str(total_power);
+
+  std::ofstream out_file(rpt_file_name);
+  if (out_file.is_open()) {
+    out_file << json_report.dump(4);  // 4 spaces indent
+    LOG_INFO << "JSON report written to: " << rpt_file_name;
+    out_file.close();
+  } else {
+    LOG_ERROR << "Failed to open JSON report file: " << rpt_file_name;
+  }
+
+  return 1;
+}
+
+/**
  * @brief report instance power
  *
  * @param rpt_file_name
@@ -635,6 +727,45 @@ unsigned Power::reportInstancePowerCSV(const char* rpt_file_name) {
   };
 
   csv_file.close();
+  return 1;
+}
+
+/**
+ * @brief report json file
+ *
+ * @param rpt_file_name
+ * @return unsigned
+ */
+unsigned Power::reportInstancePowerJSON(const char* rpt_file_name) {
+  nlohmann::json json_report = nlohmann::json::array();
+  auto data_str = [](double data) { return Str::printf("%.3e", data); };
+
+  auto instance_power_data_vec = getInstancePowerData();
+  std::sort(instance_power_data_vec.begin(), instance_power_data_vec.end(),
+            [](const IRInstancePower& a, const IRInstancePower& b) {
+              return a._total_power > b._total_power;
+            });
+
+  for (auto instance_power_data : instance_power_data_vec) {
+    json_report.push_back({
+        {"instance_name", instance_power_data._instance_name},
+        {"nominal_voltage", instance_power_data._nominal_voltage},
+        {"internal_power", data_str(instance_power_data._internal_power)},
+        {"switch_power", data_str(instance_power_data._switch_power)},
+        {"leakage_power", data_str(instance_power_data._leakage_power)},
+        {"total_power", data_str(instance_power_data._total_power)},
+    });
+  };
+
+  std::ofstream out_file(rpt_file_name);
+  if (out_file.is_open()) {
+    out_file << json_report.dump(4);  // 4 spaces indent
+    LOG_INFO << "JSON report written to: " << rpt_file_name;
+    out_file.close();
+  } else {
+    LOG_ERROR << "Failed to open JSON report file: " << rpt_file_name;
+  }
+
   return 1;
 }
 
@@ -891,6 +1022,28 @@ unsigned Power::reportPower(bool is_copy) {
     reportInstancePowerCSV(output_path.c_str());
   }
 
+  if (isJsonReportEnabled()) {
+    std::string file_name =
+        Str::printf("%s.pwr.json", ista->get_design_name().c_str());
+    if (is_copy) {
+      CopyFile(backup_work_space, output_dir, file_name);
+    }
+
+    std::string output_path = output_dir + "/" + file_name;
+    reportSummaryPowerJSON(output_path.c_str(), PwrAnalysisMode::kAveraged);
+  }
+
+  if (isJsonReportEnabled()) {
+    std::string file_name =
+        Str::printf("%s_%s.pwr.json", ista->get_design_name().c_str(), "instance");
+    if (is_copy) {
+      CopyFile(backup_work_space, output_dir, file_name);
+    }
+
+    std::string output_path = output_dir + "/" + file_name;
+    reportInstancePowerJSON(output_path.c_str());
+  }
+
   LOG_INFO << "power report end, output dir: " << output_dir;
   double memory_delta = stats.memoryDelta();
   LOG_INFO << "power report memory usage " << memory_delta << "MB";
@@ -976,19 +1129,91 @@ unsigned Power::readPGSpef(const char* spef_file) {
 }
 
 /**
+ * @brief report IR drop in table.
+ *
+ * @param rpt_file_name
+ * @return unsigned
+ */
+unsigned Power::reportIRDropTable(const char* rpt_file_name) {
+  auto create_report_table = [](const char* title) {
+    auto report_tbl =
+        std::make_unique<PwrReportInstanceTable>(title);
+
+    (*report_tbl) << TABLE_HEAD;
+    /* Fill each cell with operator[] */
+    (*report_tbl)[0][0] = "Instance Name";
+    (*report_tbl)[0][1] = "IR Drop";
+    (*report_tbl) << TABLE_ENDLINE;
+
+    return report_tbl;
+  };
+
+  auto close_file = [](std::FILE* fp) { std::fclose(fp); };
+
+  std::unique_ptr<std::FILE, decltype(close_file)> f(
+      std::fopen(rpt_file_name, "w"), close_file);
+
+  std::fprintf(f.get(), "Generate the report at %s\n\n",
+               Time::getNowWallTime());
+
+  auto pg_net_bump_node_loc = _ir_analysis.get_net_bump_node_locs();
+  for (auto [pg_net_name, net_bump_node_loc] : pg_net_bump_node_loc) {
+    std::fprintf(f.get(), "PG Net %s bump node loc: (%.3f %.3f %s)\n",
+                 pg_net_name.c_str(), net_bump_node_loc.first.first,
+                 net_bump_node_loc.first.second,
+                 net_bump_node_loc.second.c_str());
+  }
+
+  double nominal_voltage = getNominalVoltage();
+  std::fprintf(f.get(), "Nominal Voltage: %.3f V\n", nominal_voltage);
+  
+  auto data_str = [](double data) { return Str::printf("%.3e", data); };
+  auto net_to_instance_ir_drop = getNetInstanceIRDrop();
+
+  for (auto [net_name, instance_to_ir_drop] : net_to_instance_ir_drop) {
+    auto report_tbl = create_report_table(
+        Str::printf("Net %s IR Drop Report", net_name.c_str()));
+    // sort
+    std::vector<std::pair<std::string, double>> ir_drop_vec(
+        instance_to_ir_drop.begin(), instance_to_ir_drop.end());
+    std::sort(ir_drop_vec.begin(), ir_drop_vec.end(),
+              [](const auto& a, const auto& b) {
+                return a.second > b.second;  // descending order
+              });
+
+    for (auto& [instance_name, ir_drop] : ir_drop_vec) {
+      (*report_tbl) << instance_name << data_str(ir_drop) << TABLE_ENDLINE;
+    }
+
+    std::fprintf(f.get(), "\nNet %s max IR Drop: %s %f V\n", net_name.c_str(),
+                 ir_drop_vec.front().first.c_str(), ir_drop_vec.front().second);
+    std::fprintf(f.get(), "Net %s min IR Drop: %s %f V\n", net_name.c_str(),
+                 ir_drop_vec.back().first.c_str(), ir_drop_vec.back().second);
+
+    std::fprintf(f.get(), "Report : Net %s IR Drop Report, Unit V\n",
+                 net_name.c_str());
+    std::fprintf(f.get(), "%s\n", report_tbl->c_str());
+  }
+
+  return 1;
+}
+
+/**
  * @brief report IR Drop in csv file.
  *
  * @param rpt_file_name
  * @return unsigned
  */
-unsigned Power::reportIRDropCSV(const char* rpt_file_name) {
+unsigned Power::reportIRDropCSV(const char* rpt_file_name,
+                                std::string net_name) {
   std::ofstream csv_file(rpt_file_name);
   csv_file << "Instance Name"
            << ","
            << "IR Drop"
            << "\n";
   auto data_str = [](double data) { return Str::printf("%.3e", data); };
-  auto instance_to_ir_drop = getInstanceIRDrop();
+  auto net_to_instance_ir_drop = getNetInstanceIRDrop();
+  auto instance_to_ir_drop = net_to_instance_ir_drop[net_name];
 
   for (auto& [instance_name, ir_drop] : instance_to_ir_drop) {
     csv_file << instance_name << "," << data_str(ir_drop) << "\n";
@@ -1039,23 +1264,50 @@ unsigned Power::reportIRAnalysis(bool is_copy) {
     return 0;
   }
 
-  std::string csv_file_name =
-      Str::printf("%s_%s.csv", ista->get_design_name().c_str(), "ir_drop");
+  // report table file.
+  {
+    std::string table_file_name =
+        Str::printf("%s.ir", ista->get_design_name().c_str());
 
-  if (is_copy) {
-    if (!_backup_work_dir) {
-      _backup_work_dir = BackupPwrFiles(output_dir, is_copy);
+    if (is_copy) {
+      if (!_backup_work_dir) {
+        _backup_work_dir = BackupPwrFiles(output_dir, is_copy);
+      }
+
+      CopyFile(_backup_work_dir, output_dir, table_file_name);
     }
 
-    CopyFile(_backup_work_dir, output_dir, csv_file_name);
+    std::string output_path = output_dir + "/" + table_file_name;
+
+    // report in IR drop csv.
+    reportIRDropTable(output_path.c_str());
+
+    LOG_INFO << "output ir drop report: " << output_path;
   }
 
-  std::string output_path = output_dir + "/" + csv_file_name;
+  auto net_to_instance_ir_drop = getNetInstanceIRDrop();
+  for (auto [net_name, instance_ir_drop] : net_to_instance_ir_drop) {
+    // report csv file.
 
-  // report in IR drop csv.
-  reportIRDropCSV(output_path.c_str());
+    std::string csv_file_name =
+        Str::printf("%s_%s_%s.csv", ista->get_design_name().c_str(),
+                    net_name.c_str(), "ir_drop");
 
-  LOG_INFO << "output ir drop report: " << output_path;
+    if (is_copy) {
+      if (!_backup_work_dir) {
+        _backup_work_dir = BackupPwrFiles(output_dir, is_copy);
+      }
+
+      CopyFile(_backup_work_dir, output_dir, csv_file_name);
+    }
+
+    std::string output_path = output_dir + "/" + csv_file_name;
+
+    // report in IR drop csv.
+    reportIRDropCSV(output_path.c_str(), net_name);
+
+    LOG_INFO << "output ir drop csv report: " << output_path;
+  }
 
   LOG_INFO << "report IR analysis end";
   return 1;

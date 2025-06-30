@@ -39,7 +39,7 @@ unsigned StaBuildGraph::buildPort(StaGraph* the_graph, Port* port) {
   the_vertex->set_is_port();
 
   if (port->isInout()) {
-    // for inout pin, we set input as main, output as assistant.
+    // for inout port, we set input as main, output as assistant.
     the_vertex->set_is_start();
     the_vertex->set_is_bidirection();
     the_graph->addStartVertex(the_vertex.get());
@@ -259,7 +259,7 @@ unsigned StaBuildGraph::buildNet(StaGraph* the_graph, Net* net) {
     // FIXME disable the power gate arc.
     if (auto* vertex_own_cell = (*driver_vertex)->getOwnCell();
         vertex_own_cell && vertex_own_cell->isSequentialCell() &&
-        !vertex_own_cell->isICG()) {
+        !vertex_own_cell->isICG() && !vertex_own_cell->isMacroCell()) {
       if ((*load_vertex)->is_clock()) {
         net_arc->set_is_disable_arc(true);
       }

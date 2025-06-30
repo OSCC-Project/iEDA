@@ -1071,7 +1071,18 @@ int32_t DefRead::parse_net(defiNet* def_net)
     net->set_original_net_name(def_net->original());
   }
 
-  for (int i = 0; i < def_net->numConnections(); i++) {
+  int num_connections = def_net->numConnections();
+  auto setPinNet = [net, num_connections](IdbPin* pin) {
+    if (num_connections < 2) {
+      if (pin->get_net() == nullptr) {
+        pin->set_net(net);
+      }
+    } else {
+      pin->set_net(net);
+    }
+  };
+
+  for (int i = 0; i < num_connections; i++) {
     std::string io_name = def_net->instance(i);
     io_name = ieda::Str::trimEscape(io_name);
 
@@ -1082,7 +1093,7 @@ int32_t DefRead::parse_net(defiNet* def_net)
         std::cout << "Can not find Pin in Pin list ... pin name = " << def_net->pin(i) << std::endl;
       } else {
         net->add_io_pin(pin);
-        pin->set_net(net);
+        setPinNet(pin);
       }
     } else {
       IdbInstance* instance = instance_list->find_instance(io_name);
@@ -1093,7 +1104,7 @@ int32_t DefRead::parse_net(defiNet* def_net)
           std::cout << "Can not find Pin in Pin list ... pin name = " << def_net->pin(i) << std::endl;
         } else {
           net->add_instance_pin(pin);
-          pin->set_net(net);
+          setPinNet(pin);
         }
       } else {
         std::cout << "Can not find instance in instance list ... instance name = " << io_name << std::endl;

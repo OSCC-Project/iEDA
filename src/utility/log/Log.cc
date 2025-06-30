@@ -25,6 +25,7 @@
 #include "Log.hh"
 
 #include <cstddef>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -33,6 +34,8 @@
 using std::string;
 
 namespace ieda {
+
+bool Log::_is_init = false;
 
 /**
  * @brief The SIGSEGV signal handle.
@@ -56,6 +59,13 @@ void SignalHandle(const char* data, int size)
  */
 void Log::init(char* argv[], std::string log_dir)
 {
+  // Check if glog is already initialized
+  if (isInit()) {
+    LOG_WARNING << "Google logging is already initialized, skipping re-initialization.";
+    return;
+  }
+
+
   /*init google logging.*/
   google::InitGoogleLogging(argv[0]);
 
@@ -72,12 +82,15 @@ void Log::init(char* argv[], std::string log_dir)
   google::SetLogDestination(google::FATAL, fatal_log.c_str());
 
   FLAGS_alsologtostderr = 1;
+  FLAGS_colorlogtostderr = true;
 
   /*print stack trace when received SIGSEGV signal. */
   google::InstallFailureSignalHandler();
 
   /*print core dump SIGSEGV signal*/
   google::InstallFailureWriter(&SignalHandle);
+
+  set_is_init();
 }
 
 /**
@@ -98,6 +111,11 @@ void Log::end()
 void Log::setVerboseLogLevel(const char* module_name, int level)
 {
   google::SetVLOGLevel(module_name, level);
+}
+
+void Log::makeSureDirectoryExist(std::string directory_path)
+{
+  std::filesystem::create_directories(directory_path.c_str());
 }
 
 }  // namespace ieda

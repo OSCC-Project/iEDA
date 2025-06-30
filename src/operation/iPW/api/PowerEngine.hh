@@ -89,10 +89,13 @@ class PowerEngine {
   unsigned runIRAnalysis(std::string power_net_name) {
     if (!getRustPGRCData()) {
       buildPGNetWireTopo();
+      // set IR bump node locs.
+      auto net_bump_node_locs = _pg_netlist_builder.get_net_bump_node_locs();
+      _ipower->setBumpNodeLocs(net_bump_node_locs);
     }
     return _ipower->runIRAnalysis(power_net_name);
   }
-  std::map<ista::Instance*, double> getInstanceIRDrop();
+  std::map<ista::Instance*, double> getInstanceIRDrop(std::string power_net_name = "VDD");
 
   std::map<ista::Instance::Coordinate, double> displayPowerMap() {
     return _ipower->displayInstancePowerMap();

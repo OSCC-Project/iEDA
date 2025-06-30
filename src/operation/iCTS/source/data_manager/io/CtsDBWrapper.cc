@@ -210,7 +210,9 @@ CtsPin* CtsDBWrapper::idbToCts(IdbPin* idb_pin)
   if (_idb2ctsPin.find(idb_pin) == _idb2ctsPin.end()) {
     CtsPin* pin = new CtsPin(idb_pin->get_pin_name());
     CtsPinType pin_type = idbToCts(idb_pin->get_term()->get_type(), idb_pin->get_term()->get_direction());
+    Point loc = idbToCts(*idb_pin->get_average_coordinate());
     pin->set_pin_type(pin_type);
+    pin->set_location(loc);
     pin->set_io(idb_pin->is_io_pin());
 
     crossRef(pin, idb_pin);

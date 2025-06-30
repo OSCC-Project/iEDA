@@ -32,6 +32,7 @@
 #include "ops/read_vcd/RustVCDParserWrapper.hh"
 #include "iIR/api/iIR.hh"
 #include "iIR/source/module/power-netlist/PGNetlist.hh"
+#include "json/json.hpp"
 
 using namespace iir;
 
@@ -55,6 +56,9 @@ class Power {
 
   void set_default_toggle(double default_toggle) { _default_toggle = default_toggle; }
   double get_default_toggle() { return _default_toggle; }
+
+  void enableJsonReport() { _is_json_report_enabled = true; }
+  bool isJsonReportEnabled() const { return _is_json_report_enabled; }
 
   auto& get_fastest_clock() { return _power_graph.get_fastest_clock(); }
   void setFastestClock(const char* clock_name, double clock_period_ns) {
@@ -124,9 +128,12 @@ class Power {
 
   unsigned reportSummaryPower(const char* rpt_file_name,
                               PwrAnalysisMode pwr_analysis_mode);
+  unsigned reportSummaryPowerJSON(const char* rpt_file_name,
+                                  PwrAnalysisMode pwr_analysis_mode);
   unsigned reportInstancePower(const char* rpt_file_name,
                                PwrAnalysisMode pwr_analysis_mode);
   unsigned reportInstancePowerCSV(const char* rpt_file_name);
+  unsigned reportInstancePowerJSON(const char* rpt_file_name);
 
   unsigned reportPower(bool is_copy = true);
 
@@ -134,7 +141,7 @@ class Power {
 
   unsigned runCompleteFlow();
 
-  // for IR analysis.
+  // Below for IR analysis API.
   unsigned readPGSpef(const char* spef_file);
   void resetIRAnalysisData() {
     iIR ir_analysis;
@@ -142,12 +149,25 @@ class Power {
     _rust_pg_rc_data = nullptr;
   }
 
-  auto& getInstanceIRDrop() {
-    return _ir_analysis.get_instance_to_ir_drop();
+  double getNominalVoltage() {
+    return _ir_analysis.get_nominal_voltage();
   }
-  
+
+  auto& getNetInstanceIRDrop() {
+    return _ir_analysis.get_net_to_instance_ir_drop();
+  }
+  auto getInstanceIRDrop(std::string power_net_name) {
+    auto& net_to_instance_ir_drop = _ir_analysis.get_net_to_instance_ir_drop();
+    return net_to_instance_ir_drop.at(power_net_name);
+  }
+
+  void setBumpNodeLocs(
+      const std::map<std::string, IRNodeLoc>& net_bump_node_locs) {
+    _ir_analysis.set_net_bump_node_locs(net_bump_node_locs);
+  }  
   unsigned runIRAnalysis(std::string power_net_name);
-  unsigned reportIRDropCSV(const char* rpt_file_name);
+  unsigned reportIRDropTable(const char* rpt_file_name);
+  unsigned reportIRDropCSV(const char* rpt_file_name, std::string net_name);
   unsigned reportIRAnalysis(bool is_copy = true);
 
   std::pair<double, double> getNetToggleAndVoltageData(const char* net_name);
@@ -177,6 +197,8 @@ class Power {
 
   iIR _ir_analysis; //!< The IR Drop analysis top.
   const void* _rust_pg_rc_data = nullptr; //!< The rust power/ground rc data.
+
+  bool _is_json_report_enabled = false;  //!< Whether to enable json report.
 
   static Power* _power;
   FORBIDDEN_COPY(Power);

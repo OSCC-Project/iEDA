@@ -92,7 +92,7 @@ class RTInterface
   void wrapDatabase();
   void wrapDBInfo();
   void wrapMicronDBU();
-  void wrapManufactureGrid();
+  void wrapManufactureGrid(); 
   void wrapDie();
   void wrapRow();
   void wrapLayerList();

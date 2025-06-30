@@ -17,6 +17,7 @@
 #include "tcl_ipdn.h"
 
 #include "Str.hh"
+// #include "iPNPApi.hh"
 #include "idm.h"
 #include "ipdn_api.h"
 #include "tool_manager.h"
@@ -712,6 +713,38 @@ unsigned TclPdnAddSegmentVia::exec()
     pdnApiInst->addSegmentVia(net_name, top_layer_name, bottom_layer_name, offset_x, offset_y, width, height);
     return 1;
   }
+  return 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+TclRunPNP::TclRunPNP(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* config_file_name = new TclStringOption("-config_file_name", 0);
+  addOption(config_file_name);
+}
+
+unsigned TclRunPNP::check()
+{
+  TclOption* config_file_name = getOptionOrArg("-config_file_name");
+
+  LOG_FATAL_IF(!config_file_name);
+
+  return 1;
+}
+
+unsigned TclRunPNP::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+  TclOption* tcl_config_file_name = getOptionOrArg("-config_file_name");
+
+  auto config_file_name = tcl_config_file_name->getStringVal();
+
+  // pnpApiInst->runiPNP(config_file_name);
+
   return 1;
 }
 
