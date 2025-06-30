@@ -403,6 +403,9 @@ class RcTree {
   RcTree() = default;
   ~RcTree() = default;
 
+  RcTree(RcTree&&) noexcept = default;
+  RcTree& operator=(RcTree&&) noexcept = default;
+
   void updateRcTiming();
   void insertSegment(const std::string&, const std::string&, double);
   RctNode* insertNode(const std::string&, double = 0.0);

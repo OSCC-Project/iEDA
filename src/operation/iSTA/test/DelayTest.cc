@@ -25,6 +25,7 @@
 #include "netlist/Net.hh"
 #include "netlist/Netlist.hh"
 #include "sta/Sta.hh"
+#include "api/TimingEngine.hh"
 
 using ieda::Log;
 using ista::DesignObject;
@@ -35,6 +36,10 @@ using ista::Netlist;
 using ista::NetPinIterator;
 using ista::RcNet;
 using ista::Sta;
+
+using namespace ista;
+using ieda::Log;
+using ieda::Stats;
 
 namespace {
 
