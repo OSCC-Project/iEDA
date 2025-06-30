@@ -122,7 +122,7 @@ double getSegmentCapacitance(int layer_id, double segment_length) {
   return capacitance;
 }
 
-bool makeRCTreeInnerNode(const std::string& net_name, int id, float cap)
+std::string makeRCTreeInnerNode(const std::string& net_name, int id, float cap)
 {
   auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
   auto* ista = ista::Sta::getOrCreateSta();
@@ -130,10 +130,10 @@ bool makeRCTreeInnerNode(const std::string& net_name, int id, float cap)
   auto* rc_node = timing_engine->makeOrFindRCTreeNode(the_net, id);
   rc_node->incrCap(cap);
 
-  return true;
+  return rc_node->get_name();
 }
 
-bool makeRCTreeObjNode(const std::string& pin_port_name, float cap) {
+std::string makeRCTreeObjNode(const std::string& pin_port_name, float cap) {
   auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
   auto* ista = ista::Sta::getOrCreateSta();
 
@@ -143,7 +143,7 @@ bool makeRCTreeObjNode(const std::string& pin_port_name, float cap) {
   auto* rc_node = timing_engine->makeOrFindRCTreeNode(the_pin_ports.front());
   rc_node->incrCap(cap);
 
-  return true;
+  return rc_node->get_name();
 }
 
 bool makeRCTreeEdge(const std::string& net_name, std::string& node1, std::string& node2, float res) {
