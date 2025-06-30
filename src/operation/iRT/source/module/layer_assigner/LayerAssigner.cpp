@@ -66,7 +66,7 @@ void LayerAssigner::assign()
   updateSummary(la_model);
   printSummary(la_model);
   outputGuide(la_model);
-  outputDemandCSV(la_model);
+  outputNetCSV(la_model);
   outputOverflowCSV(la_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -1171,7 +1171,7 @@ void LayerAssigner::outputGuide(LAModel& la_model)
   RTUTIL.closeFileStream(guide_file_stream);
 }
 
-void LayerAssigner::outputDemandCSV(LAModel& la_model)
+void LayerAssigner::outputNetCSV(LAModel& la_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& la_temp_directory_path = RTDM.getConfig().la_temp_directory_path;
@@ -1181,17 +1181,15 @@ void LayerAssigner::outputDemandCSV(LAModel& la_model)
   }
   std::vector<GridMap<LANode>>& layer_node_map = la_model.get_layer_node_map();
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    std::ofstream* demand_csv_file
-        = RTUTIL.getOutputFileStream(RTUTIL.getString(la_temp_directory_path, "demand_map_", routing_layer.get_layer_name(), ".csv"));
-
+    std::ofstream* net_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(la_temp_directory_path, "net_map_", routing_layer.get_layer_name(), ".csv"));
     GridMap<LANode>& la_node_map = layer_node_map[routing_layer.get_layer_idx()];
     for (int32_t y = la_node_map.get_y_size() - 1; y >= 0; y--) {
       for (int32_t x = 0; x < la_node_map.get_x_size(); x++) {
-        RTUTIL.pushStream(demand_csv_file, la_node_map[x][y].getDemand(), ",");
+        RTUTIL.pushStream(net_csv_file, la_node_map[x][y].getDemand(), ",");
       }
-      RTUTIL.pushStream(demand_csv_file, "\n");
+      RTUTIL.pushStream(net_csv_file, "\n");
     }
-    RTUTIL.closeFileStream(demand_csv_file);
+    RTUTIL.closeFileStream(net_csv_file);
   }
 }
 

@@ -205,7 +205,7 @@ void SpaceRouter::routeSRModel(SRModel& sr_model)
     updateSummary(sr_model);
     printSummary(sr_model);
     outputGuide(sr_model);
-    outputDemandCSV(sr_model);
+    outputNetCSV(sr_model);
     outputOverflowCSV(sr_model);
     RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", sr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, sr_iter_param_list.size()), ")",
                iter_monitor.getStatsInfo(), "*****");
@@ -1365,7 +1365,7 @@ void SpaceRouter::selectBestResult(SRModel& sr_model)
   updateSummary(sr_model);
   printSummary(sr_model);
   outputGuide(sr_model);
-  outputDemandCSV(sr_model);
+  outputNetCSV(sr_model);
   outputOverflowCSV(sr_model);
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -1748,7 +1748,7 @@ void SpaceRouter::outputGuide(SRModel& sr_model)
   RTUTIL.closeFileStream(guide_file_stream);
 }
 
-void SpaceRouter::outputDemandCSV(SRModel& sr_model)
+void SpaceRouter::outputNetCSV(SRModel& sr_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& sr_temp_directory_path = RTDM.getConfig().sr_temp_directory_path;
@@ -1758,17 +1758,16 @@ void SpaceRouter::outputDemandCSV(SRModel& sr_model)
   }
   std::vector<GridMap<SRNode>>& layer_node_map = sr_model.get_layer_node_map();
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    std::ofstream* demand_csv_file
-        = RTUTIL.getOutputFileStream(RTUTIL.getString(sr_temp_directory_path, "demand_map_", routing_layer.get_layer_name(), "_", sr_model.get_iter(), ".csv"));
-
+    std::ofstream* net_csv_file
+        = RTUTIL.getOutputFileStream(RTUTIL.getString(sr_temp_directory_path, "net_map_", routing_layer.get_layer_name(), "_", sr_model.get_iter(), ".csv"));
     GridMap<SRNode>& sr_node_map = layer_node_map[routing_layer.get_layer_idx()];
     for (int32_t y = sr_node_map.get_y_size() - 1; y >= 0; y--) {
       for (int32_t x = 0; x < sr_node_map.get_x_size(); x++) {
-        RTUTIL.pushStream(demand_csv_file, sr_node_map[x][y].getDemand(), ",");
+        RTUTIL.pushStream(net_csv_file, sr_node_map[x][y].getDemand(), ",");
       }
-      RTUTIL.pushStream(demand_csv_file, "\n");
+      RTUTIL.pushStream(net_csv_file, "\n");
     }
-    RTUTIL.closeFileStream(demand_csv_file);
+    RTUTIL.closeFileStream(net_csv_file);
   }
 }
 

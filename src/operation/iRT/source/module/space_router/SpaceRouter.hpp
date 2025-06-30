@@ -118,7 +118,7 @@ class SpaceRouter
   void updateSummary(SRModel& sr_model);
   void printSummary(SRModel& sr_model);
   void outputGuide(SRModel& sr_model);
-  void outputDemandCSV(SRModel& sr_model);
+  void outputNetCSV(SRModel& sr_model);
   void outputOverflowCSV(SRModel& sr_model);
 #endif
 
