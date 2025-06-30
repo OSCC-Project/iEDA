@@ -16,10 +16,10 @@
 // ***************************************************************************************
 /**
  * @file CmdRunPnp.cc
- * @author sujianrong
- * @brief Implementation of the PNP algorithm execution command
- * @version 0.1
- * @date 2024-07-20
+ * @author Jianrong Su
+ * @brief
+ * @version 1.0
+ * @date 2025-06-30
  */
 
 #include "ShellCmd.hh"
@@ -27,12 +27,13 @@
 #include "iPNP.hh"
 #include "iPNPApi.hh"
 #include <filesystem>
+#include <iostream>
 
 namespace ipnp {
 
 CmdRunPnp::CmdRunPnp(const char* cmd_name) : TclCmd(cmd_name) {
 
-  auto* config_option = new TclStringOption("-config", 0, "../src/operation/iPNP/example/pnp_config.json");
+  auto* config_option = new TclStringOption("-config", 0, "");
   addOption(config_option);
 
 }
@@ -73,9 +74,32 @@ unsigned CmdRunPnp::exec() {
   }
 
   auto* ipnp = iPNPApi::getInstance();
-  LOG_INFO << "Starting iPNP algorithm...";
+  
+  std::string start_info =
+      "\033[49;32m"
+      "    _ ____  _   ______     ______________    ____  ______\n"
+      "   (_) __ \\/ | / / __ \\   / ___/_  __/   |  / __ \\/_  __/\n"
+      "  / / /_/ /  |/ / /_/ /   \\__ \\ / / / /| | / /_/ / / /   \n"
+      " / / ____/ /|  / ____/   ___/ // / / ___ |/ _, _/ / /    \n"
+      "/_/_/   /_/ |_/_/       /____//_/ /_/  |_/_/ |_| /_/     \n"
+      "                                                         \n"
+      "\e[0m";
+
+  std::cout << start_info << std::endl;
+  
   ipnp->run();
-  LOG_INFO << "iPNP algorithm finished successfully.";
+  
+  std::string finish_info =
+      "\033[49;32m"
+      "    _ ____  _   ______     ___________   ___________ __  __\n"
+      "   (_) __ \\/ | / / __ \\   / ____/  _/ | / /  _/ ___// / / /\n"
+      "  / / /_/ /  |/ / /_/ /  / /_   / //  |/ // / \\__ \\/ /_/ / \n"
+      " / / ____/ /|  / ____/  / __/ _/ // /|  // / ___/ / __  /  \n"
+      "/_/_/   /_/ |_/_/      /_/   /___/_/ |_/___//____/_/ /_/   \n"
+      "                                                           \n"
+      "\e[0m";
+
+  std::cout << finish_info << std::endl;
   
   return 1;
 }
