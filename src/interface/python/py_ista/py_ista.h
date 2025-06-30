@@ -41,8 +41,13 @@ bool readSpef(const std::string& file_name);
 
 bool readSdc(const std::string& file_name);
 
-bool makeRCTreeInnerNode(const std::string& net_name, int id, float cap);
-bool makeRCTreeObjNode(const std::string& pin_port_name, float cap);
+std::string getNetName(const std::string& pin_port_name);
+
+double getSegmentResistance(int layer_id, double segment_length);
+double getSegmentCapacitance(int layer_id, double segment_length);
+
+std::string makeRCTreeInnerNode(const std::string& net_name, int id, float cap);
+std::string makeRCTreeObjNode(const std::string& pin_port_name, float cap);
 bool makeRCTreeEdge(const std::string& net_name, std::string& node1, std::string& node2, float res);
 bool updateRCTreeInfo(const std::string& net_name);
 bool updateTiming();

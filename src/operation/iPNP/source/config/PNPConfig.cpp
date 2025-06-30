@@ -25,7 +25,7 @@
 #include "PNPConfig.hh"
 #include "log/Log.hh"
 #include <fstream>
-#include <nlohmann/json.hpp>
+#include "json.hpp"
 
 namespace ipnp {
 
