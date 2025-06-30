@@ -11,11 +11,12 @@ add_library(irt_detailed_router
     ${IRT_MODULE}/detailed_router/DetailedRouter.cpp
 )
 
-target_link_libraries(irt_detailed_router 
+target_link_libraries(irt_detailed_router
     PUBLIC
         irt_data_manager
         irt_module
         irt_toolkit
+        notification
 )
 
 target_include_directories(irt_detailed_router 

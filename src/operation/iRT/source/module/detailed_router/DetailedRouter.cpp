@@ -26,6 +26,7 @@
 #include "GDSPlotter.hpp"
 #include "Monitor.hpp"
 #include "RTInterface.hpp"
+#include "NotificationUtility.h"
 
 namespace irt {
 
@@ -148,6 +149,50 @@ void DetailedRouter::routeDRModel(DRModel& dr_model)
     printSummary(dr_model);
     outputNetCSV(dr_model);
     outputViolationCSV(dr_model);
+
+    // Send notification about iteration completion
+    try {
+      auto& notification_util = ieda::NotificationUtility::getInstance();
+      if (!notification_util.isInitialized()) {
+        // Try to initialize with environment variables
+        notification_util.initialize();
+      }
+
+      if (notification_util.isEnabled()) {
+        // Collect metrics from the current iteration
+        std::map<std::string, std::string> metrics;
+
+        // Get summary data for current iteration
+        Summary& summary = RTDM.getDatabase().get_summary();
+        auto& iter_summary = summary.iter_dr_summary_map[dr_model.get_iter()];
+
+        metrics["route_violations"] = std::to_string(getRouteViolationNum(dr_model));
+        metrics["total_patch_num"] = std::to_string(iter_summary.total_patch_num);
+        metrics["total_wire_length"] = std::to_string(iter_summary.total_wire_length);
+        metrics["total_via_num"] = std::to_string(iter_summary.total_via_num);
+        metrics["total_violation_num"] = std::to_string(iter_summary.total_violation_num);
+        metrics["elapsed_time"] = iter_monitor.getStatsInfo();
+
+        // Determine status
+        std::string status = "running";
+        if (iter == static_cast<int32_t>(dr_iter_param_list.size())) {
+          status = "completed";
+        } else if (stopIteration(dr_model)) {
+          status = "early_completion";
+        }
+
+        notification_util.sendIterationNotification(
+          "DetailedRouter",
+          iter,
+          static_cast<int>(dr_iter_param_list.size()),
+          status,
+          metrics
+        );
+      }
+    } catch (const std::exception& e) {
+      RTLOG.warn(Loc::current(), "Failed to send notification: ", e.what());
+    }
+
     RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", dr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, dr_iter_param_list.size()), ")",
                iter_monitor.getStatsInfo(), "*****");
     if (stopIteration(dr_model)) {
