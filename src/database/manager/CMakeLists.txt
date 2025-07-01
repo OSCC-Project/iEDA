@@ -1,5 +1,5 @@
 include(${HOME_CMAKE}/operation/ista.cmake)
-include(${HOME_CMAKE}/operation/ipw.cmake)
+include(${HOME_CMAKE}/operation/ipa.cmake)
 
 add_subdirectory(builder)
 add_subdirectory(memory)
