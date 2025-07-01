@@ -16,7 +16,6 @@ target_link_libraries(irt_detailed_router
         irt_data_manager
         irt_module
         irt_toolkit
-        notification
 )
 
 target_include_directories(irt_detailed_router 
