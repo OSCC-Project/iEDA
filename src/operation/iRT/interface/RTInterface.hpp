@@ -92,7 +92,7 @@ class RTInterface
   void wrapDatabase();
   void wrapDBInfo();
   void wrapMicronDBU();
-  void wrapManufactureGrid(); 
+  void wrapManufactureGrid();
   void wrapDie();
   void wrapRow();
   void wrapLayerList();
@@ -153,6 +153,10 @@ class RTInterface
 
 #if 1  // lsa
   void routeTAPanel(TAPanel& ta_panel);
+#endif
+
+#if 1  // ecos
+  void sendNotification(std::string stage, std::string json_path);
 #endif
 
 #endif
