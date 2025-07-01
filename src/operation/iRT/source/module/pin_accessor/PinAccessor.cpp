@@ -3480,9 +3480,11 @@ void PinAccessor::outputNetJson(PAModel& pa_model)
       }
     }
   }
-  std::ofstream* net_json_file = RTUTIL.getOutputFileStream(RTUTIL.getString(pa_temp_directory_path, "net_map_", pa_model.get_iter(), ".json"));
+  std::string net_json_file_path = RTUTIL.getString(pa_temp_directory_path, "net_map_", pa_model.get_iter(), ".json");
+  std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
+  RTI.sendNotification(RTUTIL.getString("PA_", pa_model.get_iter(), "_net_map"), net_json_file_path);
 }
 
 void PinAccessor::outputViolationJson(PAModel& pa_model)
@@ -3509,9 +3511,11 @@ void PinAccessor::outputViolationJson(PAModel& pa_model)
     }
     violation_json_list.push_back(violation_json);
   }
-  std::ofstream* violation_json_file = RTUTIL.getOutputFileStream(RTUTIL.getString(pa_temp_directory_path, "violation_map_", pa_model.get_iter(), ".json"));
+  std::string violation_json_file_path = RTUTIL.getString(pa_temp_directory_path, "violation_map_", pa_model.get_iter(), ".json");
+  std::ofstream* violation_json_file = RTUTIL.getOutputFileStream(violation_json_file_path);
   (*violation_json_file) << violation_json_list;
   RTUTIL.closeFileStream(violation_json_file);
+  RTI.sendNotification(RTUTIL.getString("PA_", pa_model.get_iter(), "_violation_map"), violation_json_file_path);
 }
 
 #endif
