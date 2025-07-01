@@ -30,6 +30,9 @@ namespace ipower {
 CmdReportPower::CmdReportPower(const char* cmd_name) : TclCmd(cmd_name) {
   auto* default_toggle = new TclDoubleOption("-toggle", 0, 0.02);
   addOption(default_toggle);
+
+  auto* enable_json_output = new TclSwitchOption("-json");
+  addOption(enable_json_output);
 }
 
 unsigned CmdReportPower::check() { return 1; }
@@ -44,6 +47,11 @@ unsigned CmdReportPower::exec() {
 
   auto* default_toggle_option = getOptionOrArg("-toggle");
   double default_toggle = default_toggle_option->getDoubleVal();
+
+  auto* enable_json_output_option = getOptionOrArg("-json");
+  if (enable_json_output_option->is_set_val()) {
+    ipower->enableJsonReport();
+  }
 
   ipower->set_default_toggle(default_toggle);
 

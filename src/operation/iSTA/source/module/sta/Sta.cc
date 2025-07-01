@@ -1840,6 +1840,7 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
 
       StaReportPathSummary report_path_summary(rpt_file_name, mode, n_worst);
       report_path_summary.set_significant_digits(get_significant_digits());
+      report_path_summary.enableJsonReport(isJsonReportEnabled());
 
       StaReportPathDetail report_path_detail(rpt_file_name, mode, n_worst,
                                              is_derate);
@@ -1847,6 +1848,7 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
 
       StaReportClockTNS report_path_TNS(rpt_file_name, mode, 1);
       report_path_TNS.set_significant_digits(get_significant_digits());
+      report_path_TNS.enableJsonReport(isJsonReportEnabled());
 
       std::vector<StaReportPathSummary *> report_funcs{
           &report_path_summary, &report_path_detail, &report_path_TNS};
@@ -1858,11 +1860,18 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
         report_funcs.emplace_back(&report_path_dump);
       }
 
+      StaReportPathDetailJson report_path_detail_json(rpt_file_name, mode,
+                                                      n_worst, is_derate);
+
+      if (isJsonReportEnabled()) {
+        report_funcs.emplace_back(&report_path_detail_json);
+      }
+
       for (auto *report_fun : report_funcs) {
         is_ok = report_path(*report_fun);
       }
     }
-
+    
     return is_ok;
   };
 
@@ -1889,6 +1898,24 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
 
   for (auto &report_tbl_detail : _report_tbl_details) {
     std::fprintf(f.get(), "%s", report_tbl_detail->c_str());
+  }
+
+  if (isJsonReportEnabled()) {
+    nlohmann::json dump_json;
+    dump_json["summary"] = _summary_json_report;
+    dump_json["slack"] = _slack_json_report;
+    dump_json["detail"] = _detail_json_report;
+
+    auto *report_path = Str::printf("%s.json", rpt_file_name);
+
+    std::ofstream out_file(report_path);
+    if (out_file.is_open()) {
+      out_file << dump_json.dump(4);  // 4 spaces indent
+      LOG_INFO << "JSON report written to: " << report_path;
+      out_file.close();
+    } else {
+      LOG_ERROR << "Failed to open JSON report file: " << report_path;
+    }
   }
 
   return 1;

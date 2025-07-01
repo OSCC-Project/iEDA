@@ -27,6 +27,8 @@
 #include <array>
 #include <filesystem>
 
+#include "Power.hh"
+#include "json/json.hpp"
 #include "ops/annotate_toggle_sp/AnnotateToggleSP.hh"
 #include "ops/build_graph/PwrBuildGraph.hh"
 #include "ops/calc_power/PwrCalcInternalPower.hh"
@@ -543,6 +545,95 @@ unsigned Power::reportSummaryPower(const char* rpt_file_name,
 };
 
 /**
+ * @brief report json file
+ *
+ * @param rpt_file_name
+ * @return unsigned
+ */
+unsigned Power::reportSummaryPowerJSON(const char* rpt_file_name,
+                                       PwrAnalysisMode pwr_analysis_mode) {
+  PwrReportPowerSummary report_power("", pwr_analysis_mode);
+  report_power(this);
+  auto& report_summary_data = report_power.get_report_summary_data();
+  nlohmann::json json_report = nlohmann::json::object();
+
+  // lambda for print power data float to string.
+  auto data_str = [](double data) { return Str::printf("%.3e", data); };
+  auto data_str_f = [](double data) { return Str::printf("%.3f", data); };
+
+  std::map<PwrGroupData::PwrGroupType, std::string> group_type_to_string = {
+      {PwrGroupData::PwrGroupType::kIOPad, "io_pad"},
+      {PwrGroupData::PwrGroupType::kMemory, "memory"},
+      {PwrGroupData::PwrGroupType::kBlackBox, "black_box"},
+      {PwrGroupData::PwrGroupType::kClockNetwork, "clock_network"},
+      {PwrGroupData::PwrGroupType::kRegister, "register"},
+      {PwrGroupData::PwrGroupType::kComb, "combinational"},
+      {PwrGroupData::PwrGroupType::kSeq, "sequential"}};
+
+  double total_power = report_summary_data.get_total_power();
+
+  PwrReportGroupSummaryData* report_group_data;
+  FOREACH_REPORT_GROUP_DATA(&report_summary_data, report_group_data) {
+    double group_total_power = report_group_data->get_total_power();
+    // calc percentage
+    double percentage = CalcPercentage(group_total_power / total_power);
+
+    std::string str_percentage =
+        std::string("(") + data_str_f(percentage) + std::string("%)");
+
+    json_report["groups"].push_back({
+        {"group_type",
+         group_type_to_string[report_group_data->get_group_type()]},
+        {"internal_power", data_str(report_group_data->get_internal_power())},
+        {"switch_power", data_str(report_group_data->get_switch_power())},
+        {"leakage_power", data_str(report_group_data->get_leakage_power())},
+        {"total_power", data_str(report_group_data->get_total_power())},
+        {"percentage", data_str_f(percentage)},
+    });
+  }
+
+  // Get switch power
+  double summary_switch_power = report_summary_data.get_net_switching_power();
+  std::string summary_switch_power_percentage = data_str_f(CalcPercentage(
+      report_summary_data.get_net_switching_power() / total_power));
+
+  json_report["net_switch_power"] = data_str(summary_switch_power);
+  json_report["net_switch_power_percentage"] = summary_switch_power_percentage;
+
+  // Get internal power
+  double summary_internal_power = report_summary_data.get_cell_internal_power();
+  std::string summary_internal_power_percentage = data_str_f(CalcPercentage(
+      report_summary_data.get_cell_internal_power() / total_power));
+
+  json_report["cell_internal_power"] = data_str(summary_internal_power);
+  json_report["cell_internal_power_percentage"] =
+      summary_internal_power_percentage;
+
+  // Get leakage power
+  double summary_leakage_power = report_summary_data.get_cell_leakage_power();
+  std::string summary_leakage_power_percentage = data_str_f(CalcPercentage(
+      report_summary_data.get_cell_leakage_power() / total_power));
+
+  json_report["cell_leakage_power"] = data_str(summary_leakage_power);
+  json_report["cell_leakage_power_percentage"] =
+      summary_leakage_power_percentage;
+
+  // Get total power
+  json_report["total_power"] = data_str(total_power);
+
+  std::ofstream out_file(rpt_file_name);
+  if (out_file.is_open()) {
+    out_file << json_report.dump(4);  // 4 spaces indent
+    LOG_INFO << "JSON report written to: " << rpt_file_name;
+    out_file.close();
+  } else {
+    LOG_ERROR << "Failed to open JSON report file: " << rpt_file_name;
+  }
+
+  return 1;
+}
+
+/**
  * @brief report instance power
  *
  * @param rpt_file_name
@@ -636,6 +727,45 @@ unsigned Power::reportInstancePowerCSV(const char* rpt_file_name) {
   };
 
   csv_file.close();
+  return 1;
+}
+
+/**
+ * @brief report json file
+ *
+ * @param rpt_file_name
+ * @return unsigned
+ */
+unsigned Power::reportInstancePowerJSON(const char* rpt_file_name) {
+  nlohmann::json json_report = nlohmann::json::array();
+  auto data_str = [](double data) { return Str::printf("%.3e", data); };
+
+  auto instance_power_data_vec = getInstancePowerData();
+  std::sort(instance_power_data_vec.begin(), instance_power_data_vec.end(),
+            [](const IRInstancePower& a, const IRInstancePower& b) {
+              return a._total_power > b._total_power;
+            });
+
+  for (auto instance_power_data : instance_power_data_vec) {
+    json_report.push_back({
+        {"instance_name", instance_power_data._instance_name},
+        {"nominal_voltage", instance_power_data._nominal_voltage},
+        {"internal_power", data_str(instance_power_data._internal_power)},
+        {"switch_power", data_str(instance_power_data._switch_power)},
+        {"leakage_power", data_str(instance_power_data._leakage_power)},
+        {"total_power", data_str(instance_power_data._total_power)},
+    });
+  };
+
+  std::ofstream out_file(rpt_file_name);
+  if (out_file.is_open()) {
+    out_file << json_report.dump(4);  // 4 spaces indent
+    LOG_INFO << "JSON report written to: " << rpt_file_name;
+    out_file.close();
+  } else {
+    LOG_ERROR << "Failed to open JSON report file: " << rpt_file_name;
+  }
+
   return 1;
 }
 
@@ -890,6 +1020,28 @@ unsigned Power::reportPower(bool is_copy) {
     }
     std::string output_path = output_dir + "/" + file_name;
     reportInstancePowerCSV(output_path.c_str());
+  }
+
+  if (isJsonReportEnabled()) {
+    std::string file_name =
+        Str::printf("%s.pwr.json", ista->get_design_name().c_str());
+    if (is_copy) {
+      CopyFile(backup_work_space, output_dir, file_name);
+    }
+
+    std::string output_path = output_dir + "/" + file_name;
+    reportSummaryPowerJSON(output_path.c_str(), PwrAnalysisMode::kAveraged);
+  }
+
+  if (isJsonReportEnabled()) {
+    std::string file_name =
+        Str::printf("%s_%s.pwr.json", ista->get_design_name().c_str(), "instance");
+    if (is_copy) {
+      CopyFile(backup_work_space, output_dir, file_name);
+    }
+
+    std::string output_path = output_dir + "/" + file_name;
+    reportInstancePowerJSON(output_path.c_str());
   }
 
   LOG_INFO << "power report end, output dir: " << output_dir;

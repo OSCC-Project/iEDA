@@ -27,7 +27,6 @@
 #include <filesystem>
 #include <fstream>
 #include <set>
-#include <nlohmann/json.hpp>
 
 #include "iPNP.hh"
 #include "iPNPApi.hh"

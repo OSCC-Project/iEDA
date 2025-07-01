@@ -94,18 +94,46 @@ bool readSdc(const std::string& file_name)
   return ista->readSdc(file_name.c_str());
 }
 
-bool makeRCTreeInnerNode(const std::string& net_name, int id, float cap)
+std::string getNetName(const std::string& pin_port_name)
+{
+  auto* ista = ista::Sta::getOrCreateSta();
+  auto objs = ista->get_netlist()->findObj(pin_port_name.c_str(), false, false);
+  LOG_FATAL_IF(objs.size() != 1);
+
+  auto* pin_or_port = objs[0];
+  std::string net_name = pin_or_port->get_net()->get_name();
+
+  return net_name;
+}
+
+double getSegmentResistance(int layer_id, double segment_length) {
+  auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+  auto* idb_adapter = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter());
+  double resistance = idb_adapter->getResistance(layer_id, segment_length, std::nullopt);
+
+  return resistance;
+}
+
+double getSegmentCapacitance(int layer_id, double segment_length) {
+  auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+  auto* idb_adapter = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter());
+  double capacitance = idb_adapter->getCapacitance(layer_id, segment_length, std::nullopt);
+
+  return capacitance;
+}
+
+std::string makeRCTreeInnerNode(const std::string& net_name, int id, float cap)
 {
   auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
   auto* ista = ista::Sta::getOrCreateSta();
   auto* the_net = ista->get_netlist()->findNet(net_name.c_str());
   auto* rc_node = timing_engine->makeOrFindRCTreeNode(the_net, id);
-  rc_node->setCap(cap);
+  rc_node->incrCap(cap);
 
-  return true;
+  return rc_node->get_name();
 }
 
-bool makeRCTreeObjNode(const std::string& pin_port_name, float cap) {
+std::string makeRCTreeObjNode(const std::string& pin_port_name, float cap) {
   auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
   auto* ista = ista::Sta::getOrCreateSta();
 
@@ -113,9 +141,9 @@ bool makeRCTreeObjNode(const std::string& pin_port_name, float cap) {
   assert(the_pin_ports.size() == 1);
 
   auto* rc_node = timing_engine->makeOrFindRCTreeNode(the_pin_ports.front());
-  rc_node->setCap(cap);
+  rc_node->incrCap(cap);
 
-  return true;
+  return rc_node->get_name();
 }
 
 bool makeRCTreeEdge(const std::string& net_name, std::string& node1, std::string& node2, float res) {
