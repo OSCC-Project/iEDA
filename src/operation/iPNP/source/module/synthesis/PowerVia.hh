@@ -64,7 +64,8 @@ namespace ipnp {
     ~PowerVia() = default;
 
     idb::IdbDesign* connectAllPowerLayers(GridManager& pnp_network, idb::IdbDesign* idb_design);
-
+    idb::IdbDesign* connectM2M1Layer(idb::IdbDesign* idb_design);
+    
   private:
     
     idb::IdbDesign* connectNetworkLayers(GridManager& pnp_network, PowerType net_type, idb::IdbDesign* idb_design);
