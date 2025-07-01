@@ -956,7 +956,6 @@ void DRCInterface::printSummary(std::map<std::string, std::vector<ids::Violation
 void DRCInterface::outputViolationJson(std::map<std::string, std::vector<ids::Violation>>& type_violation_map)
 {
   std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = DRCDM.getDatabase().get_cut_layer_list();
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = DRCDM.getDatabase().get_cut_to_adjacent_routing_map();
   std::string& temp_directory_path = DRCDM.getConfig().temp_directory_path;
 
@@ -975,14 +974,20 @@ void DRCInterface::outputViolationJson(std::map<std::string, std::vector<ids::Vi
       }
       violation_json["shape"] = {violation.ll_x, violation.ll_y, violation.ur_x, violation.ur_y, routing_layer_list[layer_idx].get_layer_name()};
       for (int32_t net_idx : violation.violation_net_set) {
-        violation_json["net"].push_back(idb_net_list[net_idx]->get_net_name());
+        if (net_idx != -1) {
+          violation_json["net"].push_back(idb_net_list[net_idx]->get_net_name());
+        } else {
+          violation_json["net"].push_back("obs");
+        }
       }
       violation_json_list.push_back(violation_json);
     }
   }
-  std::ofstream* violation_json_file = DRCUTIL.getOutputFileStream(DRCUTIL.getString(temp_directory_path, "violation_map.json"));
+  std::string violation_json_file_path = DRCUTIL.getString(temp_directory_path, "violation_map.json");
+  std::ofstream* violation_json_file = DRCUTIL.getOutputFileStream(violation_json_file_path);
   (*violation_json_file) << violation_json_list;
   DRCUTIL.closeFileStream(violation_json_file);
+  sendNotification(DRCUTIL.getString("DRC_violation_map"), violation_json_file_path);
 }
 
 void DRCInterface::outputSummary(std::map<std::string, std::vector<ids::Violation>>& type_violation_map)
@@ -1013,6 +1018,14 @@ DRCShape DRCInterface::convertToDRCShape(const ids::Shape& ids_shape)
   drc_shape.set_layer_idx(ids_shape.layer_idx);
   drc_shape.set_is_routing(ids_shape.is_routing);
   return drc_shape;
+}
+
+#endif
+
+#if 1  // ecos
+
+void DRCInterface::sendNotification(std::string stage, std::string json_path)
+{
 }
 
 #endif

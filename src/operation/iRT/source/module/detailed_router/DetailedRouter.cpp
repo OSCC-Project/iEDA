@@ -3021,7 +3021,7 @@ void DetailedRouter::outputNetJson(DRModel& dr_model)
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
-  RTI.sendNotification(RTUTIL.getString("DR_", dr_model.get_iter(), "_net_map"), net_json_file_path);
+  RTI.sendNotification(RTUTIL.getString("RT_DR_", dr_model.get_iter(), "_net_map"), net_json_file_path);
 }
 
 void DetailedRouter::outputViolationJson(DRModel& dr_model)
@@ -3044,7 +3044,11 @@ void DetailedRouter::outputViolationJson(DRModel& dr_model)
         = {violation_shape.get_real_rect().get_ll_x(), violation_shape.get_real_rect().get_ll_y(), violation_shape.get_real_rect().get_ur_x(),
            violation_shape.get_real_rect().get_ur_y(), routing_layer_list[violation_shape.get_layer_idx()].get_layer_name()};
     for (int32_t net_idx : violation->get_violation_net_set()) {
-      violation_json["net"].push_back(net_list[net_idx].get_net_name());
+      if (net_idx != -1) {
+        violation_json["net"].push_back(net_list[net_idx].get_net_name());
+      } else {
+        violation_json["net"].push_back("obs");
+      }
     }
     violation_json_list.push_back(violation_json);
   }
@@ -3052,7 +3056,7 @@ void DetailedRouter::outputViolationJson(DRModel& dr_model)
   std::ofstream* violation_json_file = RTUTIL.getOutputFileStream(violation_json_file_path);
   (*violation_json_file) << violation_json_list;
   RTUTIL.closeFileStream(violation_json_file);
-  RTI.sendNotification(RTUTIL.getString("DR_", dr_model.get_iter(), "_violation_map"), violation_json_file_path);
+  RTI.sendNotification(RTUTIL.getString("RT_DR_", dr_model.get_iter(), "_violation_map"), violation_json_file_path);
 }
 
 #endif

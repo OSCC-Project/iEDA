@@ -1887,8 +1887,6 @@ void RTInterface::routeTAPanel(TAPanel& ta_panel)
 
 void RTInterface::sendNotification(std::string stage, std::string json_path)
 {
-  std::cout << "stage: " << stage << std::endl;
-  std::cout << "json_path: " << json_path << std::endl;
 }
 
 #endif
