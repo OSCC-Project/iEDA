@@ -16,10 +16,10 @@
 // ***************************************************************************************
 /**
  * @file main.cpp
- * @author Xinhao li
+ * @author Jianrong Su
  * @brief The main function of iPNP. function: Launch the tcl console and interact with the user. Refer to iSTA/main.cc.
- * @version 0.1
- * @date 2024-07-15
+ * @version 1.0
+ * @date 2025-07-01
  */
 
 #include <iostream>

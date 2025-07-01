@@ -155,6 +155,10 @@ class RTInterface
   void routeTAPanel(TAPanel& ta_panel);
 #endif
 
+#if 1  // ecos
+  void sendNotification(std::string stage, std::string json_path);
+#endif
+
 #endif
 
  private:
