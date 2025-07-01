@@ -20,6 +20,7 @@ add_subdirectory(time)
 add_subdirectory(stdBase)
 add_subdirectory(usage)
 add_subdirectory(report)
+add_subdirectory(notification)
 
 option(BASE_RUN_TESTS "If ON, the tests will be run." OFF)
 
