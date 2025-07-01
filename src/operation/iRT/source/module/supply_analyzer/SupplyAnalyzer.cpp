@@ -208,25 +208,13 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
           second_orient_supply_map[second_orientation]++;
         }
       }
-
-      // decrease supply
-      // std::vector<LayerRect> wire_list = getCrossingWireList(search_rect);
-      // for (LayerRect& wire : wire_list) {
-      //   if (isAccess(wire, obs_rect_list)) {
-      //     first_orient_supply_map[first_orientation]++;
-      //     second_orient_supply_map[second_orientation]++;
-      //   }
-      // }
-      // for (auto& [orient, supply] : first_orient_supply_map) {
-      //   if (supply == static_cast<int32_t>(wire_list.size())) {
-      //     supply = std::max(0, supply - 7);
-      //   }
-      // }
-      // for (auto& [orient, supply] : second_orient_supply_map) {
-      //   if (supply == static_cast<int32_t>(wire_list.size())) {
-      //     supply = std::max(0, supply - 7);
-      //   }
-      // }
+      int32_t max_supply = std::max(0, static_cast<int32_t>(std::round(static_cast<double>(wire_list.size()) * (1 - supply_reduction))));
+      for (auto& [orient, supply] : first_orient_supply_map) {
+        supply = std::min(supply, max_supply);
+      }
+      for (auto& [orient, supply] : second_orient_supply_map) {
+        supply = std::min(supply, max_supply);
+      }
     }
     analyzed_pair_num += grid_pair_list.size();
     RTLOG.info(Loc::current(), "Analyzed ", analyzed_pair_num, "/", total_pair_num, "(", RTUTIL.getPercentage(analyzed_pair_num, total_pair_num),
