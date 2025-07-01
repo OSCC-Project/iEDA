@@ -120,6 +120,9 @@ class PLAPI
   bool insertSignalBuffer(std::pair<std::string, std::string> source_sink_net, std::vector<std::string> sink_pin_list,
                           std::pair<std::string, std::string> master_inst_buffer, std::pair<int, int> buffer_center_loc);
 
+  void enableJsonOutput() { _enable_json_output = true; }
+  bool isJsonOutputEnabled() { return _enable_json_output; }
+
   /*****************************Timing-driven Placement: START*****************************/
   double obtainPinEarlySlack(std::string pin_name);
   double obtainPinLateSlack(std::string pin_name);
@@ -155,6 +158,8 @@ class PLAPI
   static PLAPI* _s_ipl_api_instance;
   ExternalAPI* _external_api;
   PLReporter* _reporter;
+
+  bool _enable_json_output = false;
 
   PLAPI() = default;
   PLAPI(const PLAPI&) = delete;

@@ -43,7 +43,7 @@ class NesterovPlace
 {
  public:
   NesterovPlace() = delete;
-  NesterovPlace(Config* config, PlacerDB* placer_db);
+  NesterovPlace(Config* config, PlacerDB* placer_db, bool enableJsonOutput = false);
   NesterovPlace(const NesterovPlace&) = delete;
   NesterovPlace(NesterovPlace&&) = delete;
   ~NesterovPlace();
@@ -53,6 +53,8 @@ class NesterovPlace
 
   void runNesterovPlace();
   void printNesterovDatabase();
+
+  bool isJsonOutputEnabled() { return _enable_json_output; }
 
  private:
   NesterovPlaceConfig _nes_config;
@@ -65,6 +67,7 @@ class NesterovPlace
   std::vector<float> _hpwl_record_list;
   float _quad_penalty_coeff = 0.005;
   int64_t _total_inst_area = 0;
+  bool _enable_json_output = false;
 
   void resetOverflowRecordList();
   void resetHPWLRecordList();
@@ -137,6 +140,7 @@ class NesterovPlace
   void printIterationCoordi(std::ofstream& file_stream, int32_t cur_iter);
   void saveNesterovPlaceData(int32_t cur_iter);
   void plotInstImage(std::string file_name);
+  void plotInstJson(std::string file_name, int32_t cur_iter, float overflow);
   void plotBinForceLine(std::string file_name);
   void printIterInfoToCsv(std::ofstream& file_stream, int32_t iter_num);
   void printDensityMapToCsv(std::string file_name);
@@ -155,7 +159,8 @@ class NesterovPlace
   void notifyPLOverflowInfo(float final_overflow);
   void notifyPLPlaceDensity();
 };
-inline NesterovPlace::NesterovPlace(Config* config, PlacerDB* placer_db) : _nes_database(nullptr)
+inline NesterovPlace::NesterovPlace(Config* config, PlacerDB* placer_db, bool enableJsonOutput)
+    : _nes_database(nullptr), _enable_json_output(enableJsonOutput)
 {
   initNesConfig(config);
   initNesDatabase(placer_db);

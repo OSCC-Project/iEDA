@@ -164,6 +164,13 @@ void PLAPI::createPLDirectory()
       LOG_ERROR << "Cannot create " + pl_dir + "/pl/gui for iPL gui";
     }
   }
+  if (!std::filesystem::exists(pl_dir + "/pl/density")) {
+    if (std::filesystem::create_directories(pl_dir + "/pl/density")) {
+      LOG_INFO << "Create folder " + pl_dir + "/pl/density for iPL density map";
+    } else {
+      LOG_ERROR << "Cannot create " + pl_dir + "/pl/density for iPL density map";
+    }
+  }
 }
 
 void PLAPI::runIncrementalFlow()
@@ -471,7 +478,7 @@ void PLAPI::runGP()
 {
   // CenterPlace(&PlacerDBInst).runCenterPlace();
   RandomPlace(&PlacerDBInst).runRandomPlace();
-  NesterovPlace nesterov_place(PlacerDBInst.get_placer_config(), &PlacerDBInst);
+  NesterovPlace nesterov_place(PlacerDBInst.get_placer_config(), &PlacerDBInst, isJsonOutputEnabled());
   nesterov_place.printNesterovDatabase();
   nesterov_place.runNesterovPlace();
 }

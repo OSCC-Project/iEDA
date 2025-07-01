@@ -76,7 +76,7 @@ class ToolManager
   //   bool floorplanInit();
 
   /// iPL
-  bool autoRunPlacer(std::string config = "");
+  bool autoRunPlacer(std::string config = "", bool enableJsonOutput = false);
   bool runPlacerFiller(std::string config = "");
   bool runPlacerIncrementalFlow(std::string config);
   bool runPlacerIncrementalLegalization();

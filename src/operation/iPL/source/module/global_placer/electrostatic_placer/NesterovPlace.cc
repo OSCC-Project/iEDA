@@ -41,6 +41,7 @@
 #include "tool_manager.h"
 #include "usage/usage.hh"
 #include "PLAPI.hh"
+#include "json/json.hpp"
 
 
 #ifdef BUILD_QT
@@ -1479,7 +1480,7 @@ namespace ipl {
       _nes_database->_density_penalty *= phi_coef;
 
       // print info.
-      if (iter_num == 1 || iter_num % 10 == 0) {
+      if (iter_num == 1 || iter_num % _nes_config.get_info_iter_num() == 0) {
         LOG_INFO << "[NesterovSolve] Iter: " << iter_num << " overflow: " << sum_overflow << " HPWL: " << prev_hpwl;
 
         if (PRINT_LONG_NET) {
@@ -1491,6 +1492,12 @@ namespace ipl {
         if (PLOT_IMAGE) {
           plotInstImage("inst_" + std::to_string(iter_num));
           plotBinForceLine("bin_" + std::to_string(iter_num));
+        }
+
+        if (isJsonOutputEnabled()) {
+          plotInstJson("inst_" + std::to_string(iter_num), iter_num, sum_overflow);
+
+          printDensityMapToCsv("density/density_map_" + std::to_string(iter_num));
         }
       }
 
@@ -1652,6 +1659,46 @@ namespace ipl {
 
     image_ploter.save(iPLAPIInst.obtainTargetDir() + "/pl/plot/" + file_name + ".jpg");
 #endif
+  }
+
+  void NesterovPlace::plotInstJson(std::string file_name, int32_t cur_iter, float overflow)
+  {
+    auto core_shape = _nes_database->_placer_db->get_layout()->get_core_shape();
+    std::vector<NesInstance*>& inst_list = _nes_database->_nInstance_list;
+    nlohmann::json plot = nlohmann::json::object();
+
+    // Initialize the plot object
+    plot["instances"] = nlohmann::json::array();
+    plot["real_width"] = core_shape.get_width();
+    plot["real_height"] = core_shape.get_height();
+    plot["num_obj"] = _nes_database->_nInstance_list.size();
+    plot["ll_x"] = core_shape.get_ll_x();
+    plot["ll_y"] = core_shape.get_ll_y();
+    plot["iter"] = cur_iter;
+
+    int32_t core_shift_x = core_shape.get_ll_x();
+    int32_t core_shift_y = core_shape.get_ll_y();
+
+    for (auto* inst : inst_list) {
+      int32_t inst_real_width = inst->get_origin_shape().get_width();
+      int32_t inst_real_height = inst->get_origin_shape().get_height();
+      auto inst_center = inst->get_density_center_coordi();
+      inst_center.set_x(inst_center.get_x() - core_shift_x);
+      inst_center.set_y(inst_center.get_y() - core_shift_y);
+
+      plot["instances"].push_back({{"id", inst->get_inst_id()},
+                                   {"name", inst->get_name()},
+                                   {"x", inst_center.get_x()},
+                                   {"y", inst_center.get_y()},
+                                   {"width", inst_real_width},
+                                   {"height", inst_real_height},
+                                   {"is_macro", inst->isMacro()},
+                                   {"is_filler", inst->isFiller()}});
+    }
+
+    std::ofstream out_file(iPLAPIInst.obtainTargetDir() + "/pl/plot/" + file_name + ".json");
+    out_file << plot.dump(2);
+    out_file.close();
   }
 
   void NesterovPlace::plotBinForceLine(std::string file_name)

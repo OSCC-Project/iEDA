@@ -6,6 +6,7 @@
         "is_congestion_effort": 0,
         "ignore_net_degree": 100,
         "num_threads": 1,
+        "info_iter_num": 10,
         "GP": {
             "Wirelength": {
                 "init_wirelength_coef": 0.25,
