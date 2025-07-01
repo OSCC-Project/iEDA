@@ -35,6 +35,7 @@ using ieda::TclOption;
 using ieda::TclStringOption;
 using ieda::TclIntOption;
 using ieda::TclDoubleOption;
+using ieda::TclSwitchOption;
 
 /**
  * @brief set the design workspace.

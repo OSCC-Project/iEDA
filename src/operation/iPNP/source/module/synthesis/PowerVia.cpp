@@ -49,6 +49,15 @@ namespace ipnp {
     return idb_design;
   }
 
+  idb::IdbDesign* PowerVia::connectM2M1Layer(idb::IdbDesign* idb_design)
+  {
+    idb_design = connect_M2_M1("VDD", idb_design);
+    idb_design = connect_M2_M1("VSS", idb_design);
+
+    LOG_INFO << "Success : Connected M2 and M1 layers";
+    return idb_design;
+  }
+
   idb::IdbDesign* PowerVia::connectNetworkLayers(GridManager& pnp_network, PowerType net_type, idb::IdbDesign* idb_design)
   {
     std::string net_name = (net_type == PowerType::kVDD) ? "VDD" : "VSS";
@@ -520,12 +529,24 @@ namespace ipnp {
     auto idb_layout = idb_design->get_layout();
     auto idb_layer_list = idb_layout->get_layers();
     auto idb_pdn_list = idb_design->get_special_net_list();
+    auto idb_via_list = idb_design->get_via_list();
 
     // Get layer information
     idb::IdbLayerRouting* layer_M3 = dynamic_cast<idb::IdbLayerRouting*>(
       idb_layer_list->find_layer("M3"));
     idb::IdbLayerRouting* layer_M2 = dynamic_cast<idb::IdbLayerRouting*>(
       idb_layer_list->find_layer("M2"));
+    idb::IdbLayerRouting* layer_M1 = dynamic_cast<idb::IdbLayerRouting*>(
+      idb_layer_list->find_layer("M1"));
+    idb::IdbLayerCut* layer_via1 = dynamic_cast<idb::IdbLayerCut*>(
+      idb_layer_list->find_layer("VIA1"));
+    idb::IdbLayerCut* layer_via2 = dynamic_cast<idb::IdbLayerCut*>(
+      idb_layer_list->find_layer("VIA2"));
+
+    if (!layer_M3 || !layer_M2 || !layer_M1 || !layer_via1 || !layer_via2) {
+      LOG_INFO << "Error: Cannot find required layers";
+      return nullptr;
+    }
 
     // Get network
     idb::IdbSpecialNet* net = idb_pdn_list->find_net(net_name);
@@ -539,6 +560,91 @@ namespace ipnp {
     if (wire_list == nullptr) {
       LOG_INFO << "Error : not wire in Special net " << net_name;
       return nullptr;
+    }
+
+    // 首先检查是否已经存在VIAGEN12_RECT_1 via
+    idb::IdbVia* m2_m1_via = idb_via_list->find_via("VIAGEN12_RECT_1");
+    
+    // 如果不存在，则需要创建
+    if (m2_m1_via == nullptr) {
+      LOG_INFO << "VIAGEN12_RECT_1 not found, creating it...";
+      
+      // 查找M3-M2 via作为模板
+      idb::IdbVia* m3_m2_via = nullptr;
+      
+      for (auto via : idb_via_list->get_via_list()) {
+        auto cut_layer_shape = via->get_cut_layer_shape();
+        auto cut_layer = cut_layer_shape.get_layer();
+        if (cut_layer->compareLayer(layer_via2) && via->get_name().find("VIAGEN23") != std::string::npos) {
+          m3_m2_via = via;
+          LOG_INFO << "Found M3-M2 via : " << via->get_name();
+          break;
+        }
+      }
+      
+      if (m3_m2_via) {
+        // clone via
+        m2_m1_via = m3_m2_via->clone();
+
+        // set via master
+        idb::IdbViaMaster* m2_m1_via_master = m3_m2_via->get_instance()->clone();
+
+        // set via master generate
+        idb::IdbViaMasterGenerate* m2_m1_via_master_generate = m2_m1_via_master->get_master_generate()->clone();
+        m2_m1_via_master_generate->set_rule_name("VIAGEN12_RECT_1");
+        m2_m1_via_master_generate->set_layer_bottom(layer_M1);
+        m2_m1_via_master_generate->set_layer_top(layer_M2);
+        m2_m1_via_master_generate->set_layer_cut(layer_via1);
+
+        // set rule generate
+        idb::IdbViaRuleGenerate* m2_m1_via_rule_generate = m2_m1_via_master_generate->get_rule_generate();
+        m2_m1_via_rule_generate->set_name("VIAGEN12_RECT_1");
+        m2_m1_via_rule_generate->set_layer_bottom(layer_M1);
+        m2_m1_via_rule_generate->set_layer_top(layer_M2);
+        m2_m1_via_rule_generate->set_layer_cut(layer_via1);
+
+        m2_m1_via_master_generate->set_rule_generate(m2_m1_via_rule_generate);
+        m2_m1_via_master->set_master_generate(m2_m1_via_master_generate);
+        m2_m1_via->set_instance(m2_m1_via_master);
+
+        // set via name
+        m2_m1_via->set_name("VIAGEN12_RECT_1");
+
+        idb_via_list->add_via(m2_m1_via);
+
+        LOG_INFO << "Created new M2-M1 via: VIAGEN12_RECT_1 based on " << m3_m2_via->get_name();
+      } else {
+        LOG_INFO << "Error: Cannot find M3-M2 via template";
+        return idb_design;
+      }
+    } else {
+      LOG_INFO << "Using existing VIAGEN12_RECT_1 via for " << net_name;
+    }
+
+    // 无论是新创建还是已存在，都使用m2_m1_via添加到网络中
+    for (idb::IdbSpecialWire* wire : wire_list->get_wire_list()) {
+      auto segment_list = wire->get_segment_list();
+
+      for (idb::IdbSpecialWireSegment* segment : segment_list) {
+        if (segment->is_via() && segment->get_layer()->compareLayer(layer_M3)) {
+          // 在M2层添加通孔
+          idb::IdbSpecialWireSegment* new_segment = new idb::IdbSpecialWireSegment();
+          new_segment->set_layer(layer_M2);
+          new_segment->set_is_via(true);
+          new_segment->set_route_width(0);
+
+          // 使用M2-M1 via
+          new_segment->set_via(m2_m1_via);
+
+          // 复制坐标点
+          if (!segment->get_point_list().empty()) {
+            new_segment->add_point(segment->get_point_list()[0]->get_x(), segment->get_point_list()[0]->get_y());
+          }
+
+          // 添加到wire中
+          wire->add_segment(new_segment);
+        }
+      }
     }
 
     return idb_design;

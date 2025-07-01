@@ -1,5 +1,6 @@
 add_library(pnp-cmd
     CmdRunPnp.cc
+    CmdAddVIA1.cc
 )
 
 target_link_libraries(pnp-cmd

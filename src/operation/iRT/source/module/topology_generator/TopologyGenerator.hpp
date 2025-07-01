@@ -74,8 +74,10 @@ class TopologyGenerator
   void updateSummary(TGModel& tg_model);
   void printSummary(TGModel& tg_model);
   void outputGuide(TGModel& tg_model);
-  void outputDemandCSV(TGModel& tg_model);
+  void outputNetCSV(TGModel& tg_model);
   void outputOverflowCSV(TGModel& tg_model);
+  void outputNetJson(TGModel& tg_model);
+  void outputOverflowJson(TGModel& tg_model);
 #endif
 
 #if 1  // debug

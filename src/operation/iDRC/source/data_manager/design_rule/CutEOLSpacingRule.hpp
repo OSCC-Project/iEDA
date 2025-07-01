@@ -25,9 +25,15 @@ class CutEOLSpacingRule
  public:
   CutEOLSpacingRule() = default;
   ~CutEOLSpacingRule() = default;
-  int32_t curr_eol_spacing = -1;
-  int32_t curr_eol_prl = -1;
-  int32_t curr_eol_prl_spacing = -1;
+  int32_t eol_spacing = -1;
+  int32_t eol_prl = -1;
+  int32_t eol_prl_spacing = -1;
+  int32_t eol_width = -1;
+  int32_t smaller_overhang = -1;
+  int32_t equal_overhang = -1;
+  int32_t side_ext = -1;
+  int32_t backward_ext = -1;
+  int32_t span_length = -1;
 };
 
 }  // namespace idrc
