@@ -25,6 +25,13 @@ class EnclosureEdgeRule
  public:
   EnclosureEdgeRule() = default;
   ~EnclosureEdgeRule() = default;
+  bool has_above = false;
+  bool has_below = false;
+  int32_t overhang = -1;
+  int32_t min_width = -1;
+  int32_t par_length = -1;
+  int32_t par_within = -1;
+  bool has_except_two_edges = false;
 };
 
 }  // namespace idrc

@@ -251,8 +251,12 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
       case ViolationType::kEnclosure:
         break;
       case ViolationType::kEnclosureEdge:
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {-1, 0, +1});
         break;
       case ViolationType::kEnclosureParallel:
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {-1, 0, +1});
         break;
       case ViolationType::kEndOfLineSpacing:
         new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
@@ -341,6 +345,8 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
         layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kEnclosureParallel:
+        new_real_rect = enlargeRect(new_real_rect, 0);
+        layer_routing_list = expandLayer(violation, {0});
         break;
       case ViolationType::kEndOfLineSpacing:
         new_real_rect = enlargeRect(new_real_rect, 0);
