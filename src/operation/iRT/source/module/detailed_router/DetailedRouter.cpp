@@ -148,6 +148,8 @@ void DetailedRouter::routeDRModel(DRModel& dr_model)
     printSummary(dr_model);
     outputNetCSV(dr_model);
     outputViolationCSV(dr_model);
+    outputNetJson(dr_model);
+    outputViolationJson(dr_model);
     RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", dr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, dr_iter_param_list.size()), ")",
                iter_monitor.getStatsInfo(), "*****");
     if (stopIteration(dr_model)) {
@@ -2080,6 +2082,8 @@ void DetailedRouter::selectBestResult(DRModel& dr_model)
   printSummary(dr_model);
   outputNetCSV(dr_model);
   outputViolationCSV(dr_model);
+  outputNetJson(dr_model);
+  outputViolationJson(dr_model);
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -2976,6 +2980,79 @@ void DetailedRouter::outputViolationCSV(DRModel& dr_model)
     }
     RTUTIL.closeFileStream(violation_csv_file);
   }
+}
+
+void DetailedRouter::outputNetJson(DRModel& dr_model)
+{
+  Die& die = RTDM.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
+  std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
+  std::string& dr_temp_directory_path = RTDM.getConfig().dr_temp_directory_path;
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
+    return;
+  }
+  std::vector<nlohmann::json> net_json_list;
+  net_json_list.resize(net_list.size());
+  for (Net& net : net_list) {
+    net_json_list[net.get_net_idx()]["net_name"] = net.get_net_name();
+  }
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+        std::string layer_name;
+        if (net_shape.get_is_routing()) {
+          layer_name = routing_layer_list[net_shape.get_layer_idx()].get_layer_name();
+        } else {
+          layer_name = cut_layer_list[net_shape.get_layer_idx()].get_layer_name();
+        }
+        net_json_list[net_idx]["result"].push_back({net_shape.get_ll_x(), net_shape.get_ll_y(), net_shape.get_ur_x(), net_shape.get_ur_y(), layer_name});
+      }
+    }
+  }
+  for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      net_json_list[net_idx]["patch"].push_back({patch->get_real_ll_x(), patch->get_real_ll_y(), patch->get_real_ur_x(), patch->get_real_ur_y(),
+                                                 routing_layer_list[patch->get_layer_idx()].get_layer_name()});
+    }
+  }
+  std::string net_json_file_path = RTUTIL.getString(dr_temp_directory_path, "net_map_", dr_model.get_iter(), ".json");
+  std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
+  (*net_json_file) << net_json_list;
+  RTUTIL.closeFileStream(net_json_file);
+  RTI.sendNotification(RTUTIL.getString("DR_", dr_model.get_iter(), "_net_map"), net_json_file_path);
+}
+
+void DetailedRouter::outputViolationJson(DRModel& dr_model)
+{
+  Die& die = RTDM.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
+  std::string& dr_temp_directory_path = RTDM.getConfig().dr_temp_directory_path;
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
+    return;
+  }
+  std::vector<nlohmann::json> violation_json_list;
+  for (Violation* violation : RTDM.getViolationSet(die)) {
+    EXTLayerRect& violation_shape = violation->get_violation_shape();
+
+    nlohmann::json violation_json;
+    violation_json["type"] = GetViolationTypeName()(violation->get_violation_type());
+    violation_json["shape"]
+        = {violation_shape.get_real_rect().get_ll_x(), violation_shape.get_real_rect().get_ll_y(), violation_shape.get_real_rect().get_ur_x(),
+           violation_shape.get_real_rect().get_ur_y(), routing_layer_list[violation_shape.get_layer_idx()].get_layer_name()};
+    for (int32_t net_idx : violation->get_violation_net_set()) {
+      violation_json["net"].push_back(net_list[net_idx].get_net_name());
+    }
+    violation_json_list.push_back(violation_json);
+  }
+  std::string violation_json_file_path = RTUTIL.getString(dr_temp_directory_path, "violation_map_", dr_model.get_iter(), ".json");
+  std::ofstream* violation_json_file = RTUTIL.getOutputFileStream(violation_json_file_path);
+  (*violation_json_file) << violation_json_list;
+  RTUTIL.closeFileStream(violation_json_file);
+  RTI.sendNotification(RTUTIL.getString("DR_", dr_model.get_iter(), "_violation_map"), violation_json_file_path);
 }
 
 #endif

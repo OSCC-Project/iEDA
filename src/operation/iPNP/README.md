@@ -73,12 +73,19 @@ cd bin/
 
 ### TCL命令
 
-在交互模式下，可以使用以下TCL命令：
+运行完整的iPNP流程：
 
 ```tcl
 run_pnp -config /path/to/pnp_config.json
 ```
 
+在VIA1上添加通孔，即连接M2和M1层。根据VIA2的通孔位置，在相同坐标下添加VIA1的通孔，确保电源网络可以完全连通到M1层。
+
+（注意：这个tcl命令不会运行完整的iPNP流程，只用于通孔没达到M1上的数据集）
+
+```tcl
+add_via1 -config /path/to/pnp_config.json
+```
 
 
 ## 配置文件详解

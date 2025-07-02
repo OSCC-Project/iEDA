@@ -81,17 +81,19 @@ SAModel SupplyAnalyzer::initSAModel()
 void SupplyAnalyzer::setSAComParam(SAModel& sa_model)
 {
   double supply_reduction = 0.2;
-  double wire_unit = 1;
-  double via_unit = 0.5;
+  double boundary_wire_unit = 1;
+  double internal_wire_unit = 1;
+  double internal_via_unit = 0.5;
   /**
-   * supply_reduction, wire_unit, via_unit
+   * supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit
    */
   // clang-format off
-  SAComParam sa_com_param(supply_reduction, wire_unit, via_unit);
+  SAComParam sa_com_param(supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit);
   // clang-format on
   RTLOG.info(Loc::current(), "supply_reduction: ", sa_com_param.get_supply_reduction());
-  RTLOG.info(Loc::current(), "wire_unit: ", sa_com_param.get_wire_unit());
-  RTLOG.info(Loc::current(), "via_unit: ", sa_com_param.get_via_unit());
+  RTLOG.info(Loc::current(), "boundary_wire_unit: ", sa_com_param.get_boundary_wire_unit());
+  RTLOG.info(Loc::current(), "internal_wire_unit: ", sa_com_param.get_internal_wire_unit());
+  RTLOG.info(Loc::current(), "internal_via_unit: ", sa_com_param.get_internal_via_unit());
   sa_model.set_sa_com_param(sa_com_param);
 }
 
@@ -206,25 +208,13 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
           second_orient_supply_map[second_orientation]++;
         }
       }
-
-      // decrease supply
-      // std::vector<LayerRect> wire_list = getCrossingWireList(search_rect);
-      // for (LayerRect& wire : wire_list) {
-      //   if (isAccess(wire, obs_rect_list)) {
-      //     first_orient_supply_map[first_orientation]++;
-      //     second_orient_supply_map[second_orientation]++;
-      //   }
-      // }
-      // for (auto& [orient, supply] : first_orient_supply_map) {
-      //   if (supply == static_cast<int32_t>(wire_list.size())) {
-      //     supply = std::max(0, supply - 7);
-      //   }
-      // }
-      // for (auto& [orient, supply] : second_orient_supply_map) {
-      //   if (supply == static_cast<int32_t>(wire_list.size())) {
-      //     supply = std::max(0, supply - 7);
-      //   }
-      // }
+      int32_t max_supply = std::max(0, static_cast<int32_t>(std::round(static_cast<double>(wire_list.size()) * (1 - supply_reduction))));
+      for (auto& [orient, supply] : first_orient_supply_map) {
+        supply = std::min(supply, max_supply);
+      }
+      for (auto& [orient, supply] : second_orient_supply_map) {
+        supply = std::min(supply, max_supply);
+      }
     }
     analyzed_pair_num += grid_pair_list.size();
     RTLOG.info(Loc::current(), "Analyzed ", analyzed_pair_num, "/", total_pair_num, "(", RTUTIL.getPercentage(analyzed_pair_num, total_pair_num),
@@ -349,15 +339,16 @@ void SupplyAnalyzer::replenishPinSupply(SAModel& sa_model)
 void SupplyAnalyzer::analyzeDemandUnit(SAModel& sa_model)
 {
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
-  double wire_unit = sa_model.get_sa_com_param().get_wire_unit();
-  double via_unit = sa_model.get_sa_com_param().get_via_unit();
+  double boundary_wire_unit = sa_model.get_sa_com_param().get_boundary_wire_unit();
+  double internal_wire_unit = sa_model.get_sa_com_param().get_internal_wire_unit();
+  double internal_via_unit = sa_model.get_sa_com_param().get_internal_via_unit();
 
   for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
     for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
       GCell& gcell = gcell_map[x][y];
-      gcell.set_boundary_wire_unit(wire_unit);
-      gcell.set_internal_wire_unit(wire_unit);
-      gcell.set_internal_via_unit(via_unit);
+      gcell.set_boundary_wire_unit(boundary_wire_unit);
+      gcell.set_internal_wire_unit(internal_wire_unit);
+      gcell.set_internal_via_unit(internal_via_unit);
     }
   }
 }
