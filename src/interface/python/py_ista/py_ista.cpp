@@ -171,6 +171,7 @@ bool updateRCTreeInfo(const std::string& net_name) {
 bool updateTiming()
 {
   auto* ista = ista::Sta::getOrCreateSta();
+  ista->buildGraph();
   ista->updateTiming();
   return true;
 }
