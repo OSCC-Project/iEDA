@@ -49,6 +49,8 @@ class RuleValidator
   RVModel initRVModel(std::vector<DRCShape>& drc_env_shape_list, std::vector<DRCShape>& drc_result_shape_list);
   void setRVComParam(RVModel& rv_model);
   void buildRVModel(RVModel& rv_model);
+  void buildDRCShape(RVModel& rv_model);
+  void buildRVBoxList(RVModel& rv_model);
   void verifyRVModel(RVModel& rv_model);
   bool needVerifying(RVBox& rv_box);
   void buildViolationSet(RVBox& rv_box);
