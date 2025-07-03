@@ -86,6 +86,7 @@ void DRCInterface::checkDef()
     type_violation_map[ids_violation.violation_type].push_back(ids_violation);
   }
   printSummary(type_violation_map);
+  outputViolationJson(type_violation_map);
   outputSummary(type_violation_map);
 }
 
@@ -282,170 +283,42 @@ void DRCInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLa
   // EndOfLineSpacingRule
   {
     std::vector<EndOfLineSpacingRule>& end_of_line_spacing_rule_list = routing_layer.get_end_of_line_spacing_rule_list();
-    if (0) {
-      if (!idb_layer->get_lef58_spacing_eol_list().empty()) {
-        for (std::shared_ptr<idb::routinglayer::Lef58SpacingEol> idb_spacing_eol : idb_layer->get_lef58_spacing_eol_list()) {
-          EndOfLineSpacingRule end_of_line_spacing_rule;
+    if (!idb_layer->get_lef58_spacing_eol_list().empty()) {
+      for (std::shared_ptr<idb::routinglayer::Lef58SpacingEol> idb_spacing_eol : idb_layer->get_lef58_spacing_eol_list()) {
+        EndOfLineSpacingRule end_of_line_spacing_rule;
 
-          end_of_line_spacing_rule.eol_spacing = idb_spacing_eol.get()->get_eol_space();
-          end_of_line_spacing_rule.eol_width = idb_spacing_eol.get()->get_eol_width();
-          end_of_line_spacing_rule.eol_within = idb_spacing_eol.get()->get_eol_within().value();
+        end_of_line_spacing_rule.eol_spacing = idb_spacing_eol.get()->get_eol_space();
+        end_of_line_spacing_rule.eol_width = idb_spacing_eol.get()->get_eol_width();
+        end_of_line_spacing_rule.eol_within = idb_spacing_eol.get()->get_eol_within().value();
 
-          end_of_line_spacing_rule.has_ete = idb_spacing_eol.get()->get_end_to_end().has_value();
-          if (idb_spacing_eol.get()->get_end_to_end().has_value()) {
-            end_of_line_spacing_rule.ete_spacing = idb_spacing_eol.get()->get_end_to_end().value().get_end_to_end_space();
-          }
-
-          end_of_line_spacing_rule.has_par = idb_spacing_eol.get()->get_parallel_edge().has_value();
-          if (idb_spacing_eol.get()->get_parallel_edge().has_value()) {
-            end_of_line_spacing_rule.has_subtrace_eol_width = idb_spacing_eol.get()->get_parallel_edge().value().is_subtract_eol_width();
-            end_of_line_spacing_rule.par_spacing = idb_spacing_eol.get()->get_parallel_edge().value().get_par_space();
-            end_of_line_spacing_rule.par_within = idb_spacing_eol.get()->get_parallel_edge().value().get_par_within();
-            end_of_line_spacing_rule.has_two_edges = idb_spacing_eol.get()->get_parallel_edge().value().is_two_edges();
-            end_of_line_spacing_rule.has_min_length = idb_spacing_eol.get()->get_parallel_edge().value().get_min_length().has_value();
-            if (idb_spacing_eol.get()->get_parallel_edge().value().get_min_length().has_value()) {
-              end_of_line_spacing_rule.min_length = idb_spacing_eol.get()->get_parallel_edge().value().get_min_length().value();
-            }
-            end_of_line_spacing_rule.has_same_metal = idb_spacing_eol.get()->get_parallel_edge().value().is_same_metal();
-          }
-
-          end_of_line_spacing_rule.has_enclose_cut = idb_spacing_eol.get()->get_enclose_cut().has_value();
-          if (idb_spacing_eol.get()->get_enclose_cut().has_value()) {
-            end_of_line_spacing_rule.has_below
-                = idb_spacing_eol.get()->get_enclose_cut().value().get_direction() == idb::routinglayer::Lef58SpacingEol::Direction::kBelow;
-            end_of_line_spacing_rule.has_above
-                = idb_spacing_eol.get()->get_enclose_cut().value().get_direction() == idb::routinglayer::Lef58SpacingEol::Direction::kAbove;
-            end_of_line_spacing_rule.enclosed_dist = idb_spacing_eol.get()->get_enclose_cut().value().get_enclose_dist();
-            end_of_line_spacing_rule.cut_to_metal_spacing = idb_spacing_eol.get()->get_enclose_cut().value().get_cut_to_metal_space();
-            end_of_line_spacing_rule.has_all_cuts = idb_spacing_eol.get()->get_enclose_cut().value().is_all_cuts();
-          }
-          end_of_line_spacing_rule_list.push_back(end_of_line_spacing_rule);
+        end_of_line_spacing_rule.has_ete = idb_spacing_eol.get()->get_end_to_end().has_value();
+        if (idb_spacing_eol.get()->get_end_to_end().has_value()) {
+          end_of_line_spacing_rule.ete_spacing = idb_spacing_eol.get()->get_end_to_end().value().get_end_to_end_space();
         }
-        exist_rule_set.insert(ViolationType::kEndOfLineSpacing);
-      }
-    } else {
-      {
-        // eol_rule_list.push_back({/*eol spacing*/ 140, /*eol width*/ 140, /*eol within*/ 50, /*ete*/ true, 160,
-        //                          /*has par*/ false, /*sub_eol*/ false, /*par space*/ 0, /*par within*/ 0, /* two egde*/ false, /*min length*/ false, 0,
-        //                          /*enclose cut*/ false, /*below */ false, /*above */ false, /*enclose dist */ 0, /*cut to metal space*/ 0, /*all cuts*/
-        //                          false,
-        //                          /*same metal*/ false});
-        EndOfLineSpacingRule end_of_line_spacing_rule;
-        end_of_line_spacing_rule.eol_spacing = 140;
-        end_of_line_spacing_rule.eol_width = 140;
-        end_of_line_spacing_rule.eol_within = 50;
 
-        end_of_line_spacing_rule.has_ete = true;
-        end_of_line_spacing_rule.ete_spacing = 160;
+        end_of_line_spacing_rule.has_par = idb_spacing_eol.get()->get_parallel_edge().has_value();
+        if (idb_spacing_eol.get()->get_parallel_edge().has_value()) {
+          end_of_line_spacing_rule.has_subtrace_eol_width = idb_spacing_eol.get()->get_parallel_edge().value().is_subtract_eol_width();
+          end_of_line_spacing_rule.par_spacing = idb_spacing_eol.get()->get_parallel_edge().value().get_par_space();
+          end_of_line_spacing_rule.par_within = idb_spacing_eol.get()->get_parallel_edge().value().get_par_within();
+          end_of_line_spacing_rule.has_two_edges = idb_spacing_eol.get()->get_parallel_edge().value().is_two_edges();
+          end_of_line_spacing_rule.has_min_length = idb_spacing_eol.get()->get_parallel_edge().value().get_min_length().has_value();
+          if (idb_spacing_eol.get()->get_parallel_edge().value().get_min_length().has_value()) {
+            end_of_line_spacing_rule.min_length = idb_spacing_eol.get()->get_parallel_edge().value().get_min_length().value();
+          }
+          end_of_line_spacing_rule.has_same_metal = idb_spacing_eol.get()->get_parallel_edge().value().is_same_metal();
+        }
 
-        end_of_line_spacing_rule.has_par = false;
-        end_of_line_spacing_rule.has_subtrace_eol_width = false;
-        end_of_line_spacing_rule.par_spacing = 0;
-        end_of_line_spacing_rule.par_within = 0;
-        end_of_line_spacing_rule.has_two_edges = false;
-        end_of_line_spacing_rule.has_min_length = false;
-        end_of_line_spacing_rule.min_length = 0;
-        end_of_line_spacing_rule.has_same_metal = false;
-
-        end_of_line_spacing_rule.has_enclose_cut = false;
-        end_of_line_spacing_rule.has_below = false;
-        end_of_line_spacing_rule.has_above = false;
-        end_of_line_spacing_rule.enclosed_dist = 0;
-        end_of_line_spacing_rule.cut_to_metal_spacing = 0;
-        end_of_line_spacing_rule.has_all_cuts = false;
-        end_of_line_spacing_rule_list.push_back(end_of_line_spacing_rule);
-      }
-      {
-        // eol_rule_list.push_back({/*eol spacing*/ 160, /*eol width*/ 140, /*eol within*/ 50, /*ete*/ true, 160,
-        //                          /*has par*/ true, /*sub_eol*/ true, /*par space*/ 230, /*par within*/ 140, /* two egde*/ false, /*min length*/ true, 100,
-        //                          /*enclose cut*/ false, /*below */ false, /*above */ false, /*enclose dist */ 0, /*cut to metal space*/ 0, /*all cuts*/
-        //                          false,
-        //                          /*same metal*/ false});
-        EndOfLineSpacingRule end_of_line_spacing_rule;
-        end_of_line_spacing_rule.eol_spacing = 160;
-        end_of_line_spacing_rule.eol_width = 140;
-        end_of_line_spacing_rule.eol_within = 50;
-
-        end_of_line_spacing_rule.has_ete = true;
-        end_of_line_spacing_rule.ete_spacing = 160;
-
-        end_of_line_spacing_rule.has_par = true;
-        end_of_line_spacing_rule.has_subtrace_eol_width = true;
-        end_of_line_spacing_rule.par_spacing = 230;
-        end_of_line_spacing_rule.par_within = 140;
-        end_of_line_spacing_rule.has_two_edges = false;
-        end_of_line_spacing_rule.has_min_length = true;
-        end_of_line_spacing_rule.min_length = 100;
-        end_of_line_spacing_rule.has_same_metal = false;
-
-        end_of_line_spacing_rule.has_enclose_cut = false;
-        end_of_line_spacing_rule.has_below = false;
-        end_of_line_spacing_rule.has_above = false;
-        end_of_line_spacing_rule.enclosed_dist = 0;
-        end_of_line_spacing_rule.cut_to_metal_spacing = 0;
-        end_of_line_spacing_rule.has_all_cuts = false;
-        end_of_line_spacing_rule_list.push_back(end_of_line_spacing_rule);
-      }
-      {
-        // eol_rule_list.push_back({/*eol spacing*/ 200, /*eol width*/ 140, /*eol within*/ 50, /*ete*/ true, 160,
-        //                          /*has par*/ true, /*sub_eol*/ true, /*par space*/ 230, /*par within*/ 140, /* two egde*/ false, /*min length*/ true, 100,
-        //                          /*enclose cut*/ true, /*below */ true, /*above */ false, /*enclose dist */ 100, /*cut to metal space*/ 290, /*all cuts*/
-        //                          true,
-        //                          /*same metal*/ false});
-        EndOfLineSpacingRule end_of_line_spacing_rule;
-        end_of_line_spacing_rule.eol_spacing = 200;
-        end_of_line_spacing_rule.eol_width = 140;
-        end_of_line_spacing_rule.eol_within = 50;
-
-        end_of_line_spacing_rule.has_ete = true;
-        end_of_line_spacing_rule.ete_spacing = 160;
-
-        end_of_line_spacing_rule.has_par = true;
-        end_of_line_spacing_rule.has_subtrace_eol_width = true;
-        end_of_line_spacing_rule.par_spacing = 230;
-        end_of_line_spacing_rule.par_within = 140;
-        end_of_line_spacing_rule.has_two_edges = false;
-        end_of_line_spacing_rule.has_min_length = true;
-        end_of_line_spacing_rule.min_length = 100;
-        end_of_line_spacing_rule.has_same_metal = false;
-
-        end_of_line_spacing_rule.has_enclose_cut = true;
-        end_of_line_spacing_rule.has_below = true;
-        end_of_line_spacing_rule.has_above = false;
-        end_of_line_spacing_rule.enclosed_dist = 100;
-        end_of_line_spacing_rule.cut_to_metal_spacing = 290;
-        end_of_line_spacing_rule.has_all_cuts = true;
-        end_of_line_spacing_rule_list.push_back(end_of_line_spacing_rule);
-      }
-      {
-        // eol_rule_list.push_back({/*eol spacing*/ 230, /*eol width*/ 110, /*eol within*/ 0, /*ete*/ false, 0,
-        //                          /*has par*/ true, /*sub_eol*/ false, /*par space*/ 120, /*par within*/ 240, /* two egde*/ true, /*min length*/ true, 300,
-        //                          /*enclose cut*/ false, /*below */ false, /*above */ false, /*enclose dist */ 0, /*cut to metal space*/ 0, /*all cuts*/
-        //                          false,
-        //                          /*same metal*/ true});
-        EndOfLineSpacingRule end_of_line_spacing_rule;
-        end_of_line_spacing_rule.eol_spacing = 230;
-        end_of_line_spacing_rule.eol_width = 110;
-        end_of_line_spacing_rule.eol_within = 0;
-
-        end_of_line_spacing_rule.has_ete = false;
-        end_of_line_spacing_rule.ete_spacing = 0;
-
-        end_of_line_spacing_rule.has_par = true;
-        end_of_line_spacing_rule.has_subtrace_eol_width = false;
-        end_of_line_spacing_rule.par_spacing = 120;
-        end_of_line_spacing_rule.par_within = 240;
-        end_of_line_spacing_rule.has_two_edges = true;
-        end_of_line_spacing_rule.has_min_length = true;
-        end_of_line_spacing_rule.min_length = 300;
-        end_of_line_spacing_rule.has_same_metal = true;
-
-        end_of_line_spacing_rule.has_enclose_cut = false;
-        end_of_line_spacing_rule.has_below = false;
-        end_of_line_spacing_rule.has_above = false;
-        end_of_line_spacing_rule.enclosed_dist = 0;
-        end_of_line_spacing_rule.cut_to_metal_spacing = 0;
-        end_of_line_spacing_rule.has_all_cuts = false;
+        end_of_line_spacing_rule.has_enclose_cut = idb_spacing_eol.get()->get_enclose_cut().has_value();
+        if (idb_spacing_eol.get()->get_enclose_cut().has_value()) {
+          end_of_line_spacing_rule.has_below
+              = idb_spacing_eol.get()->get_enclose_cut().value().get_direction() == idb::routinglayer::Lef58SpacingEol::Direction::kBelow;
+          end_of_line_spacing_rule.has_above
+              = idb_spacing_eol.get()->get_enclose_cut().value().get_direction() == idb::routinglayer::Lef58SpacingEol::Direction::kAbove;
+          end_of_line_spacing_rule.enclosed_dist = idb_spacing_eol.get()->get_enclose_cut().value().get_enclose_dist();
+          end_of_line_spacing_rule.cut_to_metal_spacing = idb_spacing_eol.get()->get_enclose_cut().value().get_cut_to_metal_space();
+          end_of_line_spacing_rule.has_all_cuts = idb_spacing_eol.get()->get_enclose_cut().value().is_all_cuts();
+        }
         end_of_line_spacing_rule_list.push_back(end_of_line_spacing_rule);
       }
       exist_rule_set.insert(ViolationType::kEndOfLineSpacing);
@@ -563,13 +436,15 @@ void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_
     CutEOLSpacingRule& cut_eol_spacing_rule = cut_layer.get_cut_eol_spacing_rule();
     if (idb_layer->get_lef58_eol_spacing().get() != nullptr) {
       idb::cutlayer::Lef58EolSpacing* idb_eol_spacing = idb_layer->get_lef58_eol_spacing().get();
-
-      int32_t curr_eol_spacing = idb_eol_spacing->get_cut_spacing1();
-      int32_t curr_eol_prl = idb_eol_spacing->get_prl();
-      int32_t curr_eol_prl_spacing = idb_eol_spacing->get_cut_spacing2();
-      cut_eol_spacing_rule.curr_eol_spacing = curr_eol_spacing;
-      cut_eol_spacing_rule.curr_eol_prl = curr_eol_prl;
-      cut_eol_spacing_rule.curr_eol_prl_spacing = curr_eol_prl_spacing;
+      cut_eol_spacing_rule.eol_spacing = idb_eol_spacing->get_cut_spacing1();
+      cut_eol_spacing_rule.eol_prl = idb_eol_spacing->get_prl();
+      cut_eol_spacing_rule.eol_prl_spacing = idb_eol_spacing->get_cut_spacing2();
+      cut_eol_spacing_rule.eol_width = idb_eol_spacing->get_eol_width();
+      cut_eol_spacing_rule.smaller_overhang = idb_eol_spacing->get_smaller_overhang();
+      cut_eol_spacing_rule.equal_overhang = idb_eol_spacing->get_equal_overhang();
+      cut_eol_spacing_rule.side_ext = idb_eol_spacing->get_side_ext();
+      cut_eol_spacing_rule.backward_ext = idb_eol_spacing->get_backward_ext();
+      cut_eol_spacing_rule.span_length = idb_eol_spacing->get_span_length();
       exist_rule_set.insert(ViolationType::kCutEOLSpacing);
     }
   }
@@ -595,6 +470,50 @@ void DRCInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_
         different_layer_cut_spacing_rule.below_prl_spacing = below_prl_spacing;
         exist_rule_set.insert(ViolationType::kDifferentLayerCutSpacing);
       }
+    }
+  }
+  // EnclosureEdgeRule
+  {
+    std::vector<EnclosureEdgeRule>& enclosure_edge_rule_list = cut_layer.get_enclosure_edge_rule_list();
+    if (!idb_layer->get_lef58_enclosure_edge_list().empty()) {
+      for (std::shared_ptr<idb::cutlayer::Lef58EnclosureEdge>& idb_enclosure_edge : idb_layer->get_lef58_enclosure_edge_list()) {
+        if (idb_enclosure_edge.get()->get_convex_corners().has_value()) {
+          continue;
+        }
+        EnclosureEdgeRule enclosure_edge_rule;
+        enclosure_edge_rule.has_above = (idb_enclosure_edge.get()->get_direction() == idb::cutlayer::Lef58EnclosureEdge::Direction::kAbove);
+        enclosure_edge_rule.has_below = (idb_enclosure_edge.get()->get_direction() == idb::cutlayer::Lef58EnclosureEdge::Direction::kBelow);
+        enclosure_edge_rule.overhang = idb_enclosure_edge.get()->get_overhang();
+        enclosure_edge_rule.min_width = idb_enclosure_edge.get()->get_min_width().value();
+        enclosure_edge_rule.par_length = idb_enclosure_edge.get()->get_par_length().value();
+        enclosure_edge_rule.par_within = idb_enclosure_edge.get()->get_par_within().value();
+        enclosure_edge_rule.has_except_two_edges = idb_enclosure_edge.get()->has_except_twoedges();
+        enclosure_edge_rule_list.push_back(enclosure_edge_rule);
+      }
+      exist_rule_set.insert(ViolationType::kEnclosureEdge);
+    }
+  }
+  // EnclosureParallelRule
+  {
+    EnclosureParallelRule& enclosure_parallel_rule = cut_layer.get_enclosure_parallel_rule();
+    if (idb_layer->get_lef58_eol_enclosure().get() != nullptr) {
+      idb::cutlayer::Lef58EolEnclosure* idb_eol_enclosure = idb_layer->get_lef58_eol_enclosure().get();
+      enclosure_parallel_rule.eol_width = idb_eol_enclosure->get_eol_width();
+      enclosure_parallel_rule.has_above = (idb_eol_enclosure->get_direction() == idb::cutlayer::Lef58EolEnclosure::Direction::kAbove);
+      enclosure_parallel_rule.has_below = (idb_eol_enclosure->get_direction() == idb::cutlayer::Lef58EolEnclosure::Direction::kBelow);
+      enclosure_parallel_rule.overhang = idb_eol_enclosure->get_overhang();
+      if (idb_eol_enclosure->get_par_space().has_value()) {
+        enclosure_parallel_rule.par_spacing = idb_eol_enclosure->get_par_space().value();
+      }
+      if (idb_eol_enclosure->get_extension().has_value()) {
+        enclosure_parallel_rule.backward_ext = idb_eol_enclosure->get_extension().value().get_backward_ext();
+        enclosure_parallel_rule.forward_ext = idb_eol_enclosure->get_extension().value().get_forward_ext();
+      }
+      enclosure_parallel_rule.has_min_length = idb_eol_enclosure->get_min_length().has_value();
+      if (idb_eol_enclosure->get_min_length().has_value()) {
+        enclosure_parallel_rule.min_length = idb_eol_enclosure->get_min_length().value();
+      }
+      exist_rule_set.insert(ViolationType::kEnclosureParallel);
     }
   }
   // SameLayerCutSpacingRule
@@ -1032,6 +951,38 @@ void DRCInterface::printSummary(std::map<std::string, std::vector<ids::Violation
     type_violation_map_table << fort::header << "Total" << total_violation_num << DRCUTIL.getPercentage(total_violation_num, total_violation_num) << fort::endr;
   }
   DRCUTIL.printTableList({type_violation_map_table});
+}
+
+void DRCInterface::outputViolationJson(std::map<std::string, std::vector<ids::Violation>>& type_violation_map)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = DRCDM.getDatabase().get_cut_layer_list();
+  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = DRCDM.getDatabase().get_cut_to_adjacent_routing_map();
+  std::string& temp_directory_path = DRCDM.getConfig().temp_directory_path;
+
+  std::vector<idb::IdbNet*>& idb_net_list = dmInst->get_idb_def_service()->get_design()->get_net_list()->get_net_list();
+
+  std::vector<nlohmann::json> violation_json_list;
+  for (auto& [type, violation_list] : type_violation_map) {
+    for (ids::Violation& violation : violation_list) {
+      nlohmann::json violation_json;
+      violation_json["type"] = violation.violation_type;
+
+      int32_t layer_idx = violation.layer_idx;
+      if (!violation.is_routing) {
+        std::vector<int32_t>& routing_layer_idx_list = cut_to_adjacent_routing_map[layer_idx];
+        layer_idx = *std::min_element(routing_layer_idx_list.begin(), routing_layer_idx_list.end());
+      }
+      violation_json["shape"] = {violation.ll_x, violation.ll_y, violation.ur_x, violation.ur_y, routing_layer_list[layer_idx].get_layer_name()};
+      for (int32_t net_idx : violation.violation_net_set) {
+        violation_json["net"].push_back(idb_net_list[net_idx]->get_net_name());
+      }
+      violation_json_list.push_back(violation_json);
+    }
+  }
+  std::ofstream* violation_json_file = DRCUTIL.getOutputFileStream(DRCUTIL.getString(temp_directory_path, "violation_map.json"));
+  (*violation_json_file) << violation_json_list;
+  DRCUTIL.closeFileStream(violation_json_file);
 }
 
 void DRCInterface::outputSummary(std::map<std::string, std::vector<ids::Violation>>& type_violation_map)

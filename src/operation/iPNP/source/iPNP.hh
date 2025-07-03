@@ -87,6 +87,8 @@ namespace ipnp {
     void runAnalysis();
     void outputDef();
 
+    void connect_M2_M1();
+
     void run();  // According to the config. e.g. which Evaluator, which opt algorithm.
 
     // Set the output DEF file path

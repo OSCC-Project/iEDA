@@ -29,8 +29,15 @@ namespace ieda_feature {
 struct PASummary
 {
   std::map<int32_t, int32_t> routing_access_point_num_map;
-  std::map<std::string, int32_t> type_access_point_num_map;
   int32_t total_access_point_num = 0;
+  std::map<int32_t, double> routing_wire_length_map;
+  double total_wire_length = 0;
+  std::map<int32_t, int32_t> cut_via_num_map;
+  int32_t total_via_num = 0;
+  std::map<int32_t, int32_t> routing_patch_num_map;
+  int32_t total_patch_num = 0;
+  std::map<int32_t, int32_t> routing_violation_num_map;
+  int32_t total_violation_num = 0;
 };
 
 struct SASummary
@@ -41,53 +48,39 @@ struct SASummary
 
 struct TGSummary
 {
-  int32_t total_demand = 0;
-  int32_t total_overflow = 0;
+  double total_demand = 0;
+  double total_overflow = 0;
   double total_wire_length = 0;
-  std::vector<ClockTiming> clocks_timing;
-  PowerInfo power_info;
+  std::map<std::string, std::map<std::string, double>> clock_timing;
+  std::map<std::string, double> power_map;
 };
 
 struct LASummary
 {
-  std::map<int32_t, int32_t> routing_demand_map;
-  int32_t total_demand = 0;
-  std::map<int32_t, int32_t> routing_overflow_map;
-  int32_t total_overflow = 0;
+  std::map<int32_t, double> routing_demand_map;
+  double total_demand = 0;
+  std::map<int32_t, double> routing_overflow_map;
+  double total_overflow = 0;
   std::map<int32_t, double> routing_wire_length_map;
   double total_wire_length = 0;
   std::map<int32_t, int32_t> cut_via_num_map;
   int32_t total_via_num = 0;
-  std::vector<ClockTiming> clocks_timing;
-  PowerInfo power_info;
+  std::map<std::string, std::map<std::string, double>> clock_timing;
+  std::map<std::string, double> power_map;
 };
 
-struct ERSummary
+struct SRSummary
 {
-  std::map<int32_t, int32_t> routing_demand_map;
-  int32_t total_demand = 0;
-  std::map<int32_t, int32_t> routing_overflow_map;
-  int32_t total_overflow = 0;
+  std::map<int32_t, double> routing_demand_map;
+  double total_demand = 0;
+  std::map<int32_t, double> routing_overflow_map;
+  double total_overflow = 0;
   std::map<int32_t, double> routing_wire_length_map;
   double total_wire_length = 0;
   std::map<int32_t, int32_t> cut_via_num_map;
   int32_t total_via_num = 0;
-  std::vector<ClockTiming> clocks_timing;
-  PowerInfo power_info;
-};
-
-struct GRSummary
-{
-  std::map<int32_t, int32_t> routing_demand_map;
-  int32_t total_demand = 0;
-  std::map<int32_t, int32_t> routing_overflow_map;
-  int32_t total_overflow = 0;
-  std::map<int32_t, double> routing_wire_length_map;
-  double total_wire_length = 0;
-  std::map<int32_t, int32_t> cut_via_num_map;
-  int32_t total_via_num = 0;
-  std::vector<ClockTiming> clocks_timing;
-  PowerInfo power_info;
+  std::map<std::string, std::map<std::string, double>> clock_timing;
+  std::map<std::string, double> power_map;
 };
 
 struct TASummary
@@ -108,20 +101,55 @@ struct DRSummary
   int32_t total_patch_num = 0;
   std::map<int32_t, int32_t> routing_violation_num_map;
   int32_t total_violation_num = 0;
-  std::vector<ClockTiming> clocks_timing;
-  PowerInfo power_info;
+  std::map<std::string, std::map<std::string, double>> clock_timing;
+  std::map<std::string, double> power_map;
+};
+
+struct VRSummary
+{
+  std::map<int32_t, double> routing_wire_length_map;
+  double total_wire_length = 0;
+  std::map<int32_t, int32_t> cut_via_num_map;
+  int32_t total_via_num = 0;
+  std::map<int32_t, int32_t> routing_patch_num_map;
+  int32_t total_patch_num = 0;
+  std::map<int32_t, std::map<std::string, int32_t>> within_net_routing_violation_type_num_map;
+  std::map<std::string, int32_t> within_net_violation_type_num_map;
+  std::map<int32_t, int32_t> within_net_routing_violation_num_map;
+  int32_t within_net_total_violation_num = 0;
+  std::map<int32_t, std::map<std::string, int32_t>> among_net_routing_violation_type_num_map;
+  std::map<std::string, int32_t> among_net_violation_type_num_map;
+  std::map<int32_t, int32_t> among_net_routing_violation_num_map;
+  int32_t among_net_total_violation_num = 0;
+  std::map<std::string, std::map<std::string, double>> clock_timing;
+  std::map<std::string, double> power_map;
+};
+
+struct ERSummary
+{
+  std::map<int32_t, int32_t> routing_demand_map;
+  int32_t total_demand = 0;
+  std::map<int32_t, int32_t> routing_overflow_map;
+  int32_t total_overflow = 0;
+  std::map<int32_t, double> routing_wire_length_map;
+  double total_wire_length = 0;
+  std::map<int32_t, int32_t> cut_via_num_map;
+  int32_t total_via_num = 0;
+  std::map<std::string, std::map<std::string, double>> clock_timing;
+  std::map<std::string, double> power_map;
 };
 
 struct RTSummary
 {
-  PASummary pa_summary;
+  std::map<int32_t, PASummary> iter_pa_summary_map;
   SASummary sa_summary;
   TGSummary tg_summary;
   LASummary la_summary;
-  ERSummary er_summary;
-  std::map<int32_t, GRSummary> iter_gr_summary_map;
+  std::map<int32_t, SRSummary> iter_sr_summary_map;
   TASummary ta_summary;
   std::map<int32_t, DRSummary> iter_dr_summary_map;
+  VRSummary vr_summary;
+  ERSummary er_summary;
 };
 
 /// ###################################################################################///

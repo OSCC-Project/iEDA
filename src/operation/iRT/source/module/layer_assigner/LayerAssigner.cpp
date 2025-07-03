@@ -66,8 +66,10 @@ void LayerAssigner::assign()
   updateSummary(la_model);
   printSummary(la_model);
   outputGuide(la_model);
-  outputDemandCSV(la_model);
+  outputNetCSV(la_model);
   outputOverflowCSV(la_model);
+  outputNetJson(la_model);
+  outputOverflowJson(la_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -1171,7 +1173,7 @@ void LayerAssigner::outputGuide(LAModel& la_model)
   RTUTIL.closeFileStream(guide_file_stream);
 }
 
-void LayerAssigner::outputDemandCSV(LAModel& la_model)
+void LayerAssigner::outputNetCSV(LAModel& la_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& la_temp_directory_path = RTDM.getConfig().la_temp_directory_path;
@@ -1181,17 +1183,15 @@ void LayerAssigner::outputDemandCSV(LAModel& la_model)
   }
   std::vector<GridMap<LANode>>& layer_node_map = la_model.get_layer_node_map();
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    std::ofstream* demand_csv_file
-        = RTUTIL.getOutputFileStream(RTUTIL.getString(la_temp_directory_path, "demand_map_", routing_layer.get_layer_name(), ".csv"));
-
+    std::ofstream* net_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(la_temp_directory_path, "net_map_", routing_layer.get_layer_name(), ".csv"));
     GridMap<LANode>& la_node_map = layer_node_map[routing_layer.get_layer_idx()];
     for (int32_t y = la_node_map.get_y_size() - 1; y >= 0; y--) {
       for (int32_t x = 0; x < la_node_map.get_x_size(); x++) {
-        RTUTIL.pushStream(demand_csv_file, la_node_map[x][y].getDemand(), ",");
+        RTUTIL.pushStream(net_csv_file, la_node_map[x][y].getDemand(), ",");
       }
-      RTUTIL.pushStream(demand_csv_file, "\n");
+      RTUTIL.pushStream(net_csv_file, "\n");
     }
-    RTUTIL.closeFileStream(demand_csv_file);
+    RTUTIL.closeFileStream(net_csv_file);
   }
 }
 
@@ -1217,6 +1217,73 @@ void LayerAssigner::outputOverflowCSV(LAModel& la_model)
     }
     RTUTIL.closeFileStream(overflow_csv_file);
   }
+}
+
+void LayerAssigner::outputNetJson(LAModel& la_model)
+{
+  Die& die = RTDM.getDatabase().get_die();
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
+  std::string& la_temp_directory_path = RTDM.getConfig().la_temp_directory_path;
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
+    return;
+  }
+  std::vector<nlohmann::json> net_json_list;
+  net_json_list.resize(net_list.size());
+  for (Net& net : net_list) {
+    net_json_list[net.get_net_idx()]["net_name"] = net.get_net_name();
+  }
+  for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      PlanarRect first_gcell = RTUTIL.getRealRectByGCell(segment->get_first(), gcell_axis);
+      PlanarRect second_gcell = RTUTIL.getRealRectByGCell(segment->get_second(), gcell_axis);
+      if (segment->get_first().get_layer_idx() != segment->get_second().get_layer_idx()) {
+        net_json_list[net_idx]["result"].push_back({first_gcell.get_ll_x(), first_gcell.get_ll_y(), first_gcell.get_ur_x(), first_gcell.get_ur_y(),
+                                                    routing_layer_list[segment->get_first().get_layer_idx()].get_layer_name()});
+        net_json_list[net_idx]["result"].push_back({second_gcell.get_ll_x(), second_gcell.get_ll_y(), second_gcell.get_ur_x(), second_gcell.get_ur_y(),
+                                                    routing_layer_list[segment->get_second().get_layer_idx()].get_layer_name()});
+      } else {
+        PlanarRect gcell = RTUTIL.getBoundingBox({first_gcell, second_gcell});
+        net_json_list[net_idx]["result"].push_back({gcell.get_ll_x(), gcell.get_ll_y(), gcell.get_ur_x(), gcell.get_ur_y(),
+                                                    routing_layer_list[segment->get_first().get_layer_idx()].get_layer_name()});
+      }
+    }
+  }
+  std::string net_json_file_path = RTUTIL.getString(la_temp_directory_path, "net_map.json");
+  std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
+  (*net_json_file) << net_json_list;
+  RTUTIL.closeFileStream(net_json_file);
+  RTI.sendNotification(RTUTIL.getString("LA_net_map"), net_json_file_path);
+}
+
+void LayerAssigner::outputOverflowJson(LAModel& la_model)
+{
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::string& la_temp_directory_path = RTDM.getConfig().la_temp_directory_path;
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
+    return;
+  }
+  std::vector<GridMap<LANode>>& layer_node_map = la_model.get_layer_node_map();
+  std::vector<nlohmann::json> overflow_json_list;
+  for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
+    GridMap<LANode>& la_node_map = layer_node_map[layer_idx];
+    for (int32_t x = 0; x < la_node_map.get_x_size(); x++) {
+      for (int32_t y = 0; y < la_node_map.get_y_size(); y++) {
+        PlanarRect gcell = RTUTIL.getRealRectByGCell(PlanarCoord(x, y), gcell_axis);
+        overflow_json_list.push_back({gcell.get_ll_x(), gcell.get_ll_y(), gcell.get_ur_x(), gcell.get_ur_y(), routing_layer_list[layer_idx].get_layer_name(),
+                                      la_node_map[x][y].getOverflow()});
+      }
+    }
+  }
+  std::string overflow_json_file_path = RTUTIL.getString(la_temp_directory_path, "overflow_map.json");
+  std::ofstream* overflow_json_file = RTUTIL.getOutputFileStream(overflow_json_file_path);
+  (*overflow_json_file) << overflow_json_list;
+  RTUTIL.closeFileStream(overflow_json_file);
+  RTI.sendNotification(RTUTIL.getString("LA_overflow_map"), overflow_json_file_path);
 }
 
 #endif

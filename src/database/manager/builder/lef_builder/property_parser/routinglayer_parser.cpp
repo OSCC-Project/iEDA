@@ -237,9 +237,9 @@ bool RoutingLayerParser::parse_lef58_spacing_eol(const std::string& value, IdbLa
       // cut.set_cut_to_metal_space(t);
       // cut.set_cut_to_metal_space(transUnitDB(cut_._cut_to_metal_space));
       cut.set_all_cuts(!cut_._all_cuts.empty());
+      cut.set_enclose_dist(transUnitDB(cut_._enclose_dist));
+      cut.set_cut_to_metal_space(transUnitDB(cut_._cut_to_metal_space));
       spacing_eol->set_enclose_cut(cut);
-      spacing_eol->get_enclose_cut()->set_enclose_dist(transUnitDB(cut_._enclose_dist));
-      spacing_eol->get_enclose_cut()->set_cut_to_metal_space(transUnitDB(cut_._cut_to_metal_space));
     }
 
     data->add_spacing_eol(spacing_eol);

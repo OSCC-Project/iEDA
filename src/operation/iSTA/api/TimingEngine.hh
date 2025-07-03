@@ -101,8 +101,9 @@ class TimingEngine {
     return *this;
   }
 
-  TimingEngine &readDefDesign(std::string def_file, std::vector<std::string>& lef_files);
-  TimingEngine &setDefDesignBuilder(void* db_builder);
+  TimingEngine &readDefDesign(std::string def_file,
+                              std::vector<std::string> &lef_files);
+  TimingEngine &setDefDesignBuilder(void *db_builder);
 
   TimingEngine &readSdc(const char *sdc_file) {
     _ista->resetConstraint();
@@ -221,16 +222,32 @@ class TimingEngine {
   TimingEngine &buildRCTree(const char *spef_file, DelayCalcMethod kmethod);
   void initRcTree(Net *net);
   void initRcTree();
+  RcTree &initVirtualRcTree(const char *rc_tree_name);
+  RcTree* getVirtualRcTree(const char *rc_tree_name) {
+    return _virtual_rc_trees.contains(rc_tree_name)
+               ? &(_virtual_rc_trees[rc_tree_name])
+               : nullptr;
+  }
   void resetRcTree(Net *net);
   RctNode *makeOrFindRCTreeNode(Net *net, int id);
   RctNode *makeOrFindRCTreeNode(DesignObject *pin_or_port);
-  RctNode* findRCTreeNode(Net *net, std::string& node_name);
+  RctNode *makeOrFindVirtualRCTreeNode(const char *rc_tree_name,
+                                       const char *node_name);
+  RctNode *findRCTreeNode(Net *net, std::string &node_name);
   void incrCap(RctNode *node, double cap, bool is_incremental = false);
   void makeResistor(Net *net, RctNode *from_node, RctNode *to_node, double res);
+  void makeVirtualRCTreeResistor(const char *rc_tree_name, RctNode *from_node,
+                                 RctNode *to_node, double res);
   void updateRCTreeInfo(Net *net);
+  void updateVirtualRCTreeInfo(const char* rc_tree_name);
   void updateAllRCTree();
   void buildRcTreeAndUpdateRcTreeInfo(
       const char *net_name, std::map<std::string, double> &loadname2wl);
+
+  std::map<std::string, double> getVirtualRCTreeAllNodeSlew(
+      const char* rc_tree_name, double driver_slew);
+  std::map<std::string, double> getVirtualRCTreeAllNodeDelay(
+      const char* rc_tree_name);
 
   TimingEngine &incrUpdateTiming();
 
@@ -394,6 +411,9 @@ class TimingEngine {
 
   std::unique_ptr<TimingDBAdapter> _db_adapter;
   StaIncremental _incr_func;
+
+  std::map<std::string, RcTree>
+      _virtual_rc_trees;  //!< The virtual rc tree is maybe not complete net.
 
   // Singleton timing engine.
   static TimingEngine *_timing_engine;

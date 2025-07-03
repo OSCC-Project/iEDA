@@ -16,10 +16,10 @@
 // ***************************************************************************************
 /**
  * @file main.cpp
- * @author Xinhao li
+ * @author Jianrong Su
  * @brief The main function of iPNP. function: Launch the tcl console and interact with the user. Refer to iSTA/main.cc.
- * @version 0.1
- * @date 2024-07-15
+ * @version 1.0
+ * @date 2025-07-01
  */
 
 #include <iostream>
@@ -42,7 +42,8 @@ using namespace ipnp;
 
 int registerCommands() {
   registerTclCmd(CmdRunPnp, "run_pnp");
-  
+  registerTclCmd(CmdAddVIA1, "add_via1");
+
   return EXIT_SUCCESS;
 }
 
@@ -135,10 +136,32 @@ int main(int argc, char** argv) {
         ipnp.set_output_def_path(result["output"].as<std::string>());
       }
 
+      std::string start_info =
+          "\033[49;32m"
+          "    _ ____  _   ______     ______________    ____  ______\n"
+          "   (_) __ \\/ | / / __ \\   / ___/_  __/   |  / __ \\/_  __/\n"
+          "  / / /_/ /  |/ / /_/ /   \\__ \\ / / / /| | / /_/ / / /   \n"
+          " / / ____/ /|  / ____/   ___/ // / / ___ |/ _, _/ / /    \n"
+          "/_/_/   /_/ |_/_/       /____//_/ /_/  |_/_/ |_| /_/     \n"
+          "                                                         \n"
+          "\e[0m";
+
+      std::cout << start_info << std::endl;
+
       // Run iPNP
-      LOG_INFO << "Running iPNP..." << std::endl;
       ipnp.run();
-      LOG_INFO << "iPNP completed successfully" << std::endl;
+            
+      std::string finish_info =
+          "\033[49;32m"
+          "    _ ____  _   ______     ___________   ___________ __  __\n"
+          "   (_) __ \\/ | / / __ \\   / ____/  _/ | / /  _/ ___// / / /\n"
+          "  / / /_/ /  |/ / /_/ /  / /_   / //  |/ // / \\__ \\/ /_/ / \n"
+          " / / ____/ /|  / ____/  / __/ _/ // /|  // / ___/ / __  /  \n"
+          "/_/_/   /_/ |_/_/      /_/   /___/_/ |_/___//____/_/ /_/   \n"
+          "                                                           \n"
+          "\e[0m";
+
+      std::cout << finish_info << std::endl;
     }
 
   } catch (const cxxopts::exceptions::exception& e) {

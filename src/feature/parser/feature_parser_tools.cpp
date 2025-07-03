@@ -40,6 +40,8 @@ json FeatureParser::buildSummaryRT()
 {
   json json_rt;
 
+#if 0
+
   RTSummary& rt_sum = _summary->get_summary_irt();
 
   /// PA
@@ -236,6 +238,8 @@ json FeatureParser::buildSummaryRT()
     json_dr_list[std::to_string(id)] = json_dr;
   }
   json_rt["DR"] = json_dr_list;
+
+#endif
 
   return json_rt;
 }

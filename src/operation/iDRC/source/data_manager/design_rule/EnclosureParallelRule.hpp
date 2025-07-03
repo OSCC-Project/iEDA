@@ -25,6 +25,15 @@ class EnclosureParallelRule
  public:
   EnclosureParallelRule() = default;
   ~EnclosureParallelRule() = default;
+  int32_t eol_width;
+  bool has_above;
+  bool has_below;
+  int32_t overhang;
+  /**/ int32_t par_spacing;
+  /**/ int32_t backward_ext;
+  /**/ int32_t forward_ext;
+  bool has_min_length;
+  /**/ int32_t min_length;
 };
 
 }  // namespace idrc

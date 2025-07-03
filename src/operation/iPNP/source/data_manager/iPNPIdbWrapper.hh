@@ -89,6 +89,8 @@ class iPNPIdbWrapper
   void saveToIdb(GridManager pnp_network);
   void writeIdbToDef(std::string def_file_path);
 
+  void connect_M2_M1_Layer();
+
  private:
    idb::IdbDesign* _idb_design = nullptr;
    idb::IdbBuilder* _idb_builder = nullptr;

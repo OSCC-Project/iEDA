@@ -17,6 +17,7 @@
 #pragma once
 
 #include "Direction.hpp"
+#include "Orientation.hpp"
 #include "PlanarCoord.hpp"
 #include "Segment.hpp"
 
@@ -68,6 +69,7 @@ class PlanarRect
   inline int32_t getPerimeter() const;
   inline double getArea() const;
   inline std::vector<Segment<PlanarCoord>> getEdgeList() const;
+  inline Segment<PlanarCoord> getOrientEdge(Orientation orient) const;
   inline PlanarCoord getMidPoint() const;
   inline bool isIncorrect() const;
 
@@ -147,6 +149,28 @@ inline std::vector<Segment<PlanarCoord>> PlanarRect::getEdgeList() const
     segment_list.emplace_back(PlanarCoord(ur_x, ll_y), _ur);
   }
   return segment_list;
+}
+
+inline Segment<PlanarCoord> PlanarRect::getOrientEdge(Orientation orient) const
+{
+  int32_t ll_x = _ll.get_x();
+  int32_t ll_y = _ll.get_y();
+  int32_t ur_x = _ur.get_x();
+  int32_t ur_y = _ur.get_y();
+
+  Segment<PlanarCoord> segment;
+  if (orient == Orientation::kEast) {
+    segment = Segment<PlanarCoord>(PlanarCoord(ur_x, ll_y), _ur);
+  } else if (orient == Orientation::kSouth) {
+    segment = Segment<PlanarCoord>(_ll, PlanarCoord(ur_x, ll_y));
+  } else if (orient == Orientation::kWest) {
+    segment = Segment<PlanarCoord>(_ll, PlanarCoord(ll_x, ur_y));
+  } else if (orient == Orientation::kNorth) {
+    segment = Segment<PlanarCoord>(PlanarCoord(ll_x, ur_y), _ur);
+  } else {
+    DRCLOG.error(Loc::current(), "The orient is error!");
+  }
+  return segment;
 }
 
 inline PlanarCoord PlanarRect::getMidPoint() const

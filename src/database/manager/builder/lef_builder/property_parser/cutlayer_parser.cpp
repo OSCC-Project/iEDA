@@ -120,6 +120,7 @@ bool CutLayerParser::parse_lef58_enclosureedge(const std::string& value, IdbLaye
       auto& width = boost::get<cutlayer_property::lef58_enclosureedge_width>(item._width_convex);
       enclosure_edge->set_min_width(transUnitDB(width._min_width));
       enclosure_edge->set_par_length(transUnitDB(width._par_length));
+      enclosure_edge->set_par_within(transUnitDB(width._par_within));
       if (width._except_extracut == "EXCEPTEXTRACUT") {
         enclosure_edge->set_except_extracut(true);
         if (width._cut_within) {
@@ -179,6 +180,7 @@ bool CutLayerParser::parse_lef58_eolenclosure(const std::string& value, IdbLayer
       cutlayer::Lef58EolEnclosure::Extension ext;
       ext.set_backward_ext(transUnitDB(overhang._backward_ext.value()));
       ext.set_forward_ext(transUnitDB(overhang._forward_ext.value()));
+      enclosure->set_extension(ext);
     }
     if (overhang._min_length) {
       enclosure->set_min_length(transUnitDB(overhang._min_length.value()));

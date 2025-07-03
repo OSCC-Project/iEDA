@@ -16,10 +16,10 @@
 // ***************************************************************************************
 /**
  * @file ShellCmd.hh
- * @author sujianrong
- * @brief iPNP命令类定义
- * @version 0.1
- * @date 2024-07-20
+ * @author Jianrong Su
+ * @brief 
+ * @version 1.0
+ * @date 2025-06-30
  */
 
 #pragma once
@@ -55,5 +55,13 @@ public:
   unsigned exec() override;
 };
 
+class CmdAddVIA1 : public TclCmd {
+public:
+  explicit CmdAddVIA1(const char* cmd_name);
+  ~CmdAddVIA1() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+};
 
 } // namespace ipnp

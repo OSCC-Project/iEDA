@@ -97,8 +97,10 @@ class LayerAssigner
   void updateSummary(LAModel& la_model);
   void printSummary(LAModel& la_model);
   void outputGuide(LAModel& la_model);
-  void outputDemandCSV(LAModel& la_model);
+  void outputNetCSV(LAModel& la_model);
   void outputOverflowCSV(LAModel& la_model);
+  void outputNetJson(LAModel& la_model);
+  void outputOverflowJson(LAModel& la_model);
 #endif
 
 #if 1  // debug

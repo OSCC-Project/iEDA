@@ -98,8 +98,14 @@ namespace ipnp {
     else {
       std::cerr << "Error: Failed to save DEF file to: " << def_file_path << std::endl;
     }
+  }
 
+  void iPNPIdbWrapper::connect_M2_M1_Layer()
+  {
+    PowerVia* power_via = new PowerVia();
+    _idb_design = power_via->connectM2M1Layer(_idb_design);
 
+    delete power_via;
   }
 
 }  // namespace ipnp
