@@ -24,6 +24,7 @@
 #include "MinHoleRule.hpp"
 #include "MinStepRule.hpp"
 #include "MinimumAreaRule.hpp"
+#include "MinimumCutRule.hpp"
 #include "MinimumWidthRule.hpp"
 #include "NonsufficientMetalOverlapRule.hpp"
 #include "NotchSpacingRule.hpp"
@@ -48,6 +49,7 @@ class RoutingLayer
   MaximumWidthRule& get_maximum_width_rule() { return _maximum_width_rule; }
   MinHoleRule& get_min_hole_rule() { return _min_hole_rule; }
   MinimumAreaRule& get_minimum_area_rule() { return _minimum_area_rule; }
+  std::vector<MinimumCutRule>& get_minimum_cut_rule_list() { return _minimum_cut_rule_list; }
   MinimumWidthRule& get_minimum_width_rule() { return _minimum_width_rule; }
   MinStepRule& get_min_step_rule() { return _min_step_rule; }
   NonsufficientMetalOverlapRule& get_nonsufficient_metal_overlap_rule() { return _nonsufficient_metal_overlap_rule; }
@@ -73,6 +75,7 @@ class RoutingLayer
   MaximumWidthRule _maximum_width_rule;
   MinHoleRule _min_hole_rule;
   MinimumAreaRule _minimum_area_rule;
+  std::vector<MinimumCutRule> _minimum_cut_rule_list;
   MinimumWidthRule _minimum_width_rule;
   MinStepRule _min_step_rule;
   NonsufficientMetalOverlapRule _nonsufficient_metal_overlap_rule;

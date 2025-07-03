@@ -55,7 +55,7 @@ std::vector<Violation> RuleValidator::verify(std::vector<DRCShape>& drc_env_shap
   DRCLOG.info(Loc::current(), "Starting...");
   RVModel rv_model = initRVModel(drc_env_shape_list, drc_result_shape_list);
   setRVComParam(rv_model);
-  buildRVModel(rv_model);
+  buildRVBoxList(rv_model);
   verifyRVModel(rv_model);
   // debugVerifyRVModelByGolden(rv_model);
   buildViolationList(rv_model);
@@ -92,22 +92,6 @@ void RuleValidator::setRVComParam(RVModel& rv_model)
   DRCLOG.info(Loc::current(), "box_size: ", rv_com_param.get_box_size());
   DRCLOG.info(Loc::current(), "expand_size: ", rv_com_param.get_expand_size());
   rv_model.set_rv_com_param(rv_com_param);
-}
-
-void RuleValidator::buildRVModel(RVModel& rv_model)
-{
-  buildDRCShape(rv_model);
-  buildRVBoxList(rv_model);
-}
-
-void RuleValidator::buildDRCShape(RVModel& rv_model)
-{
-  for (DRCShape& drc_env_shape : rv_model.get_drc_env_shape_list()) {
-    drc_env_shape.set_is_env(true);
-  }
-  for (DRCShape& drc_result_shape : rv_model.get_drc_result_shape_list()) {
-    drc_result_shape.set_is_env(false);
-  }
 }
 
 void RuleValidator::buildRVBoxList(RVModel& rv_model)
