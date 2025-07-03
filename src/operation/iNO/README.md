@@ -1,33 +1,34 @@
-# iNO 功能文档
+# iNO: Netlist Optimization
 
-> ## 概述
 
-NO的全称为Netlist Optimization，网表优化。iNO当前支持扇出优化，通过插入缓冲器使线网满足最大扇出约束。
+## Overview
 
-> ## iNO使用示例
+NO stands for Netlist Optimization. Currently, iNO supports fanout optimization, which makes the net meet the maximum fanout constraint by inserting buffers.
 
-用户需要在Config文件中指定最大扇出（fanout）约束、使用的缓冲器类型。例如
+## iNO Usage Example
+
+Users need to specify the maximum fanout constraint and the type of buffer used in the Config file. For example,
 ```
 "insert_buffer": "LVTX_4",
 "max_fanout": 30
 ```
 
-1.在Tcl文件中设置Config文件
+1. Set the Config file in the Tcl file
 
-`run_no_fixfanout -config ./iEDA_config/no_default_config_fixfanout.json`
+`run_no_fixfanout -config./iEDA_config/no_default_config_fixfanout.json`
 
-2.使用iEDA运行tcl文件
+2. Use iEDA to run the tcl file
 
-`./iEDA -script ./script/iNO_script/run_iNO_fix_fanout.tcl`
+`./iEDA -script./script/iNO_script/run_iNO_fix_fanout.tcl`
 
-### 报告输出
+### Report Output
 
-在Config文件中可设置优化结果的报告输出路径：
+In the Config file, the report output path of the optimization result can be set:
 ```
 "report_file": "path"
 ```
 
-fanout优化报告输出示例：
+Example of fanout optimization report output:
 ```
 [Result: ] Find 0 Net with fanout violation.
 [Result: ] Insert 0 Buffers.

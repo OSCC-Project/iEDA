@@ -1,0 +1,29 @@
+Checks: 
+'-*,
+readability-*,
+-readability-convert-member-functions-to-static,
+-readability-implicit-bool-conversion,
+clang-analyzer-cplusplus*,
+modernize-*,
+-modernize-use-trailing-return-type,
+google-*,
+boost-*,
+abseil-*,
+cppcoreguidelines-*,
+-cppcoreguidelines-init-variables,
+-cppcoreguidelines-pro-type-member-init,
+-clang-diagnostic-error,
+performance-*'
+
+CheckOptions:
+  - key:             google-readability-function-size.StatementThreshold
+    value:           '800'
+  - key:             readability-function-size.ParameterThreshold
+    value:           5
+  - key:             modernize-use-auto
+    value:           Yes
+  - key:             performance-faster-string-find
+    value:           Yes
+  - key:             performance-for-range-copy
+    value:           Yes
+

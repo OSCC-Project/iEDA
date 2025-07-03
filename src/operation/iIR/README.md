@@ -1,4 +1,4 @@
-# User guide of iIR
+# iIR: IR Drop Calculation
 
 ## Introduction to the iIR
 The iIR tool is mainly used for analyzing the IR drop of the power distribution network.
