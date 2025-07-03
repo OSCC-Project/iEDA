@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.5-labs
-ARG BASE_IMAGE=ubuntu:20.04
+ARG BASE_IMAGE=ubuntu:22.04
 FROM ${BASE_IMAGE}
 LABEL maintainer="harry0789@qq.com"
 

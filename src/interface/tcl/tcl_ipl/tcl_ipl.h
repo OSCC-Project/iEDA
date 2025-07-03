@@ -32,6 +32,7 @@
 using ieda::TclCmd;
 using ieda::TclOption;
 using ieda::TclStringOption;
+using ieda::TclSwitchOption;
 
 namespace tcl {
 

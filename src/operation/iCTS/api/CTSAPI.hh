@@ -201,6 +201,7 @@ class CTSAPI
   double getCapacitance(const double& wire_length, const int& level) const;
   double getResistance(const double& wire_length, const int& level) const;
   ista::TimingIDBAdapter* getStaDbAdapter() const;
+  void writeSkewMap() const;
 
   // variable
   icts::CtsConfig* _config = nullptr;
