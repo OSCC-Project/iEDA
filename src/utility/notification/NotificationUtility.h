@@ -169,9 +169,10 @@ public:
      */
     bool waitForPendingNotifications(int timeout_ms = 0);
 
+    ~NotificationUtility();
+
 private:
     NotificationUtility() = default;
-    ~NotificationUtility();
 
     // Disable copy constructor and assignment operator
     NotificationUtility(const NotificationUtility&) = delete;
