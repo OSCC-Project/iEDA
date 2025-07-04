@@ -164,11 +164,11 @@ class StaReportPathYaml : public StaReportPathDump {
 struct StaWireTimingData {
   std::string _from_node_name;
   std::string _to_node_name;
-  double _wire_resistance;
-  double _wire_capacitance;
-  double _wire_from_slew;
-  double _wire_to_slew;
-  double _wire_delay; 
+  double _wire_resistance = 0.0;
+  double _wire_capacitance = 0.0;
+  double _wire_from_slew = 0.0;
+  double _wire_to_slew = 0.0;
+  double _wire_delay = 0.0; 
 };
 
 using StaPathWireTimingData = std::vector<StaWireTimingData>;
@@ -189,6 +189,7 @@ public:
   auto& get_path_timing_data() { return _path_timing_data; }
 
   unsigned operator()(StaSeqPathData* seq_path_data) override;
+  
   std::vector<StaPathWireTimingData> getPathGroupTimingData(StaSeqPathGroup* seq_path_group) {
     std::vector<StaPathWireTimingData> path_timing_data;
 

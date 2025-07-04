@@ -33,6 +33,7 @@ using namespace ista;
 namespace ipower {
 
 PYBIND11_MODULE(ipower_cpp, m) {
+  // sta python interface
   m.def("set_design_workspace", set_design_workspace, ("design_workspace"));
   m.def("read_lef_def", read_lef_def, ("lef_files"), ("def_file"));
   m.def("read_netlist", read_netlist, ("file_name"));
@@ -45,6 +46,19 @@ PYBIND11_MODULE(ipower_cpp, m) {
   m.def("display_timing_tns_map", display_timing_tns_map);
   m.def("display_slew_map", display_slew_map);
 
+  // get wire timing data
+  py::class_<StaWireTimingData>(m, "WireTimingData")
+  .def_readwrite("from_node_name", &StaWireTimingData::_from_node_name)
+  .def_readwrite("to_node_name", &StaWireTimingData::_to_node_name)
+  .def_readwrite("wire_resistance", &StaWireTimingData::_wire_resistance)
+  .def_readwrite("wire_capacitance", &StaWireTimingData::_wire_capacitance)
+  .def_readwrite("wire_from_slew", &StaWireTimingData::_wire_from_slew)
+  .def_readwrite("wire_to_slew", &StaWireTimingData::_wire_to_slew)
+  .def_readwrite("wire_delay", &StaWireTimingData::_wire_delay);
+
+  m.def("get_wire_timing_data", get_wire_timing_data, py::arg("n_worst_path_per_clock"));
+
+  // power python interface
   m.def("read_vcd", &read_vcd, py::arg("vcd_file"), py::arg("top_instance_name"));
   m.def("read_pg_spef", &read_pg_spef, py::arg("pg_spef_file"));
   m.def("report_power", &report_power);

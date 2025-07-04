@@ -68,7 +68,7 @@ bool updateRCTreeInfo(const std::string& net_name);
 bool updateTiming();
 bool reportSta();
 
-std::vector<PathWireTimingData> getWireTimingData();
+std::vector<PathWireTimingData> getWireTimingData(unsigned n_worst_path_per_clock);
 
 bool reportTiming(int digits, const std::string& delay_type, std::set<std::string> exclude_cell_names, bool derate);
 
