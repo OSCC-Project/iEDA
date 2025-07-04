@@ -1026,12 +1026,10 @@ void DataManager::makeLayerViaMasterList()
     for (ViaMaster& via_master : via_master_list) {
       // above
       LayerRect& above_enclosure = via_master.get_above_enclosure();
-      Direction above_layer_direction = routing_layer_list[above_enclosure.get_layer_idx()].get_prefer_direction();
-      via_master.set_above_direction(above_enclosure.getRectDirection(above_layer_direction));
+      via_master.set_above_direction(above_enclosure.getRectDirection(Direction::kNone));
       // below
       LayerRect& below_enclosure = via_master.get_below_enclosure();
-      Direction below_layer_direction = routing_layer_list[below_enclosure.get_layer_idx()].get_prefer_direction();
-      via_master.set_below_direction(below_enclosure.getRectDirection(below_layer_direction));
+      via_master.set_below_direction(below_enclosure.getRectDirection(Direction::kNone));
     }
   }
   std::vector<Direction> direction_list;
@@ -1047,7 +1045,7 @@ void DataManager::makeLayerViaMasterList()
           if (routing_shape.get_layer_idx() != 0) {
             continue;
           }
-          direction_num_map[routing_shape.get_real_rect().getRectDirection()]++;
+          direction_num_map[routing_shape.get_real_rect().getRectDirection(routing_layer_list[routing_shape.get_layer_idx()].get_prefer_direction())]++;
         }
       }
     }

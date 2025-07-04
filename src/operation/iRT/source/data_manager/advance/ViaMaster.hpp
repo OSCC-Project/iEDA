@@ -76,10 +76,10 @@ struct CmpViaMaster
     if (sort_status == SortStatus::kEqual) {
       Direction above_layer_direction = direction_list[a.get_above_enclosure().get_layer_idx()];
       Direction below_layer_direction = direction_list[a.get_below_enclosure().get_layer_idx()];
-      Direction a_above_direction = a.get_above_direction();
-      Direction a_below_direction = a.get_below_direction();
-      Direction b_above_direction = b.get_above_direction();
-      Direction b_below_direction = b.get_below_direction();
+      Direction a_above_direction = (a.get_above_direction() == Direction::kNone ? above_layer_direction : a.get_above_direction());
+      Direction a_below_direction = (a.get_below_direction() == Direction::kNone ? below_layer_direction : a.get_below_direction());
+      Direction b_above_direction = (b.get_above_direction() == Direction::kNone ? above_layer_direction : b.get_above_direction());
+      Direction b_below_direction = (b.get_below_direction() == Direction::kNone ? below_layer_direction : b.get_below_direction());
       if (a_above_direction == above_layer_direction && b_above_direction != above_layer_direction) {
         sort_status = SortStatus::kTrue;
       } else if (a_above_direction != above_layer_direction && b_above_direction == above_layer_direction) {
