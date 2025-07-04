@@ -636,7 +636,7 @@ void TimingEngine::buildRcTreeAndUpdateRcTreeInfo(
  * @return std::map<std::string, double>
  */
 std::map<std::string, double> TimingEngine::getVirtualRCTreeAllNodeSlew(
-    const char* rc_tree_name, double driver_slew) {
+    const char* rc_tree_name, double driver_slew, TransType trans_type) {
   if (!_virtual_rc_trees.contains(rc_tree_name)) {
     LOG_FATAL << "virtual RC tree " << rc_tree_name << " does not exist!";
   }
@@ -644,29 +644,7 @@ std::map<std::string, double> TimingEngine::getVirtualRCTreeAllNodeSlew(
   auto& virtual_rc_tree = _virtual_rc_trees[rc_tree_name];
 
   std::map<std::string, double> all_node_slews;
-  auto* rc_root = virtual_rc_tree.get_root();
-
-  all_node_slews[rc_root->get_name()] = driver_slew;
-
-  std::function<void(RctNode*, RctNode*)> get_snk_slew =
-      [&get_snk_slew, this, driver_slew, &all_node_slews](RctNode* parent_node,
-                                                          RctNode* src_node) {
-        auto& fanout_edges = src_node->get_fanout();
-        for (auto* fanout_edge : fanout_edges) {
-          auto& snk_node = fanout_edge->get_to();
-          if (fanout_edge->isBreak() || &snk_node == parent_node) {
-            continue;
-          }
-
-          auto snk_slew = snk_node.slew(AnalysisMode::kMax, TransType::kRise,
-                                        NS_TO_PS(driver_slew));
-          all_node_slews[snk_node.get_name()] = PS_TO_NS(snk_slew);
-
-          get_snk_slew(src_node, &snk_node);
-        }
-      };
-
-  get_snk_slew(nullptr, rc_root);
+  all_node_slews = virtual_rc_tree.getAllNodeSlew(driver_slew, AnalysisMode::kMax, trans_type);
 
   return all_node_slews;
 }

@@ -31,6 +31,7 @@
 #include "StaClock.hh"
 #include "log/Log.hh"
 #include "string/Str.hh"
+#include "json/json.hpp"
 
 namespace ista {
 
@@ -228,11 +229,17 @@ void StaClockTree::getChildNodeCnt(std::vector<StaClockTreeNode*> child_nodes,
  * format.
  *
  */
-void StaClockTree::printInstGraphViz(const char* file_path) {
+void StaClockTree::printInstGraphViz(const char* file_path,
+                                     bool show_port_suffix) {
   auto replace_str = [](const std::string& str, const std::string& old_str,
                         const std::string& new_str) {
     std::regex re(old_str);
     return std::regex_replace(str, re, new_str);
+  };
+
+  auto remove_port_suffix = [](const std::string& name) {
+    std::regex suffix_re(R"(_[AX]$)");
+    return std::regex_replace(name, suffix_re, "");
   };
 
   LOG_INFO << "dump graph dotviz start";
@@ -249,9 +256,16 @@ void StaClockTree::printInstGraphViz(const char* file_path) {
     auto from_name = net_arrive_time.get_from_name();
     from_name = replace_str(from_name, R"(\/)", "_");
     from_name = replace_str(from_name, R"(\:)", "_");
+    from_name = replace_str(from_name, R"(\.)", "__");
     auto to_name = net_arrive_time.get_to_name();
     to_name = replace_str(to_name, R"(\/)", "_");
     to_name = replace_str(to_name, R"(\:)", "_");
+    to_name = replace_str(to_name, R"(\.)", "__");
+
+    if (!show_port_suffix) {
+      from_name = remove_port_suffix(from_name);
+      to_name = remove_port_suffix(to_name);
+    }
 
     dot_file << Str::printf("%s[label=\"%s fanout %d\" ]\n", from_name.c_str(),
                             from_name.c_str(),
@@ -270,6 +284,60 @@ void StaClockTree::printInstGraphViz(const char* file_path) {
   dot_file.close();
 
   LOG_INFO << "dump graph dotviz end";
+}
+
+void StaClockTree::printInstJson(const char* file_path, bool show_port_suffix) {
+  auto replace_str = [](const std::string& str, const std::string& old_str,
+                        const std::string& new_str) {
+    std::regex re(old_str);
+    return std::regex_replace(str, re, new_str);
+  };
+
+  auto remove_port_suffix = [](const std::string& name) {
+    std::regex suffix_re(R"(_[AX]$)");
+    return std::regex_replace(name, suffix_re, "");
+  };
+
+  LOG_INFO << "dump graph json start";
+
+  nlohmann::json graph = nlohmann::json::array();
+
+  for (auto& child_arc : _child_arcs) {
+    nlohmann::json node;
+    auto* parent_node = child_arc->get_parent_node();
+    auto* child_node = child_arc->get_child_node();
+
+    auto net_arrive_time = child_arc->get_net_arrive_time();
+    auto from_name = net_arrive_time.get_from_name();
+    from_name = replace_str(from_name, R"(\/)", "_");
+    from_name = replace_str(from_name, R"(\:)", "_");
+    from_name = replace_str(from_name, R"(\.)", "__");
+    auto to_name = net_arrive_time.get_to_name();
+    to_name = replace_str(to_name, R"(\/)", "_");
+    to_name = replace_str(to_name, R"(\:)", "_");
+    to_name = replace_str(to_name, R"(\.)", "__");
+
+    if (!show_port_suffix) {
+      from_name = remove_port_suffix(from_name);
+      to_name = remove_port_suffix(to_name);
+    }
+
+    node["name"] = from_name;
+    node["to"] = to_name;
+    node["fanout"] = parent_node->get_child_nodes().size();
+    node["delay"] = net_arrive_time.get_max_rise_to_arrive_time();
+
+    graph.push_back(node);
+
+    if (child_node->get_inst_arrive_times().empty()) {
+      graph.push_back({{"name", to_name}, {"fanout", 0}});
+    }
+  }
+
+  std::ofstream json_file(file_path);
+  json_file << graph.dump(4);
+  json_file.close();
+  LOG_INFO << "dump graph json end";
 }
 
 }  // namespace ista

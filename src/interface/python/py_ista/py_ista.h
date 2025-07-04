@@ -20,7 +20,22 @@
 #include <string>
 #include <vector>
 
+
 namespace python_interface {
+
+struct WireTimingData
+{
+  std::string _from_node_name;
+  std::string _to_node_name;
+  double _wire_resistance;
+  double _wire_capacitance;
+  double _wire_from_slew;
+  double _wire_to_slew;
+  double _wire_delay;
+};
+
+using PathWireTimingData = std::vector<WireTimingData>;
+
 bool staRun(const std::string& output);
 
 bool staInit(const std::string& output);
@@ -52,6 +67,8 @@ bool makeRCTreeEdge(const std::string& net_name, std::string& node1, std::string
 bool updateRCTreeInfo(const std::string& net_name);
 bool updateTiming();
 bool reportSta();
+
+std::vector<PathWireTimingData> getWireTimingData();
 
 bool reportTiming(int digits, const std::string& delay_type, std::set<std::string> exclude_cell_names, bool derate);
 

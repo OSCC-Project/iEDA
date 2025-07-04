@@ -61,6 +61,7 @@ void Config::initConfigByJson(nlohmann::json json)
   int32_t is_congestion_effort = getDataByJson(json, {"PL", "is_congestion_effort"});
   int32_t ignore_net_degree = getDataByJson(json, {"PL", "ignore_net_degree"});
   int32_t num_threads = getDataByJson(json, {"PL", "num_threads"});
+  int32_t info_iter_num = getDataByJson(json, {"PL", "info_iter_num"});
 
   // Global Placer
   float init_wirelength_coef = getDataByJson(json, {"PL", "GP", "Wirelength", "init_wirelength_coef"});
@@ -180,6 +181,12 @@ void Config::initConfigByJson(nlohmann::json json)
     _nes_config.set_is_opt_congestion(true);
   } else {
     _nes_config.set_is_opt_congestion(false);
+  }
+
+  if (info_iter_num < 0) {
+    _nes_config.set_info_iter_num(10);
+  } else {
+    _nes_config.set_info_iter_num(info_iter_num);
   }
 
   // Buffer

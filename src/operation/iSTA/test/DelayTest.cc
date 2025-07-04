@@ -78,7 +78,7 @@ TEST_F(DelayTest, virtual_rc_tree) {
     std::cout << node_name << ": " << delay << std::endl;
   }
 
-  auto node_slews = timing_engine->getVirtualRCTreeAllNodeSlew("virtual_rc_tree", 0.002);
+  auto node_slews = timing_engine->getVirtualRCTreeAllNodeSlew("virtual_rc_tree", 0.002, TransType::kRise);
   for (auto& [node_name, slew] : node_slews) {
     std::cout << node_name << ": " << slew << std::endl;
   }

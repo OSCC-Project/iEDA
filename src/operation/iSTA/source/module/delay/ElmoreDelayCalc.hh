@@ -546,6 +546,9 @@ class RcTree {
 
   bool isHaveCoupledNodes() { return !_coupled_nodes.empty(); }
 
+  std::vector<RctEdge*> getWireTopo(const char* to_node_name);
+  std::map<std::string, double> getAllNodeSlew(double driver_slew, AnalysisMode analysis_mode, TransType trans_type);  
+
   void printGraphViz();
 
  private:

@@ -85,4 +85,26 @@ class StaDumpGraphViz : public StaFunc {
   unsigned operator()(StaGraph* the_graph) override;
 };
 
+/**
+ * @brief The class for dump timing data in memory for python call.
+ * 
+ */
+class StaDumpTimingData : public StaFunc {
+ public:
+  unsigned operator()(StaArc* the_arc) override;
+
+  void set_analysis_mode(AnalysisMode mode) { _analysis_mode = mode; }
+  AnalysisMode get_analysis_mode() { return _analysis_mode; }
+  void set_trans_type(TransType trans_type) { _trans_type = trans_type; }
+  TransType get_trans_type() { return _trans_type; }
+
+  auto get_wire_timing_datas() { return _wire_timing_datas; }
+
+  private:
+  std::vector<StaWireTimingData> _wire_timing_datas;
+
+  AnalysisMode _analysis_mode;
+  TransType _trans_type;
+};
+
 }  // namespace ista

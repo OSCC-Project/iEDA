@@ -1,6 +1,6 @@
-# User guide of iSTA
+# iSTA: Timing Analysis
 
-> ## Introduction to the iSTA
+## Introduction to the iSTA
 
 ### Software structure diagram
 
@@ -28,7 +28,7 @@
 
 ---
 
-> ## Example of how to use the iSTA tool
+## Example of how to use the iSTA tool
 
 ### Write the tcl file(run_ista.tcl)
 
