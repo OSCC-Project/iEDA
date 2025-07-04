@@ -439,4 +439,66 @@ unsigned StaDumpGraphViz::operator()(StaGraph* the_graph) {
   return 1;
 }
 
+/**
+ * @brief dump the timing data of the timing arc.
+ * 
+ * @param the_arc 
+ * @return unsigned 
+ */
+unsigned StaDumpTimingData::operator()(StaArc* the_arc) {
+  AnalysisMode analysis_mode = _analysis_mode;
+  TransType trans_type = _trans_type;
+
+  auto vertex_slew = the_arc->get_src()->getSlewNs(analysis_mode, trans_type);
+  if (the_arc->isInstArc()) {
+    double inst_arc_delay = FS_TO_NS(the_arc->get_arc_delay(analysis_mode, trans_type));
+
+    StaWireTimingData wire_timing_data;
+    wire_timing_data._from_node_name = the_arc->get_src()->getName();
+    wire_timing_data._to_node_name = the_arc->get_snk()->getName();
+    wire_timing_data._wire_from_slew = vertex_slew.value_or(0.0);
+    wire_timing_data._wire_to_slew = the_arc->get_snk()->getSlewNs(analysis_mode, trans_type).value_or(0.0);
+    wire_timing_data._wire_delay = inst_arc_delay;
+
+    _wire_timing_datas.emplace_back(wire_timing_data);
+  } else {
+        // for net arc, we need extract the wire topo.
+    auto* the_net_arc = dynamic_cast<StaNetArc*>(the_arc);
+    auto* the_net = the_net_arc->get_net();
+
+    auto* rc_net = getSta()->getRcNet(the_net);
+    if ((rc_net == nullptr) || (rc_net->rct() == nullptr)) {
+      return 0;
+    }
+
+    auto* rc_tree = rc_net->rct();
+    auto* snk_node = the_arc->get_snk();
+    auto snk_node_name = snk_node->get_design_obj()->getFullName();
+
+    auto wire_topo = rc_tree->getWireTopo(snk_node_name.c_str());
+    auto all_nodes_slew =
+        rc_tree->getAllNodeSlew(*vertex_slew, analysis_mode, trans_type);
+    for (auto* wire_edge : wire_topo | std::ranges::views::reverse) {
+      auto& from_node = wire_edge->get_from();
+      auto& to_node = wire_edge->get_to();
+
+      StaWireTimingData wire_timing_data;
+
+      wire_timing_data._from_node_name = from_node.get_name();
+      wire_timing_data._to_node_name= to_node.get_name();
+      wire_timing_data._wire_resistance = wire_edge->get_res();
+      wire_timing_data._wire_capacitance = from_node.nodeLoad() - to_node.nodeLoad();
+      wire_timing_data._wire_from_slew = all_nodes_slew[from_node.get_name()];
+      wire_timing_data._wire_to_slew = all_nodes_slew[to_node.get_name()];
+      wire_timing_data._wire_delay = PS_TO_NS(to_node.delay() - from_node.delay());
+
+      _wire_timing_datas.emplace_back(wire_timing_data);
+    }
+  }
+
+
+  return 1;
+
+}
+
 }  // namespace ista

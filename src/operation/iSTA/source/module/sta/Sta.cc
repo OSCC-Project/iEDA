@@ -91,6 +91,12 @@ Sta::Sta()
       _analysis_mode(AnalysisMode::kMaxMin),
       _graph(&_netlist),
       _clock_groups(sta_clock_cmp) {
+  char config[] = "iSTA";
+  char *argv[] = {config, nullptr};
+  // We need to initialize the log system here, because Sta() may be called in
+  // pybind, which does not have a main function to initialize the log system.
+  Log::init(argv);
+
   _report_tbl_summary = StaReportPathSummary::createReportTable("sta");
   _report_tbl_TNS = StaReportClockTNS::createReportTable("TNS");
 }
@@ -2895,6 +2901,32 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
   LOG_INFO << "The timing engine run success.";
 
   return 1;
+}
+
+/**
+ * @brief report timing data in memory for online analysis.
+ *
+ * @param n_worst_path_per_clock
+ * @return unsigned
+ */
+std::vector<StaPathWireTimingData> Sta::reportTimingData(unsigned n_worst_path_per_clock) {
+  std::vector<StaPathWireTimingData> path_timing_data;
+
+  set_n_worst_path_per_clock(n_worst_path_per_clock);
+
+  for (auto analysi_mode : {AnalysisMode::kMax, AnalysisMode::kMin}) {
+    StaReportPathTimingData report_path_timing_data_func(
+        nullptr, analysi_mode, n_worst_path_per_clock);
+    for (auto &[capture_clock, seq_path_group] : _clock_groups) {
+      auto group_timing_data =
+          report_path_timing_data_func.getPathGroupTimingData(
+              seq_path_group.get());
+      path_timing_data.insert(path_timing_data.end(), group_timing_data.begin(),
+                              group_timing_data.end());
+    }
+  }
+
+  return path_timing_data;
 }
 
 /**

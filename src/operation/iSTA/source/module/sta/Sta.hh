@@ -565,6 +565,8 @@ class Sta {
   unsigned reportTiming(std::set<std::string>&& exclude_cell_names = {},
                         bool is_derate = false, bool is_clock_cap = false,
                         bool is_copy = true);
+
+  std::vector<StaPathWireTimingData> reportTimingData(unsigned n_worst_path_per_clock);
   unsigned reportUsedLibs();
   unsigned reportWirePaths();
 

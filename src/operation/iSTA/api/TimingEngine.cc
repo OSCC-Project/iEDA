@@ -563,6 +563,49 @@ void TimingEngine::buildRcTreeAndUpdateRcTreeInfo(
 }
 
 /**
+ * @brief Get all node slew of virtual rc tree.
+ *
+ * @param rc_tree_name
+ * @param driver_slew
+ * @return std::map<std::string, double>
+ */
+std::map<std::string, double> TimingEngine::getVirtualRCTreeAllNodeSlew(
+    const char* rc_tree_name, double driver_slew, TransType trans_type) {
+  if (!_virtual_rc_trees.contains(rc_tree_name)) {
+    LOG_FATAL << "virtual RC tree " << rc_tree_name << " does not exist!";
+  }
+
+  auto& virtual_rc_tree = _virtual_rc_trees[rc_tree_name];
+
+  std::map<std::string, double> all_node_slews;
+  all_node_slews = virtual_rc_tree.getAllNodeSlew(driver_slew, AnalysisMode::kMax, trans_type);
+
+  return all_node_slews;
+}
+
+/**
+ * @brief get all node delay of virtual rc tree.
+ *
+ * @param rc_tree_name
+ * @return std::map<std::string, double>
+ */
+std::map<std::string, double> TimingEngine::getVirtualRCTreeAllNodeDelay(
+    const char* rc_tree_name) {
+  if (!_virtual_rc_trees.contains(rc_tree_name)) {
+    LOG_FATAL << "virtual RC tree " << rc_tree_name << " does not exist!";
+  }
+  auto& virtual_rc_tree = _virtual_rc_trees[rc_tree_name];
+
+  std::map<std::string, double> all_node_delays;
+
+  for (auto& [node_name, node] : virtual_rc_tree.get_nodes()) {
+    all_node_delays[node_name] = node.delay();
+  }
+
+  return all_node_delays;
+}
+
+/**
  * @brief incremental propagation to update timing data.
  *
  * @return TimingEngine&

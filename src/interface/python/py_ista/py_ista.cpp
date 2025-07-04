@@ -183,7 +183,33 @@ bool reportSta()
   return true;
 }
 
+std::vector<PathWireTimingData> getWireTimingData()
+{
+  auto* ista = ista::Sta::getOrCreateSta();
+  unsigned n_worst_path_per_clock = 10000;
+  auto path_wire_timing_data = ista->reportTimingData(n_worst_path_per_clock);
 
+  std::vector<PathWireTimingData> ret_timing_data;
+
+  for (auto& one_path_wire_timing_data : path_wire_timing_data) {
+    PathWireTimingData ret_one_path_data;
+    for (auto& wire_timing_data : one_path_wire_timing_data) {
+      WireTimingData ret_wire_data;
+      ret_wire_data._from_node_name = std::move(wire_timing_data._from_node_name);
+      ret_wire_data._to_node_name = std::move(wire_timing_data._to_node_name);
+      ret_wire_data._wire_resistance = wire_timing_data._wire_resistance;
+      ret_wire_data._wire_capacitance = wire_timing_data._wire_capacitance;
+      ret_wire_data._wire_delay = wire_timing_data._wire_delay;
+      ret_wire_data._wire_from_slew = wire_timing_data._wire_from_slew;
+      ret_wire_data._wire_to_slew = wire_timing_data._wire_to_slew;
+
+      ret_one_path_data.emplace_back(std::move(ret_wire_data));
+    }
+
+  }
+
+  return ret_timing_data;
+}
 
 bool reportTiming(int digits, const std::string& delay_type, std::set<std::string> exclude_cell_names, bool derate)
 {

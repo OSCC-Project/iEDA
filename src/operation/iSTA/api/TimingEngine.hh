@@ -234,6 +234,11 @@ class TimingEngine {
   void buildRcTreeAndUpdateRcTreeInfo(
       const char *net_name, std::map<std::string, double> &loadname2wl);
 
+  std::map<std::string, double> getVirtualRCTreeAllNodeSlew(
+      const char* rc_tree_name, double driver_slew, TransType trans_type);
+  std::map<std::string, double> getVirtualRCTreeAllNodeDelay(
+      const char* rc_tree_name);
+
   TimingEngine &incrUpdateTiming();
 
   TimingEngine &updateTiming() {
