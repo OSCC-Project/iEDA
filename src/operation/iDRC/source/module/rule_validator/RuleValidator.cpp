@@ -55,7 +55,7 @@ std::vector<Violation> RuleValidator::verify(std::vector<DRCShape>& drc_env_shap
   DRCLOG.info(Loc::current(), "Starting...");
   RVModel rv_model = initRVModel(drc_env_shape_list, drc_result_shape_list);
   setRVComParam(rv_model);
-  buildRVModel(rv_model);
+  buildRVBoxList(rv_model);
   verifyRVModel(rv_model);
   // debugVerifyRVModelByGolden(rv_model);
   buildViolationList(rv_model);
@@ -94,7 +94,7 @@ void RuleValidator::setRVComParam(RVModel& rv_model)
   rv_model.set_rv_com_param(rv_com_param);
 }
 
-void RuleValidator::buildRVModel(RVModel& rv_model)
+void RuleValidator::buildRVBoxList(RVModel& rv_model)
 {
   std::vector<RVBox>& rv_box_list = rv_model.get_rv_box_list();
   int32_t box_size = rv_model.get_rv_com_param().get_box_size();
@@ -975,14 +975,14 @@ void RuleValidator::debugVerifyRVBoxByGolden(RVBox& rv_box)
           } else {
             if (violation_type == ViolationType::kMinHole || violation_type == ViolationType::kMinimumArea) {
               required_size = static_cast<int32_t>(std::round(std::stod(required) * micron_dbu * micron_dbu));
-            } else if (violation_type == ViolationType::kMaxViaStack) {
+            } else if (violation_type == ViolationType::kMaxViaStack || violation_type == ViolationType::kMinimumCut) {
               required_size = static_cast<int32_t>(std::round(std::stod(required)));
             } else {
               required_size = static_cast<int32_t>(std::round(std::stod(required) * micron_dbu));
             }
           }
           // 筛选
-          if (violation_type == ViolationType::kFloatingPatch || violation_type == ViolationType::kEnclosure || violation_type == ViolationType::kMinimumCut) {
+          if (violation_type == ViolationType::kFloatingPatch || violation_type == ViolationType::kEnclosure) {
             continue;
           }
           if (violation_net_set.size() == 1 && (*violation_net_set.begin()) == -1) {

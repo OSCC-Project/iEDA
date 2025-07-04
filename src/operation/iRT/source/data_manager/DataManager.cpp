@@ -59,7 +59,8 @@ void DataManager::input(std::map<std::string, std::any>& config_map)
   buildDatabase();
   printConfig();
   printDatabase();
-  writePYScript();
+  outputScript();
+  outputEnvJson();
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -504,8 +505,8 @@ std::vector<NetShape> DataManager::getNetShapeList(int32_t net_idx, MTree<LayerC
 
 std::vector<NetShape> DataManager::getNetShapeList(int32_t net_idx, LayerCoord& first_coord, LayerCoord& second_coord)
 {
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
 
   std::vector<NetShape> net_shape_list;
   int32_t first_layer_idx = first_coord.get_layer_idx();
@@ -587,6 +588,8 @@ void DataManager::buildConfig()
   if (_config.bottom_routing_layer_idx >= _config.top_routing_layer_idx) {
     RTLOG.error(Loc::current(), "The routing layer should be at least two layers!");
   }
+  // **********    DataManager    ********** //
+  _config.dm_temp_directory_path = _config.temp_directory_path + "data_manager/";
   // **********     DRCEngine     ********** //
   _config.de_temp_directory_path = _config.temp_directory_path + "drc_engine/";
   // **********     GDSPlotter    ********** //
@@ -614,6 +617,8 @@ void DataManager::buildConfig()
   RTUTIL.removeDir(_config.temp_directory_path);
   RTUTIL.createDir(_config.temp_directory_path);
   RTUTIL.createDirByFile(_config.log_file_path);
+  // **********    DataManager    ********** //
+  RTUTIL.createDir(_config.dm_temp_directory_path);
   // **********     DRCEngine     ********** //
   RTUTIL.createDir(_config.de_temp_directory_path);
   // **********    GDSPlotter     ********** //
@@ -1021,12 +1026,10 @@ void DataManager::makeLayerViaMasterList()
     for (ViaMaster& via_master : via_master_list) {
       // above
       LayerRect& above_enclosure = via_master.get_above_enclosure();
-      Direction above_layer_direction = routing_layer_list[above_enclosure.get_layer_idx()].get_prefer_direction();
-      via_master.set_above_direction(above_enclosure.getRectDirection(above_layer_direction));
+      via_master.set_above_direction(above_enclosure.getRectDirection(Direction::kNone));
       // below
       LayerRect& below_enclosure = via_master.get_below_enclosure();
-      Direction below_layer_direction = routing_layer_list[below_enclosure.get_layer_idx()].get_prefer_direction();
-      via_master.set_below_direction(below_enclosure.getRectDirection(below_layer_direction));
+      via_master.set_below_direction(below_enclosure.getRectDirection(Direction::kNone));
     }
   }
   std::vector<Direction> direction_list;
@@ -1042,7 +1045,7 @@ void DataManager::makeLayerViaMasterList()
           if (routing_shape.get_layer_idx() != 0) {
             continue;
           }
-          direction_num_map[routing_shape.get_real_rect().getRectDirection()]++;
+          direction_num_map[routing_shape.get_real_rect().getRectDirection(routing_layer_list[routing_shape.get_layer_idx()].get_prefer_direction())]++;
         }
       }
     }
@@ -1469,6 +1472,10 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.bottom_routing_layer_idx);
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "top_routing_layer_idx");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.top_routing_layer_idx);
+  // **********     DataManager     ********** //
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "DataManager");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "dm_temp_directory_path");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.dm_temp_directory_path);
   // **********     DRCEngine     ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "DRCEngine");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "de_temp_directory_path");
@@ -1632,11 +1639,11 @@ void DataManager::printDatabase()
   /////////////////////////////////////////////
 }
 
-void DataManager::writePYScript()
+void DataManager::outputScript()
 {
-  std::string& temp_directory_path = RTDM.getConfig().temp_directory_path;
+  std::string& dm_temp_directory_path = _config.dm_temp_directory_path;
 
-  std::ofstream* python_file = RTUTIL.getOutputFileStream(RTUTIL.getString(temp_directory_path, "plot.py"));
+  std::ofstream* python_file = RTUTIL.getOutputFileStream(RTUTIL.getString(dm_temp_directory_path, "plot.py"));
   RTUTIL.pushStream(python_file, "import os", "\n");
   RTUTIL.pushStream(python_file, "import pandas as pd", "\n");
   RTUTIL.pushStream(python_file, "import matplotlib.pyplot as plt", "\n");
@@ -1659,6 +1666,52 @@ void DataManager::writePYScript()
   RTUTIL.pushStream(python_file, "with Pool() as pool:", "\n");
   RTUTIL.pushStream(python_file, "    pool.map(process_csv, csv_files)", "\n");
   RTUTIL.closeFileStream(python_file);
+}
+
+void DataManager::outputEnvJson()
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
+  std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
+  std::string& dm_temp_directory_path = _config.dm_temp_directory_path;
+  int32_t output_inter_result = _config.output_inter_result;
+  if (!output_inter_result) {
+    return;
+  }
+  std::vector<nlohmann::json> env_json_list;
+  {
+    nlohmann::json obs_json;
+    obs_json["net_name"] = "obs";
+    for (Obstacle& routing_obstacle : _database.get_routing_obstacle_list()) {
+      obs_json["shape"].push_back({routing_obstacle.get_real_ll_x(), routing_obstacle.get_real_ll_y(), routing_obstacle.get_real_ur_x(),
+                                   routing_obstacle.get_real_ur_y(), routing_layer_list[routing_obstacle.get_layer_idx()].get_layer_name()});
+    }
+    for (Obstacle& cut_obstacle : _database.get_cut_obstacle_list()) {
+      obs_json["shape"].push_back({cut_obstacle.get_real_ll_x(), cut_obstacle.get_real_ll_y(), cut_obstacle.get_real_ur_x(), cut_obstacle.get_real_ur_y(),
+                                   cut_layer_list[cut_obstacle.get_layer_idx()].get_layer_name()});
+    }
+    env_json_list.push_back(obs_json);
+  }
+  for (Net& net : net_list) {
+    nlohmann::json net_json;
+    net_json["net_name"] = net.get_net_name();
+    for (Pin& pin : net.get_pin_list()) {
+      for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
+        net_json["shape"].push_back({routing_shape.get_real_ll_x(), routing_shape.get_real_ll_y(), routing_shape.get_real_ur_x(), routing_shape.get_real_ur_y(),
+                                     routing_layer_list[routing_shape.get_layer_idx()].get_layer_name()});
+      }
+      for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
+        net_json["shape"].push_back({cut_shape.get_real_ll_x(), cut_shape.get_real_ll_y(), cut_shape.get_real_ur_x(), cut_shape.get_real_ur_y(),
+                                     cut_layer_list[cut_shape.get_layer_idx()].get_layer_name()});
+      }
+    }
+    env_json_list.push_back(net_json);
+  }
+  std::string env_json_file_path = RTUTIL.getString(dm_temp_directory_path, "env_map.json");
+  std::ofstream* env_json_file = RTUTIL.getOutputFileStream(env_json_file_path);
+  (*env_json_file) << env_json_list;
+  RTUTIL.closeFileStream(env_json_file);
+  RTI.sendNotification(RTUTIL.getString("RT_DM_env_map"), env_json_file_path);
 }
 
 #endif

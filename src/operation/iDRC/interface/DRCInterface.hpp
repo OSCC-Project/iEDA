@@ -98,6 +98,10 @@ class DRCInterface
   DRCShape convertToDRCShape(const ids::Shape& ids_shape);
 #endif
 
+#if 1  // ecos
+  void sendNotification(std::string stage, std::string json_path);
+#endif
+
 #endif
 
  private:

@@ -1557,7 +1557,7 @@ void TrackAssigner::outputNetJson(TAModel& ta_model)
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
-  RTI.sendNotification(RTUTIL.getString("TA_net_map"), net_json_file_path);
+  RTI.sendNotification(RTUTIL.getString("RT_TA_net_map"), net_json_file_path);
 }
 
 void TrackAssigner::outputViolationJson(TAModel& ta_model)
@@ -1580,7 +1580,11 @@ void TrackAssigner::outputViolationJson(TAModel& ta_model)
         = {violation_shape.get_real_rect().get_ll_x(), violation_shape.get_real_rect().get_ll_y(), violation_shape.get_real_rect().get_ur_x(),
            violation_shape.get_real_rect().get_ur_y(), routing_layer_list[violation_shape.get_layer_idx()].get_layer_name()};
     for (int32_t net_idx : violation->get_violation_net_set()) {
-      violation_json["net"].push_back(net_list[net_idx].get_net_name());
+      if (net_idx != -1) {
+        violation_json["net"].push_back(net_list[net_idx].get_net_name());
+      } else {
+        violation_json["net"].push_back("obs");
+      }
     }
     violation_json_list.push_back(violation_json);
   }
@@ -1588,7 +1592,7 @@ void TrackAssigner::outputViolationJson(TAModel& ta_model)
   std::ofstream* violation_json_file = RTUTIL.getOutputFileStream(violation_json_file_path);
   (*violation_json_file) << violation_json_list;
   RTUTIL.closeFileStream(violation_json_file);
-  RTI.sendNotification(RTUTIL.getString("TA_violation_map"), violation_json_file_path);
+  RTI.sendNotification(RTUTIL.getString("RT_TA_violation_map"), violation_json_file_path);
 }
 
 #endif

@@ -2734,8 +2734,8 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
   int32_t& total_patch_num = summary.iter_dr_summary_map[dr_model.get_iter()].total_patch_num;
   std::map<int32_t, int32_t>& routing_violation_num_map = summary.iter_dr_summary_map[dr_model.get_iter()].routing_violation_num_map;
   int32_t& total_violation_num = summary.iter_dr_summary_map[dr_model.get_iter()].total_violation_num;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.iter_dr_summary_map[dr_model.get_iter()].clock_timing;
-  std::map<std::string, double>& power_map = summary.iter_dr_summary_map[dr_model.get_iter()].power_map;
+  std::map<std::string, std::map<std::string, double>>& clock_timing_map = summary.iter_dr_summary_map[dr_model.get_iter()].clock_timing_map;
+  std::map<std::string, double>& type_power_map = summary.iter_dr_summary_map[dr_model.get_iter()].type_power_map;
 
   std::vector<DRNet>& dr_net_list = dr_model.get_dr_net_list();
 
@@ -2747,8 +2747,8 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
   total_patch_num = 0;
   routing_violation_num_map.clear();
   total_violation_num = 0;
-  clock_timing.clear();
-  power_map.clear();
+  clock_timing_map.clear();
+  type_power_map.clear();
 
   for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
@@ -2795,7 +2795,7 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
         routing_segment_list_list[net_idx].emplace_back(segment->get_first(), segment->get_second());
       }
     }
-    RTI.updateTimingAndPower(real_pin_coord_map_list, routing_segment_list_list, clock_timing, power_map);
+    RTI.updateTimingAndPower(real_pin_coord_map_list, routing_segment_list_list, clock_timing_map, type_power_map);
   }
 }
 
@@ -2814,8 +2814,8 @@ void DetailedRouter::printSummary(DRModel& dr_model)
   int32_t& total_patch_num = summary.iter_dr_summary_map[dr_model.get_iter()].total_patch_num;
   std::map<int32_t, int32_t>& routing_violation_num_map = summary.iter_dr_summary_map[dr_model.get_iter()].routing_violation_num_map;
   int32_t& total_violation_num = summary.iter_dr_summary_map[dr_model.get_iter()].total_violation_num;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.iter_dr_summary_map[dr_model.get_iter()].clock_timing;
-  std::map<std::string, double>& power_map = summary.iter_dr_summary_map[dr_model.get_iter()].power_map;
+  std::map<std::string, std::map<std::string, double>>& clock_timing_map = summary.iter_dr_summary_map[dr_model.get_iter()].clock_timing_map;
+  std::map<std::string, double>& type_power_map = summary.iter_dr_summary_map[dr_model.get_iter()].type_power_map;
 
   fort::char_table routing_wire_length_map_table;
   {
@@ -2875,16 +2875,16 @@ void DetailedRouter::printSummary(DRModel& dr_model)
                  << "tns"
                  << "wns"
                  << "freq" << fort::endr;
-    for (auto& [clock_name, timing_map] : clock_timing) {
+    for (auto& [clock_name, timing_map] : clock_timing_map) {
       timing_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
     }
     power_table << fort::header << "power_type";
-    for (auto& [type, power] : power_map) {
+    for (auto& [type, power] : type_power_map) {
       power_table << fort::header << type;
     }
     power_table << fort::endr;
     power_table << "power_value";
-    for (auto& [type, power] : power_map) {
+    for (auto& [type, power] : type_power_map) {
       power_table << power;
     }
     power_table << fort::endr;
@@ -3021,7 +3021,7 @@ void DetailedRouter::outputNetJson(DRModel& dr_model)
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
-  RTI.sendNotification(RTUTIL.getString("DR_", dr_model.get_iter(), "_net_map"), net_json_file_path);
+  RTI.sendNotification(RTUTIL.getString("RT_DR_", dr_model.get_iter(), "_net_map"), net_json_file_path);
 }
 
 void DetailedRouter::outputViolationJson(DRModel& dr_model)
@@ -3044,7 +3044,11 @@ void DetailedRouter::outputViolationJson(DRModel& dr_model)
         = {violation_shape.get_real_rect().get_ll_x(), violation_shape.get_real_rect().get_ll_y(), violation_shape.get_real_rect().get_ur_x(),
            violation_shape.get_real_rect().get_ur_y(), routing_layer_list[violation_shape.get_layer_idx()].get_layer_name()};
     for (int32_t net_idx : violation->get_violation_net_set()) {
-      violation_json["net"].push_back(net_list[net_idx].get_net_name());
+      if (net_idx != -1) {
+        violation_json["net"].push_back(net_list[net_idx].get_net_name());
+      } else {
+        violation_json["net"].push_back("obs");
+      }
     }
     violation_json_list.push_back(violation_json);
   }
@@ -3052,7 +3056,7 @@ void DetailedRouter::outputViolationJson(DRModel& dr_model)
   std::ofstream* violation_json_file = RTUTIL.getOutputFileStream(violation_json_file_path);
   (*violation_json_file) << violation_json_list;
   RTUTIL.closeFileStream(violation_json_file);
-  RTI.sendNotification(RTUTIL.getString("DR_", dr_model.get_iter(), "_violation_map"), violation_json_file_path);
+  RTI.sendNotification(RTUTIL.getString("RT_DR_", dr_model.get_iter(), "_violation_map"), violation_json_file_path);
 }
 
 #endif
