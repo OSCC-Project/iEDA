@@ -12,7 +12,7 @@ add_library(irt_source INTERFACE)
 
 target_link_libraries(irt_source
     INTERFACE
-        irt_data_manager
-        irt_module
-        irt_toolkit
+    irt_data_manager
+    irt_module
+    irt_toolkit
 )

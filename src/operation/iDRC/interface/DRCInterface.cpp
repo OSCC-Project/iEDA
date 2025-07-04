@@ -349,6 +349,39 @@ void DRCInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLa
     minimum_area_rule.min_area = idb_layer->get_area();
     exist_rule_set.insert(ViolationType::kMinimumArea);
   }
+  // MinimumCutRule
+  {
+    std::vector<MinimumCutRule>& minimum_cut_rule_list = routing_layer.get_minimum_cut_rule_list();
+    if (!idb_layer->get_lef58_minimum_cut().empty()) {
+      for (std::shared_ptr<idb::routinglayer::Lef58MinimumCut>& idb_minimum_cut : idb_layer->get_lef58_minimum_cut()) {
+        MinimumCutRule minimum_cut_rule;
+        if (idb_minimum_cut.get()->get_num_cuts().has_value()) {
+          minimum_cut_rule.num_cuts = idb_minimum_cut.get()->get_num_cuts().value();
+        } else {
+          for (const idb::routinglayer::Lef58MinimumCut::CutClass& idb_cut_class : idb_minimum_cut.get()->get_cut_classes()) {
+            if (idb_cut_class.get_class_name() == "VSINGLECUT") {
+              minimum_cut_rule.num_cuts = idb_cut_class.get_num_cuts();
+              break;
+            }
+          }
+        }
+        minimum_cut_rule.width = idb_minimum_cut.get()->get_width();
+        minimum_cut_rule.has_within_cut_distance = idb_minimum_cut.get()->get_within_cut_distance().has_value();
+        if (idb_minimum_cut.get()->get_within_cut_distance().has_value()) {
+          minimum_cut_rule.within_cut_distance = idb_minimum_cut.get()->get_within_cut_distance().value();
+        }
+        minimum_cut_rule.has_from_above = idb_minimum_cut.get()->get_orient() == idb::routinglayer::Lef58MinimumCut::Orient::kFromAbove ? true : false;
+        minimum_cut_rule.has_from_below = idb_minimum_cut.get()->get_orient() == idb::routinglayer::Lef58MinimumCut::Orient::kFromBelow ? true : false;
+        minimum_cut_rule.has_length = idb_minimum_cut.get()->get_length().has_value();
+        if (idb_minimum_cut.get()->get_length().has_value()) {
+          minimum_cut_rule.length = idb_minimum_cut.get()->get_length().value().get_length();
+          minimum_cut_rule.distance = idb_minimum_cut.get()->get_length().value().get_distance();
+        }
+        minimum_cut_rule_list.push_back(minimum_cut_rule);
+      }
+      exist_rule_set.insert(ViolationType::kMinimumCut);
+    }
+  }
   // MinimumWidthRule
   {
     MinimumWidthRule& minimum_width_rule = routing_layer.get_minimum_width_rule();
@@ -956,7 +989,6 @@ void DRCInterface::printSummary(std::map<std::string, std::vector<ids::Violation
 void DRCInterface::outputViolationJson(std::map<std::string, std::vector<ids::Violation>>& type_violation_map)
 {
   std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = DRCDM.getDatabase().get_cut_layer_list();
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = DRCDM.getDatabase().get_cut_to_adjacent_routing_map();
   std::string& temp_directory_path = DRCDM.getConfig().temp_directory_path;
 
@@ -975,14 +1007,20 @@ void DRCInterface::outputViolationJson(std::map<std::string, std::vector<ids::Vi
       }
       violation_json["shape"] = {violation.ll_x, violation.ll_y, violation.ur_x, violation.ur_y, routing_layer_list[layer_idx].get_layer_name()};
       for (int32_t net_idx : violation.violation_net_set) {
-        violation_json["net"].push_back(idb_net_list[net_idx]->get_net_name());
+        if (net_idx != -1) {
+          violation_json["net"].push_back(idb_net_list[net_idx]->get_net_name());
+        } else {
+          violation_json["net"].push_back("obs");
+        }
       }
       violation_json_list.push_back(violation_json);
     }
   }
-  std::ofstream* violation_json_file = DRCUTIL.getOutputFileStream(DRCUTIL.getString(temp_directory_path, "violation_map.json"));
+  std::string violation_json_file_path = DRCUTIL.getString(temp_directory_path, "violation_map.json");
+  std::ofstream* violation_json_file = DRCUTIL.getOutputFileStream(violation_json_file_path);
   (*violation_json_file) << violation_json_list;
   DRCUTIL.closeFileStream(violation_json_file);
+  sendNotification(DRCUTIL.getString("DRC_violation_map"), violation_json_file_path);
 }
 
 void DRCInterface::outputSummary(std::map<std::string, std::vector<ids::Violation>>& type_violation_map)
@@ -1013,6 +1051,14 @@ DRCShape DRCInterface::convertToDRCShape(const ids::Shape& ids_shape)
   drc_shape.set_layer_idx(ids_shape.layer_idx);
   drc_shape.set_is_routing(ids_shape.is_routing);
   return drc_shape;
+}
+
+#endif
+
+#if 1  // ecos
+
+void DRCInterface::sendNotification(std::string stage, std::string json_path)
+{
 }
 
 #endif

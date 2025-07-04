@@ -927,8 +927,8 @@ void LayerAssigner::updateSummary(LAModel& la_model)
   double& total_wire_length = summary.la_summary.total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.la_summary.cut_via_num_map;
   int32_t& total_via_num = summary.la_summary.total_via_num;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.la_summary.clock_timing;
-  std::map<std::string, double>& power_map = summary.la_summary.power_map;
+  std::map<std::string, std::map<std::string, double>>& clock_timing_map = summary.la_summary.clock_timing_map;
+  std::map<std::string, double>& type_power_map = summary.la_summary.type_power_map;
 
   std::vector<GridMap<LANode>>& layer_node_map = la_model.get_layer_node_map();
   std::vector<LANet>& la_net_list = la_model.get_la_net_list();
@@ -941,8 +941,8 @@ void LayerAssigner::updateSummary(LAModel& la_model)
   total_wire_length = 0;
   cut_via_num_map.clear();
   total_via_num = 0;
-  clock_timing.clear();
-  power_map.clear();
+  clock_timing_map.clear();
+  type_power_map.clear();
 
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
     GridMap<LANode>& la_node_map = layer_node_map[layer_idx];
@@ -1001,7 +1001,7 @@ void LayerAssigner::updateSummary(LAModel& la_model)
         routing_segment_list_list[net_idx].emplace_back(first_real_coord, second_real_coord);
       }
     }
-    RTI.updateTimingAndPower(real_pin_coord_map_list, routing_segment_list_list, clock_timing, power_map);
+    RTI.updateTimingAndPower(real_pin_coord_map_list, routing_segment_list_list, clock_timing_map, type_power_map);
   }
 }
 
@@ -1020,8 +1020,8 @@ void LayerAssigner::printSummary(LAModel& la_model)
   double& total_wire_length = summary.la_summary.total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.la_summary.cut_via_num_map;
   int32_t& total_via_num = summary.la_summary.total_via_num;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.la_summary.clock_timing;
-  std::map<std::string, double>& power_map = summary.la_summary.power_map;
+  std::map<std::string, std::map<std::string, double>>& clock_timing_map = summary.la_summary.clock_timing_map;
+  std::map<std::string, double>& type_power_map = summary.la_summary.type_power_map;
 
   fort::char_table routing_demand_map_table;
   {
@@ -1080,16 +1080,16 @@ void LayerAssigner::printSummary(LAModel& la_model)
                  << "tns"
                  << "wns"
                  << "freq" << fort::endr;
-    for (auto& [clock_name, timing_map] : clock_timing) {
+    for (auto& [clock_name, timing_map] : clock_timing_map) {
       timing_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
     }
     power_table << fort::header << "power_type";
-    for (auto& [type, power] : power_map) {
+    for (auto& [type, power] : type_power_map) {
       power_table << fort::header << type;
     }
     power_table << fort::endr;
     power_table << "power_value";
-    for (auto& [type, power] : power_map) {
+    for (auto& [type, power] : type_power_map) {
       power_table << power;
     }
     power_table << fort::endr;
@@ -1255,7 +1255,7 @@ void LayerAssigner::outputNetJson(LAModel& la_model)
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
-  RTI.sendNotification(RTUTIL.getString("LA_net_map"), net_json_file_path);
+  RTI.sendNotification(RTUTIL.getString("RT_LA_net_map"), net_json_file_path);
 }
 
 void LayerAssigner::outputOverflowJson(LAModel& la_model)
@@ -1283,7 +1283,7 @@ void LayerAssigner::outputOverflowJson(LAModel& la_model)
   std::ofstream* overflow_json_file = RTUTIL.getOutputFileStream(overflow_json_file_path);
   (*overflow_json_file) << overflow_json_list;
   RTUTIL.closeFileStream(overflow_json_file);
-  RTI.sendNotification(RTUTIL.getString("LA_overflow_map"), overflow_json_file_path);
+  RTI.sendNotification(RTUTIL.getString("RT_LA_overflow_map"), overflow_json_file_path);
 }
 
 #endif

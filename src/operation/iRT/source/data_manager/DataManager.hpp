@@ -122,7 +122,8 @@ class DataManager
   int32_t getBucketIdx(int32_t scale_start, int32_t scale_end, int32_t bucket_start, int32_t bucket_end, int32_t bucket_length);
   void printConfig();
   void printDatabase();
-  void writePYScript();
+  void outputScript();
+  void outputEnvJson();
 #endif
 
 #if 1  // destroy

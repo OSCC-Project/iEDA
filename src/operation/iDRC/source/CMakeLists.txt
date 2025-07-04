@@ -12,7 +12,7 @@ add_library(idrc_source INTERFACE)
 
 target_link_libraries(idrc_source
     INTERFACE
-        idrc_data_manager
-        idrc_module
-        idrc_toolkit
+    idrc_data_manager
+    idrc_module
+    idrc_toolkit
 )
