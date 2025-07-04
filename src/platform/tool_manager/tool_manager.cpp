@@ -173,12 +173,12 @@ void ToolManager::guiCaptrueDesign(std::string path)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// iPL
-bool ToolManager::autoRunPlacer(std::string config)
+bool ToolManager::autoRunPlacer(std::string config, bool enableJsonOutput)
 {
   //   plInst->initPlacer(config);
   //   bool flag = plInst->runPlacement(config);
   //   plInst->destroyPlacer();
-  return plInst->runPlacement(config);
+  return plInst->runPlacement(config, enableJsonOutput);
   ;
 }
 bool ToolManager::runPlacerFiller(std::string config)

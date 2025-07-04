@@ -1553,9 +1553,11 @@ void TrackAssigner::outputNetJson(TAModel& ta_model)
                                                  routing_layer_list[patch->get_layer_idx()].get_layer_name()});
     }
   }
-  std::ofstream* net_json_file = RTUTIL.getOutputFileStream(RTUTIL.getString(ta_temp_directory_path, "net_map.json"));
+  std::string net_json_file_path = RTUTIL.getString(RTUTIL.getString(ta_temp_directory_path, "net_map.json"));
+  std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
+  RTI.sendNotification(RTUTIL.getString("TA_net_map"), net_json_file_path);
 }
 
 void TrackAssigner::outputViolationJson(TAModel& ta_model)
@@ -1582,9 +1584,11 @@ void TrackAssigner::outputViolationJson(TAModel& ta_model)
     }
     violation_json_list.push_back(violation_json);
   }
-  std::ofstream* violation_json_file = RTUTIL.getOutputFileStream(RTUTIL.getString(ta_temp_directory_path, "violation_map.json"));
+  std::string violation_json_file_path = RTUTIL.getString(ta_temp_directory_path, "violation_map.json");
+  std::ofstream* violation_json_file = RTUTIL.getOutputFileStream(violation_json_file_path);
   (*violation_json_file) << violation_json_list;
   RTUTIL.closeFileStream(violation_json_file);
+  RTI.sendNotification(RTUTIL.getString("TA_violation_map"), violation_json_file_path);
 }
 
 #endif

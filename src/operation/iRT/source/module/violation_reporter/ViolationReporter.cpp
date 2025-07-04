@@ -543,9 +543,11 @@ void ViolationReporter::outputNetJson(VRModel& vr_model)
                                                  routing_layer_list[patch->get_layer_idx()].get_layer_name()});
     }
   }
-  std::ofstream* net_json_file = RTUTIL.getOutputFileStream(RTUTIL.getString(vr_temp_directory_path, "net_map.json"));
+  std::string net_json_file_path = RTUTIL.getString(RTUTIL.getString(vr_temp_directory_path, "net_map.json"));
+  std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
+  RTI.sendNotification(RTUTIL.getString("VR_net_map"), net_json_file_path);
 }
 
 void ViolationReporter::outputViolationJson(VRModel& vr_model)
@@ -572,9 +574,11 @@ void ViolationReporter::outputViolationJson(VRModel& vr_model)
     }
     violation_json_list.push_back(violation_json);
   }
-  std::ofstream* violation_json_file = RTUTIL.getOutputFileStream(RTUTIL.getString(vr_temp_directory_path, "violation_map.json"));
+  std::string violation_json_file_path = RTUTIL.getString(vr_temp_directory_path, "violation_map.json");
+  std::ofstream* violation_json_file = RTUTIL.getOutputFileStream(violation_json_file_path);
   (*violation_json_file) << violation_json_list;
   RTUTIL.closeFileStream(violation_json_file);
+  RTI.sendNotification(RTUTIL.getString("VR_violation_map"), violation_json_file_path);
 }
 
 #endif

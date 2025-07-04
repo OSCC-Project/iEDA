@@ -31,6 +31,9 @@ CmdPlacerAutoRun::CmdPlacerAutoRun(const char* cmd_name) : TclCmd(cmd_name)
 {
   auto* file_name_option = new TclStringOption(TCL_CONFIG, 1, nullptr);
   addOption(file_name_option);
+
+  auto *json_output_option = new TclSwitchOption("-json");
+  addOption(json_output_option);
 }
 
 unsigned CmdPlacerAutoRun::check()
@@ -49,7 +52,13 @@ unsigned CmdPlacerAutoRun::exec()
   TclOption* option = getOptionOrArg(TCL_CONFIG);
   auto data_config = option->getStringVal();
 
-  if (iplf::tmInst->autoRunPlacer(data_config)) {
+  bool enable_json_output = false;
+  TclOption* json_output_option = getOptionOrArg("-json");
+  if (json_output_option->is_set_val()) {
+    enable_json_output = true;
+  }
+
+  if (iplf::tmInst->autoRunPlacer(data_config, enable_json_output)) {
     std::cout << "iPL run successfully." << std::endl;
   }
 

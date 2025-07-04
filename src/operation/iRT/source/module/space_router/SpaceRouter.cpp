@@ -1831,9 +1831,11 @@ void SpaceRouter::outputNetJson(SRModel& sr_model)
       }
     }
   }
-  std::ofstream* net_json_file = RTUTIL.getOutputFileStream(RTUTIL.getString(sr_temp_directory_path, "net_map_", sr_model.get_iter(), ".json"));
+  std::string net_json_file_path = RTUTIL.getString(sr_temp_directory_path, "net_map_", sr_model.get_iter(), ".json");
+  std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
+  RTI.sendNotification(RTUTIL.getString("SR_", sr_model.get_iter(), "_net_map"), net_json_file_path);
 }
 
 void SpaceRouter::outputOverflowJson(SRModel& sr_model)
@@ -1857,9 +1859,11 @@ void SpaceRouter::outputOverflowJson(SRModel& sr_model)
       }
     }
   }
-  std::ofstream* overflow_json_file = RTUTIL.getOutputFileStream(RTUTIL.getString(sr_temp_directory_path, "overflow_map_", sr_model.get_iter(), ".json"));
+  std::string overflow_json_file_path = RTUTIL.getString(sr_temp_directory_path, "overflow_map_", sr_model.get_iter(), ".json");
+  std::ofstream* overflow_json_file = RTUTIL.getOutputFileStream(overflow_json_file_path);
   (*overflow_json_file) << overflow_json_list;
   RTUTIL.closeFileStream(overflow_json_file);
+  RTI.sendNotification(RTUTIL.getString("SR_", sr_model.get_iter(), "_net_map"), overflow_json_file_path);
 }
 
 #endif
