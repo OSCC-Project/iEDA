@@ -3105,6 +3105,7 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
  * @return unsigned
  */
 std::vector<StaPathWireTimingData> Sta::reportTimingData(unsigned n_worst_path_per_clock) {
+  LOG_INFO << "get wire timing start";
   std::vector<StaPathWireTimingData> path_timing_data;
 
   set_n_worst_path_per_clock(n_worst_path_per_clock);
@@ -3120,6 +3121,9 @@ std::vector<StaPathWireTimingData> Sta::reportTimingData(unsigned n_worst_path_p
                               group_timing_data.end());
     }
   }
+
+  LOG_INFO << "the wire timing data size: " << path_timing_data.size();
+  LOG_INFO << "get wire timing end";
 
   return path_timing_data;
 }
