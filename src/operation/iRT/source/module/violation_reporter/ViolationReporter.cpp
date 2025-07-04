@@ -195,8 +195,8 @@ void ViolationReporter::updateSummary(VRModel& vr_model)
   std::map<std::string, int32_t>& among_net_violation_type_num_map = summary.vr_summary.among_net_violation_type_num_map;
   std::map<int32_t, int32_t>& among_net_routing_violation_num_map = summary.vr_summary.among_net_routing_violation_num_map;
   int32_t& among_net_total_violation_num = summary.vr_summary.among_net_total_violation_num;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.vr_summary.clock_timing;
-  std::map<std::string, double>& power_map = summary.vr_summary.power_map;
+  std::map<std::string, std::map<std::string, double>>& clock_timing_map = summary.vr_summary.clock_timing_map;
+  std::map<std::string, double>& type_power_map = summary.vr_summary.type_power_map;
 
   std::vector<VRNet>& vr_net_list = vr_model.get_vr_net_list();
 
@@ -214,8 +214,8 @@ void ViolationReporter::updateSummary(VRModel& vr_model)
   among_net_violation_type_num_map.clear();
   among_net_routing_violation_num_map.clear();
   among_net_total_violation_num = 0;
-  clock_timing.clear();
-  power_map.clear();
+  clock_timing_map.clear();
+  type_power_map.clear();
 
   for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
@@ -276,7 +276,7 @@ void ViolationReporter::updateSummary(VRModel& vr_model)
         routing_segment_list_list[net_idx].emplace_back(segment->get_first(), segment->get_second());
       }
     }
-    RTI.updateTimingAndPower(real_pin_coord_map_list, routing_segment_list_list, clock_timing, power_map);
+    RTI.updateTimingAndPower(real_pin_coord_map_list, routing_segment_list_list, clock_timing_map, type_power_map);
   }
 }
 
@@ -301,8 +301,8 @@ void ViolationReporter::printSummary(VRModel& vr_model)
   std::map<std::string, int32_t>& among_net_violation_type_num_map = summary.vr_summary.among_net_violation_type_num_map;
   std::map<int32_t, int32_t>& among_net_routing_violation_num_map = summary.vr_summary.among_net_routing_violation_num_map;
   int32_t& among_net_total_violation_num = summary.vr_summary.among_net_total_violation_num;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.vr_summary.clock_timing;
-  std::map<std::string, double>& power_map = summary.vr_summary.power_map;
+  std::map<std::string, std::map<std::string, double>>& clock_timing_map = summary.vr_summary.clock_timing_map;
+  std::map<std::string, double>& type_power_map = summary.vr_summary.type_power_map;
 
   fort::char_table routing_wire_length_map_table;
   {
@@ -401,16 +401,16 @@ void ViolationReporter::printSummary(VRModel& vr_model)
                  << "tns"
                  << "wns"
                  << "freq" << fort::endr;
-    for (auto& [clock_name, timing_map] : clock_timing) {
+    for (auto& [clock_name, timing_map] : clock_timing_map) {
       timing_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
     }
     power_table << fort::header << "power_type";
-    for (auto& [type, power] : power_map) {
+    for (auto& [type, power] : type_power_map) {
       power_table << fort::header << type;
     }
     power_table << fort::endr;
     power_table << "power_value";
-    for (auto& [type, power] : power_map) {
+    for (auto& [type, power] : type_power_map) {
       power_table << power;
     }
     power_table << fort::endr;

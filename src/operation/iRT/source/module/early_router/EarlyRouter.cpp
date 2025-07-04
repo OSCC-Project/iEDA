@@ -1256,8 +1256,8 @@ void EarlyRouter::updateSummary(ERModel& er_model)
   double& total_wire_length = summary.er_summary.total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.er_summary.cut_via_num_map;
   int32_t& total_via_num = summary.er_summary.total_via_num;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.er_summary.clock_timing;
-  std::map<std::string, double>& power_map = summary.er_summary.power_map;
+  std::map<std::string, std::map<std::string, double>>& clock_timing_map = summary.er_summary.clock_timing_map;
+  std::map<std::string, double>& type_power_map = summary.er_summary.type_power_map;
 
   std::vector<GridMap<ERNode>>& layer_node_map = er_model.get_layer_node_map();
   std::vector<ERNet>& er_net_list = er_model.get_er_net_list();
@@ -1270,8 +1270,8 @@ void EarlyRouter::updateSummary(ERModel& er_model)
   total_wire_length = 0;
   cut_via_num_map.clear();
   total_via_num = 0;
-  clock_timing.clear();
-  power_map.clear();
+  clock_timing_map.clear();
+  type_power_map.clear();
 
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
     GridMap<ERNode>& er_node_map = layer_node_map[layer_idx];
@@ -1341,7 +1341,7 @@ void EarlyRouter::updateSummary(ERModel& er_model)
         routing_segment_list_list[net_idx].emplace_back(first_real_coord, second_real_coord);
       }
     }
-    RTI.updateTimingAndPower(real_pin_coord_map_list, routing_segment_list_list, clock_timing, power_map);
+    RTI.updateTimingAndPower(real_pin_coord_map_list, routing_segment_list_list, clock_timing_map, type_power_map);
   }
 }
 
@@ -1360,8 +1360,8 @@ void EarlyRouter::printSummary(ERModel& er_model)
   double& total_wire_length = summary.er_summary.total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.er_summary.cut_via_num_map;
   int32_t& total_via_num = summary.er_summary.total_via_num;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.er_summary.clock_timing;
-  std::map<std::string, double>& power_map = summary.er_summary.power_map;
+  std::map<std::string, std::map<std::string, double>>& clock_timing_map = summary.er_summary.clock_timing_map;
+  std::map<std::string, double>& type_power_map = summary.er_summary.type_power_map;
 
   fort::char_table routing_demand_map_table;
   {
@@ -1420,16 +1420,16 @@ void EarlyRouter::printSummary(ERModel& er_model)
                  << "tns"
                  << "wns"
                  << "freq" << fort::endr;
-    for (auto& [clock_name, timing_map] : clock_timing) {
+    for (auto& [clock_name, timing_map] : clock_timing_map) {
       timing_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
     }
     power_table << fort::header << "power_type";
-    for (auto& [type, power] : power_map) {
+    for (auto& [type, power] : type_power_map) {
       power_table << fort::header << type;
     }
     power_table << fort::endr;
     power_table << "power_value";
-    for (auto& [type, power] : power_map) {
+    for (auto& [type, power] : type_power_map) {
       power_table << power;
     }
     power_table << fort::endr;

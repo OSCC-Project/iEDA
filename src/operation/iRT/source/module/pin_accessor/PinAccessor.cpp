@@ -3199,8 +3199,6 @@ void PinAccessor::updateSummary(PAModel& pa_model)
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
   Summary& summary = RTDM.getDatabase().get_summary();
 
-  std::map<int32_t, int32_t>& routing_access_point_num_map = summary.iter_pa_summary_map[pa_model.get_iter()].routing_access_point_num_map;
-  int32_t& total_access_point_num = summary.iter_pa_summary_map[pa_model.get_iter()].total_access_point_num;
   std::map<int32_t, double>& routing_wire_length_map = summary.iter_pa_summary_map[pa_model.get_iter()].routing_wire_length_map;
   double& total_wire_length = summary.iter_pa_summary_map[pa_model.get_iter()].total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.iter_pa_summary_map[pa_model.get_iter()].cut_via_num_map;
@@ -3210,10 +3208,6 @@ void PinAccessor::updateSummary(PAModel& pa_model)
   std::map<int32_t, int32_t>& routing_violation_num_map = summary.iter_pa_summary_map[pa_model.get_iter()].routing_violation_num_map;
   int32_t& total_violation_num = summary.iter_pa_summary_map[pa_model.get_iter()].total_violation_num;
 
-  std::vector<PANet>& pa_net_list = pa_model.get_pa_net_list();
-
-  routing_access_point_num_map.clear();
-  total_access_point_num = 0;
   routing_wire_length_map.clear();
   total_wire_length = 0;
   cut_via_num_map.clear();
@@ -3223,12 +3217,6 @@ void PinAccessor::updateSummary(PAModel& pa_model)
   routing_violation_num_map.clear();
   total_violation_num = 0;
 
-  for (PANet& pa_net : pa_net_list) {
-    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      routing_access_point_num_map[pa_pin.get_access_point().get_layer_idx()]++;
-      total_access_point_num++;
-    }
-  }
   for (auto& [net_idx, pin_access_result_map] : RTDM.getNetPinAccessResultMap(die)) {
     for (auto& [pin_idx, segment_set] : pin_access_result_map) {
       for (Segment<LayerCoord>* segment : segment_set) {
@@ -3271,8 +3259,6 @@ void PinAccessor::printSummary(PAModel& pa_model)
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   Summary& summary = RTDM.getDatabase().get_summary();
 
-  std::map<int32_t, int32_t>& routing_access_point_num_map = summary.iter_pa_summary_map[pa_model.get_iter()].routing_access_point_num_map;
-  int32_t& total_access_point_num = summary.iter_pa_summary_map[pa_model.get_iter()].total_access_point_num;
   std::map<int32_t, double>& routing_wire_length_map = summary.iter_pa_summary_map[pa_model.get_iter()].routing_wire_length_map;
   double& total_wire_length = summary.iter_pa_summary_map[pa_model.get_iter()].total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.iter_pa_summary_map[pa_model.get_iter()].cut_via_num_map;
@@ -3282,20 +3268,6 @@ void PinAccessor::printSummary(PAModel& pa_model)
   std::map<int32_t, int32_t>& routing_violation_num_map = summary.iter_pa_summary_map[pa_model.get_iter()].routing_violation_num_map;
   int32_t& total_violation_num = summary.iter_pa_summary_map[pa_model.get_iter()].total_violation_num;
 
-  fort::char_table routing_access_point_num_map_table;
-  {
-    routing_access_point_num_map_table.set_cell_text_align(fort::text_align::right);
-    routing_access_point_num_map_table << fort::header << "routing"
-                                       << "#access_point"
-                                       << "prop" << fort::endr;
-    for (RoutingLayer& routing_layer : routing_layer_list) {
-      routing_access_point_num_map_table << routing_layer.get_layer_name() << routing_access_point_num_map[routing_layer.get_layer_idx()]
-                                         << RTUTIL.getPercentage(routing_access_point_num_map[routing_layer.get_layer_idx()], total_access_point_num)
-                                         << fort::endr;
-    }
-    routing_access_point_num_map_table << fort::header << "Total" << total_access_point_num
-                                       << RTUTIL.getPercentage(total_access_point_num, total_access_point_num) << fort::endr;
-  }
   fort::char_table routing_wire_length_map_table;
   {
     routing_wire_length_map_table.set_cell_text_align(fort::text_align::right);
