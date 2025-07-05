@@ -205,6 +205,8 @@ std::vector<PathWireTimingData> getWireTimingData(unsigned n_worst_path_per_cloc
       ret_one_path_data.emplace_back(std::move(ret_wire_data));
     }
 
+    ret_timing_data.emplace_back(std::move(ret_one_path_data));
+
   }
 
   LOG_INFO << "get wire data size: " << ret_timing_data.size();
