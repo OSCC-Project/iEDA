@@ -30,6 +30,7 @@
 #include <stack>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "Sta.hh"
 #include "StaDump.hh"
@@ -780,6 +781,25 @@ unsigned StaReportPathDetailJson::operator()(StaSeqPathData* seq_path_data) {
     StaVertex* last_vertex = nullptr;
 
     auto& detail_json = path_json["detail"];
+    auto& summary_json = path_json["summary"] = nlohmann::json::array();
+
+    // Helper function to extract module name from hierarchical vertex name
+    bool failed_extract_module_name = false;
+    auto extract_module_name = [](const std::string& name) -> std::string {
+      auto pos = name.find('/');
+      if (pos != std::string::npos) {
+        return name.substr(0, pos);
+      }
+      return "";
+    };
+
+    // Module statistics tracking
+    struct stats {
+      unsigned count = 0;
+      double total_delay = 0.0;
+    };
+
+    std::unordered_map<std::string, stats> module_stats_map;
 
     while (!path_stack.empty()) {
       auto* path_delay_data = path_stack.top();
@@ -800,15 +820,42 @@ unsigned StaReportPathDetailJson::operator()(StaSeqPathData* seq_path_data) {
       auto incr_time = arrive_time - last_arrive_time;
       last_arrive_time = arrive_time;
 
+      auto name = own_vertex->getNameWithCellName();
+
       detail_json.push_back(
-          {{"name", own_vertex->getNameWithCellName()},
+          {{"name", name},
            {"incr_delay", fix_point_str(incr_time)},
            {"path_delay",
             std::string(fix_point_str(arrive_time + clock_path_arrive_time)) +
                 trans_type_str}});
 
+      // Check if hierarchical naming convention is followed for module
+      // extraction
+      auto module_name = extract_module_name(name);
+      if (module_name.empty() && !failed_extract_module_name) {
+        LOG_WARNING
+            << "Cannot extract module name from vertex: " << name
+            << ". Hierarchical naming (e.g., 'module/instance') is required "
+            << ", but Yosys may flatten hierarchy.";
+        failed_extract_module_name = true;
+      }
+
+      // If once failed to extract module name, do not count it again.
+      if (!failed_extract_module_name) {
+        module_stats_map[module_name].count++;
+        module_stats_map[module_name].total_delay += incr_time;
+      }
+
       last_vertex = own_vertex;
       path_stack.pop();
+    }
+
+    if (!failed_extract_module_name) {
+      for (const auto& [module, stat] : module_stats_map) {
+        summary_json.push_back({{"module", module},
+                                {"count", stat.count},
+                                {"total_delay", stat.total_delay}});
+      }
     }
 
     path_json["end_point"] = last_vertex->getNameWithCellName();
