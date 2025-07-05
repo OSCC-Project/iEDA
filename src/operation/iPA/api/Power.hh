@@ -133,7 +133,6 @@ class Power {
   unsigned reportInstancePower(const char* rpt_file_name,
                                PwrAnalysisMode pwr_analysis_mode);
   unsigned reportInstancePowerCSV(const char* rpt_file_name);
-  unsigned reportInstancePowerJSON(const char* rpt_file_name);
 
   unsigned reportPower(bool is_copy = true);
 
