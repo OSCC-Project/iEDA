@@ -96,7 +96,6 @@ void CTSAPI::writeDB()
 
 void CTSAPI::writeGDS()
 {
-  writeSkewMap();
   GDSPloter::plotDesign();
   GDSPloter::plotFlyLine();
   GDSPloter::writePyDesign();
@@ -1173,22 +1172,5 @@ ieda_feature::CTSSummary CTSAPI::outputSummary()
   return summary;
 }
 
-void CTSAPI::writeSkewMap() const
-{
-  auto* ista = _timing_engine->get_ista();
-  auto& clocks = ista->get_clocks();
-
-  for (auto& clock : clocks) {
-    StaBuildClockTree build_clock_tree;
-    build_clock_tree(clock.get());
-
-    auto base_path = _config->get_output_def_path() + "/" + std::string(clock->get_clock_name());
-
-    auto& clock_trees = build_clock_tree.takeClockTrees();
-    clock_trees.front()->printInstGraphViz((base_path + "_skewmap.dot").c_str(), false);
-    clock_trees.front()->printInstJson((base_path + "_skewmap.json").c_str(), false);
-    clock_trees.clear();
-  }
-}
 
 }  // namespace icts
