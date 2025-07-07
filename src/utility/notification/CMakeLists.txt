@@ -11,7 +11,7 @@ add_library(notification STATIC ${SRC})
 target_link_libraries(notification PRIVATE curl)
 
 target_include_directories(notification
-    PRIVATE
+    PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CURL_INCLUDE_DIRS}
         ${HOME_THIRDPARTY}/json

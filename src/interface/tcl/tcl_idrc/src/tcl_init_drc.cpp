@@ -30,6 +30,8 @@ TclInitDRC::TclInitDRC(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-thread_number", ValueType::kInt));
   // std::string golden_directory_path;     // optional
   _config_list.push_back(std::make_pair("-golden_directory_path", ValueType::kString));
+  // int32_t enable_notification;           // optional
+  _config_list.push_back(std::make_pair("-enable_notification", ValueType::kInt));
 
   TclUtil::addOption(this, _config_list);
 }

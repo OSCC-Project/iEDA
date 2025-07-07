@@ -32,6 +32,7 @@ class Config
   std::string bottom_routing_layer;  // optional
   std::string top_routing_layer;     // optional
   int32_t output_inter_result;       // optional
+  int32_t enable_notification;       // optional
   int32_t enable_timing;             // optional
   int32_t enable_fast_mode;          // optional
   int32_t enable_lsa;                // optional

@@ -1806,8 +1806,8 @@ void SpaceRouter::outputNetJson(SRModel& sr_model)
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   std::string& sr_temp_directory_path = RTDM.getConfig().sr_temp_directory_path;
-  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
-  if (!output_inter_result) {
+  int32_t enable_notification = RTDM.getConfig().enable_notification;
+  if (!enable_notification) {
     return;
   }
   std::vector<nlohmann::json> net_json_list;
@@ -1843,8 +1843,8 @@ void SpaceRouter::outputOverflowJson(SRModel& sr_model)
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& sr_temp_directory_path = RTDM.getConfig().sr_temp_directory_path;
-  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
-  if (!output_inter_result) {
+  int32_t enable_notification = RTDM.getConfig().enable_notification;
+  if (!enable_notification) {
     return;
   }
   std::vector<GridMap<SRNode>>& layer_node_map = sr_model.get_layer_node_map();
