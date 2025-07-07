@@ -105,6 +105,16 @@ bool NotificationUtility::initialize(const std::string& endpoint_url) {
     return initialize(config);
 }
 
+NotificationUtility::HttpResponse NotificationUtility::sendNotification(const std::string& tool_name, 
+                                                                         const std::map<std::string, std::string>& metadata) {
+    NotificationPayload payload;
+    payload.tool_name = tool_name;
+    payload.metadata = metadata;
+    payload.timestamp = getCurrentTimestamp();
+    
+    return sendNotification(payload);
+}
+
 NotificationUtility::HttpResponse NotificationUtility::sendNotification(const NotificationPayload& payload) {
     if (!isEnabled() || !isInitialized()) {
         HttpResponse response;
@@ -139,24 +149,6 @@ NotificationUtility::HttpResponse NotificationUtility::sendNotification(const No
     }
 }
 
-NotificationUtility::HttpResponse NotificationUtility::sendIterationNotification(
-    const std::string& algorithm_name,
-    int iteration,
-    int total_iterations,
-    const std::string& status,
-    const std::map<std::string, std::string>& metrics) {
-    
-    NotificationPayload payload;
-    payload.algorithm_name = algorithm_name;
-    payload.stage = "iteration";
-    payload.iteration_number = iteration;
-    payload.total_iterations = total_iterations;
-    payload.status = status;
-    payload.metrics = metrics;
-    payload.timestamp = getCurrentTimestamp();
-    
-    return sendNotification(payload);
-}
 
 bool NotificationUtility::isInitialized() const {
     std::lock_guard<std::mutex> lock(_config_mutex);
@@ -296,27 +288,12 @@ NotificationUtility::HttpResponse NotificationUtility::performHttpRequest(const 
 std::string NotificationUtility::payloadToJson(const NotificationPayload& payload) {
     json j;
 
-    j["algorithm_name"] = payload.algorithm_name;
-    j["stage"] = payload.stage;
-    j["iteration_number"] = payload.iteration_number;
-    j["total_iterations"] = payload.total_iterations;
-    j["status"] = payload.status;
+    j["tool_name"] = payload.tool_name;
     j["timestamp"] = payload.timestamp;
-
-    // Add metrics
-    if (!payload.metrics.empty()) {
-        j["metrics"] = payload.metrics;
-    }
 
     // Add metadata
     if (!payload.metadata.empty()) {
         j["metadata"] = payload.metadata;
-    }
-
-    // Add progress percentage
-    if (payload.total_iterations > 0) {
-        double progress = static_cast<double>(payload.iteration_number) / payload.total_iterations * 100.0;
-        j["progress_percentage"] = progress;
     }
 
     return j.dump();

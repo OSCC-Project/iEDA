@@ -7,22 +7,12 @@ pkg_check_modules(CURL REQUIRED libcurl)
 
 aux_source_directory(./ SRC)
 
-if(BUILD_STATIC_LIB)
-  add_library(notification STATIC ${SRC})
-else()
-  add_library(notification SHARED ${SRC})
-endif()
-
-target_link_libraries(notification 
-    PUBLIC 
-        ${CURL_LIBRARIES}
-)
+add_library(notification STATIC ${SRC})
+target_link_libraries(notification PRIVATE curl)
 
 target_include_directories(notification
-    PUBLIC
+    PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CURL_INCLUDE_DIRS}
         ${HOME_THIRDPARTY}/json
 )
-
-target_compile_options(notification PRIVATE ${CURL_CFLAGS_OTHER})
