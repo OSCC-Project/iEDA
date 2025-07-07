@@ -946,6 +946,9 @@ void TrackAssigner::updateViolationList(TAPanel& ta_panel)
 
 std::vector<Violation> TrackAssigner::getViolationList(TAPanel& ta_panel)
 {
+  if (RTDM.getConfig().enable_fast_mode) {
+    return {};
+  }
   std::map<int32_t, std::vector<PlanarRect>> env_net_rect_map;
   std::map<int32_t, std::vector<PlanarRect>> result_net_rect_map;
   {

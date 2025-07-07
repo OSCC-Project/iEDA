@@ -51,6 +51,9 @@ void SpaceRouter::destroyInst()
 
 void SpaceRouter::route()
 {
+  if (RTDM.getConfig().enable_fast_mode) {
+    return;
+  }
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
   SRModel sr_model = initSRModel();
@@ -575,18 +578,8 @@ void SpaceRouter::buildOverflow(SRModel& sr_model, SRBox& sr_box)
     GridMap<SRNode>& sr_node_map = layer_node_map[layer_idx];
     for (int32_t x = box_rect.get_grid_ll_x(); x <= box_rect.get_grid_ur_x(); x++) {
       for (int32_t y = box_rect.get_grid_ll_y(); y <= box_rect.get_grid_ur_y(); y++) {
-        double node_overflow = sr_node_map[x][y].getOverflow();
-        total_overflow += node_overflow;
-        if (node_overflow > 0) {
-          std::set<int32_t> overflow_net_set;
-          for (auto& [orient, net_set] : sr_node_map[x][y].get_orient_net_map()) {
-            overflow_net_set.insert(net_set.begin(), net_set.end());
-          }
-          for (auto& [net_idx, orient_set] : sr_node_map[x][y].get_net_orient_map()) {
-            overflow_net_set.insert(net_idx);
-          }
-          overflow_net_set_list.push_back(overflow_net_set);
-        }
+        total_overflow += sr_node_map[x][y].getOverflow();
+        overflow_net_set_list.push_back(sr_node_map[x][y].getOverflowNetSet());
       }
     }
   }
@@ -1173,18 +1166,8 @@ void SpaceRouter::updateOverflow(SRBox& sr_box)
     GridMap<SRNode>& sr_node_map = layer_node_map[layer_idx];
     for (int32_t x = 0; x < sr_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < sr_node_map.get_y_size(); y++) {
-        double node_overflow = sr_node_map[x][y].getOverflow();
-        total_overflow += node_overflow;
-        if (node_overflow > 0) {
-          std::set<int32_t> overflow_net_set;
-          for (auto& [orient, net_set] : sr_node_map[x][y].get_orient_net_map()) {
-            overflow_net_set.insert(net_set.begin(), net_set.end());
-          }
-          for (auto& [net_idx, orient_set] : sr_node_map[x][y].get_net_orient_map()) {
-            overflow_net_set.insert(net_idx);
-          }
-          overflow_net_set_list.push_back(overflow_net_set);
-        }
+        total_overflow += sr_node_map[x][y].getOverflow();
+        overflow_net_set_list.push_back(sr_node_map[x][y].getOverflowNetSet());
       }
     }
   }

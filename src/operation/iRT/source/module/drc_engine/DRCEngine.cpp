@@ -62,8 +62,7 @@ void DRCEngine::init()
 
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
 {
-  int32_t enable_fast_mode = RTDM.getConfig().enable_fast_mode;
-  if (enable_fast_mode) {
+  if (RTDM.getConfig().enable_fast_mode) {
     return {};
   }
   getViolationListByInterface(de_task);
