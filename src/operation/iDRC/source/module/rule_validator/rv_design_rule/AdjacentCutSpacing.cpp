@@ -20,6 +20,7 @@ namespace idrc {
 
 void RuleValidator::verifyAdjacentCutSpacing(RVBox& rv_box)
 {
+#if 0
   /*
   规则: SPACING 0.155 ADJACENTCUTS 3 WITHIN 0.200 ;
   */
@@ -129,6 +130,7 @@ void RuleValidator::verifyAdjacentCutSpacing(RVBox& rv_box)
       }
     }
   }
+#endif
 }
 
 }  // namespace idrc
