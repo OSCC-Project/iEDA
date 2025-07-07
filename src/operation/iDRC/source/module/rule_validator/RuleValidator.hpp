@@ -55,6 +55,7 @@ class RuleValidator
   void verifyRVBox(RVBox& rv_box);
   void verifyAdjacentCutSpacing(RVBox& rv_box);
   void verifyCornerFillSpacing(RVBox& rv_box);
+  void verifyCornerSpacing(RVBox& rv_box);
   void verifyCutEOLSpacing(RVBox& rv_box);
   void verifyCutShort(RVBox& rv_box);
   void verifyDifferentLayerCutSpacing(RVBox& rv_box);

@@ -25,6 +25,7 @@ enum class ViolationType
   kNone,
   kAdjacentCutSpacing,
   kCornerFillSpacing,
+  kCornerSpacing,
   kCutEOLSpacing,
   kCutShort,
   kDifferentLayerCutSpacing,
@@ -64,6 +65,9 @@ struct GetViolationTypeName
         break;
       case ViolationType::kCornerFillSpacing:
         violation_type_name = "corner_fill_spacing";
+        break;
+      case ViolationType::kCornerSpacing:
+        violation_type_name = "corner_spacing";
         break;
       case ViolationType::kCutEOLSpacing:
         violation_type_name = "cut_eol_spacing";
@@ -151,8 +155,8 @@ struct GetViolationTypeByName
       violation_type = ViolationType::kAdjacentCutSpacing;
     } else if (violation_type_name == "corner_fill_spacing") {
       violation_type = ViolationType::kCornerFillSpacing;
-    } else if (violation_type_name == "corner_fill_spacing") {
-      violation_type = ViolationType::kCornerFillSpacing;
+    } else if (violation_type_name == "corner_spacing") {
+      violation_type = ViolationType::kCornerSpacing;
     } else if (violation_type_name == "cut_eol_spacing") {
       violation_type = ViolationType::kCutEOLSpacing;
     } else if (violation_type_name == "cut_short") {

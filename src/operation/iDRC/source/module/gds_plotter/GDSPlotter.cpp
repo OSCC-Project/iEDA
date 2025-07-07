@@ -95,6 +95,9 @@ GPDataType GDSPlotter::convertGPDataType(ViolationType violation_type)
     case ViolationType::kCornerFillSpacing:
       gp_data_type = GPDataType::kCornerFillSpacing;
       break;
+    case ViolationType::kCornerSpacing:
+      gp_data_type = GPDataType::kCornerSpacing;
+      break;
     case ViolationType::kCutEOLSpacing:
       gp_data_type = GPDataType::kCutEOLSpacing;
       break;
@@ -224,6 +227,7 @@ void GDSPlotter::buildGraphLypFile()
                                                               {GPDataType::kResultShape, false},
                                                               {GPDataType::kAdjacentCutSpacing, false},
                                                               {GPDataType::kCornerFillSpacing, false},
+                                                              {GPDataType::kCornerSpacing, false},
                                                               {GPDataType::kCutEOLSpacing, false},
                                                               {GPDataType::kCutShort, false},
                                                               {GPDataType::kDifferentLayerCutSpacing, false},

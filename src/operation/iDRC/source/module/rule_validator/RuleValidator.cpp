@@ -225,6 +225,9 @@ void RuleValidator::verifyRVBox(RVBox& rv_box)
   if (DRCUTIL.exist(exist_rule_set, ViolationType::kCornerFillSpacing)) {
     verifyCornerFillSpacing(rv_box);
   }
+  if (DRCUTIL.exist(exist_rule_set, ViolationType::kCornerSpacing)) {
+    verifyCornerSpacing(rv_box);
+  }
   if (DRCUTIL.exist(exist_rule_set, ViolationType::kCutEOLSpacing)) {
     verifyCutEOLSpacing(rv_box);
   }
