@@ -183,10 +183,9 @@ bool reportSta()
   return true;
 }
 
-std::vector<PathWireTimingData> getWireTimingData()
+std::vector<PathWireTimingData> getWireTimingData(unsigned n_worst_path_per_clock)
 {
   auto* ista = ista::Sta::getOrCreateSta();
-  unsigned n_worst_path_per_clock = 10000;
   auto path_wire_timing_data = ista->reportTimingData(n_worst_path_per_clock);
 
   std::vector<PathWireTimingData> ret_timing_data;
@@ -206,7 +205,11 @@ std::vector<PathWireTimingData> getWireTimingData()
       ret_one_path_data.emplace_back(std::move(ret_wire_data));
     }
 
+    ret_timing_data.emplace_back(std::move(ret_one_path_data));
+
   }
+
+  LOG_INFO << "get wire data size: " << ret_timing_data.size();
 
   return ret_timing_data;
 }

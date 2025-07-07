@@ -1885,6 +1885,21 @@ void RTInterface::routeTAPanel(TAPanel& ta_panel)
 
 void RTInterface::sendNotification(std::string stage, std::string json_path)
 {
+  return;
+  // #include "NotificationUtility.h"
+  // using ieda::NotificationUtility;
+  // auto& notification_util = ieda::NotificationUtility::getInstance();
+  // if NotificationUtility::getInstance().initialize();
+
+  // std::map<std::string, std::string> metadata;
+  // metadata["stage"] = stage;
+  // metadata["json_path"] = json_path;
+
+  // auto response = notification_util.sendNotification("iRT", metadata);
+  
+  // if (!response.success) {
+  //   RTLOG.warn(Loc::current(), "RTInterface: Failed to send notification for stage '", stage, "': ", response.error_message);
+  // }
 }
 
 #endif
