@@ -67,19 +67,15 @@ public:
     };
 
     /**
-     * @brief Notification payload data structure
+     * @brief Generic notification payload data structure
      */
     struct NotificationPayload {
-        std::string algorithm_name;         // Name of the algorithm (e.g., "DetailedRouter")
-        std::string stage;                  // Current stage/phase
-        int iteration_number;               // Current iteration number
-        int total_iterations;               // Total number of iterations
-        std::string status;                 // Status: "running", "completed", "failed"
-        std::map<std::string, std::string> metrics;  // Custom metrics (e.g., violations, timing)
-        std::map<std::string, std::string> metadata; // Additional metadata
+        std::string tool_name;              // Name of the tool/algorithm
+        std::map<std::string, std::string> metadata; // Generic metadata map
         std::string timestamp;              // ISO 8601 timestamp
         
-        NotificationPayload() : iteration_number(0), total_iterations(0), status("running") {}
+        NotificationPayload() = default;
+
     };
 
 public:
@@ -109,28 +105,22 @@ public:
     bool initialize(const std::string& endpoint_url = "");
 
     /**
+     * @brief Send generic notification with tool name and metadata
+     * @param tool_name Name of the tool/algorithm
+     * @param metadata Optional metadata map
+     * @return HttpResponse containing result (for sync mode) or empty response (for async mode)
+     */
+    HttpResponse sendNotification(const std::string& tool_name, 
+                                 const std::map<std::string, std::string>& metadata = {});
+
+    /**
      * @brief Send notification with custom payload
      * @param payload Notification payload data
      * @return HttpResponse containing result (for sync mode) or empty response (for async mode)
      */
     HttpResponse sendNotification(const NotificationPayload& payload);
 
-    /**
-     * @brief Send notification for algorithm iteration
-     * @param algorithm_name Name of the algorithm
-     * @param iteration Current iteration number
-     * @param total_iterations Total number of iterations
-     * @param status Current status
-     * @param metrics Optional metrics map
-     * @return HttpResponse containing result
-     */
-    HttpResponse sendIterationNotification(
-        const std::string& algorithm_name,
-        int iteration,
-        int total_iterations,
-        const std::string& status = "running",
-        const std::map<std::string, std::string>& metrics = {}
-    );
+
 
     /**
      * @brief Check if notification utility is properly initialized
