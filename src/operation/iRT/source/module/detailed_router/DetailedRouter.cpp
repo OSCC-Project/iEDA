@@ -184,31 +184,53 @@ void DetailedRouter::setDRIterParam(DRModel& dr_model, int32_t iter, DRIterParam
 void DetailedRouter::initDRBoxMap(DRModel& dr_model)
 {
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
-
-  int32_t x_gcell_num = 0;
-  for (ScaleGrid& x_grid : gcell_axis.get_x_grid_list()) {
-    x_gcell_num += x_grid.get_step_num();
-  }
-  int32_t y_gcell_num = 0;
-  for (ScaleGrid& y_grid : gcell_axis.get_y_grid_list()) {
-    y_gcell_num += y_grid.get_step_num();
-  }
-
   DRIterParam& dr_iter_param = dr_model.get_dr_iter_param();
+
   int32_t size = dr_iter_param.get_size();
   int32_t offset = dr_iter_param.get_offset();
-  int32_t x_box_num = static_cast<int32_t>(std::ceil((x_gcell_num - offset) / 1.0 / size));
-  int32_t y_box_num = static_cast<int32_t>(std::ceil((y_gcell_num - offset) / 1.0 / size));
-
+  while (offset >= size) {
+    offset -= size;
+  }
+  std::vector<int32_t> x_scale_list;
+  {
+    int32_t x_gcell_num = 0;
+    for (ScaleGrid& x_grid : gcell_axis.get_x_grid_list()) {
+      x_gcell_num += x_grid.get_step_num();
+    }
+    x_scale_list.push_back(0);
+    for (int32_t x_scale = offset; x_scale <= x_gcell_num; x_scale += size) {
+      x_scale_list.push_back(x_scale);
+    }
+    x_scale_list.push_back(x_gcell_num);
+    std::sort(x_scale_list.begin(), x_scale_list.end());
+    x_scale_list.erase(std::unique(x_scale_list.begin(), x_scale_list.end()), x_scale_list.end());
+  }
+  std::vector<int32_t> y_scale_list;
+  {
+    int32_t y_gcell_num = 0;
+    for (ScaleGrid& y_grid : gcell_axis.get_y_grid_list()) {
+      y_gcell_num += y_grid.get_step_num();
+    }
+    y_scale_list.push_back(0);
+    for (int32_t y_scale = offset; y_scale <= y_gcell_num; y_scale += size) {
+      y_scale_list.push_back(y_scale);
+    }
+    y_scale_list.push_back(y_gcell_num);
+    std::sort(y_scale_list.begin(), y_scale_list.end());
+    y_scale_list.erase(std::unique(y_scale_list.begin(), y_scale_list.end()), y_scale_list.end());
+  }
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
-  dr_box_map.init(x_box_num, y_box_num);
-
+  {
+    int32_t x_box_num = static_cast<int32_t>(x_scale_list.size()) - 1;
+    int32_t y_box_num = static_cast<int32_t>(y_scale_list.size()) - 1;
+    dr_box_map.init(x_box_num, y_box_num);
+  }
   for (int32_t x = 0; x < dr_box_map.get_x_size(); x++) {
     for (int32_t y = 0; y < dr_box_map.get_y_size(); y++) {
-      int32_t grid_ll_x = std::max(offset + x * size, 0);
-      int32_t grid_ll_y = std::max(offset + y * size, 0);
-      int32_t grid_ur_x = std::min(offset + (x + 1) * size - 1, x_gcell_num - 1);
-      int32_t grid_ur_y = std::min(offset + (y + 1) * size - 1, y_gcell_num - 1);
+      int32_t grid_ll_x = x_scale_list[x];
+      int32_t grid_ll_y = y_scale_list[y];
+      int32_t grid_ur_x = x_scale_list[x + 1] - 1;
+      int32_t grid_ur_y = y_scale_list[y + 1] - 1;
 
       PlanarRect ll_gcell_rect = RTUTIL.getRealRectByGCell(PlanarCoord(grid_ll_x, grid_ll_y), gcell_axis);
       PlanarRect ur_gcell_rect = RTUTIL.getRealRectByGCell(PlanarCoord(grid_ur_x, grid_ur_y), gcell_axis);
@@ -249,7 +271,9 @@ void DetailedRouter::buildBoxSchedule(DRModel& dr_model)
           dr_box_id_list.emplace_back(x, y);
         }
       }
-      dr_box_id_list_list.push_back(dr_box_id_list);
+      if (!dr_box_id_list.empty()) {
+        dr_box_id_list_list.push_back(dr_box_id_list);
+      }
     }
   }
   dr_model.set_dr_box_id_list_list(dr_box_id_list_list);
