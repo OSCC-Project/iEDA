@@ -204,11 +204,9 @@ void RuleValidator::verifyCornerSpacing(RVBox& rv_box)
                 PlanarCoord env_eol_coord = env_poly_info.coord_list[env_eol_idx];
                 PlanarCoord env_pre_coord = env_poly_info.coord_list[getIdx(env_eol_idx - 1, env_poly_info.coord_size)];
                 PlanarCoord env_post_coord = env_poly_info.coord_list[getIdx(env_eol_idx + 1, env_poly_info.coord_size)];
-                PlanarRect env_corner_rect = DRCUTIL.getBoundingBox({env_pre_coord, env_eol_coord, env_post_coord});
-                if (DRCUTIL.getParallelLength(env_corner_rect, corner_rect) > 0) {
-                  continue;  // skip if the corner rect is not parallel to the check rect
+                if(DRCUTIL.isInside(check_rect, env_eol_coord) == false ) {
+                  continue;  
                 }
-
                 if (!(orientation_map[pre_orientation] == DRCUTIL.getOrientation(env_pre_coord, env_eol_coord)
                       && orientation_map[post_orientation] == DRCUTIL.getOrientation(env_eol_coord, env_post_coord))) {
                   continue;  // skip if the orientation is not matched
@@ -219,9 +217,7 @@ void RuleValidator::verifyCornerSpacing(RVBox& rv_box)
                 if (MAXXY_spacing >= required_spacing || MAXXY_spacing == 0) {
                   continue;  // skip if the spacing is not satisfied
                 }
-                if(DRCUTIL.isInside(check_rect, env_eol_coord) == false ) {
-                  continue;  
-                }
+
                 PlanarRect violation_rect = DRCUTIL.getBoundingBox({eol_coord, env_eol_coord});
                 Violation violation;
                 violation.set_violation_type(ViolationType::kCornerSpacing);
