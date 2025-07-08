@@ -11,6 +11,7 @@ add_library(idrc_rule_validator
     ${IDRC_MODULE}/rule_validator/RuleValidator.cpp
     ${IDRC_MODULE}/rule_validator/rv_design_rule/AdjacentCutSpacing.cpp
     ${IDRC_MODULE}/rule_validator/rv_design_rule/CornerFillSpacing.cpp
+    ${IDRC_MODULE}/rule_validator/rv_design_rule/CornerSpacing.cpp
     ${IDRC_MODULE}/rule_validator/rv_design_rule/CutEOLSpacing.cpp
     ${IDRC_MODULE}/rule_validator/rv_design_rule/CutShort.cpp
     ${IDRC_MODULE}/rule_validator/rv_design_rule/DifferentLayerCutSpacing.cpp

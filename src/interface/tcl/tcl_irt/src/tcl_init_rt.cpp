@@ -34,6 +34,8 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-top_routing_layer", ValueType::kString));
   // int32_t output_inter_result;           // optional
   _config_list.push_back(std::make_pair("-output_inter_result", ValueType::kInt));
+  // int32_t enable_notification;           // optional
+  _config_list.push_back(std::make_pair("-enable_notification", ValueType::kInt));
   // int32_t enable_timing;                 // optional
   _config_list.push_back(std::make_pair("-enable_timing", ValueType::kInt));
   // int32_t enable_fast_mode;              // optional

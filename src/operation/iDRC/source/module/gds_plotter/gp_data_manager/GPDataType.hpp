@@ -27,6 +27,7 @@ enum class GPDataType
   kResultShape,
   kAdjacentCutSpacing,
   kCornerFillSpacing,
+  kCornerSpacing,
   kCutEOLSpacing,
   kCutShort,
   kDifferentLayerCutSpacing,
@@ -72,6 +73,9 @@ struct GetGPDataTypeName
         break;
       case GPDataType::kCornerFillSpacing:
         data_type_name = "corner_fill_spacing";
+        break;
+      case GPDataType::kCornerSpacing:
+        data_type_name = "corner_spacing";
         break;
       case GPDataType::kCutEOLSpacing:
         data_type_name = "cut_eol_spacing";

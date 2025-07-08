@@ -51,6 +51,9 @@ void SpaceRouter::destroyInst()
 
 void SpaceRouter::route()
 {
+  if (RTDM.getConfig().enable_fast_mode) {
+    return;
+  }
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
   SRModel sr_model = initSRModel();
@@ -437,7 +440,9 @@ void SpaceRouter::routeSRBoxMap(SRModel& sr_model)
         buildOrientSupply(sr_model, sr_box);
         buildOrientDemand(sr_model, sr_box);
         // debugCheckSRBox(sr_box);
+        // debugPlotSRBox(sr_box, "before");
         routeSRBox(sr_box);
+        // debugPlotSRBox(sr_box, "after");
       }
       selectBestResult(sr_box);
       freeSRBox(sr_box);
@@ -575,18 +580,8 @@ void SpaceRouter::buildOverflow(SRModel& sr_model, SRBox& sr_box)
     GridMap<SRNode>& sr_node_map = layer_node_map[layer_idx];
     for (int32_t x = box_rect.get_grid_ll_x(); x <= box_rect.get_grid_ur_x(); x++) {
       for (int32_t y = box_rect.get_grid_ll_y(); y <= box_rect.get_grid_ur_y(); y++) {
-        double node_overflow = sr_node_map[x][y].getOverflow();
-        total_overflow += node_overflow;
-        if (node_overflow > 0) {
-          std::set<int32_t> overflow_net_set;
-          for (auto& [orient, net_set] : sr_node_map[x][y].get_orient_net_map()) {
-            overflow_net_set.insert(net_set.begin(), net_set.end());
-          }
-          for (auto& [net_idx, orient_set] : sr_node_map[x][y].get_net_orient_map()) {
-            overflow_net_set.insert(net_idx);
-          }
-          overflow_net_set_list.push_back(overflow_net_set);
-        }
+        total_overflow += sr_node_map[x][y].getOverflow();
+        overflow_net_set_list.push_back(sr_node_map[x][y].getOverflowNetSet());
       }
     }
   }
@@ -1173,18 +1168,8 @@ void SpaceRouter::updateOverflow(SRBox& sr_box)
     GridMap<SRNode>& sr_node_map = layer_node_map[layer_idx];
     for (int32_t x = 0; x < sr_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < sr_node_map.get_y_size(); y++) {
-        double node_overflow = sr_node_map[x][y].getOverflow();
-        total_overflow += node_overflow;
-        if (node_overflow > 0) {
-          std::set<int32_t> overflow_net_set;
-          for (auto& [orient, net_set] : sr_node_map[x][y].get_orient_net_map()) {
-            overflow_net_set.insert(net_set.begin(), net_set.end());
-          }
-          for (auto& [net_idx, orient_set] : sr_node_map[x][y].get_net_orient_map()) {
-            overflow_net_set.insert(net_idx);
-          }
-          overflow_net_set_list.push_back(overflow_net_set);
-        }
+        total_overflow += sr_node_map[x][y].getOverflow();
+        overflow_net_set_list.push_back(sr_node_map[x][y].getOverflowNetSet());
       }
     }
   }
@@ -1806,8 +1791,8 @@ void SpaceRouter::outputNetJson(SRModel& sr_model)
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   std::string& sr_temp_directory_path = RTDM.getConfig().sr_temp_directory_path;
-  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
-  if (!output_inter_result) {
+  int32_t enable_notification = RTDM.getConfig().enable_notification;
+  if (!enable_notification) {
     return;
   }
   std::vector<nlohmann::json> net_json_list;
@@ -1843,8 +1828,8 @@ void SpaceRouter::outputOverflowJson(SRModel& sr_model)
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& sr_temp_directory_path = RTDM.getConfig().sr_temp_directory_path;
-  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
-  if (!output_inter_result) {
+  int32_t enable_notification = RTDM.getConfig().enable_notification;
+  if (!enable_notification) {
     return;
   }
   std::vector<GridMap<SRNode>>& layer_node_map = sr_model.get_layer_node_map();
@@ -1900,6 +1885,54 @@ void SpaceRouter::debugCheckSRBox(SRBox& sr_box)
       }
     }
   }
+}
+
+void SpaceRouter::debugPlotSRBox(SRBox& sr_box, std::string flag)
+{
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::string& sr_temp_directory_path = RTDM.getConfig().sr_temp_directory_path;
+
+  PlanarRect box_real_rect = sr_box.get_box_rect().get_real_rect();
+
+  int32_t point_size = 5;
+
+  GPGDS gp_gds;
+
+  // base_region
+  {
+    GPStruct base_region_struct("base_region");
+    GPBoundary gp_boundary;
+    gp_boundary.set_layer_idx(0);
+    gp_boundary.set_data_type(0);
+    gp_boundary.set_rect(box_real_rect);
+    base_region_struct.push(gp_boundary);
+    gp_gds.addStruct(base_region_struct);
+  }
+
+  // gcell_axis
+  {
+    GPStruct gcell_axis_struct("gcell_axis");
+    for (int32_t x : RTUTIL.getScaleList(box_real_rect.get_ll_x(), box_real_rect.get_ur_x(), gcell_axis.get_x_grid_list())) {
+      GPPath gp_path;
+      gp_path.set_layer_idx(0);
+      gp_path.set_data_type(1);
+      gp_path.set_segment(x, box_real_rect.get_ll_y(), x, box_real_rect.get_ur_y());
+      gcell_axis_struct.push(gp_path);
+    }
+    for (int32_t y : RTUTIL.getScaleList(box_real_rect.get_ll_y(), box_real_rect.get_ur_y(), gcell_axis.get_y_grid_list())) {
+      GPPath gp_path;
+      gp_path.set_layer_idx(0);
+      gp_path.set_data_type(1);
+      gp_path.set_segment(box_real_rect.get_ll_x(), y, box_real_rect.get_ur_x(), y);
+      gcell_axis_struct.push(gp_path);
+    }
+    gp_gds.addStruct(gcell_axis_struct);
+  }
+
+  std::string gds_file_path
+      = RTUTIL.getString(sr_temp_directory_path, flag, "_sr_box_", sr_box.get_sr_box_id().get_x(), "_", sr_box.get_sr_box_id().get_y(), ".gds");
+  RTGP.plot(gp_gds, gds_file_path);
 }
 
 #endif

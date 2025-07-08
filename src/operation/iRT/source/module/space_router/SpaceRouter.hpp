@@ -126,6 +126,7 @@ class SpaceRouter
 
 #if 1  // debug
   void debugCheckSRBox(SRBox& sr_box);
+  void debugPlotSRBox(SRBox& sr_box, std::string flag);
 #endif
 };
 

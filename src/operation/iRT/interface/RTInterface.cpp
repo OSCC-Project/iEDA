@@ -24,6 +24,7 @@
 #include "LSAssigner4iEDA/ls_assigner/LSAssigner.h"
 #include "LayerAssigner.hpp"
 #include "Monitor.hpp"
+#include "NotificationUtility.h"
 #include "PinAccessor.hpp"
 #include "RTInterface.hpp"
 #include "SpaceRouter.hpp"
@@ -302,6 +303,7 @@ void RTInterface::wrapConfig(std::map<std::string, std::any>& config_map)
   RTDM.getConfig().bottom_routing_layer = RTUTIL.getConfigValue<std::string>(config_map, "-bottom_routing_layer", "");
   RTDM.getConfig().top_routing_layer = RTUTIL.getConfigValue<std::string>(config_map, "-top_routing_layer", "");
   RTDM.getConfig().output_inter_result = RTUTIL.getConfigValue<int32_t>(config_map, "-output_inter_result", 0);
+  RTDM.getConfig().enable_notification = RTUTIL.getConfigValue<int32_t>(config_map, "-enable_notification", 0);
   RTDM.getConfig().enable_timing = RTUTIL.getConfigValue<int32_t>(config_map, "-enable_timing", 0);
   RTDM.getConfig().enable_fast_mode = RTUTIL.getConfigValue<int32_t>(config_map, "-enable_fast_mode", 0);
   RTDM.getConfig().enable_lsa = RTUTIL.getConfigValue<int32_t>(config_map, "-enable_lsa", 0);
@@ -1885,21 +1887,12 @@ void RTInterface::routeTAPanel(TAPanel& ta_panel)
 
 void RTInterface::sendNotification(std::string stage, std::string json_path)
 {
-  return;
-  // #include "NotificationUtility.h"
-  // using ieda::NotificationUtility;
-  // auto& notification_util = ieda::NotificationUtility::getInstance();
-  // if NotificationUtility::getInstance().initialize();
-
-  // std::map<std::string, std::string> metadata;
-  // metadata["stage"] = stage;
-  // metadata["json_path"] = json_path;
-
-  // auto response = notification_util.sendNotification("iRT", metadata);
-  
-  // if (!response.success) {
-  //   RTLOG.warn(Loc::current(), "RTInterface: Failed to send notification for stage '", stage, "': ", response.error_message);
-  // }
+  std::map<std::string, std::string> notification;
+  notification["stage"] = stage;
+  notification["json_path"] = json_path;
+  if (!ieda::NotificationUtility::getInstance().sendNotification("iRT", notification).success) {
+    RTLOG.warn(Loc::current(), "Failed to send notification!");
+  }
 }
 
 #endif

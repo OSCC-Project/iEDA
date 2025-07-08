@@ -62,8 +62,7 @@ void DRCEngine::init()
 
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
 {
-  int32_t enable_fast_mode = RTDM.getConfig().enable_fast_mode;
-  if (enable_fast_mode) {
+  if (RTDM.getConfig().enable_fast_mode) {
     return {};
   }
   getViolationListByInterface(de_task);
@@ -236,6 +235,8 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
         new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
         layer_routing_list = expandLayer(violation, {-1, 0, +1});
         break;
+      case ViolationType::kCornerSpacing:
+        break;
       case ViolationType::kCutEOLSpacing:
         new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
         layer_routing_list = expandLayer(violation, {0, +1});
@@ -325,6 +326,8 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
       case ViolationType::kCornerFillSpacing:
         new_real_rect = enlargeRect(new_real_rect, 0);
         layer_routing_list = expandLayer(violation, {0});
+        break;
+      case ViolationType::kCornerSpacing:
         break;
       case ViolationType::kCutEOLSpacing:
         new_real_rect = enlargeRect(new_real_rect, 0);

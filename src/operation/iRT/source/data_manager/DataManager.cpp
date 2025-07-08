@@ -1458,6 +1458,8 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.top_routing_layer);
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "output_inter_result");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.output_inter_result);
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "enable_notification");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.enable_notification);
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "enable_timing");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.enable_timing);
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "enable_fast_mode");
@@ -1674,8 +1676,8 @@ void DataManager::outputEnvJson()
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   std::string& dm_temp_directory_path = _config.dm_temp_directory_path;
-  int32_t output_inter_result = _config.output_inter_result;
-  if (!output_inter_result) {
+  int32_t enable_notification = _config.enable_notification;
+  if (!enable_notification) {
     return;
   }
   std::vector<nlohmann::json> env_json_list;

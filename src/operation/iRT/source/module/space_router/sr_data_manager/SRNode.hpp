@@ -205,6 +205,49 @@ class SRNode : public LayerCoord
     }
     return (boundary_overflow + internal_overflow);
   }
+  std::set<int32_t> getOverflowNetSet()
+  {
+    if (!validDemandUnit()) {
+      RTLOG.error(Loc::current(), "The demand unit is error!");
+    }
+    std::set<int32_t> overflow_net_set;
+    for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
+      double boundary_demand = 0;
+      if (RTUTIL.exist(_orient_net_map, orient)) {
+        boundary_demand = (static_cast<double>(_orient_net_map[orient].size()) * _boundary_wire_unit);
+      }
+      double boundary_supply = 0;
+      if (RTUTIL.exist(_orient_supply_map, orient)) {
+        boundary_supply = (_orient_supply_map[orient] * _boundary_wire_unit);
+      }
+      if (boundary_demand - boundary_supply > 0) {
+        overflow_net_set.insert(_orient_net_map[orient].begin(), _orient_net_map[orient].end());
+      }
+    }
+    {
+      double internal_demand = 0;
+      for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
+        if (RTUTIL.exist(_orient_net_map, orient)) {
+          internal_demand += (static_cast<double>(_orient_net_map[orient].size()) * _internal_wire_unit);
+        }
+      }
+      for (auto& [net_idx, orient_set] : _net_orient_map) {
+        if (RTUTIL.exist(orient_set, Orientation::kAbove) || RTUTIL.exist(orient_set, Orientation::kBelow)) {
+          internal_demand += _internal_via_unit;
+        }
+      }
+      double internal_supply = 0;
+      for (auto& [orient, supply] : _orient_supply_map) {
+        internal_supply += (supply * _internal_wire_unit);
+      }
+      if (internal_demand - internal_supply > 0) {
+        for (auto& [net_idx, orient_set] : _net_orient_map) {
+          overflow_net_set.insert(net_idx);
+        }
+      }
+    }
+    return overflow_net_set;
+  }
   void updateDemand(int32_t net_idx, std::set<Orientation> orient_set, ChangeType change_type)
   {
     for (const Orientation& orient : orient_set) {
