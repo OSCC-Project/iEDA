@@ -13,6 +13,7 @@ target_link_libraries(notification PRIVATE curl)
 target_include_directories(notification
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
+    PRIVATE
         ${CURL_INCLUDE_DIRS}
         ${HOME_THIRDPARTY}/json
 )

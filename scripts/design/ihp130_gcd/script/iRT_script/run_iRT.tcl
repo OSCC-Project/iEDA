@@ -67,15 +67,16 @@ init_rt -temp_directory_path $TOOL_REPORT_DIR \
         -top_routing_layer "Metal5" \
         -thread_number $NUM_THREADS \
         -output_inter_result 0 \
+        -enable_notification 0 \
         -enable_timing 0 \
         -enable_fast_mode 0
 
 run_rt
 
+destroy_rt
+
 # report_timing -stage "dr"
 feature_tool -path $TOOL_METRICS_JSON -step route
-
-destroy_rt
 
 #===========================================================
 ##   save def & netlist
