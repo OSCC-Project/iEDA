@@ -556,10 +556,20 @@ unsigned Power::reportSummaryPowerJSON(const char* rpt_file_name,
   report_power(this);
   auto& report_summary_data = report_power.get_report_summary_data();
   nlohmann::json json_report = nlohmann::json::object();
+  auto &summary_json = json_report["summary"] = nlohmann::json::array();
 
   // lambda for print power data float to string.
   auto data_str = [](double data) { return Str::printf("%.3e", data); };
   auto data_str_f = [](double data) { return Str::printf("%.3f", data); };
+
+  // extract module name from vertex name
+  auto extract_module_name = [](const std::string& name) -> std::string {
+    size_t pos = name.find('/');
+    if (pos != std::string::npos) {
+      return name.substr(0, pos);
+    }
+    return "";
+  };
 
   std::map<PwrGroupData::PwrGroupType, std::string> group_type_to_string = {
       {PwrGroupData::PwrGroupType::kIOPad, "io_pad"},
@@ -592,6 +602,48 @@ unsigned Power::reportSummaryPowerJSON(const char* rpt_file_name,
     });
   }
 
+  auto instance_power_data_vec = getInstancePowerData();
+  std::sort(instance_power_data_vec.begin(), instance_power_data_vec.end(),
+            [](const IRInstancePower& a, const IRInstancePower& b) {
+              return a._total_power > b._total_power;
+            });
+
+  // Helper struct for module power statistics
+  struct ModuleStats {
+    std::string module_name;
+    double internal_power = 0.0;
+    double switch_power = 0.0;
+    double leakage_power = 0.0;
+    double total_power = 0.0;
+    double nominal_voltage = 0.0;
+  };
+
+  std::unordered_map<std::string, ModuleStats> module_stats;
+
+  // Try to get module power data
+  bool failed_extract_module_name = false;
+  for (auto instance_power_data : instance_power_data_vec) {
+    auto name = extract_module_name(instance_power_data._instance_name);
+    if (name.empty() && !failed_extract_module_name) {
+      LOG_WARNING
+          << "Failed to extract module name from instance: "
+          << instance_power_data._instance_name
+          << ". Hierarchical naming (e.g., 'module/instance') is required "
+          << " but Yosys may flatten hierarchy. "
+          << "The power summary of individual modules will be stopped.";
+
+      failed_extract_module_name = true;
+      break;
+    }
+
+    module_stats[name].module_name = name;
+    module_stats[name].internal_power += instance_power_data._internal_power;
+    module_stats[name].switch_power += instance_power_data._switch_power;
+    module_stats[name].leakage_power += instance_power_data._leakage_power;
+    module_stats[name].nominal_voltage += instance_power_data._nominal_voltage;
+    module_stats[name].total_power += instance_power_data._total_power;
+  };
+
   // Get switch power
   double summary_switch_power = report_summary_data.get_net_switching_power();
   std::string summary_switch_power_percentage = data_str_f(CalcPercentage(
@@ -620,6 +672,24 @@ unsigned Power::reportSummaryPowerJSON(const char* rpt_file_name,
 
   // Get total power
   json_report["total_power"] = data_str(total_power);
+
+  if (!failed_extract_module_name) {
+    for (const auto& s : module_stats) {
+      const auto& stats = s.second;
+
+      auto percentage = CalcPercentage(stats.total_power / total_power);
+
+      summary_json.push_back({
+          {"module_name", stats.module_name},
+          {"internal_power", data_str(stats.internal_power)},
+          {"switch_power", data_str(stats.switch_power)},
+          {"leakage_power", data_str(stats.leakage_power)},
+          {"total_power", data_str(stats.total_power)},
+          {"nominal_voltage", data_str(stats.nominal_voltage)},
+          {"percentage", data_str_f(percentage)},
+      });
+    }
+  }
 
   std::ofstream out_file(rpt_file_name);
   if (out_file.is_open()) {
@@ -727,45 +797,6 @@ unsigned Power::reportInstancePowerCSV(const char* rpt_file_name) {
   };
 
   csv_file.close();
-  return 1;
-}
-
-/**
- * @brief report json file
- *
- * @param rpt_file_name
- * @return unsigned
- */
-unsigned Power::reportInstancePowerJSON(const char* rpt_file_name) {
-  nlohmann::json json_report = nlohmann::json::array();
-  auto data_str = [](double data) { return Str::printf("%.3e", data); };
-
-  auto instance_power_data_vec = getInstancePowerData();
-  std::sort(instance_power_data_vec.begin(), instance_power_data_vec.end(),
-            [](const IRInstancePower& a, const IRInstancePower& b) {
-              return a._total_power > b._total_power;
-            });
-
-  for (auto instance_power_data : instance_power_data_vec) {
-    json_report.push_back({
-        {"instance_name", instance_power_data._instance_name},
-        {"nominal_voltage", instance_power_data._nominal_voltage},
-        {"internal_power", data_str(instance_power_data._internal_power)},
-        {"switch_power", data_str(instance_power_data._switch_power)},
-        {"leakage_power", data_str(instance_power_data._leakage_power)},
-        {"total_power", data_str(instance_power_data._total_power)},
-    });
-  };
-
-  std::ofstream out_file(rpt_file_name);
-  if (out_file.is_open()) {
-    out_file << json_report.dump(4);  // 4 spaces indent
-    LOG_INFO << "JSON report written to: " << rpt_file_name;
-    out_file.close();
-  } else {
-    LOG_ERROR << "Failed to open JSON report file: " << rpt_file_name;
-  }
-
   return 1;
 }
 
@@ -1031,17 +1062,6 @@ unsigned Power::reportPower(bool is_copy) {
 
     std::string output_path = output_dir + "/" + file_name;
     reportSummaryPowerJSON(output_path.c_str(), PwrAnalysisMode::kAveraged);
-  }
-
-  if (isJsonReportEnabled()) {
-    std::string file_name =
-        Str::printf("%s_%s.pwr.json", ista->get_design_name().c_str(), "instance");
-    if (is_copy) {
-      CopyFile(backup_work_space, output_dir, file_name);
-    }
-
-    std::string output_path = output_dir + "/" + file_name;
-    reportInstancePowerJSON(output_path.c_str());
   }
 
   LOG_INFO << "power report end, output dir: " << output_dir;
