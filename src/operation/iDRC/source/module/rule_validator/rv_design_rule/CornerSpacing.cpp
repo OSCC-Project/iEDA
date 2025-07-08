@@ -20,6 +20,7 @@ namespace idrc {
 
 void RuleValidator::verifyCornerSpacing(RVBox& rv_box)
 {
+#if 0
   /*
     PROPERTY LEF58_CORNERSPACING "CORNERSPACING CONVEXCORNER EXCEPTEOL 0.08
   WIDTH 0.00 SPACING 0.10
@@ -237,5 +238,7 @@ void RuleValidator::verifyCornerSpacing(RVBox& rv_box)
       }
     }
   }
+#endif
 }
+
 }  // namespace idrc

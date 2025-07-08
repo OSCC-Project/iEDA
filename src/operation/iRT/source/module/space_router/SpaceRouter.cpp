@@ -440,7 +440,9 @@ void SpaceRouter::routeSRBoxMap(SRModel& sr_model)
         buildOrientSupply(sr_model, sr_box);
         buildOrientDemand(sr_model, sr_box);
         // debugCheckSRBox(sr_box);
+        // debugPlotSRBox(sr_box, "before");
         routeSRBox(sr_box);
+        // debugPlotSRBox(sr_box, "after");
       }
       selectBestResult(sr_box);
       freeSRBox(sr_box);
@@ -1883,6 +1885,54 @@ void SpaceRouter::debugCheckSRBox(SRBox& sr_box)
       }
     }
   }
+}
+
+void SpaceRouter::debugPlotSRBox(SRBox& sr_box, std::string flag)
+{
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::string& sr_temp_directory_path = RTDM.getConfig().sr_temp_directory_path;
+
+  PlanarRect box_real_rect = sr_box.get_box_rect().get_real_rect();
+
+  int32_t point_size = 5;
+
+  GPGDS gp_gds;
+
+  // base_region
+  {
+    GPStruct base_region_struct("base_region");
+    GPBoundary gp_boundary;
+    gp_boundary.set_layer_idx(0);
+    gp_boundary.set_data_type(0);
+    gp_boundary.set_rect(box_real_rect);
+    base_region_struct.push(gp_boundary);
+    gp_gds.addStruct(base_region_struct);
+  }
+
+  // gcell_axis
+  {
+    GPStruct gcell_axis_struct("gcell_axis");
+    for (int32_t x : RTUTIL.getScaleList(box_real_rect.get_ll_x(), box_real_rect.get_ur_x(), gcell_axis.get_x_grid_list())) {
+      GPPath gp_path;
+      gp_path.set_layer_idx(0);
+      gp_path.set_data_type(1);
+      gp_path.set_segment(x, box_real_rect.get_ll_y(), x, box_real_rect.get_ur_y());
+      gcell_axis_struct.push(gp_path);
+    }
+    for (int32_t y : RTUTIL.getScaleList(box_real_rect.get_ll_y(), box_real_rect.get_ur_y(), gcell_axis.get_y_grid_list())) {
+      GPPath gp_path;
+      gp_path.set_layer_idx(0);
+      gp_path.set_data_type(1);
+      gp_path.set_segment(box_real_rect.get_ll_x(), y, box_real_rect.get_ur_x(), y);
+      gcell_axis_struct.push(gp_path);
+    }
+    gp_gds.addStruct(gcell_axis_struct);
+  }
+
+  std::string gds_file_path
+      = RTUTIL.getString(sr_temp_directory_path, flag, "_sr_box_", sr_box.get_sr_box_id().get_x(), "_", sr_box.get_sr_box_id().get_y(), ".gds");
+  RTGP.plot(gp_gds, gds_file_path);
 }
 
 #endif
