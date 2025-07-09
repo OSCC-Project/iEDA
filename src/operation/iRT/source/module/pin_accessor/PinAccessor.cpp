@@ -627,31 +627,53 @@ void PinAccessor::setPAIterParam(PAModel& pa_model, int32_t iter, PAIterParam& p
 void PinAccessor::initPABoxMap(PAModel& pa_model)
 {
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
-
-  int32_t x_gcell_num = 0;
-  for (ScaleGrid& x_grid : gcell_axis.get_x_grid_list()) {
-    x_gcell_num += x_grid.get_step_num();
-  }
-  int32_t y_gcell_num = 0;
-  for (ScaleGrid& y_grid : gcell_axis.get_y_grid_list()) {
-    y_gcell_num += y_grid.get_step_num();
-  }
-
   PAIterParam& pa_iter_param = pa_model.get_pa_iter_param();
+
   int32_t size = pa_iter_param.get_size();
   int32_t offset = pa_iter_param.get_offset();
-  int32_t x_box_num = static_cast<int32_t>(std::ceil((x_gcell_num - offset) / 1.0 / size));
-  int32_t y_box_num = static_cast<int32_t>(std::ceil((y_gcell_num - offset) / 1.0 / size));
-
+  while (offset >= size) {
+    offset -= size;
+  }
+  std::vector<int32_t> x_scale_list;
+  {
+    int32_t x_gcell_num = 0;
+    for (ScaleGrid& x_grid : gcell_axis.get_x_grid_list()) {
+      x_gcell_num += x_grid.get_step_num();
+    }
+    x_scale_list.push_back(0);
+    for (int32_t x_scale = offset; x_scale <= x_gcell_num; x_scale += size) {
+      x_scale_list.push_back(x_scale);
+    }
+    x_scale_list.push_back(x_gcell_num);
+    std::sort(x_scale_list.begin(), x_scale_list.end());
+    x_scale_list.erase(std::unique(x_scale_list.begin(), x_scale_list.end()), x_scale_list.end());
+  }
+  std::vector<int32_t> y_scale_list;
+  {
+    int32_t y_gcell_num = 0;
+    for (ScaleGrid& y_grid : gcell_axis.get_y_grid_list()) {
+      y_gcell_num += y_grid.get_step_num();
+    }
+    y_scale_list.push_back(0);
+    for (int32_t y_scale = offset; y_scale <= y_gcell_num; y_scale += size) {
+      y_scale_list.push_back(y_scale);
+    }
+    y_scale_list.push_back(y_gcell_num);
+    std::sort(y_scale_list.begin(), y_scale_list.end());
+    y_scale_list.erase(std::unique(y_scale_list.begin(), y_scale_list.end()), y_scale_list.end());
+  }
   GridMap<PABox>& pa_box_map = pa_model.get_pa_box_map();
-  pa_box_map.init(x_box_num, y_box_num);
-
+  {
+    int32_t x_box_num = static_cast<int32_t>(x_scale_list.size()) - 1;
+    int32_t y_box_num = static_cast<int32_t>(y_scale_list.size()) - 1;
+    pa_box_map.init(x_box_num, y_box_num);
+  }
   for (int32_t x = 0; x < pa_box_map.get_x_size(); x++) {
     for (int32_t y = 0; y < pa_box_map.get_y_size(); y++) {
-      int32_t grid_ll_x = std::max(offset + x * size, 0);
-      int32_t grid_ll_y = std::max(offset + y * size, 0);
-      int32_t grid_ur_x = std::min(offset + (x + 1) * size - 1, x_gcell_num - 1);
-      int32_t grid_ur_y = std::min(offset + (y + 1) * size - 1, y_gcell_num - 1);
+      int32_t grid_ll_x = x_scale_list[x];
+      int32_t grid_ll_y = y_scale_list[y];
+      int32_t grid_ur_x = x_scale_list[x + 1] - 1;
+      int32_t grid_ur_y = y_scale_list[y + 1] - 1;
 
       PlanarRect ll_gcell_rect = RTUTIL.getRealRectByGCell(PlanarCoord(grid_ll_x, grid_ll_y), gcell_axis);
       PlanarRect ur_gcell_rect = RTUTIL.getRealRectByGCell(PlanarCoord(grid_ur_x, grid_ur_y), gcell_axis);
@@ -692,7 +714,9 @@ void PinAccessor::buildBoxSchedule(PAModel& pa_model)
           pa_box_id_list.emplace_back(x, y);
         }
       }
-      pa_box_id_list_list.push_back(pa_box_id_list);
+      if (!pa_box_id_list.empty()) {
+        pa_box_id_list_list.push_back(pa_box_id_list);
+      }
     }
   }
   pa_model.set_pa_box_id_list_list(pa_box_id_list_list);
@@ -3425,32 +3449,35 @@ void PinAccessor::outputNetJson(PAModel& pa_model)
     return;
   }
   std::vector<nlohmann::json> net_json_list;
-  net_json_list.resize(net_list.size());
-  for (Net& net : net_list) {
-    net_json_list[net.get_net_idx()]["net_name"] = net.get_net_name();
-  }
-  for (auto& [net_idx, pin_access_result_map] : RTDM.getNetPinAccessResultMap(die)) {
-    for (auto& [pin_idx, segment_set] : pin_access_result_map) {
-      for (Segment<LayerCoord>* segment : segment_set) {
-        for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
-          std::string layer_name;
-          if (net_shape.get_is_routing()) {
-            layer_name = routing_layer_list[net_shape.get_layer_idx()].get_layer_name();
-          } else {
-            layer_name = cut_layer_list[net_shape.get_layer_idx()].get_layer_name();
+  {
+    nlohmann::json result_shape_json;
+    for (auto& [net_idx, pin_access_result_map] : RTDM.getNetPinAccessResultMap(die)) {
+      std::string net_name = net_list[net_idx].get_net_name();
+      for (auto& [pin_idx, segment_set] : pin_access_result_map) {
+        for (Segment<LayerCoord>* segment : segment_set) {
+          for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+            std::string layer_name;
+            if (net_shape.get_is_routing()) {
+              layer_name = routing_layer_list[net_shape.get_layer_idx()].get_layer_name();
+            } else {
+              layer_name = cut_layer_list[net_shape.get_layer_idx()].get_layer_name();
+            }
+            result_shape_json["result_shape"][net_name]["path"].push_back(
+                {net_shape.get_ll_x(), net_shape.get_ll_y(), net_shape.get_ur_x(), net_shape.get_ur_y(), layer_name});
           }
-          net_json_list[net_idx]["result"].push_back({net_shape.get_ll_x(), net_shape.get_ll_y(), net_shape.get_ur_x(), net_shape.get_ur_y(), layer_name});
         }
       }
     }
-  }
-  for (auto& [net_idx, pin_access_patch_map] : RTDM.getNetPinAccessPatchMap(die)) {
-    for (auto& [pin_idx, patch_set] : pin_access_patch_map) {
-      for (EXTLayerRect* patch : patch_set) {
-        net_json_list[net_idx]["patch"].push_back({patch->get_real_ll_x(), patch->get_real_ll_y(), patch->get_real_ur_x(), patch->get_real_ur_y(),
-                                                   routing_layer_list[patch->get_layer_idx()].get_layer_name()});
+    for (auto& [net_idx, pin_access_patch_map] : RTDM.getNetPinAccessPatchMap(die)) {
+      std::string net_name = net_list[net_idx].get_net_name();
+      for (auto& [pin_idx, patch_set] : pin_access_patch_map) {
+        for (EXTLayerRect* patch : patch_set) {
+          result_shape_json["result_shape"][net_name]["patch"].push_back({patch->get_real_ll_x(), patch->get_real_ll_y(), patch->get_real_ur_x(),
+                                                                          patch->get_real_ur_y(), routing_layer_list[patch->get_layer_idx()].get_layer_name()});
+        }
       }
     }
+    net_json_list.push_back(result_shape_json);
   }
   std::string net_json_file_path = RTUTIL.getString(pa_temp_directory_path, "net_map_", pa_model.get_iter(), ".json");
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
