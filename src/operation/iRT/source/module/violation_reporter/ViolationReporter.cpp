@@ -520,28 +520,31 @@ void ViolationReporter::outputNetJson(VRModel& vr_model)
     return;
   }
   std::vector<nlohmann::json> net_json_list;
-  net_json_list.resize(net_list.size());
-  for (Net& net : net_list) {
-    net_json_list[net.get_net_idx()]["net_name"] = net.get_net_name();
-  }
-  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
-    for (Segment<LayerCoord>* segment : segment_set) {
-      for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
-        std::string layer_name;
-        if (net_shape.get_is_routing()) {
-          layer_name = routing_layer_list[net_shape.get_layer_idx()].get_layer_name();
-        } else {
-          layer_name = cut_layer_list[net_shape.get_layer_idx()].get_layer_name();
+  {
+    nlohmann::json result_shape_json;
+    for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
+      std::string net_name = net_list[net_idx].get_net_name();
+      for (Segment<LayerCoord>* segment : segment_set) {
+        for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+          std::string layer_name;
+          if (net_shape.get_is_routing()) {
+            layer_name = routing_layer_list[net_shape.get_layer_idx()].get_layer_name();
+          } else {
+            layer_name = cut_layer_list[net_shape.get_layer_idx()].get_layer_name();
+          }
+          result_shape_json["result_shape"][net_name]["path"].push_back(
+              {net_shape.get_ll_x(), net_shape.get_ll_y(), net_shape.get_ur_x(), net_shape.get_ur_y(), layer_name});
         }
-        net_json_list[net_idx]["result"].push_back({net_shape.get_ll_x(), net_shape.get_ll_y(), net_shape.get_ur_x(), net_shape.get_ur_y(), layer_name});
       }
     }
-  }
-  for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
-    for (EXTLayerRect* patch : patch_set) {
-      net_json_list[net_idx]["patch"].push_back({patch->get_real_ll_x(), patch->get_real_ll_y(), patch->get_real_ur_x(), patch->get_real_ur_y(),
-                                                 routing_layer_list[patch->get_layer_idx()].get_layer_name()});
+    for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
+      std::string net_name = net_list[net_idx].get_net_name();
+      for (EXTLayerRect* patch : patch_set) {
+        result_shape_json["result_shape"][net_name]["patch"].push_back({patch->get_real_ll_x(), patch->get_real_ll_y(), patch->get_real_ur_x(),
+                                                                        patch->get_real_ur_y(), routing_layer_list[patch->get_layer_idx()].get_layer_name()});
+      }
     }
+    net_json_list.push_back(result_shape_json);
   }
   std::string net_json_file_path = RTUTIL.getString(RTUTIL.getString(vr_temp_directory_path, "net_map.json"));
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);

@@ -14,23 +14,32 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
-
+#include "RTInterface.hpp"
 #include "tcl_rt.h"
-
-using namespace ieda;
+#include "tcl_util.h"
 
 namespace tcl {
 
-int registerCmdRT()
+// public
+
+TclOutputDBJson::TclOutputDBJson(const char* cmd_name) : TclCmd(cmd_name)
 {
-  registerTclCmd(TclClearDef, "clear_def");
-  registerTclCmd(TclDestroyRT, "destroy_rt");
-  registerTclCmd(TclInitRT, "init_rt");
-  registerTclCmd(TclOutputDBJson, "output_db_json");
-  registerTclCmd(TclRunEGR, "run_egr");
-  registerTclCmd(TclRunRT, "run_rt");
-  return EXIT_SUCCESS;
+  _config_list.push_back(std::make_pair("-stage", ValueType::kString));
+  _config_list.push_back(std::make_pair("-json_file_path", ValueType::kString));
+
+  TclUtil::addOption(this, _config_list);
 }
+
+unsigned TclOutputDBJson::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+  std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
+  RTI.outputDBJson(config_map);
+  return 1;
+}
+
+// private
 
 }  // namespace tcl

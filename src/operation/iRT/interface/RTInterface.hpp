@@ -78,6 +78,7 @@ class RTInterface
   void runRT();
   void destroyRT();
   void clearDef();
+  void outputDBJson(std::map<std::string, std::any> config_map);
 #endif
 
 #endif

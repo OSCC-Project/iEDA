@@ -62,6 +62,20 @@ class TclInitRT : public TclCmd
   std::vector<std::pair<std::string, ValueType>> _config_list;
 };
 
+class TclOutputDBJson : public TclCmd
+{
+ public:
+  explicit TclOutputDBJson(const char* cmd_name);
+  ~TclOutputDBJson() override = default;
+
+  unsigned check() override { return 1; };
+
+  unsigned exec() override;
+
+ private:
+  std::vector<std::pair<std::string, ValueType>> _config_list;
+};
+
 class TclRunEGR : public TclCmd
 {
  public:

@@ -1231,25 +1231,28 @@ void LayerAssigner::outputNetJson(LAModel& la_model)
     return;
   }
   std::vector<nlohmann::json> net_json_list;
-  net_json_list.resize(net_list.size());
-  for (Net& net : net_list) {
-    net_json_list[net.get_net_idx()]["net_name"] = net.get_net_name();
-  }
-  for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
-    for (Segment<LayerCoord>* segment : segment_set) {
-      PlanarRect first_gcell = RTUTIL.getRealRectByGCell(segment->get_first(), gcell_axis);
-      PlanarRect second_gcell = RTUTIL.getRealRectByGCell(segment->get_second(), gcell_axis);
-      if (segment->get_first().get_layer_idx() != segment->get_second().get_layer_idx()) {
-        net_json_list[net_idx]["result"].push_back({first_gcell.get_ll_x(), first_gcell.get_ll_y(), first_gcell.get_ur_x(), first_gcell.get_ur_y(),
-                                                    routing_layer_list[segment->get_first().get_layer_idx()].get_layer_name()});
-        net_json_list[net_idx]["result"].push_back({second_gcell.get_ll_x(), second_gcell.get_ll_y(), second_gcell.get_ur_x(), second_gcell.get_ur_y(),
-                                                    routing_layer_list[segment->get_second().get_layer_idx()].get_layer_name()});
-      } else {
-        PlanarRect gcell = RTUTIL.getBoundingBox({first_gcell, second_gcell});
-        net_json_list[net_idx]["result"].push_back({gcell.get_ll_x(), gcell.get_ll_y(), gcell.get_ur_x(), gcell.get_ur_y(),
-                                                    routing_layer_list[segment->get_first().get_layer_idx()].get_layer_name()});
+  {
+    nlohmann::json result_shape_json;
+    for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
+      std::string net_name = net_list[net_idx].get_net_name();
+      for (Segment<LayerCoord>* segment : segment_set) {
+        PlanarRect first_gcell = RTUTIL.getRealRectByGCell(segment->get_first(), gcell_axis);
+        PlanarRect second_gcell = RTUTIL.getRealRectByGCell(segment->get_second(), gcell_axis);
+        if (segment->get_first().get_layer_idx() != segment->get_second().get_layer_idx()) {
+          result_shape_json["result_shape"][net_name]["path"].push_back({first_gcell.get_ll_x(), first_gcell.get_ll_y(), first_gcell.get_ur_x(),
+                                                                         first_gcell.get_ur_y(),
+                                                                         routing_layer_list[segment->get_first().get_layer_idx()].get_layer_name()});
+          result_shape_json["result_shape"][net_name]["path"].push_back({second_gcell.get_ll_x(), second_gcell.get_ll_y(), second_gcell.get_ur_x(),
+                                                                         second_gcell.get_ur_y(),
+                                                                         routing_layer_list[segment->get_second().get_layer_idx()].get_layer_name()});
+        } else {
+          PlanarRect gcell = RTUTIL.getBoundingBox({first_gcell, second_gcell});
+          result_shape_json["result_shape"][net_name]["path"].push_back({gcell.get_ll_x(), gcell.get_ll_y(), gcell.get_ur_x(), gcell.get_ur_y(),
+                                                                         routing_layer_list[segment->get_first().get_layer_idx()].get_layer_name()});
+        }
       }
     }
+    net_json_list.push_back(result_shape_json);
   }
   std::string net_json_file_path = RTUTIL.getString(la_temp_directory_path, "net_map.json");
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
