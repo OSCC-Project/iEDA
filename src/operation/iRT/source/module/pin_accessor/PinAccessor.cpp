@@ -875,6 +875,14 @@ void PinAccessor::initPATaskList(PAModel& pa_model, PABox& pa_box)
             pa_group_list.back().get_coord_list().push_back(coord);
           }
         }
+        if (pa_group_list.back().get_coord_list().empty()) {
+          for (const LayerCoord& coord : pa_pin->get_target_coord_list()) {
+            if (!RTUTIL.isInside(box_rect.get_real_rect(), coord.get_planar_coord())) {
+              continue;
+            }
+            pa_group_list.back().get_coord_list().push_back(coord);
+          }
+        }
       }
       if (pa_group_list.front().get_coord_list().empty() || pa_group_list.back().get_coord_list().empty()) {
         continue;
