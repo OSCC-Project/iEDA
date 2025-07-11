@@ -256,7 +256,13 @@ class SRNode : public LayerCoord
         _net_orient_map[net_idx].insert(orient);
       } else {
         _orient_net_map[orient].erase(net_idx);
+        if (_orient_net_map[orient].empty()) {
+          _orient_net_map.erase(orient);
+        }
         _net_orient_map[net_idx].erase(orient);
+        if (_net_orient_map[net_idx].empty()) {
+          _net_orient_map.erase(net_idx);
+        }
       }
     }
   }
