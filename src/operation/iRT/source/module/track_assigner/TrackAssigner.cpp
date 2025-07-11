@@ -69,6 +69,7 @@ void TrackAssigner::assign()
   outputViolationCSV(ta_model);
   outputNetJson(ta_model);
   outputViolationJson(ta_model);
+  outputSummaryJson(ta_model);
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -1563,7 +1564,7 @@ void TrackAssigner::outputNetJson(TAModel& ta_model)
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
-  RTI.sendNotification(RTUTIL.getString("RT_TA_net_map"), net_json_file_path);
+  RTI.sendNotification("RT_TA_net_map", net_json_file_path);
 }
 
 void TrackAssigner::outputViolationJson(TAModel& ta_model)
@@ -1598,7 +1599,37 @@ void TrackAssigner::outputViolationJson(TAModel& ta_model)
   std::ofstream* violation_json_file = RTUTIL.getOutputFileStream(violation_json_file_path);
   (*violation_json_file) << violation_json_list;
   RTUTIL.closeFileStream(violation_json_file);
-  RTI.sendNotification(RTUTIL.getString("RT_TA_violation_map"), violation_json_file_path);
+  RTI.sendNotification("RT_TA_violation_map", violation_json_file_path);
+}
+
+void TrackAssigner::outputSummaryJson(TAModel& ta_model)
+{
+  Summary& summary = RTDM.getDatabase().get_summary();
+  std::string& ta_temp_directory_path = RTDM.getConfig().ta_temp_directory_path;
+  int32_t enable_notification = RTDM.getConfig().enable_notification;
+  if (!enable_notification) {
+    return;
+  }
+  std::map<int32_t, double>& routing_wire_length_map = summary.ta_summary.routing_wire_length_map;
+  double& total_wire_length = summary.ta_summary.total_wire_length;
+  std::map<int32_t, int32_t>& routing_violation_num_map = summary.ta_summary.routing_violation_num_map;
+  int32_t& total_violation_num = summary.ta_summary.total_violation_num;
+
+  nlohmann::json summary_json;
+  for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
+    summary_json["routing_wire_length_map"][std::to_string(routing_layer_idx)] = wire_length;
+  }
+  summary_json["total_wire_length"] = total_wire_length;
+  for (auto& [routing_layer_idx, violation_num] : routing_violation_num_map) {
+    summary_json["routing_violation_num_map"][std::to_string(routing_layer_idx)] = violation_num;
+  }
+  summary_json["total_violation_num"] = total_violation_num;
+
+  std::string summary_json_file_path = RTUTIL.getString(ta_temp_directory_path, "summary.json");
+  std::ofstream* summary_json_file = RTUTIL.getOutputFileStream(summary_json_file_path);
+  (*summary_json_file) << summary_json;
+  RTUTIL.closeFileStream(summary_json_file);
+  RTI.sendNotification("RT_TA_summary", summary_json_file_path);
 }
 
 #endif

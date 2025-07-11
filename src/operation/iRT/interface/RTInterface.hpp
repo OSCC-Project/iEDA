@@ -158,6 +158,7 @@ class RTInterface
 
 #if 1  // ecos
   void sendNotification(std::string stage, std::string json_path);
+  void sendNotification(std::string stage, int32_t iter, std::string json_path);
 #endif
 
 #endif

@@ -63,6 +63,7 @@ void ViolationReporter::report()
   outputViolationCSV(vr_model);
   outputNetJson(vr_model);
   outputViolationJson(vr_model);
+  outputSummaryJson(vr_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -550,7 +551,7 @@ void ViolationReporter::outputNetJson(VRModel& vr_model)
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
-  RTI.sendNotification(RTUTIL.getString("RT_VR_net_map"), net_json_file_path);
+  RTI.sendNotification("RT_VR_net_map", net_json_file_path);
 }
 
 void ViolationReporter::outputViolationJson(VRModel& vr_model)
@@ -585,7 +586,65 @@ void ViolationReporter::outputViolationJson(VRModel& vr_model)
   std::ofstream* violation_json_file = RTUTIL.getOutputFileStream(violation_json_file_path);
   (*violation_json_file) << violation_json_list;
   RTUTIL.closeFileStream(violation_json_file);
-  RTI.sendNotification(RTUTIL.getString("RT_VR_violation_map"), violation_json_file_path);
+  RTI.sendNotification("RT_VR_violation_map", violation_json_file_path);
+}
+
+void ViolationReporter::outputSummaryJson(VRModel& vr_model)
+{
+  Summary& summary = RTDM.getDatabase().get_summary();
+  std::string& vr_temp_directory_path = RTDM.getConfig().vr_temp_directory_path;
+  int32_t enable_notification = RTDM.getConfig().enable_notification;
+  if (!enable_notification) {
+    return;
+  }
+  std::map<int32_t, double>& routing_wire_length_map = summary.vr_summary.routing_wire_length_map;
+  double& total_wire_length = summary.vr_summary.total_wire_length;
+  std::map<int32_t, int32_t>& cut_via_num_map = summary.vr_summary.cut_via_num_map;
+  int32_t& total_via_num = summary.vr_summary.total_via_num;
+  std::map<int32_t, int32_t>& routing_patch_num_map = summary.vr_summary.routing_patch_num_map;
+  int32_t& total_patch_num = summary.vr_summary.total_patch_num;
+  std::map<int32_t, int32_t>& within_net_routing_violation_num_map = summary.vr_summary.within_net_routing_violation_num_map;
+  int32_t& within_net_total_violation_num = summary.vr_summary.within_net_total_violation_num;
+  std::map<int32_t, int32_t>& among_net_routing_violation_num_map = summary.vr_summary.among_net_routing_violation_num_map;
+  int32_t& among_net_total_violation_num = summary.vr_summary.among_net_total_violation_num;
+  std::map<std::string, std::map<std::string, double>>& clock_timing_map = summary.vr_summary.clock_timing_map;
+  std::map<std::string, double>& type_power_map = summary.vr_summary.type_power_map;
+
+  nlohmann::json summary_json;
+  for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
+    summary_json["routing_wire_length_map"][std::to_string(routing_layer_idx)] = wire_length;
+  }
+  summary_json["total_wire_length"] = total_wire_length;
+  for (auto& [cut_layer_idx, via_num] : cut_via_num_map) {
+    summary_json["cut_via_num_map"][std::to_string(cut_layer_idx)] = via_num;
+  }
+  summary_json["total_via_num"] = total_via_num;
+  for (auto& [routing_layer_idx, patch_num] : routing_patch_num_map) {
+    summary_json["routing_patch_num_map"][std::to_string(routing_layer_idx)] = patch_num;
+  }
+  summary_json["total_patch_num"] = total_patch_num;
+  for (auto& [routing_layer_idx, violation_num] : within_net_routing_violation_num_map) {
+    summary_json["within_net_routing_violation_num_map"][std::to_string(routing_layer_idx)] = violation_num;
+  }
+  summary_json["within_net_total_violation_num"] = within_net_total_violation_num;
+  for (auto& [routing_layer_idx, violation_num] : among_net_routing_violation_num_map) {
+    summary_json["among_net_routing_violation_num_map"][std::to_string(routing_layer_idx)] = violation_num;
+  }
+  summary_json["among_net_total_violation_num"] = among_net_total_violation_num;
+  for (auto& [clock_name, timing] : clock_timing_map) {
+    summary_json["clock_timing_map"]["clock_name"] = clock_name;
+    summary_json["clock_timing_map"]["timing"] = timing;
+  }
+  for (auto& [type, power] : type_power_map) {
+    summary_json["type_power_map"]["type"] = type;
+    summary_json["type_power_map"]["power"] = power;
+  }
+
+  std::string summary_json_file_path = RTUTIL.getString(vr_temp_directory_path, "summary.json");
+  std::ofstream* summary_json_file = RTUTIL.getOutputFileStream(summary_json_file_path);
+  (*summary_json_file) << summary_json;
+  RTUTIL.closeFileStream(summary_json_file);
+  RTI.sendNotification("RT_VR_summary", summary_json_file_path);
 }
 
 #endif

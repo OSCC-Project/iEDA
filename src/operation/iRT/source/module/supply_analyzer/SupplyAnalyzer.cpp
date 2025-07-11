@@ -231,8 +231,30 @@ EXTLayerRect SupplyAnalyzer::getSearchRect(LayerCoord& first_coord, LayerCoord& 
   if (first_coord.get_layer_idx() != second_coord.get_layer_idx()) {
     RTLOG.error(Loc::current(), "The grid_pair layer_idx is not equal!");
   }
+  PlanarRect search_real_rect;
+  {
+    PlanarRect first_real_rect = RTUTIL.getRealRectByGCell(first_coord, gcell_axis);
+    PlanarCoord first_mid_coord = first_real_rect.getMidPoint();
+    PlanarRect second_real_rect = RTUTIL.getRealRectByGCell(second_coord, gcell_axis);
+    PlanarCoord second_mid_coord = second_real_rect.getMidPoint();
+    if (RTUTIL.isHorizontal(first_coord, second_coord)) {
+      std::vector<PlanarCoord> coord_list;
+      coord_list.emplace_back(first_mid_coord.get_x(), first_real_rect.get_ll_y());
+      coord_list.emplace_back(first_mid_coord.get_x(), first_real_rect.get_ur_y());
+      coord_list.emplace_back(second_mid_coord.get_x(), second_real_rect.get_ll_y());
+      coord_list.emplace_back(second_mid_coord.get_x(), second_real_rect.get_ur_y());
+      search_real_rect = RTUTIL.getBoundingBox(coord_list);
+    } else if (RTUTIL.isVertical(first_coord, second_coord)) {
+      std::vector<PlanarCoord> coord_list;
+      coord_list.emplace_back(first_real_rect.get_ll_x(), first_mid_coord.get_y());
+      coord_list.emplace_back(first_real_rect.get_ur_x(), first_mid_coord.get_y());
+      coord_list.emplace_back(second_real_rect.get_ll_x(), second_mid_coord.get_y());
+      coord_list.emplace_back(second_real_rect.get_ur_x(), second_mid_coord.get_y());
+      search_real_rect = RTUTIL.getBoundingBox(coord_list);
+    }
+  }
   EXTLayerRect search_rect;
-  search_rect.set_real_rect(RTUTIL.getBoundingBox({RTUTIL.getRealRectByGCell(first_coord, gcell_axis), RTUTIL.getRealRectByGCell(second_coord, gcell_axis)}));
+  search_rect.set_real_rect(search_real_rect);
   search_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(search_rect.get_real_rect(), gcell_axis));
   search_rect.set_layer_idx(first_coord.get_layer_idx());
   return search_rect;

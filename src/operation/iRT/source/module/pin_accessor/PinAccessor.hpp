@@ -185,6 +185,7 @@ class PinAccessor
   void outputViolationCSV(PAModel& pa_model);
   void outputNetJson(PAModel& pa_model);
   void outputViolationJson(PAModel& pa_model);
+  void outputSummaryJson(PAModel& pa_model);
 #endif
 
 #if 1  // debug
