@@ -429,7 +429,11 @@ void RTInterface::outputDBJson(std::map<std::string, std::any> config_map)
   std::ofstream* db_json_file = RTUTIL.getOutputFileStream(db_json_file_path);
   (*db_json_file) << db_json_list;
   RTUTIL.closeFileStream(db_json_file);
-  RTI.sendNotification(RTUTIL.getConfigValue<std::string>(config_map, "-stage", "null"), db_json_file_path);
+
+  std::map<std::string, std::string> notification;
+  notification["stage"] = RTUTIL.getConfigValue<std::string>(config_map, "-stage", "null");
+  notification["json_path"] = db_json_file_path;
+  ieda::NotificationUtility::getInstance().sendNotification("DB", notification);
 }
 
 #endif
@@ -2038,14 +2042,6 @@ void RTInterface::routeTAPanel(TAPanel& ta_panel)
 #endif
 
 #if 1  // ecos
-
-void RTInterface::sendNotification(std::string stage, std::string json_path)
-{
-  std::map<std::string, std::string> notification;
-  notification["stage"] = stage;
-  notification["json_path"] = json_path;
-  ieda::NotificationUtility::getInstance().sendNotification("iRT", notification);
-}
 
 void RTInterface::sendNotification(std::string stage, int32_t iter, std::string json_path)
 {
