@@ -24,6 +24,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <algorithm>
+#include <thread>
 
 using json = nlohmann::json;
 
@@ -33,12 +34,7 @@ namespace ieda {
 std::unique_ptr<NotificationUtility> NotificationUtility::_instance = nullptr;
 std::mutex NotificationUtility::_instance_mutex;
 
-// Callback function for libcurl to write response data
-static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {
-    size_t total_size = size * nmemb;
-    userp->append(static_cast<char*>(contents), total_size);
-    return total_size;
-}
+
 
 NotificationUtility& NotificationUtility::getInstance() {
     std::lock_guard<std::mutex> lock(_instance_mutex);
@@ -91,17 +87,39 @@ bool NotificationUtility::initialize(const NotificationConfig& config) {
 
 bool NotificationUtility::initialize(const std::string& endpoint_url) {
     NotificationConfig config;
-    
+
     // Use provided URL or try to get from environment
     if (!endpoint_url.empty()) {
         config.endpoint_url = endpoint_url;
     } else {
-        const char* env_url = std::getenv("IEDA_NOTIFICATION_URL");
+        const char* env_url = std::getenv("IEDA_ECOS_NOTIFICATION_URL");
         if (env_url) {
             config.endpoint_url = env_url;
         }
     }
-    
+
+    // Try to load task context from environment variables
+    const char* env_task_id = std::getenv("ECOS_TASK_ID");
+    const char* env_project_id = std::getenv("ECOS_PROJECT_ID");
+    const char* env_task_type = std::getenv("ECOS_TASK_TYPE");
+
+    if (env_task_id) config.task_id = env_task_id;
+    if (env_project_id) config.project_id = env_project_id;
+    if (env_task_type) config.task_type = env_task_type;
+
+    return initialize(config);
+}
+
+bool NotificationUtility::initialize(const std::string& endpoint_url,
+                                    const std::string& task_id,
+                                    const std::string& project_id,
+                                    const std::string& task_type) {
+    NotificationConfig config;
+    config.endpoint_url = endpoint_url;
+    config.task_id = task_id;
+    config.project_id = project_id;
+    config.task_type = task_type;
+
     return initialize(config);
 }
 
@@ -142,7 +160,6 @@ NotificationUtility::HttpResponse NotificationUtility::sendNotification(const No
         
         HttpResponse response;
         response.success = true;
-        response.response_body = "Async notification queued";
         return response;
     } else {
         return performHttpRequest(payload_json);
@@ -211,12 +228,21 @@ NotificationUtility::HttpResponse NotificationUtility::performHttpRequest(const 
         return response;
     }
     
-    std::string response_body;
     struct curl_slist* headers = nullptr;
     
     try {
+        // Build URL with query parameters for task context
+        std::string url = _config.endpoint_url;
+        if (!_config.task_id.empty() && !_config.project_id.empty()) {
+            char separator = (url.find('?') != std::string::npos) ? '&' : '?';
+            url = _config.endpoint_url + separator + "task_id=" + _config.task_id + "&project_id=" + _config.project_id;
+            if (!_config.task_type.empty()) {
+                url += "&task_type=" + _config.task_type;
+            }
+        }
+
         // Set URL
-        curl_easy_setopt(curl, CURLOPT_URL, _config.endpoint_url.c_str());
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         
         // Set POST method
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
@@ -235,10 +261,6 @@ NotificationUtility::HttpResponse NotificationUtility::performHttpRequest(const 
         }
         
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        
-        // Set response callback
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_body);
         
         // Set timeout
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, _config.timeout_seconds);
@@ -262,7 +284,6 @@ NotificationUtility::HttpResponse NotificationUtility::performHttpRequest(const 
         
         if (res == CURLE_OK) {
             curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response.response_code);
-            response.response_body = response_body;
             response.success = (response.response_code >= 200 && response.response_code < 300);
             
             if (!response.success) {
@@ -313,7 +334,7 @@ std::string NotificationUtility::getCurrentTimestamp() {
 }
 
 std::string NotificationUtility::loadAuthTokenFromEnv() {
-    const char* token = std::getenv("ID_SECRET");
+    const char* token = std::getenv("IEDA_ECOS_NOTIFICATION_SECRET");
     return token ? std::string(token) : std::string();
 }
 
@@ -330,6 +351,20 @@ void NotificationUtility::asyncNotificationWorker(const std::string& payload_jso
         std::cerr << "NotificationUtility: Exception in async worker: "
                   << e.what() << std::endl;
     }
+}
+
+void NotificationUtility::setTaskContext(const std::string& task_id,
+                                        const std::string& project_id,
+                                        const std::string& task_type) {
+    std::lock_guard<std::mutex> lock(_config_mutex);
+    _config.task_id = task_id;
+    _config.project_id = project_id;
+    _config.task_type = task_type;
+}
+
+std::tuple<std::string, std::string, std::string> NotificationUtility::getTaskContext() const {
+    std::lock_guard<std::mutex> lock(_config_mutex);
+    return std::make_tuple(_config.task_id, _config.project_id, _config.task_type);
 }
 
 } // namespace ieda
