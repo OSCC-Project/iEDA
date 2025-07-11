@@ -85,6 +85,9 @@ int TapCellPlacer::buildTapcellRegion()
   auto row_list = idb_rows->get_row_list();
   for (size_t i = 0; i < row_list.size(); i++) {
     buildRegionInRow(row_list[i], i);
+    auto y = row_list[i]->get_original_coordinate()->get_y();
+    _top_y = std::max(_top_y, y);
+    _bottom_y = std::min(_bottom_y, y);
   }
 
   return _cell_region_list.size();
@@ -198,66 +201,76 @@ int TapCellPlacer::insertCell(int32_t inst_space, std::string tapcell_name, std:
     /// get width for endcap by orient
     int32_t endcap_width = getCellMasterWidthByOrient(endcap_master, region.orient);
 
-    /// insert endcap at the begin
-    if ((region.end - region.start) >= endcap_width) {
-      dmInst->createInstance("ENDCAP_" + std::to_string(endcap_index++), endcap_name, region.start, region.y, region.orient,
-                             idb::IdbInstanceType::kDist, idb::IdbPlacementStatus::kFixed);
-    }
-    /// insert endcap at the end
-    if ((region.end - region.start) >= (2 * endcap_width)) {
-      dmInst->createInstance("ENDCAP_" + std::to_string(endcap_index++), endcap_name, region.end - endcap_width, region.y, region.orient,
-                             idb::IdbInstanceType::kDist, idb::IdbPlacementStatus::kFixed);
-    }
+    /// process top and bottom endcap
+    if (region.y == _top_y || region.y == _bottom_y) {
+      for (auto x = region.start; x < region.end; x += endcap_width) {
+        dmInst->createInstance("ENDCAP_" + std::to_string(endcap_index++), endcap_name, x, region.y, region.orient,
+                               idb::IdbInstanceType::kDist, idb::IdbPlacementStatus::kFixed);
+      }
+    } else {
+      /// process area between top and bottom row
 
-    /// insert tapcell in the middle region
-    {
-      /// get core low bottom x
-      int32_t core_start_x = idb_core->get_bounding_box()->get_low_x();
+      /// insert endcap at the begin
+      if ((region.end - region.start) >= endcap_width) {
+        dmInst->createInstance("ENDCAP_" + std::to_string(endcap_index++), endcap_name, region.start, region.y, region.orient,
+                               idb::IdbInstanceType::kDist, idb::IdbPlacementStatus::kFixed);
+      }
+      /// insert endcap at the end
+      if ((region.end - region.start) >= (2 * endcap_width)) {
+        dmInst->createInstance("ENDCAP_" + std::to_string(endcap_index++), endcap_name, region.end - endcap_width, region.y, region.orient,
+                               idb::IdbInstanceType::kDist, idb::IdbPlacementStatus::kFixed);
+      }
 
-      /// get start & end of this region plus endcap width
-      int32_t region_start = region.start + endcap_width;
-      int32_t region_end = region.end - endcap_width;
+      /// insert tapcell in the middle region
+      {
+        /// get core low bottom x
+        int32_t core_start_x = idb_core->get_bounding_box()->get_low_x();
 
-      /// get width for tapcell and endcap by orient
-      int32_t tapcell_width = getCellMasterWidthByOrient(tapcell_master, region.orient);
-      int32_t coord_x = region_start;
-      while ((coord_x + tapcell_width) <= region_end) {
-        /// process first tapcell
-        if (coord_x == region_start) {
-          /// insert tapcell
-          if (region.index % 2 == 0) {
-            dmInst->createInstance("PHY_" + std::to_string(tapcell_index++), tapcell_name, region_start, region.y, region.orient,
-                                   idb::IdbInstanceType::kDist, idb::IdbPlacementStatus::kFixed);
-            /// 以core x为基准，inst_space为间距，奇偶行交错对齐tapcell
-            /// 校准偶数行起始点x
-            coord_x = core_start_x + ((coord_x - core_start_x) / inst_space + 2) * inst_space;
-          } else {
-            /// 校准奇数行起始点x
-            coord_x = core_start_x + ((coord_x - core_start_x) / inst_space + 1) * inst_space;
+        /// get start & end of this region plus endcap width
+        int32_t region_start = region.start + endcap_width;
+        int32_t region_end = region.end - endcap_width;
+
+        /// get width for tapcell and endcap by orient
+        int32_t tapcell_width = getCellMasterWidthByOrient(tapcell_master, region.orient);
+        int32_t coord_x = region_start;
+        while ((coord_x + tapcell_width) <= region_end) {
+          /// process first tapcell
+          if (coord_x == region_start) {
+            /// insert tapcell
+            if (region.index % 2 == 0) {
+              dmInst->createInstance("PHY_" + std::to_string(tapcell_index++), tapcell_name, region_start, region.y, region.orient,
+                                     idb::IdbInstanceType::kDist, idb::IdbPlacementStatus::kFixed);
+              /// 以core x为基准，inst_space为间距，奇偶行交错对齐tapcell
+              /// 校准偶数行起始点x
+              coord_x = core_start_x + ((coord_x - core_start_x) / inst_space + 2) * inst_space;
+            } else {
+              /// 校准奇数行起始点x
+              coord_x = core_start_x + ((coord_x - core_start_x) / inst_space + 1) * inst_space;
+            }
+
+            continue;
           }
 
-          continue;
-        }
+          /// process middle cell
+          dmInst->createInstance("PHY_" + std::to_string(tapcell_index++), tapcell_name, coord_x, region.y, region.orient,
+                                 idb::IdbInstanceType::kDist, idb::IdbPlacementStatus::kFixed);
 
-        /// process middle cell
-        dmInst->createInstance("PHY_" + std::to_string(tapcell_index++), tapcell_name, coord_x, region.y, region.orient,
-                               idb::IdbInstanceType::kDist, idb::IdbPlacementStatus::kFixed);
-
-        /// process last tapcell
-        if ((coord_x + 2 * inst_space) >= region_end) {
-          /// add tapcell to the end of the row adjacentd to the endcap
-          /// at less 2 tapcell width is needed in order to insert tapcell
-          if ((region_end - coord_x) > (tapcell_width * 2)) {
-            /// insert tapcell at the end,
-            /// and coordinate x = region_end - tapcell_width
-            if (region.index % 2 == 0) {
-              dmInst->createInstance("PHY_" + std::to_string(tapcell_index++), tapcell_name, region_end - tapcell_width, region.y,
-                                     region.orient, idb::IdbInstanceType::kDist, idb::IdbPlacementStatus::kFixed);
+          /// process last tapcell
+          if ((coord_x + 2 * inst_space) >= region_end) {
+            /// add tapcell to the end of the row adjacentd to the endcap
+            /// at less 2 tapcell width is needed in order to insert tapcell
+            if ((region_end - coord_x) > (tapcell_width * 2)) {
+              /// insert tapcell at the end,
+              /// and coordinate x = region_end - tapcell_width
+              if (region.index % 2 == 0) {
+                dmInst->createInstance("PHY_" + std::to_string(tapcell_index++), tapcell_name, region_end - tapcell_width, region.y,
+                                       region.orient, idb::IdbInstanceType::kDist, idb::IdbPlacementStatus::kFixed);
+              }
             }
           }
-        }
 
-        coord_x += (inst_space * 2);
+          coord_x += (inst_space * 2);
+        }
       }
     }
   }

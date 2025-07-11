@@ -266,8 +266,8 @@ Test your webhook endpoint using curl:
 
 ```bash
 curl -X POST \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-token" \
-  -d '{"algorithm_name":"test","iteration_number":1,"total_iterations":1,"status":"completed"}' \
-  https://your-webhook-endpoint.com/notifications
+   -H "Content-Type: application/json" \
+   -H "Authorization: Bearer mysecret" \
+   -d "{\"tool_name\":\"test_tool\", \"timestamp\": \"$(date -u +'%Y-%m-%dT%H:%M:%S.%6NZ')\",\"metadata\": {\"k\": \"v\", \"status\":\"completed\"}}" \
+   http://0.0.0.0:8000/webhook/notify
 ```

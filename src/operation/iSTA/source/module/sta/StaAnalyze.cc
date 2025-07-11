@@ -562,7 +562,7 @@ unsigned StaAnalyze::operator()(StaGraph* the_graph) {
   unsigned index = 0;
   FOREACH_END_VERTEX(the_graph, end_vertex) {
     ++index;
-    LOG_INFO_EVERY_N(10) << "analyze timing path end vertex " << index
+    LOG_INFO_EVERY_N(1000) << "analyze timing path end vertex " << index
                            << " total " << the_graph->get_end_vertexes().size() << " start";
 
     if (end_vertex->is_start() && end_vertex->is_end()) {

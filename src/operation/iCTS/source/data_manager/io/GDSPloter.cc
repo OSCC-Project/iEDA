@@ -461,7 +461,25 @@ void GDSPloter::writeJsonDesign(const std::string& path)
 
       wires.push_back(wire_obj);
     }
-    net["wires"] = wires;
+    net["wires_layout"] = wires;
+
+    // Add delay information
+    nlohmann::json delays = nlohmann::json::array();
+
+    // Only consider a single clock source for now.
+    auto clk_port = design->get_clocks().front()->get_clock_name();
+    
+    for (auto& p : clk_net->get_load_pins()) {
+      auto delay = CTSAPIInst.getClockAT(p->get_full_name(), clk_port);
+      auto driver = clk_net->get_driver_pin();
+
+      nlohmann::json delay_obj;
+      delay_obj["from"] = driver->get_full_name();
+      delay_obj["to"] = p->get_full_name();
+      delay_obj["delay"] = delay;
+      delays.push_back(delay_obj);
+    }
+    net["wires_delay"] = delays;
 
     nets.push_back(net);
   }
