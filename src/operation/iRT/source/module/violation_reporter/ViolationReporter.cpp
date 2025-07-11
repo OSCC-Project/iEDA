@@ -551,7 +551,7 @@ void ViolationReporter::outputNetJson(VRModel& vr_model)
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
-  RTI.sendNotification("RT_VR_net_map", net_json_file_path);
+  RTI.sendNotification("RT_VR_net_map", 1, net_json_file_path);
 }
 
 void ViolationReporter::outputViolationJson(VRModel& vr_model)
@@ -586,7 +586,7 @@ void ViolationReporter::outputViolationJson(VRModel& vr_model)
   std::ofstream* violation_json_file = RTUTIL.getOutputFileStream(violation_json_file_path);
   (*violation_json_file) << violation_json_list;
   RTUTIL.closeFileStream(violation_json_file);
-  RTI.sendNotification("RT_VR_violation_map", violation_json_file_path);
+  RTI.sendNotification("RT_VR_violation_map", 1, violation_json_file_path);
 }
 
 void ViolationReporter::outputSummaryJson(VRModel& vr_model)
@@ -644,7 +644,7 @@ void ViolationReporter::outputSummaryJson(VRModel& vr_model)
   std::ofstream* summary_json_file = RTUTIL.getOutputFileStream(summary_json_file_path);
   (*summary_json_file) << summary_json;
   RTUTIL.closeFileStream(summary_json_file);
-  RTI.sendNotification("RT_VR_summary", summary_json_file_path);
+  RTI.sendNotification("RT_VR_summary", 1, summary_json_file_path);
 }
 
 #endif

@@ -758,7 +758,7 @@ void TopologyGenerator::outputNetJson(TGModel& tg_model)
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
-  RTI.sendNotification("RT_TG_net_map", net_json_file_path);
+  RTI.sendNotification("RT_TG_net_map", 1, net_json_file_path);
 }
 
 void TopologyGenerator::outputOverflowJson(TGModel& tg_model)
@@ -783,7 +783,7 @@ void TopologyGenerator::outputOverflowJson(TGModel& tg_model)
   std::ofstream* overflow_json_file = RTUTIL.getOutputFileStream(overflow_json_file_path);
   (*overflow_json_file) << overflow_json_list;
   RTUTIL.closeFileStream(overflow_json_file);
-  RTI.sendNotification("RT_TG_overflow_map", overflow_json_file_path);
+  RTI.sendNotification("RT_TG_overflow_map", 1, overflow_json_file_path);
 }
 
 void TopologyGenerator::outputSummaryJson(TGModel& tg_model)
@@ -816,7 +816,7 @@ void TopologyGenerator::outputSummaryJson(TGModel& tg_model)
   std::ofstream* summary_json_file = RTUTIL.getOutputFileStream(summary_json_file_path);
   (*summary_json_file) << summary_json;
   RTUTIL.closeFileStream(summary_json_file);
-  RTI.sendNotification("RT_TG_summary", summary_json_file_path);
+  RTI.sendNotification("RT_TG_summary", 1, summary_json_file_path);
 }
 
 #endif
