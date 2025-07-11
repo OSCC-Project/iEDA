@@ -22,6 +22,7 @@
 #include <mutex>
 #include <future>
 #include <functional>
+#include <tuple>
 
 namespace ieda {
 
@@ -39,10 +40,9 @@ public:
      */
     struct HttpResponse {
         long response_code;
-        std::string response_body;
         std::string error_message;
         bool success;
-        
+
         HttpResponse() : response_code(0), success(false) {}
     };
 
@@ -51,14 +51,17 @@ public:
      */
     struct NotificationConfig {
         std::string endpoint_url;           // Target URL for notifications
-        std::string auth_token;             // Authentication token (from ID_SECRET env var)
+        std::string auth_token;             // Authentication token (from IEDA_ECOS_NOTIFICATION_SECRET env var)
         std::string content_type;           // Content-Type header (default: application/json)
         int timeout_seconds;                // Request timeout in seconds
         int max_retries;                    // Maximum number of retry attempts
         bool enable_ssl_verification;       // Enable SSL certificate verification
         bool async_mode;                    // Send notifications asynchronously
-        
-        NotificationConfig() 
+        std::string task_id;                // Task ID for cloud integration
+        std::string project_id;             // Project ID for cloud integration
+        std::string task_type;              // Task type for cloud integration
+
+        NotificationConfig()
             : content_type("application/json")
             , timeout_seconds(30)
             , max_retries(3)
@@ -103,6 +106,19 @@ public:
      * @return true if initialization successful, false otherwise
      */
     bool initialize(const std::string& endpoint_url = "");
+
+    /**
+     * @brief Initialize with task context for cloud integration
+     * @param endpoint_url Target URL for notifications
+     * @param task_id Task ID for cloud integration
+     * @param project_id Project ID for cloud integration
+     * @param task_type Task type for cloud integration
+     * @return true if initialization successful, false otherwise
+     */
+    bool initialize(const std::string& endpoint_url,
+                   const std::string& task_id,
+                   const std::string& project_id,
+                   const std::string& task_type = "");
 
     /**
      * @brief Send generic notification with tool name and metadata
@@ -158,6 +174,22 @@ public:
      * @return true if all notifications completed, false if timeout
      */
     bool waitForPendingNotifications(int timeout_ms = 0);
+
+    /**
+     * @brief Set task context for cloud integration
+     * @param task_id Task ID
+     * @param project_id Project ID
+     * @param task_type Task type (optional)
+     */
+    void setTaskContext(const std::string& task_id,
+                       const std::string& project_id,
+                       const std::string& task_type = "");
+
+    /**
+     * @brief Get current task context
+     * @return Tuple of (task_id, project_id, task_type)
+     */
+    std::tuple<std::string, std::string, std::string> getTaskContext() const;
 
     ~NotificationUtility();
 

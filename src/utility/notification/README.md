@@ -16,8 +16,8 @@ The NotificationUtility provides a thread-safe way to send HTTP POST notificatio
 
 ### Environment Variables
 
-- `IEDA_NOTIFICATION_URL`: Target endpoint URL for notifications
-- `ID_SECRET`: Authentication token (used as Bearer token)
+- `IEDA_ECOS_NOTIFICATION_URL`: Target endpoint URL for notifications
+- `IEDA_ECOS_NOTIFICATION_SECRET`: Authentication token (used as Bearer token)
 
 ### Programmatic Configuration
 
@@ -48,7 +48,7 @@ notifier.initialize(config);
 
 // Initialize with environment variables
 auto& notifier = ieda::NotificationUtility::getInstance();
-notifier.initialize(); // Uses IEDA_NOTIFICATION_URL and ID_SECRET env vars
+notifier.initialize(); // Uses IEDA_ECOS_NOTIFICATION_URL and IEDA_ECOS_NOTIFICATION_SECRET env vars
 
 // Send iteration notification
 auto response = notifier.sendIterationNotification(
@@ -251,10 +251,10 @@ if __name__ == '__main__':
 ### Common Issues
 
 1. **"Failed to initialize libcurl"**: Ensure libcurl is properly installed
-2. **"Endpoint URL is required"**: Set `IEDA_NOTIFICATION_URL` environment variable
+2. **"Endpoint URL is required"**: Set `IEDA_ECOS_NOTIFICATION_URL` environment variable
 3. **SSL verification errors**: Set `config.enable_ssl_verification = false` for self-signed certificates
 4. **Timeout errors**: Increase `config.timeout_seconds` value
-5. **Authentication failures**: Verify `ID_SECRET` environment variable is set correctly
+5. **Authentication failures**: Verify `IEDA_ECOS_NOTIFICATION_SECRET` environment variable is set correctly
 
 ### Debug Mode
 
