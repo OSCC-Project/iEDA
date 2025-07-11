@@ -593,6 +593,7 @@ void PinAccessor::routePAModel(PAModel& pa_model)
     outputViolationCSV(pa_model);
     outputNetJson(pa_model);
     outputViolationJson(pa_model);
+    outputSummaryJson(pa_model);
     RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", pa_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, pa_iter_param_list.size()), ")",
                iter_monitor.getStatsInfo(), "*****");
     if (stopIteration(pa_model)) {
@@ -2507,6 +2508,7 @@ void PinAccessor::selectBestResult(PAModel& pa_model)
   outputViolationCSV(pa_model);
   outputNetJson(pa_model);
   outputViolationJson(pa_model);
+  outputSummaryJson(pa_model);
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -3491,7 +3493,7 @@ void PinAccessor::outputNetJson(PAModel& pa_model)
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
-  RTI.sendNotification(RTUTIL.getString("RT_PA_", pa_model.get_iter(), "_net_map"), net_json_file_path);
+  RTI.sendNotification("RT_PA_net_map", pa_model.get_iter(), net_json_file_path);
 }
 
 void PinAccessor::outputViolationJson(PAModel& pa_model)
@@ -3526,7 +3528,50 @@ void PinAccessor::outputViolationJson(PAModel& pa_model)
   std::ofstream* violation_json_file = RTUTIL.getOutputFileStream(violation_json_file_path);
   (*violation_json_file) << violation_json_list;
   RTUTIL.closeFileStream(violation_json_file);
-  RTI.sendNotification(RTUTIL.getString("RT_PA_", pa_model.get_iter(), "_violation_map"), violation_json_file_path);
+  RTI.sendNotification("RT_PA_violation_map", pa_model.get_iter(), violation_json_file_path);
+}
+
+void PinAccessor::outputSummaryJson(PAModel& pa_model)
+{
+  Summary& summary = RTDM.getDatabase().get_summary();
+  std::string& pa_temp_directory_path = RTDM.getConfig().pa_temp_directory_path;
+  int32_t enable_notification = RTDM.getConfig().enable_notification;
+  if (!enable_notification) {
+    return;
+  }
+  std::map<int32_t, double>& routing_wire_length_map = summary.iter_pa_summary_map[pa_model.get_iter()].routing_wire_length_map;
+  double& total_wire_length = summary.iter_pa_summary_map[pa_model.get_iter()].total_wire_length;
+  std::map<int32_t, int32_t>& cut_via_num_map = summary.iter_pa_summary_map[pa_model.get_iter()].cut_via_num_map;
+  int32_t& total_via_num = summary.iter_pa_summary_map[pa_model.get_iter()].total_via_num;
+  std::map<int32_t, int32_t>& routing_patch_num_map = summary.iter_pa_summary_map[pa_model.get_iter()].routing_patch_num_map;
+  int32_t& total_patch_num = summary.iter_pa_summary_map[pa_model.get_iter()].total_patch_num;
+  std::map<int32_t, int32_t>& routing_violation_num_map = summary.iter_pa_summary_map[pa_model.get_iter()].routing_violation_num_map;
+  int32_t& total_violation_num = summary.iter_pa_summary_map[pa_model.get_iter()].total_violation_num;
+
+  nlohmann::json summary_json;
+  summary_json["iter"] = pa_model.get_iter();
+  for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
+    summary_json["routing_wire_length_map"][std::to_string(routing_layer_idx)] = wire_length;
+  }
+  summary_json["total_wire_length"] = total_wire_length;
+  for (auto& [cut_layer_idx, via_num] : cut_via_num_map) {
+    summary_json["cut_via_num_map"][std::to_string(cut_layer_idx)] = via_num;
+  }
+  summary_json["total_via_num"] = total_via_num;
+  for (auto& [routing_layer_idx, patch_num] : routing_patch_num_map) {
+    summary_json["routing_patch_num_map"][std::to_string(routing_layer_idx)] = patch_num;
+  }
+  summary_json["total_patch_num"] = total_patch_num;
+  for (auto& [routing_layer_idx, violation_num] : routing_violation_num_map) {
+    summary_json["routing_violation_num_map"][std::to_string(routing_layer_idx)] = violation_num;
+  }
+  summary_json["total_violation_num"] = total_violation_num;
+
+  std::string summary_json_file_path = RTUTIL.getString(pa_temp_directory_path, "summary_", pa_model.get_iter(), ".json");
+  std::ofstream* summary_json_file = RTUTIL.getOutputFileStream(summary_json_file_path);
+  (*summary_json_file) << summary_json;
+  RTUTIL.closeFileStream(summary_json_file);
+  RTI.sendNotification("RT_PA_summary", pa_model.get_iter(), summary_json_file_path);
 }
 
 #endif

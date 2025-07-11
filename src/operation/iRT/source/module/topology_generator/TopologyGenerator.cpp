@@ -68,6 +68,7 @@ void TopologyGenerator::generate()
   outputOverflowCSV(tg_model);
   outputNetJson(tg_model);
   outputOverflowJson(tg_model);
+  outputSummaryJson(tg_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -757,7 +758,7 @@ void TopologyGenerator::outputNetJson(TGModel& tg_model)
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
-  RTI.sendNotification(RTUTIL.getString("RT_TG_net_map"), net_json_file_path);
+  RTI.sendNotification("RT_TG_net_map", net_json_file_path);
 }
 
 void TopologyGenerator::outputOverflowJson(TGModel& tg_model)
@@ -782,7 +783,40 @@ void TopologyGenerator::outputOverflowJson(TGModel& tg_model)
   std::ofstream* overflow_json_file = RTUTIL.getOutputFileStream(overflow_json_file_path);
   (*overflow_json_file) << overflow_json_list;
   RTUTIL.closeFileStream(overflow_json_file);
-  RTI.sendNotification(RTUTIL.getString("RT_TG_overflow_map"), overflow_json_file_path);
+  RTI.sendNotification("RT_TG_overflow_map", overflow_json_file_path);
+}
+
+void TopologyGenerator::outputSummaryJson(TGModel& tg_model)
+{
+  Summary& summary = RTDM.getDatabase().get_summary();
+  std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
+  int32_t enable_notification = RTDM.getConfig().enable_notification;
+  if (!enable_notification) {
+    return;
+  }
+  double& total_demand = summary.tg_summary.total_demand;
+  double& total_overflow = summary.tg_summary.total_overflow;
+  double& total_wire_length = summary.tg_summary.total_wire_length;
+  std::map<std::string, std::map<std::string, double>>& clock_timing_map = summary.tg_summary.clock_timing_map;
+  std::map<std::string, double>& type_power_map = summary.tg_summary.type_power_map;
+
+  nlohmann::json summary_json;
+  summary_json["total_demand"] = total_demand;
+  summary_json["total_overflow"] = total_overflow;
+  summary_json["total_wire_length"] = total_wire_length;
+  for (auto& [clock_name, timing] : clock_timing_map) {
+    summary_json["clock_timing_map"]["clock_name"] = clock_name;
+    summary_json["clock_timing_map"]["timing"] = timing;
+  }
+  for (auto& [type, power] : type_power_map) {
+    summary_json["type_power_map"]["type"] = type;
+    summary_json["type_power_map"]["power"] = power;
+  }
+  std::string summary_json_file_path = RTUTIL.getString(tg_temp_directory_path, "summary.json");
+  std::ofstream* summary_json_file = RTUTIL.getOutputFileStream(summary_json_file_path);
+  (*summary_json_file) << summary_json;
+  RTUTIL.closeFileStream(summary_json_file);
+  RTI.sendNotification("RT_TG_summary", summary_json_file_path);
 }
 
 #endif

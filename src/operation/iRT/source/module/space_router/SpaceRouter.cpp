@@ -215,6 +215,7 @@ void SpaceRouter::routeSRModel(SRModel& sr_model)
     outputOverflowCSV(sr_model);
     outputNetJson(sr_model);
     outputOverflowJson(sr_model);
+    outputSummaryJson(sr_model);
     RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", sr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, sr_iter_param_list.size()), ")",
                iter_monitor.getStatsInfo(), "*****");
     if (stopIteration(sr_model)) {
@@ -1383,6 +1384,7 @@ void SpaceRouter::selectBestResult(SRModel& sr_model)
   outputOverflowCSV(sr_model);
   outputNetJson(sr_model);
   outputOverflowJson(sr_model);
+  outputSummaryJson(sr_model);
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -1850,7 +1852,7 @@ void SpaceRouter::outputNetJson(SRModel& sr_model)
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
-  RTI.sendNotification(RTUTIL.getString("RT_SR_", sr_model.get_iter(), "_net_map"), net_json_file_path);
+  RTI.sendNotification("RT_SR_net_map", sr_model.get_iter(), net_json_file_path);
 }
 
 void SpaceRouter::outputOverflowJson(SRModel& sr_model)
@@ -1878,7 +1880,60 @@ void SpaceRouter::outputOverflowJson(SRModel& sr_model)
   std::ofstream* overflow_json_file = RTUTIL.getOutputFileStream(overflow_json_file_path);
   (*overflow_json_file) << overflow_json_list;
   RTUTIL.closeFileStream(overflow_json_file);
-  RTI.sendNotification(RTUTIL.getString("RT_SR_", sr_model.get_iter(), "_overflow_map"), overflow_json_file_path);
+  RTI.sendNotification("RT_SR_overflow_map", sr_model.get_iter(), overflow_json_file_path);
+}
+
+void SpaceRouter::outputSummaryJson(SRModel& sr_model)
+{
+  Summary& summary = RTDM.getDatabase().get_summary();
+  std::string& sr_temp_directory_path = RTDM.getConfig().sr_temp_directory_path;
+  int32_t enable_notification = RTDM.getConfig().enable_notification;
+  if (!enable_notification) {
+    return;
+  }
+  std::map<int32_t, double>& routing_demand_map = summary.iter_sr_summary_map[sr_model.get_iter()].routing_demand_map;
+  double& total_demand = summary.iter_sr_summary_map[sr_model.get_iter()].total_demand;
+  std::map<int32_t, double>& routing_overflow_map = summary.iter_sr_summary_map[sr_model.get_iter()].routing_overflow_map;
+  double& total_overflow = summary.iter_sr_summary_map[sr_model.get_iter()].total_overflow;
+  std::map<int32_t, double>& routing_wire_length_map = summary.iter_sr_summary_map[sr_model.get_iter()].routing_wire_length_map;
+  double& total_wire_length = summary.iter_sr_summary_map[sr_model.get_iter()].total_wire_length;
+  std::map<int32_t, int32_t>& cut_via_num_map = summary.iter_sr_summary_map[sr_model.get_iter()].cut_via_num_map;
+  int32_t& total_via_num = summary.iter_sr_summary_map[sr_model.get_iter()].total_via_num;
+  std::map<std::string, std::map<std::string, double>>& clock_timing_map = summary.iter_sr_summary_map[sr_model.get_iter()].clock_timing_map;
+  std::map<std::string, double>& type_power_map = summary.iter_sr_summary_map[sr_model.get_iter()].type_power_map;
+
+  nlohmann::json summary_json;
+  summary_json["iter"] = sr_model.get_iter();
+  for (auto& [routing_layer_idx, demand] : routing_demand_map) {
+    summary_json["routing_demand_map"][std::to_string(routing_layer_idx)] = demand;
+  }
+  summary_json["total_demand"] = total_demand;
+  for (auto& [routing_layer_idx, overflow] : routing_overflow_map) {
+    summary_json["routing_overflow_map"][std::to_string(routing_layer_idx)] = overflow;
+  }
+  summary_json["total_overflow"] = total_overflow;
+  for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
+    summary_json["routing_wire_length_map"][std::to_string(routing_layer_idx)] = wire_length;
+  }
+  summary_json["total_wire_length"] = total_wire_length;
+  for (auto& [cut_layer_idx, via_num] : cut_via_num_map) {
+    summary_json["cut_via_num_map"][std::to_string(cut_layer_idx)] = via_num;
+  }
+  summary_json["total_via_num"] = total_via_num;
+  for (auto& [clock_name, timing] : clock_timing_map) {
+    summary_json["clock_timing_map"]["clock_name"] = clock_name;
+    summary_json["clock_timing_map"]["timing"] = timing;
+  }
+  for (auto& [type, power] : type_power_map) {
+    summary_json["type_power_map"]["type"] = type;
+    summary_json["type_power_map"]["power"] = power;
+  }
+
+  std::string summary_json_file_path = RTUTIL.getString(sr_temp_directory_path, "summary_", sr_model.get_iter(), ".json");
+  std::ofstream* summary_json_file = RTUTIL.getOutputFileStream(summary_json_file_path);
+  (*summary_json_file) << summary_json;
+  RTUTIL.closeFileStream(summary_json_file);
+  RTI.sendNotification("RT_SR_summary", sr_model.get_iter(), summary_json_file_path);
 }
 
 #endif

@@ -59,6 +59,7 @@ class ViolationReporter
   void outputViolationCSV(VRModel& vr_model);
   void outputNetJson(VRModel& vr_model);
   void outputViolationJson(VRModel& vr_model);
+  void outputSummaryJson(VRModel& vr_model);
 #endif
 
 #if 1  // debug
