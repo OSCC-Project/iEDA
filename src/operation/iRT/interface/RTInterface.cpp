@@ -2041,10 +2041,6 @@ void RTInterface::routeTAPanel(TAPanel& ta_panel)
 
 void RTInterface::sendNotification(std::string stage, std::string json_path)
 {
-  if (!ieda::NotificationUtility::getInstance().isInitialized()) {
-    RTLOG.warn(Loc::current(), "NotificationUtility is not initialized! Stage: ", stage, " Path: ", json_path);
-    return;
-  }
   std::map<std::string, std::string> notification;
   notification["stage"] = stage;
   notification["json_path"] = json_path;
