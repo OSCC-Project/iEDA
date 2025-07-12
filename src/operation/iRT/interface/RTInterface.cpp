@@ -2043,15 +2043,15 @@ void RTInterface::routeTAPanel(TAPanel& ta_panel)
 
 #if 1  // ecos
 
-void RTInterface::sendNotification(std::string stage, int32_t iter, std::string json_path)
+void RTInterface::sendNotification(std::string stage, int32_t iter, std::map<std::string, std::string> json_path_map)
 {
-  std::map<std::string, std::string> notification;
+  std::map<std::string, std::any> notification;
   notification["stage"] = stage;
   notification["iter"] = iter;
-  notification["json_path"] = json_path;
-  if (!ieda::NotificationUtility::getInstance().sendNotification("iRT", notification).success) {
-    RTLOG.warn(Loc::current(), "Failed to send notification!");
-  }
+  notification["json_path"] = json_path_map;
+  // if (!ieda::NotificationUtility::getInstance().sendNotification("iRT", notification).success) {
+  //   RTLOG.warn(Loc::current(), "Failed to send notification!");
+  // }
 }
 
 #endif

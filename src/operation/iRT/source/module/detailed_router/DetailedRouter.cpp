@@ -148,9 +148,7 @@ void DetailedRouter::routeDRModel(DRModel& dr_model)
     printSummary(dr_model);
     outputNetCSV(dr_model);
     outputViolationCSV(dr_model);
-    outputNetJson(dr_model);
-    outputViolationJson(dr_model);
-    outputSummaryJson(dr_model);
+    outputJson(dr_model);
     RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", dr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, dr_iter_param_list.size()), ")",
                iter_monitor.getStatsInfo(), "*****");
     if (stopIteration(dr_model)) {
@@ -2107,9 +2105,7 @@ void DetailedRouter::selectBestResult(DRModel& dr_model)
   printSummary(dr_model);
   outputNetCSV(dr_model);
   outputViolationCSV(dr_model);
-  outputNetJson(dr_model);
-  outputViolationJson(dr_model);
-  outputSummaryJson(dr_model);
+  outputJson(dr_model);
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -3008,17 +3004,27 @@ void DetailedRouter::outputViolationCSV(DRModel& dr_model)
   }
 }
 
-void DetailedRouter::outputNetJson(DRModel& dr_model)
+void DetailedRouter::outputJson(DRModel& dr_model)
+{
+  int32_t enable_notification = RTDM.getConfig().enable_notification;
+  if (!enable_notification) {
+    return;
+  }
+  std::map<std::string, std::string> json_path_map;
+  json_path_map["net_map"] = outputNetJson(dr_model);
+  json_path_map["violation_map"] = outputViolationJson(dr_model);
+  json_path_map["summary"] = outputSummaryJson(dr_model);
+  RTI.sendNotification("RT_DR", dr_model.get_iter(), json_path_map);
+}
+
+std::string DetailedRouter::outputNetJson(DRModel& dr_model)
 {
   Die& die = RTDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   std::string& dr_temp_directory_path = RTDM.getConfig().dr_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   std::vector<nlohmann::json> net_json_list;
   {
     nlohmann::json result_shape_json;
@@ -3050,19 +3056,16 @@ void DetailedRouter::outputNetJson(DRModel& dr_model)
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
-  RTI.sendNotification("RT_DR_net_map", dr_model.get_iter(), net_json_file_path);
+  return net_json_file_path;
 }
 
-void DetailedRouter::outputViolationJson(DRModel& dr_model)
+std::string DetailedRouter::outputViolationJson(DRModel& dr_model)
 {
   Die& die = RTDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   std::string& dr_temp_directory_path = RTDM.getConfig().dr_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   std::vector<nlohmann::json> violation_json_list;
   for (Violation* violation : RTDM.getViolationSet(die)) {
     EXTLayerRect& violation_shape = violation->get_violation_shape();
@@ -3085,17 +3088,14 @@ void DetailedRouter::outputViolationJson(DRModel& dr_model)
   std::ofstream* violation_json_file = RTUTIL.getOutputFileStream(violation_json_file_path);
   (*violation_json_file) << violation_json_list;
   RTUTIL.closeFileStream(violation_json_file);
-  RTI.sendNotification("RT_DR_violation_map", dr_model.get_iter(), violation_json_file_path);
+  return violation_json_file_path;
 }
 
-void DetailedRouter::outputSummaryJson(DRModel& dr_model)
+std::string DetailedRouter::outputSummaryJson(DRModel& dr_model)
 {
   Summary& summary = RTDM.getDatabase().get_summary();
   std::string& dr_temp_directory_path = RTDM.getConfig().dr_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   std::map<int32_t, double>& routing_wire_length_map = summary.iter_dr_summary_map[dr_model.get_iter()].routing_wire_length_map;
   double& total_wire_length = summary.iter_dr_summary_map[dr_model.get_iter()].total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.iter_dr_summary_map[dr_model.get_iter()].cut_via_num_map;
@@ -3138,7 +3138,7 @@ void DetailedRouter::outputSummaryJson(DRModel& dr_model)
   std::ofstream* summary_json_file = RTUTIL.getOutputFileStream(summary_json_file_path);
   (*summary_json_file) << summary_json;
   RTUTIL.closeFileStream(summary_json_file);
-  RTI.sendNotification("RT_DR_summary", dr_model.get_iter(), summary_json_file_path);
+  return summary_json_file_path;
 }
 
 #endif

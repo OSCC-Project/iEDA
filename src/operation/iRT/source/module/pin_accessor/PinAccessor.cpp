@@ -561,16 +561,12 @@ void PinAccessor::routePAModel(PAModel& pa_model)
    */
   std::vector<PAIterParam> pa_iter_param_list;
   // clang-format off
-  pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 20, 10);
-  pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 20, 10);
-  pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 20, 10);
-  pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 3, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 20, 10);
-  pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 4, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 20, 10);
-  pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 20, 10);
-  pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 20, 10);
-  pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 20, 10);
-  pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 3, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 20, 10);
-  pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 4, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 20, 10);
+  pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 20, 10);
+  pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 20, 10);
+  pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 20, 10);
+  pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 20, 10);
+  pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 20, 10);
+  pa_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 20, 10);
   // clang-format on
   initRoutingState(pa_model);
   for (int32_t i = 0, iter = 1; i < static_cast<int32_t>(pa_iter_param_list.size()); i++, iter++) {
@@ -591,9 +587,7 @@ void PinAccessor::routePAModel(PAModel& pa_model)
     printSummary(pa_model);
     outputNetCSV(pa_model);
     outputViolationCSV(pa_model);
-    outputNetJson(pa_model);
-    outputViolationJson(pa_model);
-    outputSummaryJson(pa_model);
+    outputJson(pa_model);
     RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", pa_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, pa_iter_param_list.size()), ")",
                iter_monitor.getStatsInfo(), "*****");
     if (stopIteration(pa_model)) {
@@ -2506,9 +2500,7 @@ void PinAccessor::selectBestResult(PAModel& pa_model)
   printSummary(pa_model);
   outputNetCSV(pa_model);
   outputViolationCSV(pa_model);
-  outputNetJson(pa_model);
-  outputViolationJson(pa_model);
-  outputSummaryJson(pa_model);
+  outputJson(pa_model);
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -3447,17 +3439,27 @@ void PinAccessor::outputViolationCSV(PAModel& pa_model)
   }
 }
 
-void PinAccessor::outputNetJson(PAModel& pa_model)
+void PinAccessor::outputJson(PAModel& pa_model)
+{
+  int32_t enable_notification = RTDM.getConfig().enable_notification;
+  if (!enable_notification) {
+    return;
+  }
+  std::map<std::string, std::string> json_path_map;
+  json_path_map["net_map"] = outputNetJson(pa_model);
+  json_path_map["violation_map"] = outputViolationJson(pa_model);
+  json_path_map["summary"] = outputSummaryJson(pa_model);
+  RTI.sendNotification("RT_PA", pa_model.get_iter(), json_path_map);
+}
+
+std::string PinAccessor::outputNetJson(PAModel& pa_model)
 {
   Die& die = RTDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   std::string& pa_temp_directory_path = RTDM.getConfig().pa_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   std::vector<nlohmann::json> net_json_list;
   {
     nlohmann::json result_shape_json;
@@ -3493,19 +3495,16 @@ void PinAccessor::outputNetJson(PAModel& pa_model)
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
-  RTI.sendNotification("RT_PA_net_map", pa_model.get_iter(), net_json_file_path);
+  return net_json_file_path;
 }
 
-void PinAccessor::outputViolationJson(PAModel& pa_model)
+std::string PinAccessor::outputViolationJson(PAModel& pa_model)
 {
   Die& die = RTDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   std::string& pa_temp_directory_path = RTDM.getConfig().pa_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   std::vector<nlohmann::json> violation_json_list;
   for (Violation* violation : RTDM.getViolationSet(die)) {
     EXTLayerRect& violation_shape = violation->get_violation_shape();
@@ -3528,17 +3527,14 @@ void PinAccessor::outputViolationJson(PAModel& pa_model)
   std::ofstream* violation_json_file = RTUTIL.getOutputFileStream(violation_json_file_path);
   (*violation_json_file) << violation_json_list;
   RTUTIL.closeFileStream(violation_json_file);
-  RTI.sendNotification("RT_PA_violation_map", pa_model.get_iter(), violation_json_file_path);
+  return violation_json_file_path;
 }
 
-void PinAccessor::outputSummaryJson(PAModel& pa_model)
+std::string PinAccessor::outputSummaryJson(PAModel& pa_model)
 {
   Summary& summary = RTDM.getDatabase().get_summary();
   std::string& pa_temp_directory_path = RTDM.getConfig().pa_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   std::map<int32_t, double>& routing_wire_length_map = summary.iter_pa_summary_map[pa_model.get_iter()].routing_wire_length_map;
   double& total_wire_length = summary.iter_pa_summary_map[pa_model.get_iter()].total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.iter_pa_summary_map[pa_model.get_iter()].cut_via_num_map;
@@ -3571,7 +3567,7 @@ void PinAccessor::outputSummaryJson(PAModel& pa_model)
   std::ofstream* summary_json_file = RTUTIL.getOutputFileStream(summary_json_file_path);
   (*summary_json_file) << summary_json;
   RTUTIL.closeFileStream(summary_json_file);
-  RTI.sendNotification("RT_PA_summary", pa_model.get_iter(), summary_json_file_path);
+  return summary_json_file_path;
 }
 
 #endif

@@ -1718,7 +1718,10 @@ void DataManager::outputEnvJson()
   std::ofstream* env_json_file = RTUTIL.getOutputFileStream(env_json_file_path);
   (*env_json_file) << env_json_list;
   RTUTIL.closeFileStream(env_json_file);
-  RTI.sendNotification("RT_DM_env_map", 1, env_json_file_path);
+
+  std::map<std::string, std::string> json_path_map;
+  json_path_map["env_map"] = env_json_file_path;
+  RTI.sendNotification("RT_DM_env_map", 1, json_path_map);
 }
 
 #endif

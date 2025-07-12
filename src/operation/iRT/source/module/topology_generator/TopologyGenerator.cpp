@@ -66,9 +66,7 @@ void TopologyGenerator::generate()
   outputGuide(tg_model);
   outputNetCSV(tg_model);
   outputOverflowCSV(tg_model);
-  outputNetJson(tg_model);
-  outputOverflowJson(tg_model);
-  outputSummaryJson(tg_model);
+  outputJson(tg_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -719,17 +717,27 @@ void TopologyGenerator::outputOverflowCSV(TGModel& tg_model)
   RTUTIL.closeFileStream(overflow_csv_file);
 }
 
-void TopologyGenerator::outputNetJson(TGModel& tg_model)
+void TopologyGenerator::outputJson(TGModel& tg_model)
+{
+  int32_t enable_notification = RTDM.getConfig().enable_notification;
+  if (!enable_notification) {
+    return;
+  }
+  std::map<std::string, std::string> json_path_map;
+  json_path_map["net_map"] = outputNetJson(tg_model);
+  json_path_map["overflow_map"] = outputOverflowJson(tg_model);
+  json_path_map["summary"] = outputSummaryJson(tg_model);
+  RTI.sendNotification("RT_TG", 1, json_path_map);
+}
+
+std::string TopologyGenerator::outputNetJson(TGModel& tg_model)
 {
   Die& die = RTDM.getDatabase().get_die();
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   std::vector<nlohmann::json> net_json_list;
   {
     nlohmann::json result_shape_json;
@@ -758,18 +766,15 @@ void TopologyGenerator::outputNetJson(TGModel& tg_model)
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
-  RTI.sendNotification("RT_TG_net_map", 1, net_json_file_path);
+  return net_json_file_path;
 }
 
-void TopologyGenerator::outputOverflowJson(TGModel& tg_model)
+std::string TopologyGenerator::outputOverflowJson(TGModel& tg_model)
 {
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
   std::vector<nlohmann::json> overflow_json_list;
   for (int32_t x = 0; x < tg_node_map.get_x_size(); x++) {
@@ -783,17 +788,14 @@ void TopologyGenerator::outputOverflowJson(TGModel& tg_model)
   std::ofstream* overflow_json_file = RTUTIL.getOutputFileStream(overflow_json_file_path);
   (*overflow_json_file) << overflow_json_list;
   RTUTIL.closeFileStream(overflow_json_file);
-  RTI.sendNotification("RT_TG_overflow_map", 1, overflow_json_file_path);
+  return overflow_json_file_path;
 }
 
-void TopologyGenerator::outputSummaryJson(TGModel& tg_model)
+std::string TopologyGenerator::outputSummaryJson(TGModel& tg_model)
 {
   Summary& summary = RTDM.getDatabase().get_summary();
   std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   double& total_demand = summary.tg_summary.total_demand;
   double& total_overflow = summary.tg_summary.total_overflow;
   double& total_wire_length = summary.tg_summary.total_wire_length;
@@ -816,7 +818,7 @@ void TopologyGenerator::outputSummaryJson(TGModel& tg_model)
   std::ofstream* summary_json_file = RTUTIL.getOutputFileStream(summary_json_file_path);
   (*summary_json_file) << summary_json;
   RTUTIL.closeFileStream(summary_json_file);
-  RTI.sendNotification("RT_TG_summary", 1, summary_json_file_path);
+  return summary_json_file_path;
 }
 
 #endif

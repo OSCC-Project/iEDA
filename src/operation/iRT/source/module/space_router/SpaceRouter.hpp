@@ -120,9 +120,10 @@ class SpaceRouter
   void outputGuide(SRModel& sr_model);
   void outputNetCSV(SRModel& sr_model);
   void outputOverflowCSV(SRModel& sr_model);
-  void outputNetJson(SRModel& sr_model);
-  void outputOverflowJson(SRModel& sr_model);
-  void outputSummaryJson(SRModel& sr_model);
+  void outputJson(SRModel& sr_model);
+  std::string outputNetJson(SRModel& sr_model);
+  std::string outputOverflowJson(SRModel& sr_model);
+  std::string outputSummaryJson(SRModel& sr_model);
 #endif
 
 #if 1  // debug
