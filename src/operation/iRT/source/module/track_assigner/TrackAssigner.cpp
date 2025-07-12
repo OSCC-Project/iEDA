@@ -1530,7 +1530,7 @@ void TrackAssigner::outputJson(TAModel& ta_model)
   json_path_map["net_map"] = outputNetJson(ta_model);
   json_path_map["violation_map"] = outputViolationJson(ta_model);
   json_path_map["summary"] = outputSummaryJson(ta_model);
-  RTI.sendNotification("RT_TA", 1, json_path_map);
+  RTI.sendNotification("TA", 1, json_path_map);
 }
 
 std::string TrackAssigner::outputNetJson(TAModel& ta_model)
@@ -1609,6 +1609,7 @@ std::string TrackAssigner::outputViolationJson(TAModel& ta_model)
 
 std::string TrackAssigner::outputSummaryJson(TAModel& ta_model)
 {
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   Summary& summary = RTDM.getDatabase().get_summary();
   std::string& ta_temp_directory_path = RTDM.getConfig().ta_temp_directory_path;
 
@@ -1619,11 +1620,11 @@ std::string TrackAssigner::outputSummaryJson(TAModel& ta_model)
 
   nlohmann::json summary_json;
   for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
-    summary_json["routing_wire_length_map"][std::to_string(routing_layer_idx)] = wire_length;
+    summary_json["routing_wire_length_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = wire_length;
   }
   summary_json["total_wire_length"] = total_wire_length;
   for (auto& [routing_layer_idx, violation_num] : routing_violation_num_map) {
-    summary_json["routing_violation_num_map"][std::to_string(routing_layer_idx)] = violation_num;
+    summary_json["routing_violation_num_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = violation_num;
   }
   summary_json["total_violation_num"] = total_violation_num;
 
