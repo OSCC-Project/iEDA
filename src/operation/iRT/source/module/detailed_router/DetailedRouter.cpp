@@ -3014,7 +3014,7 @@ void DetailedRouter::outputJson(DRModel& dr_model)
   json_path_map["net_map"] = outputNetJson(dr_model);
   json_path_map["violation_map"] = outputViolationJson(dr_model);
   json_path_map["summary"] = outputSummaryJson(dr_model);
-  RTI.sendNotification("RT_DR", dr_model.get_iter(), json_path_map);
+  RTI.sendNotification("DR", dr_model.get_iter(), json_path_map);
 }
 
 std::string DetailedRouter::outputNetJson(DRModel& dr_model)
@@ -3093,6 +3093,8 @@ std::string DetailedRouter::outputViolationJson(DRModel& dr_model)
 
 std::string DetailedRouter::outputSummaryJson(DRModel& dr_model)
 {
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   Summary& summary = RTDM.getDatabase().get_summary();
   std::string& dr_temp_directory_path = RTDM.getConfig().dr_temp_directory_path;
 
@@ -3110,19 +3112,19 @@ std::string DetailedRouter::outputSummaryJson(DRModel& dr_model)
   nlohmann::json summary_json;
   summary_json["iter"] = dr_model.get_iter();
   for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
-    summary_json["routing_wire_length_map"][std::to_string(routing_layer_idx)] = wire_length;
+    summary_json["routing_wire_length_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = wire_length;
   }
   summary_json["total_wire_length"] = total_wire_length;
   for (auto& [cut_layer_idx, via_num] : cut_via_num_map) {
-    summary_json["cut_via_num_map"][std::to_string(cut_layer_idx)] = via_num;
+    summary_json["cut_via_num_map"][cut_layer_list[cut_layer_idx].get_layer_name()] = via_num;
   }
   summary_json["total_via_num"] = total_via_num;
   for (auto& [routing_layer_idx, patch_num] : routing_patch_num_map) {
-    summary_json["routing_patch_num_map"][std::to_string(routing_layer_idx)] = patch_num;
+    summary_json["routing_patch_num_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = patch_num;
   }
   summary_json["total_patch_num"] = total_patch_num;
   for (auto& [routing_layer_idx, violation_num] : routing_violation_num_map) {
-    summary_json["routing_violation_num_map"][std::to_string(routing_layer_idx)] = violation_num;
+    summary_json["routing_violation_num_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = violation_num;
   }
   summary_json["total_violation_num"] = total_violation_num;
   for (auto& [clock_name, timing] : clock_timing_map) {

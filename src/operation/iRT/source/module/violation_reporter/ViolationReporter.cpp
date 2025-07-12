@@ -517,7 +517,7 @@ void ViolationReporter::outputJson(VRModel& vr_model)
   json_path_map["net_map"] = outputNetJson(vr_model);
   json_path_map["violation_map"] = outputViolationJson(vr_model);
   json_path_map["summary"] = outputSummaryJson(vr_model);
-  RTI.sendNotification("RT_VR", 1, json_path_map);
+  RTI.sendNotification("VR", 1, json_path_map);
 }
 
 std::string ViolationReporter::outputNetJson(VRModel& vr_model)
@@ -596,6 +596,8 @@ std::string ViolationReporter::outputViolationJson(VRModel& vr_model)
 
 std::string ViolationReporter::outputSummaryJson(VRModel& vr_model)
 {
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   Summary& summary = RTDM.getDatabase().get_summary();
   std::string& vr_temp_directory_path = RTDM.getConfig().vr_temp_directory_path;
 
@@ -614,23 +616,23 @@ std::string ViolationReporter::outputSummaryJson(VRModel& vr_model)
 
   nlohmann::json summary_json;
   for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
-    summary_json["routing_wire_length_map"][std::to_string(routing_layer_idx)] = wire_length;
+    summary_json["routing_wire_length_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = wire_length;
   }
   summary_json["total_wire_length"] = total_wire_length;
   for (auto& [cut_layer_idx, via_num] : cut_via_num_map) {
-    summary_json["cut_via_num_map"][std::to_string(cut_layer_idx)] = via_num;
+    summary_json["cut_via_num_map"][cut_layer_list[cut_layer_idx].get_layer_name()] = via_num;
   }
   summary_json["total_via_num"] = total_via_num;
   for (auto& [routing_layer_idx, patch_num] : routing_patch_num_map) {
-    summary_json["routing_patch_num_map"][std::to_string(routing_layer_idx)] = patch_num;
+    summary_json["routing_patch_num_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = patch_num;
   }
   summary_json["total_patch_num"] = total_patch_num;
   for (auto& [routing_layer_idx, violation_num] : within_net_routing_violation_num_map) {
-    summary_json["within_net_routing_violation_num_map"][std::to_string(routing_layer_idx)] = violation_num;
+    summary_json["within_net_routing_violation_num_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = violation_num;
   }
   summary_json["within_net_total_violation_num"] = within_net_total_violation_num;
   for (auto& [routing_layer_idx, violation_num] : among_net_routing_violation_num_map) {
-    summary_json["among_net_routing_violation_num_map"][std::to_string(routing_layer_idx)] = violation_num;
+    summary_json["among_net_routing_violation_num_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = violation_num;
   }
   summary_json["among_net_total_violation_num"] = among_net_total_violation_num;
   for (auto& [clock_name, timing] : clock_timing_map) {

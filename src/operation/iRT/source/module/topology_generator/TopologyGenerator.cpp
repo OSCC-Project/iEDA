@@ -727,7 +727,7 @@ void TopologyGenerator::outputJson(TGModel& tg_model)
   json_path_map["net_map"] = outputNetJson(tg_model);
   json_path_map["overflow_map"] = outputOverflowJson(tg_model);
   json_path_map["summary"] = outputSummaryJson(tg_model);
-  RTI.sendNotification("RT_TG", 1, json_path_map);
+  RTI.sendNotification("TG", 1, json_path_map);
 }
 
 std::string TopologyGenerator::outputNetJson(TGModel& tg_model)

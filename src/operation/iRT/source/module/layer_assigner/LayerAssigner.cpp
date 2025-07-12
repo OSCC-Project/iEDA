@@ -1228,7 +1228,7 @@ void LayerAssigner::outputJson(LAModel& la_model)
   json_path_map["net_map"] = outputNetJson(la_model);
   json_path_map["overflow_map"] = outputOverflowJson(la_model);
   json_path_map["summary"] = outputSummaryJson(la_model);
-  RTI.sendNotification("RT_LA", 1, json_path_map);
+  RTI.sendNotification("LA", 1, json_path_map);
 }
 
 std::string LayerAssigner::outputNetJson(LAModel& la_model)
@@ -1297,6 +1297,8 @@ std::string LayerAssigner::outputOverflowJson(LAModel& la_model)
 
 std::string LayerAssigner::outputSummaryJson(LAModel& la_model)
 {
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   Summary& summary = RTDM.getDatabase().get_summary();
   std::string& la_temp_directory_path = RTDM.getConfig().la_temp_directory_path;
 
@@ -1313,19 +1315,19 @@ std::string LayerAssigner::outputSummaryJson(LAModel& la_model)
 
   nlohmann::json summary_json;
   for (auto& [routing_layer_idx, demand] : routing_demand_map) {
-    summary_json["routing_demand_map"][std::to_string(routing_layer_idx)] = demand;
+    summary_json["routing_demand_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = demand;
   }
   summary_json["total_demand"] = total_demand;
   for (auto& [routing_layer_idx, overflow] : routing_overflow_map) {
-    summary_json["routing_overflow_map"][std::to_string(routing_layer_idx)] = overflow;
+    summary_json["routing_overflow_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = overflow;
   }
   summary_json["total_overflow"] = total_overflow;
   for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
-    summary_json["routing_wire_length_map"][std::to_string(routing_layer_idx)] = wire_length;
+    summary_json["routing_wire_length_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = wire_length;
   }
   summary_json["total_wire_length"] = total_wire_length;
   for (auto& [cut_layer_idx, via_num] : cut_via_num_map) {
-    summary_json["cut_via_num_map"][std::to_string(cut_layer_idx)] = via_num;
+    summary_json["cut_via_num_map"][cut_layer_list[cut_layer_idx].get_layer_name()] = via_num;
   }
   summary_json["total_via_num"] = total_via_num;
   for (auto& [clock_name, timing] : clock_timing_map) {
