@@ -429,11 +429,6 @@ void RTInterface::outputDBJson(std::map<std::string, std::any> config_map)
   std::ofstream* db_json_file = RTUTIL.getOutputFileStream(db_json_file_path);
   (*db_json_file) << db_json_list;
   RTUTIL.closeFileStream(db_json_file);
-
-  std::map<std::string, std::string> notification;
-  notification["stage"] = RTUTIL.getConfigValue<std::string>(config_map, "-stage", "null");
-  notification["json_path"] = db_json_file_path;
-  ieda::NotificationUtility::getInstance().sendNotification("DB", notification);
 }
 
 #endif

@@ -303,8 +303,6 @@ void DataManager::printConfig()
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _config.thread_number);
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "golden_directory_path");
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _config.golden_directory_path);
-  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "enable_notification");
-  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _config.enable_notification);
   // **********        DRC         ********** //
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(0), "DRC_CONFIG_BUILD");
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "log_file_path");
