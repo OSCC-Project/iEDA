@@ -60,7 +60,7 @@ void DataManager::input(std::map<std::string, std::any>& config_map)
   printConfig();
   printDatabase();
   outputScript();
-  outputEnvJson();
+  outputJson();
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -1670,17 +1670,25 @@ void DataManager::outputScript()
   RTUTIL.closeFileStream(python_file);
 }
 
-void DataManager::outputEnvJson()
+void DataManager::outputJson()
+{
+  int32_t enable_notification = _config.enable_notification;
+  if (!enable_notification) {
+    return;
+  }
+  std::map<std::string, std::string> json_path_map;
+  json_path_map["env_map"] = outputEnvJson();
+  RTI.sendNotification("DM", 1, json_path_map);
+}
+
+std::string DataManager::outputEnvJson()
 {
   Die& die = _database.get_die();
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
   std::vector<Net>& net_list = _database.get_net_list();
   std::string& dm_temp_directory_path = _config.dm_temp_directory_path;
-  int32_t enable_notification = _config.enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   std::vector<nlohmann::json> env_json_list;
   {
     nlohmann::json die_json;
@@ -1718,7 +1726,7 @@ void DataManager::outputEnvJson()
   std::ofstream* env_json_file = RTUTIL.getOutputFileStream(env_json_file_path);
   (*env_json_file) << env_json_list;
   RTUTIL.closeFileStream(env_json_file);
-  RTI.sendNotification("RT_DM_env_map", 1, env_json_file_path);
+  return env_json_file_path;
 }
 
 #endif

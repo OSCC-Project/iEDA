@@ -180,16 +180,12 @@ void SpaceRouter::routeSRModel(SRModel& sr_model)
    */
   std::vector<SRIterParam> sr_iter_param_list;
   // clang-format off
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 0, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 20, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 40, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 60, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 80, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 0, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 20, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 40, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 60, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 80, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 30, 0, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 30, 10, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 30, 20, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 30, 0, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 30, 10, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 30, 20, 3, overflow_unit, 3);
   // clang-format on
   initRoutingState(sr_model);
   for (int32_t i = 0, iter = 1; i < static_cast<int32_t>(sr_iter_param_list.size()); i++, iter++) {
@@ -213,9 +209,7 @@ void SpaceRouter::routeSRModel(SRModel& sr_model)
     outputGuide(sr_model);
     outputNetCSV(sr_model);
     outputOverflowCSV(sr_model);
-    outputNetJson(sr_model);
-    outputOverflowJson(sr_model);
-    outputSummaryJson(sr_model);
+    outputJson(sr_model);
     RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", sr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, sr_iter_param_list.size()), ")",
                iter_monitor.getStatsInfo(), "*****");
     if (stopIteration(sr_model)) {
@@ -1382,9 +1376,7 @@ void SpaceRouter::selectBestResult(SRModel& sr_model)
   outputGuide(sr_model);
   outputNetCSV(sr_model);
   outputOverflowCSV(sr_model);
-  outputNetJson(sr_model);
-  outputOverflowJson(sr_model);
-  outputSummaryJson(sr_model);
+  outputJson(sr_model);
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -1813,17 +1805,27 @@ void SpaceRouter::outputOverflowCSV(SRModel& sr_model)
   }
 }
 
-void SpaceRouter::outputNetJson(SRModel& sr_model)
+void SpaceRouter::outputJson(SRModel& sr_model)
+{
+  int32_t enable_notification = RTDM.getConfig().enable_notification;
+  if (!enable_notification) {
+    return;
+  }
+  std::map<std::string, std::string> json_path_map;
+  json_path_map["net_map"] = outputNetJson(sr_model);
+  json_path_map["overflow_map"] = outputOverflowJson(sr_model);
+  json_path_map["summary"] = outputSummaryJson(sr_model);
+  RTI.sendNotification("SR", sr_model.get_iter(), json_path_map);
+}
+
+std::string SpaceRouter::outputNetJson(SRModel& sr_model)
 {
   Die& die = RTDM.getDatabase().get_die();
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   std::string& sr_temp_directory_path = RTDM.getConfig().sr_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   std::vector<nlohmann::json> net_json_list;
   {
     nlohmann::json result_shape_json;
@@ -1852,18 +1854,15 @@ void SpaceRouter::outputNetJson(SRModel& sr_model)
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
-  RTI.sendNotification("RT_SR_net_map", sr_model.get_iter(), net_json_file_path);
+  return net_json_file_path;
 }
 
-void SpaceRouter::outputOverflowJson(SRModel& sr_model)
+std::string SpaceRouter::outputOverflowJson(SRModel& sr_model)
 {
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& sr_temp_directory_path = RTDM.getConfig().sr_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   std::vector<GridMap<SRNode>>& layer_node_map = sr_model.get_layer_node_map();
   std::vector<nlohmann::json> overflow_json_list;
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
@@ -1880,17 +1879,16 @@ void SpaceRouter::outputOverflowJson(SRModel& sr_model)
   std::ofstream* overflow_json_file = RTUTIL.getOutputFileStream(overflow_json_file_path);
   (*overflow_json_file) << overflow_json_list;
   RTUTIL.closeFileStream(overflow_json_file);
-  RTI.sendNotification("RT_SR_overflow_map", sr_model.get_iter(), overflow_json_file_path);
+  return overflow_json_file_path;
 }
 
-void SpaceRouter::outputSummaryJson(SRModel& sr_model)
+std::string SpaceRouter::outputSummaryJson(SRModel& sr_model)
 {
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   Summary& summary = RTDM.getDatabase().get_summary();
   std::string& sr_temp_directory_path = RTDM.getConfig().sr_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   std::map<int32_t, double>& routing_demand_map = summary.iter_sr_summary_map[sr_model.get_iter()].routing_demand_map;
   double& total_demand = summary.iter_sr_summary_map[sr_model.get_iter()].total_demand;
   std::map<int32_t, double>& routing_overflow_map = summary.iter_sr_summary_map[sr_model.get_iter()].routing_overflow_map;
@@ -1905,19 +1903,19 @@ void SpaceRouter::outputSummaryJson(SRModel& sr_model)
   nlohmann::json summary_json;
   summary_json["iter"] = sr_model.get_iter();
   for (auto& [routing_layer_idx, demand] : routing_demand_map) {
-    summary_json["routing_demand_map"][std::to_string(routing_layer_idx)] = demand;
+    summary_json["routing_demand_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = demand;
   }
   summary_json["total_demand"] = total_demand;
   for (auto& [routing_layer_idx, overflow] : routing_overflow_map) {
-    summary_json["routing_overflow_map"][std::to_string(routing_layer_idx)] = overflow;
+    summary_json["routing_overflow_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = overflow;
   }
   summary_json["total_overflow"] = total_overflow;
   for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
-    summary_json["routing_wire_length_map"][std::to_string(routing_layer_idx)] = wire_length;
+    summary_json["routing_wire_length_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = wire_length;
   }
   summary_json["total_wire_length"] = total_wire_length;
   for (auto& [cut_layer_idx, via_num] : cut_via_num_map) {
-    summary_json["cut_via_num_map"][std::to_string(cut_layer_idx)] = via_num;
+    summary_json["cut_via_num_map"][cut_layer_list[cut_layer_idx].get_layer_name()] = via_num;
   }
   summary_json["total_via_num"] = total_via_num;
   for (auto& [clock_name, timing] : clock_timing_map) {
@@ -1933,7 +1931,7 @@ void SpaceRouter::outputSummaryJson(SRModel& sr_model)
   std::ofstream* summary_json_file = RTUTIL.getOutputFileStream(summary_json_file_path);
   (*summary_json_file) << summary_json;
   RTUTIL.closeFileStream(summary_json_file);
-  RTI.sendNotification("RT_SR_summary", sr_model.get_iter(), summary_json_file_path);
+  return summary_json_file_path;
 }
 
 #endif

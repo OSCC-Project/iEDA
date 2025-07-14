@@ -68,9 +68,7 @@ void LayerAssigner::assign()
   outputGuide(la_model);
   outputNetCSV(la_model);
   outputOverflowCSV(la_model);
-  outputNetJson(la_model);
-  outputOverflowJson(la_model);
-  outputSummaryJson(la_model);
+  outputJson(la_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -1220,17 +1218,27 @@ void LayerAssigner::outputOverflowCSV(LAModel& la_model)
   }
 }
 
-void LayerAssigner::outputNetJson(LAModel& la_model)
+void LayerAssigner::outputJson(LAModel& la_model)
+{
+  int32_t enable_notification = RTDM.getConfig().enable_notification;
+  if (!enable_notification) {
+    return;
+  }
+  std::map<std::string, std::string> json_path_map;
+  json_path_map["net_map"] = outputNetJson(la_model);
+  json_path_map["overflow_map"] = outputOverflowJson(la_model);
+  json_path_map["summary"] = outputSummaryJson(la_model);
+  RTI.sendNotification("LA", 1, json_path_map);
+}
+
+std::string LayerAssigner::outputNetJson(LAModel& la_model)
 {
   Die& die = RTDM.getDatabase().get_die();
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   std::string& la_temp_directory_path = RTDM.getConfig().la_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   std::vector<nlohmann::json> net_json_list;
   {
     nlohmann::json result_shape_json;
@@ -1259,18 +1267,15 @@ void LayerAssigner::outputNetJson(LAModel& la_model)
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
-  RTI.sendNotification("RT_LA_net_map", 1, net_json_file_path);
+  return net_json_file_path;
 }
 
-void LayerAssigner::outputOverflowJson(LAModel& la_model)
+std::string LayerAssigner::outputOverflowJson(LAModel& la_model)
 {
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& la_temp_directory_path = RTDM.getConfig().la_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   std::vector<GridMap<LANode>>& layer_node_map = la_model.get_layer_node_map();
   std::vector<nlohmann::json> overflow_json_list;
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
@@ -1287,17 +1292,16 @@ void LayerAssigner::outputOverflowJson(LAModel& la_model)
   std::ofstream* overflow_json_file = RTUTIL.getOutputFileStream(overflow_json_file_path);
   (*overflow_json_file) << overflow_json_list;
   RTUTIL.closeFileStream(overflow_json_file);
-  RTI.sendNotification("RT_LA_overflow_map", 1, overflow_json_file_path);
+  return overflow_json_file_path;
 }
 
-void LayerAssigner::outputSummaryJson(LAModel& la_model)
+std::string LayerAssigner::outputSummaryJson(LAModel& la_model)
 {
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   Summary& summary = RTDM.getDatabase().get_summary();
   std::string& la_temp_directory_path = RTDM.getConfig().la_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   std::map<int32_t, double>& routing_demand_map = summary.la_summary.routing_demand_map;
   double& total_demand = summary.la_summary.total_demand;
   std::map<int32_t, double>& routing_overflow_map = summary.la_summary.routing_overflow_map;
@@ -1311,19 +1315,19 @@ void LayerAssigner::outputSummaryJson(LAModel& la_model)
 
   nlohmann::json summary_json;
   for (auto& [routing_layer_idx, demand] : routing_demand_map) {
-    summary_json["routing_demand_map"][std::to_string(routing_layer_idx)] = demand;
+    summary_json["routing_demand_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = demand;
   }
   summary_json["total_demand"] = total_demand;
   for (auto& [routing_layer_idx, overflow] : routing_overflow_map) {
-    summary_json["routing_overflow_map"][std::to_string(routing_layer_idx)] = overflow;
+    summary_json["routing_overflow_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = overflow;
   }
   summary_json["total_overflow"] = total_overflow;
   for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
-    summary_json["routing_wire_length_map"][std::to_string(routing_layer_idx)] = wire_length;
+    summary_json["routing_wire_length_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = wire_length;
   }
   summary_json["total_wire_length"] = total_wire_length;
   for (auto& [cut_layer_idx, via_num] : cut_via_num_map) {
-    summary_json["cut_via_num_map"][std::to_string(cut_layer_idx)] = via_num;
+    summary_json["cut_via_num_map"][cut_layer_list[cut_layer_idx].get_layer_name()] = via_num;
   }
   summary_json["total_via_num"] = total_via_num;
   for (auto& [clock_name, timing] : clock_timing_map) {
@@ -1338,7 +1342,7 @@ void LayerAssigner::outputSummaryJson(LAModel& la_model)
   std::ofstream* summary_json_file = RTUTIL.getOutputFileStream(summary_json_file_path);
   (*summary_json_file) << summary_json;
   RTUTIL.closeFileStream(summary_json_file);
-  RTI.sendNotification("RT_LA_summary", 1, summary_json_file_path);
+  return summary_json_file_path;
 }
 
 #endif

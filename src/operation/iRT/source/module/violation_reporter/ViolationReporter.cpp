@@ -61,9 +61,7 @@ void ViolationReporter::report()
   printSummary(vr_model);
   outputNetCSV(vr_model);
   outputViolationCSV(vr_model);
-  outputNetJson(vr_model);
-  outputViolationJson(vr_model);
-  outputSummaryJson(vr_model);
+  outputJson(vr_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -509,17 +507,27 @@ void ViolationReporter::outputViolationCSV(VRModel& vr_model)
   }
 }
 
-void ViolationReporter::outputNetJson(VRModel& vr_model)
+void ViolationReporter::outputJson(VRModel& vr_model)
+{
+  int32_t enable_notification = RTDM.getConfig().enable_notification;
+  if (!enable_notification) {
+    return;
+  }
+  std::map<std::string, std::string> json_path_map;
+  json_path_map["net_map"] = outputNetJson(vr_model);
+  json_path_map["violation_map"] = outputViolationJson(vr_model);
+  json_path_map["summary"] = outputSummaryJson(vr_model);
+  RTI.sendNotification("VR", 1, json_path_map);
+}
+
+std::string ViolationReporter::outputNetJson(VRModel& vr_model)
 {
   Die& die = RTDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   std::string& vr_temp_directory_path = RTDM.getConfig().vr_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   std::vector<nlohmann::json> net_json_list;
   {
     nlohmann::json result_shape_json;
@@ -551,19 +559,16 @@ void ViolationReporter::outputNetJson(VRModel& vr_model)
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
-  RTI.sendNotification("RT_VR_net_map", 1, net_json_file_path);
+  return net_json_file_path;
 }
 
-void ViolationReporter::outputViolationJson(VRModel& vr_model)
+std::string ViolationReporter::outputViolationJson(VRModel& vr_model)
 {
   Die& die = RTDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   std::string& vr_temp_directory_path = RTDM.getConfig().vr_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   std::vector<nlohmann::json> violation_json_list;
   for (Violation* violation : RTDM.getViolationSet(die)) {
     EXTLayerRect& violation_shape = violation->get_violation_shape();
@@ -586,17 +591,16 @@ void ViolationReporter::outputViolationJson(VRModel& vr_model)
   std::ofstream* violation_json_file = RTUTIL.getOutputFileStream(violation_json_file_path);
   (*violation_json_file) << violation_json_list;
   RTUTIL.closeFileStream(violation_json_file);
-  RTI.sendNotification("RT_VR_violation_map", 1, violation_json_file_path);
+  return violation_json_file_path;
 }
 
-void ViolationReporter::outputSummaryJson(VRModel& vr_model)
+std::string ViolationReporter::outputSummaryJson(VRModel& vr_model)
 {
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   Summary& summary = RTDM.getDatabase().get_summary();
   std::string& vr_temp_directory_path = RTDM.getConfig().vr_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   std::map<int32_t, double>& routing_wire_length_map = summary.vr_summary.routing_wire_length_map;
   double& total_wire_length = summary.vr_summary.total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.vr_summary.cut_via_num_map;
@@ -612,23 +616,23 @@ void ViolationReporter::outputSummaryJson(VRModel& vr_model)
 
   nlohmann::json summary_json;
   for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
-    summary_json["routing_wire_length_map"][std::to_string(routing_layer_idx)] = wire_length;
+    summary_json["routing_wire_length_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = wire_length;
   }
   summary_json["total_wire_length"] = total_wire_length;
   for (auto& [cut_layer_idx, via_num] : cut_via_num_map) {
-    summary_json["cut_via_num_map"][std::to_string(cut_layer_idx)] = via_num;
+    summary_json["cut_via_num_map"][cut_layer_list[cut_layer_idx].get_layer_name()] = via_num;
   }
   summary_json["total_via_num"] = total_via_num;
   for (auto& [routing_layer_idx, patch_num] : routing_patch_num_map) {
-    summary_json["routing_patch_num_map"][std::to_string(routing_layer_idx)] = patch_num;
+    summary_json["routing_patch_num_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = patch_num;
   }
   summary_json["total_patch_num"] = total_patch_num;
   for (auto& [routing_layer_idx, violation_num] : within_net_routing_violation_num_map) {
-    summary_json["within_net_routing_violation_num_map"][std::to_string(routing_layer_idx)] = violation_num;
+    summary_json["within_net_routing_violation_num_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = violation_num;
   }
   summary_json["within_net_total_violation_num"] = within_net_total_violation_num;
   for (auto& [routing_layer_idx, violation_num] : among_net_routing_violation_num_map) {
-    summary_json["among_net_routing_violation_num_map"][std::to_string(routing_layer_idx)] = violation_num;
+    summary_json["among_net_routing_violation_num_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = violation_num;
   }
   summary_json["among_net_total_violation_num"] = among_net_total_violation_num;
   for (auto& [clock_name, timing] : clock_timing_map) {
@@ -644,7 +648,7 @@ void ViolationReporter::outputSummaryJson(VRModel& vr_model)
   std::ofstream* summary_json_file = RTUTIL.getOutputFileStream(summary_json_file_path);
   (*summary_json_file) << summary_json;
   RTUTIL.closeFileStream(summary_json_file);
-  RTI.sendNotification("RT_VR_summary", 1, summary_json_file_path);
+  return summary_json_file_path;
 }
 
 #endif

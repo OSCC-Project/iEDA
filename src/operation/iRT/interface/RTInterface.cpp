@@ -429,11 +429,6 @@ void RTInterface::outputDBJson(std::map<std::string, std::any> config_map)
   std::ofstream* db_json_file = RTUTIL.getOutputFileStream(db_json_file_path);
   (*db_json_file) << db_json_list;
   RTUTIL.closeFileStream(db_json_file);
-
-  std::map<std::string, std::string> notification;
-  notification["stage"] = RTUTIL.getConfigValue<std::string>(config_map, "-stage", "null");
-  notification["json_path"] = db_json_file_path;
-  ieda::NotificationUtility::getInstance().sendNotification("DB", notification);
 }
 
 #endif
@@ -2043,15 +2038,15 @@ void RTInterface::routeTAPanel(TAPanel& ta_panel)
 
 #if 1  // ecos
 
-void RTInterface::sendNotification(std::string stage, int32_t iter, std::string json_path)
+void RTInterface::sendNotification(std::string stage, int32_t iter, std::map<std::string, std::string> json_path_map)
 {
-  std::map<std::string, std::string> notification;
+  std::map<std::string, std::any> notification;
   notification["stage"] = stage;
   notification["iter"] = iter;
-  notification["json_path"] = json_path;
-  if (!ieda::NotificationUtility::getInstance().sendNotification("iRT", notification).success) {
-    RTLOG.warn(Loc::current(), "Failed to send notification!");
-  }
+  notification["json_path"] = json_path_map;
+  // if (!ieda::NotificationUtility::getInstance().sendNotification("iRT", notification).success) {
+  //   RTLOG.warn(Loc::current(), "Failed to send notification!");
+  // }
 }
 
 #endif
