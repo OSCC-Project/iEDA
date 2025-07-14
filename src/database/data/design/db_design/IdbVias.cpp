@@ -34,6 +34,7 @@
 #include <limits.h>
 
 #include <algorithm>
+#include <cstdio>
 
 #include "../db_layout/IdbLayer.h"
 #include "IdbViaMaster.h"
@@ -334,6 +335,12 @@ IdbVia* IdbVias::createVia(string via_name, IdbLayerCut* layer_cut, int32_t widt
 
   int32_t spacing_x = via_rule->get_spacing_x();
   int32_t spacing_y = via_rule->get_spacing_y();
+  if (!layer_cut->get_spacings().empty()) {
+    int layer_cut_spacing = layer_cut->get_spacings().at(0)->get_spacing();
+    spacing_x = std::max(spacing_x, cutsize_x + layer_cut_spacing);
+    spacing_y = std::max(spacing_y, cutsize_y + layer_cut_spacing);
+  }
+
   int32_t cut_spacing_x = spacing_x - cutsize_x;
   int32_t cut_spacing_y = spacing_y - cutsize_y;
   master_generate->set_cut_spacing(cut_spacing_x, cut_spacing_y);
@@ -686,6 +693,12 @@ std::pair<int32_t, int32_t> IdbVias::calculateRowsCols(IdbLayerCut* layer_cut, i
   int32_t cutsize_y = via_rule->get_cut_rect()->get_height();
   int32_t spacing_x = via_rule->get_spacing_x();
   int32_t spacing_y = via_rule->get_spacing_y();
+
+  if (!layer_cut->get_spacings().empty()) {
+    int layer_cut_spacing = layer_cut->get_spacings().at(0)->get_spacing();
+    spacing_x = std::max(spacing_x, cutsize_x + layer_cut_spacing);
+    spacing_y = std::max(spacing_y, cutsize_y + layer_cut_spacing);
+  }
 
   if (width > 0 && height > 0) {
     num_rows = std::max(kMinRowColNum + (height - cutsize_y) / spacing_y, kMinRowColNum);
