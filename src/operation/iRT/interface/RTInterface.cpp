@@ -329,6 +329,7 @@ void RTInterface::outputDBJson(std::map<std::string, std::any> config_map)
           }
         }
         instance_json["layer"] = layer_name_set;
+        instance_json["type"] = ((idb_instance->get_cell_master()->get_type() == idb::CellMasterType::kPad) ? "io_cell" : "core");
         db_json_list.push_back(instance_json);
       }
     }
@@ -348,6 +349,7 @@ void RTInterface::outputDBJson(std::map<std::string, std::any> config_map)
         row_json["bbox"]
             = {idb_coord->get_x(), idb_coord->get_y(), idb_coord->get_x() + (idb_row->get_row_num_x() * idb_row->get_step_x()), idb_coord->get_y()};
         row_json["layer"] = layer_name;
+        row_json["type"] = "row";
         db_json_list.push_back(row_json);
       }
     }
