@@ -67,8 +67,7 @@ void TrackAssigner::assign()
   printSummary(ta_model);
   outputNetCSV(ta_model);
   outputViolationCSV(ta_model);
-  outputNetJson(ta_model);
-  outputViolationJson(ta_model);
+  outputJson(ta_model);
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -1521,58 +1520,68 @@ void TrackAssigner::outputViolationCSV(TAModel& ta_model)
   }
 }
 
-void TrackAssigner::outputNetJson(TAModel& ta_model)
+void TrackAssigner::outputJson(TAModel& ta_model)
+{
+  int32_t enable_notification = RTDM.getConfig().enable_notification;
+  if (!enable_notification) {
+    return;
+  }
+  std::map<std::string, std::string> json_path_map;
+  json_path_map["net_map"] = outputNetJson(ta_model);
+  json_path_map["violation_map"] = outputViolationJson(ta_model);
+  json_path_map["summary"] = outputSummaryJson(ta_model);
+  RTI.sendNotification("TA", 1, json_path_map);
+}
+
+std::string TrackAssigner::outputNetJson(TAModel& ta_model)
 {
   Die& die = RTDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   std::string& ta_temp_directory_path = RTDM.getConfig().ta_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   std::vector<nlohmann::json> net_json_list;
-  net_json_list.resize(net_list.size());
-  for (Net& net : net_list) {
-    net_json_list[net.get_net_idx()]["net_name"] = net.get_net_name();
-  }
-  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
-    for (Segment<LayerCoord>* segment : segment_set) {
-      for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
-        std::string layer_name;
-        if (net_shape.get_is_routing()) {
-          layer_name = routing_layer_list[net_shape.get_layer_idx()].get_layer_name();
-        } else {
-          layer_name = cut_layer_list[net_shape.get_layer_idx()].get_layer_name();
+  {
+    nlohmann::json result_shape_json;
+    for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
+      std::string net_name = net_list[net_idx].get_net_name();
+      for (Segment<LayerCoord>* segment : segment_set) {
+        for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+          std::string layer_name;
+          if (net_shape.get_is_routing()) {
+            layer_name = routing_layer_list[net_shape.get_layer_idx()].get_layer_name();
+          } else {
+            layer_name = cut_layer_list[net_shape.get_layer_idx()].get_layer_name();
+          }
+          result_shape_json["result_shape"][net_name]["path"].push_back(
+              {net_shape.get_ll_x(), net_shape.get_ll_y(), net_shape.get_ur_x(), net_shape.get_ur_y(), layer_name});
         }
-        net_json_list[net_idx]["result"].push_back({net_shape.get_ll_x(), net_shape.get_ll_y(), net_shape.get_ur_x(), net_shape.get_ur_y(), layer_name});
       }
     }
-  }
-  for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
-    for (EXTLayerRect* patch : patch_set) {
-      net_json_list[net_idx]["patch"].push_back({patch->get_real_ll_x(), patch->get_real_ll_y(), patch->get_real_ur_x(), patch->get_real_ur_y(),
-                                                 routing_layer_list[patch->get_layer_idx()].get_layer_name()});
+    for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
+      std::string net_name = net_list[net_idx].get_net_name();
+      for (EXTLayerRect* patch : patch_set) {
+        result_shape_json["result_shape"][net_name]["patch"].push_back({patch->get_real_ll_x(), patch->get_real_ll_y(), patch->get_real_ur_x(),
+                                                                        patch->get_real_ur_y(), routing_layer_list[patch->get_layer_idx()].get_layer_name()});
+      }
     }
+    net_json_list.push_back(result_shape_json);
   }
   std::string net_json_file_path = RTUTIL.getString(RTUTIL.getString(ta_temp_directory_path, "net_map.json"));
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
-  RTI.sendNotification(RTUTIL.getString("RT_TA_net_map"), net_json_file_path);
+  return net_json_file_path;
 }
 
-void TrackAssigner::outputViolationJson(TAModel& ta_model)
+std::string TrackAssigner::outputViolationJson(TAModel& ta_model)
 {
   Die& die = RTDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   std::string& ta_temp_directory_path = RTDM.getConfig().ta_temp_directory_path;
-  int32_t enable_notification = RTDM.getConfig().enable_notification;
-  if (!enable_notification) {
-    return;
-  }
+
   std::vector<nlohmann::json> violation_json_list;
   for (Violation* violation : RTDM.getViolationSet(die)) {
     EXTLayerRect& violation_shape = violation->get_violation_shape();
@@ -1595,7 +1604,35 @@ void TrackAssigner::outputViolationJson(TAModel& ta_model)
   std::ofstream* violation_json_file = RTUTIL.getOutputFileStream(violation_json_file_path);
   (*violation_json_file) << violation_json_list;
   RTUTIL.closeFileStream(violation_json_file);
-  RTI.sendNotification(RTUTIL.getString("RT_TA_violation_map"), violation_json_file_path);
+  return violation_json_file_path;
+}
+
+std::string TrackAssigner::outputSummaryJson(TAModel& ta_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  Summary& summary = RTDM.getDatabase().get_summary();
+  std::string& ta_temp_directory_path = RTDM.getConfig().ta_temp_directory_path;
+
+  std::map<int32_t, double>& routing_wire_length_map = summary.ta_summary.routing_wire_length_map;
+  double& total_wire_length = summary.ta_summary.total_wire_length;
+  std::map<int32_t, int32_t>& routing_violation_num_map = summary.ta_summary.routing_violation_num_map;
+  int32_t& total_violation_num = summary.ta_summary.total_violation_num;
+
+  nlohmann::json summary_json;
+  for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
+    summary_json["routing_wire_length_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = wire_length;
+  }
+  summary_json["total_wire_length"] = total_wire_length;
+  for (auto& [routing_layer_idx, violation_num] : routing_violation_num_map) {
+    summary_json["routing_violation_num_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = violation_num;
+  }
+  summary_json["total_violation_num"] = total_violation_num;
+
+  std::string summary_json_file_path = RTUTIL.getString(ta_temp_directory_path, "summary.json");
+  std::ofstream* summary_json_file = RTUTIL.getOutputFileStream(summary_json_file_path);
+  (*summary_json_file) << summary_json;
+  RTUTIL.closeFileStream(summary_json_file);
+  return summary_json_file_path;
 }
 
 #endif

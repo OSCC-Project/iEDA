@@ -174,8 +174,10 @@ class DetailedRouter
   void printSummary(DRModel& dr_model);
   void outputNetCSV(DRModel& dr_model);
   void outputViolationCSV(DRModel& dr_model);
-  void outputNetJson(DRModel& dr_model);
-  void outputViolationJson(DRModel& dr_model);
+  void outputJson(DRModel& dr_model);
+  std::string outputNetJson(DRModel& dr_model);
+  std::string outputViolationJson(DRModel& dr_model);
+  std::string outputSummaryJson(DRModel& dr_model);
 #endif
 
 #if 1  // debug

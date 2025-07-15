@@ -35,6 +35,7 @@ enum class GPDataType
   kAccessPoint,
   kBestCoord,
   kAxis,
+  kOverflow,
   kRouteViolation,
   kPatchViolation
 };
@@ -80,6 +81,9 @@ struct GetGPDataTypeName
         break;
       case GPDataType::kAxis:
         data_type_name = "axis";
+        break;
+      case GPDataType::kOverflow:
+        data_type_name = "overflow";
         break;
       case GPDataType::kRouteViolation:
         data_type_name = "route_violation";

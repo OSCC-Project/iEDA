@@ -78,6 +78,7 @@ class RTInterface
   void runRT();
   void destroyRT();
   void clearDef();
+  void outputDBJson(std::map<std::string, std::any> config_map);
 #endif
 
 #endif
@@ -156,7 +157,7 @@ class RTInterface
 #endif
 
 #if 1  // ecos
-  void sendNotification(std::string stage, std::string json_path);
+  void sendNotification(std::string stage, int32_t iter, std::map<std::string, std::string> json_path_map);
 #endif
 
 #endif

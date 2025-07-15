@@ -5,4 +5,6 @@
 build
 docs
 bin
+scripts/foundry/sky130
+scripts/design/sky130_gcd
 **/target/

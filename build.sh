@@ -196,7 +196,10 @@ install_dependencies()
     sys_requirement_warning
     install_dependencies_apt
   elif [[ $INSTALL_DEP == "mirror" ]]; then
-    sed -i 's@//.*archive.ubuntu.com@//mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list
+    sed -i \
+        -e 's@//archive.ubuntu.com@//mirrors.tuna.tsinghua.edu.cn@g' \
+        -e 's@//security.ubuntu.com@//mirrors.tuna.tsinghua.edu.cn@g' \
+        /etc/apt/sources.list
     install_dependencies_apt
   elif [[ $INSTALL_DEP == "docker" ]]; then
     install_docker_experimental
