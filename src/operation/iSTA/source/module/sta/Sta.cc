@@ -1885,6 +1885,9 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
   LOG_INFO << "\n" << _report_tbl_summary->c_str();
   LOG_INFO << "\n" << _report_tbl_TNS->c_str();
 
+  Time::stop();
+  double elapsed_time = Time::elapsedTime();
+
   auto close_file = [](std::FILE *fp) { std::fclose(fp); };
 
   std::unique_ptr<std::FILE, decltype(close_file)> f(
@@ -1892,6 +1895,9 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
 
   std::fprintf(f.get(), "Generate the report at %s, GitVersion: %s.\n",
                Time::getNowWallTime(), GIT_VERSION);
+
+  std::fprintf(f.get(), "iSTA elapsed time: %.2f seconds.\n", elapsed_time);
+
   std::fprintf(f.get(), "%s", _report_tbl_summary->c_str());  // WNS
   // report_TNS;
   std::fprintf(f.get(), "%s", _report_tbl_TNS->c_str());
@@ -3086,6 +3092,9 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
   writeVerilog(verilog_file_name.c_str(), exclude_cell_names);
 
   reportUsedLibs();
+
+  // for test dump timing data in memory.
+  // reportTimingData(10);
 
 #if CUDA_PROPAGATION
   printFlattenData();

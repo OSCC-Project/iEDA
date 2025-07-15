@@ -27,9 +27,6 @@
 #include <iostream>
 #include <sstream>
 
-#include "absl/time/civil_time.h"
-#include "absl/time/clock.h"
-#include "absl/time/time.h"
 #include "string/Str.hh"
 
 namespace ieda {
@@ -48,5 +45,11 @@ const char* Time::getNowWallTime()
 
   return Str::printf("%s", s.str().c_str());
 }
+
+// Initialize static members
+absl::Time Time::_start_time = absl::UnixEpoch();
+absl::Time Time::_end_time = absl::UnixEpoch();
+Time::TimeMode Time::_time_mode = Time::kOneShot;
+double Time::_accumulate_time = 0.0;
 
 }  // namespace ieda
