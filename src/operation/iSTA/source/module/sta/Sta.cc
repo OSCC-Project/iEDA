@@ -1887,6 +1887,7 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
 
   Time::stop();
   double elapsed_time = Time::elapsedTime();
+  LOG_INFO << "iSTA total elapsed time: " << elapsed_time << " seconds";  
 
   auto close_file = [](std::FILE *fp) { std::fclose(fp); };
 
@@ -3103,6 +3104,9 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
   // dumpGraphData("/home/taosimin/ysyx_test25/2025-04-05/graph.yaml");
 
   LOG_INFO << "The timing engine run success.";
+
+  // restart the timer.
+  Time::start();
 
   return 1;
 }
