@@ -28,11 +28,14 @@
 
 #include "../platform/flow/flow.h"
 #include "log/Log.hh"
+#include "time/Time.hh"
 
 using namespace iplf;
 
 int main(int argc, char** argv)
 {
+  ieda::Time::start();
+
   if (argc == 1) {
     argv[0] = const_cast<char*>("UserShell\n");
   }
@@ -42,7 +45,7 @@ int main(int argc, char** argv)
     if (std::string("-v") == argv[i]) {
       printVersion = true;
     }
-    
+
     // support specific log directory
     if (std::string("-log") == argv[i]) {
       ieda::Log::init(argv, argv[i + 1]);
