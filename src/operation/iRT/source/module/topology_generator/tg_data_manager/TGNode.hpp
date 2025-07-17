@@ -35,6 +35,7 @@ class TGNode : public PlanarCoord
   double get_internal_via_unit() const { return _internal_via_unit; }
   std::map<Orientation, TGNode*>& get_neighbor_node_map() { return _neighbor_node_map; }
   std::map<Orientation, int32_t>& get_orient_supply_map() { return _orient_supply_map; }
+  std::map<int32_t, std::set<Orientation>>& get_ignore_net_orient_map() { return _ignore_net_orient_map; }
   std::map<Orientation, std::set<int32_t>>& get_orient_net_map() { return _orient_net_map; }
   std::map<int32_t, std::set<Orientation>>& get_net_orient_map() { return _net_orient_map; }
   // setter
@@ -43,6 +44,7 @@ class TGNode : public PlanarCoord
   void set_internal_via_unit(const double internal_via_unit) { _internal_via_unit = internal_via_unit; }
   void set_neighbor_node_map(const std::map<Orientation, TGNode*>& neighbor_node_map) { _neighbor_node_map = neighbor_node_map; }
   void set_orient_supply_map(const std::map<Orientation, int32_t>& orient_supply_map) { _orient_supply_map = orient_supply_map; }
+  void set_ignore_net_orient_map(const std::map<int32_t, std::set<Orientation>>& ignore_net_orient_map) { _ignore_net_orient_map = ignore_net_orient_map; }
   void set_orient_net_map(const std::map<Orientation, std::set<int32_t>>& orient_net_map) { _orient_net_map = orient_net_map; }
   void set_net_orient_map(const std::map<int32_t, std::set<Orientation>>& net_orient_map) { _net_orient_map = net_orient_map; }
   // function
@@ -54,56 +56,52 @@ class TGNode : public PlanarCoord
     }
     return neighbor_node;
   }
-  double getOverflowCost(int32_t curr_net_idx, Orientation orientation, double overflow_unit)
+  double getOverflowCost(int32_t net_idx, double overflow_unit)
   {
     if (!validDemandUnit()) {
       RTLOG.error(Loc::current(), "The demand unit is error!");
     }
+    std::map<Orientation, std::set<int32_t>> orient_net_map = _orient_net_map;
+    std::map<int32_t, std::set<Orientation>> net_orient_map = _net_orient_map;
+    for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
+      orient_net_map[orient].insert(net_idx);
+      net_orient_map[net_idx].insert(orient);
+    }
     double boundary_overflow = 0;
-    if (orientation == Orientation::kEast || orientation == Orientation::kWest || orientation == Orientation::kSouth || orientation == Orientation::kNorth) {
+    for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
       double boundary_demand = 0;
-      if (RTUTIL.exist(_orient_net_map, orientation)) {
-        std::set<int32_t>& net_set = _orient_net_map[orientation];
-        boundary_demand += (static_cast<double>(net_set.size()) * _boundary_wire_unit);
-        if (RTUTIL.exist(net_set, curr_net_idx)) {
-          boundary_demand -= _boundary_wire_unit;
+      if (RTUTIL.exist(orient_net_map, orient)) {
+        for (int32_t demand_net_idx : orient_net_map[orient]) {
+          if (RTUTIL.exist(_ignore_net_orient_map, demand_net_idx) && RTUTIL.exist(_ignore_net_orient_map[demand_net_idx], orient)) {
+            continue;
+          }
+          boundary_demand += _boundary_wire_unit;
         }
       }
       double boundary_supply = 0;
-      if (RTUTIL.exist(_orient_supply_map, orientation)) {
-        boundary_supply = (_orient_supply_map[orientation] * _boundary_wire_unit);
+      if (RTUTIL.exist(_orient_supply_map, orient)) {
+        boundary_supply = (_orient_supply_map[orient] * _boundary_wire_unit);
       }
-      boundary_overflow = calcCost(boundary_demand + _boundary_wire_unit, boundary_supply);
+      boundary_overflow += calcCost(boundary_demand, boundary_supply);
     }
     double internal_overflow = 0;
     {
       double internal_demand = 0;
-      for (auto& [orient, net_set] : _orient_net_map) {
-        if (orient == Orientation::kAbove || orient == Orientation::kBelow) {
-          continue;
-        }
-        internal_demand += (static_cast<double>(net_set.size()) * _internal_wire_unit);
-        if (RTUTIL.exist(net_set, curr_net_idx)) {
-          internal_demand -= _internal_wire_unit;
-        }
-      }
-      for (auto& [net_idx, orient_set] : _net_orient_map) {
-        if (net_idx == curr_net_idx) {
-          continue;
-        }
-        if (RTUTIL.exist(orient_set, Orientation::kAbove) || RTUTIL.exist(orient_set, Orientation::kBelow)) {
-          internal_demand += _internal_via_unit;
+      for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
+        if (RTUTIL.exist(orient_net_map, orient)) {
+          for (int32_t demand_net_idx : orient_net_map[orient]) {
+            if (RTUTIL.exist(_ignore_net_orient_map, demand_net_idx) && RTUTIL.exist(_ignore_net_orient_map[demand_net_idx], orient)) {
+              continue;
+            }
+            internal_demand += _internal_wire_unit;
+          }
         }
       }
       double internal_supply = 0;
       for (auto& [orient, supply] : _orient_supply_map) {
         internal_supply += (supply * _internal_wire_unit);
       }
-      if (orientation == Orientation::kEast || orientation == Orientation::kWest || orientation == Orientation::kSouth || orientation == Orientation::kNorth) {
-        internal_overflow = calcCost(internal_demand + _internal_wire_unit, internal_supply);
-      } else if (orientation == Orientation::kAbove || orientation == Orientation::kBelow) {
-        internal_overflow = calcCost(internal_demand + _internal_via_unit, internal_supply);
-      }
+      internal_overflow += calcCost(internal_demand, internal_supply);
     }
     double cost = 0;
     cost += (overflow_unit * (boundary_overflow + internal_overflow));
@@ -115,9 +113,6 @@ class TGNode : public PlanarCoord
       return false;
     }
     if (_internal_wire_unit <= 0) {
-      return false;
-    }
-    if (_internal_via_unit <= 0) {
       return false;
     }
     return true;
@@ -151,11 +146,6 @@ class TGNode : public PlanarCoord
         internal_demand += (static_cast<double>(_orient_net_map[orient].size()) * _internal_wire_unit);
       }
     }
-    for (auto& [net_idx, orient_set] : _net_orient_map) {
-      if (RTUTIL.exist(orient_set, Orientation::kAbove) || RTUTIL.exist(orient_set, Orientation::kBelow)) {
-        internal_demand += _internal_via_unit;
-      }
-    }
     return (boundary_demand + internal_demand);
   }
   double getOverflow()
@@ -167,7 +157,12 @@ class TGNode : public PlanarCoord
     for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
       double boundary_demand = 0;
       if (RTUTIL.exist(_orient_net_map, orient)) {
-        boundary_demand = (static_cast<double>(_orient_net_map[orient].size()) * _boundary_wire_unit);
+        for (int32_t demand_net_idx : _orient_net_map[orient]) {
+          if (RTUTIL.exist(_ignore_net_orient_map, demand_net_idx) && RTUTIL.exist(_ignore_net_orient_map[demand_net_idx], orient)) {
+            continue;
+          }
+          boundary_demand += _boundary_wire_unit;
+        }
       }
       double boundary_supply = 0;
       if (RTUTIL.exist(_orient_supply_map, orient)) {
@@ -180,12 +175,12 @@ class TGNode : public PlanarCoord
       double internal_demand = 0;
       for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
         if (RTUTIL.exist(_orient_net_map, orient)) {
-          internal_demand += (static_cast<double>(_orient_net_map[orient].size()) * _internal_wire_unit);
-        }
-      }
-      for (auto& [net_idx, orient_set] : _net_orient_map) {
-        if (RTUTIL.exist(orient_set, Orientation::kAbove) || RTUTIL.exist(orient_set, Orientation::kBelow)) {
-          internal_demand += _internal_via_unit;
+          for (int32_t demand_net_idx : _orient_net_map[orient]) {
+            if (RTUTIL.exist(_ignore_net_orient_map, demand_net_idx) && RTUTIL.exist(_ignore_net_orient_map[demand_net_idx], orient)) {
+              continue;
+            }
+            internal_demand += _internal_wire_unit;
+          }
         }
       }
       double internal_supply = 0;
@@ -221,6 +216,7 @@ class TGNode : public PlanarCoord
   double _internal_via_unit = -1;
   std::map<Orientation, TGNode*> _neighbor_node_map;
   std::map<Orientation, int32_t> _orient_supply_map;
+  std::map<int32_t, std::set<Orientation>> _ignore_net_orient_map;
   std::map<Orientation, std::set<int32_t>> _orient_net_map;
   std::map<int32_t, std::set<Orientation>> _net_orient_map;
 };

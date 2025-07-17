@@ -106,6 +106,7 @@ class LayerAssigner
 #endif
 
 #if 1  // debug
+  void debugPlotLAModel(LAModel& la_model, std::string flag);
   void debugCheckLAModel(LAModel& la_model);
 #endif
 };
