@@ -285,32 +285,12 @@ json FeatureParser::buildSummaryPL(std::string step)
 
   if (step == "place") {
     summary_pl["gplace"]["place_density"] = pl_summary.gplace.place_density;
-    // summary_pl["gplace"]["pin_density"] = pl_summary.gplace.pin_density;
-    // summary_pl["gplace"]["HPWL"] = pl_summary.gplace.HPWL;
-    // summary_pl["gplace"]["STWL"] = pl_summary.gplace.STWL;
-    // summary_pl["gplace"]["GRWL"] = pl_summary.gplace.GRWL;
-
-    // summary_pl["gplace"]["egr_tof"] = pl_summary.gplace.egr_tof;
-    // summary_pl["gplace"]["egr_mof"] = pl_summary.gplace.egr_mof;
-    // summary_pl["gplace"]["egr_ace"] = pl_summary.gplace.egr_ace;
-
-    // summary_pl["gplace"]["tns"] = pl_summary.gplace.tns;
-    // summary_pl["gplace"]["wns"] = pl_summary.gplace.wns;
-    // summary_pl["gplace"]["suggest_freq"] = pl_summary.gplace.suggest_freq;
+    summary_pl["gplace"]["HPWL"] = pl_summary.gplace.HPWL;
+    summary_pl["gplace"]["STWL"] = pl_summary.gplace.STWL;
 
     summary_pl["dplace"]["place_density"] = pl_summary.dplace.place_density;
-    // summary_pl["dplace"]["pin_density"] = pl_summary.dplace.pin_density;
-    // summary_pl["dplace"]["HPWL"] = pl_summary.dplace.HPWL;
-    // summary_pl["dplace"]["STWL"] = pl_summary.dplace.STWL;
-    // summary_pl["dplace"]["GRWL"] = pl_summary.dplace.GRWL;
-
-    // summary_pl["dplace"]["egr_tof"] = pl_summary.dplace.egr_tof;
-    // summary_pl["dplace"]["egr_mof"] = pl_summary.dplace.egr_mof;
-    // summary_pl["dplace"]["egr_ace"] = pl_summary.dplace.egr_ace;
-
-    // summary_pl["dplace"]["tns"] = pl_summary.dplace.tns;
-    // summary_pl["dplace"]["wns"] = pl_summary.dplace.wns;
-    // summary_pl["dplace"]["suggest_freq"] = pl_summary.dplace.suggest_freq;
+    summary_pl["dplace"]["HPWL"] = pl_summary.dplace.HPWL;
+    summary_pl["dplace"]["STWL"] = pl_summary.dplace.STWL;
 
     summary_pl["instance_cnt"] = pl_summary.instance_cnt;
     summary_pl["fix_inst_cnt"] = pl_summary.fix_inst_cnt;
@@ -324,22 +304,10 @@ json FeatureParser::buildSummaryPL(std::string step)
   }
   // 3: Data parameters required for legalization.
   else if (step == "legalization") {
-    summary_pl["legalization"]["place_density"] = pl_summary.lg_summary.pl_common_summary.place_density;
-    // summary_pl["legalization"]["pin_density"] = pl_summary.lg_summary.pl_common_summary.pin_density;
-    // summary_pl["legalization"]["HPWL"] = pl_summary.lg_summary.pl_common_summary.HPWL;
-    // summary_pl["legalization"]["STWL"] = pl_summary.lg_summary.pl_common_summary.STWL;
-    // summary_pl["legalization"]["GRWL"] = pl_summary.lg_summary.pl_common_summary.GRWL;
-
-    // summary_pl["legalization"]["egr_tof"] = pl_summary.lg_summary.pl_common_summary.egr_tof;
-    // summary_pl["legalization"]["egr_mof"] = pl_summary.lg_summary.pl_common_summary.egr_mof;
-    // summary_pl["legalization"]["egr_ace"] = pl_summary.lg_summary.pl_common_summary.egr_ace;
-
-    // summary_pl["legalization"]["tns"] = pl_summary.lg_summary.pl_common_summary.tns;
-    // summary_pl["legalization"]["wns"] = pl_summary.lg_summary.pl_common_summary.wns;
-    // summary_pl["legalization"]["suggest_freq"] = pl_summary.lg_summary.pl_common_summary.suggest_freq;
-
-    summary_pl["legalization"]["total_movement"] = pl_summary.lg_summary.lg_total_movement;
-    summary_pl["legalization"]["max_movement"] = pl_summary.lg_summary.lg_max_movement;
+    summary_pl["HPWL"] = pl_summary.lg_summary.pl_common_summary.HPWL;
+    summary_pl["STWL"] = pl_summary.lg_summary.pl_common_summary.STWL;
+    summary_pl["total_movement"] = pl_summary.lg_summary.lg_total_movement;
+    summary_pl["max_movement"] = pl_summary.lg_summary.lg_max_movement;
   }
 
   return summary_pl;
