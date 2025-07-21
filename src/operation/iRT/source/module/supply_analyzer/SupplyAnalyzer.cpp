@@ -58,7 +58,6 @@ void SupplyAnalyzer::analyze()
   setSAComParam(sa_model);
   buildSupplySchedule(sa_model);
   analyzeSupply(sa_model);
-  reduceSupply(sa_model);
   buildIgnoreNet(sa_model);
   analyzeDemandUnit(sa_model);
   // debugPlotSAModel(sa_model);
@@ -139,6 +138,7 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
   RTLOG.info(Loc::current(), "Starting...");
 
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+  int32_t supply_reduction = sa_model.get_sa_com_param().get_supply_reduction();
 
   size_t total_pair_num = 0;
   for (std::vector<std::pair<LayerCoord, LayerCoord>>& grid_pair_list : sa_model.get_grid_pair_list_list()) {
@@ -202,12 +202,15 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
         }
       }
       std::vector<LayerRect> wire_list = getCrossingWireList(search_rect);
+      int32_t supply = 0;
       for (LayerRect& wire : wire_list) {
         if (isAccess(wire, obs_rect_list)) {
-          first_orient_supply_map[first_orientation]++;
-          second_orient_supply_map[second_orientation]++;
+          supply++;
         }
       }
+      int32_t max_supply = std::max(0, static_cast<int32_t>(wire_list.size()) - supply_reduction);
+      first_orient_supply_map[first_orientation] = std::min(supply, max_supply);
+      second_orient_supply_map[second_orientation] = std::min(supply, max_supply);
     }
     analyzed_pair_num += grid_pair_list.size();
     RTLOG.info(Loc::current(), "Analyzed ", analyzed_pair_num, "/", total_pair_num, "(", RTUTIL.getPercentage(analyzed_pair_num, total_pair_num),
@@ -292,22 +295,6 @@ bool SupplyAnalyzer::isAccess(LayerRect& wire, std::vector<PlanarRect>& obs_rect
     }
   }
   return true;
-}
-
-void SupplyAnalyzer::reduceSupply(SAModel& sa_model)
-{
-  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
-  int32_t supply_reduction = sa_model.get_sa_com_param().get_supply_reduction();
-
-  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-      for (auto& [routing_layer_idx, orient_supply_map] : gcell_map[x][y].get_routing_orient_supply_map()) {
-        for (auto& [orient, supply] : orient_supply_map) {
-          supply = std::max(0, supply - supply_reduction);
-        }
-      }
-    }
-  }
 }
 
 void SupplyAnalyzer::buildIgnoreNet(SAModel& sa_model)

@@ -61,7 +61,7 @@ void LayerAssigner::assign()
   buildLANodeNeighbor(la_model);
   buildOrientSupply(la_model);
   // debugCheckLAModel(la_model);
-  buildTopoTree(la_model);
+  buildPlaneTree(la_model);
   routeLAModel(la_model);
   // debugPlotLAModel(la_model, "after");
   updateSummary(la_model);
@@ -111,19 +111,18 @@ LANet LayerAssigner::convertToLANet(Net& net)
 
 void LayerAssigner::setLAComParam(LAModel& la_model)
 {
-  int32_t topo_spilt_length = 10;
+  int32_t topo_spilt_length = 1;
   double prefer_wire_unit = 1;
   double non_prefer_wire_unit = 2.5 * prefer_wire_unit;
   double via_unit = 2 * non_prefer_wire_unit;
   double overflow_unit = 4 * non_prefer_wire_unit;
   /**
-   * topo_spilt_length, prefer_wire_unit, via_unit, overflow_unit
+   * topo_spilt_length, via_unit, overflow_unit
    */
   // clang-format off
-  LAComParam la_com_param(topo_spilt_length, prefer_wire_unit, via_unit, overflow_unit);
+  LAComParam la_com_param(topo_spilt_length, via_unit, overflow_unit);
   // clang-format on
   RTLOG.info(Loc::current(), "topo_spilt_length: ", la_com_param.get_topo_spilt_length());
-  RTLOG.info(Loc::current(), "prefer_wire_unit: ", la_com_param.get_prefer_wire_unit());
   RTLOG.info(Loc::current(), "via_unit: ", la_com_param.get_via_unit());
   RTLOG.info(Loc::current(), "overflow_unit: ", la_com_param.get_overflow_unit());
   la_model.set_la_com_param(la_com_param);
@@ -246,7 +245,7 @@ void LayerAssigner::buildOrientSupply(LAModel& la_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void LayerAssigner::buildTopoTree(LAModel& la_model)
+void LayerAssigner::buildPlaneTree(LAModel& la_model)
 {
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
@@ -270,7 +269,7 @@ void LayerAssigner::buildTopoTree(LAModel& la_model)
       candidate_root_coord_list.push_back(coord);
       key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
     }
-    la_net.set_topo_tree(RTUTIL.getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map));
+    la_net.set_planar_tree(RTUTIL.getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map));
   }
   for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
@@ -304,19 +303,12 @@ void LayerAssigner::routeLAModel(LAModel& la_model)
 void LayerAssigner::routeLATask(LAModel& la_model, LANet* la_task)
 {
   initSingleTask(la_model, la_task);
-  // 构建la_topo_list,并将通孔线段加入routing_segment_list
-  std::vector<LATopo> la_topo_list;
-  std::vector<Segment<LayerCoord>> routing_segment_list;
-  makeLATopoList(la_model, la_topo_list, routing_segment_list);
-  for (LATopo& la_topo : la_topo_list) {
-    routeLATopo(la_model, &la_topo);
-    for (Segment<LayerCoord>& routing_segment : la_topo.get_routing_segment_list()) {
-      routing_segment_list.push_back(routing_segment);
-    }
+  if (needRouting(la_model)) {
+    spiltPlaneTree(la_model);
+    buildPillarTree(la_model);
+    assignPillarTree(la_model);
+    buildLayerTree(la_model);
   }
-  MTree<LayerCoord> coord_tree = getCoordTree(la_model, routing_segment_list);
-  updateDemandToGraph(la_model, ChangeType::kAdd, coord_tree);
-  uploadNetResult(la_model, coord_tree);
   resetSingleTask(la_model);
 }
 
@@ -325,509 +317,365 @@ void LayerAssigner::initSingleTask(LAModel& la_model, LANet* la_task)
   la_model.set_curr_la_task(la_task);
 }
 
-void LayerAssigner::makeLATopoList(LAModel& la_model, std::vector<LATopo>& la_topo_list, std::vector<Segment<LayerCoord>>& routing_segment_list)
+bool LayerAssigner::needRouting(LAModel& la_model)
 {
-  int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
-  int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
+  return (la_model.get_curr_la_task()->get_planar_tree().get_root() != nullptr);
+}
+
+void LayerAssigner::spiltPlaneTree(LAModel& la_model)
+{
   int32_t topo_spilt_length = la_model.get_la_com_param().get_topo_spilt_length();
+
+  TNode<LayerCoord>* planar_tree_root = la_model.get_curr_la_task()->get_planar_tree().get_root();
+  std::queue<TNode<LayerCoord>*> planar_queue = RTUTIL.initQueue(planar_tree_root);
+  while (!planar_queue.empty()) {
+    TNode<LayerCoord>* planar_node = RTUTIL.getFrontAndPop(planar_queue);
+    std::vector<TNode<LayerCoord>*> child_list = planar_node->get_child_list();
+    for (size_t i = 0; i < child_list.size(); i++) {
+      int32_t length = RTUTIL.getManhattanDistance(planar_node->value().get_planar_coord(), child_list[i]->value().get_planar_coord());
+      if (length <= topo_spilt_length) {
+        continue;
+      }
+      insertMidPoint(la_model, planar_node, child_list[i]);
+    }
+    RTUTIL.addListToQueue(planar_queue, child_list);
+  }
+}
+
+void LayerAssigner::insertMidPoint(LAModel& la_model, TNode<LayerCoord>* planar_node, TNode<LayerCoord>* child_node)
+{
+  int32_t topo_spilt_length = la_model.get_la_com_param().get_topo_spilt_length();
+
+  PlanarCoord& parent_coord = planar_node->value().get_planar_coord();
+  PlanarCoord& child_coord = child_node->value().get_planar_coord();
+  if (RTUTIL.isProximal(parent_coord, child_coord)) {
+    return;
+  }
+  std::vector<PlanarCoord> mid_coord_list;
+  int32_t x1 = parent_coord.get_x();
+  int32_t x2 = child_coord.get_x();
+  int32_t y1 = parent_coord.get_y();
+  int32_t y2 = child_coord.get_y();
+  if (RTUTIL.isHorizontal(parent_coord, child_coord)) {
+    RTUTIL.swapByASC(x1, x2);
+    for (int32_t x = x1 + topo_spilt_length; x < x2; x += topo_spilt_length) {
+      mid_coord_list.emplace_back(x, y1);
+    }
+    if (parent_coord.get_x() > child_coord.get_x()) {
+      for (size_t i = 0, j = mid_coord_list.size() - 1; i < j; i++, j--) {
+        std::swap(mid_coord_list[i], mid_coord_list[j]);
+      }
+    }
+  } else if (RTUTIL.isVertical(parent_coord, child_coord)) {
+    RTUTIL.swapByASC(y1, y2);
+    for (int32_t y = y1 + topo_spilt_length; y < y2; y += topo_spilt_length) {
+      mid_coord_list.emplace_back(x1, y);
+    }
+    if (parent_coord.get_y() > child_coord.get_y()) {
+      for (size_t i = 0, j = mid_coord_list.size() - 1; i < j; i++, j--) {
+        std::swap(mid_coord_list[i], mid_coord_list[j]);
+      }
+    }
+  } else {
+    RTLOG.error(Loc::current(), "The segment is oblique!");
+  }
+  planar_node->delChild(child_node);
+  TNode<LayerCoord>* curr_node = planar_node;
+  for (size_t i = 0; i < mid_coord_list.size(); i++) {
+    LayerCoord mid_coord(mid_coord_list[i], 0);
+    TNode<LayerCoord>* mid_node = new TNode<LayerCoord>(mid_coord);
+    curr_node->addChild(mid_node);
+    curr_node = mid_node;
+  }
+  curr_node->addChild(child_node);
+}
+
+void LayerAssigner::buildPillarTree(LAModel& la_model)
+{
   LANet* curr_la_task = la_model.get_curr_la_task();
 
-  if (curr_la_task->get_topo_tree().get_root() == nullptr) {
-    LATopo la_topo;
-    for (LAPin& la_pin : curr_la_task->get_la_pin_list()) {
-      LAGroup la_group;
-      la_group.get_coord_list().push_back(la_pin.get_access_point().getGridLayerCoord());
-      la_topo.get_la_group_list().push_back(la_group);
-    }
-    la_topo_list.push_back(la_topo);
-    {
-      std::set<PlanarCoord, CmpPlanarCoordByXASC> coord_set;
-      for (LATopo& la_topo : la_topo_list) {
-        for (LAGroup& la_group : la_topo.get_la_group_list()) {
-          for (LayerCoord& coord : la_group.get_coord_list()) {
-            coord_set.insert(coord);
-          }
-        }
-      }
-      if (coord_set.size() > 1) {
-        RTLOG.error(Loc::current(), "The topo_tree should not be empty!");
-      }
-    }
-  } else {
-    // planar_topo_list
-    std::vector<Segment<PlanarCoord>> planar_topo_list;
-    {
-      for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(curr_la_task->get_topo_tree())) {
-        PlanarCoord& first_coord = coord_segment.get_first()->value();
-        PlanarCoord& second_coord = coord_segment.get_second()->value();
-        int32_t first_x = first_coord.get_x();
-        int32_t first_y = first_coord.get_y();
-        int32_t second_x = second_coord.get_x();
-        int32_t second_y = second_coord.get_y();
-
-        if (first_x == second_x) {
-          int32_t y_diff = std::abs(second_y - first_y);
-          int32_t segment_num = std::max(1, static_cast<int32_t>(std::ceil(y_diff / topo_spilt_length)));
-          int32_t step = (second_y - first_y) / segment_num;
-          for (int32_t i = 0; i < segment_num; ++i) {
-            PlanarCoord start(first_x, first_y + i * step);
-            PlanarCoord end(first_x, first_y + (i + 1) * step);
-            planar_topo_list.emplace_back(start, end);
-          }
-          // Add the last segment to reach the exact second_coord
-          if (planar_topo_list.back().get_second().get_y() != second_y) {
-            planar_topo_list.emplace_back(planar_topo_list.back().get_second(), second_coord);
-          }
-        } else if (first_y == second_y) {
-          int32_t x_diff = std::abs(second_x - first_x);
-          int32_t segment_num = std::max(1, static_cast<int32_t>(std::ceil(x_diff / topo_spilt_length)));
-          int32_t step = (second_x - first_x) / segment_num;
-          for (int32_t i = 0; i < segment_num; ++i) {
-            PlanarCoord start(first_x + i * step, first_y);
-            PlanarCoord end(first_x + (i + 1) * step, first_y);
-            planar_topo_list.emplace_back(start, end);
-          }
-          if (planar_topo_list.back().get_second().get_x() != second_x) {
-            planar_topo_list.emplace_back(planar_topo_list.back().get_second(), second_coord);
-          }
-        } else {
-          RTLOG.error(Loc::current(), "The segment is not horizontal or vertical!");
-        }
-      }
-    }
-    // planar_pin_group_map
-    std::map<PlanarCoord, std::vector<LAGroup>, CmpPlanarCoordByXASC> planar_pin_group_map;
-    {
-      for (LAPin& la_pin : curr_la_task->get_la_pin_list()) {
-        LayerCoord grid_coord = la_pin.get_access_point().getGridLayerCoord();
-
-        LAGroup la_group;
-        la_group.get_coord_list().push_back(grid_coord);
-        planar_pin_group_map[grid_coord.get_planar_coord()].push_back(la_group);
-      }
-    }
-    // planar_steiner_group_map
-    std::map<PlanarCoord, LAGroup, CmpPlanarCoordByXASC> planar_steiner_group_map;
-    {
-      for (Segment<PlanarCoord>& planar_topo : planar_topo_list) {
-        for (PlanarCoord coord : {planar_topo.get_first(), planar_topo.get_second()}) {
-          if (!RTUTIL.exist(planar_pin_group_map, coord) && !RTUTIL.exist(planar_steiner_group_map, coord)) {
-            // 补充steiner point的垂直线段
-            routing_segment_list.emplace_back(LayerCoord(coord, bottom_routing_layer_idx), LayerCoord(coord, top_routing_layer_idx));
-            for (int32_t layer_idx = bottom_routing_layer_idx; layer_idx <= top_routing_layer_idx; layer_idx++) {
-              planar_steiner_group_map[coord].get_coord_list().push_back(LayerCoord(coord, layer_idx));
-            }
-          }
-        }
-      }
-    }
-    // 生成topo group
-    {
-      for (Segment<PlanarCoord>& planar_topo : planar_topo_list) {
-        LATopo la_topo;
-        for (PlanarCoord coord : {planar_topo.get_first(), planar_topo.get_second()}) {
-          if (RTUTIL.exist(planar_pin_group_map, coord)) {
-            for (LAGroup& la_group : planar_pin_group_map[coord]) {
-              la_topo.get_la_group_list().push_back(la_group);
-            }
-          } else if (RTUTIL.exist(planar_steiner_group_map, coord)) {
-            la_topo.get_la_group_list().push_back(planar_steiner_group_map[coord]);
-          }
-        }
-        la_topo_list.push_back(la_topo);
-      }
-    }
+  std::map<PlanarCoord, std::set<int32_t>, CmpPlanarCoordByXASC> coord_pin_layer_map;
+  for (LAPin& la_pin : curr_la_task->get_la_pin_list()) {
+    AccessPoint& access_point = la_pin.get_access_point();
+    coord_pin_layer_map[access_point.get_grid_coord()].insert(access_point.get_layer_idx());
   }
-  // 构建topo的其他内容
-  {
-    for (LATopo& la_topo : la_topo_list) {
-      la_topo.set_net_idx(curr_la_task->get_net_idx());
-      std::vector<PlanarCoord> coord_list;
-      for (LAGroup& la_group : la_topo.get_la_group_list()) {
-        for (LayerCoord& coord : la_group.get_coord_list()) {
-          coord_list.push_back(coord);
-        }
-      }
-      la_topo.set_bounding_box(RTUTIL.getBoundingBox(coord_list));
+  std::function<LAPillar(LayerCoord&, std::map<PlanarCoord, std::set<int32_t>, CmpPlanarCoordByXASC>&)> convert;
+  convert = std::bind(&LayerAssigner::convertLAPillar, this, std::placeholders::_1, std::placeholders::_2);
+  curr_la_task->set_pillar_tree(RTUTIL.convertTree(curr_la_task->get_planar_tree(), convert, coord_pin_layer_map));
+}
+
+LAPillar LayerAssigner::convertLAPillar(LayerCoord& layer_coord, std::map<PlanarCoord, std::set<int32_t>, CmpPlanarCoordByXASC>& coord_pin_layer_map)
+{
+  LAPillar la_pillar;
+  la_pillar.set_planar_coord(layer_coord.get_planar_coord());
+  la_pillar.set_pin_layer_idx_set(coord_pin_layer_map[layer_coord.get_planar_coord()]);
+  return la_pillar;
+}
+
+void LayerAssigner::assignPillarTree(LAModel& la_model)
+{
+  assignForward(la_model);
+  assignBackward(la_model);
+}
+
+void LayerAssigner::assignForward(LAModel& la_model)
+{
+  TNode<LAPillar>* pillar_tree_root = la_model.get_curr_la_task()->get_pillar_tree().get_root();
+
+  LAPackage la_package(pillar_tree_root, pillar_tree_root);
+  for (int32_t candidate_layer_idx : getCandidateLayerList(la_model, la_package)) {
+    std::set<int32_t>& pin_layer_idx_set = pillar_tree_root->value().get_pin_layer_idx_set();
+    LALayerCost layer_cost;
+    layer_cost.set_parent_layer_idx(candidate_layer_idx);
+    layer_cost.set_layer_idx(candidate_layer_idx);
+    layer_cost.set_history_cost(getFullViaCost(la_model, pin_layer_idx_set, candidate_layer_idx));
+    pillar_tree_root->value().get_layer_cost_list().push_back(std::move(layer_cost));
+  }
+  std::queue<TNode<LAPillar>*> pillar_node_queue = RTUTIL.initQueue(pillar_tree_root);
+  while (!pillar_node_queue.empty()) {
+    TNode<LAPillar>* parent_pillar_node = RTUTIL.getFrontAndPop(pillar_node_queue);
+    std::vector<TNode<LAPillar>*>& child_list = parent_pillar_node->get_child_list();
+    for (size_t i = 0; i < child_list.size(); i++) {
+      LAPackage la_package(parent_pillar_node, child_list[i]);
+      buildLayerCost(la_model, la_package);
     }
+    RTUTIL.addListToQueue(pillar_node_queue, child_list);
   }
 }
 
-void LayerAssigner::routeLATopo(LAModel& la_model, LATopo* la_topo)
+std::vector<int32_t> LayerAssigner::getCandidateLayerList(LAModel& la_model, LAPackage& la_package)
 {
-  initSingleTopo(la_model, la_topo);
-  while (!isConnectedAllEnd(la_model)) {
-    routeSinglePath(la_model);
-    updatePathResult(la_model);
-    resetStartAndEnd(la_model);
-    resetSinglePath(la_model);
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
+  int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
+
+  Direction direction = RTUTIL.getDirection(la_package.getParentPillar().get_planar_coord(), la_package.getChildPillar().get_planar_coord());
+
+  std::vector<int32_t> candidate_layer_idx_list;
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    if (routing_layer.get_layer_idx() < bottom_routing_layer_idx || top_routing_layer_idx < routing_layer.get_layer_idx()) {
+      continue;
+    }
+    if (direction == Direction::kProximal) {
+      candidate_layer_idx_list.push_back(routing_layer.get_layer_idx());
+    } else if (direction == routing_layer.get_prefer_direction()) {
+      candidate_layer_idx_list.push_back(routing_layer.get_layer_idx());
+    }
   }
-  updateTopoResult(la_model);
-  resetSingleTopo(la_model);
+  return candidate_layer_idx_list;
 }
 
-void LayerAssigner::initSingleTopo(LAModel& la_model, LATopo* la_topo)
+double LayerAssigner::getFullViaCost(LAModel& la_model, std::set<int32_t>& layer_idx_set, int32_t candidate_layer_idx)
 {
+  double via_unit = la_model.get_la_com_param().get_via_unit();
+
+  int32_t via_num = 0;
+  if (layer_idx_set.size() > 0) {
+    std::set<int32_t> layer_idx_set_temp = layer_idx_set;
+    layer_idx_set_temp.insert(candidate_layer_idx);
+    via_num = std::abs(*layer_idx_set_temp.begin() - *layer_idx_set_temp.rbegin());
+  }
+  return (via_unit * via_num);
+}
+
+void LayerAssigner::buildLayerCost(LAModel& la_model, LAPackage& la_package)
+{
+  std::vector<LALayerCost>& layer_cost_list = la_package.getChildPillar().get_layer_cost_list();
+
+  for (int32_t candidate_layer_idx : getCandidateLayerList(la_model, la_package)) {
+    std::pair<int32_t, double> parent_pillar_cost_pair = getParentPillarCost(la_model, la_package, candidate_layer_idx);
+    double segment_cost = getSegmentCost(la_model, la_package, candidate_layer_idx);
+    double child_pillar_cost = getChildPillarCost(la_model, la_package, candidate_layer_idx);
+
+    LALayerCost layer_cost;
+    layer_cost.set_parent_layer_idx(parent_pillar_cost_pair.first);
+    layer_cost.set_layer_idx(candidate_layer_idx);
+    layer_cost.set_history_cost(parent_pillar_cost_pair.second + segment_cost + child_pillar_cost);
+    layer_cost_list.push_back(std::move(layer_cost));
+  }
+}
+
+std::pair<int32_t, double> LayerAssigner::getParentPillarCost(LAModel& la_model, LAPackage& la_package, int32_t candidate_layer_idx)
+{
+  LAPillar& parent_pillar = la_package.getParentPillar();
+
+  std::pair<int32_t, double> layer_cost_pair;
+  double min_cost = DBL_MAX;
+  for (LALayerCost& layer_cost : parent_pillar.get_layer_cost_list()) {
+    std::set<int32_t> layer_idx_set_temp = parent_pillar.get_pin_layer_idx_set();
+    layer_idx_set_temp.insert(layer_cost.get_layer_idx());
+    double curr_cost = layer_cost.get_history_cost() + getExtraViaCost(la_model, layer_idx_set_temp, candidate_layer_idx);
+
+    if (curr_cost < min_cost) {
+      min_cost = curr_cost;
+      layer_cost_pair.first = layer_cost.get_layer_idx();
+      layer_cost_pair.second = curr_cost;
+    } else if (curr_cost == min_cost) {
+      layer_cost_pair.first = std::min(layer_cost_pair.first, layer_cost.get_layer_idx());
+    }
+  }
+  if (min_cost == DBL_MAX) {
+    RTLOG.error(Loc::current(), "The min cost is wrong!");
+  }
+  return layer_cost_pair;
+}
+
+double LayerAssigner::getExtraViaCost(LAModel& la_model, std::set<int32_t>& layer_idx_set, int32_t candidate_layer_idx)
+{
+  double via_unit = la_model.get_la_com_param().get_via_unit();
+
+  int32_t via_num = 0;
+  if (layer_idx_set.size() > 0) {
+    int32_t begin_layer_idx = *layer_idx_set.begin();
+    int32_t end_layer_idx = *layer_idx_set.rbegin();
+    if (candidate_layer_idx < begin_layer_idx) {
+      via_num = std::abs(candidate_layer_idx - begin_layer_idx);
+    } else if (end_layer_idx < candidate_layer_idx) {
+      via_num = std::abs(candidate_layer_idx - end_layer_idx);
+    } else {
+      via_num = 0;
+    }
+  }
+  return (via_unit * via_num);
+}
+
+double LayerAssigner::getSegmentCost(LAModel& la_model, LAPackage& la_package, int32_t candidate_layer_idx)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<GridMap<LANode>>& layer_node_map = la_model.get_layer_node_map();
+  double overflow_unit = la_model.get_la_com_param().get_overflow_unit();
 
-  // single topo
-  la_model.set_curr_la_topo(la_topo);
-  {
-    std::vector<std::vector<LANode*>> node_list_list;
-    std::vector<LAGroup>& la_group_list = la_topo->get_la_group_list();
-    for (LAGroup& la_group : la_group_list) {
-      std::vector<LANode*> node_list;
-      for (LayerCoord& coord : la_group.get_coord_list()) {
-        LANode& la_node = layer_node_map[coord.get_layer_idx()][coord.get_x()][coord.get_y()];
-        node_list.push_back(&la_node);
-      }
-      node_list_list.push_back(node_list);
+  Direction prefer_direction = routing_layer_list[candidate_layer_idx].get_prefer_direction();
+
+  PlanarCoord first_coord = la_package.getParentPillar().get_planar_coord();
+  PlanarCoord second_coord = la_package.getChildPillar().get_planar_coord();
+  int32_t first_x = first_coord.get_x();
+  int32_t first_y = first_coord.get_y();
+  int32_t second_x = second_coord.get_x();
+  int32_t second_y = second_coord.get_y();
+  RTUTIL.swapByASC(first_x, second_x);
+  RTUTIL.swapByASC(first_y, second_y);
+
+  double node_cost = 0;
+  for (int32_t x = first_x; x <= second_x; x++) {
+    for (int32_t y = first_y; y <= second_y; y++) {
+      node_cost += layer_node_map[candidate_layer_idx][x][y].getOverflowCost(la_model.get_curr_la_task()->get_net_idx(), prefer_direction, overflow_unit);
     }
-    for (size_t i = 0; i < node_list_list.size(); i++) {
-      if (i == 0) {
-        la_model.get_start_node_list_list().push_back(node_list_list[i]);
+  }
+  return node_cost;
+}
+
+double LayerAssigner::getChildPillarCost(LAModel& la_model, LAPackage& la_package, int32_t candidate_layer_idx)
+{
+  LAPillar& child_pillar = la_package.getChildPillar();
+  return getFullViaCost(la_model, child_pillar.get_pin_layer_idx_set(), candidate_layer_idx);
+}
+
+void LayerAssigner::assignBackward(LAModel& la_model)
+{
+  std::vector<std::vector<TNode<LAPillar>*>> level_list = RTUTIL.getLevelOrder(la_model.get_curr_la_task()->get_pillar_tree());
+  if (level_list.empty()) {
+    return;
+  }
+  for (int32_t i = static_cast<int32_t>(level_list.size() - 1); i >= 0; i--) {
+    for (size_t j = 0; j < level_list[i].size(); j++) {
+      int32_t best_layer_idx;
+      if (level_list[i][j]->isLeafNode()) {
+        best_layer_idx = getBestLayerBySelf(level_list[i][j]);
       } else {
-        la_model.get_end_node_list_list().push_back(node_list_list[i]);
+        best_layer_idx = getBestLayerByChild(level_list[i][j]);
+      }
+      level_list[i][j]->value().set_layer_idx(best_layer_idx);
+    }
+  }
+}
+
+int32_t LayerAssigner::getBestLayerBySelf(TNode<LAPillar>* pillar_node)
+{
+  std::vector<LALayerCost>& layer_cost_list = pillar_node->value().get_layer_cost_list();
+
+  double min_cost = DBL_MAX;
+  int32_t best_layer_idx = layer_cost_list.front().get_layer_idx();
+  for (LALayerCost& layer_cost : layer_cost_list) {
+    double cost = layer_cost.get_history_cost();
+    if (cost < min_cost) {
+      min_cost = cost;
+      best_layer_idx = layer_cost.get_layer_idx();
+    } else if (cost == min_cost) {
+      best_layer_idx = std::min(best_layer_idx, layer_cost.get_layer_idx());
+    }
+  }
+  if (min_cost == DBL_MAX) {
+    RTLOG.error(Loc::current(), "The min cost is wrong!");
+  }
+  return best_layer_idx;
+}
+
+int32_t LayerAssigner::getBestLayerByChild(TNode<LAPillar>* parent_pillar_node)
+{
+  std::set<int32_t> candidate_layer_idx_set;
+  for (TNode<LAPillar>* child_node : parent_pillar_node->get_child_list()) {
+    for (LALayerCost& layer_cost : child_node->value().get_layer_cost_list()) {
+      if (layer_cost.get_layer_idx() == child_node->value().get_layer_idx()) {
+        candidate_layer_idx_set.insert(layer_cost.get_parent_layer_idx());
       }
     }
   }
-  la_model.get_path_node_list().clear();
-  la_model.get_single_topo_visited_node_list().clear();
-  la_model.get_routing_segment_list().clear();
-}
-
-bool LayerAssigner::isConnectedAllEnd(LAModel& la_model)
-{
-  return la_model.get_end_node_list_list().empty();
-}
-
-void LayerAssigner::routeSinglePath(LAModel& la_model)
-{
-  initPathHead(la_model);
-  while (!searchEnded(la_model)) {
-    expandSearching(la_model);
-    resetPathHead(la_model);
-  }
-}
-
-void LayerAssigner::initPathHead(LAModel& la_model)
-{
-  std::vector<std::vector<LANode*>>& start_node_list_list = la_model.get_start_node_list_list();
-  std::vector<LANode*>& path_node_list = la_model.get_path_node_list();
-
-  for (std::vector<LANode*>& start_node_list : start_node_list_list) {
-    for (LANode* start_node : start_node_list) {
-      start_node->set_estimated_cost(getEstimateCostToEnd(la_model, start_node));
-      pushToOpenList(la_model, start_node);
-    }
-  }
-  for (LANode* path_node : path_node_list) {
-    path_node->set_estimated_cost(getEstimateCostToEnd(la_model, path_node));
-    pushToOpenList(la_model, path_node);
-  }
-  resetPathHead(la_model);
-}
-
-bool LayerAssigner::searchEnded(LAModel& la_model)
-{
-  std::vector<std::vector<LANode*>>& end_node_list_list = la_model.get_end_node_list_list();
-  LANode* path_head_node = la_model.get_path_head_node();
-
-  if (path_head_node == nullptr) {
-    la_model.set_end_node_list_idx(-1);
-    return true;
-  }
-  for (size_t i = 0; i < end_node_list_list.size(); i++) {
-    for (LANode* end_node : end_node_list_list[i]) {
-      if (path_head_node == end_node) {
-        la_model.set_end_node_list_idx(static_cast<int32_t>(i));
-        return true;
+  double min_cost = DBL_MAX;
+  int32_t best_layer_idx = INT_MAX;
+  for (int32_t candidate_layer_idx : candidate_layer_idx_set) {
+    for (LALayerCost& layer_cost : parent_pillar_node->value().get_layer_cost_list()) {
+      if (layer_cost.get_layer_idx() != candidate_layer_idx) {
+        continue;
       }
+      double curr_cost = layer_cost.get_history_cost();
+      if (curr_cost < min_cost) {
+        min_cost = curr_cost;
+        best_layer_idx = candidate_layer_idx;
+      } else if (curr_cost == min_cost) {
+        best_layer_idx = std::min(best_layer_idx, candidate_layer_idx);
+      }
+      break;
     }
   }
-  return false;
+  if (min_cost == DBL_MAX) {
+    RTLOG.error(Loc::current(), "The min cost is wrong!");
+  }
+  return best_layer_idx;
 }
 
-void LayerAssigner::expandSearching(LAModel& la_model)
+void LayerAssigner::buildLayerTree(LAModel& la_model)
 {
-  PriorityQueue<LANode*, std::vector<LANode*>, CmpLANodeCost>& open_queue = la_model.get_open_queue();
-  LANode* path_head_node = la_model.get_path_head_node();
-
-  for (auto& [orientation, neighbor_node] : path_head_node->get_neighbor_node_map()) {
-    if (neighbor_node == nullptr) {
-      continue;
-    }
-    if (!RTUTIL.isInside(la_model.get_curr_la_topo()->get_bounding_box(), *neighbor_node)) {
-      continue;
-    }
-    if (neighbor_node->isClose()) {
-      continue;
-    }
-    double known_cost = getKnownCost(la_model, path_head_node, neighbor_node);
-    if (neighbor_node->isOpen() && known_cost < neighbor_node->get_known_cost()) {
-      neighbor_node->set_known_cost(known_cost);
-      neighbor_node->set_parent_node(path_head_node);
-      // 对优先队列中的值修改了,需要重新建堆
-      std::make_heap(open_queue.begin(), open_queue.end(), CmpLANodeCost());
-    } else if (neighbor_node->isNone()) {
-      neighbor_node->set_known_cost(known_cost);
-      neighbor_node->set_parent_node(path_head_node);
-      neighbor_node->set_estimated_cost(getEstimateCostToEnd(la_model, neighbor_node));
-      pushToOpenList(la_model, neighbor_node);
-    }
-  }
-}
-
-void LayerAssigner::resetPathHead(LAModel& la_model)
-{
-  la_model.set_path_head_node(popFromOpenList(la_model));
-}
-
-void LayerAssigner::updatePathResult(LAModel& la_model)
-{
-  for (Segment<LayerCoord>& routing_segment : getRoutingSegmentListByNode(la_model.get_path_head_node())) {
-    la_model.get_routing_segment_list().push_back(routing_segment);
-  }
-}
-
-std::vector<Segment<LayerCoord>> LayerAssigner::getRoutingSegmentListByNode(LANode* node)
-{
-  std::vector<Segment<LayerCoord>> routing_segment_list;
-
-  LANode* curr_node = node;
-  LANode* pre_node = curr_node->get_parent_node();
-
-  if (pre_node == nullptr) {
-    // 起点和终点重合
-    return routing_segment_list;
-  }
-  Orientation curr_orientation = RTUTIL.getOrientation(*curr_node, *pre_node);
-  while (pre_node->get_parent_node() != nullptr) {
-    Orientation pre_orientation = RTUTIL.getOrientation(*pre_node, *pre_node->get_parent_node());
-    if (curr_orientation != pre_orientation) {
-      routing_segment_list.emplace_back(*curr_node, *pre_node);
-      curr_orientation = pre_orientation;
-      curr_node = pre_node;
-    }
-    pre_node = pre_node->get_parent_node();
-  }
-  routing_segment_list.emplace_back(*curr_node, *pre_node);
-
-  return routing_segment_list;
-}
-
-void LayerAssigner::resetStartAndEnd(LAModel& la_model)
-{
-  std::vector<std::vector<LANode*>>& start_node_list_list = la_model.get_start_node_list_list();
-  std::vector<std::vector<LANode*>>& end_node_list_list = la_model.get_end_node_list_list();
-  std::vector<LANode*>& path_node_list = la_model.get_path_node_list();
-  LANode* path_head_node = la_model.get_path_head_node();
-  int32_t end_node_list_idx = la_model.get_end_node_list_idx();
-
-  // 对于抵达的终点pin,只保留到达的node
-  end_node_list_list[end_node_list_idx].clear();
-  end_node_list_list[end_node_list_idx].push_back(path_head_node);
-
-  LANode* path_node = path_head_node->get_parent_node();
-  if (path_node == nullptr) {
-    // 起点和终点重合
-    path_node = path_head_node;
-  } else {
-    // 起点和终点不重合
-    while (path_node->get_parent_node() != nullptr) {
-      path_node_list.push_back(path_node);
-      path_node = path_node->get_parent_node();
-    }
-  }
-  if (start_node_list_list.size() == 1) {
-    start_node_list_list.front().clear();
-    start_node_list_list.front().push_back(path_node);
-  }
-  start_node_list_list.push_back(end_node_list_list[end_node_list_idx]);
-  end_node_list_list.erase(end_node_list_list.begin() + end_node_list_idx);
-}
-
-void LayerAssigner::resetSinglePath(LAModel& la_model)
-{
-  PriorityQueue<LANode*, std::vector<LANode*>, CmpLANodeCost> empty_queue;
-  la_model.set_open_queue(empty_queue);
-
-  std::vector<LANode*>& single_path_visited_node_list = la_model.get_single_path_visited_node_list();
-  for (LANode* visited_node : single_path_visited_node_list) {
-    visited_node->set_state(LANodeState::kNone);
-    visited_node->set_parent_node(nullptr);
-    visited_node->set_known_cost(0);
-    visited_node->set_estimated_cost(0);
-  }
-  single_path_visited_node_list.clear();
-
-  la_model.set_path_head_node(nullptr);
-  la_model.set_end_node_list_idx(-1);
-}
-
-void LayerAssigner::updateTopoResult(LAModel& la_model)
-{
-  la_model.get_curr_la_topo()->set_routing_segment_list(getRoutingSegmentList(la_model));
+  std::vector<Segment<LayerCoord>> routing_segment_list = getRoutingSegmentList(la_model);
+  MTree<LayerCoord> coord_tree = getCoordTree(la_model, routing_segment_list);
+  updateDemandToGraph(la_model, ChangeType::kAdd, coord_tree);
+  uploadNetResult(la_model, coord_tree);
 }
 
 std::vector<Segment<LayerCoord>> LayerAssigner::getRoutingSegmentList(LAModel& la_model)
 {
-  LATopo* curr_la_topo = la_model.get_curr_la_topo();
-
-  std::vector<LayerCoord> candidate_root_coord_list;
-  std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
-  std::vector<LAGroup>& la_group_list = curr_la_topo->get_la_group_list();
-  for (size_t i = 0; i < la_group_list.size(); i++) {
-    for (LayerCoord& coord : la_group_list[i].get_coord_list()) {
-      candidate_root_coord_list.push_back(coord);
-      key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
-    }
-  }
-  MTree<LayerCoord> coord_tree = RTUTIL.getTreeByFullFlow(candidate_root_coord_list, la_model.get_routing_segment_list(), key_coord_pin_map);
-
   std::vector<Segment<LayerCoord>> routing_segment_list;
-  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
-    routing_segment_list.emplace_back(coord_segment.get_first()->value(), coord_segment.get_second()->value());
+
+  std::queue<TNode<LAPillar>*> pillar_node_queue = RTUTIL.initQueue(la_model.get_curr_la_task()->get_pillar_tree().get_root());
+  while (!pillar_node_queue.empty()) {
+    TNode<LAPillar>* parent_pillar_node = RTUTIL.getFrontAndPop(pillar_node_queue);
+    std::vector<TNode<LAPillar>*>& child_list = parent_pillar_node->get_child_list();
+    {
+      std::set<int32_t> layer_idx_set = parent_pillar_node->value().get_pin_layer_idx_set();
+      layer_idx_set.insert(parent_pillar_node->value().get_layer_idx());
+      for (TNode<LAPillar>* child_node : child_list) {
+        layer_idx_set.insert(child_node->value().get_layer_idx());
+      }
+      routing_segment_list.emplace_back(LayerCoord(parent_pillar_node->value().get_planar_coord(), *layer_idx_set.begin()),
+                                        LayerCoord(parent_pillar_node->value().get_planar_coord(), *layer_idx_set.rbegin()));
+    }
+    for (TNode<LAPillar>* child_node : child_list) {
+      routing_segment_list.emplace_back(LayerCoord(parent_pillar_node->value().get_planar_coord(), child_node->value().get_layer_idx()),
+                                        LayerCoord(child_node->value().get_planar_coord(), child_node->value().get_layer_idx()));
+    }
+    RTUTIL.addListToQueue(pillar_node_queue, child_list);
   }
   return routing_segment_list;
-}
-
-void LayerAssigner::resetSingleTopo(LAModel& la_model)
-{
-  la_model.set_curr_la_topo(nullptr);
-  la_model.get_start_node_list_list().clear();
-  la_model.get_end_node_list_list().clear();
-  la_model.get_path_node_list().clear();
-  la_model.get_single_topo_visited_node_list().clear();
-  la_model.get_routing_segment_list().clear();
-}
-
-// manager open list
-
-void LayerAssigner::pushToOpenList(LAModel& la_model, LANode* curr_node)
-{
-  PriorityQueue<LANode*, std::vector<LANode*>, CmpLANodeCost>& open_queue = la_model.get_open_queue();
-  std::vector<LANode*>& single_topo_visited_node_list = la_model.get_single_topo_visited_node_list();
-  std::vector<LANode*>& single_path_visited_node_list = la_model.get_single_path_visited_node_list();
-
-  open_queue.push(curr_node);
-  curr_node->set_state(LANodeState::kOpen);
-  single_topo_visited_node_list.push_back(curr_node);
-  single_path_visited_node_list.push_back(curr_node);
-}
-
-LANode* LayerAssigner::popFromOpenList(LAModel& la_model)
-{
-  PriorityQueue<LANode*, std::vector<LANode*>, CmpLANodeCost>& open_queue = la_model.get_open_queue();
-
-  LANode* node = nullptr;
-  if (!open_queue.empty()) {
-    node = open_queue.top();
-    open_queue.pop();
-    node->set_state(LANodeState::kClose);
-  }
-  return node;
-}
-
-// calculate known
-
-double LayerAssigner::getKnownCost(LAModel& la_model, LANode* start_node, LANode* end_node)
-{
-  bool exist_neighbor = false;
-  for (auto& [orientation, neighbor_ptr] : start_node->get_neighbor_node_map()) {
-    if (neighbor_ptr == end_node) {
-      exist_neighbor = true;
-      break;
-    }
-  }
-  if (!exist_neighbor) {
-    RTLOG.error(Loc::current(), "The neighbor not exist!");
-  }
-
-  double cost = 0;
-  cost += start_node->get_known_cost();
-  cost += getNodeCost(la_model, start_node, RTUTIL.getOrientation(*start_node, *end_node));
-  cost += getNodeCost(la_model, end_node, RTUTIL.getOrientation(*end_node, *start_node));
-  cost += getKnownWireCost(la_model, start_node, end_node);
-  cost += getKnownViaCost(la_model, start_node, end_node);
-  return cost;
-}
-
-double LayerAssigner::getNodeCost(LAModel& la_model, LANode* curr_node, Orientation orientation)
-{
-  double overflow_unit = la_model.get_la_com_param().get_overflow_unit();
-  int32_t curr_net_idx = la_model.get_curr_la_topo()->get_net_idx();
-
-  double node_cost = 0;
-  node_cost += curr_node->getOverflowCost(curr_net_idx, overflow_unit);
-  return node_cost;
-}
-
-double LayerAssigner::getKnownWireCost(LAModel& la_model, LANode* start_node, LANode* end_node)
-{
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  double prefer_wire_unit = la_model.get_la_com_param().get_prefer_wire_unit();
-
-  double wire_cost = 0;
-  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
-    wire_cost += RTUTIL.getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
-
-    RoutingLayer& routing_layer = routing_layer_list[start_node->get_layer_idx()];
-    if (routing_layer.get_prefer_direction() == RTUTIL.getDirection(*start_node, *end_node)) {
-      wire_cost *= prefer_wire_unit;
-    }
-  }
-  return wire_cost;
-}
-
-double LayerAssigner::getKnownViaCost(LAModel& la_model, LANode* start_node, LANode* end_node)
-{
-  double via_unit = la_model.get_la_com_param().get_via_unit();
-  double via_cost = (via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));
-  return via_cost;
-}
-
-// calculate estimate
-
-double LayerAssigner::getEstimateCostToEnd(LAModel& la_model, LANode* curr_node)
-{
-  std::vector<std::vector<LANode*>>& end_node_list_list = la_model.get_end_node_list_list();
-
-  double estimate_cost = DBL_MAX;
-  for (std::vector<LANode*>& end_node_list : end_node_list_list) {
-    for (LANode* end_node : end_node_list) {
-      if (end_node->isClose()) {
-        continue;
-      }
-      estimate_cost = std::min(estimate_cost, getEstimateCost(la_model, curr_node, end_node));
-    }
-  }
-  return estimate_cost;
-}
-
-double LayerAssigner::getEstimateCost(LAModel& la_model, LANode* start_node, LANode* end_node)
-{
-  double estimate_cost = 0;
-  estimate_cost += getEstimateWireCost(la_model, start_node, end_node);
-  estimate_cost += getEstimateViaCost(la_model, start_node, end_node);
-  return estimate_cost;
-}
-
-double LayerAssigner::getEstimateWireCost(LAModel& la_model, LANode* start_node, LANode* end_node)
-{
-  double prefer_wire_unit = la_model.get_la_com_param().get_prefer_wire_unit();
-
-  double wire_cost = 0;
-  wire_cost += RTUTIL.getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
-  wire_cost *= prefer_wire_unit;
-  return wire_cost;
-}
-
-double LayerAssigner::getEstimateViaCost(LAModel& la_model, LANode* start_node, LANode* end_node)
-{
-  double via_unit = la_model.get_la_com_param().get_via_unit();
-  double via_cost = (via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));
-  return via_cost;
 }
 
 MTree<LayerCoord> LayerAssigner::getCoordTree(LAModel& la_model, std::vector<Segment<LayerCoord>>& routing_segment_list)

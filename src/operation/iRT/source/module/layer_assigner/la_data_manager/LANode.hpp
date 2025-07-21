@@ -24,15 +24,6 @@
 
 namespace irt {
 
-#if 1  // astar
-enum class LANodeState
-{
-  kNone = 0,
-  kOpen = 1,
-  kClose = 2
-};
-#endif
-
 class LANode : public LayerCoord
 {
  public:
@@ -65,16 +56,25 @@ class LANode : public LayerCoord
     }
     return neighbor_node;
   }
-  double getOverflowCost(int32_t net_idx, double overflow_unit)
+  double getOverflowCost(int32_t net_idx, Direction direction, double overflow_unit)
   {
     if (!validDemandUnit()) {
       RTLOG.error(Loc::current(), "The demand unit is error!");
     }
     std::map<Orientation, std::set<int32_t>> orient_net_map = _orient_net_map;
     std::map<int32_t, std::set<Orientation>> net_orient_map = _net_orient_map;
-    for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
-      orient_net_map[orient].insert(net_idx);
-      net_orient_map[net_idx].insert(orient);
+    if (direction == Direction::kHorizontal) {
+      for (Orientation orient : {Orientation::kEast, Orientation::kWest}) {
+        orient_net_map[orient].insert(net_idx);
+        net_orient_map[net_idx].insert(orient);
+      }
+    } else if (direction == Direction::kVertical) {
+      for (Orientation orient : {Orientation::kSouth, Orientation::kNorth}) {
+        orient_net_map[orient].insert(net_idx);
+        net_orient_map[net_idx].insert(orient);
+      }
+    } else {
+      RTLOG.error(Loc::current(), "The direction is error!");
     }
     double boundary_overflow = 0;
     for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
@@ -256,22 +256,6 @@ class LANode : public LayerCoord
       }
     }
   }
-#if 1  // astar
-  // single path
-  LANodeState& get_state() { return _state; }
-  LANode* get_parent_node() const { return _parent_node; }
-  double get_known_cost() const { return _known_cost; }
-  double get_estimated_cost() const { return _estimated_cost; }
-  void set_state(LANodeState state) { _state = state; }
-  void set_parent_node(LANode* parent_node) { _parent_node = parent_node; }
-  void set_known_cost(const double known_cost) { _known_cost = known_cost; }
-  void set_estimated_cost(const double estimated_cost) { _estimated_cost = estimated_cost; }
-  // function
-  bool isNone() { return _state == LANodeState::kNone; }
-  bool isOpen() { return _state == LANodeState::kOpen; }
-  bool isClose() { return _state == LANodeState::kClose; }
-  double getTotalCost() { return (_known_cost + _estimated_cost); }
-#endif
 
  private:
   double _boundary_wire_unit = -1;
@@ -282,31 +266,6 @@ class LANode : public LayerCoord
   std::map<int32_t, std::set<Orientation>> _ignore_net_orient_map;
   std::map<Orientation, std::set<int32_t>> _orient_net_map;
   std::map<int32_t, std::set<Orientation>> _net_orient_map;
-#if 1  // astar
-  // single path
-  LANodeState _state = LANodeState::kNone;
-  LANode* _parent_node = nullptr;
-  double _known_cost = 0.0;  // include curr
-  double _estimated_cost = 0.0;
-#endif
 };
-
-#if 1  // astar
-struct CmpLANodeCost
-{
-  bool operator()(LANode* a, LANode* b)
-  {
-    if (RTUTIL.equalDoubleByError(a->getTotalCost(), b->getTotalCost(), RT_ERROR)) {
-      if (RTUTIL.equalDoubleByError(a->get_estimated_cost(), b->get_estimated_cost(), RT_ERROR)) {
-        return a->get_neighbor_node_map().size() < b->get_neighbor_node_map().size();
-      } else {
-        return a->get_estimated_cost() > b->get_estimated_cost();
-      }
-    } else {
-      return a->getTotalCost() > b->getTotalCost();
-    }
-  }
-};
-#endif
 
 }  // namespace irt

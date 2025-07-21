@@ -1085,6 +1085,8 @@ SRNode* SpaceRouter::popFromOpenList(SRBox& sr_box)
 
 double SpaceRouter::getKnownCost(SRBox& sr_box, SRNode* start_node, SRNode* end_node)
 {
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+
   bool exist_neighbor = false;
   for (auto& [orientation, neighbor_ptr] : start_node->get_neighbor_node_map()) {
     if (neighbor_ptr == end_node) {
@@ -1095,22 +1097,27 @@ double SpaceRouter::getKnownCost(SRBox& sr_box, SRNode* start_node, SRNode* end_
   if (!exist_neighbor) {
     RTLOG.error(Loc::current(), "The neighbor not exist!");
   }
-
+  Direction direction;
+  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
+    direction = routing_layer_list[start_node->get_layer_idx()].get_prefer_direction();
+  } else {
+    direction = Direction::kProximal;
+  }
   double cost = 0;
   cost += start_node->get_known_cost();
-  cost += getNodeCost(sr_box, start_node, RTUTIL.getOrientation(*start_node, *end_node));
-  cost += getNodeCost(sr_box, end_node, RTUTIL.getOrientation(*end_node, *start_node));
+  cost += getNodeCost(sr_box, start_node, direction);
+  cost += getNodeCost(sr_box, end_node, direction);
   cost += getKnownWireCost(sr_box, start_node, end_node);
   cost += getKnownViaCost(sr_box, start_node, end_node);
   return cost;
 }
 
-double SpaceRouter::getNodeCost(SRBox& sr_box, SRNode* curr_node, Orientation orientation)
+double SpaceRouter::getNodeCost(SRBox& sr_box, SRNode* curr_node, Direction direction)
 {
   double overflow_unit = sr_box.get_sr_iter_param()->get_overflow_unit();
 
   double node_cost = 0;
-  node_cost += curr_node->getOverflowCost(sr_box.get_curr_sr_task()->get_net_idx(), overflow_unit);
+  node_cost += curr_node->getOverflowCost(sr_box.get_curr_sr_task()->get_net_idx(), direction, overflow_unit);
   return node_cost;
 }
 

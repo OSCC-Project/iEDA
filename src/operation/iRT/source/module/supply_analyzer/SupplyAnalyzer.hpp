@@ -53,7 +53,6 @@ class SupplyAnalyzer
   EXTLayerRect getSearchRect(LayerCoord& first_coord, LayerCoord& second_coord);
   std::vector<LayerRect> getCrossingWireList(EXTLayerRect& search_rect);
   bool isAccess(LayerRect& wire, std::vector<PlanarRect>& obs_rect_list);
-  void reduceSupply(SAModel& sa_model);
   void buildIgnoreNet(SAModel& sa_model);
   void analyzeDemandUnit(SAModel& sa_model);
 
