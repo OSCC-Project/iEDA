@@ -1,5 +1,7 @@
-# set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_BUILD_TYPE "Debug")
+if(NOT DEFINED CMD_BUILD)
+    # set(CMAKE_BUILD_TYPE "Release")
+    set(CMAKE_BUILD_TYPE "Debug")
+endif()
 
 add_subdirectory(${EVAL_MODULE}/congestion)
 add_subdirectory(${EVAL_MODULE}/density)

@@ -594,16 +594,15 @@ void RTInterface::wrapLayerViaMasterList()
     idb::IdbLayerShape* idb_shape_top = idb_via_master->get_top_layer_shape();
     idb::IdbLayerRouting* idb_layer_top = dynamic_cast<idb::IdbLayerRouting*>(idb_shape_top->get_layer());
     idb::IdbRect idb_box_top = idb_shape_top->get_bounding_box();
-    LayerRect above_enclosure(idb_box_top.get_low_x(), idb_box_top.get_low_y(), idb_box_top.get_high_x(), idb_box_top.get_high_y(),
-                              idb_layer_top->get_id());
+    LayerRect above_enclosure(idb_box_top.get_low_x(), idb_box_top.get_low_y(), idb_box_top.get_high_x(), idb_box_top.get_high_y(), idb_layer_top->get_id());
     via_master.set_above_enclosure(above_enclosure);
     via_master.set_above_direction(getRTDirectionByDB(idb_layer_top->get_direction()));
     // bottom enclosure
     idb::IdbLayerShape* idb_shape_bottom = idb_via_master->get_bottom_layer_shape();
     idb::IdbLayerRouting* idb_layer_bottom = dynamic_cast<idb::IdbLayerRouting*>(idb_shape_bottom->get_layer());
     idb::IdbRect idb_box_bottom = idb_shape_bottom->get_bounding_box();
-    LayerRect below_enclosure(idb_box_bottom.get_low_x(), idb_box_bottom.get_low_y(), idb_box_bottom.get_high_x(),
-                              idb_box_bottom.get_high_y(), idb_layer_bottom->get_id());
+    LayerRect below_enclosure(idb_box_bottom.get_low_x(), idb_box_bottom.get_low_y(), idb_box_bottom.get_high_x(), idb_box_bottom.get_high_y(),
+                              idb_layer_bottom->get_id());
     via_master.set_below_enclosure(below_enclosure);
     via_master.set_below_direction(getRTDirectionByDB(idb_layer_bottom->get_direction()));
     // cut shape
@@ -628,12 +627,11 @@ void RTInterface::wrapObstacleList()
   std::vector<Obstacle>& routing_obstacle_list = RTDM.getDatabase().get_routing_obstacle_list();
   std::vector<Obstacle>& cut_obstacle_list = RTDM.getDatabase().get_cut_obstacle_list();
   std::vector<idb::IdbInstance*>& instance_list = dmInst->get_idb_def_service()->get_design()->get_instance_list()->get_instance_list();
-  std::vector<idb::IdbSpecialNet*>& idb_special_net_list
-      = dmInst->get_idb_def_service()->get_design()->get_special_net_list()->get_net_list();
+  std::vector<idb::IdbSpecialNet*>& idb_special_net_list = dmInst->get_idb_def_service()->get_design()->get_special_net_list()->get_net_list();
   std::vector<idb::IdbPin*>& idb_io_pin_list = dmInst->get_idb_def_service()->get_design()->get_io_pin_list()->get_pin_list();
 
-  int32_t total_routing_obstacle_num = 0;
-  int32_t total_cut_obstacle_num = 0;
+  size_t total_routing_obstacle_num = 0;
+  size_t total_cut_obstacle_num = 0;
   {
     // instance
     for (idb::IdbInstance* instance : instance_list) {
@@ -763,8 +761,7 @@ void RTInterface::wrapObstacleList()
       for (idb::IdbSpecialWire* idb_wire : idb_net->get_wire_list()->get_wire_list()) {
         for (idb::IdbSpecialWireSegment* idb_segment : idb_wire->get_segment_list()) {
           if (idb_segment->is_via()) {
-            for (idb::IdbLayerShape layer_shape :
-                 {idb_segment->get_via()->get_top_layer_shape(), idb_segment->get_via()->get_bottom_layer_shape()}) {
+            for (idb::IdbLayerShape layer_shape : {idb_segment->get_via()->get_top_layer_shape(), idb_segment->get_via()->get_bottom_layer_shape()}) {
               for (idb::IdbRect* rect : layer_shape.get_rect_list()) {
                 Obstacle obstacle;
                 obstacle.set_real_ll(rect->get_low_x(), rect->get_low_y());
@@ -1135,14 +1132,15 @@ void RTInterface::outputNetList()
 
 void RTInterface::outputSummary()
 {
+#if 0
   ieda_feature::RTSummary& top_rt_summary = featureInst->get_summary()->get_summary_irt();
 
   Summary& rt_summary = RTDM.getDatabase().get_summary();
 
   // pa_summary
   {
-    // top_rt_summary.pa_summary.routing_access_point_num_map = rt_summary.pa_summary.routing_access_point_num_map;
-    // top_rt_summary.pa_summary.total_access_point_num = rt_summary.pa_summary.total_access_point_num;
+    top_rt_summary.pa_summary.routing_access_point_num_map = rt_summary.pa_summary.routing_access_point_num_map;
+    top_rt_summary.pa_summary.total_access_point_num = rt_summary.pa_summary.total_access_point_num;
   }
   // sa_summary
   {
@@ -1162,8 +1160,7 @@ void RTInterface::outputSummary()
       clock_timing.suggest_freq = timing_map["Freq(MHz)"];
       top_rt_summary.tg_summary.clocks_timing.push_back(clock_timing);
     }
-    top_rt_summary.tg_summary.power_info
-        = {rt_summary.tg_summary.power_map["static_power"], rt_summary.tg_summary.power_map["dynamic_power"]};
+    top_rt_summary.tg_summary.power_info = {rt_summary.tg_summary.power_map["static_power"], rt_summary.tg_summary.power_map["dynamic_power"]};
   }
   // la_summary
   {
@@ -1183,8 +1180,7 @@ void RTInterface::outputSummary()
       clock_timing.suggest_freq = timing_map["Freq(MHz)"];
       top_rt_summary.la_summary.clocks_timing.push_back(clock_timing);
     }
-    top_rt_summary.la_summary.power_info
-        = {rt_summary.la_summary.power_map["static_power"], rt_summary.la_summary.power_map["dynamic_power"]};
+    top_rt_summary.la_summary.power_info = {rt_summary.la_summary.power_map["static_power"], rt_summary.la_summary.power_map["dynamic_power"]};
   }
   // gr_summary
   {
@@ -1256,9 +1252,9 @@ void RTInterface::outputSummary()
       clock_timing.suggest_freq = timing_map["Freq(MHz)"];
       top_rt_summary.er_summary.clocks_timing.push_back(clock_timing);
     }
-    top_rt_summary.er_summary.power_info
-        = {rt_summary.er_summary.power_map["static_power"], rt_summary.er_summary.power_map["dynamic_power"]};
+    top_rt_summary.er_summary.power_info = {rt_summary.er_summary.power_map["static_power"], rt_summary.er_summary.power_map["dynamic_power"]};
   }
+#endif
 }
 
 #endif
@@ -1526,8 +1522,7 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerSh
 
 void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
                                        std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list,
-                                       std::map<std::string, std::map<std::string, double>>& clock_timing,
-                                       std::map<std::string, double>& power)
+                                       std::map<std::string, std::map<std::string, double>>& clock_timing, std::map<std::string, double>& power)
 {
 #if 1  // 数据结构定义
   struct RCPin
@@ -1579,57 +1574,57 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
     }
     return power_engine;
   };
-  auto getRCSegmentList = [](std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>& coord_real_pin_map,
-                             std::vector<Segment<LayerCoord>>& routing_segment_list) {
-    // 预处理 对名字去重
-    for (auto& [coord, real_pin_list] : coord_real_pin_map) {
-      std::sort(real_pin_list.begin(), real_pin_list.end());
-      real_pin_list.erase(std::unique(real_pin_list.begin(), real_pin_list.end()), real_pin_list.end());
-    }
-    // 构建coord_fake_pin_map
-    std::map<LayerCoord, int32_t, CmpLayerCoordByXASC> coord_fake_pin_map;
-    {
-      int32_t fake_id = 0;
-      for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
-        LayerCoord& first_coord = routing_segment.get_first();
-        LayerCoord& second_coord = routing_segment.get_second();
-
-        if (!RTUTIL.exist(coord_real_pin_map, first_coord) && !RTUTIL.exist(coord_fake_pin_map, first_coord)) {
-          coord_fake_pin_map[first_coord] = fake_id++;
-        }
-        if (!RTUTIL.exist(coord_real_pin_map, second_coord) && !RTUTIL.exist(coord_fake_pin_map, second_coord)) {
-          coord_fake_pin_map[second_coord] = fake_id++;
-        }
-      }
-    }
-    std::vector<Segment<RCPin>> rc_segment_list;
-    {
-      // 生成线长为0的线段
-      for (auto& [coord, real_pin_list] : coord_real_pin_map) {
-        for (size_t i = 1; i < real_pin_list.size(); i++) {
-          RCPin first_rc_pin(coord, true, RTUTIL.escapeBackslash(real_pin_list[i - 1]));
-          RCPin second_rc_pin(coord, true, RTUTIL.escapeBackslash(real_pin_list[i]));
-          rc_segment_list.emplace_back(first_rc_pin, second_rc_pin);
-        }
-      }
-      // 生成线长大于0的线段
-      for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
-        auto getRCPin = [&](LayerCoord& coord) {
-          RCPin rc_pin;
-          if (RTUTIL.exist(coord_real_pin_map, coord)) {
-            rc_pin = RCPin(coord, true, RTUTIL.escapeBackslash(coord_real_pin_map[coord].front()));
-          } else if (RTUTIL.exist(coord_fake_pin_map, coord)) {
-            rc_pin = RCPin(coord, false, coord_fake_pin_map[coord]);
-          } else {
-            RTLOG.error(Loc::current(), "The coord is not exist!");
+  auto getRCSegmentList
+      = [](std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>& coord_real_pin_map, std::vector<Segment<LayerCoord>>& routing_segment_list) {
+          // 预处理 对名字去重
+          for (auto& [coord, real_pin_list] : coord_real_pin_map) {
+            std::sort(real_pin_list.begin(), real_pin_list.end());
+            real_pin_list.erase(std::unique(real_pin_list.begin(), real_pin_list.end()), real_pin_list.end());
           }
-          return rc_pin;
+          // 构建coord_fake_pin_map
+          std::map<LayerCoord, int32_t, CmpLayerCoordByXASC> coord_fake_pin_map;
+          {
+            int32_t fake_id = 0;
+            for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
+              LayerCoord& first_coord = routing_segment.get_first();
+              LayerCoord& second_coord = routing_segment.get_second();
+
+              if (!RTUTIL.exist(coord_real_pin_map, first_coord) && !RTUTIL.exist(coord_fake_pin_map, first_coord)) {
+                coord_fake_pin_map[first_coord] = fake_id++;
+              }
+              if (!RTUTIL.exist(coord_real_pin_map, second_coord) && !RTUTIL.exist(coord_fake_pin_map, second_coord)) {
+                coord_fake_pin_map[second_coord] = fake_id++;
+              }
+            }
+          }
+          std::vector<Segment<RCPin>> rc_segment_list;
+          {
+            // 生成线长为0的线段
+            for (auto& [coord, real_pin_list] : coord_real_pin_map) {
+              for (size_t i = 1; i < real_pin_list.size(); i++) {
+                RCPin first_rc_pin(coord, true, RTUTIL.escapeBackslash(real_pin_list[i - 1]));
+                RCPin second_rc_pin(coord, true, RTUTIL.escapeBackslash(real_pin_list[i]));
+                rc_segment_list.emplace_back(first_rc_pin, second_rc_pin);
+              }
+            }
+            // 生成线长大于0的线段
+            for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
+              auto getRCPin = [&](LayerCoord& coord) {
+                RCPin rc_pin;
+                if (RTUTIL.exist(coord_real_pin_map, coord)) {
+                  rc_pin = RCPin(coord, true, RTUTIL.escapeBackslash(coord_real_pin_map[coord].front()));
+                } else if (RTUTIL.exist(coord_fake_pin_map, coord)) {
+                  rc_pin = RCPin(coord, false, coord_fake_pin_map[coord]);
+                } else {
+                  RTLOG.error(Loc::current(), "The coord is not exist!");
+                }
+                return rc_pin;
+              };
+              rc_segment_list.emplace_back(getRCPin(routing_segment.get_first()), getRCPin(routing_segment.get_second()));
+            }
+          }
+          return rc_segment_list;
         };
-        rc_segment_list.emplace_back(getRCPin(routing_segment.get_first()), getRCPin(routing_segment.get_second()));
-      }
-    }
-    return rc_segment_list;
-  };
   auto getRctNode = [](ista::TimingEngine* timing_engine, ista::Netlist* sta_net_list, ista::Net* ista_net, RCPin& rc_pin) {
     ista::RctNode* rct_node = nullptr;
     if (rc_pin._is_real_pin) {
@@ -1780,10 +1775,10 @@ std::vector<Segment<PlanarCoord>> RTInterface::getPlanarTopoList(std::vector<Pla
 {
   std::vector<Segment<PlanarCoord>> planar_topo_list;
   if (planar_coord_list.size() > 1) {
-    size_t point_num = planar_coord_list.size();
+    int32_t point_num = static_cast<int32_t>(planar_coord_list.size());
     Flute::DTYPE* x_list = (Flute::DTYPE*) malloc(sizeof(Flute::DTYPE) * (point_num));
     Flute::DTYPE* y_list = (Flute::DTYPE*) malloc(sizeof(Flute::DTYPE) * (point_num));
-    for (size_t i = 0; i < point_num; i++) {
+    for (int32_t i = 0; i < point_num; i++) {
       x_list[i] = planar_coord_list[i].get_x();
       y_list[i] = planar_coord_list[i].get_y();
     }

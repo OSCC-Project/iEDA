@@ -437,6 +437,14 @@ void WirelengthEval::evalNetInfo()
   }
 }
 
+void WirelengthEval::evalNetFlute()
+{
+  auto name_pointset = getNamePointSet();
+  for (const auto& [net_name, point_set] : name_pointset) {
+    _name_flute[net_name] = evalNetFLUTE(point_set);
+  }
+}
+
 int32_t WirelengthEval::findHPWL(std::string net_name)
 {
   auto it = _name_hpwl.find(net_name);

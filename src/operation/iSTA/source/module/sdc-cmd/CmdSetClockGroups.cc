@@ -39,6 +39,10 @@ CmdSetClockGroups::CmdSetClockGroups(const char* cmd_name) : TclCmd(cmd_name) {
       new TclSwitchOption("-physically_exclusive");
   addOption(physically_exclusive_option);
 
+  auto* logically_exclusive =
+  new TclSwitchOption("-logically_exclusive");
+  addOption(logically_exclusive);
+
   auto* group = new TclStringListListOption("-group", 0);
   addOption(group);
 }

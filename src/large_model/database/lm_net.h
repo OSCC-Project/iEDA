@@ -72,6 +72,7 @@ struct LmNetFeature
   std::vector<std::string> drc_type = {};
   int64_t volume = 0;
   std::vector<int> layer_ratio = {};
+  int rsmt = 0;
 };
 
 static int64_t wire_id_index = 0;
@@ -112,6 +113,41 @@ class LmNetWire
   std::map<int, std::set<int>> _patchs;
 };
 
+struct LmPin
+{
+  int pin_id = -1;
+  std::string pin_name = "";
+  std::string instance_name = "";
+  bool is_driver = false;
+};
+
+
+struct NetRoutingPoint {
+  int x;
+  int y;
+  int layer_id;
+};
+
+struct NetRoutingVertex {
+  size_t id;
+  bool is_pin;
+  bool is_driver_pin;
+  NetRoutingPoint point;
+};
+
+struct NetRoutingEdge {
+  size_t source_id;
+  size_t target_id;
+
+  std::vector<NetRoutingPoint> path;
+};
+
+struct NetRoutingGraph {
+  std::vector<NetRoutingVertex> vertices;
+  std::vector<NetRoutingEdge> edges;
+};
+
+
 class LmNet
 {
  public:
@@ -123,21 +159,26 @@ class LmNet
   std::vector<LmNetWire>& get_wires() { return _wires; }
   std::vector<int>& get_pin_ids() { return _pin_ids; }
   LmNetFeature* get_feature(bool b_create = false);
-
+  std::map<int, LmPin>& get_pin_list() { return _pin_list; }
+  NetRoutingGraph get_routing_graph() { return _routing_graph; }
   // setter
   void set_net_id(int net_id) { _net_id = net_id; }
+  void set_routing_graph(const NetRoutingGraph& routing_graph) { _routing_graph = routing_graph; }
 
   // operator
   void addWire(LmNetWire wire);
   void clearWire() { _wires.clear(); }
   void addPinId(int id) { _pin_ids.push_back(id); }
+  void addPin(int id, LmPin pin) { _pin_list.insert(std::make_pair(id, pin)); }
   LmNetWire* findWire(int64_t wire_id);
 
  private:
   int _net_id = -1;
   std::vector<LmNetWire> _wires;
   std::vector<int> _pin_ids;
+  std::map<int, LmPin> _pin_list;
   LmNetFeature* _feature = nullptr;
+  NetRoutingGraph _routing_graph;
 };
 
 class LmGraph

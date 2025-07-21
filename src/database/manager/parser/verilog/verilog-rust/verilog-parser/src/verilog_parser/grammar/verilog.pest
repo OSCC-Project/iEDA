@@ -4,19 +4,20 @@ range_from = { decimal_digits+ }
 range_to = { decimal_digits+ }
 bus_slice  = { "[" ~ range_from ~ ":" ~ range_to ~ "]" }
 
-scalar_constant = { "1'b0" | "1'b1" | "1'B0" | "1'B1" | "'b0" | "'b1" | "'B0" | "'B1" | "1" | "0" | "2'b00"}
+scalar_constant = { "1'b0" | "1'b1" | "1'h0" | "1'h1" | "1'B0" | "1'B1" | "'b0" | "'b1" | "'B0" | "'B1" | "1" | "0" | "2'b00"}
 
 line_comment      = _{ "//" ~ (!("\n") ~ ASCII)* ~ ("\n" | EOI) }
 multiline_comment = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 COMMENT = _{ line_comment | multiline_comment }
 
-char = _{ ASCII_ALPHANUMERIC | "_" | "\\" | "[" | "]" | "/" | ":" | "$" | "." | "'" | "-" }
+no_equal_char = _{ASCII_ALPHANUMERIC | "_" | "\\" | "[" | "]" | "/" | ":" | "$" | "." | "'" | "-"}
+char = _{ no_equal_char | "=" }
 
 // Donnot deal with yosys with (* top =  1  *)
 yosys_hierarchy_declaration = {"(* top =" ~ decimal_digits ~ "*)" }
 
 //(assign_port_or_wire_id donnot contain the whitespace.)
-assign_port_or_wire_id = @{ (char+ ~ " " ~ char+) | char+ } 
+assign_port_or_wire_id = @{ (char+ ~ " " ~ no_equal_char+) | char+ } 
 port_or_wire_id = @{ (char+ ~ " " ~ char+) | char+ }
 port_list = { port_or_wire_id ~ ("," ~ port_or_wire_id)* }
 // To do (.v before DC)

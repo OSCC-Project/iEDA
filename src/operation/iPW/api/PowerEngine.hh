@@ -29,6 +29,7 @@
 #include "Power.hh"
 #include "Type.hh"
 #include "api/TimingEngine.hh"
+#include "api/TimingIDBAdapter.hh"
 
 namespace ipower {
 
@@ -80,6 +81,34 @@ class PowerEngine {
   // api for build only macro connection.
   std::vector<MacroConnection> buildMacroConnectionMap(unsigned max_hop);
 
+  unsigned buildPGNetWireTopo();
+  unsigned readPGSpef(const char* spef_file) { return _ipower->readPGSpef(spef_file); }
+
+  void resetIRAnalysisData();
+  auto* getRustPGRCData() { return _ipower->get_rust_pg_rc_data(); }
+  unsigned runIRAnalysis(std::string power_net_name) {
+    bool is_ok = false;
+    if (!getRustPGRCData()) {
+      is_ok = buildPGNetWireTopo();
+    }
+
+    if (!is_ok) {
+      return 0;
+    }
+
+    return _ipower->runIRAnalysis(power_net_name);
+  }
+  std::map<ista::Instance*, double> getInstanceIRDrop();
+
+  std::map<ista::Instance::Coordinate, double> displayPowerMap() {
+    return _ipower->displayInstancePowerMap();
+  }
+  std::map<ista::Instance::Coordinate, double> displayIRDropMap();
+
+  unsigned reportIRAnalysis() {
+    return _ipower->reportIRAnalysis();
+  }
+
 #ifdef USE_GPU
   std::vector<MacroConnection> buildMacroConnectionMapWithGPU(unsigned max_hop);
 #endif
@@ -90,6 +119,8 @@ class PowerEngine {
 
   Power *_ipower = nullptr;
   ista::TimingEngine *_timing_engine = nullptr;
+
+  IRPGNetlistBuilder _pg_netlist_builder;
 
   // Singleton power engine.
   static PowerEngine *_power_engine;

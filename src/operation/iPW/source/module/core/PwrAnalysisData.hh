@@ -71,7 +71,7 @@ class PwrLeakageData : public PwrAnalysisData {
   }
 
  private:
-  double _leakage_power;
+  double _leakage_power; //!< unit is W.
 };
 
 /**
@@ -92,7 +92,7 @@ class PwrInternalData : public PwrAnalysisData {
   }
 
  private:
-  double _internal_power;
+  double _internal_power; //!< unit is W.
 };
 
 /**
@@ -113,6 +113,6 @@ class PwrSwitchData : public PwrAnalysisData {
   }
 
  private:
-  double _switch_power;
+  double _switch_power; //!< Unit is W.
 };
 }  // namespace ipower

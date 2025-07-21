@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.11)
 set(CMAKE_CXX_STANDARD 20)
 
 find_package(TCL 8.6 QUIET)
@@ -11,10 +11,15 @@ endif(TCL_FOUND)
 
 aux_source_directory(./ SRC)
 set(LINK_tcl "tcl8.6")
+find_library(TCL_STATIC_LIB 
+  NAMES libtcl8.6.a
+  PATHS /usr/lib/x86_64-linux-gnu
+  NO_DEFAULT_PATH
+)
 
-if(BUILD_STATIC_LIB)
+if(BUILD_STATIC_LIB AND TCL_STATIC_LIB)
+  set(LINK_tcl ${TCL_STATIC_LIB})
   add_library(tcl STATIC ${SRC})
-  # set(LINK_tcl "libtcl8.6.a")
 else()
   add_library(tcl SHARED ${SRC})
 endif()

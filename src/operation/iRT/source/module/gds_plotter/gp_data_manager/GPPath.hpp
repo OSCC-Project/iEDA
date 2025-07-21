@@ -24,8 +24,7 @@ namespace irt {
 class GPPath : public Segment<PlanarCoord>
 {
  public:
-  GPPath(const Segment<PlanarCoord>& segment, const int32_t layer_idx, const int32_t data_type, const int32_t width)
-      : Segment<PlanarCoord>(segment)
+  GPPath(const Segment<PlanarCoord>& segment, const int32_t layer_idx, const int32_t data_type, const int32_t width) : Segment<PlanarCoord>(segment)
   {
     _layer_idx = layer_idx;
     _data_type = data_type;

@@ -27,6 +27,7 @@
 #include "sdc/SdcConstrain.hh"
 #include "sdc/SdcSetInputTransition.hh"
 #include "sta/Sta.hh"
+#include "sdc/SdcAllPorts.hh"
 
 namespace ista {
 CmdSetInputTransition::CmdSetInputTransition(const char* cmd_name)
@@ -113,9 +114,16 @@ unsigned CmdSetInputTransition::exec() {
   std::set<DesignObject*> pin_ports;
   for (auto obj : pin_port_list) {
     std::visit(overloaded{
-                   [](SdcCommandObj* sdc_obj) {
-                     LOG_FATAL
-                         << "set_input_transition not support sdc obj yet.";
+                   [&pin_ports](SdcCommandObj* sdc_obj) {
+                     if (sdc_obj->isAllInputPorts()) {
+                       auto* all_input_ports =
+                           dynamic_cast<SdcAllInputPorts*>(sdc_obj);
+                       auto& input_ports = all_input_ports->get_input_ports();
+                       std::ranges::for_each(input_ports,
+                                             [&pin_ports](auto* input_port) {
+                                               pin_ports.insert(input_port);
+                                             });
+                     }
                    },
                    [&pin_ports](DesignObject* design_obj) {
                      pin_ports.insert(design_obj);

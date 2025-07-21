@@ -36,8 +36,32 @@ void register_ista(py::module& m)
   m.def("link_design", linkDesign, ("cell_name"));
   m.def("read_spef", readSpef, ("file_name"));
   m.def("read_sdc", readSdc, py::arg("file_name"));
+
+  m.def("get_net_name", getNetName, py::arg("pin_port_name"));
+  m.def("get_segment_capacitance", getSegmentCapacitance, py::arg("layer_id"), py::arg("segment_length"));
+  m.def("get_segment_resistance", getSegmentResistance, py::arg("layer_id"), py::arg("segment_length"));
+  
+  m.def("make_rc_tree_inner_node", makeRCTreeInnerNode, py::arg("net_name"), py::arg("id"), py::arg("cap"));
+  m.def("make_rc_tree_obj_node", makeRCTreeObjNode, py::arg("pin_port_name"), py::arg("cap"));
+  m.def("make_rc_tree_edge", makeRCTreeEdge, py::arg("net_name"), py::arg("node1"), py::arg("node2"), py::arg("res"));
+  m.def("update_rc_tree_info", updateRCTreeInfo, py::arg("net_name"));
+  m.def("update_timing", updateTiming);
+  m.def("report_sta", reportSta);
+
   m.def("report_timing", reportTiming, py::arg("digits"), py::arg("delay_type"), py::arg("exclude_cell_names"), py::arg("derate"));
 
   m.def("get_used_libs", get_used_libs);
+
+  // get wire timing data
+  py::class_<WireTimingData>(m, "WireTimingData")
+  .def_readwrite("from_node_name", &WireTimingData::_from_node_name)
+  .def_readwrite("to_node_name", &WireTimingData::_to_node_name)
+  .def_readwrite("wire_resistance", &WireTimingData::_wire_resistance)
+  .def_readwrite("wire_capacitance", &WireTimingData::_wire_capacitance)
+  .def_readwrite("wire_from_slew", &WireTimingData::_wire_from_slew)
+  .def_readwrite("wire_to_slew", &WireTimingData::_wire_to_slew)
+  .def_readwrite("wire_delay", &WireTimingData::_wire_delay);
+
+  m.def("get_wire_timing_data", getWireTimingData);
 }
 }  // namespace python_interface

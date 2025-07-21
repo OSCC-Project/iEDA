@@ -27,10 +27,7 @@ class GPBoundary : public LayerRect
  public:
   GPBoundary() = default;
   GPBoundary(const LayerRect& rect, const int32_t data_type) : LayerRect(rect) { _data_type = data_type; }
-  GPBoundary(const PlanarRect& rect, const int32_t layer_idx, const int32_t data_type) : LayerRect(rect, layer_idx)
-  {
-    _data_type = data_type;
-  }
+  GPBoundary(const PlanarRect& rect, const int32_t layer_idx, const int32_t data_type) : LayerRect(rect, layer_idx) { _data_type = data_type; }
   ~GPBoundary() = default;
   // getter
   int32_t get_data_type() const { return _data_type; }

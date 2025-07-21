@@ -188,32 +188,20 @@ std::tuple<bool, std::vector<std::string>, std::vector<std::string>, int> DataMa
 {
   std::cout << "[CheckNet Info] Begin check connected ..." << std::endl;
 
-  std::vector<std::string> disconnected_net_list;
-  std::vector<std::string> one_pin_net_list;
+  std::map<int, std::vector<std::string>> pin_num_disconnected_net_map;
 
   omp_lock_t lck;
   omp_init_lock(&lck);
 
 #pragma omp parallel for schedule(dynamic)
-
   for (auto net : _design->get_net_list()->get_net_list()) {
-    if (net->get_pin_number() < 2) {
-      omp_set_lock(&lck);
-
-      one_pin_net_list.push_back(net->get_net_name());
-
-      omp_unset_lock(&lck);
-
-      continue;
-    }
-
     CheckNet check_net(net);
     CheckInfo check_result = check_net.checkNetConnection();
 
     if (CheckInfo::kDisconnected == check_result) {
       omp_set_lock(&lck);
 
-      disconnected_net_list.push_back(net->get_net_name());
+      pin_num_disconnected_net_map[std::min(3, net->get_pin_number())].push_back(net->get_net_name());
 
       omp_unset_lock(&lck);
     }
@@ -221,20 +209,37 @@ std::tuple<bool, std::vector<std::string>, std::vector<std::string>, int> DataMa
 
   omp_destroy_lock(&lck);
 
-  for (auto disconnected_net : disconnected_net_list) {
-    std::cout << "[CheckNet Summary] Disconneted net [pin number >= 2] : " << disconnected_net << std::endl;
+  for (auto disconnected_net : pin_num_disconnected_net_map[2]) {
+    std::cout << "[CheckNet Info] Disconneted net [pin number == 2] : " << disconnected_net << std::endl;
   }
-
-  if (one_pin_net_list.size() > 0) {
-    std::cout << "[CheckNet Summary] Disconneted nets [pin number < 2] : " << one_pin_net_list.size() << " / "
+  for (auto disconnected_net : pin_num_disconnected_net_map[3]) {
+    std::cout << "[CheckNet Info] Disconneted net [pin number >= 3] : " << disconnected_net << std::endl;
+  }
+  if (!pin_num_disconnected_net_map[0].empty()) {
+    std::cout << "[CheckNet Info] Disconneted net [pin number == 0] : " << pin_num_disconnected_net_map[0].size() << " / "
               << _design->get_net_list()->get_net_list().size() << std::endl;
   }
-
-  if (disconnected_net_list.size() > 0) {
-    std::cout << "[CheckNet Summary] Disconneted nets [pin number >= 2] : " << disconnected_net_list.size() << " / "
+  if (!pin_num_disconnected_net_map[1].empty()) {
+    std::cout << "[CheckNet Info] Disconneted net [pin number == 1] : " << pin_num_disconnected_net_map[1].size() << " / "
               << _design->get_net_list()->get_net_list().size() << std::endl;
   }
-
+  if (!pin_num_disconnected_net_map[2].empty()) {
+    std::cout << "[CheckNet Info] Disconneted net [pin number == 2] : " << pin_num_disconnected_net_map[2].size() << " / "
+              << _design->get_net_list()->get_net_list().size() << std::endl;
+  }
+  if (!pin_num_disconnected_net_map[3].empty()) {
+    std::cout << "[CheckNet Info] Disconneted net [pin number >= 3] : " << pin_num_disconnected_net_map[3].size() << " / "
+              << _design->get_net_list()->get_net_list().size() << std::endl;
+  }
+  std::vector<std::string> disconnected_net_list;
+  for (size_t i = 0; i <= 3; i++) {
+    disconnected_net_list.insert(disconnected_net_list.end(), pin_num_disconnected_net_map[i].begin(),
+                                 pin_num_disconnected_net_map[i].end());
+  }
+  std::vector<std::string> one_pin_net_list;
+  for (size_t i = 0; i <= 1; i++) {
+    one_pin_net_list.insert(one_pin_net_list.end(), pin_num_disconnected_net_map[i].begin(), pin_num_disconnected_net_map[i].end());
+  }
   bool b_result = disconnected_net_list.size() > 0 ? false : true;
 
   int num_net = _design->get_net_list()->get_net_list().size();

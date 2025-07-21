@@ -16,8 +16,9 @@
 // ***************************************************************************************
 #pragma once
 
+// #include <boost/gil/extension/io/bmp.hpp>
 #include <boost/gil.hpp>
-#include <boost/gil/extension/io/bmp.hpp>
+
 #include <boost/gil/extension/toolbox/image_types/indexed_image.hpp>
 #include <boost/gil/image_view_factory.hpp>
 #include <boost/gil/typedefs.hpp>

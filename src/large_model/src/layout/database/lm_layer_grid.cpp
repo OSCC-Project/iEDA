@@ -34,6 +34,7 @@ namespace ilm {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 LmLayerGrid::~LmLayerGrid()
 {
   //   for (int row_id = 0; row_id < gridInfoInst.node_row_num; ++row_id) {
@@ -44,6 +45,10 @@ LmLayerGrid::~LmLayerGrid()
   //       }
   //     }
   //   }
+    // 释放所有节点
+  for (auto& pair : _node_map) {
+      delete pair.second;
+  }
 }
 
 std::pair<int, int> LmLayerGrid::buildNodeMatrix(int order)
@@ -51,23 +56,45 @@ std::pair<int, int> LmLayerGrid::buildNodeMatrix(int order)
   gridInfoInst.node_x_start = gridInfoInst.x_start % gridInfoInst.x_step;
   gridInfoInst.node_y_start = gridInfoInst.y_start % gridInfoInst.y_step;
 
-  int row_num = (gridInfoInst.ury - gridInfoInst.node_y_start) / gridInfoInst.y_step;
-  int col_num = (gridInfoInst.urx - gridInfoInst.node_x_start) / gridInfoInst.x_step;
+  _row_num = (gridInfoInst.ury - gridInfoInst.node_y_start) / gridInfoInst.y_step;
+  _col_num = (gridInfoInst.urx - gridInfoInst.node_x_start) / gridInfoInst.x_step;
 
-  _node_matrix = std::vector<std::vector<LmNode*>>(row_num, std::vector<LmNode*>(col_num, nullptr));
+  gridInfoInst.node_row_num = _row_num;
+  gridInfoInst.node_col_num = _col_num;
 
-  gridInfoInst.node_row_num = _node_matrix.size();
-  gridInfoInst.node_col_num = _node_matrix[0].size();
-
-  return std::make_pair(gridInfoInst.node_row_num, gridInfoInst.node_col_num);
+  return std::make_pair(_row_num, _col_num);
 }
 
 LmNode* LmLayerGrid::get_node(int row_id, int col_id, bool b_create)
-{
-  if (_node_matrix[row_id][col_id] == nullptr && b_create) {
-    _node_matrix[row_id][col_id] = new LmNode();
+{  
+  std::pair<int, int> key = {row_id, col_id};
+  
+  // 尝试查找节点
+  auto it = _node_map.find(key);
+  if (it != _node_map.end()) {
+      return it->second;
   }
-  return _node_matrix[row_id][col_id];
+  
+  // 如果不存在且不需要创建，返回nullptr
+  if (!b_create) {
+      return nullptr;
+  }
+  
+  // 创建新节点
+  LmNode* new_node = new LmNode();
+  
+  // 使用原子操作尝试插入
+  // insert_or_assign 不适用于 TBB，使用 insert 代替
+  auto result = _node_map.insert({key, new_node});
+  
+  if (!result.second) {
+      // 插入失败，说明其他线程已经创建了节点
+      delete new_node;
+      return result.first->second;
+  }
+  
+  // 插入成功，返回新节点
+  return new_node;
 }
 
 LmNode* LmLayerGrid::findNode(int x, int y)
@@ -76,5 +103,18 @@ LmNode* LmLayerGrid::findNode(int x, int y)
 
   return get_node(row_id, col_id);
 }
+
+std::vector<LmNode*> LmLayerGrid::get_all_nodes() 
+{
+  std::vector<LmNode*> nodes;
+  nodes.reserve(_node_map.size());
+  
+  for (const auto& pair : _node_map) {
+      nodes.push_back(pair.second);
+  }
+  
+  return nodes;
+}
+
 
 }  // namespace ilm

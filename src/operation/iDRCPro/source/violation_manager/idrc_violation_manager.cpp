@@ -46,7 +46,7 @@ void DrcViolationManager::set_net_ids(DrcEngineManager* engine_manager)
     std::string rule_name = idrc::GetViolationTypeName()(type);
     DEBUGOUTPUT(DEBUGHIGHLIGHT("rule_name:\t") << rule_name << ("\tsize:\t") << violation_list.size());
 
-#pragma omp parallel for
+// #pragma omp parallel for
     for (auto* violation : violation_list) {
       if (violation == nullptr) {
         continue;
@@ -77,7 +77,7 @@ void DrcViolationManager::set_net_ids(DrcEngineManager* engine_manager)
           }
           violation_rect->set_net_ids(net_ids);
 
-          DEBUGOUTPUT(DEBUGHIGHLIGHT("net_ids:\t") << net_ids.size());
+          // DEBUGOUTPUT(DEBUGHIGHLIGHT("net_ids:\t") << net_ids.size());
         }
       }
     }

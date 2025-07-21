@@ -5,3 +5,4 @@ buildTGNodeMap:构建Graph,只有节点,其他信息后续构建
 buildTGNodeNeighbor:将所有节点连接
 buildOrientSupply:构建Graph的supply
 generateTGModel:生成线网的拓扑
+    routeTGNet:通过topo逐个生成布线结果

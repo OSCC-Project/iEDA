@@ -116,7 +116,9 @@ void LmLayoutInit::initLayers()
       auto& grid = layout_layer.get_grid();
       grid.layer_order = index;
 
-      layout_layer_map.insert(std::make_pair(index, layout_layer));
+      // layout_layer_map.insert(std::make_pair(index, layout_layer));
+      layout_layer_map.emplace(index, std::move(layout_layer));
+
 
       index++;
 
@@ -437,7 +439,6 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, LmNodeTYpe type, i
     if (layer_shape->is_via()) {
       for (IdbRect* rect : layer_shape->get_rect_list()) {
         /// build grid
-        auto& grid = layout_layer->get_grid();
         auto [row_id, col_id] = gridInfoInst.findNodeID(rect->get_middle_point_x(), rect->get_middle_point_y());
         auto* node = grid.get_node(row_id, col_id, true);
         node->set_col_id(col_id);
@@ -638,20 +639,46 @@ void LmLayoutInit::initNets()
   for (int net_id = 0; net_id < (int) idb_nets->get_net_list().size(); ++net_id) {
     /// init net id map
     auto* idb_net = idb_nets->get_net_list()[net_id];
-    /// ignore net if pin number < 2
-    if (idb_net->get_pin_number() < 2) {
+    auto* driver_pin = idb_net->get_driving_pin();
+    /// ignore net if pin number < 2 and no driver pin
+    if (idb_net->get_pin_number() < 2 || driver_pin == nullptr ) {
       continue;
     }
     _layout->add_net_map(net_id, idb_net->get_net_name());
 
     auto* lm_net = graph.addNet(net_id);
+    if (lm_net == nullptr) {
+      continue;
+    }
 
-    for (auto* idb_inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
-      if (lm_net == nullptr) {
-        continue;
-      }
+    {
+      auto instance_name = driver_pin->is_io_pin() ? "" : driver_pin->get_instance()->get_name();
+
+      LmPin lm_pin;
+      lm_pin.pin_id = pin_id;
+      lm_pin.pin_name = driver_pin->get_pin_name();
+      lm_pin.instance_name = instance_name;
+      lm_pin.is_driver = true;
+      lm_net->addPin(pin_id, lm_pin);
+
       lm_net->addPinId(pin_id);
-      _layout->add_pin_map(pin_id, idb_inst_pin->get_instance()->get_name(), idb_inst_pin->get_pin_name());
+      _layout->add_pin_map(pin_id, instance_name, driver_pin->get_pin_name());
+
+      pin_id++;
+    }
+
+    for (auto* load_pin : idb_net->get_load_pins()) {
+      auto instance_name = load_pin->is_io_pin() ? "" : load_pin->get_instance()->get_name();
+
+      LmPin lm_pin;
+      lm_pin.pin_id = pin_id;
+      lm_pin.pin_name = load_pin->get_pin_name();
+      lm_pin.instance_name = instance_name;
+      lm_pin.is_driver = false;
+      lm_net->addPin(pin_id, lm_pin);
+
+      lm_net->addPinId(pin_id);
+      _layout->add_pin_map(pin_id, instance_name, load_pin->get_pin_name());
 
       pin_id++;
     }
@@ -669,8 +696,9 @@ void LmLayoutInit::initNets()
 #pragma omp parallel for schedule(dynamic)
   for (int net_id = 0; net_id < (int) idb_nets->get_net_list().size(); ++net_id) {
     auto* idb_net = idb_nets->get_net_list()[net_id];
-    /// ignore net if pin number < 2
-    if (idb_net->get_pin_number() < 2) {
+    auto* driver_pin = idb_net->get_driving_pin();
+    /// ignore net if pin number < 2 and no driver pin
+    if (idb_net->get_pin_number() < 2 || driver_pin == nullptr ) {
       continue;
     }
 

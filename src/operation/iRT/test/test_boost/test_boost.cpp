@@ -48,18 +48,12 @@ class PlanarCoord
 
 struct CmpPlanarCoordByXASC
 {
-  bool operator()(const PlanarCoord& a, const PlanarCoord& b) const
-  {
-    return a.get_x() != b.get_x() ? a.get_x() < b.get_x() : a.get_y() < b.get_y();
-  }
+  bool operator()(const PlanarCoord& a, const PlanarCoord& b) const { return a.get_x() != b.get_x() ? a.get_x() < b.get_x() : a.get_y() < b.get_y(); }
 };
 
 struct CmpPlanarCoordByYASC
 {
-  bool operator()(const PlanarCoord& a, const PlanarCoord& b) const
-  {
-    return a.get_y() != b.get_y() ? a.get_y() < b.get_y() : a.get_x() < b.get_x();
-  }
+  bool operator()(const PlanarCoord& a, const PlanarCoord& b) const { return a.get_y() != b.get_y() ? a.get_y() < b.get_y() : a.get_x() < b.get_x(); }
 };
 
 class PlanarRect
@@ -361,20 +355,17 @@ class RTUtil
     return getCuttingRectListByBoost(master_list, rect_list, true);
   }
 
-  static std::vector<PlanarRect> getOpenCuttingRectListByBoost(const std::vector<PlanarRect>& master_list,
-                                                               const std::vector<PlanarRect>& rect_list)
+  static std::vector<PlanarRect> getOpenCuttingRectListByBoost(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
   {
     return getCuttingRectListByBoost(master_list, rect_list, true);
   }
 
-  static std::vector<PlanarRect> getClosedCuttingRectListByBoost(const std::vector<PlanarRect>& master_list,
-                                                                 const std::vector<PlanarRect>& rect_list)
+  static std::vector<PlanarRect> getClosedCuttingRectListByBoost(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
   {
     return getCuttingRectListByBoost(master_list, rect_list, false);
   }
 
-  static std::vector<PlanarRect> getCuttingRectListByBoost(const std::vector<PlanarRect>& master_list,
-                                                           const std::vector<PlanarRect>& rect_list, bool is_open)
+  static std::vector<PlanarRect> getCuttingRectListByBoost(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list, bool is_open)
   {
     std::vector<PlanarRect> result_list;
 
@@ -476,20 +467,17 @@ class RTUtil
 
 #if 1  // overlap
 
-  static std::vector<PlanarRect> getOpenOverlapRectListByBoost(const std::vector<PlanarRect>& master_list,
-                                                               const std::vector<PlanarRect>& rect_list)
+  static std::vector<PlanarRect> getOpenOverlapRectListByBoost(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
   {
     return getOverlapRectListByBoost(master_list, rect_list, true);
   }
 
-  static std::vector<PlanarRect> getClosedOverlapRectListByBoost(const std::vector<PlanarRect>& master_list,
-                                                                 const std::vector<PlanarRect>& rect_list)
+  static std::vector<PlanarRect> getClosedOverlapRectListByBoost(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list)
   {
     return getOverlapRectListByBoost(master_list, rect_list, false);
   }
 
-  static std::vector<PlanarRect> getOverlapRectListByBoost(const std::vector<PlanarRect>& master_list,
-                                                           const std::vector<PlanarRect>& rect_list, bool is_open)
+  static std::vector<PlanarRect> getOverlapRectListByBoost(const std::vector<PlanarRect>& master_list, const std::vector<PlanarRect>& rect_list, bool is_open)
   {
     std::vector<PlanarRect> result_list;
 
@@ -544,9 +532,8 @@ class RTUtil
 
 #if 1  // reduce
 
-  static std::vector<PlanarRect> getOpenShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
-                                                                int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
-                                                                int32_t ur_y_minus_offset)
+  static std::vector<PlanarRect> getOpenShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset, int32_t ll_y_add_offset,
+                                                                int32_t ur_x_minus_offset, int32_t ur_y_minus_offset)
   {
     return getShrinkedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, true);
   }
@@ -556,16 +543,14 @@ class RTUtil
     return getShrinkedRectListByBoost(master_list, shrinked_offset, shrinked_offset, shrinked_offset, shrinked_offset, false);
   }
 
-  static std::vector<PlanarRect> getClosedShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
-                                                                  int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
-                                                                  int32_t ur_y_minus_offset)
+  static std::vector<PlanarRect> getClosedShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset, int32_t ll_y_add_offset,
+                                                                  int32_t ur_x_minus_offset, int32_t ur_y_minus_offset)
   {
     return getShrinkedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, false);
   }
 
-  static std::vector<PlanarRect> getShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
-                                                            int32_t ll_y_add_offset, int32_t ur_x_minus_offset, int32_t ur_y_minus_offset,
-                                                            bool is_open)
+  static std::vector<PlanarRect> getShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset, int32_t ll_y_add_offset,
+                                                            int32_t ur_x_minus_offset, int32_t ur_y_minus_offset, bool is_open)
   {
     std::vector<PlanarRect> result_list;
 

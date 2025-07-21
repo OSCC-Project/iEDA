@@ -27,6 +27,7 @@ enum class GPDataType
   kClose,
   kInfo,
   kNeighbor,
+  kGraphShape,
   kKey,
   kPath,
   kShape,
@@ -57,6 +58,9 @@ struct GetGPDataTypeName
       case GPDataType::kNeighbor:
         data_type_name = "neighbor";
         break;
+      case GPDataType::kGraphShape:
+        data_type_name = "graph_shape";
+        break;
       case GPDataType::kKey:
         data_type_name = "key";
         break;
@@ -68,9 +72,6 @@ struct GetGPDataTypeName
         break;
       case GPDataType::kAccessPoint:
         data_type_name = "access_point";
-        break;
-      case GPDataType::kBestCoord:
-        data_type_name = "best_coord";
         break;
       case GPDataType::kAxis:
         data_type_name = "axis";

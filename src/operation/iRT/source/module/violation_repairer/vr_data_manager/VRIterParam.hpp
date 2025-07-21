@@ -22,8 +22,8 @@ class VRIterParam
 {
  public:
   VRIterParam() = default;
-  VRIterParam(int32_t size, int32_t offset, int32_t schedule_interval, double fixed_rect_unit, double routed_rect_unit,
-              double violation_unit, int32_t max_routed_times)
+  VRIterParam(int32_t size, int32_t offset, int32_t schedule_interval, double fixed_rect_unit, double routed_rect_unit, double violation_unit,
+              int32_t max_routed_times)
   {
     _size = size;
     _offset = offset;

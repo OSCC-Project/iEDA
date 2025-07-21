@@ -25,10 +25,11 @@ std::unique_ptr<PwrReportInstanceTable> PwrReportInstance::createReportTable(
   (*report_tbl) << TABLE_HEAD;
   /* Fill each cell with operator[] */
   (*report_tbl)[0][0] = "Instance Name";
-  (*report_tbl)[0][1] = "Internal Power";
-  (*report_tbl)[0][2] = "Switch Power";
-  (*report_tbl)[0][3] = "Leakage Power";
-  (*report_tbl)[0][4] = "Total Power";
+  (*report_tbl)[0][1] = "Nominal Voltage";
+  (*report_tbl)[0][2] = "Internal Power";
+  (*report_tbl)[0][3] = "Switch Power";
+  (*report_tbl)[0][4] = "Leakage Power";
+  (*report_tbl)[0][5] = "Total Power";
   (*report_tbl) << TABLE_ENDLINE;
 
   return report_tbl;

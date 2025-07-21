@@ -66,8 +66,10 @@ TEST_F(LibDataGPUTest, test) {
   auto& lib_arcs_gpu =
       timing_engine->get_ista()->get_lib_gpu_arcs();
   Lib_Data_GPU lib_data_gpu;
-  build_lib_data_gpu(lib_data_gpu, lib_arcs_gpu);
-  double ret_val = find_value_test(lib_data_gpu, 0.0449324, 0.0449324);
+  std::vector<Lib_Table_GPU> lib_tables_gpu;
+  std::vector<Lib_Table_GPU*> lib_gpu_table_ptrs;
+  build_lib_data_gpu(lib_data_gpu, lib_tables_gpu, lib_gpu_table_ptrs, lib_arcs_gpu);
+  find_value_test(lib_data_gpu, 0.0449324, 0.0449324);
 
   double memory_delta = stats.memoryDelta();
   LOG_INFO << "memory usage " << memory_delta << "MB";

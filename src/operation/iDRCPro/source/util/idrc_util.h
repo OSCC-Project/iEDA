@@ -30,9 +30,9 @@ inline void hash_combine(std::size_t& seed, T const& v)
 
 namespace idrc {
 
-#define DEBUGCONDITION 0
+// #define DEBUGCONDITION 0
 
-#if DEBUGCONDITION
+#if DEBUG_IDRC_CONDITION
 #define DEBUGPRINT 1
 #define DEBUGCLOSE 0
 #else

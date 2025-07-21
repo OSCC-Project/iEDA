@@ -11,7 +11,14 @@ Do not modify this manually.
 #include <stdint.h>
 #include <stdlib.h>
 
+#define POWER_INNER_RESISTANCE 1e-3
+
 typedef struct HashMap_usize__f64 HashMap_usize__f64;
+
+/**
+ * IR PG node of the PG netlist.
+ */
+typedef struct RustIRPGNode RustIRPGNode;
 
 /**
  * The iterator for Rust hash map, temporarily write here.
@@ -20,6 +27,15 @@ typedef struct HashMapIterator {
     struct HashMap_usize__f64 *hashmap;
     Iter<uintptr_t, double> iter;
 } HashMapIterator;
+
+/**
+ * IR PG edge of the PG netlist.
+ */
+typedef struct RustIRPGEdge {
+    int64_t node1;
+    int64_t node2;
+    double resistance;
+} RustIRPGEdge;
 
 /**
  * Rust vec to C vec
@@ -50,6 +66,28 @@ bool hashmap_iterator_next(struct HashMapIterator *iterator, uintptr_t *out_key,
 void destroy_hashmap_iterator(struct HashMapIterator *iterator);
 
 const void *read_spef(const char *c_power_net_spef);
+
+/**
+ * create power ground node.
+ */
+const void *create_pg_node(void *c_pg_netlist, const struct RustIRPGNode *c_pg_node);
+
+/**
+ * create power ground edge.
+ */
+const void *create_pg_edge(const void *c_pg_netlist, const struct RustIRPGEdge *c_pg_edge);
+
+/**
+ * create power ground netlist.
+ */
+const void *create_pg_netlist(const char *c_power_net_name);
+
+/**
+ * estimate all pg netlist rc data.
+ */
+const void *create_rc_data(const void *c_pg_netlist_ptr, uintptr_t len);
+
+double get_sum_resistance(const void *c_rc_data, const char *c_net_name);
 
 struct RustNetConductanceData build_one_net_conductance_matrix_data(const void *c_rc_data,
                                                                     const char *c_net_name);

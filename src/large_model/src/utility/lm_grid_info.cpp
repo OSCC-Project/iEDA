@@ -36,15 +36,15 @@ LmPatchInfo* LmPatchInfo::_info_inst = nullptr;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int LmGridInfo::calculate_x(int col)
+int64_t LmGridInfo::calculate_x(int64_t col)
 {
-  int x = node_x_start + col * x_step;
+  int64_t x = node_x_start + col * x_step;
   return x > urx ? urx : x;
 }
 
-int LmGridInfo::calculate_y(int row)
+int64_t LmGridInfo::calculate_y(int64_t row)
 {
-  int y = node_y_start + row * y_step;
+  int64_t y = node_y_start + row * y_step;
   return y > ury ? ury : y;
 }
 

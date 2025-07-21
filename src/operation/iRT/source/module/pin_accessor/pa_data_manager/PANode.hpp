@@ -45,14 +45,8 @@ class PANode : public LayerCoord
   std::map<Orientation, int32_t>& get_orient_violation_number_map() { return _orient_violation_number_map; }
   // setter
   void set_neighbor_node_map(const std::map<Orientation, PANode*>& neighbor_node_map) { _neighbor_node_map = neighbor_node_map; }
-  void set_orient_fixed_rect_map(const std::map<Orientation, std::set<int32_t>>& orient_fixed_rect_map)
-  {
-    _orient_fixed_rect_map = orient_fixed_rect_map;
-  }
-  void set_orient_routed_rect_map(const std::map<Orientation, std::set<int32_t>>& orient_routed_rect_map)
-  {
-    _orient_routed_rect_map = orient_routed_rect_map;
-  }
+  void set_orient_fixed_rect_map(const std::map<Orientation, std::set<int32_t>>& orient_fixed_rect_map) { _orient_fixed_rect_map = orient_fixed_rect_map; }
+  void set_orient_routed_rect_map(const std::map<Orientation, std::set<int32_t>>& orient_routed_rect_map) { _orient_routed_rect_map = orient_routed_rect_map; }
   void set_orient_violation_number_map(const std::map<Orientation, int32_t>& orient_violation_number_map)
   {
     _orient_violation_number_map = orient_violation_number_map;

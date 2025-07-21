@@ -54,6 +54,7 @@ impl Clone for Box<dyn VerilogVirtualBaseID> {
 
 /// verilog id.
 #[derive(Debug, Clone)]
+#[derive(Default)]
 pub struct VerilogID {
     id: String,
 }
@@ -90,11 +91,6 @@ impl VerilogVirtualBaseID for VerilogID {
     }
 }
 
-impl Default for VerilogID {
-    fn default() -> Self {
-        VerilogID { id: String::new() }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct VerilogIndexID {
@@ -106,7 +102,7 @@ pub struct VerilogIndexID {
 impl VerilogIndexID {
     pub fn new(id: &str, index: i32) -> VerilogIndexID {
         let formatted_index_id = format!("{}[{}]", id, index);
-        VerilogIndexID { id: VerilogID::new(id), index: index, formatted_index_id: formatted_index_id }
+        VerilogIndexID { id: VerilogID::new(id), index, formatted_index_id }
     }
 
     #[allow(dead_code)]
@@ -125,7 +121,7 @@ impl VerilogVirtualBaseID for VerilogIndexID {
     }
 
     fn get_base_name(&self) -> &str {
-        &self.id.get_base_name()
+        self.id.get_base_name()
     }
 
     fn get_name(&self) -> &str {
@@ -155,9 +151,9 @@ impl VerilogSliceID {
         let formatted_slice_id = format!("{}[{}:{}]", id, range_from, range_to);
         VerilogSliceID {
             id: VerilogID::new(id),
-            range_from: range_from,
-            range_to: range_to,
-            formatted_slice_id: formatted_slice_id,
+            range_from,
+            range_to,
+            formatted_slice_id,
         }
     }
 
@@ -200,7 +196,7 @@ impl VerilogVirtualBaseID for VerilogSliceID {
     }
 
     fn get_base_name(&self) -> &str {
-        &self.id.get_base_name()
+        self.id.get_base_name()
     }
 
     fn get_name(&self) -> &str {
@@ -228,16 +224,16 @@ impl VerilogConstantID {
     pub fn new(bit_width: u32, value: &str) -> VerilogConstantID {
         let formatted_constant_id = format!("{}'{}", bit_width, value);
         VerilogConstantID {
-            bit_width: bit_width,
+            bit_width,
             value: VerilogID::new(value),
-            formatted_constant_id: formatted_constant_id,
+            formatted_constant_id,
         }
     }
 
     pub fn get_bit_width(&self) -> u32 {
         self.bit_width
     }
-
+    #[allow(dead_code)]
     pub fn get_value(&self) -> &VerilogID {
         &self.value
     }
@@ -253,7 +249,7 @@ impl VerilogVirtualBaseID for VerilogConstantID {
     }
 
     fn get_base_name(&self) -> &str {
-        &self.value.get_base_name()
+        self.value.get_base_name()
     }
 
     fn set_base_name(&mut self, id: &str) {
@@ -313,7 +309,7 @@ pub struct VerilogNetExpr {
 
 impl VerilogNetExpr {
     fn new(line_no: usize) -> VerilogNetExpr {
-        VerilogNetExpr { line_no: line_no }
+        VerilogNetExpr { line_no }
     }
 
     pub fn get_line_no(&self) -> usize {
@@ -329,7 +325,7 @@ pub struct VerilogNetIDExpr {
 
 impl VerilogNetIDExpr {
     pub fn new(line_no: usize, verilog_id: Box<dyn VerilogVirtualBaseID>) -> VerilogNetIDExpr {
-        VerilogNetIDExpr { net_expr: VerilogNetExpr::new(line_no), verilog_id: verilog_id }
+        VerilogNetIDExpr { net_expr: VerilogNetExpr::new(line_no), verilog_id }
     }
 
     pub fn get_net_expr(&self) -> &VerilogNetExpr {
@@ -368,7 +364,7 @@ pub struct VerilogNetConcatExpr {
 
 impl VerilogNetConcatExpr {
     pub fn new(line_no: usize, verilog_id_concat: Vec<Box<dyn VerilogVirtualBaseNetExpr>>) -> VerilogNetConcatExpr {
-        VerilogNetConcatExpr { net_expr: VerilogNetExpr::new(line_no), verilog_id_concat: verilog_id_concat }
+        VerilogNetConcatExpr { net_expr: VerilogNetExpr::new(line_no), verilog_id_concat }
     }
 
     pub fn get_net_expr(&self) -> &VerilogNetExpr {
@@ -390,7 +386,7 @@ impl VerilogVirtualBaseNetExpr for VerilogNetConcatExpr {
     }
 
     fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
-        &self.verilog_id_concat.first().unwrap().get_verilog_id()
+        self.verilog_id_concat.first().unwrap().get_verilog_id()
     }
 
     fn get_line_no(&self) -> usize {
@@ -411,7 +407,7 @@ pub struct VerilogConstantExpr {
 
 impl VerilogConstantExpr {
     pub fn new(line_no: usize, verilog_id: Box<dyn VerilogVirtualBaseID>) -> VerilogConstantExpr {
-        VerilogConstantExpr { net_expr: VerilogNetExpr::new(line_no), verilog_id: verilog_id }
+        VerilogConstantExpr { net_expr: VerilogNetExpr::new(line_no), verilog_id }
     }
 
     pub fn get_net_expr(&self) -> &VerilogNetExpr {
@@ -450,7 +446,7 @@ impl VerilogPortRefPortConnect {
         port_id: Box<dyn VerilogVirtualBaseID>,
         net_expr: Option<Box<dyn VerilogVirtualBaseNetExpr>>,
     ) -> VerilogPortRefPortConnect {
-        VerilogPortRefPortConnect { port_id: port_id, net_expr: net_expr }
+        VerilogPortRefPortConnect { port_id, net_expr }
     }
 
     pub fn get_port_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
@@ -517,7 +513,7 @@ pub struct VerilogStmt {
 
 impl VerilogStmt {
     fn new(line_no: usize) -> VerilogStmt {
-        VerilogStmt { line_no: line_no }
+        VerilogStmt { line_no }
     }
 
     pub fn get_line_no(&self) -> usize {
@@ -545,7 +541,7 @@ impl VerilogInst {
             stmt: VerilogStmt::new(line_no),
             inst_name: inst_name.to_string(), // add for other to do
             cell_name: cell_name.to_string(),
-            port_connections: port_connections,
+            port_connections,
         }
     }
 
@@ -625,7 +621,7 @@ impl VerilogInst {
             } else {
                 let borrowed_parent_module = parent_module.borrow();
                 let stmt = borrowed_parent_module.find_dcls_stmt(expr_net.get_verilog_id().get_base_name());
-                if !stmt.is_some() {
+                if stmt.is_none() {
                     println!("not found dcl stmt {}", expr_net.get_verilog_id().get_base_name());
                 }
                 if stmt.is_some() {
@@ -711,7 +707,7 @@ impl VerilogInst {
                 }
             }
         }
-        return range;
+        range
     }
 
     pub fn get_port_connect_net(
@@ -886,7 +882,7 @@ impl VerilogInst {
                 break;
             }
         }
-        return port_connect_net_option;
+        port_connect_net_option
     }
 }
 
@@ -917,7 +913,7 @@ impl VerilogAssign {
         left_net_expr: Box<dyn VerilogVirtualBaseNetExpr>,
         right_net_expr: Box<dyn VerilogVirtualBaseNetExpr>,
     ) -> VerilogAssign {
-        VerilogAssign { stmt: VerilogStmt::new(line_no), left_net_expr: left_net_expr, right_net_expr: right_net_expr }
+        VerilogAssign { stmt: VerilogStmt::new(line_no), left_net_expr, right_net_expr }
     }
 
     pub fn get_stmt(&self) -> &VerilogStmt {
@@ -974,7 +970,7 @@ pub struct VerilogDcl {
 
 impl VerilogDcl {
     pub fn new(line_no: usize, dcl_type: DclType, dcl_name: &str, range: Option<(i32, i32)>) -> VerilogDcl {
-        VerilogDcl { stmt: VerilogStmt::new(line_no), dcl_type: dcl_type, dcl_name: dcl_name.to_string(), range: range }
+        VerilogDcl { stmt: VerilogStmt::new(line_no), dcl_type, dcl_name: dcl_name.to_string(), range }
     }
 
     pub fn get_stmt(&self) -> &VerilogStmt {
@@ -1016,7 +1012,7 @@ pub struct VerilogDcls {
 
 impl VerilogDcls {
     pub fn new(line_no: usize, verilog_dcls: Vec<Box<VerilogDcl>>) -> VerilogDcls {
-        VerilogDcls { stmt: VerilogStmt::new(line_no), verilog_dcls: verilog_dcls }
+        VerilogDcls { stmt: VerilogStmt::new(line_no), verilog_dcls }
     }
 
     pub fn get_stmt(&self) -> &VerilogStmt {
@@ -1076,8 +1072,8 @@ impl VerilogModule {
         VerilogModule {
             stmt: VerilogStmt::new(line_no),
             module_name: module_name.to_string(),
-            port_list: port_list,
-            module_stmts: module_stmts,
+            port_list,
+            module_stmts,
         }
     }
 
@@ -1094,7 +1090,7 @@ impl VerilogModule {
         &self.module_stmts
     }
     pub fn get_clone_module_stms(&self) -> Vec<Box<dyn VerilogVirtualBaseStmt>> {
-        self.module_stmts.iter().map(|module_stmt| module_stmt.clone()).collect()
+        self.module_stmts.to_vec()
     }
     pub fn erase_stmt(&mut self, the_stmt: &Box<dyn VerilogVirtualBaseStmt>) {
         self.module_stmts.retain(|stmt| {

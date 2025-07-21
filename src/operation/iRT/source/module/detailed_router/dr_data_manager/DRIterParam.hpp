@@ -22,8 +22,8 @@ class DRIterParam
 {
  public:
   DRIterParam() = default;
-  DRIterParam(double prefer_wire_unit, double non_prefer_wire_unit, double via_unit, int32_t size, int32_t offset,
-              int32_t schedule_interval, double fixed_rect_unit, double routed_rect_unit, double violation_unit, int32_t max_routed_times)
+  DRIterParam(double prefer_wire_unit, double non_prefer_wire_unit, double via_unit, int32_t size, int32_t offset, int32_t schedule_interval,
+              double fixed_rect_unit, double routed_rect_unit, double violation_unit, int32_t max_routed_times)
   {
     _prefer_wire_unit = prefer_wire_unit;
     _non_prefer_wire_unit = non_prefer_wire_unit;

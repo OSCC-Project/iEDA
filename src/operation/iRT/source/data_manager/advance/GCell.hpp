@@ -27,15 +27,9 @@ class GCell : public PlanarRect
   GCell() = default;
   ~GCell() = default;
   // getter
-  std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map()
-  {
-    return _type_layer_net_fixed_rect_map;
-  }
+  std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map() { return _type_layer_net_fixed_rect_map; }
   std::map<int32_t, std::set<AccessPoint*>>& get_net_access_point_map() { return _net_access_point_map; }
-  std::map<int32_t, std::map<int32_t, std::set<Segment<LayerCoord>*>>>& get_net_pin_access_result_map()
-  {
-    return _net_pin_access_result_map;
-  }
+  std::map<int32_t, std::map<int32_t, std::set<Segment<LayerCoord>*>>>& get_net_pin_access_result_map() { return _net_pin_access_result_map; }
   std::map<int32_t, std::map<Orientation, int32_t>>& get_routing_orient_supply_map() { return _routing_orient_supply_map; }
   std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_global_result_map() { return _net_global_result_map; }
   std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_detailed_result_map() { return _net_detailed_result_map; }
@@ -43,15 +37,11 @@ class GCell : public PlanarRect
   std::map<int32_t, std::set<EXTLayerRect*>>& get_net_final_patch_map() { return _net_final_patch_map; }
   std::set<Violation*>& get_violation_set() { return _violation_set; }
   // setter
-  void set_type_layer_net_fixed_rect_map(
-      const std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& type_layer_net_fixed_rect_map)
+  void set_type_layer_net_fixed_rect_map(const std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& type_layer_net_fixed_rect_map)
   {
     _type_layer_net_fixed_rect_map = type_layer_net_fixed_rect_map;
   }
-  void set_net_access_point_map(const std::map<int32_t, std::set<AccessPoint*>>& net_access_point_map)
-  {
-    _net_access_point_map = net_access_point_map;
-  }
+  void set_net_access_point_map(const std::map<int32_t, std::set<AccessPoint*>>& net_access_point_map) { _net_access_point_map = net_access_point_map; }
   void set_net_pin_access_result_map(const std::map<int32_t, std::map<int32_t, std::set<Segment<LayerCoord>*>>>& net_pin_access_result_map)
   {
     _net_pin_access_result_map = net_pin_access_result_map;
@@ -68,14 +58,8 @@ class GCell : public PlanarRect
   {
     _net_detailed_result_map = net_detailed_result_map;
   }
-  void set_net_final_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& net_final_result_map)
-  {
-    _net_final_result_map = net_final_result_map;
-  }
-  void set_net_final_patch_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_final_patch_map)
-  {
-    _net_final_patch_map = net_final_patch_map;
-  }
+  void set_net_final_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& net_final_result_map) { _net_final_result_map = net_final_result_map; }
+  void set_net_final_patch_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_final_patch_map) { _net_final_patch_map = net_final_patch_map; }
   void set_violation_set(const std::set<Violation*>& violation_set) { _violation_set = violation_set; }
   // function
 

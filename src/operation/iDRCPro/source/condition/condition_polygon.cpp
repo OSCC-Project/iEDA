@@ -394,14 +394,14 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
 
 // min enclosed area
 #ifndef DEBUGCLOSE_HOLE
-      if (hole_area < rule_min_enclosed_area) {
-        ieda_solver::GeometryPolygon hole_polygon;
-        hole_polygon.set(hole_it->begin(), hole_it->end());
-        ieda_solver::GeometryRect violation_rect;
-        ieda_solver::envelope(violation_rect, hole_polygon);
-        addViolation(violation_rect, layer, ViolationEnumType::kAreaEnclosed);
-        ++enclosed_area_count;
-      }
+      // if (hole_area < rule_min_enclosed_area) {
+      //   ieda_solver::GeometryPolygon hole_polygon;
+      //   hole_polygon.set(hole_it->begin(), hole_it->end());
+      //   ieda_solver::GeometryRect violation_rect;
+      //   ieda_solver::envelope(violation_rect, hole_polygon);
+      //   addViolation(violation_rect, layer, ViolationEnumType::kAreaEnclosed);
+      //   ++enclosed_area_count;
+      // }
 #endif
     }
   }

@@ -18,7 +18,9 @@
 #include "idrc_api.h"
 #include "tcl_drc.h"
 #include "tcl_util.h"
-
+#ifdef USE_PROFILER
+#include <gperftools/profiler.h>
+#endif
 namespace tcl {
 
 // public

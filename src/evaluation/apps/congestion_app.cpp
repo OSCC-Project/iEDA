@@ -41,7 +41,7 @@ void TestEgrDataStructure()
   std::string congestion_dir = "/home/yhqiu/net_level_collect/benchmark/large_model_test/rt/rt_temp_directory/early_router";
 
   ieval::CongestionAPI api;
-  std::map<std::string, std::vector<std::vector<int>>> egr_map = api.getEGRMap(congestion_dir);
+  std::map<std::string, std::vector<std::vector<int>>> egr_map = api.getEGRMap();
 
   for (const auto& pair : egr_map) {
     std::cout << "Layer: " << pair.first << std::endl;

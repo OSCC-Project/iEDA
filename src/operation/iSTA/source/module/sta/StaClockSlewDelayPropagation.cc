@@ -23,6 +23,7 @@
  */
 
 #include "StaClockSlewDelayPropagation.hh"
+
 #include "StaDelayPropagation.hh"
 #include "StaSlewPropagation.hh"
 #include "ThreadPool/ThreadPool.h"
@@ -56,8 +57,10 @@ unsigned StaClockSlewDelayPropagation::operator()(StaVertex* the_vertex) {
     return 1;
   }
 
+  auto* vertex_own_cell = the_vertex->getOwnCell();
+
   // clock propagation end at the clock vertex.
-  if (the_vertex->is_clock()) {
+  if (the_vertex->is_clock() && vertex_own_cell && !vertex_own_cell->isICG()) {
     the_vertex->set_is_slew_prop();
     the_vertex->set_is_delay_prop();
     return 1;
@@ -72,7 +75,7 @@ unsigned StaClockSlewDelayPropagation::operator()(StaVertex* the_vertex) {
     if (src_arc->is_loop_disable()) {
       continue;
     }
-    
+
     // get the next bfs vertex and add it to the queue.
     auto* snk_vertex = src_arc->get_snk();
     if (!isIdealClock()) {
@@ -153,9 +156,10 @@ unsigned StaClockSlewDelayPropagation::operator()(StaGraph*) {
   } while (!_bfs_queue.empty());
 
   LOG_INFO << "clock slew delay propagation end";
-  
+
   double memory_delta = stats.memoryDelta();
-  LOG_INFO << "clock slew delay propagation memory usage " << memory_delta << "MB";
+  LOG_INFO << "clock slew delay propagation memory usage " << memory_delta
+           << "MB";
   double time_delta = stats.elapsedRunTime();
   LOG_INFO << "clock slew delay propagation time elapsed " << time_delta << "s";
 

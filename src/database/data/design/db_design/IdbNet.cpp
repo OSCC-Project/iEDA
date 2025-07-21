@@ -108,6 +108,15 @@ void IdbNet::set_source_type(string type)
 // IdbPin* IdbNet::findDrivingPin()
 IdbPin* IdbNet::get_driving_pin()
 {
+  /// 1st step : check if exist instance output pin, if existed, it is driving pin
+  for (IdbPin* pin : _instance_pin_list->get_pin_list()) {
+    if (pin->get_term()->get_direction() == IdbConnectDirection::kOutput
+        || pin->get_term()->get_direction() == IdbConnectDirection::kOutputTriState) {
+      return pin;
+    }
+  }
+
+  /// 2nd step : if instance output pin not exist, find io pin with input direction
   for (IdbPin* io_pin : _io_pin_list->get_pin_list()) {
     // case 2
     if (io_pin->get_term()->get_direction() == IdbConnectDirection::kInput) {
@@ -115,12 +124,13 @@ IdbPin* IdbNet::get_driving_pin()
     }
   }
 
-  for (IdbPin* pin : _instance_pin_list->get_pin_list()) {
-    if (pin->get_term()->get_direction() == IdbConnectDirection::kOutput) {
-      return pin;
+  /// 3nd step, if io input pin not exist, find io pin with inout direction
+  for (IdbPin* io_pin : _io_pin_list->get_pin_list()) {
+    // case 2
+    if (io_pin->get_term()->get_direction() == IdbConnectDirection::kInOut) {
+      return io_pin;
     }
   }
-
   //     // case 3 or case 4
   // IdbInstance* instance      = instance_pin->get_instance();
   // IdbPins* instance_pin_list = instance->get_pin_list();
@@ -130,7 +140,7 @@ IdbPin* IdbNet::get_driving_pin()
   //   }
   //   }
 
-  // std::cout << "Error : No driven pin exist..." << std::endl;
+  std::cout << "Error : No driver pin exist..." << std::endl;
   return nullptr;
 }
 
@@ -138,18 +148,12 @@ vector<IdbPin*> IdbNet::get_load_pins()
 {
   vector<IdbPin*> pin_list;
 
-  for (IdbPin* io_pin : _io_pin_list->get_pin_list()) {
-    // case 2
-    if (io_pin->get_term()->get_direction() == IdbConnectDirection::kOutput) {
-      pin_list.emplace_back(io_pin);
-    }
-  }
+  auto* driver_pin = get_driving_pin();
 
-  for (IdbPin* pin : _instance_pin_list->get_pin_list()) {
-    if (pin->get_term()->get_direction() == IdbConnectDirection::kInput) {
-      pin_list.emplace_back(pin);
-    }
-  }
+  std::copy(_io_pin_list->get_pin_list().begin(), _io_pin_list->get_pin_list().end(), std::back_inserter(pin_list));
+  std::copy(_instance_pin_list->get_pin_list().begin(), _instance_pin_list->get_pin_list().end(), std::back_inserter(pin_list));
+
+  pin_list.erase(std::remove(pin_list.begin(), pin_list.end(), driver_pin), pin_list.end());
 
   return pin_list;
 }
@@ -175,7 +179,6 @@ IdbRect* IdbNet::get_bounding_box()
   }
   return new IdbRect(min_lx, min_ly, max_ux, max_uy);
 }
-
 
 bool IdbNet::set_bounding_box()
 {

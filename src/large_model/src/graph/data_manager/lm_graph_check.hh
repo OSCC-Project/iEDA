@@ -30,9 +30,9 @@
 namespace ilm {
 struct GraphLabel
 {
-  int x;
-  int y;
-  int32_t layer_id;
+  int64_t x;
+  int64_t y;
+  int layer_id;
   int pin_id;
 };
 

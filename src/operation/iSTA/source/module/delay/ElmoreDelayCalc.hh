@@ -403,6 +403,9 @@ class RcTree {
   RcTree() = default;
   ~RcTree() = default;
 
+  RcTree(RcTree&&) noexcept = default;
+  RcTree& operator=(RcTree&&) noexcept = default;
+
   void updateRcTiming();
   void insertSegment(const std::string&, const std::string&, double);
   RctNode* insertNode(const std::string&, double = 0.0);
@@ -543,6 +546,9 @@ class RcTree {
   }
 
   bool isHaveCoupledNodes() { return !_coupled_nodes.empty(); }
+
+  std::vector<RctEdge*> getWireTopo(const char* to_node_name);
+  std::map<std::string, double> getAllNodeSlew(double driver_slew, AnalysisMode analysis_mode, TransType trans_type);  
 
   void printGraphViz();
 

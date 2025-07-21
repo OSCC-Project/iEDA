@@ -74,7 +74,7 @@ Open-source is not a goal but a way
 
 ---
 
-## **论文和报告**
+## **论文和报告**  [[查看更多](https://ieda.oscc.cc/en/research/achieves/papers.html)]
 - iRT: Net Resource Allocation: A Desirable Initial Routing Step, DAC, 2024
 - iCTS: Toward Controllable Hierarchical Clock Tree Synthesis with Skew-Latency-Load Tree, DAC, 2024
 - AiEDA: An Open-source AI-native EDA Library, ISEDA, 2024
@@ -86,21 +86,21 @@ Open-source is not a goal but a way
 
 
 
-# iEDA 使用指导
+## iEDA 使用指导
 
 使用 iEDA 进行芯片设计，需首先获得 iEDA 可执行文件。
 
-若您需要对 iEDA 进行修改，通过源码构建，请按照顺序阅读。
+若您需要对 iEDA 进行修改，通过源码构建，请按照顺序阅读，查看 [iEDA user guide](https://ieda.oscc.cc/en/tools/ieda-platform/guide.html).。
 
 您也可以直接使用最新的 [iEDA docker 镜像](https://hub.docker.com/r/iedaopensource/base)，即可跳过 "*1. 源码构建 iEDA*"。
 
 PS: 关于如何安装 Docker，可参考[Docker安装及初始化](https://www.cnblogs.com/harrypotterisdead/p/17223606.html)。
 
-## 1. 源码构建 iEDA
+### 1. 源码构建 iEDA
 
 我们提供两种源码构建 iEDA 的方法作为示例。
 
-### 方法1 使用iEDA镜像（推荐）
+#### 方法1 使用iEDA镜像（推荐）
 
 从 Dockerhub 上下载最新的 iedaopensource/base 镜像，镜像中包含了最新的 master 分支代码和依赖（构建工具和依赖库）。也可使用 `-v` 命令挂载自行下载的 iEDA 代码仓库，仅使用镜像提供的编译工具和依赖库进行构建。
 
@@ -117,7 +117,7 @@ bash build.sh
 
 根据个人使用习惯，有 ubuntu（基于Ubuntu20.04）和 debian（基于Debian11）两种不同镜像tag可选。
 
-### 方法2 手动安装依赖并编译
+#### 方法2 手动安装依赖并编译
 
 在 Ubuntu 20.04 下执行如下命令：
 
@@ -132,7 +132,7 @@ bash build.sh
 ./bin/iEDA -script scripts/hello.tcl
 ```
 
-## 2. 使用 iEDA 完成芯片设计
+### 2. 使用 iEDA 完成芯片设计
 
 详细内容请移步至 [iEDA 用户手册](docs/user_guide/iEDA_user_guide.md)
 
@@ -145,6 +145,27 @@ Roadmap -->
 Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/oscc-project/iEDA/pulls)。
 
 请注意 iEDA 使用的[编程规范][Code-conduct-md]。
+
+## **论文引用**
+```
+@inproceedings{li2024ieda,
+title={iEDA: An Open-source infrastructure of EDA},
+author={Li, Xingquan and Huang, Zengrong and Tao, Simin and Huang, Zhipeng and Zhuang, Chunan and Wang, Hao and Li, Yifan and Qiu, Yihang and Luo, Guojie and Li, Huawei and Shen, Haihua and Chen, Mingyu and Bu, Dongbo and Zhu, Wenxing and Cai, Ye and Xiong, Xiaoming and Jiang, Ying and Heng, Yi and Zhang, Peng and Yu, Bei and Xie, Biwei and Bao, Yungang},
+booktitle={2024 29th Asia and South Pacific Design Automation Conference (ASP-DAC)},
+pages={77--82},
+year={2024},
+organization={IEEE}
+}
+
+@inproceedings{li2024ipd,
+title={iPD: An Open-source intelligent Physical Design Toolchain},
+author={Li, Xingquan and Tao, Simin and Chen, Shijian and Zeng, Zhisheng and Huang, Zhipeng and Wu, Hongxi and Li, Weiguo and Huang, Zengrong and Ni, Liwei and Zhao, Xueyan and Liu, He and Long, Shuaiying and Liu, Ruizhi and Lin, Xiaoze and Yang, Bo and Huang, Fuxing and Yang, Zonglin and Qiu, Yihang and Shao, Zheqing and Liu, Jikang and Liang, Yuyao and Xie, Biwei and Bao, Yungang and Yu, Bei},
+booktitle={2024 29th Asia and South Pacific Design Automation Conference (ASP-DAC)},
+pages={83--88},
+year={2024},
+organization={IEEE}
+}
+```
 
 ## 讨论和反馈
 

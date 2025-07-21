@@ -115,19 +115,19 @@ ERNet EarlyRouter::convertToERNet(Net& net)
 void EarlyRouter::setERComParam(ERModel& er_model)
 {
   int32_t topo_spilt_length = 10;
-  double congestion_unit = 2;
   double prefer_wire_unit = 1;
   double via_unit = 1;
+  double overflow_unit = 2;
   /**
-   * topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit
+   * topo_spilt_length, prefer_wire_unit, via_unit, overflow_unit
    */
   // clang-format off
-  ERComParam er_com_param(topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit);
+  ERComParam er_com_param(topo_spilt_length, prefer_wire_unit, via_unit, overflow_unit);
   // clang-format on
   RTLOG.info(Loc::current(), "topo_spilt_length: ", er_com_param.get_topo_spilt_length());
-  RTLOG.info(Loc::current(), "congestion_unit: ", er_com_param.get_congestion_unit());
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", er_com_param.get_prefer_wire_unit());
   RTLOG.info(Loc::current(), "via_unit: ", er_com_param.get_via_unit());
+  RTLOG.info(Loc::current(), "overflow_unit: ", er_com_param.get_overflow_unit());
   er_model.set_er_com_param(er_com_param);
 }
 
@@ -151,7 +151,7 @@ void EarlyRouter::generateAccessPoint(ERModel& er_model)
         for (EXTLayerRect& routing_shape : er_pin.get_routing_shape_list()) {
           PlanarRect& real_shape = routing_shape.get_real_rect();
           if (max_area < real_shape.getArea()) {
-            max_area = real_shape.getArea();
+            max_area = static_cast<int32_t>(real_shape.getArea());
             max_area_shape.set_rect(real_shape);
           }
         }
@@ -272,8 +272,8 @@ void EarlyRouter::generateTopoTree(ERModel& er_model)
   for (size_t i = 0; i < er_task_list.size(); i++) {
     routePlanarNet(er_model, er_task_list[i]);
     if ((i + 1) % batch_size == 0 || (i + 1) == er_task_list.size()) {
-      RTLOG.info(Loc::current(), "Routed ", (i + 1), "/", er_task_list.size(), "(", RTUTIL.getPercentage(i + 1, er_task_list.size()),
-                 ") nets", stage_monitor.getStatsInfo());
+      RTLOG.info(Loc::current(), "Routed ", (i + 1), "/", er_task_list.size(), "(", RTUTIL.getPercentage(i + 1, er_task_list.size()), ") nets",
+                 stage_monitor.getStatsInfo());
     }
   }
 
@@ -289,7 +289,7 @@ void EarlyRouter::routePlanarNet(ERModel& er_model, ERNet* er_net)
     }
   }
   MTree<LayerCoord> coord_tree = getPlanarCoordTree(er_net, routing_segment_list);
-  updatePlanarDemand(er_model, coord_tree);
+  updatePlanarDemandToGraph(er_model, ChangeType::kAdd, coord_tree);
   if (!RTUTIL.getSegListByTree(coord_tree).empty()) {
     er_net->set_topo_tree(coord_tree);
   }
@@ -349,9 +349,8 @@ std::vector<Segment<PlanarCoord>> EarlyRouter::getPlanarTopoList(ERModel& er_mod
 std::vector<Segment<PlanarCoord>> EarlyRouter::getRoutingSegmentList(ERModel& er_model, Segment<PlanarCoord>& planar_topo)
 {
   std::vector<Segment<PlanarCoord>> routing_segment_list;
-  for (auto getRoutingSegmentList :
-       {std::bind(&EarlyRouter::getRoutingSegmentListByStraight, this, std::placeholders::_1, std::placeholders::_2),
-        std::bind(&EarlyRouter::getRoutingSegmentListByLPattern, this, std::placeholders::_1, std::placeholders::_2)}) {
+  for (auto getRoutingSegmentList : {std::bind(&EarlyRouter::getRoutingSegmentListByStraight, this, std::placeholders::_1, std::placeholders::_2),
+                                     std::bind(&EarlyRouter::getRoutingSegmentListByLPattern, this, std::placeholders::_1, std::placeholders::_2)}) {
     if (routing_segment_list.empty()) {
       routing_segment_list = getRoutingSegmentList(er_model, planar_topo);
     }
@@ -416,7 +415,7 @@ std::vector<Segment<PlanarCoord>> EarlyRouter::getRoutingSegmentListByLPattern(E
 
 double EarlyRouter::getPlanarNodeCost(ERModel& er_model, std::vector<Segment<PlanarCoord>>& routing_segment_list)
 {
-  double congestion_unit = er_model.get_er_com_param().get_congestion_unit();
+  double overflow_unit = er_model.get_er_com_param().get_overflow_unit();
   GridMap<ERNode>& planar_node_map = er_model.get_planar_node_map();
 
   double node_cost = 0;
@@ -430,8 +429,8 @@ double EarlyRouter::getPlanarNodeCost(ERModel& er_model, std::vector<Segment<Pla
     }
     Orientation opposite_orientation = RTUTIL.getOppositeOrientation(orientation);
 
-    node_cost += planar_node_map[first_coord.get_x()][first_coord.get_y()].getCongestionCost(orientation);
-    node_cost += planar_node_map[second_coord.get_x()][second_coord.get_y()].getCongestionCost(opposite_orientation);
+    node_cost += planar_node_map[first_coord.get_x()][first_coord.get_y()].getOverflowCost(orientation, overflow_unit);
+    node_cost += planar_node_map[second_coord.get_x()][second_coord.get_y()].getOverflowCost(opposite_orientation, overflow_unit);
 
     if (RTUTIL.isHorizontal(first_coord, second_coord)) {
       int32_t first_x = first_coord.get_x();
@@ -439,8 +438,8 @@ double EarlyRouter::getPlanarNodeCost(ERModel& er_model, std::vector<Segment<Pla
       int32_t y = first_coord.get_y();
       RTUTIL.swapByASC(first_x, second_x);
       for (int32_t x = (first_x + 1); x <= (second_x - 1); x++) {
-        node_cost += planar_node_map[x][y].getCongestionCost(orientation);
-        node_cost += planar_node_map[x][y].getCongestionCost(opposite_orientation);
+        node_cost += planar_node_map[x][y].getOverflowCost(orientation, overflow_unit);
+        node_cost += planar_node_map[x][y].getOverflowCost(opposite_orientation, overflow_unit);
       }
     } else if (RTUTIL.isVertical(first_coord, second_coord)) {
       int32_t x = first_coord.get_x();
@@ -448,12 +447,11 @@ double EarlyRouter::getPlanarNodeCost(ERModel& er_model, std::vector<Segment<Pla
       int32_t second_y = second_coord.get_y();
       RTUTIL.swapByASC(first_y, second_y);
       for (int32_t y = (first_y + 1); y <= (second_y - 1); y++) {
-        node_cost += planar_node_map[x][y].getCongestionCost(orientation);
-        node_cost += planar_node_map[x][y].getCongestionCost(opposite_orientation);
+        node_cost += planar_node_map[x][y].getOverflowCost(orientation, overflow_unit);
+        node_cost += planar_node_map[x][y].getOverflowCost(opposite_orientation, overflow_unit);
       }
     }
   }
-  node_cost *= congestion_unit;
   return node_cost;
 }
 
@@ -461,8 +459,7 @@ MTree<LayerCoord> EarlyRouter::getPlanarCoordTree(ERNet* er_net, std::vector<Seg
 {
   std::vector<Segment<LayerCoord>> routing_segment_list;
   for (Segment<PlanarCoord>& planar_routing_segment : planar_routing_segment_list) {
-    routing_segment_list.emplace_back(LayerCoord(planar_routing_segment.get_first(), 0),
-                                      LayerCoord(planar_routing_segment.get_second(), 0));
+    routing_segment_list.emplace_back(LayerCoord(planar_routing_segment.get_first(), 0), LayerCoord(planar_routing_segment.get_second(), 0));
   }
   std::vector<LayerCoord> candidate_root_coord_list;
   std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
@@ -473,54 +470,6 @@ MTree<LayerCoord> EarlyRouter::getPlanarCoordTree(ERNet* er_net, std::vector<Seg
     key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
   }
   return RTUTIL.getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
-}
-
-void EarlyRouter::updatePlanarDemand(ERModel& er_model, MTree<LayerCoord>& coord_tree)
-{
-  std::vector<Segment<LayerCoord>> routing_segment_list;
-  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
-    routing_segment_list.emplace_back(coord_segment.get_first()->value(), coord_segment.get_second()->value());
-  }
-  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> usage_map;
-  for (Segment<LayerCoord>& coord_segment : routing_segment_list) {
-    LayerCoord& first_coord = coord_segment.get_first();
-    LayerCoord& second_coord = coord_segment.get_second();
-
-    Orientation orientation = RTUTIL.getOrientation(first_coord, second_coord);
-    if (orientation == Orientation::kNone || orientation == Orientation::kOblique) {
-      RTLOG.error(Loc::current(), "The orientation is error!");
-    }
-    Orientation opposite_orientation = RTUTIL.getOppositeOrientation(orientation);
-
-    int32_t first_x = first_coord.get_x();
-    int32_t first_y = first_coord.get_y();
-    int32_t first_layer_idx = first_coord.get_layer_idx();
-    int32_t second_x = second_coord.get_x();
-    int32_t second_y = second_coord.get_y();
-    int32_t second_layer_idx = second_coord.get_layer_idx();
-    RTUTIL.swapByASC(first_x, second_x);
-    RTUTIL.swapByASC(first_y, second_y);
-    RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
-
-    for (int32_t x = first_x; x <= second_x; x++) {
-      for (int32_t y = first_y; y <= second_y; y++) {
-        for (int32_t layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
-          LayerCoord coord(x, y, layer_idx);
-          if (coord != first_coord) {
-            usage_map[coord].insert(opposite_orientation);
-          }
-          if (coord != second_coord) {
-            usage_map[coord].insert(orientation);
-          }
-        }
-      }
-    }
-  }
-  GridMap<ERNode>& planar_node_map = er_model.get_planar_node_map();
-  for (auto& [usage_coord, orientation_list] : usage_map) {
-    ERNode& er_node = planar_node_map[usage_coord.get_x()][usage_coord.get_y()];
-    er_node.updateDemand(orientation_list, ChangeType::kAdd);
-  }
 }
 
 void EarlyRouter::buildLayerNodeMap(ERModel& er_model)
@@ -636,8 +585,8 @@ void EarlyRouter::generateGlobalTree(ERModel& er_model)
   for (size_t i = 0; i < er_task_list.size(); i++) {
     routeLayerNet(er_model, er_task_list[i]);
     if ((i + 1) % batch_size == 0 || (i + 1) == er_task_list.size()) {
-      RTLOG.info(Loc::current(), "Routed ", (i + 1), "/", er_task_list.size(), "(", RTUTIL.getPercentage(i + 1, er_task_list.size()),
-                 ") nets", stage_monitor.getStatsInfo());
+      RTLOG.info(Loc::current(), "Routed ", (i + 1), "/", er_task_list.size(), "(", RTUTIL.getPercentage(i + 1, er_task_list.size()), ") nets",
+                 stage_monitor.getStatsInfo());
     }
   }
 
@@ -657,12 +606,11 @@ void EarlyRouter::routeLayerNet(ERModel& er_model, ERNet* er_net)
     }
   }
   MTree<LayerCoord> coord_tree = getLayerCoordTree(er_net, routing_segment_list);
-  updateLayerDemand(er_model, er_net, coord_tree);
+  updateLayerDemandToGraph(er_model, ChangeType::kAdd, coord_tree);
   uploadNetResult(er_net, coord_tree);
 }
 
-void EarlyRouter::makeERTopoList(ERModel& er_model, ERNet* er_net, std::vector<ERTopo>& er_topo_list,
-                                 std::vector<Segment<LayerCoord>>& routing_segment_list)
+void EarlyRouter::makeERTopoList(ERModel& er_model, ERNet* er_net, std::vector<ERTopo>& er_topo_list, std::vector<Segment<LayerCoord>>& routing_segment_list)
 {
   int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
   int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
@@ -1021,8 +969,7 @@ std::vector<Segment<LayerCoord>> EarlyRouter::getRoutingSegmentList(ERModel& er_
       key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
     }
   }
-  MTree<LayerCoord> coord_tree
-      = RTUTIL.getTreeByFullFlow(candidate_root_coord_list, er_model.get_routing_segment_list(), key_coord_pin_map);
+  MTree<LayerCoord> coord_tree = RTUTIL.getTreeByFullFlow(candidate_root_coord_list, er_model.get_routing_segment_list(), key_coord_pin_map);
 
   std::vector<Segment<LayerCoord>> routing_segment_list;
   for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
@@ -1094,10 +1041,10 @@ double EarlyRouter::getKnowCost(ERModel& er_model, ERNode* start_node, ERNode* e
 
 double EarlyRouter::getNodeCost(ERModel& er_model, ERNode* curr_node, Orientation orientation)
 {
-  double congestion_unit = er_model.get_er_com_param().get_congestion_unit();
+  double overflow_unit = er_model.get_er_com_param().get_overflow_unit();
 
   double node_cost = 0;
-  node_cost += curr_node->getCongestionCost(orientation) * congestion_unit;
+  node_cost += curr_node->getOverflowCost(orientation, overflow_unit);
   return node_cost;
 }
 
@@ -1181,12 +1128,66 @@ MTree<LayerCoord> EarlyRouter::getLayerCoordTree(ERNet* er_net, std::vector<Segm
   return RTUTIL.getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
 }
 
-void EarlyRouter::updateLayerDemand(ERModel& er_model, ERNet* er_net, MTree<LayerCoord>& coord_tree)
+void EarlyRouter::uploadNetResult(ERNet* er_net, MTree<LayerCoord>& coord_tree)
 {
-  std::set<LayerCoord, CmpLayerCoordByXASC> key_coord_set;
-  for (ERPin& er_pin : er_net->get_er_pin_list()) {
-    key_coord_set.insert(er_pin.get_access_point().getGridLayerCoord());
+  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
+    Segment<LayerCoord>* segment = new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value());
+    RTDM.updateNetGlobalResultToGCellMap(ChangeType::kAdd, er_net->get_net_idx(), segment);
   }
+}
+
+#if 1  // update env
+
+void EarlyRouter::updatePlanarDemandToGraph(ERModel& er_model, ChangeType change_type, MTree<LayerCoord>& coord_tree)
+{
+  std::vector<Segment<LayerCoord>> routing_segment_list;
+  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
+    routing_segment_list.emplace_back(coord_segment.get_first()->value(), coord_segment.get_second()->value());
+  }
+  std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> usage_map;
+  for (Segment<LayerCoord>& coord_segment : routing_segment_list) {
+    LayerCoord& first_coord = coord_segment.get_first();
+    LayerCoord& second_coord = coord_segment.get_second();
+
+    Orientation orientation = RTUTIL.getOrientation(first_coord, second_coord);
+    if (orientation == Orientation::kNone || orientation == Orientation::kOblique) {
+      RTLOG.error(Loc::current(), "The orientation is error!");
+    }
+    Orientation opposite_orientation = RTUTIL.getOppositeOrientation(orientation);
+
+    int32_t first_x = first_coord.get_x();
+    int32_t first_y = first_coord.get_y();
+    int32_t first_layer_idx = first_coord.get_layer_idx();
+    int32_t second_x = second_coord.get_x();
+    int32_t second_y = second_coord.get_y();
+    int32_t second_layer_idx = second_coord.get_layer_idx();
+    RTUTIL.swapByASC(first_x, second_x);
+    RTUTIL.swapByASC(first_y, second_y);
+    RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
+
+    for (int32_t x = first_x; x <= second_x; x++) {
+      for (int32_t y = first_y; y <= second_y; y++) {
+        for (int32_t layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
+          LayerCoord coord(x, y, layer_idx);
+          if (coord != first_coord) {
+            usage_map[coord].insert(opposite_orientation);
+          }
+          if (coord != second_coord) {
+            usage_map[coord].insert(orientation);
+          }
+        }
+      }
+    }
+  }
+  GridMap<ERNode>& planar_node_map = er_model.get_planar_node_map();
+  for (auto& [usage_coord, orientation_list] : usage_map) {
+    ERNode& er_node = planar_node_map[usage_coord.get_x()][usage_coord.get_y()];
+    er_node.updateDemand(orientation_list, ChangeType::kAdd);
+  }
+}
+
+void EarlyRouter::updateLayerDemandToGraph(ERModel& er_model, ChangeType change_type, MTree<LayerCoord>& coord_tree)
+{
   std::vector<Segment<LayerCoord>> routing_segment_list;
   for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
     routing_segment_list.emplace_back(coord_segment.get_first()->value(), coord_segment.get_second()->value());
@@ -1233,13 +1234,7 @@ void EarlyRouter::updateLayerDemand(ERModel& er_model, ERNet* er_net, MTree<Laye
   }
 }
 
-void EarlyRouter::uploadNetResult(ERNet* er_net, MTree<LayerCoord>& coord_tree)
-{
-  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
-    Segment<LayerCoord>* segment = new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value());
-    RTDM.updateGlobalNetResultToGCellMap(ChangeType::kAdd, er_net->get_net_idx(), segment);
-  }
-}
+#endif
 
 #if 1  // exhibit
 
@@ -1333,18 +1328,16 @@ void EarlyRouter::updateSummary(ERModel& er_model)
     for (ERNet& er_net : er_net_list) {
       for (ERPin& er_pin : er_net.get_er_pin_list()) {
         LayerCoord layer_coord = er_pin.get_access_point().getGridLayerCoord();
-        real_pin_coord_map_list[er_net.get_net_idx()][er_pin.get_pin_name()].emplace_back(
-            RTUTIL.getRealRectByGCell(layer_coord, gcell_axis).getMidPoint(), layer_coord.get_layer_idx());
+        real_pin_coord_map_list[er_net.get_net_idx()][er_pin.get_pin_name()].emplace_back(RTUTIL.getRealRectByGCell(layer_coord, gcell_axis).getMidPoint(),
+                                                                                          layer_coord.get_layer_idx());
       }
     }
     for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
       for (Segment<LayerCoord>* segment : segment_set) {
         LayerCoord first_layer_coord = segment->get_first();
-        LayerCoord first_real_coord(RTUTIL.getRealRectByGCell(first_layer_coord, gcell_axis).getMidPoint(),
-                                    first_layer_coord.get_layer_idx());
+        LayerCoord first_real_coord(RTUTIL.getRealRectByGCell(first_layer_coord, gcell_axis).getMidPoint(), first_layer_coord.get_layer_idx());
         LayerCoord second_layer_coord = segment->get_second();
-        LayerCoord second_real_coord(RTUTIL.getRealRectByGCell(second_layer_coord, gcell_axis).getMidPoint(),
-                                     second_layer_coord.get_layer_idx());
+        LayerCoord second_real_coord(RTUTIL.getRealRectByGCell(second_layer_coord, gcell_axis).getMidPoint(), second_layer_coord.get_layer_idx());
 
         routing_segment_list_list[net_idx].emplace_back(first_real_coord, second_real_coord);
       }
@@ -1373,6 +1366,7 @@ void EarlyRouter::printSummary(ERModel& er_model)
 
   fort::char_table routing_demand_map_table;
   {
+    routing_demand_map_table.set_cell_text_align(fort::text_align::right);
     routing_demand_map_table << fort::header << "routing"
                              << "demand"
                              << "prop" << fort::endr;
@@ -1384,6 +1378,7 @@ void EarlyRouter::printSummary(ERModel& er_model)
   }
   fort::char_table routing_overflow_map_table;
   {
+    routing_overflow_map_table.set_cell_text_align(fort::text_align::right);
     routing_overflow_map_table << fort::header << "routing"
                                << "overflow"
                                << "prop" << fort::endr;
@@ -1391,24 +1386,23 @@ void EarlyRouter::printSummary(ERModel& er_model)
       routing_overflow_map_table << routing_layer.get_layer_name() << routing_overflow_map[routing_layer.get_layer_idx()]
                                  << RTUTIL.getPercentage(routing_overflow_map[routing_layer.get_layer_idx()], total_overflow) << fort::endr;
     }
-    routing_overflow_map_table << fort::header << "Total" << total_overflow << RTUTIL.getPercentage(total_overflow, total_overflow)
-                               << fort::endr;
+    routing_overflow_map_table << fort::header << "Total" << total_overflow << RTUTIL.getPercentage(total_overflow, total_overflow) << fort::endr;
   }
   fort::char_table routing_wire_length_map_table;
   {
+    routing_wire_length_map_table.set_cell_text_align(fort::text_align::right);
     routing_wire_length_map_table << fort::header << "routing"
                                   << "wire_length"
                                   << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_wire_length_map_table << routing_layer.get_layer_name() << routing_wire_length_map[routing_layer.get_layer_idx()]
-                                    << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length)
-                                    << fort::endr;
+                                    << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length) << fort::endr;
     }
-    routing_wire_length_map_table << fort::header << "Total" << total_wire_length
-                                  << RTUTIL.getPercentage(total_wire_length, total_wire_length) << fort::endr;
+    routing_wire_length_map_table << fort::header << "Total" << total_wire_length << RTUTIL.getPercentage(total_wire_length, total_wire_length) << fort::endr;
   }
   fort::char_table cut_via_num_map_table;
   {
+    cut_via_num_map_table.set_cell_text_align(fort::text_align::right);
     cut_via_num_map_table << fort::header << "cut"
                           << "#via"
                           << "prop" << fort::endr;
@@ -1419,7 +1413,9 @@ void EarlyRouter::printSummary(ERModel& er_model)
     cut_via_num_map_table << fort::header << "Total" << total_via_num << RTUTIL.getPercentage(total_via_num, total_via_num) << fort::endr;
   }
   fort::char_table timing_table;
+  timing_table.set_cell_text_align(fort::text_align::right);
   fort::char_table power_table;
+  power_table.set_cell_text_align(fort::text_align::right);
   if (enable_timing) {
     timing_table << fort::header << "clock_name"
                  << "tns"
@@ -1428,10 +1424,16 @@ void EarlyRouter::printSummary(ERModel& er_model)
     for (auto& [clock_name, timing_map] : clock_timing) {
       timing_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
     }
-    power_table << fort::header << "power_type" << "power_value" << fort::endr;
+    power_table << fort::header << "power_type";
     for (auto& [type, power] : power_map) {
-      power_table << type << power << fort::endr;
+      power_table << fort::header << type;
     }
+    power_table << fort::endr;
+    power_table << "power_value";
+    for (auto& [type, power] : power_map) {
+      power_table << power;
+    }
+    power_table << fort::endr;
   }
   RTUTIL.printTableList({routing_demand_map_table, routing_overflow_map_table, routing_wire_length_map_table, cut_via_num_map_table});
   RTUTIL.printTableList({timing_table, power_table});
@@ -1450,7 +1452,7 @@ void EarlyRouter::outputGuide(ERModel& er_model)
   }
   std::vector<ERNet>& er_net_list = er_model.get_er_net_list();
 
-  std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(er_temp_directory_path + "route.guide");
+  std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(RTUTIL.getString(er_temp_directory_path, "route.guide"));
   if (guide_file_stream == nullptr) {
     return;
   }
@@ -1476,8 +1478,7 @@ void EarlyRouter::outputGuide(ERModel& er_model)
       } else {
         connnect = "load";
       }
-      RTUTIL.pushStream(guide_file_stream, "pin ", grid_x, " ", grid_y, " ", real_x, " ", real_y, " ", layer, " ", connnect, " ",
-                        er_pin.get_pin_name(), "\n");
+      RTUTIL.pushStream(guide_file_stream, "pin ", grid_x, " ", grid_y, " ", real_x, " ", real_y, " ", layer, " ", connnect, " ", er_pin.get_pin_name(), "\n");
     }
     for (Segment<LayerCoord>* segment : segment_set) {
       LayerCoord first_layer_coord = segment->get_first();
@@ -1505,8 +1506,8 @@ void EarlyRouter::outputGuide(ERModel& er_model)
         RTUTIL.pushStream(guide_file_stream, "via ", grid1_x, " ", grid1_y, " ", real1_x, " ", real1_y, " ", layer1, " ", layer2, "\n");
       } else {
         std::string layer = routing_layer_list[first_layer_idx].get_layer_name();
-        RTUTIL.pushStream(guide_file_stream, "wire ", grid1_x, " ", grid1_y, " ", grid2_x, " ", grid2_y, " ", real1_x, " ", real1_y, " ",
-                          real2_x, " ", real2_y, " ", layer, "\n");
+        RTUTIL.pushStream(guide_file_stream, "wire ", grid1_x, " ", grid1_y, " ", grid2_x, " ", grid2_y, " ", real1_x, " ", real1_y, " ", real2_x, " ", real2_y,
+                          " ", layer, "\n");
       }
     }
   }

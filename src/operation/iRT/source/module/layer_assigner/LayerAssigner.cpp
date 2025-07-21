@@ -110,19 +110,19 @@ LANet LayerAssigner::convertToLANet(Net& net)
 void LayerAssigner::setLAComParam(LAModel& la_model)
 {
   int32_t topo_spilt_length = 10;
-  double congestion_unit = 2;
   double prefer_wire_unit = 1;
   double via_unit = 1;
+  double overflow_unit = 2;
   /**
-   * topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit
+   * topo_spilt_length, prefer_wire_unit, via_unit, overflow_unit
    */
   // clang-format off
-  LAComParam la_com_param(topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit);
+  LAComParam la_com_param(topo_spilt_length, prefer_wire_unit, via_unit, overflow_unit);
   // clang-format on
   RTLOG.info(Loc::current(), "topo_spilt_length: ", la_com_param.get_topo_spilt_length());
-  RTLOG.info(Loc::current(), "congestion_unit: ", la_com_param.get_congestion_unit());
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", la_com_param.get_prefer_wire_unit());
   RTLOG.info(Loc::current(), "via_unit: ", la_com_param.get_via_unit());
+  RTLOG.info(Loc::current(), "overflow_unit: ", la_com_param.get_overflow_unit());
   la_model.set_la_com_param(la_com_param);
 }
 
@@ -265,7 +265,7 @@ void LayerAssigner::buildTopoTree(LAModel& la_model)
   }
   for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
-      RTDM.updateGlobalNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+      RTDM.updateNetGlobalResultToGCellMap(ChangeType::kDel, net_idx, segment);
     }
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -284,8 +284,8 @@ void LayerAssigner::routeLAModel(LAModel& la_model)
   for (size_t i = 0; i < la_task_list.size(); i++) {
     routeLANet(la_model, la_task_list[i]);
     if ((i + 1) % batch_size == 0 || (i + 1) == la_task_list.size()) {
-      RTLOG.info(Loc::current(), "Routed ", (i + 1), "/", la_task_list.size(), "(", RTUTIL.getPercentage(i + 1, la_task_list.size()),
-                 ") nets", stage_monitor.getStatsInfo());
+      RTLOG.info(Loc::current(), "Routed ", (i + 1), "/", la_task_list.size(), "(", RTUTIL.getPercentage(i + 1, la_task_list.size()), ") nets",
+                 stage_monitor.getStatsInfo());
     }
   }
 
@@ -305,12 +305,11 @@ void LayerAssigner::routeLANet(LAModel& la_model, LANet* la_net)
     }
   }
   MTree<LayerCoord> coord_tree = getCoordTree(la_net, routing_segment_list);
-  updateDemand(la_model, la_net, coord_tree);
+  updateDemandToGraph(la_model, ChangeType::kAdd, coord_tree);
   uploadNetResult(la_net, coord_tree);
 }
 
-void LayerAssigner::makeLATopoList(LAModel& la_model, LANet* la_net, std::vector<LATopo>& la_topo_list,
-                                   std::vector<Segment<LayerCoord>>& routing_segment_list)
+void LayerAssigner::makeLATopoList(LAModel& la_model, LANet* la_net, std::vector<LATopo>& la_topo_list, std::vector<Segment<LayerCoord>>& routing_segment_list)
 {
   int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
   int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
@@ -669,8 +668,7 @@ std::vector<Segment<LayerCoord>> LayerAssigner::getRoutingSegmentList(LAModel& l
       key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
     }
   }
-  MTree<LayerCoord> coord_tree
-      = RTUTIL.getTreeByFullFlow(candidate_root_coord_list, la_model.get_routing_segment_list(), key_coord_pin_map);
+  MTree<LayerCoord> coord_tree = RTUTIL.getTreeByFullFlow(candidate_root_coord_list, la_model.get_routing_segment_list(), key_coord_pin_map);
 
   std::vector<Segment<LayerCoord>> routing_segment_list;
   for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
@@ -742,10 +740,10 @@ double LayerAssigner::getKnowCost(LAModel& la_model, LANode* start_node, LANode*
 
 double LayerAssigner::getNodeCost(LAModel& la_model, LANode* curr_node, Orientation orientation)
 {
-  double congestion_unit = la_model.get_la_com_param().get_congestion_unit();
+  double overflow_unit = la_model.get_la_com_param().get_overflow_unit();
 
   double node_cost = 0;
-  node_cost += curr_node->getCongestionCost(orientation) * congestion_unit;
+  node_cost += curr_node->getOverflowCost(orientation, overflow_unit);
   return node_cost;
 }
 
@@ -829,12 +827,18 @@ MTree<LayerCoord> LayerAssigner::getCoordTree(LANet* la_net, std::vector<Segment
   return RTUTIL.getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
 }
 
-void LayerAssigner::updateDemand(LAModel& la_model, LANet* la_net, MTree<LayerCoord>& coord_tree)
+void LayerAssigner::uploadNetResult(LANet* la_net, MTree<LayerCoord>& coord_tree)
 {
-  std::set<LayerCoord, CmpLayerCoordByXASC> key_coord_set;
-  for (LAPin& la_pin : la_net->get_la_pin_list()) {
-    key_coord_set.insert(la_pin.get_access_point().getGridLayerCoord());
+  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
+    Segment<LayerCoord>* segment = new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value());
+    RTDM.updateNetGlobalResultToGCellMap(ChangeType::kAdd, la_net->get_net_idx(), segment);
   }
+}
+
+#if 1  // update env
+
+void LayerAssigner::updateDemandToGraph(LAModel& la_model, ChangeType change_type, MTree<LayerCoord>& coord_tree)
+{
   std::vector<Segment<LayerCoord>> routing_segment_list;
   for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
     routing_segment_list.emplace_back(coord_segment.get_first()->value(), coord_segment.get_second()->value());
@@ -877,17 +881,11 @@ void LayerAssigner::updateDemand(LAModel& la_model, LANet* la_net, MTree<LayerCo
   std::vector<GridMap<LANode>>& layer_node_map = la_model.get_layer_node_map();
   for (auto& [usage_coord, orientation_list] : usage_map) {
     LANode& la_node = layer_node_map[usage_coord.get_layer_idx()][usage_coord.get_x()][usage_coord.get_y()];
-    la_node.updateDemand(orientation_list, ChangeType::kAdd);
+    la_node.updateDemand(orientation_list, change_type);
   }
 }
 
-void LayerAssigner::uploadNetResult(LANet* la_net, MTree<LayerCoord>& coord_tree)
-{
-  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
-    Segment<LayerCoord>* segment = new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value());
-    RTDM.updateGlobalNetResultToGCellMap(ChangeType::kAdd, la_net->get_net_idx(), segment);
-  }
-}
+#endif
 
 #if 1  // exhibit
 
@@ -981,18 +979,16 @@ void LayerAssigner::updateSummary(LAModel& la_model)
     for (LANet& la_net : la_net_list) {
       for (LAPin& la_pin : la_net.get_la_pin_list()) {
         LayerCoord layer_coord = la_pin.get_access_point().getGridLayerCoord();
-        real_pin_coord_map_list[la_net.get_net_idx()][la_pin.get_pin_name()].emplace_back(
-            RTUTIL.getRealRectByGCell(layer_coord, gcell_axis).getMidPoint(), layer_coord.get_layer_idx());
+        real_pin_coord_map_list[la_net.get_net_idx()][la_pin.get_pin_name()].emplace_back(RTUTIL.getRealRectByGCell(layer_coord, gcell_axis).getMidPoint(),
+                                                                                          layer_coord.get_layer_idx());
       }
     }
     for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
       for (Segment<LayerCoord>* segment : segment_set) {
         LayerCoord first_layer_coord = segment->get_first();
-        LayerCoord first_real_coord(RTUTIL.getRealRectByGCell(first_layer_coord, gcell_axis).getMidPoint(),
-                                    first_layer_coord.get_layer_idx());
+        LayerCoord first_real_coord(RTUTIL.getRealRectByGCell(first_layer_coord, gcell_axis).getMidPoint(), first_layer_coord.get_layer_idx());
         LayerCoord second_layer_coord = segment->get_second();
-        LayerCoord second_real_coord(RTUTIL.getRealRectByGCell(second_layer_coord, gcell_axis).getMidPoint(),
-                                     second_layer_coord.get_layer_idx());
+        LayerCoord second_real_coord(RTUTIL.getRealRectByGCell(second_layer_coord, gcell_axis).getMidPoint(), second_layer_coord.get_layer_idx());
 
         routing_segment_list_list[net_idx].emplace_back(first_real_coord, second_real_coord);
       }
@@ -1021,6 +1017,7 @@ void LayerAssigner::printSummary(LAModel& la_model)
 
   fort::char_table routing_demand_map_table;
   {
+    routing_demand_map_table.set_cell_text_align(fort::text_align::right);
     routing_demand_map_table << fort::header << "routing"
                              << "demand"
                              << "prop" << fort::endr;
@@ -1032,6 +1029,7 @@ void LayerAssigner::printSummary(LAModel& la_model)
   }
   fort::char_table routing_overflow_map_table;
   {
+    routing_overflow_map_table.set_cell_text_align(fort::text_align::right);
     routing_overflow_map_table << fort::header << "routing"
                                << "overflow"
                                << "prop" << fort::endr;
@@ -1039,24 +1037,23 @@ void LayerAssigner::printSummary(LAModel& la_model)
       routing_overflow_map_table << routing_layer.get_layer_name() << routing_overflow_map[routing_layer.get_layer_idx()]
                                  << RTUTIL.getPercentage(routing_overflow_map[routing_layer.get_layer_idx()], total_overflow) << fort::endr;
     }
-    routing_overflow_map_table << fort::header << "Total" << total_overflow << RTUTIL.getPercentage(total_overflow, total_overflow)
-                               << fort::endr;
+    routing_overflow_map_table << fort::header << "Total" << total_overflow << RTUTIL.getPercentage(total_overflow, total_overflow) << fort::endr;
   }
   fort::char_table routing_wire_length_map_table;
   {
+    routing_wire_length_map_table.set_cell_text_align(fort::text_align::right);
     routing_wire_length_map_table << fort::header << "routing"
                                   << "wire_length"
                                   << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_wire_length_map_table << routing_layer.get_layer_name() << routing_wire_length_map[routing_layer.get_layer_idx()]
-                                    << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length)
-                                    << fort::endr;
+                                    << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length) << fort::endr;
     }
-    routing_wire_length_map_table << fort::header << "Total" << total_wire_length
-                                  << RTUTIL.getPercentage(total_wire_length, total_wire_length) << fort::endr;
+    routing_wire_length_map_table << fort::header << "Total" << total_wire_length << RTUTIL.getPercentage(total_wire_length, total_wire_length) << fort::endr;
   }
   fort::char_table cut_via_num_map_table;
   {
+    cut_via_num_map_table.set_cell_text_align(fort::text_align::right);
     cut_via_num_map_table << fort::header << "cut"
                           << "#via"
                           << "prop" << fort::endr;
@@ -1067,7 +1064,9 @@ void LayerAssigner::printSummary(LAModel& la_model)
     cut_via_num_map_table << fort::header << "Total" << total_via_num << RTUTIL.getPercentage(total_via_num, total_via_num) << fort::endr;
   }
   fort::char_table timing_table;
+  timing_table.set_cell_text_align(fort::text_align::right);
   fort::char_table power_table;
+  power_table.set_cell_text_align(fort::text_align::right);
   if (enable_timing) {
     timing_table << fort::header << "clock_name"
                  << "tns"
@@ -1076,10 +1075,16 @@ void LayerAssigner::printSummary(LAModel& la_model)
     for (auto& [clock_name, timing_map] : clock_timing) {
       timing_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
     }
-    power_table << fort::header << "power_type" << "power_value" << fort::endr;
+    power_table << fort::header << "power_type";
     for (auto& [type, power] : power_map) {
-      power_table << type << power << fort::endr;
+      power_table << fort::header << type;
     }
+    power_table << fort::endr;
+    power_table << "power_value";
+    for (auto& [type, power] : power_map) {
+      power_table << power;
+    }
+    power_table << fort::endr;
   }
   RTUTIL.printTableList({routing_demand_map_table, routing_overflow_map_table, routing_wire_length_map_table, cut_via_num_map_table});
   RTUTIL.printTableList({timing_table, power_table});
@@ -1098,7 +1103,7 @@ void LayerAssigner::outputGuide(LAModel& la_model)
   }
   std::vector<LANet>& la_net_list = la_model.get_la_net_list();
 
-  std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(la_temp_directory_path + "route.guide");
+  std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(RTUTIL.getString(la_temp_directory_path, "route.guide"));
   if (guide_file_stream == nullptr) {
     return;
   }
@@ -1124,8 +1129,7 @@ void LayerAssigner::outputGuide(LAModel& la_model)
       } else {
         connnect = "load";
       }
-      RTUTIL.pushStream(guide_file_stream, "pin ", grid_x, " ", grid_y, " ", real_x, " ", real_y, " ", layer, " ", connnect, " ",
-                        la_pin.get_pin_name(), "\n");
+      RTUTIL.pushStream(guide_file_stream, "pin ", grid_x, " ", grid_y, " ", real_x, " ", real_y, " ", layer, " ", connnect, " ", la_pin.get_pin_name(), "\n");
     }
     for (Segment<LayerCoord>* segment : segment_set) {
       LayerCoord first_layer_coord = segment->get_first();
@@ -1153,8 +1157,8 @@ void LayerAssigner::outputGuide(LAModel& la_model)
         RTUTIL.pushStream(guide_file_stream, "via ", grid1_x, " ", grid1_y, " ", real1_x, " ", real1_y, " ", layer1, " ", layer2, "\n");
       } else {
         std::string layer = routing_layer_list[first_layer_idx].get_layer_name();
-        RTUTIL.pushStream(guide_file_stream, "wire ", grid1_x, " ", grid1_y, " ", grid2_x, " ", grid2_y, " ", real1_x, " ", real1_y, " ",
-                          real2_x, " ", real2_y, " ", layer, "\n");
+        RTUTIL.pushStream(guide_file_stream, "wire ", grid1_x, " ", grid1_y, " ", grid2_x, " ", grid2_y, " ", real1_x, " ", real1_y, " ", real2_x, " ", real2_y,
+                          " ", layer, "\n");
       }
     }
   }

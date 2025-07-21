@@ -35,6 +35,14 @@ void init_iir(void);
 
 const void *read_spef(const char *c_power_net_spef);
 
+const void *create_pg_node(const void *c_pg_netlist, const void *c_pg_node);
+
+const void *create_pg_edge(const void *c_pg_netlist, const void *c_pg_edge);
+
+const void *create_pg_netlist(const char *c_power_net_name);
+
+const void *create_rc_data(const void *c_pg_netlist_ptr, uintptr_t len);
+
 /**
  * Read instance power csv file.
  */
@@ -47,6 +55,8 @@ const void *read_inst_pwr_csv(const char *file_path);
  * @return void* 
  */
 void *set_instance_power_data(struct RustVec c_instance_power_data);
+
+double get_sum_resistance(const void *c_rc_data, const char *c_net_name);
 
 struct RustNetConductanceData build_one_net_conductance_matrix_data(
     const void *c_rc_data, const char *c_net_name);

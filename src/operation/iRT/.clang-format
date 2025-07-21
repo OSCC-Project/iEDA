@@ -19,7 +19,7 @@
 Language:        Cpp
 BasedOnStyle:  Google
 
-ColumnLimit: 140
+ColumnLimit: 160
 AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false
 AllowAllParametersOfDeclarationOnNextLine: false

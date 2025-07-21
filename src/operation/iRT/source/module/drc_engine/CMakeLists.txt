@@ -6,6 +6,10 @@ else()
     set(CMAKE_BUILD_TYPE "Release")   
 endif()
 
+if(CCLOUD_WORKAROUND)
+    add_compile_definitions(CCLOUD_WORKAROUND)
+endif()
+
 add_library(irt_drc_engine
     ## module drc_engine
     ${IRT_MODULE}/drc_engine/DRCEngine.cpp

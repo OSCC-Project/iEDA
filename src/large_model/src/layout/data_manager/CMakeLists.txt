@@ -5,7 +5,7 @@ add_library(ilm_layout_dm
     lm_pattern_gen.cc
 )
 
-find_package(OpenCV REQUIRED)
+# find_package(OpenCV REQUIRED)
 
 target_link_libraries(ilm_layout_dm
     PUBLIC

@@ -23,8 +23,8 @@ namespace irt {
 enum class DENetType
 {
   kNone,
-  kSingleNet,
-  kMultiNet
+  kAmong,
+  kHybrid
 };
 
 struct GetDENetTypeName
@@ -36,11 +36,11 @@ struct GetDENetTypeName
       case DENetType::kNone:
         net_type_name = "none";
         break;
-      case DENetType::kSingleNet:
-        net_type_name = "single_net";
+      case DENetType::kAmong:
+        net_type_name = "among";
         break;
-      case DENetType::kMultiNet:
-        net_type_name = "multi_net";
+      case DENetType::kHybrid:
+        net_type_name = "hybrid";
         break;
       default:
         RTLOG.error(Loc::current(), "Unrecognized type!");

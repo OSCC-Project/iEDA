@@ -35,6 +35,10 @@
 #include "IdbPins.h"
 #include "idm.h"
 #include "log/Log.hh"
+#ifdef BUILD_LM_GUI
+#include "lm_graph_gui.hh"
+#endif
+
 namespace ilm {
 void LmNetGraphGenerator::initLayerMap()
 {
@@ -73,6 +77,10 @@ std::vector<WireGraph> LmNetGraphGenerator::buildGraphs() const
 }
 bool LmNetGraphGenerator::isCornerCase(idb::IdbNet* idb_net) const
 {
+  auto* driver_pin = idb_net->get_driving_pin();
+  if (!driver_pin) {
+    return true;
+  }
   auto io_pins = idb_net->get_io_pins()->get_pin_list();
   if (io_pins.size() != 1) {
     return false;
@@ -124,12 +132,13 @@ TopoGraph LmNetGraphGenerator::buildTopoGraph(idb::IdbNet* idb_net) const
 
   TopoGraph graph;
   // Build Instances' pins and IO pins
+  auto* driver_pin = idb_net->get_driving_pin();
   std::vector<idb::IdbPin*> pins;
   std::ranges::copy(idb_net->get_instance_pin_list()->get_pin_list(), std::back_inserter(pins));
   std::ranges::copy(idb_net->get_io_pins()->get_pin_list(), std::back_inserter(pins));
   std::ranges::for_each(pins, [&](auto* idb_pin) -> void {
     auto vertex = boost::add_vertex(graph);
-    auto* layout_pin = new LayoutPin();
+    auto* layout_pin = new LayoutPin(idb_net->get_net_name(), idb_pin->get_pin_name(), idb_pin == driver_pin);
     graph[vertex].content = layout_pin;
     for (auto* layer_shape : idb_pin->get_port_box_list()) {
       auto layer_name = layer_shape->get_layer()->get_name();
@@ -381,9 +390,11 @@ bool LmNetGraphGenerator::checkConnectivity(const TopoGraph& graph) const
   auto num = boost::connected_components(graph, component.data());
   if (num > 1) {
     LOG_ERROR << "Topo Graph is not connected";
+    // toQt(graph);
     // toPy(graph, "/home/liweiguo/temp/file/temp_net.py");
     return false;
   }
+  // toQt(graph);
   // toPy(graph, "/home/liweiguo/temp/file/temp_net.py");
   return true;
 }
@@ -453,6 +464,7 @@ WireGraph LmNetGraphGenerator::buildWireGraph(const TopoGraph& graph) const
   markPinVertex(graph, wire_graph);
   reduceWireGraph(wire_graph);
   checkConnectivity(wire_graph);
+  checkDriverIsTreeRoot(graph, wire_graph);
   return wire_graph;
 }
 std::vector<WireGraphVertex> LmNetGraphGenerator::canonicalizeCycle(const std::vector<WireGraphVertex>& cycle) const
@@ -680,13 +692,13 @@ void LmNetGraphGenerator::buildVirtualWire(const TopoGraph& graph, WireGraph& wi
     auto* content = graph[v].content;
     auto* pin = static_cast<LayoutPin*>(content);
     // only save the points in the shapes
+    auto shape_manager = LayoutShapeManager();
+    for (size_t i = 0; i < pin->pin_shapes.size(); ++i) {
+      shape_manager.addShape(pin->pin_shapes[i], i);
+    }
     auto is_in_shapes = [&](const LayoutDefPoint& point) -> bool {
-      for (const auto& shape : pin->pin_shapes) {
-        if (bg::intersects(shape, point)) {
-          return true;
-        }
-      }
-      return false;
+      auto intersections = shape_manager.findIntersections(point);
+      return !intersections.empty();
     };
     // divide pin's shape by layer
     std::unordered_map<int, std::vector<LayoutDefRect>> shapes_by_layer;
@@ -767,11 +779,22 @@ void LmNetGraphGenerator::buildVirtualWire(const TopoGraph& graph, WireGraph& wi
 }
 void LmNetGraphGenerator::markPinVertex(const TopoGraph& graph, WireGraph& wire_graph) const
 {
-  auto shape_manager = buildShapeManager(graph);
+  auto shape_manager = LayoutShapeManager();
+  auto [v_topo_iter, v_topo_end] = boost::vertices(graph);
+  for (; v_topo_iter != v_topo_end; ++v_topo_iter) {
+    auto v = *v_topo_iter;
+    auto* content = graph[v].content;
+    if (content->is_pin()) {
+      auto* pin = static_cast<LayoutPin*>(content);
+      for (auto& pin_shape : pin->pin_shapes) {
+        shape_manager.addShape(pin_shape, v);
+      }
+    }
+  }
   // for each node in wire graph, if it's located in the pin shape, mark it as pin
-  auto [v_iter, v_end] = boost::vertices(wire_graph);
-  for (; v_iter != v_end; ++v_iter) {
-    auto v = *v_iter;
+  auto [v_wire_iter, v_wire_end] = boost::vertices(wire_graph);
+  for (; v_wire_iter != v_wire_end; ++v_wire_iter) {
+    auto v = *v_wire_iter;
     auto x = wire_graph[v].x;
     auto y = wire_graph[v].y;
     auto layer_id = wire_graph[v].layer_id;
@@ -780,11 +803,16 @@ void LmNetGraphGenerator::markPinVertex(const TopoGraph& graph, WireGraph& wire_
     if (intersections.empty()) {
       continue;
     }
-    auto is_pin = std::ranges::any_of(intersections, [&](size_t i) -> bool {
+    auto is_driver_pin = std::ranges::any_of(intersections, [&](size_t i) -> bool {
       auto* content = graph[i].content;
-      return content->is_pin();
+      if (content->is_pin()) {
+        auto* pin = static_cast<LayoutPin*>(content);
+        return pin->is_driver_pin;
+      }
+      return false;
     });
-    wire_graph[v].is_pin = is_pin;
+    wire_graph[v].is_pin = true;
+    wire_graph[v].is_driver_pin = is_driver_pin;
   }
 }
 void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph, const bool& retain_pin) const
@@ -995,10 +1023,54 @@ bool LmNetGraphGenerator::checkConnectivity(const WireGraph& graph) const
   auto num = boost::connected_components(graph, component.data());
   if (num > 1) {
     LOG_ERROR << "Wire Graph is not connected";
+    // toQt(graph);
     // toPy(graph, "/home/liweiguo/temp/file/temp_net.py");
     return false;
   }
+  // toQt(graph);
   // toPy(graph, "/home/liweiguo/temp/file/temp_net.py");
+  return true;
+}
+bool LmNetGraphGenerator::checkDriverIsTreeRoot(const TopoGraph& topo_graph, const WireGraph& wire_graph) const
+{
+  // build rtree for driver pin shapes
+  auto shape_manager = LayoutShapeManager();
+  auto [v_iter, v_end] = boost::vertices(topo_graph);
+  for (; v_iter != v_end; ++v_iter) {
+    auto v = *v_iter;
+    auto* content = topo_graph[v].content;
+    if (content->is_pin()) {
+      auto* pin = static_cast<LayoutPin*>(content);
+      if (!pin->is_driver_pin) {
+        continue;
+      }
+      auto pin_shapes = pin->pin_shapes;
+      for (size_t i = 0; i < pin_shapes.size(); ++i) {
+        shape_manager.addShape(pin_shapes[i], i);
+      }
+    }
+  }
+  // check leaf vertices in wire graph whether is in the driver pin shapes
+  size_t connected_point_count = 0;
+  auto [w_iter, w_end] = boost::vertices(wire_graph);
+  for (; w_iter != w_end; ++w_iter) {
+    auto v = *w_iter;
+    auto x = wire_graph[v].x;
+    auto y = wire_graph[v].y;
+    auto layer_id = wire_graph[v].layer_id;
+    auto point = LayoutDefPoint(x, y, layer_id);
+    auto intersections = shape_manager.findIntersections(point);
+    if (intersections.empty()) {
+      continue;
+    }
+    ++connected_point_count;
+  }
+  if (connected_point_count > 1) {
+    // LOG_ERROR << "Multiple connections to driver pin are not allowed, please check the design";
+    // toPy(topo_graph, "/home/liweiguo/temp/file/temp_topo.py");
+    // toPy(wire_graph, "/home/liweiguo/temp/file/temp_wire.py");
+    return false;
+  }
   return true;
 }
 std::vector<std::vector<LayoutDefPoint>> LmNetGraphGenerator::generateShortestPath(const std::vector<LayoutDefPoint>& points,
@@ -1007,15 +1079,17 @@ std::vector<std::vector<LayoutDefPoint>> LmNetGraphGenerator::generateShortestPa
   using PointSet = std::unordered_set<LayoutDefPoint, LayoutDefPointHash, LayoutDefPointEqual>;
   PointSet path_point_set(points.begin(), points.end());
 
-  auto rtree = bgi::rtree<LayoutDefRect, bgi::quadratic<16>>();
-  std::ranges::for_each(regions, [&](const LayoutDefRect& rect) -> void { rtree.insert(rect); });
+  auto shape_manager = LayoutShapeManager();
+  for (size_t i = 0; i < regions.size(); ++i) {
+    shape_manager.addShape(regions[i], i);
+  }
 
   // 1. generate seg pivot between regions
   std::ranges::for_each(regions, [&](const LayoutDefRect& rect) -> void {
-    std::vector<LayoutDefRect> intersections;
-    rtree.query(bgi::intersects(rect), std::back_inserter(intersections));
+    auto intersections = shape_manager.findIntersections(rect);
     std::vector<LayoutDefSeg> segs;
-    std::ranges::for_each(intersections, [&](const LayoutDefRect& other) -> void {
+    std::ranges::for_each(intersections, [&](const size_t& idx) -> void {
+      auto other = regions[idx];
       if (boost::geometry::equals(rect, other)) {
         return;
       }
@@ -1035,17 +1109,17 @@ std::vector<std::vector<LayoutDefPoint>> LmNetGraphGenerator::generateShortestPa
   // 2. generate crossroads points between points and regions
   PointSet add_point_set;
   std::ranges::for_each(points, [&](const LayoutDefPoint& point) -> void {
-    std::vector<LayoutDefRect> intersections;
-    rtree.query(bgi::intersects(point), std::back_inserter(intersections));
-    std::ranges::for_each(intersections, [&](const LayoutDefRect& rect) -> void {
+    auto intersections = shape_manager.findIntersections(point);
+    std::ranges::for_each(intersections, [&](const size_t& idx) -> void {
+      auto rect = regions[idx];
       auto crossroads = generateCrossroadsPoints(point, rect);
       std::ranges::for_each(crossroads, [&](const LayoutDefPoint& crossroad) -> void { add_point_set.insert(crossroad); });
     });
   });
   std::ranges::for_each(add_point_set, [&](const LayoutDefPoint& point) -> void {
-    std::vector<LayoutDefRect> intersections;
-    rtree.query(bgi::intersects(point), std::back_inserter(intersections));
-    std::ranges::for_each(intersections, [&](const LayoutDefRect& rect) -> void {
+    auto intersections = shape_manager.findIntersections(point);
+    std::ranges::for_each(intersections, [&](const size_t& idx) -> void {
+      auto rect = regions[idx];
       auto pivot = generatePointPivot(point, rect);
       path_point_set.insert(pivot);
     });
@@ -1319,7 +1393,8 @@ void LmNetGraphGenerator::toPy(const TopoGraph& graph, const std::string& path) 
       auto* pin = static_cast<LayoutPin*>(content);
       size_t via_pin_shape_count = 0;
       size_t via_cut_count = 0;
-
+      auto pin_name = pin->net_name + "/" + pin->pin_name;
+      auto rgb_color = pin->is_driver_pin ? "rgb(255,0,0)" : "rgb(255, 255, 0)";
       for (auto& pin_shape : pin->pin_shapes) {
         // plot pin shapes
         file << "fig.add_trace(go.Scatter3d(\n";
@@ -1330,8 +1405,8 @@ void LmNetGraphGenerator::toPy(const TopoGraph& graph, const std::string& path) 
         file << "    z=[" << getLowZ(pin_shape) << ", " << getLowZ(pin_shape) << ", " << getLowZ(pin_shape) << ", " << getLowZ(pin_shape)
              << ", " << getLowZ(pin_shape) << "],\n";
         file << "    mode='lines',\n";
-        file << "    line=dict(color='rgb(255,255,0)', width=4),\n";
-        file << "    name='Pin " << pin_count << " Shape " << via_pin_shape_count++ << "'\n";
+        file << "    line=dict(color='" << rgb_color << "', width=4),\n";
+        file << "    name='Pin " << pin_name << " Id " << pin_count << " Shape " << via_pin_shape_count++ << "'\n";
         file << "))\n";
       }
 
@@ -1343,8 +1418,8 @@ void LmNetGraphGenerator::toPy(const TopoGraph& graph, const std::string& path) 
         file << "    y=[" << getY(center) << ", " << getY(center) << "],\n";
         file << "    z=[" << getLowZ(via_cut) << ", " << getHighZ(via_cut) << "],\n";
         file << "    mode='lines',\n";
-        file << "    line=dict(color='rgb(255,255,0)', width=4),\n";
-        file << "    name='Pin " << pin_count << " Via Cut " << via_cut_count++ << "'\n";
+        file << "    line=dict(color='" << rgb_color << "', width=4),\n";
+        file << "    name='Pin " << pin_name << " Id " << pin_count << " Via Cut " << via_cut_count++ << "'\n";
         file << "))\n";
       }
       pin_count++;
@@ -1421,5 +1496,376 @@ void LmNetGraphGenerator::toPy(const WireGraph& graph, const std::string& path) 
 
   // Show the plot
   file << "fig.show()\n";
+}
+void LmNetGraphGenerator::toQt(const TopoGraph& graph, const bool& component_mode) const
+{
+  // Create the Qt application if needed (assumes one is not already running)
+#ifdef BUILD_LM_GUI
+  int argc = 0;
+  char** argv = nullptr;
+  auto app = QApplication(argc, argv);
+
+  // Create the widget.
+  LmGraphWidget* widget = new LmGraphWidget();
+
+  // Compute connected components for color selection if needed.
+  std::vector<int> component(boost::num_vertices(graph));
+
+  size_t patch_count = 0;
+  size_t wire_count = 0;
+  size_t via_count = 0;
+  size_t pin_count = 0;
+
+  auto [v_iter, v_end] = boost::vertices(graph);
+  for (; v_iter != v_end; ++v_iter) {
+    auto v = *v_iter;
+    auto* content = graph[v].content;
+    if (content->is_patch()) {
+      auto* patch = static_cast<LayoutPatch*>(content);
+      // Add patch as a rectangle (default green).
+      auto label = component_mode ? "Component " + std::to_string(component[v]) : "Patch";
+      widget->addRect(getLowX(patch->rect), getLowY(patch->rect), getLowZ(patch->rect), getHighX(patch->rect), getHighY(patch->rect),
+                      getLowZ(patch->rect), "Patch " + std::to_string(patch_count), label);
+      ++patch_count;
+    } else if (content->is_wire()) {
+      auto* wire = static_cast<LayoutWire*>(content);
+      // Add wire (default red).
+      auto label = component_mode ? "Component " + std::to_string(component[v]) : "Wire";
+      widget->addWire(getX(wire->start), getY(wire->start), getZ(wire->start), getX(wire->end), getY(wire->end), getZ(wire->end),
+                      "Wire " + std::to_string(wire_count), label);
+      ++wire_count;
+    } else if (content->is_via()) {
+      auto* via = static_cast<LayoutVia*>(content);
+      // Add the via cut path (default blue).
+      auto via_label = component_mode ? "Component " + std::to_string(component[v]) : "Via Cut Path";
+      widget->addVia(getStartX(via->cut_path), getStartY(via->cut_path), getStartZ(via->cut_path), getEndZ(via->cut_path),
+                     "Via " + std::to_string(via_count) + " Cut Path", via_label);
+      // Add bottom shapes as rectangles (gray).
+      auto via_bottom_label = component_mode ? "Component " + std::to_string(component[v]) : "Via Bottom";
+      for (auto& bottom_shape : via->bottom_shapes) {
+        widget->addRect(getLowX(bottom_shape), getLowY(bottom_shape), getLowZ(bottom_shape), getHighX(bottom_shape), getHighY(bottom_shape),
+                        getLowZ(bottom_shape), "Via " + std::to_string(via_count) + " Bottom", via_bottom_label);
+      }
+      // Add top shapes as rectangles (gray).
+      auto via_top_label = component_mode ? "Component " + std::to_string(component[v]) : "Via Top";
+      for (auto& top_shape : via->top_shapes) {
+        widget->addRect(getLowX(top_shape), getLowY(top_shape), getLowZ(top_shape), getHighX(top_shape), getHighY(top_shape),
+                        getLowZ(top_shape), "Via " + std::to_string(via_count) + " Top", via_top_label);
+      }
+      ++via_count;
+    } else if (content->is_pin()) {
+      auto* pin = static_cast<LayoutPin*>(content);
+      // Add each pin shape as a rectangle (yellow).
+      auto pin_label = component_mode ? "Component " + std::to_string(component[v]) : "Pin Shape";
+      for (auto& pin_shape : pin->pin_shapes) {
+        widget->addRect(getLowX(pin_shape), getLowY(pin_shape), getLowZ(pin_shape), getHighX(pin_shape), getHighY(pin_shape),
+                        getLowZ(pin_shape), "Pin " + std::to_string(pin_count) + " Shape", pin_label);
+      }
+      // Add each via cut as a vertical wire (yellow).
+      auto via_cut_label = component_mode ? "Component " + std::to_string(component[v]) : "Pin Via Cut";
+      for (auto& via_cut : pin->via_cuts) {
+        auto center = getCenter(via_cut);
+        widget->addVia(getX(center), getY(center), getLowZ(via_cut), getHighZ(via_cut), "Pin " + std::to_string(pin_count) + " Via Cut",
+                       via_cut_label);
+      }
+      ++pin_count;
+    }
+  }
+  // Setup the view.
+  widget->autoScale();
+  widget->initView();
+  widget->showAxes();
+  widget->resize(1600, 1200);
+  widget->show();
+
+  app.exec();
+#endif
+}
+void LmNetGraphGenerator::toQt(const WireGraph& graph) const
+{
+#ifdef BUILD_LM_GUI
+  // Create the Qt application if needed (assumes one is not already running)
+  int argc = 0;
+  char** argv = nullptr;
+  auto app = QApplication(argc, argv);
+
+  // Create the widget.
+  LmGraphWidget* widget = new LmGraphWidget();
+
+  // Compute connected components for color selection if needed.
+  std::vector<int> component(boost::num_vertices(graph));
+
+  size_t wire_idx = 0;
+  size_t via_idx = 0;
+
+  auto [e_iter, e_end] = boost::edges(graph);
+  for (; e_iter != e_end; ++e_iter) {
+    auto e = *e_iter;
+    auto u = boost::source(e, graph);
+    auto v = boost::target(e, graph);
+    size_t path_idx = 0;
+    // plot line
+    for (const auto& [start, end] : graph[e].path) {
+      auto label = "Component " + std::to_string(component[u]);
+      auto start_z = getZ(start);
+      auto end_z = getZ(end);
+      if (start_z != end_z) {
+        widget->addVia(getX(start), getY(start), start_z, end_z, "Via " + std::to_string(via_idx), label);
+      } else {
+        widget->addWire(getX(start), getY(start), getZ(start), getX(end), getY(end), getZ(end), "Wire " + std::to_string(wire_idx), label);
+      }
+      ++path_idx;
+    }
+    if (graph[u].layer_id == graph[v].layer_id) {
+      wire_idx++;
+    } else {
+      via_idx++;
+    }
+  }
+
+  // Setup the view.
+  widget->autoScale();
+  widget->initView();
+  widget->showAxes();
+  widget->resize(1600, 1200);
+  widget->show();
+
+  app.exec();
+#endif
+}
+void LmNetGraphGenerator::toJs(const std::vector<TopoGraph>& graphs, const std::string& path) const
+{
+  std::ofstream file(path);
+  file << "{\n";
+  file << "  \"shapes\": [\n";
+
+  bool first_shape = true;
+
+  for (size_t graph_idx = 0; graph_idx < graphs.size(); ++graph_idx) {
+    const auto& graph = graphs[graph_idx];
+
+    // Calculate connected components for this graph to determine colors
+    std::vector<int> component(boost::num_vertices(graph));
+    auto num_components = boost::connected_components(graph, component.data());
+
+    // Counters for naming shapes within this graph
+    size_t patch_count = 0;
+    size_t wire_count = 0;
+    size_t via_count = 0;
+    size_t pin_count = 0;
+
+    auto [v_iter, v_end] = boost::vertices(graph);
+    for (; v_iter != v_end; ++v_iter) {
+      auto v = *v_iter;
+      auto* content = graph[v].content;
+
+      if (content->is_patch()) {
+        auto* patch = static_cast<LayoutPatch*>(content);
+
+        if (!first_shape)
+          file << ",\n";
+        first_shape = false;
+
+        file << "    {\n";
+        file << "      \"type\": \"Rect\",\n";
+        file << "      \"x1\": " << getLowX(patch->rect) << ",\n";
+        file << "      \"y1\": " << getLowY(patch->rect) << ",\n";
+        file << "      \"z1\": " << getLowZ(patch->rect) << ",\n";
+        file << "      \"x2\": " << getHighX(patch->rect) << ",\n";
+        file << "      \"y2\": " << getHighY(patch->rect) << ",\n";
+        file << "      \"z2\": " << getLowZ(patch->rect) << ",\n";
+        file << "      \"comment\": \"Graph " << graph_idx << " Patch " << patch_count << "\",\n";
+        file << "      \"shapeClass\": \"Graph" << graph_idx << "_Patches\",\n";
+        file << "      \"color\": { \"r\": 0, \"g\": 0.5, \"b\": 0 }\n";
+        file << "    }";
+
+        patch_count++;
+
+      } else if (content->is_wire()) {
+        auto* wire = static_cast<LayoutWire*>(content);
+
+        if (!first_shape)
+          file << ",\n";
+        first_shape = false;
+
+        // Generate color based on component ID (use tab10 colormap approximation)
+        double hue = (component[v] % 10) / 10.0;
+        double r = 0.5 + 0.5 * std::sin(hue * 6.28);
+        double g = 0.5 + 0.5 * std::sin((hue + 0.33) * 6.28);
+        double b = 0.5 + 0.5 * std::sin((hue + 0.66) * 6.28);
+
+        file << "    {\n";
+        file << "      \"type\": \"Wire\",\n";
+        file << "      \"x1\": " << getX(wire->start) << ",\n";
+        file << "      \"y1\": " << getY(wire->start) << ",\n";
+        file << "      \"z1\": " << getZ(wire->start) << ",\n";
+        file << "      \"x2\": " << getX(wire->end) << ",\n";
+        file << "      \"y2\": " << getY(wire->end) << ",\n";
+        file << "      \"z2\": " << getZ(wire->end) << ",\n";
+        file << "      \"comment\": \"Graph " << graph_idx << " Wire " << wire_count << " Component " << component[v] << "\",\n";
+        if (graph_idx == 102) {
+          file << "      \"shapeClass\": \"Graph " << graph_idx << " Wire " << wire_count << " Component " << component[v] << "\",\n";
+        } else {
+          file << "      \"shapeClass\": \"Graph" << graph_idx << "_Wires_Comp" << component[v] << "\",\n";
+        }
+        // file << "      \"shapeClass\": \"Graph" << graph_idx << "_Wires_Comp" << component[v] << "\",\n";
+        file << "      \"color\": { \"r\": " << r << ", \"g\": " << g << ", \"b\": " << b << " }\n";
+        file << "    }";
+
+        wire_count++;
+
+      } else if (content->is_via()) {
+        auto* via = static_cast<LayoutVia*>(content);
+
+        // Generate color based on component ID
+        double hue = (component[v] % 10) / 10.0;
+        double r = 0.5 + 0.5 * std::sin(hue * 6.28);
+        double g = 0.5 + 0.5 * std::sin((hue + 0.33) * 6.28);
+        double b = 0.5 + 0.5 * std::sin((hue + 0.66) * 6.28);
+
+        // Add cut path as a via
+        if (!first_shape)
+          file << ",\n";
+        first_shape = false;
+
+        file << "    {\n";
+        file << "      \"type\": \"Via\",\n";
+        file << "      \"x1\": " << getStartX(via->cut_path) << ",\n";
+        file << "      \"y1\": " << getStartY(via->cut_path) << ",\n";
+        file << "      \"z1\": " << getStartZ(via->cut_path) << ",\n";
+        file << "      \"x2\": " << getEndX(via->cut_path) << ",\n";
+        file << "      \"y2\": " << getEndY(via->cut_path) << ",\n";
+        file << "      \"z2\": " << getEndZ(via->cut_path) << ",\n";
+        file << "      \"comment\": \"Graph " << graph_idx << " Via " << via_count << " Cut Path\",\n";
+        if (graph_idx == 102) {
+          file << "      \"shapeClass\": \"Graph " << graph_idx << " Via " << via_count << " Cut Path Component " << component[v]
+               << "\",\n";
+        } else {
+          file << "      \"shapeClass\": \"Graph" << graph_idx << "_Vias_Comp" << component[v] << "\",\n";
+        }
+        // file << "      \"shapeClass\": \"Graph" << graph_idx << "_Vias_Comp" << component[v] << "\",\n";
+        file << "      \"color\": { \"r\": " << r << ", \"g\": " << g << ", \"b\": " << b << " }\n";
+        file << "    }";
+
+        // Add bottom shapes as rectangles
+        size_t bottom_count = 0;
+        for (auto& bottom_shape : via->bottom_shapes) {
+          if (!first_shape)
+            file << ",\n";
+          first_shape = false;
+
+          file << "    {\n";
+          file << "      \"type\": \"Rect\",\n";
+          file << "      \"x1\": " << getLowX(bottom_shape) << ",\n";
+          file << "      \"y1\": " << getLowY(bottom_shape) << ",\n";
+          file << "      \"z1\": " << getLowZ(bottom_shape) << ",\n";
+          file << "      \"x2\": " << getHighX(bottom_shape) << ",\n";
+          file << "      \"y2\": " << getHighY(bottom_shape) << ",\n";
+          file << "      \"z2\": " << getLowZ(bottom_shape) << ",\n";
+          file << "      \"comment\": \"Graph " << graph_idx << " Via " << via_count << " Bottom " << bottom_count << "\",\n";
+          if (graph_idx == 102) {
+            file << "      \"shapeClass\": \"Graph " << graph_idx << " Via " << via_count << " Bottoms Component " << component[v]
+                 << "\",\n";
+          } else {
+            file << "      \"shapeClass\": \"Graph" << graph_idx << "_ViaBottoms\",\n";
+          }
+          // file << "      \"shapeClass\": \"Graph" << graph_idx << "_ViaBottoms\",\n";
+          file << "      \"color\": { \"r\": 0.5, \"g\": 0.5, \"b\": 0.5 }\n";
+          file << "    }";
+          bottom_count++;
+        }
+
+        // Add top shapes as rectangles
+        size_t top_count = 0;
+        for (auto& top_shape : via->top_shapes) {
+          if (!first_shape)
+            file << ",\n";
+          first_shape = false;
+
+          file << "    {\n";
+          file << "      \"type\": \"Rect\",\n";
+          file << "      \"x1\": " << getLowX(top_shape) << ",\n";
+          file << "      \"y1\": " << getLowY(top_shape) << ",\n";
+          file << "      \"z1\": " << getLowZ(top_shape) << ",\n";
+          file << "      \"x2\": " << getHighX(top_shape) << ",\n";
+          file << "      \"y2\": " << getHighY(top_shape) << ",\n";
+          file << "      \"z2\": " << getLowZ(top_shape) << ",\n";
+          file << "      \"comment\": \"Graph " << graph_idx << " Via " << via_count << " Top " << top_count << "\",\n";
+          if (graph_idx == 102) {
+            file << "      \"shapeClass\": \"Graph " << graph_idx << " Via " << via_count << " Tops Component " << component[v] << "\",\n";
+          } else {
+            file << "      \"shapeClass\": \"Graph" << graph_idx << "_ViaTops\",\n";
+          }
+          // file << "      \"shapeClass\": \"Graph" << graph_idx << "_ViaTops\",\n";
+          file << "      \"color\": { \"r\": 0.5, \"g\": 0.5, \"b\": 0.5 }\n";
+          file << "    }";
+          top_count++;
+        }
+
+        via_count++;
+
+      } else if (content->is_pin()) {
+        auto* pin = static_cast<LayoutPin*>(content);
+        auto pin_name = pin->net_name + "/" + pin->pin_name;
+
+        // Pin color: red for driver pins, yellow for non-driver pins
+        double r = pin->is_driver_pin ? 1.0 : 1.0;
+        double g = pin->is_driver_pin ? 0.0 : 1.0;
+        double b = 0.0;
+        std::string pin_class = pin->is_driver_pin ? "DriverPins" : "ReceiverPins";
+
+        // Add pin shapes as rectangles
+        size_t pin_shape_count = 0;
+        for (auto& pin_shape : pin->pin_shapes) {
+          if (!first_shape)
+            file << ",\n";
+          first_shape = false;
+
+          file << "    {\n";
+          file << "      \"type\": \"Rect\",\n";
+          file << "      \"x1\": " << getLowX(pin_shape) << ",\n";
+          file << "      \"y1\": " << getLowY(pin_shape) << ",\n";
+          file << "      \"z1\": " << getLowZ(pin_shape) << ",\n";
+          file << "      \"x2\": " << getHighX(pin_shape) << ",\n";
+          file << "      \"y2\": " << getHighY(pin_shape) << ",\n";
+          file << "      \"z2\": " << getLowZ(pin_shape) << ",\n";
+          file << "      \"comment\": \"Graph " << graph_idx << " Pin " << pin_name << " Shape " << pin_shape_count << "\",\n";
+          file << "      \"shapeClass\": \"Graph" << graph_idx << "_" << pin_class << "\",\n";
+          file << "      \"color\": { \"r\": " << r << ", \"g\": " << g << ", \"b\": " << b << " }\n";
+          file << "    }";
+          pin_shape_count++;
+        }
+
+        // Add via cuts as vias
+        size_t via_cut_count = 0;
+        for (auto& via_cut : pin->via_cuts) {
+          auto center = getCenter(via_cut);
+
+          if (!first_shape)
+            file << ",\n";
+          first_shape = false;
+
+          file << "    {\n";
+          file << "      \"type\": \"Via\",\n";
+          file << "      \"x1\": " << getX(center) << ",\n";
+          file << "      \"y1\": " << getY(center) << ",\n";
+          file << "      \"z1\": " << getLowZ(via_cut) << ",\n";
+          file << "      \"x2\": " << getX(center) << ",\n";
+          file << "      \"y2\": " << getY(center) << ",\n";
+          file << "      \"z2\": " << getHighZ(via_cut) << ",\n";
+          file << "      \"comment\": \"Graph " << graph_idx << " Pin " << pin_name << " Via Cut " << via_cut_count << "\",\n";
+          file << "      \"shapeClass\": \"Graph" << graph_idx << "_" << pin_class << "_Vias\",\n";
+          file << "      \"color\": { \"r\": " << r << ", \"g\": " << g << ", \"b\": " << b << " }\n";
+          file << "    }";
+          via_cut_count++;
+        }
+
+        pin_count++;
+      }
+    }
+  }
+
+  file << "\n  ]\n";
+  file << "}\n";
 }
 }  // namespace ilm

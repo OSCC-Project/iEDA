@@ -67,6 +67,10 @@
 #include "time/Time.hh"
 #include "usage/usage.hh"
 
+#if CUDA_PROPAGATION
+#include "propagation-cuda/lib_arc.cuh"
+#endif
+
 namespace ista {
 
 static bool IsFileExists(const char *name) {
@@ -87,6 +91,12 @@ Sta::Sta()
       _analysis_mode(AnalysisMode::kMaxMin),
       _graph(&_netlist),
       _clock_groups(sta_clock_cmp) {
+  char config[] = "iSTA";
+  char *argv[] = {config, nullptr};
+  // We need to initialize the log system here, because Sta() may be called in
+  // pybind, which does not have a main function to initialize the log system.
+  Log::init(argv);
+
   _report_tbl_summary = StaReportPathSummary::createReportTable("sta");
   _report_tbl_TNS = StaReportClockTNS::createReportTable("TNS");
 }
@@ -825,16 +835,20 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         remove_to_merge_nets[left_net_name] = the_right_net;
 
       } else if (the_left_net && !the_left_port) {
-        // assign net = input_port;
-
-        LOG_FATAL_IF(!the_right_port) << "the right port is not exist.";
-        the_left_net->addPinPort(the_right_port);
+        // assign net = input_port;        
+        if (the_right_port) {          
+          the_left_net->addPinPort(the_right_port);
+        } else {
+          LOG_ERROR << "the right port is not exist.";
+        }
 
       } else if (the_right_net && !the_right_port) {
         // assign output_port = net;
-
-        LOG_FATAL_IF(!the_left_port) << "the left port is not exist.";
-        the_right_net->addPinPort(the_left_port);
+        if (the_left_port) {
+          the_right_net->addPinPort(the_left_port);
+        } else {
+          LOG_ERROR << "the left port is not exist.";
+        }
 
       } else if (!the_right_net && !the_left_net && the_right_port) {
         // assign output_port = input_port;
@@ -863,11 +877,45 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       }
 
       // remove ununsed nets.
-      if (the_left_net->get_pin_ports().size() == 0) {
+      if (the_left_net && the_left_net->get_pin_ports().size() == 0) {
+        // update the remove to merge nets before remove net.
+        for (auto it = remove_to_merge_nets.begin();
+             it != remove_to_merge_nets.end();) {
+          auto &merge_net = it->second;
+          if (merge_net == the_left_net) {
+            if (the_right_net && the_right_net->get_pin_ports().size() > 0) {
+              it->second = the_right_net; 
+              ++it;
+            } else {
+              it = remove_to_merge_nets.erase(
+                  it); 
+            }
+          } else {
+            ++it;
+          }
+        }
+
         design_netlist.removeNet(the_left_net);
+        the_left_net = nullptr;
       }
 
-      if (the_right_net->get_pin_ports().size() == 0) {
+      if (the_right_net && the_right_net->get_pin_ports().size() == 0) {
+        // update the remove to merge nets before remove net.
+        for (auto it = remove_to_merge_nets.begin();
+             it != remove_to_merge_nets.end();) {
+          auto &merge_net = it->second;
+          if (merge_net == the_right_net) {
+            if (the_left_net) {
+              merge_net = the_left_net;
+              ++it;
+            } else {
+              it = remove_to_merge_nets.erase(it);
+            }
+          } else {
+            ++it;
+          }
+        }
+
         design_netlist.removeNet(the_right_net);
       }
     }
@@ -1021,6 +1069,7 @@ void Sta::initSdcCmd() {
   registerTclCmd(CmdSetOperatingConditions, "set_operating_conditions");
   registerTclCmd(CmdSetWireLoadMode, "set_wire_load_mode");
   registerTclCmd(CmdSetDisableTiming, "set_disable_timing");
+  registerTclCmd(CmdSetCaseAnalysis, "set_case_analysis");
 }
 
 /**
@@ -1412,6 +1461,11 @@ unsigned Sta::buildLibArcsGPU() {
     lib_gpu_arc._cap_unit =
         ((lib_cap_unit == CapacitiveUnit::kFF) ? Lib_Cap_unit::kFF
                                                : Lib_Cap_unit::kPF);
+    auto lib_time_unit = the_lib_arc->get_owner_cell()->get_owner_lib()->get_time_unit();
+    lib_gpu_arc._time_unit =
+        ((lib_time_unit == TimeUnit::kNS) ? Lib_Time_unit::kNS :
+                                          (lib_time_unit == TimeUnit::kPS) ? Lib_Time_unit::kPS : Lib_Time_unit::kFS);
+
     lib_gpu_arc._table = new Lib_Table_GPU[lib_gpu_arc._num_table];
 
     for (size_t index = 0; index < num_table; index++) {
@@ -1420,6 +1474,12 @@ unsigned Sta::buildLibArcsGPU() {
       Lib_Table_GPU gpu_table;
 
       if (!table) {
+        lib_gpu_arc._table[index] = gpu_table;
+        continue;
+      }
+
+      if (table->getAxesSize() == 0) {
+        // (TODO totaosimin), need to process no axes table.
         lib_gpu_arc._table[index] = gpu_table;
         continue;
       }
@@ -1913,10 +1973,13 @@ double Sta::getWNS(const char *clock_name, AnalysisMode mode) {
       StaPathData *path_data;
       FOREACH_PATH_GROUP_END(seq_path_group.get(), path_end)
       FOREACH_PATH_END_DATA(path_end, mode, path_data) {
-        seq_data_queue.push(path_data);
+        seq_data_queue.push(path_data);  
       }
-      auto *worst_seq_data = seq_data_queue.top();
-      WNS = FS_TO_NS(worst_seq_data->getSlack());
+      // 添加队列非空检查
+      if (!seq_data_queue.empty()) {
+        auto *worst_seq_data = seq_data_queue.top();
+        WNS = FS_TO_NS(worst_seq_data->getSlack());
+      }
       break;
     }
   }
@@ -2534,6 +2597,37 @@ unsigned Sta::resetPathData() {
   return 1;
 }
 
+#if CUDA_PROPAGATION
+unsigned Sta::resetGPUData() {
+  _gpu_vertices.clear();
+  _gpu_arcs.clear();
+
+  GPU_Flatten_Data flatten_data;
+  _flatten_data = std::move(flatten_data);
+
+  GPU_Graph gpu_graph;
+  _gpu_graph = std::move(gpu_graph);
+
+  _lib_gpu_arcs.clear();
+
+  free_lib_data_gpu(_gpu_lib_data, _lib_gpu_tables, _lib_gpu_table_ptrs);
+
+  Lib_Data_GPU gpu_lib_data;
+  _gpu_lib_data = std::move(gpu_lib_data);
+
+  _lib_gpu_tables.clear();
+  _lib_gpu_table_ptrs.clear();
+
+  _arc_to_index.clear();
+  _at_to_index.clear();
+  _index_to_at.clear();
+
+  return 1;
+
+}
+#endif
+
+
 /**
  * @brief update the timing data.
  *
@@ -2547,6 +2641,10 @@ unsigned Sta::updateTiming() {
   resetSdcConstrain();
   resetGraphData();
   resetPathData();
+
+#if CUDA_PROPAGATION
+  resetGPUData();
+#endif
 
   StaGraph &the_graph = get_graph();
   if (_propagation_method == PropagationMethod::kDFS) {
@@ -2798,9 +2896,41 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
   // printFlattenData();
 #endif
 
+  // dumpGraphData("/home/taosimin/ysyx_test25/2025-04-05/graph.yaml");
+
   LOG_INFO << "The timing engine run success.";
 
   return 1;
+}
+
+/**
+ * @brief report timing data in memory for online analysis.
+ *
+ * @param n_worst_path_per_clock
+ * @return unsigned
+ */
+std::vector<StaPathWireTimingData> Sta::reportTimingData(unsigned n_worst_path_per_clock) {
+  LOG_INFO << "get wire timing start";
+  std::vector<StaPathWireTimingData> path_timing_data;
+
+  set_n_worst_path_per_clock(n_worst_path_per_clock);
+
+  for (auto analysi_mode : {AnalysisMode::kMax, AnalysisMode::kMin}) {
+    StaReportPathTimingData report_path_timing_data_func(
+        nullptr, analysi_mode, n_worst_path_per_clock);
+    for (auto &[capture_clock, seq_path_group] : _clock_groups) {
+      auto group_timing_data =
+          report_path_timing_data_func.getPathGroupTimingData(
+              seq_path_group.get());
+      path_timing_data.insert(path_timing_data.end(), group_timing_data.begin(),
+                              group_timing_data.end());
+    }
+  }
+
+  LOG_INFO << "the wire timing data size: " << path_timing_data.size();
+  LOG_INFO << "get wire timing end";
+
+  return path_timing_data;
 }
 
 /**
@@ -3226,7 +3356,7 @@ void Sta::printFlattenData() {
 
     output_file << "GPU_AT_DATA_" << at_data_index++ << ": " << std::endl;
     output_file << "  own_vertex: " << own_vertex->getName() << std::endl;
-    output_file << "  vertex level" << own_vertex->get_level() << std::endl;
+    output_file << "  vertex level: " << own_vertex->get_level() << std::endl;
     output_file << "  launch_clock_name: " << launch_clock_name << std::endl;
     output_file << "  launch_clock_index: " << at_data._own_clock_index
                 << std::endl;

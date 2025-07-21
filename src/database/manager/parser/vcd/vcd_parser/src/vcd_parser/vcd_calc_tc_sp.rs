@@ -80,7 +80,7 @@ pub trait VcdCounter {
             VCDValue::BitScalar(bit) => Ok(bit),
             VCDValue::BitVector(bit_vec) => {
                 let index = bus_index.unwrap() as usize;
-                
+
                 let bit_value = if index < bit_vec.len() {
                     &bit_vec[index as usize]
                 } else {
@@ -96,7 +96,7 @@ pub trait VcdCounter {
             VCDValue::BitScalar(bit) => Ok(bit),
             VCDValue::BitVector(bit_vec) => {
                 let index = bus_index.unwrap() as usize;
-                
+
                 let bit_value = if index < bit_vec.len() {
                     &bit_vec[index as usize]
                 } else {
@@ -510,17 +510,12 @@ impl<'a> CalcTcAndSp<'a> {
                 /*count signal */
                 // let cur_signal = Arc::new(Mutex::new(scope_signal.deref()));
                 // Select whether to use multithreading for count signal
-                #[cfg(feature = "multithreading")]
-                {
-                    thread_pool.execute(move || {
-                        self.count_signal(cur_signal, signal_tc_vec, signal_duration_vec);
-                    });
-                }
 
-                #[cfg(not(feature = "multithreading"))]
-                {
-                    self.count_signal(scope_signal, signal_tc_vec, signal_duration_vec);
-                }
+                // thread_pool.execute(move || {
+                //     self.count_signal(cur_signal, signal_tc_vec, signal_duration_vec);
+                // });
+
+                self.count_signal(scope_signal, signal_tc_vec, signal_duration_vec);
             } else {
                 continue;
             }

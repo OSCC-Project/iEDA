@@ -21,7 +21,7 @@ source $::env(TCL_SCRIPT_DIR)/DB_script/db_init_lef.tcl
 #===========================================================
 ##   read def
 #===========================================================
-def_init -path $::env(RESULT_DIR)/iPL_filler_result.def
+def_init -path $::env(RESULT_DIR)/iRT_result.def
 
 #===========================================================
 ##   run gui

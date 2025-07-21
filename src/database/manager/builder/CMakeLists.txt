@@ -5,12 +5,22 @@ add_subdirectory(verilog_builder)
 add_subdirectory(gds_builder)
 add_subdirectory(json_builder)
 
-add_library(IdbBuilder
-    builder.cpp
-    buildNet.cpp
-    buildBus.cpp
-    buildLefData.cpp
-)
+if(BUILD_STATIC_LIB)
+    add_library(IdbBuilder
+        builder.cpp
+        buildNet.cpp
+        buildBus.cpp
+        buildLefData.cpp
+    )
+else()
+    add_library(IdbBuilder SHARED
+        builder.cpp
+        buildNet.cpp
+        buildBus.cpp
+        buildLefData.cpp
+    )
+
+endif()
 
 target_link_libraries(IdbBuilder def_service def_builder lef_service lef_builder verilog_builder gds_builder json_builder)
 

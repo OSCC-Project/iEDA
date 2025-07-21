@@ -642,8 +642,8 @@ unsigned StaApplySdc::processClockUncertainty(
 
     auto& clk_groups = ista->get_clock_groups();
     for (auto& [clk, seq_path_group] : clk_groups) {
-      if (Str::equal(clk->get_clock_name(),
-                     dynamic_cast<SdcClock*>(sdc_clk)->get_clock_name())) {
+      if (sdc_clk->isAllClock() || (Str::equal(clk->get_clock_name(),
+                     dynamic_cast<SdcClock*>(sdc_clk)->get_clock_name()))) {
         StaPathEnd* path_end;
         StaPathData* path_data;
         auto mode =

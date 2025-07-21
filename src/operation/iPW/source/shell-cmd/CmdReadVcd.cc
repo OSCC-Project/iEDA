@@ -43,8 +43,8 @@ CmdReadVcd::CmdReadVcd(const char* cmd_name) : TclCmd(cmd_name) {
 unsigned CmdReadVcd::check() {
   TclOption* file_name_option = getOptionOrArg("file_name");
   TclOption* top_instance_name_option = getOptionOrArg("-top_name");
-  LOG_FATAL_IF(!file_name_option);
-  LOG_FATAL_IF(!top_instance_name_option);
+  LOG_FATAL_IF(!file_name_option) << "vcd file should be specified";
+  LOG_FATAL_IF(!top_instance_name_option) << "top instance name should be specified";
   return 1;
 }
 

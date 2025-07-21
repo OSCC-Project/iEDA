@@ -66,15 +66,13 @@ void DrcEngineInitDef::initDataFromInstances()
     if (idb_inst == nullptr || idb_inst->get_cell_master() == nullptr) {
       continue;
     }
-    /// instance pins
+    /// obs
     for (auto* idb_pin : idb_inst->get_pin_list()->get_pin_list()) {
       initDataFromPin(idb_pin);
     }
-
-    /// obs
-    // for (auto* idb_obs : idb_inst->get_obs_box_list()) {
-    //   initDataFromShape(idb_obs, NET_ID_OBS);
-    // }
+    for (auto* idb_obs : idb_inst->get_obs_box_list()) {
+      initDataFromShape(idb_obs, NET_ID_OBS);
+    }
 
     number++;
   }

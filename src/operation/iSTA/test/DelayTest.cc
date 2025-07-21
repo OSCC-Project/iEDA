@@ -25,6 +25,7 @@
 #include "netlist/Net.hh"
 #include "netlist/Netlist.hh"
 #include "sta/Sta.hh"
+#include "api/TimingEngine.hh"
 
 using ieda::Log;
 using ista::DesignObject;
@@ -36,6 +37,10 @@ using ista::NetPinIterator;
 using ista::RcNet;
 using ista::Sta;
 
+using namespace ista;
+using ieda::Log;
+using ieda::Stats;
+
 namespace {
 
 class DelayTest : public testing::Test {
@@ -46,5 +51,37 @@ class DelayTest : public testing::Test {
   }
   void TearDown() { Log::end(); }
 };
+
+TEST_F(DelayTest, virtual_rc_tree) {
+  auto* timing_engine = TimingEngine::getOrCreateTimingEngine();
+
+  auto& virutal_rc_tree = timing_engine->initVirtualRcTree("virtual_rc_tree");
+
+  auto* root_node = timing_engine->makeOrFindVirtualRCTreeNode("virtual_rc_tree", "root");
+  root_node->setCap(0.1);
+  virutal_rc_tree.set_root(root_node);
+
+  auto* inner_node = timing_engine->makeOrFindVirtualRCTreeNode("virtual_rc_tree", "inner");
+  inner_node->setCap(0.2);
+
+  timing_engine->makeVirtualRCTreeResistor("virtual_rc_tree", root_node, inner_node, 10);
+
+  auto* leaf_node = timing_engine->makeOrFindVirtualRCTreeNode("virtual_rc_tree", "leaf");
+  leaf_node->setCap(0.3);
+
+  timing_engine->makeVirtualRCTreeResistor("virtual_rc_tree", inner_node, leaf_node, 10);
+
+  timing_engine->updateVirtualRCTreeInfo("virtual_rc_tree");
+
+  auto node_delays = timing_engine->getVirtualRCTreeAllNodeDelay("virtual_rc_tree");
+  for (auto& [node_name, delay] : node_delays) {
+    std::cout << node_name << ": " << delay << std::endl;
+  }
+
+  auto node_slews = timing_engine->getVirtualRCTreeAllNodeSlew("virtual_rc_tree", 0.002, TransType::kRise);
+  for (auto& [node_name, slew] : node_slews) {
+    std::cout << node_name << ": " << slew << std::endl;
+  }
+}
 
 }  // namespace

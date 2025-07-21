@@ -1,5 +1,5 @@
 # 3.5 is actually available almost everywhere, but this a good minimum
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.11)
 
 # enable MSVC_RUNTIME_LIBRARY target property
 # see https://cmake.org/cmake/help/latest/policy/CMP0091.html
@@ -14,11 +14,12 @@ option(YAML_CPP_BUILD_TOOLS "Enable parse tools" ON)
 option(YAML_BUILD_SHARED_LIBS "Build yaml-cpp shared library" ${BUILD_SHARED_LIBS})
 
 
-set(yaml-cpp-type SHARED)
-set(yaml-cpp-label-postfix "static")
 if (YAML_BUILD_SHARED_LIBS)
   set(yaml-cpp-type SHARED)
   set(yaml-cpp-label-postfix "shared")
+else()
+  set(yaml-cpp-type STATIC)
+  set(yaml-cpp-label-postfix "static")
 endif()
 
 set(contrib-pattern "src/contrib/*.cpp")

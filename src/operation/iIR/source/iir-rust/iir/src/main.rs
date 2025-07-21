@@ -1,7 +1,6 @@
 mod app;
 mod matrix;
 
-use log;
 fn main() {
     app::init_ir();
 

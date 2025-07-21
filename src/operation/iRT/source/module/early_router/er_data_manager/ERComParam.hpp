@@ -22,30 +22,30 @@ class ERComParam
 {
  public:
   ERComParam() = default;
-  ERComParam(int32_t topo_spilt_length, double congestion_unit, double prefer_wire_unit, double via_unit)
+  ERComParam(int32_t topo_spilt_length, double prefer_wire_unit, double via_unit, double overflow_unit)
   {
-    _topo_spilt_length = 10;
-    _congestion_unit = 2;
-    _prefer_wire_unit = 1;
-    _via_unit = 1;
+    _topo_spilt_length = topo_spilt_length;
+    _prefer_wire_unit = prefer_wire_unit;
+    _via_unit = via_unit;
+    _overflow_unit = overflow_unit;
   }
   ~ERComParam() = default;
   // getter
   int32_t get_topo_spilt_length() const { return _topo_spilt_length; }
-  double get_congestion_unit() const { return _congestion_unit; }
   double get_prefer_wire_unit() const { return _prefer_wire_unit; }
   double get_via_unit() const { return _via_unit; }
+  double get_overflow_unit() const { return _overflow_unit; }
   // setter
   void set_topo_spilt_length(const int32_t topo_spilt_length) { _topo_spilt_length = topo_spilt_length; }
-  void set_congestion_unit(const double congestion_unit) { _congestion_unit = congestion_unit; }
   void set_prefer_wire_unit(const double prefer_wire_unit) { _prefer_wire_unit = prefer_wire_unit; }
   void set_via_unit(const double via_unit) { _via_unit = via_unit; }
+  void set_overflow_unit(const double overflow_unit) { _overflow_unit = overflow_unit; }
 
  private:
   int32_t _topo_spilt_length = 0;
-  double _congestion_unit = 0;
   double _prefer_wire_unit = 0;
   double _via_unit = 0;
+  double _overflow_unit = 0;
 };
 
 }  // namespace irt

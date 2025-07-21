@@ -112,18 +112,18 @@ IdbCoordinate<int32_t>* TimingIDBAdapter::idbLocation(
  *
  * @param num_layer layer number = target routing layer id - first routing layer
  * id by data config
- * @param segment_length
- * @param segment_width
+ * @param segment_length unit is um (micro meter)
+ * @param segment_width unit is um (micro meter)
  * @return double Ω
  */
 double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
-                                       std::optional<double>& segment_width) {
+                                       std::optional<double> segment_width) {
   double segment_resistance = 0;
   IdbLayout* idb_layout = _idb_lef_service->get_layout();
   vector<IdbLayer*>& routing_layers =
       idb_layout->get_layers()->get_routing_layers();
 
-  int routing_layer_1st = 0;  // dmInst->get_routing_layer_1st();
+  int routing_layer_1st = 0;
   int routing_layer_id = num_layer - 1 + routing_layer_1st;
   int routing_layer_size = routing_layers.size();
 
@@ -145,19 +145,24 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
 
   segment_resistance = lef_resistance * segment_length / *segment_width;
 
+  // _debug_csv_file << lef_resistance << "," << segment_length << ","
+  //           << *segment_width << "," << num_layer << ","
+  //           << segment_resistance << "\n";
+
   return segment_resistance;
-}  // namespace ista
+}
 
 /**
  * @brief get segment capacitance.
  *
- * @param num_layer
+ * @param num_layer  layer number = target routing layer id - first routing layer
+ * id by data config
  * @param segment_length unit is um (micro meter)
  * @param segment_width unit is um (micro meter)
  * @return double cap unit is pf
  */
 double TimingIDBAdapter::getCapacitance(int num_layer, double segment_length,
-                                        std::optional<double>& segment_width) {
+                                        std::optional<double> segment_width) {
   double segment_capacitance = 0;
   IdbLayout* idb_layout = _idb_lef_service->get_layout();
   vector<IdbLayer*>& routing_layers =
@@ -729,6 +734,7 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
 
   _ista->set_design_name(_idb_design->get_design_name().c_str());
   int dbu = _idb_design->get_units()->get_micron_dbu();
+  set_dbu(dbu);
   double width = _idb_design->get_layout()->get_die()->get_width() /
                  static_cast<double>(dbu);
   double height = _idb_design->get_layout()->get_die()->get_height() /
@@ -840,16 +846,15 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
 
   auto build_nets = [this, &design_netlist]() {
     // build nets
-    auto db_net_list = _idb_design->get_net_list()->get_net_list();
-    for (auto* db_net : db_net_list) {
+
+    auto process_net = [this, &design_netlist]<typename T>(T* db_net) {
+      std::string raw_name = db_net->get_net_name();
       if ((db_net->get_connect_type() == IdbConnectType::kPower) ||
           (db_net->get_connect_type() == IdbConnectType::kGround)) {
-        continue;
+        return;
       }
 
-      std::string raw_name = db_net->get_net_name();
-
-      std::regex re(R"(\\)");
+      std::regex re(R"(\\)"); 
       std::string net_name = std::regex_replace(raw_name, re, "");
       Net* sta_net = design_netlist.findNet(net_name.c_str());
 
@@ -901,6 +906,16 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
 
       LOG_INFO_EVERY_N(10000)
           << "build net num: " << design_netlist.getNetNum();
+    };
+
+    auto db_net_list = _idb_design->get_net_list()->get_net_list();
+    for (auto* db_net : db_net_list) {
+      process_net(db_net);
+    }
+
+    auto db_special_nets = _idb_design->get_special_net_list()->get_net_list();
+    for (auto* db_special_net : db_special_nets) {
+      process_net(db_special_net);
     }
   };
 

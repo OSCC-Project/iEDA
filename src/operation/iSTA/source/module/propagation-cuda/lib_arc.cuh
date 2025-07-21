@@ -60,8 +60,19 @@ __device__ float find_value(Lib_Table_GPU& lib_table_gpu, float slew,
  * @param lib_arcs_cpu The vector of Lib_Arc_GPU.
  */
 void build_lib_data_gpu(Lib_Data_GPU& lib_data_gpu,
+                        std::vector<Lib_Table_GPU>& lib_tables_gpu,
+                        std::vector<Lib_Table_GPU*>& lib_gpu_table_ptrs,
                         std::vector<Lib_Arc_GPU>& lib_arcs_cpu);
 
+/**
+ * @brief free the gpu memory of Lib_Data_GPU.
+ * 
+ * @param lib_data_gpu 
+ * @return * void 
+ */
+void free_lib_data_gpu(Lib_Data_GPU& lib_data_gpu,
+                       std::vector<Lib_Table_GPU>& lib_tables_gpu,
+                       std::vector<Lib_Table_GPU*>& lib_gpu_table_ptrs);
 
 /**
  * @brief for test.

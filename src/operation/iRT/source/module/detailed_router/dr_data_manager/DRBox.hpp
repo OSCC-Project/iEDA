@@ -39,23 +39,14 @@ class DRBox
   DRIterParam* get_dr_iter_param() { return _dr_iter_param; }
   bool get_initial_routing() const { return _initial_routing; }
   std::vector<DRTask*>& get_dr_task_list() { return _dr_task_list; }
-  std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map()
-  {
-    return _type_layer_net_fixed_rect_map;
-  }
-  std::map<int32_t, std::map<int32_t, std::set<Segment<LayerCoord>*>>>& get_net_pin_access_result_map()
-  {
-    return _net_pin_access_result_map;
-  }
+  std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map() { return _type_layer_net_fixed_rect_map; }
+  std::map<int32_t, std::map<int32_t, std::set<Segment<LayerCoord>*>>>& get_net_pin_access_result_map() { return _net_pin_access_result_map; }
   std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_detailed_result_map() { return _net_detailed_result_map; }
   std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_net_task_detailed_result_map() { return _net_task_detailed_result_map; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
   std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
-  std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_best_net_task_detailed_result_map()
-  {
-    return _best_net_task_detailed_result_map;
-  }
+  std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_best_net_task_detailed_result_map() { return _best_net_task_detailed_result_map; }
   std::vector<Violation>& get_best_violation_list() { return _best_violation_list; }
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
@@ -63,8 +54,7 @@ class DRBox
   void set_dr_iter_param(DRIterParam* dr_iter_param) { _dr_iter_param = dr_iter_param; }
   void set_initial_routing(const bool initial_routing) { _initial_routing = initial_routing; }
   void set_dr_task_list(const std::vector<DRTask*>& dr_task_list) { _dr_task_list = dr_task_list; }
-  void set_type_layer_net_fixed_rect_map(
-      const std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& type_layer_net_fixed_rect_map)
+  void set_type_layer_net_fixed_rect_map(const std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& type_layer_net_fixed_rect_map)
   {
     _type_layer_net_fixed_rect_map = type_layer_net_fixed_rect_map;
   }
@@ -98,20 +88,14 @@ class DRBox
   std::vector<DRNode*>& get_single_task_visited_node_list() { return _single_task_visited_node_list; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
   void set_curr_dr_task(DRTask* curr_dr_task) { _curr_dr_task = curr_dr_task; }
-  void set_start_node_list_list(const std::vector<std::vector<DRNode*>>& start_node_list_list)
-  {
-    _start_node_list_list = start_node_list_list;
-  }
+  void set_start_node_list_list(const std::vector<std::vector<DRNode*>>& start_node_list_list) { _start_node_list_list = start_node_list_list; }
   void set_end_node_list_list(const std::vector<std::vector<DRNode*>>& end_node_list_list) { _end_node_list_list = end_node_list_list; }
   void set_path_node_list(const std::vector<DRNode*>& path_node_list) { _path_node_list = path_node_list; }
   void set_single_task_visited_node_list(const std::vector<DRNode*>& single_task_visited_node_list)
   {
     _single_task_visited_node_list = single_task_visited_node_list;
   }
-  void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list)
-  {
-    _routing_segment_list = routing_segment_list;
-  }
+  void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list) { _routing_segment_list = routing_segment_list; }
   // single path
   PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& get_open_queue() { return _open_queue; }
   std::vector<DRNode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }

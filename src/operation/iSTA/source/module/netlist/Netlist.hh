@@ -183,8 +183,8 @@ class Netlist : public DesignObject {
 
   void reset();
 
-  void writeVerilog(const char* verilog_file_name,
-                    std::set<std::string> exclude_cell_names);
+  void writeVerilog(const char* verilog_file_name="nl.v",
+                    std::set<std::string> exclude_cell_names={});
 
  private:
   std::list<Port> _ports;

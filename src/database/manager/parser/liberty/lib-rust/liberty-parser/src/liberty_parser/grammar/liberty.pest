@@ -1,8 +1,8 @@
 decimal_digits  = _{ ASCII_DIGIT }
 decimal_integer = _{ "-"? ~ (ASCII_DIGIT ~ decimal_digits*) }
 dec_int         = _{ decimal_integer }
-optional_exp    = _{ ("e" | "E") ~ ("+" | "-")? ~ decimal_digits* }
-optional_frac   = _{ "." ~ decimal_digits* }
+optional_exp    = _{ ("e" | "E" | "k" | "K") ~ ("+" | "-")? ~ decimal_digits* }
+optional_frac   = _{ ("." | "_") ~ decimal_digits* }
 float           = @{ dec_int ~ optional_frac? ~ optional_exp? }
 
 bus_index = _{ "[" ~ decimal_digits+ ~ "]" }
@@ -29,8 +29,9 @@ expr_token             = ${ float ~ string? | string }
 simple_attribute_value = _{ expr_operator? ~ expr_token ~ (expr_operator ~ expr_operator? ~ expr_token)* }
 
 id = { lib_id ~ bus_index? ~ (bus_index | bus_slice)? }
+version_id = { decimal_digits* ~ "." ~ decimal_digits+ ~ ("." ~ decimal_digits+)* }
 
-string = _{ id | multiline_string }
+string = _{ id | multiline_string | version_id }
 
 attribute_value  = _{ float | string }
 attribute_values = _{ attribute_value? ~ (("," | WHITESPACE) ~ attribute_value)* }

@@ -29,7 +29,7 @@
 ## USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ################################################################################
 
-CMAKE_MINIMUM_REQUIRED (VERSION 3.1)
+CMAKE_MINIMUM_REQUIRED (VERSION 3.11)
 PROJECT(flute)
 
 SET(CMAKE_CXX_STANDARD 11)

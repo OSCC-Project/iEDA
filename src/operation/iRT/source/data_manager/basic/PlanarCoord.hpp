@@ -52,18 +52,12 @@ class PlanarCoord
 
 struct CmpPlanarCoordByXASC
 {
-  bool operator()(const PlanarCoord& a, const PlanarCoord& b) const
-  {
-    return a.get_x() != b.get_x() ? a.get_x() < b.get_x() : a.get_y() < b.get_y();
-  }
+  bool operator()(const PlanarCoord& a, const PlanarCoord& b) const { return a.get_x() != b.get_x() ? a.get_x() < b.get_x() : a.get_y() < b.get_y(); }
 };
 
 struct CmpPlanarCoordByYASC
 {
-  bool operator()(const PlanarCoord& a, const PlanarCoord& b) const
-  {
-    return a.get_y() != b.get_y() ? a.get_y() < b.get_y() : a.get_x() < b.get_x();
-  }
+  bool operator()(const PlanarCoord& a, const PlanarCoord& b) const { return a.get_y() != b.get_y() ? a.get_y() < b.get_y() : a.get_x() < b.get_x(); }
 };
 
 }  // namespace irt

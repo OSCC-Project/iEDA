@@ -37,6 +37,12 @@ namespace ista {
  *
  */
 void RustLibertyExprBuilder::execute() {
+  if (std::string::npos != _expr_str.find('\\')) {
+    // LOG_INFO << "before remove backslash, expr is " << _expr_str;
+    // contain backslash, remove backslash.
+    _expr_str = Str::concateBackSlashStr(_expr_str);
+    // LOG_INFO << "after remove backslash, expr is " << _expr_str;
+  }
   auto* rust_expr_result = rust_parse_expr(_expr_str.c_str());
   _result_expr = rust_convert_expr(rust_expr_result);
 }
@@ -1016,6 +1022,8 @@ unsigned RustLibertyReader::visitInternalPower(RustLibertyGroupStmt* group) {
   lib_power_arc->set_owner_cell(lib_cell);
 
   auto internal_power_info = std::make_unique<LibInternalPowerInfo>();
+  internal_power_info->set_file_name(group->file_name);
+  internal_power_info->set_line_no(group->line_no);
   lib_power_arc->set_internal_power_info(std::move(internal_power_info));
 
   unsigned is_ok = 1;

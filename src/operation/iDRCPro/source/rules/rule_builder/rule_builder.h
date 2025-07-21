@@ -32,7 +32,8 @@ class DrcRuleBuilder
 
  private:
   /// init rule
-  void init();
+  // TODO: not used
+  // void init(); 
   void initRoutingLayerRules();
   void buildRoutingLayerArea(ConditionRuleLayer* rule_layer, idb::IdbLayerRouting* idb_routing_layer);
   void buildRoutingLayerSpacing(ConditionRuleLayer* rule_layer, idb::IdbLayerRouting* idb_routing_layer);

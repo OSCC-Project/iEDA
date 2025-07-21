@@ -57,6 +57,7 @@ using idb::IdbLayerRouting;
 using idb::IdbLayout;
 using idb::IdbLefService;
 using idb::IdbNet;
+using idb::IdbSpecialNet;
 using idb::IdbNetList;
 using idb::IdbPin;
 using idb::IdbPlacementStatus;
@@ -68,8 +69,14 @@ using idb::IdbTerm;
  */
 class TimingIDBAdapter : public TimingDBAdapter {
  public:
-  explicit TimingIDBAdapter(Sta* ista) : TimingDBAdapter(ista) {}
-  ~TimingIDBAdapter() override = default;
+  explicit TimingIDBAdapter(Sta* ista) : TimingDBAdapter(ista) {
+    _debug_csv_file.open("debug_timing_idb.csv", std::ios_base::trunc);
+    _debug_csv_file << "lef_resistance,segment_length,segment_width,layer,segment_resistance"
+                    << std::endl;
+  }
+  ~TimingIDBAdapter() override {
+    _debug_csv_file.close();
+  }
 
   void set_idb(IdbBuilder* idb) {
     _idb = idb;
@@ -78,6 +85,9 @@ class TimingIDBAdapter : public TimingDBAdapter {
     _idb_design = _idb_def_service->get_design();
   }
   IdbBuilder* get_idb() const { return _idb; }
+
+  void set_dbu(int dbu) { _dbu = dbu; }
+  int get_dbu() const { return _dbu; }
 
   bool isPlaced(DesignObject* pin_or_port) override;
   double dbuToMeters(int distance) const override;
@@ -89,9 +99,9 @@ class TimingIDBAdapter : public TimingDBAdapter {
   IdbCoordinate<int32_t>* idbLocation(DesignObject* pin_or_port);
 
   double getResistance(int num_layer, double segment_length,
-                       std::optional<double>& segment_width);
+                       std::optional<double> segment_width);
   double getCapacitance(int num_layer, double segment_length,
-                        std::optional<double>& segment_width);
+                        std::optional<double> segment_width);
   double getAverageResistance(std::optional<double>& segment_width);
   double getAverageCapacitance(std::optional<double>& segment_width);
 
@@ -173,9 +183,20 @@ class TimingIDBAdapter : public TimingDBAdapter {
     _sta2dbNet[sta_net] = db_net;
     _db2staNet[db_net] = sta_net;
   }
+
   void removeCrossRef(Net* sta_net, IdbNet* db_net) {
     _sta2dbNet.erase(sta_net);
     _db2staNet.erase(db_net);
+  }
+
+  void crossRef(Net* sta_net, IdbSpecialNet* db_net) {
+    _sta2dbSpecialNet[sta_net] = db_net;
+    _db2staSpecialNet[db_net] = sta_net;
+  }
+
+  void removeCrossRef(Net* sta_net, IdbSpecialNet* db_net) {
+    _sta2dbSpecialNet.erase(sta_net);
+    _db2staSpecialNet.erase(db_net);
   }
 
   void crossRef(Pin* sta_pin, IdbPin* db_pin) {
@@ -196,6 +217,7 @@ class TimingIDBAdapter : public TimingDBAdapter {
 
   IdbBuilder* _idb = nullptr;
   IdbDesign* _idb_design = nullptr;
+  int _dbu = 2000;
   IdbDefService* _idb_def_service = nullptr;
   IdbLefService* _idb_lef_service = nullptr;
 
@@ -208,8 +230,13 @@ class TimingIDBAdapter : public TimingDBAdapter {
   FlatMap<IdbNet*, Net*> _db2staNet;
   FlatMap<Net*, IdbNet*> _sta2dbNet;
 
+  FlatMap<IdbSpecialNet*, Net*> _db2staSpecialNet;
+  FlatMap<Net*, IdbSpecialNet*> _sta2dbSpecialNet;
+
   FlatMap<IdbPin*, Pin*> _db2staPin;  // net: get instance_pin
   FlatMap<Pin*, IdbPin*> _sta2dbPin;
+
+  std::ofstream _debug_csv_file;
 };
 
 }  // namespace ista

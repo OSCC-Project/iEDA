@@ -58,6 +58,7 @@ class WirelengthEval
   void destroyFlute();
 
   void evalNetInfo();
+  void evalNetFlute();
   int32_t findHPWL(std::string net_name);
   int32_t findFLUTE(std::string net_name);
   int32_t findGRWL(std::string net_name);

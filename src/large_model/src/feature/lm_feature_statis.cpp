@@ -29,13 +29,15 @@
 #include "idm.h"
 #include "lm_grid_info.h"
 #include "omp.h"
+#include "timing_api.hh"
 #include "usage.hh"
+#include "wirelength_api.h"
 
 namespace ilm {
 void LmFeatureStatis::build()
 {
-  feature_graph();
   feature_patch();
+  feature_graph();
 }
 
 void LmFeatureStatis::feature_graph()
@@ -59,6 +61,7 @@ void LmFeatureStatis::feature_graph()
   double col_factor = static_cast<double>(gridInfoInst.urx - gridInfoInst.llx) / egr_cols;
 
   CONGESTION_API_INST->evalNetInfo();
+  WIRELENGTH_API_INST->evalNetFlute();
 
   auto& net_map = _layout->get_graph().get_net_map();
 #pragma omp parallel for schedule(dynamic)
@@ -80,10 +83,16 @@ void LmFeatureStatis::feature_graph()
     net_feature->height = CONGESTION_API_INST->findBBoxHeight(net_name);
     net_feature->area = CONGESTION_API_INST->findBBoxArea(net_name);
     net_feature->l_ness = CONGESTION_API_INST->findLness(net_name);
+    net_feature->rsmt = WIRELENGTH_API_INST->findNetFLUTE(net_name);
 
     /// 初始化 layer_ratio
+<<<<<<< HEAD
     int min_order = INT32_MAX;  // 记录最小层
     int max_order = INT32_MIN;  // 记录最大层
+=======
+    int16_t min_order = INT8_MAX;  // 记录最小层
+    int16_t max_order = INT8_MIN;  // 记录最大层
+>>>>>>> 049773477f86fa1ebda4eef046e3cd72177be2f0
     int layer_order_top = layout_layers.get_layer_order_top();
     int layer_order_bottom = layout_layers.get_layer_order_bottom();
     int num_layers = layer_order_top - layer_order_bottom + 1;  // 总布线层数
@@ -218,6 +227,10 @@ void LmFeatureStatis::feature_patch()
   omp_init_lock(&lck);
 
   // 评估器特征计算，返回的是 patch_id 和 value 的 map
+  std::map<int, double> cell_power_map = TimingPower_API_INST->patchPowerMap(patch_xy_map);
+  std::map<int, double> cell_timing_map = TimingPower_API_INST->patchTimingMap(patch_xy_map);
+  std::map<int, double> cell_ir_map = TimingPower_API_INST->patchIRDropMap(patch_xy_map);
+
   std::map<int, int> pin_density_map = DENSITY_API_INST->patchPinDensity(patch_xy_map);
   LOG_INFO << "finish pin_density_map, runtime: " << stats.elapsedRunTime();
 
@@ -236,6 +249,12 @@ void LmFeatureStatis::feature_patch()
   std::map<int, double> egr_congestion_map = CONGESTION_API_INST->patchEGRCongestion(patch_xy_map);
   LOG_INFO << "finish egr_congestion_map, runtime: " << stats.elapsedRunTime();
 
+<<<<<<< HEAD
+=======
+  std::map<int, std::map<std::string, double>> layer_congestion_map = CONGESTION_API_INST->patchLayerEGRCongestion(patch_xy_map);
+  LOG_INFO << "finish layer_egr_congestion_map, runtime: " << stats.elapsedRunTime();  
+
+>>>>>>> 049773477f86fa1ebda4eef046e3cd72177be2f0
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < (int) patchs.size(); ++i) {
     auto it = patchs.begin();
@@ -250,9 +269,31 @@ void LmFeatureStatis::feature_patch()
     patch.macro_margin = macro_margin_map[patch_id];
     patch.RUDY_congestion = rudy_congestion_map[patch_id];
     patch.EGR_congestion = egr_congestion_map[patch_id];
+<<<<<<< HEAD
+=======
+
+    // // timing, power, ir drop map
+    auto cell_timing_map_find = cell_timing_map.find(patch_id);
+    if (cell_timing_map_find != cell_timing_map.end()) {
+      patch.timing_map = cell_timing_map_find->second;
+    }
+
+    auto cell_power_map_find = cell_power_map.find(patch_id);
+    if (cell_power_map_find != cell_power_map.end()) {
+      patch.power_map = cell_power_map[patch_id];
+    }
+
+    auto cell_ir_map_find = cell_ir_map.find(patch_id);
+    if (cell_ir_map_find != cell_ir_map.end()) {
+      patch.ir_drop_map = cell_ir_map[patch_id];
+    }
+>>>>>>> 049773477f86fa1ebda4eef046e3cd72177be2f0
 
     for (auto& [layer_id, patch_layer] : patch.get_layer_map()) {
       patch_layer.wire_width = layout_layers.findLayoutLayer(layer_id)->get_wire_width();
+      // 获取每一层对应patch的拥塞值
+      std::string layer_name = layout_layers.findLayoutLayer(layer_id)->get_layer_name();
+      patch_layer.congestion = layer_congestion_map[patch_id][layer_name];
 
       for (auto& [net_id, lm_net] : patch_layer.get_sub_nets()) {
         for (auto& wire : lm_net.get_wires()) {

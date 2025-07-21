@@ -52,7 +52,7 @@ struct GetViolationTypeName
       case ViolationEnumType::kArea:
         return "Minimum Area";
       case ViolationEnumType::kAreaEnclosed:
-        return "Encolsed Area";
+        return "MinHole";
       case ViolationEnumType::kShort:
         return "Metal Short";
       case ViolationEnumType::kDefaultSpacing:
@@ -83,7 +83,7 @@ struct GetViolationType
   {
     if (type_name == "Minimum Area") {
       return ViolationEnumType::kArea;
-    } else if (type_name == "Encolsed Area") {
+    } else if (type_name == "MinHole") {
       return ViolationEnumType::kAreaEnclosed;
     } else if (type_name == "Metal Short") {
       return ViolationEnumType::kShort;

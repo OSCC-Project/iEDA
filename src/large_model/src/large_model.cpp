@@ -18,6 +18,7 @@
 #include "large_model.h"
 
 #include "Log.hh"
+#include "MemoryMonitor.hh"
 #include "idm.h"
 #include "init_sta.hh"
 #include "lm_feature.h"
@@ -71,15 +72,23 @@ std::map<int, LmNet> LargeModel::getGraph(std::string path)
 
 void LargeModel::buildFeature(const std::string dir)
 {
-  /// build layout data
-  _data_manager.buildLayoutData();
+  {
+    /// build layout data
+    MemoryMonitor monitor("buildLayoutData", "./memory_usage.log");
+    _data_manager.buildLayoutData();
+  }
 
-  /// build graph
-  _data_manager.buildGraphData();
+  {
+    /// build graph
+    MemoryMonitor monitor("buildGraphData", "./memory_usage.log");
+    _data_manager.buildGraphData();
+  }
 
+  {
   /// build patch data
-  buildPatchData(dir);
-
+    MemoryMonitor monitor("buildPatchData", "./memory_usage.log");
+    buildPatchData(dir);
+  }
   // build pattern
   // _data_manager.buildPatternData();
 
@@ -97,10 +106,18 @@ void LargeModel::generateFeature(const std::string dir)
 {
   auto* patch_grid = _data_manager.patch_dm == nullptr ? nullptr : &_data_manager.patch_dm->get_patch_grid();
   LmFeature feature(&_data_manager.layout_dm.get_layout(), patch_grid, dir);
-
-  feature.buildFeatureDrc();
-  feature.buildFeatureStatis();
-  feature.buildFeatureTiming();
+  {
+    MemoryMonitor monitor("buildFeatureTiming", "./memory_usage.log");
+    feature.buildFeatureTiming();
+  }
+  {
+    MemoryMonitor monitor("buildFeatureDrc", "./memory_usage.log");
+    feature.buildFeatureDrc();
+  }
+  {
+    MemoryMonitor monitor("buildFeatureStatis", "./memory_usage.log");
+    feature.buildFeatureStatis();
+  }
 }
 
 /// for run large model sta api.

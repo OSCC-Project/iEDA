@@ -23,6 +23,8 @@
  * @FilePath: /irefactor/src/operation/iPL/source/module/global_placer/electrostatic_placer/NesterovPlace.cc
  * Contact : https://github.com/sjchanson
  */
+#include <boost/polygon/polygon.hpp>
+#include <boost/geometry.hpp>
 
 #include "NesterovPlace.hh"
 
@@ -38,8 +40,7 @@
 #include "tool_manager.h"
 #include "usage/usage.hh"
 #include "PLAPI.hh"
-#include <boost/polygon/polygon.hpp>
-#include <boost/geometry.hpp>
+
 
 #ifdef BUILD_QT
 #include "utility/Image.hh"

@@ -485,12 +485,16 @@ unsigned StaGPUFwdPropagation::prepareGPUData(StaGraph* the_graph) {
 
   auto* ista = getSta();
   ista->buildLibArcsGPU();
-  auto& lib_arcs_gpu = ista->get_lib_gpu_arcs();
+  auto& lib_arcs_host = ista->get_lib_gpu_arcs();
   Lib_Data_GPU lib_data_gpu;
-  build_lib_data_gpu(lib_data_gpu, lib_arcs_gpu);
+  std::vector<Lib_Table_GPU> lib_gpu_tables;
+  std::vector<Lib_Table_GPU*> lib_gpu_tables_ptrs; 
+  build_lib_data_gpu(lib_data_gpu, lib_gpu_tables, lib_gpu_tables_ptrs, lib_arcs_host);
 
   // save lib data
   ista->set_gpu_lib_data(std::move(lib_data_gpu));
+  ista->set_lib_gpu_tables(std::move(lib_gpu_tables));
+  ista->set_lib_gpu_table_ptr(std::move(lib_gpu_tables_ptrs));
 
   LOG_INFO << "prepare lib data end";
   CPU_PROF_END(0, "prepare lib data");
@@ -555,7 +559,7 @@ unsigned StaGPUFwdPropagation::prepareGPUData(StaGraph* the_graph) {
   for (auto& [level, the_arcs] : _level_to_arcs) {
     std::vector<unsigned> arc_indexes;
     for (auto* the_arc : the_arcs) {
-      arc_indexes.emplace_back(arc_to_index[the_arc]);
+      arc_indexes.emplace_back(arc_to_index.at(the_arc));
     }
     level_to_arc_index[level] = std::move(arc_indexes);
   }

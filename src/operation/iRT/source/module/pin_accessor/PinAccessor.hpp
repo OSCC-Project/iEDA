@@ -108,15 +108,19 @@ class PinAccessor
   double getEstimateWireCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   double getEstimateViaCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   void updateViolationList(PABox& pa_box);
-  std::vector<Violation> getCostViolationList(PABox& pa_box);
+  std::vector<Violation> getAmongNetViolationList(PABox& pa_box);
+  void updateBestResult(PABox& pa_box);
   void updateTaskSchedule(PABox& pa_box, std::vector<PATask*>& routing_task_list);
-  void uploadAccessResult(PABox& pa_box);
-  void uploadViolation(PABox& pa_box);
+  void selectBestResult(PABox& pa_box);
+  void uploadBestResult(PABox& pa_box);
   void freePABox(PABox& pa_box);
-  int32_t getViolationNum();
+  int32_t getViolationNum(PAModel& pa_model);
   void uploadViolation(PAModel& pa_model);
-  std::vector<Violation> getCostViolationList(PAModel& pa_model);
+  std::vector<Violation> getAmongNetViolationList(PAModel& pa_model);
+  void updateBestResult(PAModel& pa_model);
   bool stopIteration(PAModel& pa_model);
+  void selectBestResult(PAModel& pa_model);
+  void uploadBestResult(PAModel& pa_model);
   void uploadAccessPoint(PAModel& pa_model);
 
 #if 1  // update env
@@ -125,9 +129,9 @@ class PinAccessor
   void updateRoutedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
   void addViolationToGraph(PABox& pa_box, Violation& violation);
   void addViolationToGraph(PABox& pa_box, LayerRect& searched_rect, std::vector<Segment<LayerCoord>>& overlap_segment_list);
-  std::map<PANode*, std::set<Orientation>> getNodeOrientationMap(PABox& pa_box, NetShape& net_shape, bool need_enlarged);
-  std::map<PANode*, std::set<Orientation>> getRoutingNodeOrientationMap(PABox& pa_box, NetShape& net_shape, bool need_enlarged);
-  std::map<PANode*, std::set<Orientation>> getCutNodeOrientationMap(PABox& pa_box, NetShape& net_shape, bool need_enlarged);
+  std::map<PANode*, std::set<Orientation>> getNodeOrientationMap(PABox& pa_box, NetShape& net_shape);
+  std::map<PANode*, std::set<Orientation>> getRoutingNodeOrientationMap(PABox& pa_box, NetShape& net_shape);
+  std::map<PANode*, std::set<Orientation>> getCutNodeOrientationMap(PABox& pa_box, NetShape& net_shape);
 #endif
 
 #if 1  // exhibit
@@ -142,7 +146,7 @@ class PinAccessor
 #if 1  // debug
   void debugPlotPAModel(PAModel& pa_model, std::string flag);
   void debugCheckPABox(PABox& pa_box);
-  void debugPlotPABox(PABox& pa_box, int32_t curr_task_idx, std::string flag);
+  void debugPlotPABox(PABox& pa_box,  std::string flag);
 #endif
 };
 

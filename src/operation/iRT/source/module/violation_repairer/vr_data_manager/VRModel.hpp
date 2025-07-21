@@ -20,6 +20,7 @@
 #include "VRBox.hpp"
 #include "VRIterParam.hpp"
 #include "VRNet.hpp"
+#include "VRSolution.hpp"
 
 namespace irt {
 

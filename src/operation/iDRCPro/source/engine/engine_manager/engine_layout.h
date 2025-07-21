@@ -54,7 +54,7 @@ class DrcEngineLayout
 
   bool addRect(int llx, int lly, int urx, int ury, int net_id);
 
-  void combineLayout(DrcDataManager* data_manager);
+  void combineLayout();
 
   /// engine RTree
   void addRTreeSubLayout(DrcEngineSubLayout* sub_layout);

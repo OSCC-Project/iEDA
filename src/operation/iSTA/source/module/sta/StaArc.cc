@@ -174,11 +174,6 @@ void printLibTableGPU(const Lib_Table_GPU& gpu_table) {
   std::cout << ");" << std::endl;
 }
 
-/**
- * @brief build gpu lib arc(axes and values) according to the lib arc.
- */
-void StaInstArc::buildLibArcsGPU() {
 
-}
 
 }  // namespace ista

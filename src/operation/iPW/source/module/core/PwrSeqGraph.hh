@@ -143,7 +143,7 @@ class PwrSeqVertex {
   void addSnkArc(PwrSeqArc* snk_arc);
   auto& get_src_arcs() { return _src_arcs; }
   auto& get_snk_arcs() { return _snk_arcs; }
-  Instance* get_own_seq_inst() {
+  ista::Instance* get_own_seq_inst() {
     return !_seq_in_vertexes.empty()
                ? (*_seq_in_vertexes.begin())->getOwnInstance()
                : nullptr;

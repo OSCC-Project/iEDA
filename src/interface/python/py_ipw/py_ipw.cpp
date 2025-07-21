@@ -19,6 +19,7 @@
 #include <string>
 
 #include "api/Power.hh"
+#include "api/PowerEngine.hh"
 #include "sta/Sta.hh"
 
 namespace python_interface {
@@ -37,6 +38,49 @@ unsigned reportPower() {
 
   return 1;
 }
+
+/**
+ * @brief interface for python of report power.
+ *
+ * @return unsigned
+ */
+unsigned report_power() {
+  ista::Sta* ista = ista::Sta::getOrCreateSta();
+  ipower::Power* ipower = ipower::Power::getOrCreatePower(&(ista->get_graph()));
+
+  ipower->runCompleteFlow();
+  return 1;
+}
+
+/**
+ * @brief interface for python of read pg spef.
+ * 
+ * @param pg_spef_file 
+ * @return true 
+ * @return false 
+ */
+bool read_pg_spef(std::string pg_spef_file) {
+  ista::Sta* ista = ista::Sta::getOrCreateSta();
+  ipower::Power* ipower = ipower::Power::getOrCreatePower(&(ista->get_graph()));
+
+  return ipower->readPGSpef(pg_spef_file.c_str());
+}
+
+/**
+ * @brief interface for python of report ir drop.
+ * 
+ * @param power_net_name 
+ * @return unsigned 
+ */
+unsigned report_ir_drop(std::string power_net_name) {
+  auto* power_engine = ipower::PowerEngine::getOrCreatePowerEngine();
+
+  power_engine->runIRAnalysis(power_net_name);
+  power_engine->reportIRAnalysis();
+
+  return 1;
+}
+
 
 unsigned create_data_flow() {
   auto* power_engine = ipower::PowerEngine::getOrCreatePowerEngine();

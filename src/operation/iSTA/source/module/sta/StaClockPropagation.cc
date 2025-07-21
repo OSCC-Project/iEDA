@@ -239,6 +239,10 @@ unsigned StaClockPropagation::propagateClock(StaVertex* the_vertex,
       continue;
     }
 
+    if (src_arc->is_disable_arc()) {
+      continue;
+    }
+
     auto* snk_vertex = src_arc->get_snk();
     Instance* the_inst = get_vertex_own_instance(the_vertex);
     if (the_inst &&
@@ -346,6 +350,8 @@ unsigned StaClockPropagation::operator()(StaGraph* /* the_graph */) {
   };
 
   unsigned is_ok = 1;
+
+  LOG_INFO << "clock propagation clock num: " << clocks.size();
 
   for (auto& clock : clocks) {
     if (((_prop_type == PropType::kIdealClockProp) &&

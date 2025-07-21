@@ -22,6 +22,7 @@
 
 #include <unordered_map>
 #include <utility>
+#include <limits>
 
 #include "CTSAPI.hh"
 #include "CtsConfig.hh"

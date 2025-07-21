@@ -397,6 +397,15 @@ class Sta {
   void set_gpu_lib_data(Lib_Data_GPU&& lib_data_gpu) { _gpu_lib_data = std::move(lib_data_gpu); }
   auto& get_gpu_lib_data() { return _gpu_lib_data; }
 
+  void set_lib_gpu_tables(std::vector<Lib_Table_GPU> lib_gpu_tables) {
+    _lib_gpu_tables = std::move(lib_gpu_tables);
+  }
+  auto& get_lib_gpu_tables() { return _lib_gpu_tables; }
+
+  void set_lib_gpu_table_ptr(std::vector<Lib_Table_GPU*> lib_gpu_table_ptrs) {
+    _lib_gpu_table_ptrs = std::move(lib_gpu_table_ptrs);
+  }
+  auto& get_lib_gpu_table_ptrs() { return _lib_gpu_table_ptrs; }
   void set_lib_gpu_arcs(std::vector<Lib_Arc_GPU>&& lib_gpu_arcs) {
     _lib_gpu_arcs = std::move(lib_gpu_arcs);
   }
@@ -547,12 +556,17 @@ class Sta {
 
   unsigned resetGraphData();
   unsigned resetPathData();
+#if CUDA_PROPAGATION
+  unsigned resetGPUData();
+#endif
   unsigned updateTiming();
   unsigned updateClockTiming();
   std::set<std::string> findStartOrEnd(StaVertex* the_vertex, bool is_find_end);
   unsigned reportTiming(std::set<std::string>&& exclude_cell_names = {},
                         bool is_derate = false, bool is_clock_cap = false,
                         bool is_copy = true);
+
+  std::vector<StaPathWireTimingData> reportTimingData(unsigned n_worst_path_per_clock);
   unsigned reportUsedLibs();
   unsigned reportWirePaths();
 
@@ -675,12 +689,16 @@ class Sta {
   std::vector<GPU_Vertex> _gpu_vertices; //!< gpu flatten vertex, arc data.
   std::vector<GPU_Arc> _gpu_arcs;
   GPU_Flatten_Data _flatten_data;
-  GPU_Graph _gpu_graph; //!< The gpu graph mapped to sta graph.
-  Lib_Data_GPU _gpu_lib_data; //!< The gpu lib arc data.
-  std::vector<ista::Lib_Arc_GPU> _lib_gpu_arcs; //!< The gpu lib arc data.
-  std::map<StaArc*, unsigned> _arc_to_index; //!< The arc map to gpu index.
-  std::map<StaPathDelayData*, unsigned> _at_to_index; //!< The at map to gpu index.
-  std::map<unsigned, StaPathDelayData*> _index_to_at; //!< The gpu index to at map.
+  GPU_Graph _gpu_graph;        //!< The gpu graph mapped to sta graph.
+  std::vector<Lib_Arc_GPU> _lib_gpu_arcs;  //!< The gpu lib arc data.
+  Lib_Data_GPU _gpu_lib_data;  //!< The gpu lib arc data.
+  std::vector<Lib_Table_GPU> _lib_gpu_tables; //!< The gpu lib table data.
+  std::vector<Lib_Table_GPU*> _lib_gpu_table_ptrs; //!< The gpu lib table data.
+  std::map<StaArc*, unsigned> _arc_to_index;     //!< The arc map to gpu index.
+  std::map<StaPathDelayData*, unsigned>
+      _at_to_index;  //!< The at map to gpu index.
+  std::map<unsigned, StaPathDelayData*>
+      _index_to_at;  //!< The gpu index to at map.
 #endif
 
   FORBIDDEN_COPY(Sta);

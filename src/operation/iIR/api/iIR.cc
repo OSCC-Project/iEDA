@@ -25,10 +25,12 @@
 #include "iIR.hh"
 
 #include <string_view>
+#include <optional>
 
 #include "ir-solver/IRSolver.hh"
 #include "log/Log.hh"
 #include "matrix/IRMatrix.hh"
+#include "usage/usage.hh"
 
 namespace iir {
 
@@ -64,6 +66,8 @@ unsigned iIR::readInstancePowerDB(std::string_view instance_power_file_path) {
 }
 
 unsigned iIR::setInstancePowerData(std::vector<IRInstancePower> instance_power_data) {
+  _nominal_voltage = instance_power_data[0]._nominal_voltage;
+
   RustVec c_instance_power_data;
   c_instance_power_data.data = instance_power_data.data();
   c_instance_power_data.len = instance_power_data.size();
@@ -78,8 +82,20 @@ unsigned iIR::setInstancePowerData(std::vector<IRInstancePower> instance_power_d
  *
  */
 unsigned iIR::solveIRDrop(const char* net_name) {
+  if (!_rc_data) {
+    LOG_ERROR << "no " << net_name << " RC data to solve IR drop";
+    return 0;
+  }
+
+  CPU_PROF_START(0);
+
+  LOG_INFO << "solve " << net_name << " IR drop start";
+
   auto one_net_matrix_data =
       build_one_net_conductance_matrix_data(_rc_data, net_name);
+
+  double sum_resistance = get_sum_resistance(_rc_data, net_name);
+  LOG_INFO << "sum resistance: " << sum_resistance;
 
   IRMatrix ir_matrix;
   auto G_matrix = ir_matrix.buildConductanceMatrix(one_net_matrix_data);
@@ -89,8 +105,26 @@ unsigned iIR::solveIRDrop(const char* net_name) {
   auto J_vector = ir_matrix.buildCurrentVector(current_rust_map,
                                                one_net_matrix_data.node_num);
 
-  IRSolver ir_solver;
-  auto grid_voltages = ir_solver(G_matrix, J_vector);
+  // Get the minimum element of J_vector
+  double min_element = J_vector.minCoeff();
+  LOG_INFO << "minimum element in J_vector: " << min_element;
+
+  std::unique_ptr<IRSolver> ir_solver;
+  if (_solver_method == IRSolverMethod::kLUSolver) {
+    LOG_INFO << "Using LU solver";
+    ir_solver = std::make_unique<IRLUSolver>();
+  } else if (_solver_method == IRSolverMethod::kCGSolver) {
+    LOG_INFO << "Using CG solver";
+    ir_solver = std::make_unique<IRCGSolver>(_nominal_voltage);
+  } else {
+    LOG_ERROR << "unknown IR solver method";
+    return 0;
+  }
+
+  auto grid_voltages = (*ir_solver)(G_matrix, J_vector);
+
+  std::optional<std::pair<std::string, double>> max_ir_drop;
+  std::optional<std::pair<std::string, double>> min_ir_drop;
 
   auto instance_node_ids = get_instance_node_ids(_rc_data, net_name);
   uintptr_t* instance_id;
@@ -98,11 +132,33 @@ unsigned iIR::solveIRDrop(const char* net_name) {
     double ir_drop = grid_voltages[*instance_id];
     std::string instance_name = get_instance_name(_rc_data, net_name, *instance_id);
 
-    LOG_INFO << "instance name " << instance_name << " ir drop "
-             << ir_drop;
+    // LOG_INFO << "instance: " << instance_name << " ir drop: "
+    //          << ir_drop;
+
+    if (!max_ir_drop) {
+      max_ir_drop = {instance_name, ir_drop};
+      min_ir_drop = {instance_name, ir_drop};
+    } else {
+      if (ir_drop > max_ir_drop->second) {
+        max_ir_drop = {instance_name, ir_drop};
+      }
+
+      if (ir_drop < min_ir_drop->second) {
+        min_ir_drop = {instance_name, ir_drop};
+      }
+
+    }
+
+
     _instance_to_ir_drop[instance_name] = ir_drop;
   }
 
+  LOG_INFO << "solve " << net_name << " IR drop end";
+
+  LOG_INFO << "max ir drop: " << max_ir_drop->first << " : " << max_ir_drop->second;
+  LOG_INFO << "min ir drop: " << min_ir_drop->first << " : " << min_ir_drop->second;
+
+  CPU_PROF_END(0, "solve IR drop");
   return 1;
 }
 

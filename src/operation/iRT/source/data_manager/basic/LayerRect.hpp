@@ -27,8 +27,7 @@ class LayerRect : public PlanarRect
   LayerRect() = default;
   LayerRect(const PlanarRect& rect_2d, const int32_t layer_idx = -1) : PlanarRect(rect_2d) { _layer_idx = layer_idx; }
   LayerRect(const PlanarCoord& ll, const PlanarCoord& ur, const int32_t layer_idx = -1) : PlanarRect(ll, ur) { _layer_idx = layer_idx; }
-  LayerRect(const int32_t ll_x, const int32_t ll_y, const int32_t ur_x, const int32_t ur_y, const int32_t layer_idx = -1)
-      : PlanarRect(ll_x, ll_y, ur_x, ur_y)
+  LayerRect(const int32_t ll_x, const int32_t ll_y, const int32_t ur_x, const int32_t ur_y, const int32_t layer_idx = -1) : PlanarRect(ll_x, ll_y, ur_x, ur_y)
   {
     _layer_idx = layer_idx;
   }

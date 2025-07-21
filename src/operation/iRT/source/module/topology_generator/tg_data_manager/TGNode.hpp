@@ -46,18 +46,20 @@ class TGNode : public PlanarCoord
     }
     return neighbor_node;
   }
-  double getCongestionCost(Orientation orientation)
+  double getOverflowCost(Orientation orientation, double overflow_cost)
   {
     double cost = 0;
-    int32_t node_demand = 0;
-    if (RTUTIL.exist(_orient_demand_map, orientation)) {
-      node_demand = _orient_demand_map[orientation];
+    if (orientation != Orientation::kAbove && orientation != Orientation::kBelow) {
+      int32_t node_demand = 0;
+      if (RTUTIL.exist(_orient_demand_map, orientation)) {
+        node_demand = _orient_demand_map[orientation];
+      }
+      int32_t node_supply = 0;
+      if (RTUTIL.exist(_orient_supply_map, orientation)) {
+        node_supply = _orient_supply_map[orientation];
+      }
+      cost += (calcCost(node_demand + 1, node_supply) * overflow_cost);
     }
-    int32_t node_supply = 0;
-    if (RTUTIL.exist(_orient_supply_map, orientation)) {
-      node_supply = _orient_supply_map[orientation];
-    }
-    cost += calcCost(node_demand + 1, node_supply);
     return cost;
   }
   double calcCost(double demand, double supply)

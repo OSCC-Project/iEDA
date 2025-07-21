@@ -3,8 +3,10 @@ setPAComParam:设置参数
 initAccessPointList:用boost得到pinshape上的合法区域并生成ap
 uploadAccessPointList:将中间结果暂时存储至顶层
 iterativePAModel:迭代PAModel
+    initRoutingState:初始化布线状态
     setPAIterParam:设置参数
     initPABoxMap:构建PABox框架,里面主要数据为空
+    resetRoutingState:重置布线状态
     buildBoxSchedule:构建Box布线的调度表
     routePABoxMap:
         buildFixedRect:将GCellmap中的fix_rect(与此Box覆盖)以指针的方式拷贝到Box内,不需要对GCellmap删除或添加
@@ -15,13 +17,15 @@ iterativePAModel:迭代PAModel
         buildLayerNodeMap:构建Box的Graph,只有节点,其他信息后续构建
         buildPANodeNeighbor:将所有节点连接
         buildOrientNetMap:构建Graph的cost,fix_rect从Box中得到,在pa阶段net_pin_access_result为布线结果
+        exemptPinShape:排除掉pin_shape上的障碍cost
         routePABox:
             initTaskSchedule:初始化task布线调度表
-                routePATask:给task布线,在此函数末尾,布线结果从graph中删除,再加入新的结果
+            routePATask:给task布线,在此函数末尾,布线结果从graph中删除,再加入新的结果
             updateViolationList:首先得到Violation存到Box下面,然后Violation结果从graph中删除,再加入新的结果
-            getTaskScheduleByViolation:通过Violation得到新的布线调度
-        uploadAccessResult:将access数据,加入GCellMap
-        uploadViolation:将violation加入GCellMap
+            updateBestResult:更新最优结果
+            updateTaskSchedule:通过Violation得到新的布线调度
+        selectBestResult:选择box的最优结果上传
         freePABox:析构
     uploadViolation:将整个版图结果进行检查并将violation加入GCellMap
+    updateBestResult:更新PAModel中的最优结果
 uploadAccessPoint:将access数据更新到顶层GCellMap

@@ -71,7 +71,7 @@ double PwrCalcSPData::getSPData(std::string_view port_name, Instance* inst) {
  * @return double
  */
 double PwrCalcSPData::calcSPData(RustLibertyExpr* expr, Instance* inst) {
-  double sp_data;
+  double sp_data = 0.0;
   const char* port_name = expr->port_name;
   auto* left_expr = rust_get_expr_left(expr);
   auto* right_expr = rust_get_expr_right(expr);

@@ -60,6 +60,7 @@ class LmPatchLayer
   int wire_width = 0;
   int wire_len = 0;
   double wire_density = 0.0;
+  double congestion = 0.0;
 
  private:
   std::map<int, LmNet> _sub_nets;  /// int : net id
@@ -96,6 +97,11 @@ class LmPatch
   int macro_margin = 0;
   double RUDY_congestion = -1;
   double EGR_congestion = -1;
+
+  // timing, power, IR Drop map
+  double timing_map = 0.0;
+  double power_map = 0.0;
+  double ir_drop_map = 0.0;
 
  private:
   std::map<int, LmPatchLayer> _layer_map;  /// int : layer id

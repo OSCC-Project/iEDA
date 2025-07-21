@@ -115,26 +115,35 @@ class LmNode
 
   // getter
   uint64_t get_node_id();
-  int get_x();
-  int get_y();
-  int get_row_id() { return _row_id; }
-  int get_col_id() { return _col_id; }
-  int32_t get_layer_id() { return _layer_id; }
+  int64_t get_x();
+  int64_t get_y();
+  int64_t get_row_id() { return _row_id; }
+  int64_t get_col_id() { return _col_id; }
+  int16_t get_layer_id() { return _layer_id; }
+  int32_t get_realx() { return _real_x; }
+  int32_t get_realy() { return _real_y; }
 
   LmNodeData* get_node_data(int net_id = -1, bool b_create = false);
 
   // setter
-  void set_row_id(int row_id) { _row_id = row_id; }
-  void set_col_id(int col_id) { _col_id = col_id; }
-  void set_layer_id(int32_t layer_id) { _layer_id = layer_id; }
+  void set_row_id(int64_t row_id) { _row_id = row_id; }
+  void set_col_id(int64_t col_id) { _col_id = col_id; }
+  void set_layer_id(int16_t layer_id) { _layer_id = layer_id; }
+  void set_real_coordinate(int32_t real_x, int32_t real_y)
+  {
+    _real_x = real_x;
+    _real_y = real_y;
+  }
 
   // operator
 
  private:
-  int16_t _row_id = -1;  // node order of layer rows
-  int16_t _col_id = -1;  // node order of layer cols
-  int8_t _layer_id = -1;
+  int64_t _row_id = -1;  // node order of layer rows
+  int64_t _col_id = -1;  // node order of layer cols
+  int16_t _layer_id = -1;
   LmNodeData* _node_data = nullptr;
+  int32_t _real_x = -1;
+  int32_t _real_y = -1;
   //   std::map<int, LmNodeData> _data_map;
 };
 

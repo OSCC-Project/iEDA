@@ -56,6 +56,9 @@ int registerCommands() {
   registerTclCmd(CmdReadVcd, "read_vcd");
   registerTclCmd(CmdReportPower, "report_power");
 
+  registerTclCmd(CmdReadPGSpef, "read_pg_spef");
+  registerTclCmd(CmdReportIRDrop, "report_ir_drop");
+
   return EXIT_SUCCESS;
 }
 

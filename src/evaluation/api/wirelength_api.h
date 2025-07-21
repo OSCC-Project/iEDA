@@ -35,6 +35,7 @@ class WirelengthAPI
 
   void evalNetInfo();
   void evalNetInfoPure();
+  void evalNetFlute();
   int32_t findNetHPWL(std::string net_name);
   int32_t findNetFLUTE(std::string net_name);
   int32_t findNetGRWL(std::string net_name);

@@ -191,9 +191,9 @@ inline GridManager::GridManager(Rectangle<int32_t> region, int32_t grid_cnt_x, i
       _shape(std::move(region)),
       _grid_cnt_x(grid_cnt_x),
       _grid_cnt_y(grid_cnt_y),
-      _available_ratio(available_ratio),
       _grid_size_x(grid_size_x),
-      _grid_size_y(grid_size_y)
+      _grid_size_y(grid_size_y),
+      _available_ratio(available_ratio)
 {
   init();
 }

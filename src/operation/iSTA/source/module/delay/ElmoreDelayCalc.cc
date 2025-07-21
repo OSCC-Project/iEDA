@@ -48,18 +48,17 @@
  * @version 0.1
  * @date 2021-01-27
  */
-
+#include "ElmoreDelayCalc.hh"
 #include <numeric>
 #include <queue>
 #include <utility>
 
-#include "ElmoreDelayCalc.hh"
 #include "log/Log.hh"
 #include "liberty/Lib.hh"
+#include "log/Log.hh"
 #include "netlist/Net.hh"
 #include "netlist/Pin.hh"
 #include "netlist/Port.hh"
-
 
 namespace ista {
 
@@ -569,6 +568,85 @@ double RcTree::slew(const std::string& name, AnalysisMode mode,
 }
 
 /**
+ * @brief get wire topo of arriving to node.
+ *
+ * @param to_node_name
+ * @return std::vector<RctEdge*>
+ */
+std::vector<RctEdge*> RcTree::getWireTopo(const char* to_node_name) {
+  std::vector<RctEdge*> wire_topo;
+
+  std::function<unsigned(RctNode*, RctNode*)> get_topo_edge =
+      [&get_topo_edge, this, &wire_topo, to_node_name](
+          RctNode* parent_node, RctNode* src_node) -> unsigned {
+    auto& fanout_edges = src_node->get_fanout();
+    for (auto* fanout_edge : fanout_edges) {
+      auto& snk_node = fanout_edge->_to;
+      if (fanout_edge->isBreak() || &snk_node == parent_node) {
+        continue;
+      }
+
+      if (snk_node.get_name() == to_node_name) {
+        wire_topo.push_back(fanout_edge);
+        return 1;
+      }
+
+      if (get_topo_edge(src_node, &snk_node)) {
+        wire_topo.push_back(fanout_edge);
+        return 1;
+      }
+    }
+
+    return 0;
+  };
+
+  get_topo_edge(nullptr, _root);
+
+  LOG_FATAL_IF((wire_topo.empty() ||
+                (*wire_topo.begin())->_to.get_name() != to_node_name))
+      << "not found to node name " << to_node_name;
+
+  return wire_topo;
+}
+
+/**
+ * @brief get rc tree all node slew.
+ *
+ * @param driver_slew
+ * @return std::map<std::string, double>
+ */
+std::map<std::string, double> RcTree::getAllNodeSlew(double driver_slew,
+                                                     AnalysisMode analysis_mode,
+                                                     TransType trans_type) {
+  std::map<std::string, double> all_node_slews;
+  auto* rc_root = get_root();
+
+  all_node_slews[rc_root->get_name()] = driver_slew;
+
+  std::function<void(RctNode*, RctNode*)> get_snk_slew =
+      [&get_snk_slew, this, driver_slew, analysis_mode, trans_type,
+       &all_node_slews](RctNode* parent_node, RctNode* src_node) {
+        auto& fanout_edges = src_node->get_fanout();
+        for (auto* fanout_edge : fanout_edges) {
+          auto& snk_node = fanout_edge->get_to();
+          if (fanout_edge->isBreak() || &snk_node == parent_node) {
+            continue;
+          }
+
+          auto snk_slew =
+              snk_node.slew(analysis_mode, trans_type, NS_TO_PS(driver_slew));
+          all_node_slews[snk_node.get_name()] = PS_TO_NS(snk_slew);
+
+          get_snk_slew(src_node, &snk_node);
+        }
+      };
+
+  get_snk_slew(nullptr, rc_root);
+
+  return all_node_slews;
+}
+
+/**
  * @brief Print the rc tree to graphviz dot file format.
  *
  */
@@ -719,6 +797,10 @@ void RcTree::applyDelayDataToArray() {
         res_array.emplace_back((*found_edge)->get_res());
 
         int parent_pos = rc_node->get_parent()->get_flatten_pos();
+        if (flatten_pos >= node_num) {
+          LOG_FATAL << "flatten pos " << flatten_pos
+                    << " is larger than node num " << node_num;
+        }
         parent_pos_array[flatten_pos] = parent_pos;
 
         if (children_pos_array[parent_pos * 2] == 0) {
@@ -748,24 +830,25 @@ void RcTree::applyDelayDataToArray() {
 }
 
 void RCNetCommonInfo::set_spef_cap_unit(const std::string& spef_cap_unit) {
-      // The unit is 1.0 FF, fix me
-    if (Str::contain(spef_cap_unit.c_str(), "1 FF") ||
-        Str::contain(spef_cap_unit.c_str(), "1.0 FF")) {
-      _spef_cap_unit = CapacitiveUnit::kFF;
-    } else {
-      _spef_cap_unit = CapacitiveUnit::kPF;
-    }
+  // The unit is 1.0 FF, fix me
+  if (Str::contain(spef_cap_unit.c_str(), "1 FF") ||
+      Str::contain(spef_cap_unit.c_str(), "1.0 FF")) {
+    _spef_cap_unit = CapacitiveUnit::kFF;
+  } else {
+    _spef_cap_unit = CapacitiveUnit::kPF;
+  }
 }
 
-void RCNetCommonInfo::set_spef_resistance_unit(const std::string& spef_resistance_unit) {
-    // The unit is 1.0 OHM, fix me
-    if (Str::contain(spef_resistance_unit.c_str(), "1 OHM") ||
-        Str::contain(spef_resistance_unit.c_str(), "1.0 OHM")) {
-      _spef_resistance_unit = ResistanceUnit::kOHM;
-    } else {
-      _spef_resistance_unit = ResistanceUnit::kOHM;
-    }
+void RCNetCommonInfo::set_spef_resistance_unit(
+    const std::string& spef_resistance_unit) {
+  // The unit is 1.0 OHM, fix me
+  if (Str::contain(spef_resistance_unit.c_str(), "1 OHM") ||
+      Str::contain(spef_resistance_unit.c_str(), "1.0 OHM")) {
+    _spef_resistance_unit = ResistanceUnit::kOHM;
+  } else {
+    _spef_resistance_unit = ResistanceUnit::kOHM;
   }
+}
 
 std::string RcNet::name() const { return _net->get_name(); }
 size_t RcNet::numPins() const { return _net->get_pin_ports().size() - 1; }
@@ -998,7 +1081,7 @@ void RcNet::updateRcTreeInfo() {
   auto pin_ports = _net->get_pin_ports();
 
   // fix for net is only driver
-  if (pin_ports.size() < 2) {
+  if (pin_ports.size() < 2 || driver == nullptr) {
     return;
   }
 
@@ -1062,7 +1145,6 @@ void RcNet::updateRcTiming(RustSpefNet* spef_net) {
     //   rct.printGraphViz();
     // }
   }
-
 }
 /**
  * @brief net load
@@ -1104,22 +1186,23 @@ double RcNet::load(AnalysisMode mode, TransType trans_type) {
 
 /**
  * @brief get slew impulse for gpu speedup data.
- * 
- * @param mode 
- * @param trans_type 
- * @return double 
+ *
+ * @param mode
+ * @param trans_type
+ * @return double
  */
-double RcNet::slewImpulse(DesignObject& to, AnalysisMode mode, TransType trans_type) {
+double RcNet::slewImpulse(DesignObject& to, AnalysisMode mode,
+                          TransType trans_type) {
   if (!rct()) {
     return 0.0;
   }
-  
+
   auto* node = std::get<RcTree>(_rct).node(to.getFullName());
   if (_rct.index() == 0) {
     return 0.0;
   } else {
     if (node) {
-      return node->_impulse[ModeTransPair{mode, trans_type}]; 
+      return node->_impulse[ModeTransPair{mode, trans_type}];
     } else {
       return 0.0;
     }
@@ -1311,39 +1394,42 @@ std::map<std::string, double>& RcNet::getAllNodeSlew(double driver_slew,
   if (_all_node_slews) {
     return *_all_node_slews;
   }
-  
-  if (_rct.index() == 0) {
-    return *_all_node_slews;
+
+  _all_node_slews = std::map<std::string, double>{};
+  auto* rc_tree = rct();
+  if (!rc_tree) {
+    return _all_node_slews.value();
   }
 
+  auto* rc_root = rc_tree->_root;
+  if (!rc_root) {
+    return _all_node_slews.value();
+  }
+
+  _all_node_slews.value()[rc_root->get_name()] = driver_slew;
+  
   std::map<std::string, double> all_node_slews;
 
   std::function<void(RctNode*, RctNode*)> get_snk_slew =
-      [&get_snk_slew, this, mode, trans_type, driver_slew, &all_node_slews](
-          RctNode* parent_node, RctNode* src_node) {
+      [&get_snk_slew, this, mode, trans_type, driver_slew](
+          RctNode* parent_node, RctNode* src_node) {        
         auto& fanout_edges = src_node->get_fanout();
-        for (auto* fanout_edge : fanout_edges) {
+        for (auto* fanout_edge : fanout_edges) {          
           auto& snk_node = fanout_edge->_to;
           if (fanout_edge->isBreak() || &snk_node == parent_node) {
             continue;
           }
 
           auto snk_slew = snk_node.slew(mode, trans_type, NS_TO_PS(driver_slew));
-          all_node_slews[snk_node.get_name()] = PS_TO_NS(snk_slew);
+          _all_node_slews.value()[snk_node.get_name()] = PS_TO_NS(snk_slew);
 
           get_snk_slew(src_node, &snk_node);
         }
       };
 
-  auto* rc_tree = rct();
-  auto* rc_root = rc_tree->_root;
-  all_node_slews[rc_root->get_name()] = driver_slew;
-
   get_snk_slew(nullptr, rc_root);
 
-  _all_node_slews = std::move(all_node_slews);
-
-  return *_all_node_slews;
+  return _all_node_slews.value();
 }
 
 /**

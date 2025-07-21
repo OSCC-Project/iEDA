@@ -1,29 +1,33 @@
 initDRModel:初始化dr_net
 iterativeDRModel:迭代DRModel
+    initRoutingState:初始化布线状态
     setDRIterParam:设置参数
     initDRBoxMap:构建DRBox框架,里面主要数据为空
+    resetRoutingState:重置布线状态
     buildBoxSchedule:构建Box布线的调度表
     splitNetResult:以Box边界分割线网结果
     routeDRBoxMap:
         buildFixedRect:将GCellmap中的fix_rect(与此Box覆盖)以指针的方式拷贝到Box内,不需要对GCellmap删除或添加
         buildAccessResult:将GCellmap中的access结果(与此Box覆盖)以指针的方式拷贝到Box内,不需要对GCellmap删除或添加
         buildNetResult:将GCellMap中的net_result以实体的方式拷贝到Box的net_result_map,对于完全在Box内的,在GCellMap中删除
-        buildViolation:将GCellMap中的violation以实体的方式拷贝到Box的violation_list,对于完全在Box内的,在GCellMap中删除
         initDRTaskList:构建DRTask
+        buildViolation:将GCellMap中的violation以实体的方式拷贝到Box的violation_list,对于完全在Box内的,在GCellMap中删除
         buildBoxTrackAxis:构建Box内的track_axis
         buildLayerNodeMap:构建Box的Graph,只有节点,其他信息后续构建
         buildDRNodeNeighbor:将所有节点连接
         buildOrientNetMap:构建Graph的cost,环境从Box中得到,在dr阶段net_pin_access_result为fix结果
+        exemptPinShape:排除掉pin_shape上的障碍cost
         routeDRBox:
             initTaskSchedule:初始化task布线调度表
-                routeDRTask:给task布线,在此函数末尾,布线结果从graph中删除,再加入新的结果
+            routeDRTask:给task布线,在此函数末尾,布线结果从graph中删除,再加入新的结果
             updateViolationList:首先得到Violation存到Box下面,然后Violation结果从graph中删除,再加入新的结果
-            getTaskScheduleByViolation:通过Violation得到新的布线调度
-        uploadNetResult:构建布线数据,并加入GCellMap
-        uploadViolation:将violation加入GCellMap
+            updateBestResult:更新最优结果
+            updateTaskSchedule:通过Violation得到新的布线调度
+        selectBestResult:选择box的最优结果上传
         freeDRBox:析构
     uploadNetResult:将所有的box布线结果去环优化,然后删除所有GCellMap的结果再添加
     uploadViolation:将整个版图结果进行检查并将violation加入GCellMap
+    updateBestResult:更新DRModel中的最优结果
 
 
 

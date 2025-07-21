@@ -75,12 +75,12 @@ uint64_t LmNode::get_node_id()
          + ((uint64_t) _row_id) * ((uint64_t) gridInfoInst.node_col_num) + ((uint64_t) _col_id);
 }
 
-int LmNode::get_x()
+int64_t LmNode::get_x()
 {
   return gridInfoInst.calculate_x(_col_id);
 }
 
-int LmNode::get_y()
+int64_t LmNode::get_y()
 {
   return gridInfoInst.calculate_y(_row_id);
 }

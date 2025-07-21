@@ -33,10 +33,7 @@ class SpacingTable
   // setter
   void set_width_list(const std::vector<int32_t>& width_list) { _width_list = width_list; }
   void set_parallel_length_list(const std::vector<int32_t>& parallel_length_list) { _parallel_length_list = parallel_length_list; }
-  void set_width_parallel_length_map(const GridMap<int32_t>& width_parallel_length_map)
-  {
-    _width_parallel_length_map = width_parallel_length_map;
-  }
+  void set_width_parallel_length_map(const GridMap<int32_t>& width_parallel_length_map) { _width_parallel_length_map = width_parallel_length_map; }
   // function
 
  private:

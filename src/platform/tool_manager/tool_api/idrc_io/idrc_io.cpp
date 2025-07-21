@@ -22,6 +22,10 @@
 #include "idrc_api.h"
 #include "report_manager.h"
 
+#ifdef USE_PROFILER
+#include <gperftools/profiler.h>
+#endif
+
 namespace iplf {
 DrcIO* DrcIO::_instance = nullptr;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -98,6 +102,9 @@ std::map<std::string, std::vector<idrc::DrcViolation*>> DrcIO::getDetailCheckRes
 
 void DrcIO::get_def_drc()
 {
+#ifdef USE_PROFILER
+  ProfilerStart("idrc.prof");
+#endif
   idrc::DrcApi drc_api;
   drc_api.init();
   auto violations = drc_api.checkDef();
@@ -106,6 +113,9 @@ void DrcIO::get_def_drc()
 
     _detail_drc.insert(std::make_pair(name, violation_list));
   }
+#ifdef USE_PROFILER
+  ProfilerStop();
+#endif
 }
 
 void DrcIO::set_detail_drc(std::map<std::string, std::vector<idrc::DrcViolation*>>& detail_drc)
