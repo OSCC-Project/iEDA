@@ -86,13 +86,8 @@ void LmFeatureStatis::feature_graph()
     net_feature->rsmt = WIRELENGTH_API_INST->findNetFLUTE(net_name);
 
     /// 初始化 layer_ratio
-<<<<<<< HEAD
-    int min_order = INT32_MAX;  // 记录最小层
-    int max_order = INT32_MIN;  // 记录最大层
-=======
     int16_t min_order = INT8_MAX;  // 记录最小层
     int16_t max_order = INT8_MIN;  // 记录最大层
->>>>>>> 049773477f86fa1ebda4eef046e3cd72177be2f0
     int layer_order_top = layout_layers.get_layer_order_top();
     int layer_order_bottom = layout_layers.get_layer_order_bottom();
     int num_layers = layer_order_top - layer_order_bottom + 1;  // 总布线层数
@@ -249,12 +244,9 @@ void LmFeatureStatis::feature_patch()
   std::map<int, double> egr_congestion_map = CONGESTION_API_INST->patchEGRCongestion(patch_xy_map);
   LOG_INFO << "finish egr_congestion_map, runtime: " << stats.elapsedRunTime();
 
-<<<<<<< HEAD
-=======
   std::map<int, std::map<std::string, double>> layer_congestion_map = CONGESTION_API_INST->patchLayerEGRCongestion(patch_xy_map);
-  LOG_INFO << "finish layer_egr_congestion_map, runtime: " << stats.elapsedRunTime();  
+  LOG_INFO << "finish layer_egr_congestion_map, runtime: " << stats.elapsedRunTime();
 
->>>>>>> 049773477f86fa1ebda4eef046e3cd72177be2f0
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < (int) patchs.size(); ++i) {
     auto it = patchs.begin();
@@ -269,8 +261,6 @@ void LmFeatureStatis::feature_patch()
     patch.macro_margin = macro_margin_map[patch_id];
     patch.RUDY_congestion = rudy_congestion_map[patch_id];
     patch.EGR_congestion = egr_congestion_map[patch_id];
-<<<<<<< HEAD
-=======
 
     // // timing, power, ir drop map
     auto cell_timing_map_find = cell_timing_map.find(patch_id);
@@ -287,7 +277,6 @@ void LmFeatureStatis::feature_patch()
     if (cell_ir_map_find != cell_ir_map.end()) {
       patch.ir_drop_map = cell_ir_map[patch_id];
     }
->>>>>>> 049773477f86fa1ebda4eef046e3cd72177be2f0
 
     for (auto& [layer_id, patch_layer] : patch.get_layer_map()) {
       patch_layer.wire_width = layout_layers.findLayoutLayer(layer_id)->get_wire_width();
