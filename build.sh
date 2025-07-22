@@ -182,7 +182,7 @@ install_dependencies_apt()
       g++-10 cmake ninja-build \
       tcl-dev libgflags-dev libgoogle-glog-dev libboost-all-dev libgtest-dev flex\
       libeigen3-dev libunwind-dev libmetis-dev libgmp-dev bison rustc cargo\
-      libhwloc-dev libcairo2-dev
+      libhwloc-dev libcairo2-dev libcurl4-openssl-dev
     exit 0
   else
     echo -e "${red}apt-get not found, pleas make sure you were running on Debian-Based Linux distribution${clear}"
@@ -196,7 +196,10 @@ install_dependencies()
     sys_requirement_warning
     install_dependencies_apt
   elif [[ $INSTALL_DEP == "mirror" ]]; then
-    sed -i 's@//.*archive.ubuntu.com@//mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list
+    sed -i \
+        -e 's@//archive.ubuntu.com@//mirrors.tuna.tsinghua.edu.cn@g' \
+        -e 's@//security.ubuntu.com@//mirrors.tuna.tsinghua.edu.cn@g' \
+        /etc/apt/sources.list
     install_dependencies_apt
   elif [[ $INSTALL_DEP == "docker" ]]; then
     install_docker_experimental

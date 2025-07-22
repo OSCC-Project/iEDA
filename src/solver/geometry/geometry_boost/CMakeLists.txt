@@ -10,5 +10,5 @@ target_link_libraries(solver_geometry_boost
 target_include_directories(solver_geometry_boost
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${HOME_DATABASE}/interaction/RT_DRC
+    ${HOME_DATABASE}/interaction
 )

@@ -10,15 +10,34 @@
 #include "idm.h"
 #include "log/Log.hh"
 #include "timing_api.hh"
-void TestTiming();
+void TestTiming(const string& db_config_path);
 
-int main()
+void PrintUsage(const char* program_name)
 {
-  TestTiming();
-  return 0;
+  std::cout << "timing evaluation" << std::endl;
+  std::cout << "Usage: " << program_name << " <function_name>" << std::endl;
+  std::cout << "Available parameters:" << std::endl;
+  std::cout << "  <db_config_path> Path to the database configuration file." << std::endl;
+  std::cout << "  --help, -h       Show this help message and exit." << std::endl;
 }
 
-void TestTiming()
+int main(const int argc, const char* argv[])
+{
+  if (argc == 2) {
+    if (const std::string arg = argv[1]; arg == "--help" || arg == "-h") {
+      PrintUsage(argv[0]);
+      return 0;
+    } else {
+      TestTiming(arg);
+    }
+    return 0;
+  }
+  std::cerr << "Error: Incorrect number of arguments." << std::endl;
+  PrintUsage(argv[0]);
+  return 1;
+}
+
+void TestTiming(const string& db_config_path)
 {
   // dmInst->init("/data/project_share/dataset_baseline/gcd/workspace/config/iEDA_config/db_default_config.json");
   // auto config = dmInst->get_config();
@@ -27,7 +46,7 @@ void TestTiming()
   // iPLAPIInst.initAPI("/data/project_share/dataset_baseline/gcd/workspace/config/iEDA_config/pl_default_config.json",
   //                    dmInst->get_idb_builder());
   // iPLAPIInst.runFlow();
-  dmInst->init("/data/project_share/dataset_baseline/s15850/workspace/config/iEDA_config/db_default_config.json");
+  dmInst->init(db_config_path);
   auto config = dmInst->get_config();
   config.set_output_path("/home/liweiguo/project/iEDA/scripts/design/eval/result");
   dmInst->readLef(std::vector<std::string>{config.get_tech_lef_path()}, true);

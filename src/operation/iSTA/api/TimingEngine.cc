@@ -24,6 +24,7 @@
 
 #include "TimingEngine.hh"
 
+#include <cassert>
 #include <iostream>
 #include <optional>
 
@@ -35,6 +36,7 @@
 #include "netlist/Instance.hh"
 #include "netlist/Netlist.hh"
 #include "sdc-cmd/Cmd.hh"
+#include "sdc/SdcSetLoad.hh"
 #include "sta/Sta.hh"
 #include "sta/StaAnalyze.hh"
 #include "sta/StaApplySdc.hh"
@@ -1607,6 +1609,12 @@ double TimingEngine::getInstPinCapacitance(const char* pin_name) {
   auto* design_netlist = ista->get_netlist();
   std::vector<DesignObject*> match_pins =
       design_netlist->findPin(pin_name, false, false);
+  if (match_pins.empty()) {
+    auto* port = design_netlist->findPort(pin_name);
+    assert(port);
+    return port->cap();
+  }
+
   auto* pin = match_pins.front();
   auto* pin1 = dynamic_cast<Pin*>(pin);
   double cap = pin1->cap();

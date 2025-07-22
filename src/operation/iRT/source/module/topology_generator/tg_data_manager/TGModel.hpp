@@ -39,12 +39,21 @@ class TGModel
   void set_tg_com_param(const TGComParam& tg_com_param) { _tg_com_param = tg_com_param; }
   void set_tg_task_list(const std::vector<TGNet*>& tg_task_list) { _tg_task_list = tg_task_list; }
   void set_tg_node_map(const GridMap<TGNode>& tg_node_map) { _tg_node_map = tg_node_map; }
+#if 1
+  // single task
+  TGNet* get_curr_tg_task() { return _curr_tg_task; }
+  void set_curr_tg_task(TGNet* curr_tg_task) { _curr_tg_task = curr_tg_task; }
+#endif
 
  private:
   std::vector<TGNet> _tg_net_list;
   TGComParam _tg_com_param;
   std::vector<TGNet*> _tg_task_list;
   GridMap<TGNode> _tg_node_map;
+#if 1
+  // single task
+  TGNet* _curr_tg_task = nullptr;
+#endif
 };
 
 }  // namespace irt

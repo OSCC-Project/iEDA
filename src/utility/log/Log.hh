@@ -53,6 +53,12 @@ class Log
   static void init(char* argv[], std::string log_dir = "/var/tmp/");
   static void end();
   static void setVerboseLogLevel(const char* module_name, int level);
+  static void makeSureDirectoryExist(std::string directory_path);
+
+  static bool isInit() { return _is_init; }
+  static void set_is_init() { _is_init = true; }
+
+  static bool _is_init;  // check if the log module is initialized.
 };
 
 /*The log print category of info warning error fatal. */

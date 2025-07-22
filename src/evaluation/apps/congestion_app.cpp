@@ -13,27 +13,43 @@ void TestEgrMap();
 void TestRudyMap();
 void TestEgrOverflow();
 void TestRudyUtilization();
-// void TestRudyMapFromIDB();
-void TestRudyMapFromIDB(const std::string& file_path);
-void TestEgrMapFromIDB();
-void TestEgrDataStructure();
+void TestRudyMapFromIDB(const std::string& db_config_path);
+void TestEgrMapFromIDB(const std::string& db_config_path);
 
-int main(int argc, char* argv[])
+void PrintUsage(const char* program_name)
 {
-  // TestEgrMap();
-  // TestRudyMap();
-  // TestEgrOverflow();
-  // TestRudyUtilization();
+  std::cout << "Congestion Evaluation" << std::endl;
+  std::cout << "Usage: " << program_name << " <function_name>" << std::endl;
+  std::cout << "Available parameters:" << std::endl;
+  std::cout << "  <map_config_path> Path to the database configuration file." << std::endl;
+  std::cout << "  --help, -h       Show this help message and exit." << std::endl;
+}
 
-  // if (argc > 1) {
-  //   std::string map_path(argv[1]);
-  //   std::cout << "map_path: " << map_path << std::endl;
-  //   TestRudyMapFromIDB(map_path);
-  // }
+int main(const int argc, const char* argv[])
+{
+  if (argc == 2) {
+    if (const std::string arg = argv[1]; arg == "--help" || arg == "-h") {
+      PrintUsage(argv[0]);
+      return 0;
+    } else {
+      std::cout << "map_path: " << arg << std::endl;
+      TestRudyMapFromIDB(arg);
+      // Here are some test functions that can be uncommented to run
+      // TestEgrMapFromIDB(arg);
+      // TestEgrMap();
+      // TestRudyMap();
+      // TestEgrOverflow();
+      // TestRudyUtilization();
+      return 0;
+    }
+  }
+  std::cerr << "Error: Incorrect number of arguments." << std::endl;
+  PrintUsage(argv[0]);
+  return 1;
 
-  // TestEgrMapFromIDB();
-  TestEgrDataStructure();
-  return 0;
+  std::cerr << "Error: Incorrect number of arguments." << std::endl;
+  PrintUsage(argv[0]);
+  return 1;
 }
 
 void TestEgrDataStructure()
@@ -162,9 +178,9 @@ void TestRudyUtilization()
   std::cout << "average utilization union: " << utilization_summary.weighted_average_utilization_union << std::endl;
 }
 
-void TestRudyMapFromIDB(const std::string& file_path)
+void TestRudyMapFromIDB(const std::string& db_config_path)
 {
-  dmInst->init(file_path);
+  dmInst->init(db_config_path);
 
   std::string stage = "place";
 
@@ -198,9 +214,9 @@ void TestRudyMapFromIDB(const std::string& file_path)
   std::cout << "average utilization union: " << utilization_summary.weighted_average_utilization_union << std::endl;
 }
 
-void TestEgrMapFromIDB()
+void TestEgrMapFromIDB(const std::string& db_config_path)
 {
-  dmInst->init("/data/yhqiu/benchmark/AiEDA/application/benchmark/28nm/gcd/config/db_default_config_test.json");
+  dmInst->init(db_config_path);
   std::string stage = "place";
 
   ieval::CongestionAPI congestion_api;

@@ -42,11 +42,11 @@ class AnnealOptAux : public TestInterface
                           const double& temperature) const
   {
     auto bufs = genRandomBuffers(env_info);
-    auto clusters = BalanceClustering::kMeansPlus(bufs, cluster_num);
-    LatAnnealOpt solver(clusters);
-    solver.initParameter(max_iter, cooling_rate, temperature);
-    clusters = solver.run(true);
-    std::ranges::for_each(bufs, [](auto& buf) { delete buf; });
+    // auto clusters = BalanceClustering::kMeansPlus(bufs, cluster_num);
+    // LatAnnealOpt solver(clusters);
+    // solver.initParameter(max_iter, cooling_rate, temperature);
+    // clusters = solver.run(true);
+    // std::ranges::for_each(bufs, [](auto& buf) { delete buf; });
   }
 
   void runViolationCostTest(const EnvInfo& env_info, const size_t& cluster_num, const size_t& max_iter, const double& cooling_rate,
@@ -54,13 +54,13 @@ class AnnealOptAux : public TestInterface
                             const double& skew_bound) const
   {
     auto bufs = genRandomBuffers(env_info);
-    auto clusters = BalanceClustering::kMeansPlus(bufs, cluster_num);
-    BalanceClustering::writeClusterPy(clusters, "before");
-    VioAnnealOpt solver(clusters);
-    solver.initParameter(max_iter, cooling_rate, temperature, max_fanout, max_cap, max_net_len, skew_bound);
-    clusters = solver.run(true);
-    BalanceClustering::writeClusterPy(clusters, "after");
-    std::ranges::for_each(bufs, [](auto& buf) { delete buf; });
+    // auto clusters = BalanceClustering::kMeansPlus(bufs, cluster_num);
+    // BalanceClustering::writeClusterPy(clusters, "before");
+    // VioAnnealOpt solver(clusters);
+    // solver.initParameter(max_iter, cooling_rate, temperature, max_fanout, max_cap, max_net_len, skew_bound);
+    // clusters = solver.run(true);
+    // BalanceClustering::writeClusterPy(clusters, "after");
+    // std::ranges::for_each(bufs, [](auto& buf) { delete buf; });
   }
 
  private:

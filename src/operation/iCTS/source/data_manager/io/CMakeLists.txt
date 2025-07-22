@@ -8,6 +8,11 @@ endif()
 
 add_subdirectory(report)
 
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${HOME_THIRDPARTY}/json
+)
+
 add_library(icts_io ${ICTS_DATA_MANAGER}/io/CtsDBWrapper.cc
                     ${ICTS_DATA_MANAGER}/io/GDSPloter.cc)
 

@@ -29,6 +29,7 @@
 
 #include <stdint.h>
 
+#include <cassert>
 #include <iostream>
 #include <vector>
 
@@ -271,23 +272,26 @@ inline void BinGrid::evalRouteDem(const std::vector<NetWork*>& network_list, int
     if (network->isIgnoreNetwork()) {
       continue;
     }
-
+    // FIXME: Temporarily fix this bug.
     auto net_shape = std::move(network->obtainNetWorkShape());
-    if (net_shape.get_ll_x() > net_shape.get_ur_x()) {
+    auto old_shape = net_shape;
+    if (old_shape.get_ll_x() > old_shape.get_ur_x() || old_shape.get_ll_y() > old_shape.get_ur_y()) {
       continue;
     }
-    if (net_shape.get_ur_x() > _grid_manager->get_shape().get_ur_x()) {
-      net_shape.set_upper_right(_grid_manager->get_shape().get_ur_x(), net_shape.get_ur_y());
+    if (old_shape.get_ll_x() > _grid_manager->get_shape().get_ur_x() || old_shape.get_ll_y() > _grid_manager->get_shape().get_ur_y()
+        || old_shape.get_ur_x() < _grid_manager->get_shape().get_ll_x() || old_shape.get_ur_y() < _grid_manager->get_shape().get_ll_y()) {
+      continue;
     }
-    if (net_shape.get_ur_y() > _grid_manager->get_shape().get_ur_y()) {
-      net_shape.set_upper_right(net_shape.get_ur_x(), _grid_manager->get_shape().get_ur_y());
-    }
-    if (net_shape.get_ll_x() < _grid_manager->get_shape().get_ll_x()) {
-      net_shape.set_lower_left(_grid_manager->get_shape().get_ll_x(), net_shape.get_ll_y());
-    }
-    if (net_shape.get_ll_y() < _grid_manager->get_shape().get_ll_y()) {
-      net_shape.set_lower_left(net_shape.get_ll_x(), _grid_manager->get_shape().get_ll_y());
-    }
+    double new_ur_x = std::min(net_shape.get_ur_x(), _grid_manager->get_shape().get_ur_x());
+    double new_ur_y = std::min(net_shape.get_ur_y(), _grid_manager->get_shape().get_ur_y());
+    net_shape.set_upper_right(new_ur_x, new_ur_y);
+
+    double new_ll_x = std::max(net_shape.get_ll_x(), _grid_manager->get_shape().get_ll_x());
+    double new_ll_y = std::max(net_shape.get_ll_y(), _grid_manager->get_shape().get_ll_y());
+    net_shape.set_lower_left(new_ll_x, new_ll_y);
+
+    assert(net_shape.get_ll_x() <= net_shape.get_ur_x());
+    assert(net_shape.get_ll_y() <= net_shape.get_ur_y());
 
     int32_t pin_num = network->get_node_list().size();
     int64_t net_width = net_shape.get_width();

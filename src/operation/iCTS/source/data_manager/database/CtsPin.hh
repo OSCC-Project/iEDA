@@ -24,6 +24,7 @@
 
 #include "CtsInstance.hh"
 #include "CtsNet.hh"
+#include "CtsPoint.hh"
 #include "DesignObject.hh"
 
 namespace icts {
@@ -53,6 +54,7 @@ class CtsPin : public DesignObject
   const std::string& get_pin_name() const { return _pin_name; }
   std::string get_full_name() const;
   CtsPinType get_pin_type() const { return _pin_type; }
+  Point get_location() const { return _location; }
   CtsInstance* get_instance() const { return _instance; }
   CtsNet* get_net() const { return _net; }
   bool is_io() { return _b_io; }
@@ -60,6 +62,7 @@ class CtsPin : public DesignObject
   // setter
   void set_pin_name(const std::string& pin_name) { _pin_name = pin_name; }
   void set_pin_type(CtsPinType pin_type) { _pin_type = pin_type; }
+  void set_location(const Point& location) { _location = location; }
   void set_instance(CtsInstance* instance) { _instance = instance; }
   void set_net(CtsNet* net) { _net = net; }
   void set_io(bool b_io = false) { _b_io = b_io; }
@@ -67,6 +70,7 @@ class CtsPin : public DesignObject
  private:
   std::string _pin_name;
   CtsPinType _pin_type = CtsPinType::kOther;
+  Point _location;
   CtsInstance* _instance = nullptr;
   CtsNet* _net = nullptr;
   bool _b_io = false;

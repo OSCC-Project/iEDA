@@ -20,6 +20,9 @@
  */
 #pragma once
 class Pin;
+#include <algorithm>
+#include <cstdint>
+
 #include "CTSAPI.hh"
 #include "Pin.hh"
 

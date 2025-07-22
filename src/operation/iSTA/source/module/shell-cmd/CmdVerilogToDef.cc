@@ -84,8 +84,10 @@ unsigned CmdVerilogToDef::exec() {
                                    idb_layout->transUnitDB(die_area[3]));
 
   TclOption* def_option = getOptionOrArg("-def");
-  auto* def_file = def_option->getStringVal();
-  db_builder->saveDef(def_file);
+  const auto* def_file = def_option->getStringVal();
+  if (const auto ret = db_builder->saveDef(def_file); !ret) {
+    LOG_FATAL << "Fail to Save DEF file!";
+  }
 
   // the below two lines is used to test idb verilog.
   // std::set<std::string> exclude_cell_names = {};

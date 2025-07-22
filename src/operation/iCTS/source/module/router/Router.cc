@@ -110,7 +110,6 @@ void Router::routing(CtsNet* clk_net)
   auto net_name = clk_net->get_net_name();
   // total topology
   auto solver = Solver(net_name, clk_net->get_driver_pin(), pins);
-  solver.set_max_thread(1);
   solver.run();
   auto clk_nets = solver.get_solver_nets();
   if (clk_nets.empty()) {
@@ -128,7 +127,7 @@ std::vector<CtsPin*> Router::getSinkPins(CtsNet* clk_net)
   for (auto* load_pin : clk_net->get_load_pins()) {
     auto* load_inst = load_pin->get_instance();
     auto inst_type = load_inst->get_type();
-    if (inst_type != CtsInstanceType::kBuffer) {
+    if (inst_type != CtsInstanceType::kBuffer && inst_type != CtsInstanceType::kMux) {
       pins.push_back(load_pin);
     }
   }
@@ -192,7 +191,7 @@ void Router::synthesisNet(Net* net)
   // It's a new insert buffer net
   std::ranges::for_each(net->get_pins(), [&](Pin* pin) {
     auto* cts_pin = design->findPin(pin->get_name());
-    LOG_FATAL_IF(!cts_pin) << "Can't found pin in net: " << net->get_name();
+    LOG_FATAL_IF(!cts_pin) << "Can't found pin " << pin->get_name() << " in net " << net->get_name();
     if (cts_pin->is_io()) {
       return;
     }

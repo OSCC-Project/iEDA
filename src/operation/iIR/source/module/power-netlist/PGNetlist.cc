@@ -21,11 +21,12 @@
  * @version 0.1
  * @date 2025-02-22
  */
+#include "PGNetlist.hh"
+
 #include <fstream>
 #include <iostream>
 #include <random>
 
-#include "PGNetlist.hh"
 #include "iir-rust/IRRustC.hh"
 #include "log/Log.hh"
 #include "string/Str.hh"
@@ -86,6 +87,11 @@ std::vector<BGSegment> IRPGNetlistBuilder::buildBGSegments(
   // build line segment.
   auto* idb_wires = special_net->get_wire_list();
   for (auto* idb_wire : idb_wires->get_wire_list()) {
+    if (!idb_wire->get_shiled_name().empty()) {
+      // skip the shield wire.
+      continue;
+    }
+
     for (auto* idb_segment : idb_wire->get_segment_list()) {
       // line firstly process, we need know line intersect point first.
       if (!idb_segment->is_via()) {
@@ -176,7 +182,8 @@ void IRPGNetlistBuilder::build(
   // Firstly, get the wire topo point in line segment.
   std::set<std::tuple<int64_t, int64_t, int64_t>> pg_points;
   std::map<int, std::set<IRPGNode*, IRNodeComparator>> segment_to_point;
-  std::map<int, int> intersect_segment_one_layer; // the segment one layer need connect.
+  std::map<int, int>
+      intersect_segment_one_layer;  // the segment one layer need connect.
   std::map<int, int> coordy_to_segment_id;  // coord y to segment id, for locate
                                             // instance pin segment.
   for (unsigned i = 0; i < line_segment_num; ++i) {
@@ -277,8 +284,10 @@ void IRPGNetlistBuilder::build(
   // of the segment.
   for (auto [seg_id1, seg_id2] : intersect_segment_one_layer) {
     // connect the last point of seg_id1 and first point of seg_id2.
-    auto* node1 = *(segment_to_point[seg_id1].rbegin());  // Get last element of first segment
-    auto* node2 = *(segment_to_point[seg_id2].begin());  // Get first element of second segment
+    auto* node1 = *(segment_to_point[seg_id1]
+                        .rbegin());  // Get last element of first segment
+    auto* node2 = *(segment_to_point[seg_id2]
+                        .begin());  // Get first element of second segment
 
     if (node1->get_coord().first == node2->get_coord().first) {
       LOG_FATAL_IF(node1->get_coord().second > node2->get_coord().second)
@@ -287,14 +296,13 @@ void IRPGNetlistBuilder::build(
       LOG_FATAL_IF(node1->get_coord().first > node2->get_coord().first)
           << "node1 coord x should be less than node2 coord x.";
     }
-    
+
     // Add edge between intersecting segments
     auto& pg_edge = pg_netlist.addEdge(node1, node2);
     auto width_dbu = segment_widths[seg_id1];
 
-    double resistance =
-        calc_segment_resistance(node1, node2, width_dbu);
-    
+    double resistance = calc_segment_resistance(node1, node2, width_dbu);
+
     double random_value = dis(gen);
     pg_edge.set_resistance(resistance + random_value);
   }
@@ -326,16 +334,19 @@ void IRPGNetlistBuilder::build(
       via_end_node->set_is_via();
     }
 
-    if (bg_start.get<2>() == instance_pin_layer) {
+    auto via_bottom_layer = bg_start.get<2>();
+
+    if (via_bottom_layer == instance_pin_layer) {
       coordy_to_via_segment_nodes[via_start_node->get_coord().second].insert(
           via_start_node);
     }
 
     auto& pg_edge = pg_netlist.addEdge(via_start_node, via_end_node);
+    double random_value = dis(gen);
     // TODO(to taosimin), hard code the via resistance, need know the resistance
     // of via.
-    double random_value = dis(gen);
-    pg_edge.set_resistance(_c_via_resistance + random_value);
+    double via_resistance = getViaResistance(via_bottom_layer);
+    pg_edge.set_resistance(via_resistance + random_value);
   }
 
   unsigned via_edge_num = pg_netlist.getEdgeNum() - line_edge_num;
@@ -492,6 +503,11 @@ void IRPGNetlistBuilder::build(
            << " bump node location: " << middle_point.get_x() / _dbu << " "
            << middle_point.get_y() / _dbu << " " << getLayerName(layer_id);
 
+  IRNodeLoc bump_node_loc{{middle_point.get_x() / (double)_dbu,
+                           middle_point.get_y() / (double)_dbu},
+                          getLayerName(layer_id)};
+  _net_bump_node_locs[special_net_name] = bump_node_loc;
+
   LOG_INFO << "instance pin edge num: "
            << pg_netlist.getEdgeNum() - via_edge_num - line_edge_num;
   LOG_INFO << "total edge num: " << pg_netlist.getEdgeNum();
@@ -499,7 +515,7 @@ void IRPGNetlistBuilder::build(
   // for debug.
   // if (special_net_name == "VDD") {
   //   pg_netlist.printToYaml(
-  //       "/home/taosimin/iEDA24/iEDA/bin/aes_pg_netlist_1.yaml");
+  //       "/home/taosimin/iEDA24/iEDA/bin/aes_pg_netlist_06_23.yaml");
   // }
 }
 
@@ -530,10 +546,7 @@ void IRPGNetlistBuilder::createRustPGNetlist() {
  */
 unsigned IRPGNetlistBuilder::createRustRCData() {
   auto* rust_pg_netlist_vec_ptr = _rust_pg_netlists.data();
-  auto len =  _rust_pg_netlists.size();
-  if (!rust_pg_netlist_vec_ptr || len == 0) {
-    return 0;
-  }
+  auto len = _rust_pg_netlists.size();
   _rust_rc_data = create_rc_data(rust_pg_netlist_vec_ptr, len);
   return 1;
 }
@@ -547,6 +560,36 @@ void IRPGNetlistBuilder::calcResistanceFromBumpNode(std::string net_name) {
 
   // TODO(to taosimin), need to calc the resistance from bump node to all
   // segment node.
+}
+
+/**
+ * @brief get the via resistance, maybe need calc by layer shape.
+ *
+ * @param bottom_layer_id
+ * @return double
+ */
+double IRPGNetlistBuilder::getViaResistance(unsigned bottom_layer_id) {
+  double via_resistance = _c_via_resistance;
+
+  if (bottom_layer_id == 1) {
+    via_resistance = 7.597;
+  } else if (bottom_layer_id == 2) {
+    via_resistance = 3.799;
+  } else if (bottom_layer_id == 3) {
+    via_resistance = 3.799;
+  } else if (bottom_layer_id == 4) {
+    via_resistance = 3.799;
+  } else if (bottom_layer_id == 5) {
+    via_resistance = 3.799;
+  } else if (bottom_layer_id == 6) {
+    via_resistance = 3.7997;
+  } else if (bottom_layer_id == 7) {
+    via_resistance = 0.085;
+  } else if (bottom_layer_id == 8) {
+    via_resistance = 0.017;
+  }
+
+  return via_resistance;
 }
 
 }  // namespace iir

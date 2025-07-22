@@ -56,7 +56,7 @@ class Inst
   void set_location(const Point& location)
   {
     _location = location;
-    updatePinLocation(location);
+    // updatePinLocation(location);
   }
   void set_type(const InstType& type) { _type = type; }
   void set_cell_master(const std::string& cell_master) { _cell_master = cell_master; }

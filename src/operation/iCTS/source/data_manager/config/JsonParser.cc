@@ -26,6 +26,17 @@
 #include "log/Log.hh"
 namespace icts {
 
+JsonParser::JsonParser()
+{
+  char program_name[] = "JsonParser";
+  char* argv[] = {program_name};
+  // We need to initialize the log system here, because JsonParser() may be called in pybind,
+  // which does not have a main function to initialize the log system.
+  const std::string log_dir = "/tmp/icts_logs/";
+  Log::makeSureDirectoryExist(log_dir);
+  Log::init(argv, log_dir);
+}
+
 JsonParser& JsonParser::getInstance()
 {
   static JsonParser parser;
@@ -55,15 +66,6 @@ void JsonParser::parse(const string& json_file, CtsConfig* config) const
         config->set_use_skew_tree_alg(false);
       }
     }
-    if (COMUtil::getData(json, {"router_type"}) != nullptr) {
-      config->set_router_type(COMUtil::getData(json, {"router_type"}));
-    }
-    if (COMUtil::getData(json, {"delay_type"}) != nullptr) {
-      config->set_delay_type(COMUtil::getData(json, {"delay_type"}));
-    }
-    if (COMUtil::getData(json, {"cluster_type"}) != nullptr) {
-      config->set_cluster_type(COMUtil::getData(json, {"cluster_type"}));
-    }
     if (COMUtil::getData(json, {"skew_bound"}) != nullptr) {
       std::string skew_bound = COMUtil::getData(json, {"skew_bound"});
       config->set_skew_bound(std::stod(skew_bound));
@@ -91,14 +93,6 @@ void JsonParser::parse(const string& json_file, CtsConfig* config) const
     if (COMUtil::getData(json, {"max_length"}) != nullptr) {
       std::string max_length = COMUtil::getData(json, {"max_length"});
       config->set_max_length(std::stod(max_length));
-    }
-    if (COMUtil::getData(json, {"scale_size"}) != nullptr) {
-      int scale_size = COMUtil::getData(json, {"scale_size"});
-      config->set_scale_size(scale_size);
-    }
-    if (COMUtil::getData(json, {"cluster_size"}) != nullptr) {
-      int cluster_size = COMUtil::getData(json, {"cluster_size"});
-      config->set_cluster_size(cluster_size);
     }
     if (COMUtil::getData(json, {"routing_layer"}) != nullptr) {
       std::vector<int> routing_layers = COMUtil::getData(json, {"routing_layer"});
@@ -203,20 +197,6 @@ void JsonParser::parse(const string& json_file, CtsConfig* config) const
       }
 
       config->set_netlist(clock_net_list);
-    }
-
-    nlohmann::json json_ext_models = COMUtil::getData(json, {"external_model"});
-    {
-      auto net_name_list = COMUtil::getSerializeObjectData(json_ext_models, "net_name", data_type_string);
-      auto model_path_list = COMUtil::getSerializeObjectData(json_ext_models, "model_path", data_type_string);
-
-      std::vector<std::pair<std::string, std::string>> external_models;
-      for (size_t i = 0; i < net_name_list.size(); ++i) {
-        auto model_path = resolvePath(model_path_list[i]);
-        external_models.push_back(std::make_pair(net_name_list[i], model_path));
-      }
-
-      config->set_external_models(external_models);
     }
   }
 

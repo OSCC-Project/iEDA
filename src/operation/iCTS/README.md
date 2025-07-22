@@ -1,59 +1,60 @@
-# iCTS 功能文档
+# iCTS: Clock Tree Synthesis
 
-## 一、概述
 
-当前iCTS支持在给定约束下进行时钟树构建，目前iCTS以DME和Slew-Aware为基本框架，融合多类约束进行时钟树设计，由于DME的自底向上过程中无法获取上游Slew信息，
-在下游的链式传播将带来较大误差，iCTS在引入时序后向传播方法，在缓冲插入阶段进行线网级别的时序传播，矫正线网负载单元的插入时延。
-iCTS采用较为准确的时序模型进行时序信息的估算与传播，以最小设计成本为目标进行时钟树构建。
+## 1. Overview
 
-### 约束
+Currently, iCTS supports clock tree construction under given constraints. Currently, iCTS takes DME and Slew-Aware as the basic framework and integrates multiple types of constraints for clock tree design. Due to the inability to obtain upstream Slew information in the bottom-up process of DME,
+The downstream chained propagation will bring a large error. iCTS introduces the timing backward propagation method and performs timing propagation at the wire level during the buffer insertion stage to correct the insertion delay of the wire load unit.
+iCTS uses a more accurate timing model for the estimation and propagation of timing information and constructs the clock tree with the goal of minimizing the design cost.
 
-iCTS可支持约束如下表所示，其中约束名称与Config参数名称对应
+### Constraints
 
-|   约束名称    | 约束等级 |
-| :-----------: | :------: |
-|  skew_bound   |   Hard   |
-| max_buf_tran  |   Hard   |
-| max_sink_tran |   Hard   |
-|    max_cap    |   Soft   |
-|  max_fanout   |   Hard   |
-|  max_length   |   Soft   |
+The constraints that iCTS can support are shown in the following table, where the constraint names correspond to the Config parameter names
 
-### 时序模型
+| Constraint Name | Constraint Level |
+| :-------------: | :--------------: |
+|   skew_bound   |      Hard        |
+|  max_buf_tran  |      Hard        |
+|  max_sink_tran |      Hard        |
+|     max_cap    |      Soft        |
+|   max_fanout   |      Hard        |
+|   max_length   |      Soft        |
 
-iCTS目前采用PERI互连线模型作为互连线的slew计算方法，采用Elmore模型作为互连线时延计算方法，对于缓冲器的插入时延采用查表法（Lut），其中包含部分方法的扩展，具体如下表所示。
+### Timing Models
 
-|  模型   |                   场景                   |                     扩展                     |
-| :-----: | :--------------------------------------: | :------------------------------------------: |
-|  PERI   |          互连线slew的计算与传播          |          公式计算、时序后向传播矫正          |
-| Elmore  |              互连线时延计算              |                   公式计算                   |
-| Unit RC | 根据单位电容电阻换算互连线的负载电容电阻 |                   公式计算                   |
-|   Lut   |     缓冲器插入时延计算与单元slew传播     | 双线性插值法、多元线性拟合模型、机器学习模型 |
+iCTS currently uses the PERI interconnect model as the slew calculation method for interconnects and the Elmore model as the delay calculation method for interconnects. For the insertion delay of buffers, the lookup table method (Lut) is used, which includes extensions of some methods, as shown in the following table.
 
-### 目标
+| Model |                         Scenario                          |                        Extension                        |
+| :---: | :------------------------------------------------------: | :------------------------------------------------------: |
+|  PERI |          Calculation and propagation of interconnect slew          |          Formula calculation, timing backward propagation correction          |
+| Elmore |              Calculation of interconnect delay              |                   Formula calculation                   |
+| Unit RC | Conversion of the load capacitance and resistance of interconnects based on the unit capacitance and resistance |                   Formula calculation                   |
+|   Lut  |     Calculation of buffer insertion delay and unit slew propagation     | Bilinear interpolation method, multiple linear fitting model, machine learning model |
 
-iCTS在尽可能满足设计约束的前提下，对于存在多种缓冲方案的情景将采用最小化设计成本的方案进行时钟树设计，目前采用的度量方法如下：
+### Goals
 
-* 优先选取满足时序约束下尺寸较小的缓冲方案
-* 对于连续缓冲插入以平衡时钟偏差（skew）的情况，为简化时序计算与传播的复杂性，考虑采用同种缓冲器并以均匀线长为间距进行时序平衡，该阶段优先考虑最小化单元面积增加的缓冲方案
+Under the premise of meeting the design constraints as much as possible, for scenarios with multiple buffering schemes, iCTS will adopt the scheme with the minimum design cost for clock tree design. The current measurement methods are as follows:
 
-## 二、多时钟平衡
+* Prefer the buffering scheme with a smaller size that meets the timing constraints.
+* For the case of continuous buffer insertion to balance the clock skew, in order to simplify the complexity of timing calculation and propagation, consider using the same buffer and perform timing balancing at a uniform wire length interval. At this stage, the buffering scheme that minimizes the increase in cell area is preferred.
 
-iCTS可支持多时钟设计，首先对各个时钟逐一构建时钟树形成基本的时钟树结果，通过iSTA的时序评估分析顶层节点的时钟偏差，最终根据设计需要进行时序平衡。
+## 2. Multi-Clock Balance
 
-## 三、支持扩展
+iCTS can support multi-clock design. First, a clock tree is constructed for each clock one by one to form the basic clock tree result. The clock skew of the top-level node is analyzed through the timing evaluation of iSTA, and finally, timing balancing is performed according to the design requirements.
 
-### 多缓冲器类型
+## 3. Support Extensions
 
-iCTS支持基于多缓冲器类型（目前不包括反相器）进行时钟树设计，并在缓冲插入过程中采用[目标](#目标)中的策略进行缓冲器选取，该特性可在Config中的`buffer_type`参数进行设定。
+### Multiple Buffer Types
 
-### 聚类降低规模
+iCTS supports clock tree design based on multiple buffer types (currently excluding inverters) and selects buffers using the strategy in [Goals](#Goals) during the buffer insertion process. This feature can be set in the `buffer_type` parameter in Config.
 
-iCTS支持使用聚类方法（K-Means）降低大规模线网的运行时间，对于寄存器数量超过3000的线网，iCTS将自动执行K-Means算法划分为50个之类分别进行局部时钟树构建，在完成局部构建后进行顶层的时钟树合并，局部构建和顶层时钟树构建均采用相同的时钟树算法。
+### Clustering to Reduce Scale
 
-在K-Means聚类过程中，我们设定了初始迭代次数，在每次迭代过程中，我们记录每一簇的寄存器负载电容总和，并考虑较小簇间电容方差的聚类结果进行时钟树构建。
+iCTS supports using the clustering method (K-Means) to reduce the running time of large-scale nets. For nets with more than 3000 registers, iCTS will automatically execute the K-Means algorithm and divide them into 50 clusters for local clock tree construction. After completing the local construction, the top-level clock tree is merged. Both the local construction and the top-level clock tree construction use the same clock tree algorithm.
 
-### 机器学习模型
+During the K-Means clustering process, we set the initial number of iterations. In each iteration, we record the total register load capacitance of each cluster and consider the clustering result with a smaller variance of capacitance between clusters for clock tree construction.
 
-iCTS基于Cython支持Python模型、方法的调用。目前封装Linear、XGBoost、CatBoost模型和Matplotlib的基本绘图方法可供使用，可指定编译选项`SYS_PYTHON3_VERSION`指定系统Python版本，
-并打开`PY_MODEL`选项即可实现C++与Python交互，在该模式下，时序有关Lut过程将使用机器学习模型进行。
+### Machine Learning Models
+
+iCTS supports the invocation of Python models and methods based on Cython. Currently, the encapsulated Linear, XGBoost, CatBoost models, and basic plotting methods of Matplotlib are available. You can specify the compilation option `SYS_PYTHON3_VERSION` to specify the system Python version,
+And by turning on the `PY_MODEL` option, C++ and Python interaction can be achieved. In this mode, the timing-related Lut process will use machine learning models. 

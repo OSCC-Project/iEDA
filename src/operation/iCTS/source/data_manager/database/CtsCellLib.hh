@@ -26,6 +26,7 @@
 #include <map>
 #include <span>
 #include <tuple>
+#include <unordered_map>
 #include <vector>
 
 #include "ModelFactory.hh"
@@ -61,17 +62,10 @@ class CtsCellLib
   void set_delay_coef(const std::vector<double>& coef) { _delay_coef = coef; }
   void set_slew_coef(const std::vector<double>& coef) { _slew_coef = coef; }
   void set_init_cap(const double& init_cap) { _init_cap = init_cap; }
-#ifdef PY_MODEL
-  void set_delay_lib_model(ModelBase* delay_lib_model) { _delay_lib_model = delay_lib_model; }
-  void set_slew_lib_model(ModelBase* slew_lib_model) { _slew_lib_model = slew_lib_model; }
-#endif
 
   // calc
   double calcSlew(const double& cap_out) const
   {
-    // #ifdef PY_MODEL
-    //     return _slew_lib_model->predict({cap_out});
-    // #endif
     return calcLinearSlew(cap_out);
   }
 
@@ -103,9 +97,6 @@ class CtsCellLib
   }
   double calcDelay(const double& slew_in, const double& cap_out) const
   {
-#ifdef PY_MODEL
-    return _delay_lib_model->predict({slew_in, cap_out});
-#endif
     return calcInsertDelay(slew_in, cap_out);
   }
   double calcLinearSlew(const double& cap_out) const { return _slew_coef[0] + _slew_coef[1] * cap_out; }
@@ -150,10 +141,6 @@ class CtsCellLib
   std::vector<double> _delay_coef;
   std::vector<double> _slew_coef;
   double _init_cap = 0.0;
-#ifdef PY_MODEL
-  ModelBase* _delay_lib_model = nullptr;
-  ModelBase* _slew_lib_model = nullptr;
-#endif
 };
 
 class CtsLibs
@@ -170,21 +157,7 @@ class CtsLibs
     }
     return _lib_maps[cell_master];
   }
-#if (defined PY_MODEL) && (defined USE_EXTERNAL_MODEL)
-  void insertModel(const std::string& net_name, ModelBase* model) { _model_maps[net_name] = model; }
-
-  ModelBase* findModel(const std::string& net_name)
-  {
-    if (_model_maps.find(net_name) == _model_maps.end()) {
-      return nullptr;
-    }
-    return _model_maps[net_name];
-  }
-#endif
  private:
   std::unordered_map<std::string, CtsCellLib*> _lib_maps;
-#if (defined PY_MODEL) && (defined USE_EXTERNAL_MODEL)
-  std::unordered_map<std::string, ModelBase*> _model_maps;
-#endif
 };
 }  // namespace icts

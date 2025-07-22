@@ -207,6 +207,7 @@ class Lef58EnclosureEdge
   void set_min_width(int32_t width) { _min_width = width; }
   void set_max_width(int32_t width) { _max_width = width; }
   void set_par_length(int32_t par_length) { _par_length = par_length; }
+  void set_par_within(int32_t par_within) { _par_within = par_within; }
   void set_except_extracut(bool has_except_extracut) { _except_extracut = has_except_extracut; }
   void set_except_extracut_cutwithin(int32_t cut_within) { _cut_within = cut_within; }
   void set_except_twoedges(bool has_except_twoedges) { _except_two_edges = has_except_twoedges; }

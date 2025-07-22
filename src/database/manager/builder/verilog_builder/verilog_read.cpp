@@ -354,17 +354,17 @@ int32_t RustVerilogRead::build_nets()
         auto bus_range = std::make_pair(dcl_range.start, dcl_range.end);
         for (int index = bus_range.second; index <= bus_range.first; index++) {
           // for port or wire bus, we split to one bye one port.
-          const char* one_name = ieda::Str::printf("%s[%d]", dcl_name, index);
+          const char* one_name = ieda::Str::printf("%s[%d]", net_name.c_str(), index);
           auto idb_net = add_wire_net(one_name);
           if (index == bus_range.second) {
-            IdbBus io_pin_bus(dcl_name, bus_range.first, bus_range.second);
+            IdbBus io_pin_bus(net_name, bus_range.first, bus_range.second);
             io_pin_bus.set_type(IdbBus::kBusType::kBusNet);
             io_pin_bus.addNet(idb_net);
 
             idb_design->get_bus_list()->addBusObject(std::move(io_pin_bus));
 
           } else {
-            std::string bus_name = dcl_name;
+            std::string bus_name = net_name;
             auto found_pin_bus = idb_design->get_bus_list()->findBus(bus_name);
             assert(found_pin_bus);
             (*found_pin_bus).get().addNet(idb_net);
@@ -411,12 +411,130 @@ int32_t RustVerilogRead::build_assign()
   auto& top_module_stmts = _rust_top_module->module_stmts;
   void* stmt;
 
-  //record the merge nets.
+  // record the merge nets.
   std::map<std::string, IdbNet*> remove_to_merge_nets;
+
+  auto process_one_to_one_net
+      = [idb_design, idb_io_pin_list, idb_net_list, &remove_to_merge_nets](std::string left_net_name, std::string right_net_name) {
+          left_net_name = ieda::Str::trimmed(left_net_name.c_str());
+          right_net_name = ieda::Str::trimmed(right_net_name.c_str());
+
+          left_net_name = ieda::Str::replace(left_net_name, R"(\\)", "");
+          left_net_name = ieda::Str::replace(left_net_name, R"( )", "");
+          right_net_name = ieda::Str::replace(right_net_name, R"(\\)", "");
+          right_net_name = ieda::Str::replace(right_net_name, R"( )", "");
+
+          // according to assign's lhs/rhs to connect port to net.
+
+          auto* the_left_idb_net = idb_net_list->find_net(left_net_name);
+          if (!the_left_idb_net && remove_to_merge_nets.contains(left_net_name)) {
+            the_left_idb_net = remove_to_merge_nets[left_net_name];
+          }
+
+          auto* the_right_idb_net = idb_net_list->find_net(right_net_name);
+          if (!the_right_idb_net && remove_to_merge_nets.contains(right_net_name)) {
+            the_right_idb_net = remove_to_merge_nets[right_net_name];
+          }
+
+          auto* the_left_io_pin = idb_io_pin_list->find_pin(left_net_name.c_str());
+          auto* the_right_io_pin = idb_io_pin_list->find_pin(right_net_name.c_str());
+
+          if (the_left_idb_net && the_right_idb_net && !the_left_io_pin && !the_right_io_pin) {
+            // assign net = net, need merge two net to one net.
+
+            // std::cout << "merge " << left_net_name << " = " << right_net_name << "\n";
+
+            auto left_instance_pin_list = the_left_idb_net->get_instance_pin_list()->get_pin_list();
+            auto left_io_pin_list = the_left_idb_net->get_io_pins()->get_pin_list();
+
+            // merge left to right net.
+            for (auto* left_instance_pin : left_instance_pin_list) {
+              the_right_idb_net->add_instance_pin(left_instance_pin);
+              the_left_idb_net->remove_pin(left_instance_pin);
+              left_instance_pin->set_net(the_right_idb_net);
+              left_instance_pin->set_net_name(right_net_name);
+            }
+
+            for (auto* left_io_pin : left_io_pin_list) {
+              the_right_idb_net->add_io_pin(left_io_pin);
+              the_left_idb_net->remove_pin(left_io_pin);
+              left_io_pin->set_net(the_right_idb_net);
+              left_io_pin->set_net_name(right_net_name);
+            }
+
+            assert(the_left_idb_net != the_right_idb_net);
+            // the remove map to merge net maybe removed, need update the new net.
+            for (auto [remove_net_name, merge_idb_net] : remove_to_merge_nets) {
+              if (merge_idb_net->get_net_name() == left_net_name) {
+                remove_to_merge_nets[remove_net_name] = the_right_idb_net;
+              }
+            }
+
+            idb_net_list->remove_net(left_net_name);
+            remove_to_merge_nets[left_net_name] = the_right_idb_net;
+
+          } else if (the_left_idb_net && !the_left_io_pin) {
+            // assign net = input_port;
+            if (the_right_io_pin && the_right_io_pin->is_io_pin()) {
+              the_left_idb_net->add_io_pin(the_right_io_pin);
+              the_right_io_pin->set_net(the_left_idb_net);
+              the_right_io_pin->set_net_name(the_left_idb_net->get_net_name());
+            } else {
+              std::cout << "assign " << left_net_name << " = " << right_net_name << " is not processed." << "\n";
+            }
+          } else if (the_right_idb_net && !the_right_io_pin) {
+            // assign output_port = net;
+            if (the_left_io_pin->is_io_pin()) {
+              the_right_idb_net->add_io_pin(the_left_io_pin);
+              the_left_io_pin->set_net(the_right_idb_net);
+              the_left_io_pin->set_net_name(the_right_idb_net->get_net_name());
+            } else {
+              std::cout << "assign " << left_net_name << " = " << right_net_name << " is not processed." << "\n";
+            }
+          } else if (!the_left_idb_net && !the_right_idb_net && the_right_io_pin) {
+            // assign output_port = input_port;
+            IdbNet* idb_net = new IdbNet();
+            idb_net->set_net_name(right_net_name.c_str());
+            idb_net->set_connect_type(IdbConnectType::kSignal);
+            if (the_left_io_pin->is_io_pin()) {
+              idb_net->add_io_pin(the_left_io_pin);
+              the_left_io_pin->set_net(idb_net);
+              the_left_io_pin->set_net_name(idb_net->get_net_name());
+            }
+            if (the_right_io_pin->is_io_pin()) {
+              idb_net->add_io_pin(the_right_io_pin);
+              the_right_io_pin->set_net(idb_net);
+              the_right_io_pin->set_net_name(idb_net->get_net_name());
+            }
+            idb_net_list->add_net(idb_net);
+          } else if (!the_left_idb_net && !the_right_idb_net && !the_right_io_pin) {
+            // assign output_port = 1'b0(1'b1);
+            IdbNet* idb_net = new IdbNet();
+            idb_net->set_net_name(left_net_name.c_str());
+            idb_net->set_connect_type(IdbConnectType::kSignal);
+            if (the_left_io_pin && the_left_io_pin->is_io_pin()) {
+              idb_net->add_io_pin(the_left_io_pin);
+              the_left_io_pin->set_net(idb_net);
+              the_left_io_pin->set_net_name(idb_net->get_net_name());
+            } else {
+              std::cout << "assign " << left_net_name << " = " << right_net_name << " is not processed." << "\n";
+            }
+          } else if (the_left_idb_net && the_right_idb_net && the_left_io_pin && the_right_io_pin) {
+            // assign output_port = output_port
+            the_left_idb_net->add_io_pin(the_right_io_pin);
+            the_right_io_pin->set_net(the_left_idb_net);
+            the_right_io_pin->set_net_name(the_left_idb_net->get_net_name());
+
+          } else {
+            std::cout << "assign " << left_net_name << " = " << right_net_name << " is not processed." << "\n";
+          }
+        };
+
   FOREACH_VEC_ELEM(&top_module_stmts, void, stmt)
   {
     if (rust_is_module_assign_stmt(stmt)) {
       RustVerilogAssign* verilog_assign = rust_convert_verilog_assign(stmt);
+
       auto* left_net_expr = const_cast<void*>(verilog_assign->left_net_expr);
       auto* right_net_expr = const_cast<void*>(verilog_assign->right_net_expr);
       std::string left_net_name;
@@ -440,122 +558,144 @@ int32_t RustVerilogRead::build_assign()
         } else {
           right_net_name = rust_convert_verilog_slice_id(right_net_id)->id;
         }
+
+        process_one_to_one_net(left_net_name, right_net_name);
+      } else if ((rust_is_id_expr(left_net_expr) && rust_is_concat_expr(right_net_expr))
+                 || (rust_is_concat_expr(left_net_expr) && rust_is_id_expr(right_net_expr))) {
+        auto process_id_concat_assign = [&process_one_to_one_net](auto* id_net_expr, auto* concat_net_expr, bool is_first_left) {
+          std::string id_net_name;
+          std::string concat_net_name;
+
+          // assume left the not concatenation, right is concatenation. such as "assign io_out_arsize = { _41_, _41_, io_in_size };"
+          auto* id_net_expr_id = const_cast<void*>(rust_convert_verilog_net_id_expr(id_net_expr)->verilog_id);
+          unsigned base_id_index = 0;
+          if (rust_is_id(id_net_expr_id)) {
+            id_net_name = rust_convert_verilog_id(id_net_expr_id)->id;
+          } else if (rust_is_bus_slice_id(id_net_expr_id)) {
+            auto slice_net_id = rust_convert_verilog_slice_id(id_net_expr_id);
+            id_net_name = slice_net_id->base_id;
+            base_id_index = slice_net_id->range_base;
+          } else {
+            std::cout << "left net id should be id or bus slice id";
+            assert(false);
+          }
+
+          auto verilog_id_concat = rust_convert_verilog_net_concat_expr(concat_net_expr)->verilog_id_concat;
+
+          void* one_net_expr;
+          FOREACH_VEC_ELEM(&verilog_id_concat, void, one_net_expr)
+          {
+            assert(rust_is_id_expr(one_net_expr));
+            auto* one_net_id = (void*) (rust_convert_verilog_net_id_expr(one_net_expr)->verilog_id);
+            if (rust_is_id(one_net_id)) {
+              std::string one_id_net_name = id_net_name + "[" + std::to_string(base_id_index) + "]";
+              std::string one_concat_net_name = rust_convert_verilog_id(one_net_id)->id;
+              if (is_first_left) {
+                process_one_to_one_net(one_id_net_name, one_concat_net_name);
+              } else {
+                process_one_to_one_net(one_concat_net_name, one_id_net_name);
+              }
+
+            } else if (rust_is_bus_index_id(one_net_id)) {
+              std::string one_id_net_name = id_net_name + "[" + std::to_string(base_id_index) + "]";
+              std::string one_concat_net_name = rust_convert_verilog_index_id(one_net_id)->id;
+              if (is_first_left) {
+                process_one_to_one_net(one_id_net_name, one_concat_net_name);
+              } else {
+                process_one_to_one_net(one_concat_net_name, one_id_net_name);
+              }
+            } else {
+              auto right_slice_id = rust_convert_verilog_slice_id(one_net_id);
+              std::string right_net_base_name = right_slice_id->base_id;
+              auto right_base_index = right_slice_id->range_base;
+              while (right_base_index <= right_slice_id->range_max) {
+                std::string one_id_net_name = id_net_name + "[" + std::to_string(base_id_index) + "]";
+                std::string one_concat_net_name = right_net_base_name + "[" + std::to_string(right_base_index) + "]";
+
+                if (is_first_left) {
+                  process_one_to_one_net(one_id_net_name, one_concat_net_name);
+                } else {
+                  process_one_to_one_net(one_concat_net_name, one_id_net_name);
+                }
+
+                ++base_id_index;
+                ++right_base_index;
+              }
+            }
+
+            ++base_id_index;
+          }
+        };
+
+        if (rust_is_id_expr(left_net_expr) && rust_is_concat_expr(right_net_expr)) {
+          process_id_concat_assign(left_net_expr, right_net_expr, true);
+        } else {
+          process_id_concat_assign(right_net_expr, left_net_expr, false);
+        }
+
+      } else if (rust_is_concat_expr(left_net_expr) && rust_is_concat_expr(right_net_expr)) {
+        std::function<std::vector<std::string>(RustVec&)> get_concat_net_names
+            = [&get_concat_net_names](RustVec& verilog_id_concat) -> std::vector<std::string> {
+          std::vector<std::string> concat_net_names;
+          void* one_net_expr;
+          FOREACH_VEC_ELEM(&verilog_id_concat, void, one_net_expr)
+          {
+            if (rust_is_id_expr(one_net_expr)) {
+              auto* one_net_id = (void*) (rust_convert_verilog_net_id_expr(one_net_expr)->verilog_id);
+              if (rust_is_id(one_net_id)) {
+                std::string one_concat_net_name = rust_convert_verilog_id(one_net_id)->id;
+                concat_net_names.emplace_back(std::move(one_concat_net_name));
+              } else if (rust_is_bus_index_id(one_net_id)) {
+                std::string one_concat_net_name = rust_convert_verilog_index_id(one_net_id)->id;
+                concat_net_names.emplace_back(std::move(one_concat_net_name));
+              } else {
+                auto right_slice_id = rust_convert_verilog_slice_id(one_net_id);
+                std::string right_net_base_name = right_slice_id->base_id;
+                auto right_base_index = right_slice_id->range_base;
+                while (right_base_index <= right_slice_id->range_max) {
+                  std::string one_concat_net_name = right_net_base_name + "[" + std::to_string(right_base_index) + "]";
+                  concat_net_names.emplace_back(std::move(one_concat_net_name));
+                  ++right_base_index;
+                }
+              }
+            } else if (rust_is_concat_expr(one_net_expr)) {
+              auto one_net_concat_expr = rust_convert_verilog_net_concat_expr(one_net_expr);
+              auto one_net_verilog_id_concat = one_net_concat_expr->verilog_id_concat;
+              auto one_concat_net_names = get_concat_net_names(one_net_verilog_id_concat);
+              concat_net_names.insert(concat_net_names.end(), one_concat_net_names.begin(), one_concat_net_names.end());
+
+            } else {
+              assert(false);
+            }
+          }
+
+          return concat_net_names;
+        };
+
+        auto left_concat_net_expr = rust_convert_verilog_net_concat_expr(left_net_expr);
+        auto left_concat_net_names = get_concat_net_names(left_concat_net_expr->verilog_id_concat);
+
+        auto right_concat_net_expr = rust_convert_verilog_net_concat_expr(right_net_expr);
+        auto right_concat_net_names = get_concat_net_names(right_concat_net_expr->verilog_id_concat);
+
+        assert(left_concat_net_names.size() == right_concat_net_names.size());
+
+        for (size_t i = 0; i < left_concat_net_names.size(); i++) {
+          // process assign net = net, which is concat net.
+          std::string left_concat_net_name = left_concat_net_names[i];
+          std::string right_concat_net_name = right_concat_net_names[i];
+
+          if (left_concat_net_name == right_concat_net_name) {
+            // skip same net name.
+            continue;
+          }
+
+          process_one_to_one_net(left_concat_net_name, right_concat_net_name);
+        }
+
       } else {
         std::cout << "assign declaration's lhs/rhs is not VerilogNetIDExpr class." << std::endl;
-      }
-
-      left_net_name = ieda::Str::trimmed(left_net_name.c_str());
-      right_net_name = ieda::Str::trimmed(right_net_name.c_str());
-
-      left_net_name = ieda::Str::replace(left_net_name, R"(\\)", "");
-      left_net_name = ieda::Str::replace(left_net_name, R"( )", "");
-      right_net_name = ieda::Str::replace(right_net_name, R"(\\)", "");
-      right_net_name = ieda::Str::replace(right_net_name, R"( )", "");
-
-      // according to assign's lhs/rhs to connect port to net.
-
-      auto* the_left_idb_net = idb_net_list->find_net(left_net_name);
-      if (!the_left_idb_net && remove_to_merge_nets.contains(left_net_name)) {
-        the_left_idb_net = remove_to_merge_nets[left_net_name];        
-      }
-
-      auto* the_right_idb_net = idb_net_list->find_net(right_net_name);
-      if (!the_right_idb_net && remove_to_merge_nets.contains(right_net_name)) {
-        the_right_idb_net = remove_to_merge_nets[right_net_name];        
-      }
-
-      auto* the_left_io_pin = idb_io_pin_list->find_pin(left_net_name.c_str());
-      auto* the_right_io_pin = idb_io_pin_list->find_pin(right_net_name.c_str());
-
-      if (the_left_idb_net && the_right_idb_net && !the_left_io_pin && !the_right_io_pin) {
-        // assign net = net, need merge two net to one net.
-
-        // std::cout << "merge " << left_net_name << " = " << right_net_name << "\n";
-
-        auto left_instance_pin_list = the_left_idb_net->get_instance_pin_list()->get_pin_list();
-        auto left_io_pin_list = the_left_idb_net->get_io_pins()->get_pin_list();
-
-        // merge left to right net.
-        for (auto* left_instance_pin : left_instance_pin_list) {
-          the_right_idb_net->add_instance_pin(left_instance_pin);
-          the_left_idb_net->remove_pin(left_instance_pin);
-          left_instance_pin->set_net(the_right_idb_net);
-          left_instance_pin->set_net_name(right_net_name);
-        }
-
-        for (auto* left_io_pin : left_io_pin_list) {
-          the_right_idb_net->add_io_pin(left_io_pin);
-          the_left_idb_net->remove_pin(left_io_pin);
-          left_io_pin->set_net(the_right_idb_net);
-          left_io_pin->set_net_name(right_net_name);
-        }
-
-        assert(the_left_idb_net != the_right_idb_net);
-        // the remove map to merge net maybe removed, need update the new net.
-        for (auto [remove_net_name, merge_idb_net] : remove_to_merge_nets) {
-          if (merge_idb_net->get_net_name() == left_net_name) {
-            remove_to_merge_nets[remove_net_name] = the_right_idb_net;
-          }
-        }
-
-        idb_net_list->remove_net(left_net_name);
-        remove_to_merge_nets[left_net_name] = the_right_idb_net; 
-
-      } else if (the_left_idb_net && !the_left_io_pin) {
-        // assign net = input_port;
-        if (the_right_io_pin && the_right_io_pin->is_io_pin()) {
-          the_left_idb_net->add_io_pin(the_right_io_pin);
-          the_right_io_pin->set_net(the_left_idb_net);
-          the_right_io_pin->set_net_name(the_left_idb_net->get_net_name());
-        } else {
-          std::cout << "assign " << left_net_name << " = " << right_net_name << " is not processed." << "\n";
-        }
-      } else if (the_right_idb_net && !the_right_io_pin) {
-        // assign output_port = net;
-        if (the_left_io_pin->is_io_pin()) {
-          the_right_idb_net->add_io_pin(the_left_io_pin);
-          the_left_io_pin->set_net(the_right_idb_net);
-          the_left_io_pin->set_net_name(the_right_idb_net->get_net_name());
-        } else {
-          std::cout << "assign " << left_net_name << " = " << right_net_name << " is not processed." << "\n";
-        }
-      } else if (!the_left_idb_net && !the_right_idb_net && the_right_io_pin) {
-        // assign output_port = input_port;
-        IdbNet* idb_net = new IdbNet();
-        idb_net->set_net_name(right_net_name.c_str());
-        idb_net->set_connect_type(IdbConnectType::kSignal);
-        if (the_left_io_pin->is_io_pin()) {
-          idb_net->add_io_pin(the_left_io_pin);
-          the_left_io_pin->set_net(idb_net);
-          the_left_io_pin->set_net_name(idb_net->get_net_name());
-        }
-        if (the_right_io_pin->is_io_pin()) {
-          idb_net->add_io_pin(the_right_io_pin);
-          the_right_io_pin->set_net(idb_net);
-          the_right_io_pin->set_net_name(idb_net->get_net_name());
-        }
-        idb_net_list->add_net(idb_net);
-      } else if (!the_left_idb_net && !the_right_idb_net && !the_right_io_pin) {
-        // assign output_port = 1'b0(1'b1);
-        IdbNet* idb_net = new IdbNet();
-        idb_net->set_net_name(left_net_name.c_str());
-        idb_net->set_connect_type(IdbConnectType::kSignal);
-        if (the_left_io_pin && the_left_io_pin->is_io_pin()) {
-          idb_net->add_io_pin(the_left_io_pin);
-          the_left_io_pin->set_net(idb_net);
-          the_left_io_pin->set_net_name(idb_net->get_net_name());
-        } else{
-          std::cout << "assign " << left_net_name << " = " << right_net_name << " is not processed." << "\n";
-        }
-      } else if (the_left_idb_net && the_right_idb_net 
-                  && the_left_io_pin && the_right_io_pin) {
-        // assign output_port = output_port
-          the_left_idb_net->add_io_pin(the_right_io_pin);
-          the_right_io_pin->set_net(the_left_idb_net);
-          the_right_io_pin->set_net_name(the_left_idb_net->get_net_name());
-
-      } else {
-        std::cout << "assign " << left_net_name << " = " << right_net_name << " is not processed." << "\n";
+        assert(false);
       }
     }
   }
@@ -794,7 +934,7 @@ int32_t RustVerilogRead::build_components()
               }
             }
 
-            std::string bus_name = ieda::Str::printf("%s/%s", inst_name, cell_port_name);
+            std::string bus_name = ieda::Str::printf("%s/%s", inst_name.c_str(), cell_port_name);
             for (int i = 0; auto* idb_bus_pin : bus_pins) {
               if (i == 0) {
                 create_or_found_bus(bus_name, idb_bus_pin, max_bus_bit - 1, true);
@@ -835,7 +975,7 @@ int32_t RustVerilogRead::build_components()
           std::vector<void*> verilog_id_concat_vec;
           flatten_concat_net_expr(net_concat_expr, verilog_id_concat_vec);
 
-          std::string bus_name = ieda::Str::printf("%s/%s", inst_name, cell_port_name);
+          std::string bus_name = ieda::Str::printf("%s/%s", inst_name.c_str(), cell_port_name);
 
           // found pin bus size.
           std::vector<IdbPin*> bus_pin_vec;

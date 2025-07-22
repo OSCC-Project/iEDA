@@ -1,96 +1,93 @@
-# iTO 功能文档
+# iTO: Timing Optimization
 
-> ## 概述
+## Overview
 
-TO的全称为Timing Optimization，时序优化。在该步骤，EDA工具会根据时序约束文件，对芯片进行时序分析，目的是通过单元尺寸调整和插入缓冲器等方法尽可能地修复芯片存在的时序违例。
+The full name of TO is Timing Optimization. In this step, the EDA tool performs timing analysis on the chip according to the timing constraint file. The purpose is to repair the timing violations of the chip as much as possible by methods such as cell sizing and buffer insertion.
 
-时序违例检查主要包括：
-1. 时序设计规则违例（DRV）检查；
-2. 建立时间违例（Setup）检查；
-3. 保持时间违例（Hold）检查。
+The main checks for timing violations include:
+1. Timing design rule violation (DRV) check;
+2. Setup time violation check;
+3. Hold time violation check.
 
-支持功能：
-1. 时序设计规则违例（DRV）优化；
-2. 建立时间违例（Setup）优化；
-3. 保持时间违例（Hold）优化。
+Supported functions:
+1. Timing design rule violation (DRV) optimization;
+2. Setup time violation optimization;
+3. Hold time violation optimization.
 
-iTO提供了4个Tcl命令：
-1. `run_to`：由用户在config文件中任意指定需要优化的步骤；
-2. `run_to_drv`：执行DRV优化；
-2. `run_to_hold`：执行Hold优化；
-2. `run_to_setup`：执行Setup优化。
+iTO provides 4 Tcl commands:
+1. `run_to`: Users can arbitrarily specify the optimization steps needed in the config file;
+2. `run_to_drv`: Perform DRV optimization;
+2. `run_to_hold`: Perform Hold optimization;
+2. `run_to_setup`: Perform Setup optimization.
 
-> ## iTO使用示例
+## iTO Usage Example
 
-部分Config说明
+Part of the Config description
 ```
-"routing_tree": "flute",  // 连接线网所有引脚的topology，主要用于RC树构建，DRV优化，以及Setup优化。可选flute：flute构建的rsmt、hvtree：HV tree、shallow-light：通过SALT构建的shallow-light tree
-"setup_target_slack": 0.0, // setup slack小于该值时认为违例，也是slack优化的目标
-"hold_target_slack": 0.4,  // hold slack小于该值时认为违例，也是slack优化的目标
-"max_insert_instance_percent": 0.2,  // 缓冲器插入的面积占芯片面积的最大比例
-"max_core_utilization": 0.8,  // 缓冲器插入后的面积+其他单元的面积，占芯片面积的最大比例
+"setup_slack_margin": 0.0, // When the setup slack is less than this value, it is considered a violation and is also the target of slack optimization
+"hold_slack_margin": 0.4,  // When the hold slack is less than this value, it is considered a violation and is also the target of slack optimization
+"max_buffer_percent": 0.2,  // The maximum proportion of the area occupied by buffer insertion to the chip area
+"max_utilization": 0.8,  // The maximum proportion of the area after buffer insertion + the area of other cells to the chip area
 
 "DRV_insert_buffers": [
-    ""  // 优化DRV使用的缓冲器
+    ""  // Buffers used for optimizing DRV
 ],
 "setup_insert_buffers": [
-    ""  // 优化setup使用的缓冲器
+    ""  // Buffers used for optimizing setup
 ],
 "hold_insert_buffers": [
-    ""  // 优化hold使用的缓冲器
+    ""  // Buffers used for optimizing hold
 ],
-"number_of_decreasing_slack_iter": 5,  // 迭代优化setup时，允许WNS不断变差的最大连续迭代次数
-"max_allowed_buffering_fanout": 20,  // 针对setup，线网的fanout超过该值时不会对其进行缓冲器插入优化
-"min_divide_fanout": 8  // 针对setup，线网的fanout大于该值时通过插入缓冲器把fanout降低
-"optimize_endpoints_percent": 1.0 //针对setup，需要优化的违例端点占全部违例端点的比例 
-"drv_optimize_iter_number": 5  // 针对drv，drv优化的执行次数
+"number_passes_allowed_decreasing_slack": 5,  // When iteratively optimizing setup, the maximum consecutive number of iterations allowed for WNS to continuously deteriorate
+"rebuffer_max_fanout": 20,  // For setup, when the fanout of a net exceeds this value, buffer insertion optimization will not be performed on it
+"split_load_min_fanout": 8  // For setup, when the fanout of a net is greater than this value, the fanout is reduced by inserting buffers
 
 ```
 
-iTO可以独立执行某个优化步骤，也可以任意指定需要优化的步骤。
-需要执行哪个步骤，可将iTO的Config文件中对应的步骤设置为True
+iTO can perform a certain optimization step independently or arbitrarily specify the steps to be optimized.
+To perform which step, set the corresponding step in the iTO Config file to True
 ```
 "optimize_drv": false,
 "optimize_hold": false,
 "optimize_setup": false,
 ```
 
-下面以执行DRV优化为例：
+The following takes performing DRV optimization as an example:
 
-1.在Tcl文件中设置Config文件
+1. Set the Config file in the Tcl file
 
-`run_to_drv -config ./iEDA_config/to_default_config_drv.json`
+`run_to_drv -config./iEDA_config/to_default_config_drv.json`
 
 
-2.使用iEDA运行tcl文件
+2. Use iEDA to run the tcl file
 
-`./iEDA -script ./script/iTO_script/run_iTO_drv.tcl`
+`./iEDA -script./script/iTO_script/run_iTO_drv.tcl`
 
-### 报告输出
+### Report Output
 
-在Config文件中可设置优化结果的报告输出路径：
+The report output path of the optimization result can be set in the Config file:
 ```
 "report_file": "path"
 ```
 
-DRV优化报告示例：
+Example of DRV optimization report:
 
 ```
 Found 0 slew violations.
 Found 0 capacitance violations.
 Found 0 fanout violations.
 Found 0 long wires.
-Before ViolationFix | slew_vio: 0 cap_vio: 0 fanout_vio: 0 length_vio: 0    \\ 优化前违例情况
+Before ViolationFix | slew_vio: 0 cap_vio: 0 fanout_vio: 0 length_vio: 0    \\ Violation situation before optimization
 The 1th check
-After ViolationFix | slew_vio: 0 cap_vio: 0 fanout_vio: 0 length_vio: 0 \\ 优化后违例情况
+After ViolationFix | slew_vio: 0 cap_vio: 0 fanout_vio: 0 length_vio: 0 \\ Violation situation after optimization
 Inserted 0 buffers in 0 nets.
 Resized 0 instances.
 ```
 
-Hold优化报告示例：
+Example of Hold optimization report:
 
 ```
-// 优化前Hold违例情况。
+// Hold violation situation before optimization.
 ---------------------------------------------------------------------------
 Clock Group                                    Hold TNS            Hold WNS
 ---------------------------------------------------------------------------
@@ -104,7 +101,7 @@ Worst Hold Path Capture: dpath/a_reg/_145_:CLK
 Finish hold optimization!
 Total inserted 0 hold buffers and 0 load buffers.
 
-// 优化后Hold违例情况。
+// Hold violation situation after optimization.
 ---------------------------------------------------------------------------
 Clock Group                                    Hold TNS            Hold WNS
 ---------------------------------------------------------------------------
@@ -112,9 +109,9 @@ core_clock                                            0                   0
 ---------------------------------------------------------------------------
 ```
 
-Setup优化报告示例：
+Example of Setup optimization report:
 ```
--0.304023 -0.204023    // setup优化过程中的WNS变化情况
+-0.304023 -0.204023    // WNS changes during setup optimization
 Inserted 10 buffers.
 Resized 10 instances.
 Unable to repair all setup violations.

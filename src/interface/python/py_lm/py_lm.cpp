@@ -16,9 +16,10 @@
 // ***************************************************************************************
 #include "py_lm.h"
 
+#include <filesystem>
+
 #include "lm_api.h"
 #include "timing_api.hh"
-#include <filesystem>
 
 namespace python_interface {
 
@@ -37,20 +38,21 @@ bool layout_graph(const std::string& path)
 bool large_model_feature(std::string dir)
 {
   if (dir == "") {
-    dir = "./large_model";
+    dir = "./vectorization";
   }
   ilm::LargeModelApi lm_api;
   return lm_api.buildLargeModelFeature(dir);
 }
 
-ieval::TimingWireGraph get_timing_wire_graph(std::string wire_graph_yaml_path) {
+ieval::TimingWireGraph get_timing_wire_graph(std::string wire_graph_yaml_path)
+{
   if (std::filesystem::exists(wire_graph_yaml_path)) {
     auto timing_wire_graph = ieval::RestoreTimingGraph(wire_graph_yaml_path);
     return timing_wire_graph;
   }
 
   ilm::LargeModelApi lm_api;
-  lm_api.runLmSTA(); 
+  lm_api.runLmSTA();
 
   auto* timing_wire_graph_ptr = ieval::TimingAPI::getInst()->getTimingWireGraph();
   ieval::SaveTimingGraph(*timing_wire_graph_ptr, wire_graph_yaml_path);

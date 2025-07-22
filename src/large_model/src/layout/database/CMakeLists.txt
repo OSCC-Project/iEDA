@@ -20,4 +20,3 @@ target_include_directories(ilm_layout_db
     ${CMAKE_CURRENT_SOURCE_DIR}
     Eigen3::Eigen
 )
-set(CMAKE_BUILD_TYPE "debug")

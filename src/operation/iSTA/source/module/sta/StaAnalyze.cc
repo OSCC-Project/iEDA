@@ -329,8 +329,8 @@ unsigned StaAnalyze::analyzePortSetupHold(StaVertex* port_vertex,
                            << " is not constrained";
     return 1;
   }
-  auto find_io_constrain = [&io_constrains](auto analysis_mode,
-                                            auto trans_type) {
+  auto find_io_constrain = [&io_constrains, port_vertex](auto analysis_mode,
+                                            auto trans_type) -> SdcSetIODelay* {
     auto it = std::find_if(
         io_constrains.begin(), io_constrains.end(),
         [=](SdcSetIODelay* io_constrain) {
@@ -344,7 +344,16 @@ unsigned StaAnalyze::analyzePortSetupHold(StaVertex* port_vertex,
             return io_constrain->isMin() && io_constrain->isFall();
           }
         });
-    LOG_FATAL_IF(it == io_constrains.end());
+
+    if (it == io_constrains.end()) {
+      LOG_ERROR << ""
+                << "The output port " << port_vertex->getName()
+                << " has no io constrain for "
+                << (IS_MAX(analysis_mode) ? "max" : "min") << " and "
+                << (IS_RISE(trans_type) ? "rise" : "fall");
+      return nullptr;
+    }
+
     return *it;
   };
 
@@ -362,6 +371,11 @@ unsigned StaAnalyze::analyzePortSetupHold(StaVertex* port_vertex,
       auto trans_type = delay_data->get_trans_type();
 
       auto* output_delay = find_io_constrain(analysis_mode, trans_type);
+      if (output_delay == nullptr) {
+        // no output delay for this port and analysis mode.;
+        continue;  
+      }
+
       TransType clock_trans_type =
           output_delay->isClockFall() ? TransType::kFall : TransType::kRise;
 
@@ -548,7 +562,7 @@ unsigned StaAnalyze::operator()(StaGraph* the_graph) {
   unsigned index = 0;
   FOREACH_END_VERTEX(the_graph, end_vertex) {
     ++index;
-    LOG_INFO_EVERY_N(10) << "analyze timing path end vertex " << index
+    LOG_INFO_EVERY_N(1000) << "analyze timing path end vertex " << index
                            << " total " << the_graph->get_end_vertexes().size() << " start";
 
     if (end_vertex->is_start() && end_vertex->is_end()) {

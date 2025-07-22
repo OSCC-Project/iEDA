@@ -428,7 +428,7 @@ class TreeBuilderAux : public TestInterface
     auto* driver_pin = buf->get_driver_pin();
     driver_pin->preOrder([](Node* node) { node->set_pattern(static_cast<RCPattern>(1 + std::rand() % 2)); });
     auto* net = TimingPropagator::genNet("BoundSkewTree", driver_pin, load_pins);
-    TreeBuilder::localPlace(buf, load_pins);
+    // TreeBuilder::localPlace(buf, load_pins);
     auto loc = driver_pin->get_location();
     TimingPropagator::resetNet(net);
     return loc;

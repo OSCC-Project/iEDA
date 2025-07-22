@@ -1,5 +1,10 @@
-add_subdirectory(multi_patterning)
-add_subdirectory(region_query)
-add_subdirectory(shape_check)
-add_subdirectory(spacing_check)
-add_subdirectory(spot_parser)
+add_subdirectory(${IDRC_MODULE}/gds_plotter)
+add_subdirectory(${IDRC_MODULE}/rule_validator)
+
+add_library(idrc_module INTERFACE)
+
+target_link_libraries(idrc_module
+    INTERFACE
+    idrc_gds_plotter
+    idrc_rule_validator
+)

@@ -144,6 +144,11 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
   double lef_resistance = routing_layer->get_resistance();
 
   segment_resistance = lef_resistance * segment_length / *segment_width;
+#if DEBUG_TIMING_IDB
+  _debug_csv_file << lef_resistance << "," << segment_length << ","
+            << *segment_width << "," << num_layer << ","
+            << segment_resistance << "\n";
+#endif
 
   // _debug_csv_file << lef_resistance << "," << segment_length << ","
   //           << *segment_width << "," << num_layer << ","

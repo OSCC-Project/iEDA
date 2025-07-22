@@ -97,6 +97,7 @@ class IdbDesign
 
   // operator
   int32_t transUnitDB(double value) { return std::round(_units->get_micron_dbu() * value); }
+  double transToUDB(int32_t value) { return ((double) value) / _units->get_micron_dbu(); }
 
   //   void createDefaultVias(IdbLayers* layers);
   bool connectIOPinToPowerStripe(std::vector<IdbCoordinate<int32_t>*>& point_list, IdbLayer* layer);

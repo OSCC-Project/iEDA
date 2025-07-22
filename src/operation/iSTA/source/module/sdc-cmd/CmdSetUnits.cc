@@ -81,7 +81,7 @@ unsigned CmdSetUnits::exec() {
 
     ista->setTimeUnit(
         timeUnitMap[Str::toUpper(time_unit_option->getStringVal())]);
-    LOG_INFO << "Already set ista time unit" << std::endl;
+    LOG_INFO << "set ista time unit" << std::endl;
   }
   if (cap_unit_option->is_set_val()) {
     std::map<std::string, CapacitiveUnit> capUnitMap = {
@@ -90,7 +90,7 @@ unsigned CmdSetUnits::exec() {
         {"F", CapacitiveUnit::kF}};
 
     ista->setCapUnit(capUnitMap[Str::toUpper(cap_unit_option->getStringVal())]);
-    LOG_INFO << "Already set ista capacitance unit" << std::endl;
+    LOG_INFO << "set ista capacitance unit" << std::endl;
   }
   return 1;
 }

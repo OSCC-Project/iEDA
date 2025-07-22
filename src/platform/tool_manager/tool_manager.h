@@ -79,7 +79,7 @@ class ToolManager
   //   bool floorplanInit();
 
   /// iPL
-  bool autoRunPlacer(std::string config = "");
+  bool autoRunPlacer(std::string config = "", bool enableJsonOutput = false);
   bool runPlacerFiller(std::string config = "");
   bool runPlacerIncrementalFlow(std::string config);
   bool runPlacerIncrementalLegalization();
@@ -104,7 +104,7 @@ class ToolManager
   bool autoRunRouter(std::string config_file_path = "");
 
   /// iDRC
-  bool autoRunDRC(std::string config = "", std::string path = "");
+  bool autoRunDRC(std::string config = "", std::string path = "", bool has_init = false);
   bool readDrcDetailFromFile(std::string path = "");
   bool saveDrcDetailToFile(std::string path = "");
 

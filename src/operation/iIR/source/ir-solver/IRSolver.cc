@@ -25,15 +25,16 @@
  *
  */
 
-#include <Eigen/IterativeLinearSolvers>
-#include <Spectra/SymEigsSolver.h>
-#include <Spectra/MatOp/SparseSymMatProd.h>
+#include "IRSolver.hh"
 
+#include <Spectra/MatOp/SparseSymMatProd.h>
+#include <Spectra/SymEigsSolver.h>
+
+#include <Eigen/IterativeLinearSolvers>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 
-#include "IRSolver.hh"
 #include "log/Log.hh"
 #if CUDA_IR_SOLVER
 #include "ir-solver-cuda/ir_solver.cuh"
@@ -49,10 +50,10 @@ namespace iir {
  */
 void PrintMatrix(Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
                  Eigen::Index base_index, Eigen::Index num_nodes) {
-
   LOG_INFO << "start write matrix, num nodes: " << num_nodes
            << ", base index: " << base_index;
-  std::ofstream out("/home/taosimin/iEDA24/iEDA/bin/matrix_fixed_via_1.txt", std::ios::trunc);
+  std::ofstream out("/home/taosimin/iEDA24/iEDA/bin/matrix_m9_m7.txt",
+                    std::ios::trunc);
   for (Eigen::Index i = base_index; i < base_index + num_nodes; ++i) {
     for (Eigen::Index j = base_index; j < base_index + num_nodes; ++j) {
       // LOG_INFO << "matrix element at (" << i << ", " << j
@@ -102,7 +103,6 @@ void PrintCSCMatrix(Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix) {
  * @param v_vector
  */
 void PrintVector(const Eigen::VectorXd& v_vector, const std::string& filename) {
-
   std::ofstream out(filename, std::ios::trunc);
   for (Eigen::Index i = 0; i < v_vector.size(); ++i) {
     // LOG_INFO << "vector element at (" << i << "): " << v_vector(i);
@@ -160,8 +160,8 @@ std::vector<double> IRSolver::getIRDrop(Eigen::VectorXd& v_vector) {
 std::vector<double> IRLUSolver::operator()(
     Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
     Eigen::VectorXd& J_vector) {
-      
-  Eigen::SparseMatrix<double> A = G_matrix;  // Copy G_matrix to A for preconditioning
+  Eigen::SparseMatrix<double> A =
+      G_matrix;  // Copy G_matrix to A for preconditioning
 
   // PrintMatrix(G_matrix, 0, G_matrix.rows());
 
@@ -175,7 +175,7 @@ std::vector<double> IRLUSolver::operator()(
 
   auto ret_value = solver.info();
   if (ret_value != Eigen::Success) {
-    // PrintMatrix(G_matrix, 0);
+    // PrintMatrix(G_matrix, 0, G_matrix.rows());
     LOG_FATAL << "LU solver error " << ret_value;
   }
 
@@ -233,15 +233,15 @@ Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A,
   int i = 0;
   int min_residual_iter = 0;
   for (; i < max_iter; ++i) {
-    LOG_INFO_EVERY_N(1) << "CG iteration num: " << i + 1
-                          << " residual: " << sqrt(rsold);
+    LOG_INFO_EVERY_N(1000) << "CG iteration num: " << i + 1
+                           << " residual: " << sqrt(rsold);
     // LOG_INFO_EVERY_N(200) << "x:\n"<< x.transpose();
 
     // L2 regularization for gradient
     Eigen::VectorXd Ap = A * p + lambda * p;
     // PrintVector(Ap, "/home/taosimin/iEDA24/iEDA/bin/Ap.txt");
 
-    double pAp  = p.dot(Ap);
+    double pAp = p.dot(Ap);
     double alpha = rsold / pAp;
 
     // PrintVector(p, "/home/taosimin/iEDA24/iEDA/bin/p.txt");
@@ -273,10 +273,10 @@ Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A,
       min_residual_iter = i;
     }
 
-    LOG_INFO << "current residual: " << sqrt(rsnew);
+    // LOG_INFO << "current residual: " << sqrt(rsnew);
 
     if (sqrt(rsnew) < tol) {
-      rsold =  rsnew;
+      rsold = rsnew;
       ++i;
       break;
     }
@@ -308,58 +308,57 @@ Eigen::VectorXd conjugateGradient(const Eigen::SparseMatrix<double>& A,
 
 /**
  * @brief Guess-Seidel solver the ir drop.
- * 
- * @param A 
- * @param b 
- * @param x0 
- * @param tol 
- * @param max_iter 
- * @return Eigen::VectorXd 
+ *
+ * @param A
+ * @param b
+ * @param x0
+ * @param tol
+ * @param max_iter
+ * @return Eigen::VectorXd
  */
 Eigen::VectorXd gaussSeidel(const Eigen::SparseMatrix<double>& A,
-  const Eigen::VectorXd& b,
-  const Eigen::VectorXd& x0, double tol,
-  int max_iter) {
-    int n = A.rows();
-    Eigen::VectorXd x = x0;
-    Eigen::VectorXd x_prev(n);
-    double residual;
+                            const Eigen::VectorXd& b, const Eigen::VectorXd& x0,
+                            double tol, int max_iter) {
+  int n = A.rows();
+  Eigen::VectorXd x = x0;
+  Eigen::VectorXd x_prev(n);
+  double residual;
 
-    std::ofstream residual_file("gauss_seidel_residual.csv", std::ios::trunc);
-    residual_file << "iteration,residual\n";
+  std::ofstream residual_file("gauss_seidel_residual.csv", std::ios::trunc);
+  residual_file << "iteration,residual\n";
 
-    for (int iter = 0; iter < max_iter; ++iter) {
-        x_prev = x;
+  for (int iter = 0; iter < max_iter; ++iter) {
+    x_prev = x;
 
-        // Gauss-Seidel iteration
-        for (int i = 0; i < n; i++) {
-            double sum = 0.0;
-            for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
-                if (it.row() != i) {
-                    sum += it.value() * x(it.row());
-                }
-            }
-            x(i) = (b(i) - sum) / A.coeff(i, i);
-            
-            // Apply constraints
-            x(i) = std::max(x(i), x0(i) * 0.5);
+    // Gauss-Seidel iteration
+    for (int i = 0; i < n; i++) {
+      double sum = 0.0;
+      for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
+        if (it.row() != i) {
+          sum += it.value() * x(it.row());
         }
+      }
+      x(i) = (b(i) - sum) / A.coeff(i, i);
 
-        // Calculate residual
-        residual = (x - x_prev).norm() / x.norm();
-        residual_file << iter + 1 << "," << residual << "\n";
-
-        LOG_INFO_EVERY_N(100) << "Gauss-Seidel iteration " << iter + 1 
-                             << " residual: " << residual;
-
-        if (residual < tol) {
-            LOG_INFO << "Gauss-Seidel converged after " << iter + 1 << " iterations";
-            break;
-        }
+      // Apply constraints
+      x(i) = std::max(x(i), x0(i) * 0.5);
     }
 
-    residual_file.close();
-    return x;
+    // Calculate residual
+    residual = (x - x_prev).norm() / x.norm();
+    residual_file << iter + 1 << "," << residual << "\n";
+
+    LOG_INFO_EVERY_N(100) << "Gauss-Seidel iteration " << iter + 1
+                          << " residual: " << residual;
+
+    if (residual < tol) {
+      LOG_INFO << "Gauss-Seidel converged after " << iter + 1 << " iterations";
+      break;
+    }
+  }
+
+  residual_file.close();
+  return x;
 }
 
 /**
@@ -369,40 +368,38 @@ Eigen::VectorXd gaussSeidel(const Eigen::SparseMatrix<double>& A,
  * @return double
  */
 double calculateConditionNumber(const Eigen::SparseMatrix<double>& A) {
-    Eigen::MatrixXd denseA = A; 
-    using namespace Spectra;
+  Eigen::MatrixXd denseA = A;
+  using namespace Spectra;
 
-    Eigen::MatrixXd M = denseA + denseA.transpose();
+  Eigen::MatrixXd M = denseA + denseA.transpose();
 
-    // Construct matrix operation object using the wrapper class DenseSymMatProd
-    DenseSymMatProd<double> op(M);
+  // Construct matrix operation object using the wrapper class DenseSymMatProd
+  DenseSymMatProd<double> op(M);
 
-    // Construct eigen solver object, requesting the largest three eigenvalues
-    SymEigsSolver<DenseSymMatProd<double>> eigs(op, 3, 6);
+  // Construct eigen solver object, requesting the largest three eigenvalues
+  SymEigsSolver<DenseSymMatProd<double>> eigs(op, 3, 6);
 
-    // Initialize and compute
-    eigs.init();
-    // int nconv = eigs.compute(SortRule::LargestAlge);
+  // Initialize and compute
+  eigs.init();
+  // int nconv = eigs.compute(SortRule::LargestAlge);
 
-    // Retrieve results
-    Eigen::VectorXd evalues;
-    if(eigs.info() == CompInfo::Successful)
-        evalues = eigs.eigenvalues();
+  // Retrieve results
+  Eigen::VectorXd evalues;
+  if (eigs.info() == CompInfo::Successful) evalues = eigs.eigenvalues();
 
-   LOG_INFO << "Largest eigenvalue: " << evalues.maxCoeff();
-   LOG_INFO << "Smallest eigenvalue: " << evalues.minCoeff();
+  LOG_INFO << "Largest eigenvalue: " << evalues.maxCoeff();
+  LOG_INFO << "Smallest eigenvalue: " << evalues.minCoeff();
 
-    return 0.0;
-
+  return 0.0;
 }
 
 /**
  * @brief for debug, print top 10 elements of a vector.
- * 
- * @param vec 
+ *
+ * @param vec
  */
 void PrintTopTenVectorElements(Eigen::VectorXd& vec) {
-    // for debug
+  // for debug
   // Get the top 10 elements of J_vector
   std::vector<std::pair<double, int>> indexed_values;
   for (int i = 0; i < vec.size(); ++i) {
@@ -411,17 +408,16 @@ void PrintTopTenVectorElements(Eigen::VectorXd& vec) {
 
   // Sort in descending order
   std::sort(indexed_values.begin(), indexed_values.end(),
-            [](const std::pair<double, int>& a, const std::pair<double, int>& b) {
-              return a.first < b.first;
-            });
+            [](const std::pair<double, int>& a,
+               const std::pair<double, int>& b) { return a.first < b.first; });
 
   // Print the top 10 elements
   LOG_INFO << "Top 10 elements in vec:";
-  for (int i = 0; i < std::min(10, static_cast<int>(indexed_values.size())); ++i) {
+  for (int i = 0; i < std::min(10, static_cast<int>(indexed_values.size()));
+       ++i) {
     LOG_INFO << "Index: " << indexed_values[i].second
              << ", Value: " << indexed_values[i].first;
   }
-
 }
 
 /**
@@ -444,7 +440,7 @@ std::vector<double> IRCGSolver::operator()(
 
 #if !CUDA_IR_SOLVER
   Eigen::SparseMatrix<double> A = G_matrix;
-  
+
   // call the eigen CG solver
   // Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,
   //                          Eigen::Lower | Eigen::Upper>
@@ -461,26 +457,26 @@ std::vector<double> IRCGSolver::operator()(
   // Construct the diagonal preconditioner matrix
   Eigen::SparseMatrix<double> preconditioner(A.rows(), A.cols());
   for (int i = 0; i < A.rows(); ++i) {
-      double diag = A.coeff(i, i);
-      if (diag != 0) {
-          preconditioner.insert(i, i) = 1.0 / 1.0;
-          // LOG_INFO << "Diagonal element at index " << i << " : " << diag;
-      } else {
-          preconditioner.insert(i, i) = 0.0; // Handle zero diagonal elements
-      }
+    double diag = A.coeff(i, i);
+    if (diag != 0) {
+      preconditioner.insert(i, i) = 1.0 / 1.0;
+      // LOG_INFO << "Diagonal element at index " << i << " : " << diag;
+    } else {
+      preconditioner.insert(i, i) = 0.0;  // Handle zero diagonal elements
+    }
   }
   LOG_INFO << "Preconditioner matrix constructed.";
-  
-  auto B = preconditioner * A;  // Apply the preconditioner 
+
+  auto B = preconditioner * A;           // Apply the preconditioner
   J_vector = preconditioner * J_vector;  // Apply the preconditioner to J_vector
 
-  // for debug, calculate the condition number of matrix A  
+  // for debug, calculate the condition number of matrix A
   // double condition_number = calculateConditionNumber(B);
   // LOG_INFO << "Condition number of matrix A: " << condition_number;
 
   auto max_iter = std::max((int)X0.size(), _max_iteration);
-  Eigen::VectorXd v_vector =
-      conjugateGradient(B, J_vector, preconditioner, X0, _tolerance, max_iter, _lambda);
+  Eigen::VectorXd v_vector = conjugateGradient(B, J_vector, preconditioner, X0,
+                                               _tolerance, max_iter, _lambda);
 
   v_vector = v_vector / scale;
 

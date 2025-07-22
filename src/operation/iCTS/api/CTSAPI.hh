@@ -28,6 +28,7 @@
 #include <string_view>
 #include <type_traits>
 #include <vector>
+#include <optional>
 
 #include "../../../database/interaction/ids.hpp"
 
@@ -181,16 +182,6 @@ class CTSAPI
   void writeVerilog() const;
   void toPyArray(const icts::Point& point, const std::string& label);
 
-// python API
-#ifdef PY_MODEL
-
-#ifdef USE_EXTERNAL_MODEL
-  icts::ModelBase* findExternalModel(const std::string& net_name);
-#endif
-
-  icts::ModelBase* fitPyModel(const std::vector<std::vector<double>>& X, const std::vector<double>& y, const icts::FitType& fit_type);
-
-#endif
  private:
   static CTSAPI* _cts_api_instance;
   CTSAPI() = default;

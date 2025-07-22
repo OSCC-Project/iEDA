@@ -11,6 +11,7 @@ target_link_libraries(tcl_ipdn
         str
         tool_manager
         ipdn_api
+        iPNPApi
 )
 
 target_include_directories(tcl_ipdn

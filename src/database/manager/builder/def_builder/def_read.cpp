@@ -74,7 +74,7 @@ bool DefRead::createDb(const char* file)
     FILE* f = fopen(file, "r");
 
     if (f == NULL) {
-      std::cout << "Open def file failed..." << std::endl;
+      std::cerr << "Open def file failed..." << std::endl;
       return false;
     }
 
@@ -257,7 +257,7 @@ bool DefRead::createDbGzip(const char* gzip_file)
   defGZFile f = defrGZipOpen(gzip_file, "r");
 
   if (f == NULL) {
-    std::cout << "Open def file failed..." << std::endl;
+    std::cerr << "Open def file failed..." << std::endl;
     return false;
   }
 
@@ -1075,7 +1075,18 @@ int32_t DefRead::parse_net(defiNet* def_net)
     net->set_original_net_name(def_net->original());
   }
 
-  for (int i = 0; i < def_net->numConnections(); i++) {
+  int num_connections = def_net->numConnections();
+  auto setPinNet = [net, num_connections](IdbPin* pin) {
+    if (num_connections < 2) {
+      if (pin->get_net() == nullptr) {
+        pin->set_net(net);
+      }
+    } else {
+      pin->set_net(net);
+    }
+  };
+
+  for (int i = 0; i < num_connections; i++) {
     std::string io_name = def_net->instance(i);
     io_name = ieda::Str::trimEscape(io_name);
 
@@ -1086,7 +1097,7 @@ int32_t DefRead::parse_net(defiNet* def_net)
         std::cout << "Can not find Pin in Pin list ... pin name = " << def_net->pin(i) << std::endl;
       } else {
         net->add_io_pin(pin);
-        pin->set_net(net);
+        setPinNet(pin);
       }
     } else {
       IdbInstance* instance = instance_list->find_instance(io_name);
@@ -1097,7 +1108,7 @@ int32_t DefRead::parse_net(defiNet* def_net)
           std::cout << "Can not find Pin in Pin list ... pin name = " << def_net->pin(i) << std::endl;
         } else {
           net->add_instance_pin(pin);
-          pin->set_net(net);
+          setPinNet(pin);
         }
       } else {
         std::cout << "Can not find instance in instance list ... instance name = " << io_name << std::endl;
@@ -1274,6 +1285,21 @@ int32_t DefRead::parse_special_net(defiNet* def_net)
     return kDbFail;
   }
 
+  if (def_net->hasUse()) {
+    auto* enum_property = IdbEnum::GetInstance()->get_connect_property();
+    if (enum_property->is_pdn(def_net->use())) {
+      return parse_pdn(def_net);
+    }
+
+    if (enum_property->is_net(def_net->use())) {
+      return parse_net(def_net);
+    }
+  }
+  return kDbSuccess;
+}
+
+int32_t DefRead::parse_pdn(defiNet* def_net)
+{
   IdbDesign* design = _def_service->get_design();  // Def
   // IdbLayout* layout = _def_service->get_layout();  // Lef
   // IdbLayers* layer_list = layout->get_layers();
@@ -1340,8 +1366,8 @@ int32_t DefRead::parse_special_net(defiNet* def_net)
   }
 
   IdbSpecialWireList* wire_list = net->get_wire_list();
-  parse_special_net_wire(def_net, wire_list);
-  parse_special_net_rects(def_net, wire_list);
+  parse_pdn_wire(def_net, wire_list);
+  parse_pdn_rects(def_net, wire_list);
 
   if (net_list->get_num() % 1000 == 0) {
     std::cout << "-" << std::flush;
@@ -1354,7 +1380,7 @@ int32_t DefRead::parse_special_net(defiNet* def_net)
   return kDbSuccess;
 }
 
-int32_t DefRead::parse_special_net_wire(defiNet* def_net, IdbSpecialWireList* wire_list)
+int32_t DefRead::parse_pdn_wire(defiNet* def_net, IdbSpecialWireList* wire_list)
 {
   IdbDesign* design = _def_service->get_design();  // Def
   IdbLayout* layout = _def_service->get_layout();  // Lef
@@ -1446,7 +1472,7 @@ int32_t DefRead::parse_special_net_wire(defiNet* def_net, IdbSpecialWireList* wi
   return kDbSuccess;
 }
 
-int32_t DefRead::parse_special_net_rects(defiNet* def_net, IdbSpecialWireList* wire_list)
+int32_t DefRead::parse_pdn_rects(defiNet* def_net, IdbSpecialWireList* wire_list)
 {
   // IdbDesign* design = _def_service->get_design();  // Def
   IdbLayout* layout = _def_service->get_layout();  // Lef
@@ -2279,6 +2305,9 @@ int32_t DefRead::parse_bus_bit_chars(const char* bus_bit_chars_str)
   bus_bit_chars->setLeftDelimiter(bus_bit_chars_str[0]);
   bus_bit_chars->setRightDelimter(bus_bit_chars_str[1]);
 
+  if (design->get_bus_bit_chars() != nullptr) {
+    delete design->get_bus_bit_chars();
+  }
   design->set_bus_bit_chars(bus_bit_chars);
   return kDbSuccess;
 }

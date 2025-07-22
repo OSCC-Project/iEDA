@@ -1,0 +1,14 @@
+*.gds
+*.gz
+*.lib
+*.v
+*.def
+*.txt
+!slute.txt
+*.log
+*.rpt
+*.spef
+iEDA
+iEDA_gui
+${RESULT_PATH}
+${RESULT_DIR}

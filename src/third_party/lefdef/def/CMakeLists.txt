@@ -8,7 +8,26 @@ set(DEFLIB_HOME ${CMAKE_CURRENT_SOURCE_DIR})
 
 # BISON and ZLIB is required to compile DEF/LEF Parsers.
 find_package(BISON)
-find_package(ZLIB REQUIRED)
+
+if(BUILD_STATIC_LIB)
+  # This is a workaround on cmake 3.22.1, should ensure static libraries are used
+  # Note: There is a better approach in newer versions of CMake:
+  # set(ZLIB_USE_STATIC_LIBS ON CACHE BOOL "Use static zlib" FORCE)
+
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+
+  find_package(ZLIB REQUIRED)
+
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ${ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
+
+  if(ZLIB_LIBRARIES MATCHES "\\.so(\\.|$)")
+    message(FATAL_ERROR "Found dynamic zlib, but static required: ${ZLIB_LIBRARIES}")
+  endif()
+
+  message(STATUS "Linking static zlib: ${ZLIB_LIBRARIES}")
+else()
+  find_package(ZLIB REQUIRED)
+endif()
 
 ############################################################
 # Create a library for DEF
@@ -139,9 +158,15 @@ target_include_directories( defzlib
   def
   defzlib 
   )
-target_link_libraries(defzlib ${ZLIB_LIBRARIES})
-# the below also works.
-# target_link_libraries(defzlib -lz)
+
+if (BUILD_STATIC_LIB)
+  message(STATUS "Linking static zlib: ${ZLIB_LIBRARIES}")
+  target_link_libraries(defzlib PRIVATE ${ZLIB_LIBRARIES})
+else()
+  target_link_libraries(defzlib ${ZLIB_LIBRARIES})
+  # the below also works.
+  # target_link_libraries(defzlib -lz)
+endif()
 
 add_compile_options(-w)
 

@@ -19,10 +19,11 @@
  * @author Dawn Li (dawnli619215645@gmail.com)
  */
 #pragma once
+#include <limits>
 #include <vector>
 #include <limits>
 
-#include "Inst.hh"
+#include "Pin.hh"
 
 namespace icts {
 enum class EnhanceType
@@ -36,7 +37,7 @@ struct ViolationScore
   double skew_vio_score;
   double cap_vio_score;
   double net_len_vio_score;
-  std::vector<Inst*> cluster;
+  std::vector<Pin*> cluster;
 };
 class LCA
 {
@@ -139,75 +140,75 @@ class BalanceClustering
  public:
   BalanceClustering() = delete;
   ~BalanceClustering() = default;
-  static std::vector<std::vector<Inst*>> kMeansPlus(const std::vector<Inst*>& insts, const size_t& k, const int& seed = 0,
-                                                    const size_t& max_iter = 100, const size_t& no_change_stop = 5);
+  static std::vector<std::vector<Pin*>> kMeansPlus(const std::vector<Pin*>& load_pins, const size_t& k, const int& seed = 0,
+                                                   const size_t& max_iter = 100, const size_t& no_change_stop = 5);
 
-  static std::vector<std::vector<Inst*>> kMeans(const std::vector<Inst*>& insts, const size_t& k, const int& seed = 0,
-                                                const size_t& max_iter = 100);
+  static std::vector<std::vector<Pin*>> kMeans(const std::vector<Pin*>& load_pins, const size_t& k, const int& seed = 0,
+                                               const size_t& max_iter = 100);
 
-  static std::vector<std::vector<Inst*>> iterClustering(const std::vector<Inst*>& insts, const size_t& max_fanout,
-                                                        const size_t& iters = 100, const size_t& no_change_stop = 5,
-                                                        const double& limit_ratio = 0.8, const bool& log = false);
+  static std::vector<std::vector<Pin*>> iterClustering(const std::vector<Pin*>& load_pins, const size_t& max_fanout,
+                                                       const size_t& iters = 100, const size_t& no_change_stop = 5,
+                                                       const double& limit_ratio = 0.8, const bool& log = false);
 
-  static std::vector<std::vector<Inst*>> slackClustering(const std::vector<std::vector<Inst*>>& clusters, const double& max_net_length,
-                                                         const size_t& max_fanout);
+  static std::vector<std::vector<Pin*>> slackClustering(const std::vector<std::vector<Pin*>>& clusters, const double& max_net_length,
+                                                        const size_t& max_fanout);
 
-  static std::vector<std::vector<Inst*>> clusteringEnhancement(const std::vector<std::vector<Inst*>>& clusters, const int& max_fanout,
-                                                               const double& max_cap, const double& max_net_length,
-                                                               const double& skew_bound, const size_t& max_iter = 200,
-                                                               const double& cooling_rate = 0.99, const double& temperature = 50000);
+  static std::vector<std::vector<Pin*>> clusteringEnhancement(const std::vector<std::vector<Pin*>>& clusters, const int& max_fanout,
+                                                              const double& max_cap, const double& max_net_length, const double& skew_bound,
+                                                              const size_t& max_iter = 200, const double& cooling_rate = 0.99,
+                                                              const double& temperature = 50000);
 
-  static std::vector<Point> guideCenter(const std::vector<std::vector<Inst*>>& clusters, const std::optional<Point>& center = std::nullopt,
+  static std::vector<Point> guideCenter(const std::vector<std::vector<Pin*>>& clusters, const std::optional<Point>& center = std::nullopt,
                                         const double& min_length = 50, const size_t& level = 1);
 
-  static std::vector<Inst*> getMinDelayCluster(const std::vector<std::vector<Inst*>>& clusters);
+  static std::vector<Pin*> getMinDelayCluster(const std::vector<std::vector<Pin*>>& clusters);
 
-  static std::vector<Inst*> getMaxDelayCluster(const std::vector<std::vector<Inst*>>& clusters);
+  static std::vector<Pin*> getMaxDelayCluster(const std::vector<std::vector<Pin*>>& clusters);
 
-  static std::vector<Inst*> getWorstViolationCluster(const std::vector<std::vector<Inst*>>& clusters);
+  static std::vector<Pin*> getWorstViolationCluster(const std::vector<std::vector<Pin*>>& clusters);
 
-  static std::vector<std::vector<Inst*>> getMostRecentClusters(const std::vector<std::vector<Inst*>>& clusters,
-                                                               const std::vector<Inst*>& center_cluster, const size_t& num_limit = 42,
-                                                               const size_t& cluster_num_limit = 4);
+  static std::vector<std::vector<Pin*>> getMostRecentClusters(const std::vector<std::vector<Pin*>>& clusters,
+                                                              const std::vector<Pin*>& center_cluster, const size_t& num_limit = 42,
+                                                              const size_t& cluster_num_limit = 4);
 
-  static std::vector<Point> getCentroidBuffers(const std::vector<std::vector<Inst*>>& clusters);
+  static std::vector<Point> getCentroids(const std::vector<std::vector<Pin*>>& clusters);
 
-  static std::pair<std::vector<Inst*>, std::vector<Inst*>> divideBy(const std::vector<Inst*>& insts,
-                                                                    const std::function<double(const Inst*)>& func, const double& ratio);
+  static std::pair<std::vector<Pin*>, std::vector<Pin*>> divideBy(const std::vector<Pin*>& load_pins,
+                                                                  const std::function<double(Pin*)>& func, const double& ratio);
 
-  static std::pair<std::vector<std::vector<Inst*>>, std::vector<std::vector<Inst*>>> getBoundCluster(
-      const std::vector<std::vector<Inst*>>& clusters);
+  static std::pair<std::vector<std::vector<Pin*>>, std::vector<std::vector<Pin*>>> getBoundCluster(
+      const std::vector<std::vector<Pin*>>& clusters);
 
-  static void latencyOpt(const std::vector<Inst*> cluster, const double& skew_bound, const double& ratio);
+  static void latencyOpt(const std::vector<Pin*>& cluster, const double& skew_bound, const double& ratio);
 
-  static double estimateSkew(const std::vector<Inst*>& cluster);
+  static double estimateSkew(const std::vector<Pin*>& cluster);
 
-  static double estimateNetDelay(const std::vector<Inst*>& cluster, const bool& is_max = true);
+  static double estimateNetDelay(const std::vector<Pin*>& cluster, const bool& is_max = true);
 
-  static double estimateNetCap(const std::vector<Inst*>& cluster);
+  static double estimateNetCap(const std::vector<Pin*>& cluster);
 
-  static double estimateNetLength(const std::vector<Inst*>& cluster);
+  static double estimateNetLength(const std::vector<Pin*>& cluster);
 
-  static Point calcCentroid(const std::vector<Inst*>& cluster);
+  static Point calcCentroid(const std::vector<Pin*>& cluster);
 
-  static Point calcBoundCentroid(const std::vector<Inst*>& cluster);
+  static Point calcBoundCentroid(const std::vector<Pin*>& cluster);
 
-  static int calcHPMD(const std::vector<Inst*>& cluster);
+  static int calcHPMD(const std::vector<Pin*>& cluster);
 
-  static double calcHPWL(const std::vector<Inst*>& cluster);
+  static double calcHPWL(const std::vector<Pin*>& cluster);
 
-  static double calcSAE(const std::vector<std::vector<Inst*>>& clusters, const std::vector<Point>& buffers);
+  static double calcSAE(const std::vector<std::vector<Pin*>>& clusters, const std::vector<Point>& buffers);
 
-  static double calcBalanceVariance(const std::vector<std::vector<Inst*>>& clusters, const std::vector<Point>& buffers,
+  static double calcBalanceVariance(const std::vector<std::vector<Pin*>>& clusters, const std::vector<Point>& buffers,
                                     const double& cap_coef = 1.0, const double& delay_coef = 1.0);
 
-  static double calcCapVariance(const std::vector<std::vector<Inst*>>& clusters, const std::vector<Point>& buffers);
+  static double calcCapVariance(const std::vector<std::vector<Pin*>>& clusters, const std::vector<Point>& buffers);
 
-  static double calcDelayVariance(const std::vector<std::vector<Inst*>>& clusters, const std::vector<Point>& buffers);
+  static double calcDelayVariance(const std::vector<std::vector<Pin*>>& clusters, const std::vector<Point>& buffers);
 
   static double calcVariance(const std::vector<double>& values);
 
-  static ViolationScore calcScore(const std::vector<Inst*>& cluster);
+  static ViolationScore calcScore(const std::vector<Pin*>& cluster);
 
   static double crossProduct(const Point& p1, const Point& p2, const Point& p3);
 
@@ -217,8 +218,8 @@ class BalanceClustering
 
   static bool isContain(const Point& p, const std::vector<Point>& pts);
 
-  static bool isSame(const std::vector<std::vector<Inst*>>& clusters1, const std::vector<std::vector<Inst*>>& clusters2);
+  static bool isSame(const std::vector<std::vector<Pin*>>& clusters1, const std::vector<std::vector<Pin*>>& clusters2);
 
-  static void writeClusterPy(const std::vector<std::vector<Inst*>>& clusters, const std::string& save_name = "clusters");
+  static void writeClusterPy(const std::vector<std::vector<Pin*>>& clusters, const std::string& save_name = "clusters");
 };
 }  // namespace icts

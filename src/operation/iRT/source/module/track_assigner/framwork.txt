@@ -1,19 +1,16 @@
 initTAModel:初始化ta_net
-ignoreViolation:将整个版图结果进行检查并将violation加入ignore
 setTAComParam:设置ta_model的参数
 initTAPanelMap:构建TAPanel框架,里面主要数据为空
 buildPanelSchedule:构建时间表
 assignTAPanelMap:
     buildFixedRect:将GCellmap中的fix_rect(与此Panel覆盖)以指针的方式拷贝到Panel内,不需要对GCellmap删除或添加
-    buildAccessResult:将GCellmap中的access_result(与此Panel覆盖)以指针的方式拷贝到Panel内,不需要对GCellmap删除或添加
     buildNetResult:将GCellMap中的net_result(与此Panel覆盖)以指针的方式拷贝到Panel内,不需要对GCellmap删除或添加
     initTATaskList:构建task任务
     buildViolation:将GCellMap中的violation以实体的方式拷贝到Panel的violation_list,对于完全在Panel内的,在GCellMap中删除
     buildPanelTrackAxis:构建Panel内的track_axis
     buildTANodeMap:构建Panel的Graph,只有节点,其他信息后续构建
     buildTANodeNeighbor:将所有节点连接
-    buildOrientNetMap:构建Graph的cost,fix_rect从Panel中得到,在ta阶段net_pin_access_result为fix结果
-    exemptPinShape:排除掉pin_shape上的障碍cost
+    buildOrientNetMap:构建Graph的cost,fix_rect从Panel中得到
     routeTAPanel:
         initTaskSchedule:初始化task布线调度表
         routeTATask:给task布线,在此函数末尾,布线结果从graph中删除,再加入新的结果

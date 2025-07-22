@@ -27,7 +27,7 @@ bool readRustVCD(const char* vcd_path, const char* top_instance_name);
 bool read_pg_spef(std::string pg_spef_file);
 
 unsigned reportPower();
-unsigned report_ir_drop(std::string power_net_name);
+unsigned report_ir_drop(std::vector<std::string> power_nets);
 
 // for dataflow.
 unsigned create_data_flow();

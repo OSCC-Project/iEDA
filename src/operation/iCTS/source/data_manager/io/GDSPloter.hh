@@ -43,6 +43,8 @@ class GDSPloter
   static void writePyDesign(const std::string& path = "");
   static void writePyFlyLine(const std::string& path = "");
 
+  static void writeJsonDesign(const std::string& path = "");
+
   static void plotInstances(std::fstream& log_ofs, vector<CtsInstance*>& insts);
   static void insertInstance(std::fstream& log_ofs, CtsInstance* inst);
 

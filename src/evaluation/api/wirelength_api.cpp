@@ -127,7 +127,7 @@ PathWLSummary WirelengthAPI::pathWL(PointSet point_set, PointPair point_pair)
   return path_wirelength_summary;
 }
 
-float WirelengthAPI::totalEGRWL(std::string guide_path)
+double WirelengthAPI::totalEGRWL(std::string guide_path)
 {
   return EVAL_WIRELENGTH_INST->evalTotalEGRWL(guide_path);
 }

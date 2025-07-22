@@ -87,10 +87,10 @@ class EarlyRouter
   void resetSingleTask(ERModel& er_model);
   void pushToOpenList(ERModel& er_model, ERNode* curr_node);
   ERNode* popFromOpenList(ERModel& er_model);
-  double getKnowCost(ERModel& er_model, ERNode* start_node, ERNode* end_node);
+  double getKnownCost(ERModel& er_model, ERNode* start_node, ERNode* end_node);
   double getNodeCost(ERModel& er_model, ERNode* curr_node, Orientation orientation);
-  double getKnowWireCost(ERModel& er_model, ERNode* start_node, ERNode* end_node);
-  double getKnowViaCost(ERModel& er_model, ERNode* start_node, ERNode* end_node);
+  double getKnownWireCost(ERModel& er_model, ERNode* start_node, ERNode* end_node);
+  double getKnownViaCost(ERModel& er_model, ERNode* start_node, ERNode* end_node);
   double getEstimateCostToEnd(ERModel& er_model, ERNode* curr_node);
   double getEstimateCost(ERModel& er_model, ERNode* start_node, ERNode* end_node);
   double getEstimateWireCost(ERModel& er_model, ERNode* start_node, ERNode* end_node);

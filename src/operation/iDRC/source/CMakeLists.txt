@@ -1,31 +1,18 @@
-add_subdirectory(config)
-add_subdirectory(data)
-add_subdirectory(module)
-add_subdirectory(util)
+## set path 
+set(IDRC_DATA_MANAGER ${IDRC_SOURCE}/data_manager)
+set(IDRC_MODULE ${IDRC_SOURCE}/module)
+set(IDRC_TOOLKIT ${IDRC_SOURCE}/toolkit)
 
-add_library(idrc_src
-    DRC.cpp
-    DRCInit.cpp
-)
+## build
+add_subdirectory(${IDRC_DATA_MANAGER})
+add_subdirectory(${IDRC_MODULE})
+add_subdirectory(${IDRC_TOOLKIT})
 
-target_include_directories(idrc_src
-    PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
+add_library(idrc_source INTERFACE)
 
-    ${HOME_OPERATION}/iDRC/source/util
-    # ${HOME_OPERATION}/iDRC/data/basic
-
-)
-
-target_link_libraries(idrc_src
-    PRIVATE
-    idrc_config
-    idrc_db
-
-    idrc_multi_pattern
-    idrc_region_query
-    idrc_shape_check
-    idrc_spacing_check
-    idrc_spot_parser
-
+target_link_libraries(idrc_source
+    INTERFACE
+    idrc_data_manager
+    idrc_module
+    idrc_toolkit
 )

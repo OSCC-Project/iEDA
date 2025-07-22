@@ -40,6 +40,12 @@ class LAModel
   void set_la_task_list(const std::vector<LANet*>& la_task_list) { _la_task_list = la_task_list; }
   void set_layer_node_map(const std::vector<GridMap<LANode>>& layer_node_map) { _layer_node_map = layer_node_map; }
   // function
+
+#if 1
+  // single task
+  LANet* get_curr_la_task() { return _curr_la_task; }
+  void set_curr_la_task(LANet* curr_la_task) { _curr_la_task = curr_la_task; }
+#endif
 #if 1  // astar
   // single topo
   LATopo* get_curr_la_topo() { return _curr_la_topo; }
@@ -76,6 +82,10 @@ class LAModel
   LAComParam _la_com_param;
   std::vector<LANet*> _la_task_list;
   std::vector<GridMap<LANode>> _layer_node_map;
+#if 1
+  // single task
+  LANet* _curr_la_task = nullptr;
+#endif
 #if 1  // astar
   // single topo
   LATopo* _curr_la_topo = nullptr;

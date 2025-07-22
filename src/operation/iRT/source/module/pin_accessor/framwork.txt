@@ -1,8 +1,9 @@
 initPAModel:初始化pa_net
 setPAComParam:设置参数
+buildBlockTrimRectMap:对PinShape在Block很里面的pin,只从最外面生成ap点
 initAccessPointList:用boost得到pinshape上的合法区域并生成ap
 uploadAccessPointList:将中间结果暂时存储至顶层
-iterativePAModel:迭代PAModel
+routePAModel:迭代PAModel
     initRoutingState:初始化布线状态
     setPAIterParam:设置参数
     initPABoxMap:构建PABox框架,里面主要数据为空
@@ -12,7 +13,7 @@ iterativePAModel:迭代PAModel
         buildFixedRect:将GCellmap中的fix_rect(与此Box覆盖)以指针的方式拷贝到Box内,不需要对GCellmap删除或添加
         buildAccessResult:将GCellmap中的access结果(与此Box覆盖)以指针的方式拷贝到Box内,不需要对GCellmap删除或添加
         initPATaskList:构建PATask,并将AccessResult中属于task的数据拷贝,在GCellMap中删除
-        buildViolation:将GCellMap中的violation以实体的方式拷贝到Box的violation_list,对于完全在Box内的,在GCellMap中删除
+        buildRouteViolation:将GCellMap中的violation以实体的方式拷贝到Box的violation_list,对于完全在Box内的,在GCellMap中删除
         buildBoxTrackAxis:构建Box内的track_axis
         buildLayerNodeMap:构建Box的Graph,只有节点,其他信息后续构建
         buildPANodeNeighbor:将所有节点连接

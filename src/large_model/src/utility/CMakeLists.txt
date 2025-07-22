@@ -10,4 +10,3 @@ target_include_directories(ilm_util
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
-set(CMAKE_BUILD_TYPE "debug")

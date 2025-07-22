@@ -58,6 +58,7 @@ class Database
   std::map<int32_t, PlanarRect>& get_layer_cut_shape_map() { return _layer_cut_shape_map; }
   std::vector<Obstacle>& get_routing_obstacle_list() { return _routing_obstacle_list; }
   std::vector<Obstacle>& get_cut_obstacle_list() { return _cut_obstacle_list; }
+  std::map<std::string, PlanarRect>& get_block_shape_map() { return _block_shape_map; }
   std::vector<Net>& get_net_list() { return _net_list; }
   GridMap<GCell>& get_gcell_map() { return _gcell_map; }
   int32_t get_detection_distance() const { return _detection_distance; }
@@ -93,6 +94,7 @@ class Database
   std::map<int32_t, PlanarRect> _layer_cut_shape_map;
   std::vector<Obstacle> _routing_obstacle_list;
   std::vector<Obstacle> _cut_obstacle_list;
+  std::map<std::string, PlanarRect> _block_shape_map;
   std::vector<Net> _net_list;
   GridMap<GCell> _gcell_map;
   int32_t _detection_distance = -1;

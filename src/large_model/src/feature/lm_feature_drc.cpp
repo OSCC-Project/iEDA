@@ -26,6 +26,7 @@
 #include "IdbLayer.h"
 #include "Log.hh"
 #include "idrc_io.h"
+#include "ids.hpp"
 #include "lm_grid_info.h"
 #include "omp.h"
 #include "usage.hh"
@@ -68,51 +69,49 @@ void LmFeatureDrc::markNodes()
   // 新增：用于记录 drc_id 和 drc_type（rule）的映射
   std::map<int, std::string> drc_id_to_type;
 
-  for (auto& [rule, drc_spot_list] : detail_drc_map) {
-    LOG_INFO << "LM mark nodes drc : " << rule << ", size :" << drc_spot_list.size();
-    origin_drc_num += drc_spot_list.size();
+  for (auto& [rule, drc_list_map] : detail_drc_map) {
+    for (auto& [layer_name, drc_spot_list] : drc_list_map) {
 #pragma omp parallel for schedule(dynamic)
-    for (int i = 0; i < (int) drc_spot_list.size(); ++i) {
-      // for (auto drc_spot : drc_spot_list) {
-      /// set to node if node data exist
-      auto& drc_spot = drc_spot_list[i];
-      auto order = _layout->findLayerId(drc_spot->get_layer()->get_name());
-      if (order < 0) {
-        continue;
-      }
+      for (int i = 0; i < (int) drc_spot_list.size(); ++i) {
+        /// set to node if node data exist
+        auto& drc_spot = drc_spot_list[i];
+        auto order = _layout->findLayerId(_layout->findLayerName(drc_spot.layer_idx));
+        if (order < 0) {
+          continue;
+        }
 
-      auto& grid = layout_layers.findLayoutLayer(order)->get_grid();
+        auto& grid = layout_layers.findLayoutLayer(order)->get_grid();
 
-      /// get row & col
-      auto* spot_rect = static_cast<idrc::DrcViolationRect*>(drc_spot);
-      bool b_find_net = false;
-      auto [row_1, row_2, co_1, col_2] = gridInfoInst.get_node_id_range(spot_rect->get_llx() - 1, spot_rect->get_urx() + 1,
-                                                                        spot_rect->get_lly() - 1, spot_rect->get_ury() + 1);
-      for (int row = row_1; row <= row_2; ++row) {
-        for (int col = co_1; col <= col_2; ++col) {
-          auto* node = grid.get_node(row, col);
-          if (node != nullptr && node->get_node_data() != nullptr) {
-            auto& node_feature = node->get_node_data()->get_feature();
-            omp_set_lock(&lck);
-            node_feature.drc_ids.insert(drc_id + i);
-            drc_id_to_type[drc_id + i] = rule; // 将 drc_id 和 rule 关联
-            omp_unset_lock(&lck);
+        /// get row & col
+        bool b_find_net = false;
+        auto [row_1, row_2, co_1, col_2]
+            = gridInfoInst.get_node_id_range(drc_spot.ll_x - 1, drc_spot.ll_y + 1, drc_spot.ur_x - 1, drc_spot.ur_y + 1);
+        for (int row = row_1; row <= row_2; ++row) {
+          for (int col = co_1; col <= col_2; ++col) {
+            auto* node = grid.get_node(row, col);
+            if (node != nullptr && node->get_node_data() != nullptr) {
+              auto& node_feature = node->get_node_data()->get_feature();
+              omp_set_lock(&lck);
+              node_feature.drc_ids.insert(drc_id + i);
+              drc_id_to_type[drc_id + i] = rule;  // 将 drc_id 和 rule 关联
+              omp_unset_lock(&lck);
 
-            if (node->get_node_data()->get_net_id() >= 0) {
-              b_find_net = true;
+              if (node->get_node_data()->get_net_id() >= 0) {
+                b_find_net = true;
+              }
             }
           }
         }
-      }
 
-      if (false == b_find_net) {
-        omp_set_lock(&lck);
-        drc_without_net++;
-        omp_unset_lock(&lck);
+        if (false == b_find_net) {
+          omp_set_lock(&lck);
+          drc_without_net++;
+          omp_unset_lock(&lck);
+        }
+
+        drc_id += drc_spot_list.size();
       }
     }
-
-    drc_id += drc_spot_list.size();
   }
 
   LOG_INFO << "drc with no net id : " << drc_without_net;
@@ -124,7 +123,6 @@ void LmFeatureDrc::markNodes()
   LOG_INFO << "LM mark nodes drc end...";
 
   _drc_id_to_type = std::move(drc_id_to_type);
-
 }
 
 void LmFeatureDrc::markWires()
@@ -198,7 +196,7 @@ void LmFeatureDrc::markWires()
       }
       // 填充 wire_feature->drc_type
       for (auto drc_id : drc_ids) {
-        wire_feature->drc_type.push_back(_drc_id_to_type[drc_id]); // 根据 drc_id 获取对应的 drc_type
+        wire_feature->drc_type.push_back(_drc_id_to_type[drc_id]);  // 根据 drc_id 获取对应的 drc_type
       }
     }
 
@@ -238,20 +236,19 @@ void LmFeatureDrc::markNets()
     auto& grid = layout_layers.findLayoutLayer(layer_id)->get_grid();
     // 这里改用get_all_nodes()替代原来的get_node_matrix()
     auto nodes = grid.get_all_nodes();
-    
+
 #pragma omp parallel for schedule(dynamic)
-    for (int i = 0; i < (int)nodes.size(); i++) {
+    for (int i = 0; i < (int) nodes.size(); i++) {
       LmNode* node = nodes[i];
       if (node != nullptr && node->get_node_data() != nullptr) {
         omp_set_lock(&lck);
-        net_drc_map[node->get_node_data()->get_net_id()].insert(
-            node->get_node_data()->get_feature().drc_ids.begin(),
-            node->get_node_data()->get_feature().drc_ids.end());
+        net_drc_map[node->get_node_data()->get_net_id()].insert(node->get_node_data()->get_feature().drc_ids.begin(),
+                                                                node->get_node_data()->get_feature().drc_ids.end());
         omp_unset_lock(&lck);
       }
     }
   }
-  
+
   int test_num = 0;
   for (auto& [net_id, drc_ids] : net_drc_map) {
     test_num += drc_ids.size();
@@ -272,7 +269,7 @@ void LmFeatureDrc::markNets()
     // 填充 drc_type
     for (auto drc_id : net_drc_map[i]) {
       omp_set_lock(&lck);
-      net_feature->drc_type.push_back(_drc_id_to_type[drc_id]); // 根据 drc_id 获取对应的 drc_type
+      net_feature->drc_type.push_back(_drc_id_to_type[drc_id]);  // 根据 drc_id 获取对应的 drc_type
       omp_unset_lock(&lck);
     }
 

@@ -86,8 +86,13 @@ unsigned CmdCreateClock::exec() {
   Sta* ista = Sta::getOrCreateSta();
   SdcConstrain* the_constrain = ista->getConstrain();
   const char* clk_name = name_option->getStringVal();
-  LOG_FATAL_IF(!clk_name) << "clock name can not be empty.";
-  SdcClock* the_clock = new SdcClock(clk_name);
+  SdcClock* the_clock = nullptr;
+  std::string sdc_clock_name = clk_name ? clk_name : "";
+  the_clock = new SdcClock(sdc_clock_name.c_str());
+  if (!clk_name)  {
+    LOG_INFO << "clock name is empty, will use port name as clock name."; 
+  } 
+  
   double period = ista->convertTimeUnit(period_option->getDoubleVal());
 
   the_clock->set_period(period);
@@ -116,15 +121,26 @@ unsigned CmdCreateClock::exec() {
                        LOG_FATAL << "not support sdc obj.";
                      },
                      [&pins, clk_name](DesignObject* design_obj) {
-                       DLOG_INFO
-                           << "create clock " << clk_name
-                           << " for pin/port: " << design_obj->getFullName();
+                       LOG_INFO << "create clock " << (clk_name ? clk_name : "") 
+                       << " for pin/port: " << design_obj->getFullName();
                        pins.insert(design_obj);
                      },
                  },
                  object);
     }
   }
+
+  if (sdc_clock_name.empty()) {
+    // if clock name is empty, use the first pin/port name as clock name.
+    if (!pins.empty()) {
+      auto first_pin = *pins.begin();
+      sdc_clock_name = first_pin->getFullName();
+      the_clock->set_clock_name(sdc_clock_name.c_str());
+      LOG_INFO << "clock name is empty, use the first pin/port name as clock name: " << sdc_clock_name;
+    } else {
+      LOG_ERROR << "no source objects provided for clock.";
+    }
+  } 
 
   the_clock->set_objs(std::move(pins));
 

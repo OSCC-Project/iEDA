@@ -109,8 +109,9 @@ class DefRead
   int32_t parse_net_number(int32_t def_net_num);
   int32_t parse_net(defiNet* def_net);
   int32_t parse_special_net(defiNet* def_net);
-  int32_t parse_special_net_wire(defiNet* def_net, IdbSpecialWireList* wire_list);
-  int32_t parse_special_net_rects(defiNet* def_net, IdbSpecialWireList* wire_list);
+  int32_t parse_pdn(defiNet* def_net);
+  int32_t parse_pdn_wire(defiNet* def_net, IdbSpecialWireList* wire_list);
+  int32_t parse_pdn_rects(defiNet* def_net, IdbSpecialWireList* wire_list);
   int32_t parse_pin_number(int32_t def_pin_num);
   int32_t parse_pin(defiPin* def_pin);
   int32_t parse_via_num(int32_t via_num);

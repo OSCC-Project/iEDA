@@ -23,8 +23,8 @@ namespace irt {
 enum class DENetType
 {
   kNone,
-  kAmong,
-  kHybrid
+  kRouteHybrid,
+  kPatchHybrid
 };
 
 struct GetDENetTypeName
@@ -36,11 +36,11 @@ struct GetDENetTypeName
       case DENetType::kNone:
         net_type_name = "none";
         break;
-      case DENetType::kAmong:
-        net_type_name = "among";
+      case DENetType::kRouteHybrid:
+        net_type_name = "route_hybrid";
         break;
-      case DENetType::kHybrid:
-        net_type_name = "hybrid";
+      case DENetType::kPatchHybrid:
+        net_type_name = "patch_hybrid";
         break;
       default:
         RTLOG.error(Loc::current(), "Unrecognized type!");

@@ -116,8 +116,9 @@ void EarlyRouter::setERComParam(ERModel& er_model)
 {
   int32_t topo_spilt_length = 10;
   double prefer_wire_unit = 1;
+  double non_prefer_wire_unit = 2.5 * prefer_wire_unit;
   double via_unit = 1;
-  double overflow_unit = 2;
+  double overflow_unit = 4 * non_prefer_wire_unit;
   /**
    * topo_spilt_length, prefer_wire_unit, via_unit, overflow_unit
    */
@@ -847,14 +848,14 @@ void EarlyRouter::expandSearching(ERModel& er_model)
     if (neighbor_node->isClose()) {
       continue;
     }
-    double know_cost = getKnowCost(er_model, path_head_node, neighbor_node);
-    if (neighbor_node->isOpen() && know_cost < neighbor_node->get_known_cost()) {
-      neighbor_node->set_known_cost(know_cost);
+    double known_cost = getKnownCost(er_model, path_head_node, neighbor_node);
+    if (neighbor_node->isOpen() && known_cost < neighbor_node->get_known_cost()) {
+      neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
       // 对优先队列中的值修改了,需要重新建堆
       std::make_heap(open_queue.begin(), open_queue.end(), CmpERNodeCost());
     } else if (neighbor_node->isNone()) {
-      neighbor_node->set_known_cost(know_cost);
+      neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
       neighbor_node->set_estimated_cost(getEstimateCostToEnd(er_model, neighbor_node));
       pushToOpenList(er_model, neighbor_node);
@@ -924,8 +925,6 @@ void EarlyRouter::resetStartAndEnd(ERModel& er_model)
     }
   }
   if (start_node_list_list.size() == 1) {
-    // 初始化时,要把start_node_list_list的pin只留一个ap点
-    // 后续只要将end_node_list_list的pin保留一个ap点
     start_node_list_list.front().clear();
     start_node_list_list.front().push_back(path_node);
   }
@@ -1015,9 +1014,9 @@ ERNode* EarlyRouter::popFromOpenList(ERModel& er_model)
   return node;
 }
 
-// calculate known cost
+// calculate known
 
-double EarlyRouter::getKnowCost(ERModel& er_model, ERNode* start_node, ERNode* end_node)
+double EarlyRouter::getKnownCost(ERModel& er_model, ERNode* start_node, ERNode* end_node)
 {
   bool exist_neighbor = false;
   for (auto& [orientation, neighbor_ptr] : start_node->get_neighbor_node_map()) {
@@ -1034,8 +1033,8 @@ double EarlyRouter::getKnowCost(ERModel& er_model, ERNode* start_node, ERNode* e
   cost += start_node->get_known_cost();
   cost += getNodeCost(er_model, start_node, RTUTIL.getOrientation(*start_node, *end_node));
   cost += getNodeCost(er_model, end_node, RTUTIL.getOrientation(*end_node, *start_node));
-  cost += getKnowWireCost(er_model, start_node, end_node);
-  cost += getKnowViaCost(er_model, start_node, end_node);
+  cost += getKnownWireCost(er_model, start_node, end_node);
+  cost += getKnownViaCost(er_model, start_node, end_node);
   return cost;
 }
 
@@ -1048,7 +1047,7 @@ double EarlyRouter::getNodeCost(ERModel& er_model, ERNode* curr_node, Orientatio
   return node_cost;
 }
 
-double EarlyRouter::getKnowWireCost(ERModel& er_model, ERNode* start_node, ERNode* end_node)
+double EarlyRouter::getKnownWireCost(ERModel& er_model, ERNode* start_node, ERNode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   double prefer_wire_unit = er_model.get_er_com_param().get_prefer_wire_unit();
@@ -1065,14 +1064,14 @@ double EarlyRouter::getKnowWireCost(ERModel& er_model, ERNode* start_node, ERNod
   return wire_cost;
 }
 
-double EarlyRouter::getKnowViaCost(ERModel& er_model, ERNode* start_node, ERNode* end_node)
+double EarlyRouter::getKnownViaCost(ERModel& er_model, ERNode* start_node, ERNode* end_node)
 {
   double via_unit = er_model.get_er_com_param().get_via_unit();
   double via_cost = (via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));
   return via_cost;
 }
 
-// calculate estimate cost
+// calculate estimate
 
 double EarlyRouter::getEstimateCostToEnd(ERModel& er_model, ERNode* curr_node)
 {
@@ -1257,8 +1256,8 @@ void EarlyRouter::updateSummary(ERModel& er_model)
   double& total_wire_length = summary.er_summary.total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.er_summary.cut_via_num_map;
   int32_t& total_via_num = summary.er_summary.total_via_num;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.er_summary.clock_timing;
-  std::map<std::string, double>& power_map = summary.er_summary.power_map;
+  std::map<std::string, std::map<std::string, double>>& clock_timing_map = summary.er_summary.clock_timing_map;
+  std::map<std::string, double>& type_power_map = summary.er_summary.type_power_map;
 
   std::vector<GridMap<ERNode>>& layer_node_map = er_model.get_layer_node_map();
   std::vector<ERNet>& er_net_list = er_model.get_er_net_list();
@@ -1271,8 +1270,8 @@ void EarlyRouter::updateSummary(ERModel& er_model)
   total_wire_length = 0;
   cut_via_num_map.clear();
   total_via_num = 0;
-  clock_timing.clear();
-  power_map.clear();
+  clock_timing_map.clear();
+  type_power_map.clear();
 
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
     GridMap<ERNode>& er_node_map = layer_node_map[layer_idx];
@@ -1342,7 +1341,7 @@ void EarlyRouter::updateSummary(ERModel& er_model)
         routing_segment_list_list[net_idx].emplace_back(first_real_coord, second_real_coord);
       }
     }
-    RTI.updateTimingAndPower(real_pin_coord_map_list, routing_segment_list_list, clock_timing, power_map);
+    RTI.updateTimingAndPower(real_pin_coord_map_list, routing_segment_list_list, clock_timing_map, type_power_map);
   }
 }
 
@@ -1361,8 +1360,8 @@ void EarlyRouter::printSummary(ERModel& er_model)
   double& total_wire_length = summary.er_summary.total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.er_summary.cut_via_num_map;
   int32_t& total_via_num = summary.er_summary.total_via_num;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.er_summary.clock_timing;
-  std::map<std::string, double>& power_map = summary.er_summary.power_map;
+  std::map<std::string, std::map<std::string, double>>& clock_timing_map = summary.er_summary.clock_timing_map;
+  std::map<std::string, double>& type_power_map = summary.er_summary.type_power_map;
 
   fort::char_table routing_demand_map_table;
   {
@@ -1421,16 +1420,16 @@ void EarlyRouter::printSummary(ERModel& er_model)
                  << "tns"
                  << "wns"
                  << "freq" << fort::endr;
-    for (auto& [clock_name, timing_map] : clock_timing) {
+    for (auto& [clock_name, timing_map] : clock_timing_map) {
       timing_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
     }
     power_table << fort::header << "power_type";
-    for (auto& [type, power] : power_map) {
+    for (auto& [type, power] : type_power_map) {
       power_table << fort::header << type;
     }
     power_table << fort::endr;
     power_table << "power_value";
-    for (auto& [type, power] : power_map) {
+    for (auto& [type, power] : type_power_map) {
       power_table << power;
     }
     power_table << fort::endr;

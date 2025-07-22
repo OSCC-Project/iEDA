@@ -27,5 +27,3 @@ target_include_directories(ilm_patch_dm
 )
 
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-
-set(CMAKE_BUILD_TYPE "debug")

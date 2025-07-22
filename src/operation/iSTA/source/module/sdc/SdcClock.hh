@@ -42,6 +42,8 @@ class SdcClock : public SdcCommandObj {
   using SdcWaveform = Vector<double>;
   explicit SdcClock(const char* clock_name);
   ~SdcClock() override = default;
+
+  unsigned isClock() override { return 1; }
   void set_clock_name(const char* clock_name) { _clock_name = clock_name; }
   const char* get_clock_name() { return _clock_name.c_str(); }
 

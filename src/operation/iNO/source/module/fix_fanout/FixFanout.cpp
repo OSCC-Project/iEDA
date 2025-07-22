@@ -119,7 +119,7 @@ void FixFanout::fixFanout(IdbNet *net) {
         have_switch_name = true;
       }
       // 1
-      disconnectPin(idb_pin);
+      disconnectPin(idb_pin, in_net);
       // 2
       connect(idb_pin->get_instance(), idb_pin, out_net);
     }
@@ -148,9 +148,8 @@ IdbInstance *FixFanout::makeInstance(string master_name, string inst_name) {
   return idb_inst;
 }
 
-void FixFanout::disconnectPin(IdbPin *dpin) {
-  if (dpin) {
-    auto *dnet = dpin->get_net();
+void FixFanout::disconnectPin(IdbPin *dpin, IdbNet *dnet) {
+  if (dpin && dnet) {
     dnet->remove_pin(dpin);
   }
 }

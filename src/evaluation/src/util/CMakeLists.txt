@@ -1,5 +1,4 @@
 # set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_BUILD_TYPE "Debug")
 
 # general ops
 add_library(eval_util_general_ops

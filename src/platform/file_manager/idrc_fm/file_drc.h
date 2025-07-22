@@ -35,7 +35,7 @@
 #include <vector>
 
 #include "file_manager.h"
-#include "idrc_violation.h"
+#include "ids.hpp"
 #include "json.hpp"
 
 using std::string;
@@ -44,29 +44,6 @@ using std::vector;
 namespace iplf {
 
 using json = nlohmann::ordered_json;
-
-struct DrcFileHeader
-{
-  int32_t module_num;
-};
-
-struct DrcResultHeader
-{
-  char rule_name[1000];
-  uint32_t drc_num;
-};
-
-struct DrcDetailResult
-{
-  int16_t violation_type;
-  char layer_name[100];
-  int16_t layer_id;
-  int32_t net_id;
-  int32_t min_x;
-  int32_t min_y;
-  int32_t max_x;
-  int32_t max_y;
-};
 
 class FileDrcManager : public FileManager
 {
@@ -77,14 +54,9 @@ class FileDrcManager : public FileManager
   ~FileDrcManager() = default;
 
   virtual bool readFile() override;
+  virtual bool saveFileData() override;
 
  private:
-  /// file parser
-  virtual bool parseFileData() override;
-
-  /// file save
-  virtual int32_t getBufferSize() override;
-  virtual bool saveFileData() override;
   bool saveJson();
   bool readJson();
 
@@ -92,12 +64,8 @@ class FileDrcManager : public FileManager
 
  private:
   constexpr static size_t max_num = 100000;
-  constexpr static size_t max_size = max_num * sizeof(DrcDetailResult) + 100;
 
-  void wrapDrcStruct(idrc::DrcViolation* spot, DrcDetailResult& detail_result);
-  idrc::DrcViolation* parseDrcStruct(DrcDetailResult& detail_result);
-
-  std::map<std::string, std::vector<idrc::DrcViolation*>> parseJson(std::string path = "");
+  void parseJson(std::string path = "");
 };
 
 }  // namespace iplf

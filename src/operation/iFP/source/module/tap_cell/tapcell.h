@@ -16,6 +16,9 @@
 // ***************************************************************************************
 #pragma once
 
+#include <stdint.h>
+#include <limits.h>
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -49,6 +52,8 @@ class TapCellPlacer
 
  private:
   std::vector<TapcellRegion> _cell_region_list;
+  int _top_y = INT_MIN;
+  int _bottom_y = INT_MAX;
 
   bool checkDistance(int32_t distance);
   int buildTapcellRegion();

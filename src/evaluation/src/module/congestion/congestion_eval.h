@@ -7,30 +7,33 @@
 
 #pragma once
 
-#include "congestion_db.h"
-
 #include <map>
+#include <tuple>
 #include <unordered_map>
+
+#include "congestion_db.h"
 
 namespace ieval {
 
 using namespace ::std;
 
-struct NetMetadata {
-    int32_t lx, ly, ux, uy;  // 预计算的net边界框
-    double hor_rudy, ver_rudy; // 预计算的RUDY因子
+struct NetMetadata
+{
+  int32_t lx, ly, ux, uy;     // 预计算的net边界框
+  double hor_rudy, ver_rudy;  // 预计算的RUDY因子
 };
 
 // 辅助哈希函数
-struct CongestionPairHash {
-    template <typename T1, typename T2>
-    size_t operator()(const std::pair<T1, T2>& p) const {
-        auto hash1 = std::hash<T1>{}(p.first);
-        auto hash2 = std::hash<T2>{}(p.second);
-        return hash1 ^ (hash2 << 1);
-    }
+struct CongestionPairHash
+{
+  template <typename T1, typename T2>
+  size_t operator()(const std::pair<T1, T2>& p) const
+  {
+    auto hash1 = std::hash<T1>{}(p.first);
+    auto hash2 = std::hash<T2>{}(p.second);
+    return hash1 ^ (hash2 << 1);
+  }
 };
-
 
 class CongestionEval
 {
@@ -91,6 +94,14 @@ class CongestionEval
   int32_t findBBoxLy(std::string net_name);
   int32_t findBBoxUx(std::string net_name);
   int32_t findBBoxUy(std::string net_name);
+  double findXEntropy(std::string net_name);
+  double findYEntropy(std::string net_name);
+  double findAvgXNNDistance(std::string net_name);
+  double findStdXNNDistance(std::string net_name);
+  double findRatioXNNDistance(std::string net_name);
+  double findAvgYNNDistance(std::string net_name);
+  double findStdYNNDistance(std::string net_name);
+  double findRatioYNNDistance(std::string net_name);
 
   int32_t getRowHeight();
   std::string getEGRDirPath();
@@ -99,10 +110,12 @@ class CongestionEval
 
   std::map<std::string, std::vector<std::vector<int>>> getEGRMap(bool is_run_egr = true);
   std::map<std::string, std::vector<std::vector<int>>> getDemandSupplyDiffMap(bool is_run_egr = true);
-  std::map<int, double> patchRUDYCongestion(CongestionNets nets, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
+  std::map<int, double> patchRUDYCongestion(CongestionNets nets,
+                                            std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
   std::map<int, double> patchEGRCongestion(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
-  std::map<int, std::map<std::string, double>> patchLayerEGRCongestion(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
- 
+  std::map<int, std::map<std::string, double>> patchLayerEGRCongestion(
+      std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
+
  private:
   static CongestionEval* _congestion_eval;
 
@@ -116,6 +129,14 @@ class CongestionEval
   std::map<std::string, int32_t> _name_bbox_ly;
   std::map<std::string, int32_t> _name_bbox_ux;
   std::map<std::string, int32_t> _name_bbox_uy;
+  std::map<std::string, double> _name_x_entropy;
+  std::map<std::string, double> _name_y_entropy;
+  std::map<std::string, double> _name_avg_x_nn_distance;
+  std::map<std::string, double> _name_std_x_nn_distance;
+  std::map<std::string, double> _name_ratio_x_nn_distance;
+  std::map<std::string, double> _name_avg_y_nn_distance;
+  std::map<std::string, double> _name_std_y_nn_distance;
+  std::map<std::string, double> _name_ratio_y_nn_distance;
 
   string evalEGR(string rt_dir_path, string egr_type, string output_filename);
   string evalRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size, string rudy_type, string output_filename);
@@ -133,5 +154,7 @@ class CongestionEval
   float evalAvgUtilization(string stage, string rudy_dir_path, string utilization_type, bool use_lut = false);
   std::vector<NetMetadata> precomputeNetData(const CongestionNets& nets);
 
+  double calculateEntropy(const std::vector<int32_t>& coords, int bin_count);
+  std::tuple<double, double, double> calculateNearestNeighborStats(const std::vector<int32_t>& coords);
 };
 }  // namespace ieval

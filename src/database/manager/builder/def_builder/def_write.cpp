@@ -33,8 +33,12 @@
 
 #include "def_write.h"
 
+#include <algorithm>
+#include <cstdint>
+
 #include "../../../data/design/IdbDesign.h"
 #include "Str.hh"
+#include "boost_definition.h"
 
 using std::cout;
 using std::endl;
@@ -76,10 +80,10 @@ bool DefWrite::initFile(const char* file)
       return false;
     }
   } else {
-    _font = SaveFormat::kDef;
+    _font = SaveFormat::kUnzip;
     _file_write = fopen(file, "w+");
     if (_file_write == nullptr) {
-      std::cout << "Open def file failed..." << std::endl;
+      std::cerr << "Open def file failed..." << std::endl;
       return false;
     }
   }
@@ -101,7 +105,7 @@ bool DefWrite::closeFile()
       _file_write_gz = nullptr;
       break;
 
-    case SaveFormat::kDef:
+    case SaveFormat::kUnzip:
     default:
       result = fclose(_file_write);
       _file_write = nullptr;
@@ -120,7 +124,7 @@ void DefWrite::writestr(const char* strdata, ...)
   va_list args;
   va_start(args, strdata);
   switch (_font) {
-    case SaveFormat::kDef:
+    case SaveFormat::kUnzip:
       vfprintf(_file_write, strdata, args);
       break;
     case SaveFormat::kGzip:
@@ -159,6 +163,10 @@ bool DefWrite::writeDb(const char* file)
       writeChip();
       break;
     }
+    case DefWriteType::kLef: {
+      writeLef();
+      break;
+    }
 
     default: {
       writeChip();
@@ -167,6 +175,25 @@ bool DefWrite::writeDb(const char* file)
   }
 
   return closeFile();
+}
+
+/**
+ * @brief Write the design to the lef fine.
+ *
+ * @param file Path to the file.
+ * @return true if writing succeeds, false otherwise.
+ */
+bool DefWrite::writeLef()
+{
+  write_version();
+  write_divider_char();
+  write_busbit_char();
+  write_lef_macro();
+
+  writestr("\n");
+  write_libreary_end();
+
+  return true;
 }
 
 /**
@@ -230,6 +257,12 @@ int32_t DefWrite::write_end()
   return kDbSuccess;
 }
 
+int32_t DefWrite::write_libreary_end()
+{
+  writestr("END LIBRARY\n");
+  return kDbSuccess;
+}
+
 /**
  * @brief Writes the VERSION information to the DEF file.
  * @return Status code indicating success or failure.
@@ -247,6 +280,8 @@ int32_t DefWrite::write_version()
 
 int32_t DefWrite::write_divider_char()
 {
+  writestr("DIVIDERCHAR \"/\" ;\n");
+
   return kDbSuccess;
 }
 
@@ -259,7 +294,7 @@ int32_t DefWrite::write_busbit_char()
     return kDbFail;
   }
 
-  writestr("BUSBITCHARS \"%c%c\";\n", bus_bit_chars->getLeftDelimiter(), bus_bit_chars->getRightDelimiter());
+  writestr("BUSBITCHARS \"%c%c\" ;\n", bus_bit_chars->getLeftDelimiter(), bus_bit_chars->getRightDelimiter());
 
   std::cout << "Write BUSBITCHARS success..." << std::endl;
 
@@ -1097,6 +1132,322 @@ int32_t DefWrite::write_fill()
   }
 
   cout << "Write FILLS success..." << endl;
+  return kDbSuccess;
+}
+
+int32_t DefWrite::write_lef_macro()
+{
+  auto* design = _def_service->get_design();
+  auto* layout = _def_service->get_layout();
+
+  writestr("\n");
+  writestr("MACRO %s\n", design->get_design_name().c_str());
+  writestr("%sCLASS BLOCK ;\n", _spacer);
+  writestr("%sFOREIGN %s ;\n", _spacer, design->get_design_name().c_str());
+  writestr("%sORIGIN 0.0 0.0 ;\n", _spacer);
+  writestr("%sSIZE %.3f BY %.3f ;\n", _spacer, design->transToUDB(layout->get_die()->get_width()),
+           design->transToUDB(layout->get_die()->get_height()));
+  writestr("%sSYMMETRY X Y ;\n", _spacer);
+
+  write_lef_macro_pins();
+  write_lef_macro_obs();
+
+  writestr("\n");
+  writestr("END %s\n", design->get_design_name().c_str());
+
+  cout << "Write Macro success..." << endl;
+  return kDbSuccess;
+}
+
+int32_t DefWrite::write_lef_macro_pins()
+{
+  auto* design = _def_service->get_design();
+  auto* layout = _def_service->get_layout();
+  auto* layers = layout->get_layers();
+  auto* pdn_list = design->get_special_net_list();
+  auto* die = layout->get_die();
+
+  /// write io ports
+  auto* io_pins = design->get_io_pin_list();
+  for (auto idb_pin : io_pins->get_pin_list()) {
+    writestr("%sPIN %s\n", _spacer, idb_pin->get_pin_name().c_str());
+    /// definition
+    {
+      auto* io_term = idb_pin->get_term();
+
+      auto* enum_property = IdbEnum::GetInstance()->get_connect_property();
+      /// DIRECTION
+      string direction = enum_property->get_direction_name(io_term->get_direction());
+      writestr("%s%sDIRECTION %s ;\n", _spacer, _spacer, direction.c_str());
+      /// USE
+      string use = enum_property->get_type_name(io_term->get_type());
+      writestr("%s%sUSE %s ;\n", _spacer, _spacer, use.c_str());
+    }
+
+    /// PORT
+    {
+      writestr("%s%sPORT\n", _spacer, _spacer);
+
+      for (auto* layer_shape : idb_pin->get_port_box_list()) {
+        writestr("%s%s%sLAYER %s ;\n", _spacer, _spacer, _spacer, layer_shape->get_layer()->get_name().c_str());
+        for (auto* rect : layer_shape->get_rect_list()) {
+          if (rect->get_low_x() < die->get_bounding_box()->get_low_x() || rect->get_low_y() < die->get_bounding_box()->get_low_y()
+              || rect->get_high_x() > die->get_bounding_box()->get_high_x() || rect->get_high_y() > die->get_bounding_box()->get_high_y()) {
+            std::cout << "error boundry" << std::endl;
+          }
+
+          writestr("%s%s%s%sRECT %.3f %.3f %.3f %.3f ;\n", _spacer, _spacer, _spacer, _spacer, design->transToUDB(rect->get_low_x()),
+                   design->transToUDB(rect->get_low_y()), design->transToUDB(rect->get_high_x()), design->transToUDB(rect->get_high_y()));
+        }
+      }
+
+      writestr("%s%sEND\n", _spacer, _spacer);
+    }
+
+    writestr("%sEND %s\n", _spacer, idb_pin->get_pin_name().c_str());
+  }
+
+  /// write top pdn
+  auto get_top_pdn_rect = [&](IdbLayer* layer, bool is_power) -> std::vector<IdbRect> {
+    std::vector<IdbRect> pdn_rects;
+
+    for (auto* net : pdn_list->get_net_list()) {
+      if ((net->is_vdd() && !is_power) || (net->is_vss() && is_power)) {
+        continue;
+      }
+
+      for (auto* wire : net->get_wire_list()->get_wire_list()) {
+        for (auto* segment : wire->get_segment_list()) {
+          if ((segment->is_via() && segment->get_point_num() < 2) || segment->get_layer() != layer) {
+            continue;
+          }
+
+          /// build segment rect
+          int32_t routing_width = segment->get_route_width() == 0 ? ((IdbLayerRouting*) layer)->get_width() : segment->get_route_width();
+
+          auto* point_1 = segment->get_point_start();
+          auto* point_2 = segment->get_point_second();
+
+          int32_t ll_x = 0;
+          int32_t ll_y = 0;
+          int32_t ur_x = 0;
+          int32_t ur_y = 0;
+
+          if (point_1->get_y() == point_2->get_y()) {
+            // horizontal
+            ll_x = std::min(point_1->get_x(), point_2->get_x());
+            ll_y = std::min(point_1->get_y(), point_2->get_y()) - routing_width / 2;
+            ur_x = std::max(point_1->get_x(), point_2->get_x());
+            ur_y = ll_y + routing_width;
+          } else if (point_1->get_x() == point_2->get_x()) {
+            // vertical
+            ll_x = std::min(point_1->get_x(), point_2->get_x()) - routing_width / 2;
+            ll_y = std::min(point_1->get_y(), point_2->get_y());
+            ur_x = ll_x + routing_width;
+            ur_y = std::max(point_1->get_y(), point_2->get_y());
+          }
+
+          pdn_rects.emplace_back(IdbRect(ll_x, ll_y, ur_x, ur_y));
+        }
+      }
+    }
+
+    return pdn_rects;
+  };
+
+  auto layer_pair = get_pdn_layer_order_range();
+  IdbLayer* top_layer = layers->find_layer_by_order(layer_pair.second);
+  auto top_vdd = get_top_pdn_rect(top_layer, true);
+  auto top_vss = get_top_pdn_rect(top_layer, false);
+
+  auto write_pdn_as_port = [&](bool is_power) {
+    auto& top_rects = is_power ? top_vdd : top_vss;
+    if (top_rects.size() <= 0) {
+      return;
+    }
+
+    std::string pin_name = is_power ? "vdd_stripe_generate" : "vss_stripe_generate";
+    writestr("%sPIN %s\n", _spacer, pin_name.c_str());
+    /// definition
+    {
+      /// DIRECTION
+      string direction = "INOUT";
+      writestr("%s%sDIRECTION %s ;\n", _spacer, _spacer, direction.c_str());
+      /// USE
+      string use = is_power ? "POWER" : "GROUND";
+      writestr("%s%sUSE %s ;\n", _spacer, _spacer, use.c_str());
+    }
+
+    /// PORT
+    {
+      writestr("%s%sPORT\n", _spacer, _spacer);
+
+      for (auto& rect : top_rects) {
+        writestr("%s%s%sLAYER %s ;\n", _spacer, _spacer, _spacer, top_layer->get_name().c_str());
+        writestr("%s%s%s%sRECT %.3f %.3f %.3f %.3f ;\n", _spacer, _spacer, _spacer, _spacer, design->transToUDB(rect.get_low_x()),
+                 design->transToUDB(rect.get_low_y()), design->transToUDB(rect.get_high_x()), design->transToUDB(rect.get_high_y()));
+      }
+
+      writestr("%s%sEND\n", _spacer, _spacer);
+    }
+
+    writestr("%sEND %s\n", _spacer, pin_name.c_str());
+  };
+
+  write_pdn_as_port(true);
+  write_pdn_as_port(false);
+
+  return kDbSuccess;
+}
+std::pair<int, int> DefWrite::get_pdn_layer_order_range()
+{
+  auto* design = _def_service->get_design();
+  auto* layout = _def_service->get_layout();
+  auto* pdn_list = design->get_special_net_list();
+
+  int min_layer = layout->get_layers()->get_layers_num() - 1;
+  int max_layer = 0;
+
+  for (auto* net : pdn_list->get_net_list()) {
+    for (auto* wire : net->get_wire_list()->get_wire_list()) {
+      for (auto* segment : wire->get_segment_list()) {
+        if (segment->is_via() && segment->get_point_num() < 2) {
+          continue;
+        }
+        auto order = segment->get_layer()->get_order();
+        min_layer = std::min(min_layer, (int) order);
+        max_layer = std::max(max_layer, (int) order);
+      }
+    }
+  }
+  return std::make_pair(min_layer, max_layer);
+}
+
+int32_t DefWrite::write_lef_macro_obs()
+{
+  auto* design = _def_service->get_design();
+  auto* layout = _def_service->get_layout();
+  auto* die = layout->get_die();
+  auto* layers = layout->get_layers();
+  auto* io_pins = design->get_io_pin_list();
+  auto* pdn_list = design->get_special_net_list();
+
+  auto get_obs_rect = [&](IdbLayer* layer, bool is_top) -> std::vector<IdbRect> {
+    std::vector<IdbRect> obs_list;
+
+    ieda_solver::GtlPolygon90Set polyset_die;
+
+    auto* die_bbox = die->get_bounding_box();
+    ieda_solver::GtlRect die_rect(die_bbox->get_low_x(), die_bbox->get_low_y(), die_bbox->get_high_x(), die_bbox->get_high_y());
+    polyset_die += die_rect;
+
+    ieda_solver::GtlPolygon90Set polyset_data;
+    if (is_top) {
+      /// exclude pdn data for top layer of pdn
+      for (auto* net : pdn_list->get_net_list()) {
+        for (auto* wire : net->get_wire_list()->get_wire_list()) {
+          for (auto* segment : wire->get_segment_list()) {
+            if ((segment->is_via() && segment->get_point_num() < 2) || segment->get_layer() != layer) {
+              continue;
+            }
+
+            /// build segment rect
+            int32_t routing_width = segment->get_route_width() == 0 ? ((IdbLayerRouting*) layer)->get_width() : segment->get_route_width();
+
+            auto* point_1 = segment->get_point_start();
+            auto* point_2 = segment->get_point_second();
+
+            int32_t ll_x = 0;
+            int32_t ll_y = 0;
+            int32_t ur_x = 0;
+            int32_t ur_y = 0;
+
+            if (point_1->get_y() == point_2->get_y()) {
+              // horizontal
+              ll_x = std::min(point_1->get_x(), point_2->get_x());
+              ll_y = std::min(point_1->get_y(), point_2->get_y()) - routing_width / 2;
+              ur_x = std::max(point_1->get_x(), point_2->get_x());
+              ur_y = ll_y + routing_width;
+            } else if (point_1->get_x() == point_2->get_x()) {
+              // vertical
+              ll_x = std::min(point_1->get_x(), point_2->get_x()) - routing_width / 2;
+              ll_y = std::min(point_1->get_y(), point_2->get_y());
+              ur_x = ll_x + routing_width;
+              ur_y = std::max(point_1->get_y(), point_2->get_y());
+            }
+
+            /// enlarge spacing required for drc
+            int32_t required_size_h = ((IdbLayerRouting*) layer)->get_spacing(ur_x - ll_x, ur_y - ll_y);
+            int32_t required_size_v = ((IdbLayerRouting*) layer)->get_spacing(ur_y - ll_y, ur_x - ll_x);
+
+            ieda_solver::GtlRect bloat_rect(ll_x, ll_y, ur_x, ur_y);
+
+            gtl::bloat(bloat_rect, gtl::HORIZONTAL, required_size_h);
+            gtl::bloat(bloat_rect, gtl::VERTICAL, required_size_v);
+
+            polyset_data += bloat_rect;
+          }
+        }
+      }
+    }
+
+    /// exclude io port data
+    for (auto* pin : io_pins->get_pin_list()) {
+      for (auto* layer_shape : pin->get_port_box_list()) {
+        if (layer_shape->get_layer() != layer) {
+          continue;
+        }
+
+        for (auto* port_rect : layer_shape->get_rect_list()) {
+          // get require spacing
+          int32_t required_size_h = ((IdbLayerRouting*) layer)->get_spacing(port_rect->get_width(), port_rect->get_height());
+          int32_t required_size_v = ((IdbLayerRouting*) layer)->get_spacing(port_rect->get_height(), port_rect->get_width());
+
+          ieda_solver::GtlRect bloat_rect(port_rect->get_low_x(), port_rect->get_low_y(), port_rect->get_high_x(), port_rect->get_high_y());
+
+          gtl::bloat(bloat_rect, gtl::HORIZONTAL, required_size_h);
+          gtl::bloat(bloat_rect, gtl::VERTICAL, required_size_v);
+
+          polyset_data += bloat_rect;
+        }
+      }
+    }
+
+    polyset_die.clean();
+    polyset_data.clean();
+
+    auto polyset_obs = polyset_die - polyset_data;
+
+    auto direction = ((IdbLayerRouting*) layer)->is_horizontal() ? gtl::HORIZONTAL : gtl::VERTICAL;
+    std::vector<ieda_solver::GtlRect> obs_rects;
+    gtl::get_rectangles(obs_rects, polyset_obs, direction);
+    obs_list.reserve(obs_rects.size());
+    for (auto obs_rect : obs_rects) {
+      obs_list.emplace_back(IdbRect(gtl::xl(obs_rect), gtl::yl(obs_rect), gtl::xh(obs_rect), gtl::yh(obs_rect)));
+    }
+
+    return obs_list;
+  };
+
+  /// write obs
+  writestr("%sOBS\n", _spacer);
+
+  auto layer_pair = get_pdn_layer_order_range();
+  for (auto layer_order = layer_pair.first; layer_order <= layer_pair.second; layer_order += 2) {
+    IdbLayer* layer = layers->find_layer_by_order(layer_order);
+    auto is_top = layer_order == layer_pair.second ? true : false;
+    auto obs_rects = get_obs_rect(layer, is_top);
+
+    for (auto& obs_rect : obs_rects) {
+      writestr("%s%sLAYER %s ;\n", _spacer, _spacer, layer->get_name().c_str());
+      writestr("%s%sRECT %.3f %.3f %.3f %.3f ;\n", _spacer, _spacer, design->transToUDB(obs_rect.get_low_x()),
+               design->transToUDB(obs_rect.get_low_y()), design->transToUDB(obs_rect.get_high_x()),
+               design->transToUDB(obs_rect.get_high_y()));
+    }
+  }
+
+  writestr("%sEND\n", _spacer);
+
   return kDbSuccess;
 }
 

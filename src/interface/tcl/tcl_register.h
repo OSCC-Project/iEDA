@@ -33,7 +33,7 @@
 #include "tcl_flow.h"
 #include "tcl_register_config.h"
 #include "tcl_register_cts.h"
-#include "tcl_register_drc.h"
+#include "tcl_register_idrc.h"
 #include "tcl_register_eco.h"
 #include "tcl_register_eval.h"
 #include "tcl_register_feature.h"

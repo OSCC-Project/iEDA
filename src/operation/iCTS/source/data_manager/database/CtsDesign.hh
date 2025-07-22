@@ -60,9 +60,10 @@ class CtsDesign
 
   void addPin(CtsPin* pin)
   {
-    if (_pin_map.count(pin->get_pin_name()) == 0) {
+    auto name = pin->is_io() ? pin->get_pin_name() : pin->get_full_name();
+    if (_pin_map.count(name) == 0) {
       _pins.push_back(pin);
-      _pin_map.insert(std::make_pair(pin->get_full_name(), pin));
+      _pin_map.insert(std::make_pair(name, pin));
     }
   }
   void addNet(CtsNet* net)

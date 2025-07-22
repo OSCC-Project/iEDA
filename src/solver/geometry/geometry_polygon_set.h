@@ -29,7 +29,7 @@ typedef GtlPolygon90Set GeometryPolygonSet;
 #define getMaxRectangles(output, polygon_set) gtl::get_max_rectangles(output, polygon_set)
 #define getPolygons(output, polygon_set) gtl::get_polygons(output, polygon_set)
 
-#define envelope(rect, polygon_set) gtl::extents(rect, polygon_set)
+#define ENVELOPE(rect, polygon_set) gtl::extents(rect, polygon_set)
 
 #define growAnd(polygon_set, value) gtl::grow_and(polygon_set, value)
 #define growAndHorizontal(polygon_set, value) gtl::grow_and(polygon_set, gtl::orientation_2d(HORIZONTAL), value)

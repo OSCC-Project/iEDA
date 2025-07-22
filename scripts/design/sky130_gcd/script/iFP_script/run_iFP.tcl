@@ -76,7 +76,7 @@ tapcell \
 #===========================================================
 ##   PDN 
 #===========================================================
-source $::env(TCL_SCRIPT_DIR)/iFP_script/module/pdn.tcl 
+#source $::env(TCL_SCRIPT_DIR)/iFP_script/module/pdn.tcl 
 
 #===========================================================
 ##   set clock net

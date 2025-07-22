@@ -45,7 +45,6 @@
 #include "src/MapFiller.h"
 #include "timing_db.hh"
 #include "wirelength_db.h"
-
 namespace ipl {
 
 // NOLINTBEGIN
@@ -93,12 +92,13 @@ void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
   createPLDirectory();
 
   char config[] = "info_ipl_glog";
-  char* argv[] = {config};
+  char* argv[] = { config };
 
   std::string log_home_path = this->obtainTargetDir() + "/pl/log/";
   // std::string design_name = idb_builder->get_def_service()->get_design()->get_design_name();
   // std::string home_path = "./evaluation_task/benchmark/" + design_name + "/pl_reports/";
 
+  Log::makeSureDirectoryExist(log_home_path);
   Log::init(argv, log_home_path);
   IDBWrapper* idb_wrapper = new IDBWrapper(idb_builder);
   PlacerDBInst.initPlacerDB(pl_json_path, idb_wrapper);
@@ -132,6 +132,9 @@ void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
 void PLAPI::createPLDirectory()
 {
   std::string pl_dir = this->obtainTargetDir();
+  if (pl_dir == "") {
+    pl_dir = ".";
+  }
   // create log and report folder
   if (!std::filesystem::exists(pl_dir + "/pl/log")) {
     if (std::filesystem::create_directories(pl_dir + "/pl/log")) {
@@ -161,11 +164,19 @@ void PLAPI::createPLDirectory()
       LOG_ERROR << "Cannot create " + pl_dir + "/pl/gui for iPL gui";
     }
   }
+  if (!std::filesystem::exists(pl_dir + "/pl/density")) {
+    if (std::filesystem::create_directories(pl_dir + "/pl/density")) {
+      LOG_INFO << "Create folder " + pl_dir + "/pl/density for iPL density map";
+    } else {
+      LOG_ERROR << "Cannot create " + pl_dir + "/pl/density for iPL density map";
+    }
+  }
 }
 
 void PLAPI::runIncrementalFlow()
 {
   runLG();
+  notifyPLWLInfo(1);
   reportPLInfo();
   writeBackSourceDataBase();
 }
@@ -379,7 +390,7 @@ void PLAPI::runFlow()
   runGP();
   // printHPWLInfo();
   // printTimingInfo();
-  // notifyPLWLInfo(0);
+  notifyPLWLInfo(0);
   // if (isSTAStarted()) {
   //   notifyPLCongestionInfo(0);
   //   notifyPLTimingInfo(0);
@@ -400,7 +411,7 @@ void PLAPI::runFlow()
   runLG();
   // printHPWLInfo();
   // printTimingInfo();
-  // notifyPLWLInfo(1);
+  notifyPLWLInfo(1);
   // if (isSTAStarted()) {
   //   notifyPLCongestionInfo(1);
   //   notifyPLTimingInfo(1);
@@ -410,12 +421,12 @@ void PLAPI::runFlow()
   if (isSTAStarted()) {
     runPostGP();
   } else {
-    runDP();
+    // runDP(); // remove DP
   }
   // printHPWLInfo();
   // printTimingInfo();
 
-  // notifyPLWLInfo(2);
+  notifyPLWLInfo(2);
   // if (isSTAStarted()) {
   //   notifyPLCongestionInfo(2);
   //   notifyPLTimingInfo(2);
@@ -468,7 +479,7 @@ void PLAPI::runGP()
 {
   // CenterPlace(&PlacerDBInst).runCenterPlace();
   RandomPlace(&PlacerDBInst).runRandomPlace();
-  NesterovPlace nesterov_place(PlacerDBInst.get_placer_config(), &PlacerDBInst);
+  NesterovPlace nesterov_place(PlacerDBInst.get_placer_config(), &PlacerDBInst, isJsonOutputEnabled());
   nesterov_place.printNesterovDatabase();
   nesterov_place.runNesterovPlace();
 }
@@ -539,18 +550,18 @@ void PLAPI::runNetworkFlowSpread()
 void PLAPI::notifyPLWLInfo(int stage)
 {
   // 1. origin method
-  // HPWirelength hpwl(PlacerDBInst.get_topo_manager());
-  // SteinerWirelength stwl(PlacerDBInst.get_topo_manager());
-  // stwl.updateAllNetWorkPointPair();
-  // PlacerDBInst.PL_HPWL[stage] = hpwl.obtainTotalWirelength();
-  // PlacerDBInst.PL_STWL[stage] = stwl.obtainTotalWirelength();
+  HPWirelength hpwl(PlacerDBInst.get_topo_manager());
+  SteinerWirelength stwl(PlacerDBInst.get_topo_manager());
+  stwl.updateAllNetWorkPointPair();
+  PlacerDBInst.PL_HPWL[stage] = hpwl.obtainTotalWirelength();
+  PlacerDBInst.PL_STWL[stage] = stwl.obtainTotalWirelength();
 
   // 2. most work in evalpro
-  this->writeBackSourceDataBase();
-  ieval::TotalWLSummary wl_summary = _external_api->evalproIDBWL();
-  PlacerDBInst.PL_HPWL[stage] = wl_summary.HPWL;
-  PlacerDBInst.PL_STWL[stage] = wl_summary.FLUTE;
-  PlacerDBInst.PL_GRWL[stage] = wl_summary.GRWL;
+  // this->writeBackSourceDataBase();
+  // ieval::TotalWLSummary wl_summary = _external_api->evalproIDBWL();
+  // PlacerDBInst.PL_HPWL[stage] = wl_summary.HPWL;
+  // PlacerDBInst.PL_STWL[stage] = wl_summary.FLUTE;
+  // PlacerDBInst.PL_GRWL[stage] = wl_summary.GRWL;
 }
 
 void PLAPI::notifyPLCongestionInfo(int stage)
@@ -713,7 +724,11 @@ void PLAPI::writeBackSourceDataBase()
 
 std::string PLAPI::obtainTargetDir()
 {
-  return _external_api->obtainTargetDir();
+  auto target_dir = _external_api->obtainTargetDir();
+  if (target_dir == "") {
+    target_dir = ".";
+  }
+  return target_dir;
 }
 
 std::vector<Rectangle<int32_t>> PLAPI::obtainAvailableWhiteSpaceList(std::pair<int32_t, int32_t> row_range,
@@ -808,9 +823,9 @@ void PLAPI::reportPLInfo()
   }
 
   // report congestion
-  if (PlacerDBInst.get_placer_config()->isCongestionEffort()) {
-    reportCongestionInfo(summary_stream);
-  }
+  // if (PlacerDBInst.get_placer_config()->isCongestionEffort()) {
+  //   reportCongestionInfo(summary_stream);
+  // }
   summary_stream.close();
 
   double time_delta = report_status.elapsedRunTime();
@@ -950,46 +965,18 @@ ieda_feature::PlaceSummary PLAPI::outputSummary(std::string step)
 
   // 1:全局布局、详细布局、合法化都需要存储的数据参数，需要根据step存储不同的值
   auto place_density = PlacerDBInst.place_density;
-  // auto pin_density = PlacerDBInst.pin_density;
-  // auto HPWL = PlacerDBInst.PL_HPWL;
-  // auto STWL = PlacerDBInst.PL_STWL;
-  // auto GRWL = PlacerDBInst.PL_GRWL;
-
-  // auto egr_tof = PlacerDBInst.egr_tof;
-  // auto egr_mof = PlacerDBInst.egr_mof;
-  // auto egr_ace = PlacerDBInst.egr_ace;
-
-  // auto tns = PlacerDBInst.tns;
-  // auto wns = PlacerDBInst.wns;
-  // auto suggest_freq = PlacerDBInst.suggest_freq;
+  auto hpwl = PlacerDBInst.PL_HPWL;
+  auto stwl = PlacerDBInst.PL_STWL;
 
   // 2:全局布局、详细布局需要存储的数据参数
   if (step == "place") {
     summary.gplace.place_density = place_density[0];
-    // summary.gplace.pin_density = pin_density[0];
-    // summary.gplace.HPWL = HPWL[0];
-    // summary.gplace.STWL = STWL[0];
-    // summary.gplace.GRWL = GRWL[0];
+    summary.gplace.HPWL = hpwl[0];
+    summary.gplace.STWL = stwl[0];
 
-    // summary.gplace.egr_tof = egr_tof[0];
-    // summary.gplace.egr_mof = egr_mof[0];
-    // summary.gplace.egr_ace = egr_ace[0];
-    // summary.gplace.tns = tns[0];
-    // summary.gplace.wns = wns[0];
-    // summary.gplace.suggest_freq = suggest_freq[0];
-
-    summary.dplace.place_density = place_density[1];
-    // summary.dplace.pin_density = pin_density[1];
-    // summary.dplace.HPWL = HPWL[1];
-    // summary.dplace.STWL = STWL[1];
-    // summary.dplace.GRWL = GRWL[1];
-
-    // summary.dplace.egr_tof = egr_tof[1];
-    // summary.dplace.egr_mof = egr_mof[1];
-    // summary.dplace.egr_ace = egr_ace[1];
-    // summary.dplace.tns = tns[1];
-    // summary.dplace.wns = wns[1];
-    // summary.dplace.suggest_freq = suggest_freq[1];
+    summary.dplace.place_density = place_density[2];
+    summary.dplace.HPWL = hpwl[2];
+    summary.dplace.STWL = stwl[2];
 
     auto* pl_design = PlacerDBInst.get_design();
     summary.instance_cnt = pl_design->get_instances_range();
@@ -1013,18 +1000,8 @@ ieda_feature::PlaceSummary PLAPI::outputSummary(std::string step)
   }
   // 3:合法化需要存储的数据参数
   else if (step == "legalization") {
-    summary.lg_summary.pl_common_summary.place_density = place_density[2];
-    // summary.lg_summary.pl_common_summary.pin_density = pin_density[2];
-    // summary.lg_summary.pl_common_summary.HPWL = HPWL[2];
-    // summary.lg_summary.pl_common_summary.STWL = STWL[2];
-    // summary.lg_summary.pl_common_summary.GRWL = GRWL[2];
-
-    // summary.lg_summary.pl_common_summary.egr_tof = egr_tof[2];
-    // summary.lg_summary.pl_common_summary.egr_mof = egr_mof[2];
-    // summary.lg_summary.pl_common_summary.egr_ace = egr_ace[2];
-    // summary.lg_summary.pl_common_summary.tns = tns[2];
-    // summary.lg_summary.pl_common_summary.wns = wns[2];
-    // summary.lg_summary.pl_common_summary.suggest_freq = suggest_freq[2];
+    summary.lg_summary.pl_common_summary.HPWL = hpwl[1];
+    summary.lg_summary.pl_common_summary.STWL = stwl[1];
 
     summary.lg_summary.lg_total_movement = PlacerDBInst.lg_total_movement;
     summary.lg_summary.lg_max_movement = PlacerDBInst.lg_max_movement;

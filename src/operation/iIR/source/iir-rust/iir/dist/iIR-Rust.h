@@ -13,6 +13,8 @@ Do not modify this manually.
 
 #define POWER_INNER_RESISTANCE 1e-3
 
+#define RC_COEFF 3.0
+
 typedef struct HashMap_usize__f64 HashMap_usize__f64;
 
 /**

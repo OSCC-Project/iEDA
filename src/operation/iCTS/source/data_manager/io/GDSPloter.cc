@@ -24,6 +24,7 @@
 
 #include "CTSAPI.hh"
 #include "CtsDBWrapper.hh"
+#include "json.hpp"
 
 namespace icts {
 
@@ -139,10 +140,11 @@ void GDSPloter::plotFlyLine(const std::string& path)
 
   for (auto& clk_net : clk_nets) {
     auto* driver = clk_net->get_driver_inst();
+    auto* driver_pin = clk_net->get_driver_pin();
     size_t wire_id = 0;
-    for (auto* load : clk_net->get_load_insts()) {
+    for (auto* load_pin : clk_net->get_load_pins()) {
       auto wire_name = "WIRE_" + clk_net->get_net_name() + "_" + std::to_string(wire_id++);
-      insertWire(ofs, driver->get_location(), load->get_location(), wire_name, driver->get_level());
+      insertWire(ofs, driver_pin->get_location(), load_pin->get_location(), wire_name, driver->get_level());
     }
   }
 
@@ -366,9 +368,9 @@ void GDSPloter::writePyFlyLine(const std::string& path)
       continue;
     }
     auto level = driver->get_level();
-    for (auto load : clk_net->get_load_insts()) {
-      py_ofs << "plt.plot([" << clk_net->get_driver_inst()->get_location().x() << "," << load->get_location().x() << "],["
-             << clk_net->get_driver_inst()->get_location().y() << "," << load->get_location().y() << "],color=colors[" << level
+    for (auto load_pin : clk_net->get_load_pins()) {
+      py_ofs << "plt.plot([" << clk_net->get_driver_pin()->get_location().x() << "," << load_pin->get_location().x() << "],["
+             << clk_net->get_driver_pin()->get_location().y() << "," << load_pin->get_location().y() << "],color=colors[" << level
              << "],linewidth=line_width[" << level << "],zorder=" << level << ")" << std::endl;
     }
   }
@@ -390,6 +392,132 @@ void GDSPloter::writePyFlyLine(const std::string& path)
   py_ofs << "plt.axis('square')\n";
   py_ofs << "plt.axis('off')\n";
   py_ofs << "plt.savefig('cts_flyline.png', dpi=300, bbox_inches='tight')" << std::endl;
+}
+
+void GDSPloter::writeJsonDesign(const std::string& path)
+{
+  auto* design = CTSAPIInst.get_design();
+  auto* config = CTSAPIInst.get_config();
+  auto* db_wrapper = CTSAPIInst.get_db_wrapper();
+
+  auto file_path = path;
+  if (file_path.empty()) {
+    auto dir = std::filesystem::path(config->get_work_dir()).append("output").string();
+    if (!std::filesystem::exists(dir)) {
+      std::filesystem::create_directories(dir);
+    }
+    file_path = std::filesystem::path(dir).append("cts_design.json").string();
+  }
+
+  // Calculate the maximum level of instances
+  int max_level = 0;
+  auto* idb_design = db_wrapper->get_idb()->get_def_service()->get_design();
+  auto idb_insts = idb_design->get_instance_list()->get_instance_list();
+  for (auto* idb_inst : idb_insts) {
+    if (auto* cts_inst = design->findInstance(idb_inst->get_name())) {
+      max_level = std::max(max_level, cts_inst->get_level());
+    }
+  }
+
+  // Create JSON object
+  nlohmann::json json_data;
+  json_data["design"]["max_level"] = max_level;
+
+  // Add instance information
+  nlohmann::json instances = nlohmann::json::array();
+  for (auto* idb_inst : idb_insts) {
+    nlohmann::json instance;
+    instance["name"] = idb_inst->get_name();
+    instances.push_back(instance);
+  }
+  json_data["design"]["instances"] = instances;
+
+  // Add wire information
+  nlohmann::json nets = nlohmann::json::array();
+  for (auto& clk_nets = design->get_nets(); auto& clk_net : clk_nets) {
+    auto* driver = clk_net->get_driver_inst();
+    auto* driver_pin = clk_net->get_driver_pin();
+    if (driver->get_location() == Point(-1, -1)) {
+      continue;
+    }
+
+    nlohmann::json net;
+    net["name"] = clk_net->get_net_name();
+    net["driver_level"] = driver->get_level();
+    net["driver_location"]["x"] = driver_pin->get_location().x();
+    net["driver_location"]["y"] = driver_pin->get_location().y();
+
+    // Add signal wires
+    nlohmann::json wires = nlohmann::json::array();
+    for (const auto& signal_wires = clk_net->get_signal_wires(); const auto& wire : signal_wires) {
+      auto first = wire.get_first().point;
+      auto second = wire.get_second().point;
+
+      nlohmann::json wire_obj;
+      wire_obj["start"]["x"] = first.x();
+      wire_obj["start"]["y"] = first.y();
+      wire_obj["end"]["x"] = second.x();
+      wire_obj["end"]["y"] = second.y();
+
+      wires.push_back(wire_obj);
+    }
+    net["wires_layout"] = wires;
+
+    // Add delay information
+    nlohmann::json delays = nlohmann::json::array();
+
+    // Only consider a single clock source for now.
+    auto clk_port = design->get_clocks().front()->get_clock_name();
+    
+    for (auto& p : clk_net->get_load_pins()) {
+      auto delay = CTSAPIInst.getClockAT(p->get_full_name(), clk_port);
+      auto driver = clk_net->get_driver_pin();
+
+      nlohmann::json delay_obj;
+      delay_obj["from"] = driver->get_full_name();
+      delay_obj["to"] = p->get_full_name();
+      delay_obj["delay"] = delay;
+      delays.push_back(delay_obj);
+    }
+    net["wires_delay"] = delays;
+
+    nets.push_back(net);
+  }
+  json_data["design"]["nets"] = nets;
+
+  // Add blockage information
+  nlohmann::json blockages = nlohmann::json::array();
+  for (auto idb_blockages = idb_design->get_blockage_list()->get_blockage_list(); auto* blockage : idb_blockages) {
+    auto blockage_rect_list = blockage->get_rect_list();
+    if (blockage_rect_list.empty()) {
+      continue;
+    }
+
+    for (size_t i = 0; i < blockage_rect_list.size(); ++i) {
+      auto* blockage_rect = blockage_rect_list[i];
+
+      nlohmann::json blockage_obj;
+      blockage_obj["name"] = blockage->get_instance_name() + "_" + std::to_string(i);
+      blockage_obj["bounding_box"]["low_x"] = blockage_rect->get_low_x();
+      blockage_obj["bounding_box"]["low_y"] = blockage_rect->get_low_y();
+      blockage_obj["bounding_box"]["high_x"] = blockage_rect->get_high_x();
+      blockage_obj["bounding_box"]["high_y"] = blockage_rect->get_high_y();
+
+      blockages.push_back(blockage_obj);
+    }
+  }
+  json_data["design"]["blockages"] = blockages;
+
+  // Add core bounding box information
+  auto* core = db_wrapper->get_core_bounding_box();
+  json_data["design"]["core"]["bounding_box"]["low_x"] = core->get_low_x();
+  json_data["design"]["core"]["bounding_box"]["low_y"] = core->get_low_y();
+  json_data["design"]["core"]["bounding_box"]["high_x"] = core->get_high_x();
+  json_data["design"]["core"]["bounding_box"]["high_y"] = core->get_high_y();
+
+  std::ofstream json_file(file_path);
+  json_file << json_data.dump(2);
+  json_file.close();
 }
 
 void GDSPloter::refPolygon(std::fstream& log_ofs, const string& name)

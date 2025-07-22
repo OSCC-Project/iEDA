@@ -26,10 +26,8 @@
 
 #include <iostream>
 
-#include "congestion_api.h"
-#include "density_api.h"
-#include "timing_api.hh"
-#include "wirelength_api.h"
+#include "wirelength_io.h"
+#include "density_io.h"
 
 using namespace ieval;
 
@@ -71,4 +69,133 @@ unsigned CmdEvalInit::exec()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+CmdEvalTimingRun::CmdEvalTimingRun(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* path_option = new TclStringOption(TCL_OUTPUT_PATH, 1, nullptr);
+  auto* output_path_option = new TclStringOption("-eval_output_path", 1, nullptr);
+  auto* route_type_option = new TclStringOption("-routing_type", 1, "HPWL");
+  addOption(output_path_option);
+  addOption(path_option);
+  addOption(route_type_option);
+}
+
+unsigned CmdEvalTimingRun::check()
+{
+  const TclOption* path_option = getOptionOrArg(TCL_OUTPUT_PATH);
+  const TclOption* output_path_option = getOptionOrArg("-eval_output_path");
+  const TclOption* route_type_option = getOptionOrArg("-routing_type");
+  LOG_FATAL_IF(!path_option);
+  LOG_FATAL_IF(!output_path_option);
+  LOG_INFO_IF(!route_type_option);
+  return 1;
+}
+
+unsigned CmdEvalTimingRun::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+  TclOption* path_option = getOptionOrArg(TCL_OUTPUT_PATH);
+  TclOption* output_path_option = getOptionOrArg("-eval_output_path");
+  TclOption* route_type_option = getOptionOrArg("-routing_type");
+  const auto path = path_option->getStringVal() != nullptr ? path_option->getStringVal() : "";
+  const auto output_path = output_path_option->getStringVal() != nullptr ? output_path_option->getStringVal() : "";
+  const auto route_type = route_type_option->getStringVal() != nullptr ? route_type_option->getStringVal() : "HPWL";
+  std::cout << "[Evaluate Timing] path = " << path << std::endl;
+  std::cout << "[Evaluate Timing] output_path = " << output_path << std::endl;
+  std::cout << "[Evaluate Timing] route_type = " << route_type << std::endl;
+
+  EvalTiming::runTimingEval(route_type);
+  EvalTiming::setOutputPath(output_path);
+  EvalTiming::printTimingResult();
+  std::cout << path << std::endl;
+
+  return 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+CmdEvalWirelengthRun::CmdEvalWirelengthRun(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* option = new TclStringOption(TCL_OUTPUT_PATH, 1, nullptr);
+  auto* output_path_option = new TclStringOption("-eval_output_path", 1, nullptr);
+  addOption(option);
+  addOption(output_path_option);
+}
+
+unsigned CmdEvalWirelengthRun::check()
+{
+  const TclOption* option = getOptionOrArg(TCL_OUTPUT_PATH);
+  const TclOption* output_path_option = getOptionOrArg("-eval_output_path");
+  LOG_FATAL_IF(!option);
+  LOG_FATAL_IF(!output_path_option);
+  return 1;
+}
+
+unsigned CmdEvalWirelengthRun::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+  TclOption* option = getOptionOrArg(TCL_OUTPUT_PATH);
+  TclOption* output_path_option = getOptionOrArg("-eval_output_path");
+  const auto path = option->getStringVal() != nullptr ? option->getStringVal() : "";
+  const auto output_path = output_path_option->getStringVal() != nullptr ? output_path_option->getStringVal() : "";
+  std::cout << "[Evaluate Wirelength] path = " << path << std::endl;
+  std::cout << "[Evaluate Wirelength] output_path = " << output_path << std::endl;
+
+  EvalWirelength::setOutputPath(output_path);
+  return EvalWirelength::runWirelengthEvalAndOutput();
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+CmdEvalDensityRun::CmdEvalDensityRun(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* option = new TclStringOption(TCL_OUTPUT_PATH, 1, nullptr);
+  auto* output_path_option = new TclStringOption("-eval_output_path", 1, nullptr);
+  auto* grid_size = new TclIntOption("-grid_size", 1, 200);
+  auto* stage = new TclStringOption("-stage", 1, "place");
+  addOption(option);
+  addOption(output_path_option);
+  addOption(grid_size);
+  addOption(stage);
+}
+
+unsigned CmdEvalDensityRun::check()
+{
+  const TclOption* option = getOptionOrArg(TCL_OUTPUT_PATH);
+  const TclOption* output_path_option = getOptionOrArg("-eval_output_path");
+  const TclOption* grid_size_option = getOptionOrArg("-grid_size");
+  const TclOption* stage_option = getOptionOrArg("-stage");
+  LOG_FATAL_IF(!option);
+  LOG_FATAL_IF(!output_path_option);
+  LOG_FATAL_IF(!grid_size_option);
+  LOG_FATAL_IF(!stage_option);
+  return 1;
+}
+
+unsigned CmdEvalDensityRun::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+  TclOption* option = getOptionOrArg(TCL_OUTPUT_PATH);
+  TclOption* output_path_option = getOptionOrArg("-eval_output_path");
+  TclOption* grid_size_option = getOptionOrArg("-grid_size");
+  TclOption* stage_option = getOptionOrArg("-stage");
+
+  const auto path = option->getStringVal() != nullptr ? option->getStringVal() : "";
+  const auto output_path = output_path_option->getStringVal() != nullptr ? output_path_option->getStringVal() : "";
+  const auto grid_size = grid_size_option->getIntVal();
+  const auto stage = stage_option->getStringVal() != nullptr ? stage_option->getStringVal() : "place";
+
+  std::cout << "[Evaluate Density] path = " << path << std::endl;
+  std::cout << "[Evaluate Density] output_path = " << output_path << std::endl;
+  std::cout << "[Evaluate Density] grid_size = " << grid_size << std::endl;
+  std::cout << "[Evaluate Density] stage = " << stage << std::endl;
+
+  EvalDensity::setOutputPath(output_path);
+  return EvalDensity::runDensityEvalAndOutput(grid_size, stage);
+}
 }  // namespace tcl

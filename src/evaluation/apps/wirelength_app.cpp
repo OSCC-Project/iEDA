@@ -14,18 +14,32 @@ void TestTotalWirelength();
 void TestNetWirelength();
 void TestPathWirelength();
 void TestEgrWirelength(std::string guide_path);
-void TestWirelengthEvalFromIDB(const std::string& workspace_path="/data/yhqiu/benchmark/AiEDA/application/benchmark/28nm/gcd/config/db_default_config_test.json");
+void TestWirelengthEvalFromIDB(const std::string& db_config_path);
 
-int main(int argc, char* argv[])
+void PrintUsage(const char* program_name) {
+  std::cout << "Wirelength Evaluation" << std::endl;
+  std::cout << "Usage: " << program_name << " <function_name>" << std::endl;
+  std::cout << "Available parameters:" << std::endl;
+  std::cout << "  <db_config_path> Path to the database configuration file." << std::endl;
+  std::cout << "  --help, -h       Show this help message and exit." << std::endl;
+}
+
+int main(const int argc, const char* argv[])
 {
-  // TestTotalWirelength();
-  // TestNetWirelength();
-  // TestPathWirelength();
-  // TestEgrWirelength("./rt_temp_directory/early_router/route.guide");
-  if (argc > 1) {
-    std::string workspace_path(argv[1]);
-    std::cout << "workspace_path: " << workspace_path << std::endl;
-    TestWirelengthEvalFromIDB(workspace_path);
+  if (argc == 2) {
+    if (const std::string arg = argv[1]; arg == "--help" || arg == "-h") {
+      PrintUsage(argv[0]);
+      return 0;
+    } else {
+      std::cout << "db_config_path: " << arg << std::endl;
+      TestWirelengthEvalFromIDB(arg);
+      // Here are some test functions that can be uncommented to run
+      // TestTotalWirelength();
+      // TestNetWirelength();
+      // TestPathWirelength();
+      // TestEgrWirelength("./rt_temp_directory/early_router/route.guide");
+      return 0;
+    }
   }
 
   return 0;
@@ -120,9 +134,9 @@ void TestEgrWirelength(std::string guide_path)
   std::cout << "Path EGR WL: " << path_egr_wl << std::endl;
 }
 
-void TestWirelengthEvalFromIDB(const std::string& workspace_path)
+void TestWirelengthEvalFromIDB(const std::string& db_config_path)
 {
-  dmInst->init(workspace_path);
+  dmInst->init(db_config_path);
   ieval::WirelengthAPI wirelength_api;
   ieval::TotalWLSummary wl_summary = wirelength_api.totalWL();
   std::cout << "Total HPWL: " << wl_summary.HPWL << std::endl;

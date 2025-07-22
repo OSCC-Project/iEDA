@@ -24,9 +24,6 @@
 #include <cmath>
 #include <unsupported/Eigen/Polynomials>
 
-#ifdef PY_MODEL
-#include "PyModel.h"
-#endif
 namespace icts {
 
 std::vector<double> ModelFactory::solvePolynomialRealRoots(const std::vector<double>& coeffs) const
@@ -151,43 +148,4 @@ double ModelFactory::criticalError(const double& r, const double& c, const doubl
 
   return numerator / denominator;
 }
-#ifdef PY_MODEL
-/**
- * @brief Python interface for timing model
- *
- * @param x (m x n)
- * @param y (n)
- */
-
-double ModelBase::predict(const std::vector<double>& x) const
-{
-  return pyPredict(x, _model);
-}
-
-ModelBase* ModelFactory::pyFit(const std::vector<std::vector<double>>& x, const std::vector<double>& y, const FitType& fit_type) const
-{
-  PyObject* model;
-  switch (fit_type) {
-    case FitType::kLinear:
-      model = pyLinearModel(x, y);
-      break;
-    case FitType::kCatBoost:
-      model = pyCatBoostModel(x, y);
-      break;
-    case FitType::kXgBoost:
-      model = pyXGBoostModel(x, y);
-      break;
-    default:
-      model = pyLinearModel(x, y);
-      break;
-  }
-  return new ModelBase(model);
-}
-
-ModelBase* ModelFactory::pyLoad(const std::string& model_path) const
-{
-  auto* model = pyLoadModel(model_path);
-  return new ModelBase(model);
-}
-#endif
 }  // namespace icts

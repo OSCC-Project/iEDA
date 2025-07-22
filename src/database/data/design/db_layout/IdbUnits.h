@@ -84,10 +84,10 @@ class IdbUnits
   int32_t _nanoseconds;
   int32_t _picofarads;
   int32_t _ohms;
-  int32_t _milliwatts;
-  int32_t _milliamps;
-  int32_t _volts;
-  int32_t _micron_dbu;
+  int32_t _milliwatts;  //毫瓦
+  int32_t _milliamps;   //毫安
+  int32_t _volts;       //伏特
+  int32_t _micron_dbu;  //微米_dbu
   int32_t _megahertz;
 };
 

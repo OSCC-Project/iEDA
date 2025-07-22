@@ -23,9 +23,9 @@
 
 #define guiConfig (igui::GuiConfig::getInstance())
 
-using namespace std;
-
 namespace igui {
+  using namespace std;
+
   class GuiConfig {
    public:
     static GuiConfig* getInstance() {

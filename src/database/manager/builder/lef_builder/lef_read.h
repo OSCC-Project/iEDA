@@ -76,6 +76,8 @@ class LefRead
 
   // callback
   static int manufacturingCB(lefrCallbackType_e c, double lef_num, lefiUserData data);
+  static int propDefCB(lefrCallbackType_e c, lefiProp* prop, lefiUserData data);
+  static int maxStackViaCB(lefrCallbackType_e c, lefiMaxStackVia* maxStack, lefiUserData);
   static int siteCB(lefrCallbackType_e c, lefiSite* lef_site, lefiUserData data);
   static int unitsCB(lefrCallbackType_e c, lefiUnits* lef_unit, lefiUserData data);
   static int layerCB(lefrCallbackType_e c, lefiLayer* lef_layer, lefiUserData data);
@@ -90,6 +92,9 @@ class LefRead
 
   // parser
   int parse_manufacture_grid(double value);
+  int parse_property_definition(lefiProp* prop);
+  int parse_max_stack_via_lef58(std::string data);
+  int parse_max_stack_via(lefiMaxStackVia* maxStack);
   int parse_sites(lefiSite* lef_site);
   int parse_units(lefiUnits* lef_units);
   int parse_layer(lefiLayer* lef_layer);

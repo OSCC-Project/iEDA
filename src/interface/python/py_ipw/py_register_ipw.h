@@ -31,7 +31,7 @@ void register_ipw(py::module& m)
   m.def("read_vcd_cpp", &readRustVCD, py::arg("file_name"), py::arg("top_name"));
   m.def("read_pg_spef", &read_pg_spef, py::arg("pg_spef_file"));
   m.def("report_power_cpp", &reportPower);
-  m.def("report_ir_drop", &report_ir_drop, py::arg("net_name"));
+  m.def("report_ir_drop", &report_ir_drop, py::arg("power_nets"));
 
   // for dataflow.
   m.def("create_data_flow", &create_data_flow);

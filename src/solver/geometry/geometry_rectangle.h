@@ -25,8 +25,8 @@ typedef gtl::direction_2d GeometryDirection2D;
 typedef gtl::orientation_2d GeometryOrientation;
 typedef gtl::interval_data<int> GeometryInterval;
 
-#define HORIZONTAL gtl::HORIZONTAL
-#define VERTICAL gtl::VERTICAL
+#define K_HORIZONTAL gtl::HORIZONTAL
+#define K_VERTICAL gtl::VERTICAL
 #define WEST gtl::WEST
 #define EAST gtl::EAST
 #define NORTH gtl::NORTH
@@ -38,8 +38,8 @@ typedef GtlRect GeometryRect;
 
 #define getWireWidth(wire, dir) gtl::delta(wire, dir)
 
-#define bloat(rect_to_change, direction, value) gtl::bloat(rect_to_change, direction, value)
-#define shrink(rect_to_change, direction, value) gtl::shrink(rect_to_change, direction, value)
+#define BLOAT(rect_to_change, direction, value) gtl::bloat(rect_to_change, direction, value)
+#define SHRINK(rect_to_change, direction, value) gtl::shrink(rect_to_change, direction, value)
 
 #define rectManhattanDistance(rect1, rect2) gtl::manhattan_distance(rect1, rect2)
 #define rectEuclideanDistance(rect1, rect2) gtl::square_euclidean_distance(rect1, rect2)

@@ -34,7 +34,7 @@ class LayerAssigner
   static LayerAssigner& getInst();
   static void destroyInst();
   // function
-  void route();
+  void assign();
 
  private:
   // self
@@ -57,10 +57,11 @@ class LayerAssigner
   void buildOrientSupply(LAModel& la_model);
   void buildTopoTree(LAModel& la_model);
   void routeLAModel(LAModel& la_model);
-  void routeLANet(LAModel& la_model, LANet* la_net);
-  void makeLATopoList(LAModel& la_model, LANet* la_net, std::vector<LATopo>& la_topo_list, std::vector<Segment<LayerCoord>>& routing_segment_list);
+  void routeLATask(LAModel& la_model, LANet* la_net);
+  void initSingleTask(LAModel& la_model, LANet* la_task);
+  void makeLATopoList(LAModel& la_model, std::vector<LATopo>& la_topo_list, std::vector<Segment<LayerCoord>>& routing_segment_list);
   void routeLATopo(LAModel& la_model, LATopo* la_topo);
-  void initSingleTask(LAModel& la_model, LATopo* la_topo);
+  void initSingleTopo(LAModel& la_model, LATopo* la_topo);
   bool isConnectedAllEnd(LAModel& la_model);
   void routeSinglePath(LAModel& la_model);
   void initPathHead(LAModel& la_model);
@@ -71,21 +72,22 @@ class LayerAssigner
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(LANode* node);
   void resetStartAndEnd(LAModel& la_model);
   void resetSinglePath(LAModel& la_model);
-  void updateTaskResult(LAModel& la_model);
+  void updateTopoResult(LAModel& la_model);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(LAModel& la_model);
-  void resetSingleTask(LAModel& la_model);
+  void resetSingleTopo(LAModel& la_model);
   void pushToOpenList(LAModel& la_model, LANode* curr_node);
   LANode* popFromOpenList(LAModel& la_model);
-  double getKnowCost(LAModel& la_model, LANode* start_node, LANode* end_node);
+  double getKnownCost(LAModel& la_model, LANode* start_node, LANode* end_node);
   double getNodeCost(LAModel& la_model, LANode* curr_node, Orientation orientation);
-  double getKnowWireCost(LAModel& la_model, LANode* start_node, LANode* end_node);
-  double getKnowViaCost(LAModel& la_model, LANode* start_node, LANode* end_node);
+  double getKnownWireCost(LAModel& la_model, LANode* start_node, LANode* end_node);
+  double getKnownViaCost(LAModel& la_model, LANode* start_node, LANode* end_node);
   double getEstimateCostToEnd(LAModel& la_model, LANode* curr_node);
   double getEstimateCost(LAModel& la_model, LANode* start_node, LANode* end_node);
   double getEstimateWireCost(LAModel& la_model, LANode* start_node, LANode* end_node);
   double getEstimateViaCost(LAModel& la_model, LANode* start_node, LANode* end_node);
-  MTree<LayerCoord> getCoordTree(LANet* la_net, std::vector<Segment<LayerCoord>>& routing_segment_list);
-  void uploadNetResult(LANet* la_net, MTree<LayerCoord>& coord_tree);
+  MTree<LayerCoord> getCoordTree(LAModel& la_model, std::vector<Segment<LayerCoord>>& routing_segment_list);
+  void uploadNetResult(LAModel& la_model, MTree<LayerCoord>& coord_tree);
+  void resetSingleTask(LAModel& la_model);
 
 #if 1  // update env
   void updateDemandToGraph(LAModel& la_model, ChangeType change_type, MTree<LayerCoord>& coord_tree);
@@ -95,8 +97,12 @@ class LayerAssigner
   void updateSummary(LAModel& la_model);
   void printSummary(LAModel& la_model);
   void outputGuide(LAModel& la_model);
-  void outputDemandCSV(LAModel& la_model);
+  void outputNetCSV(LAModel& la_model);
   void outputOverflowCSV(LAModel& la_model);
+  void outputJson(LAModel& la_model);
+  std::string outputNetJson(LAModel& la_model);
+  std::string outputOverflowJson(LAModel& la_model);
+  std::string outputSummaryJson(LAModel& la_model);
 #endif
 
 #if 1  // debug

@@ -1,0 +1,64 @@
+{
+    "PL": {
+        "is_max_length_opt": 0,
+        "max_length_constraint": 1000000,
+        "is_timing_effort": 0,
+        "is_congestion_effort": 0,
+        "ignore_net_degree": 100,
+        "num_threads": 16,
+        "info_iter_num": 10,
+        "GP": {
+            "Wirelength": {
+                "init_wirelength_coef": 0.25,
+                "reference_hpwl": 446000000,
+                "min_wirelength_force_bar": -300
+            },
+            "Density": {
+                "target_density": 0.6,
+                "is_adaptive_bin": 1,
+                "bin_cnt_x": 128,
+                "bin_cnt_y": 128
+            },
+            "Nesterov": {
+                "max_iter": 2000,
+                "max_backtrack": 10,
+                "init_density_penalty": 0.00008,
+                "target_overflow": 0.1,
+                "initial_prev_coordi_update_coef": 100,
+                "min_precondition": 1.0,
+                "min_phi_coef": 0.95,
+                "max_phi_coef": 1.05
+            }
+        },
+        "BUFFER": {
+            "max_buffer_num": 10000,
+            "buffer_type": [
+                "sg13g2_buf_1"
+            ]
+        },
+        "LG": {
+            "max_displacement": 1000000,
+            "global_right_padding": 0
+        },
+        "DP": {
+            "max_displacement": 1000000,
+            "global_right_padding": 0,
+            "enable_networkflow": 0
+        },
+        "Filler": {
+            "first_iter": [
+                "sg13g2_decap_8",
+                "sg13g2_decap_4",
+                "sg13g2_fill_2",
+                "sg13g2_fill_1"
+            ],
+            "second_iter": [
+                "sg13g2_decap_8",
+                "sg13g2_decap_4",
+                "sg13g2_fill_2",
+                "sg13g2_fill_1"
+            ],
+            "min_filler_width": 1
+        }
+    }
+}

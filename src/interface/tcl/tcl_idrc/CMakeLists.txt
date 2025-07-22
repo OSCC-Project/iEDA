@@ -1,23 +1,18 @@
-AUX_SOURCE_DIRECTORY(./ TCL_IDRC_SRC)
-
 add_library(tcl_idrc 
-    ${TCL_IDRC_SRC}
+    ${HOME_INTERFACE}/tcl/tcl_idrc/src/tcl_check_def.cpp
+    ${HOME_INTERFACE}/tcl/tcl_idrc/src/tcl_destroy_drc.cpp
+    ${HOME_INTERFACE}/tcl/tcl_idrc/src/tcl_init_drc.cpp
 )
 
 target_link_libraries(tcl_idrc 
     PUBLIC
         tool_manager
-        tcl
-        shell-cmd
-        str
         tcl_util
-        # idrc_api
-        tool_api_idrc
-        idrc_pro_api
-        ${LIBPROFILER_LIBRARY}
+    PRIVATE
+        idrc_interface
 )
 
 target_include_directories(tcl_idrc
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${HOME_INTERFACE}/tcl/tcl_idrc/include
 )

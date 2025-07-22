@@ -33,6 +33,8 @@
 
 #include "builder.h"
 
+#include "log/Log.hh"
+
 using std::cout;
 using std::endl;
 
@@ -113,7 +115,10 @@ IdbDefService* IdbBuilder::buildDef(string file)
   std::cout << "Read DEF file : " << file << endl;
 
   std::shared_ptr<DefRead> def_read = std::make_shared<DefRead>(_def_service);
-  def_read->createDb(file.c_str());
+  if (const auto ret = def_read->createDb(file.c_str()); !ret) {
+    LOG_FATAL << "Def file read failed..." << endl;
+  }
+
   buildNet();
   buildBus();
   log();
@@ -139,7 +144,10 @@ IdbDefService* IdbBuilder::buildDefGzip(string gzip_file)
   std::cout << "Read DEF ZIP file : " << gzip_file << endl;
 
   std::shared_ptr<DefRead> def_read = std::make_shared<DefRead>(_def_service);
-  def_read->createDbGzip(gzip_file.c_str());
+  if (const auto ret = def_read->createDbGzip(gzip_file.c_str()); !ret) {
+    LOG_FATAL << "Def file read failed..." << endl;
+  }
+
   buildNet();
   buildBus();
   log();
@@ -261,6 +269,17 @@ bool IdbBuilder::saveDef(string file, DefWriteType type)
 
   std::shared_ptr<DefWrite> def_write = std::make_shared<DefWrite>(_def_service, type);
   return def_write->writeDb(file.c_str());
+}
+
+bool IdbBuilder::saveLef(string file)
+{
+  if (IdbDefServiceResult::kServiceFailed == _def_service->DefFileWriteInit(file.c_str())) {
+    std::cout << "Create LEF file failed..." << endl;
+    return false;
+  }
+
+  std::shared_ptr<DefWrite> def_writer = std::make_shared<DefWrite>(_def_service, DefWriteType::kLef);
+  return def_writer->writeDb(file.c_str());
 }
 
 void IdbBuilder::saveVerilog(std::string verilog_file_name, std::set<std::string>& exclude_cell_names, bool is_add_space_for_escape_name)

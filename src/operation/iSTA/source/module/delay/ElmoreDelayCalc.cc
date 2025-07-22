@@ -53,7 +53,6 @@
 #include <queue>
 #include <utility>
 
-#include "log/Log.hh"
 #include "liberty/Lib.hh"
 #include "log/Log.hh"
 #include "netlist/Net.hh"

@@ -123,6 +123,61 @@ class Graph:
         
         return path
 
+    def _dfs(self, start_id: int, visited: set, path: list) -> None:
+        """Helper method for DFS traversal (iterative implementation)"""
+        stack = [(start_id, 0)]  # Stack of (node_id, edge_index) tuples
+        visited.add(start_id)
+        path.append(start_id)
+        
+        while stack:
+            node_id, edge_idx = stack.pop()
+            
+            # If we've processed all edges for this node, backtrack
+            if edge_idx >= len(self.nodes[node_id].edges):
+                path.pop()  # Remove this node from path when we're done processing it
+                continue
+                
+            edge = self.nodes[node_id].edges[edge_idx]
+            next_id = edge.node1 if edge.node2 == node_id else edge.node2
+            
+            # Push the current node back to stack with next edge index
+            stack.append((node_id, edge_idx + 1))
+            
+            if next_id not in visited:
+                visited.add(next_id)
+                path.append(next_id)
+                # Push the next node to process
+                stack.append((next_id, 0))
+
+    def is_connected(self) -> Tuple[bool, Optional[List[int]]]:
+        """Check if the graph is connected
+        Returns:
+            Tuple[bool, Optional[List[int]]]: (is_connected, disconnected_nodes)
+            - is_connected: True if graph is connected
+            - disconnected_nodes: List of node IDs that are not reachable from start node
+        """
+        if not self.nodes:
+            return True, None
+            
+        # Start DFS from first node
+        start_id = next(iter(self.nodes))
+        visited = set()
+        path = []
+        try:
+            self._dfs(start_id, visited, path)
+        except Exception as e:
+            print(f"Exception occurred: {e}")
+            print("Path traversed:", " -> ".join([self.id_to_name[node_id] for node_id in path]))
+            raise  # 重新抛出异常以便外部处理
+        finally:
+            print("graph traversal complete.")  # 回溯时移除节点
+        
+        # Check if all nodes were visited
+        all_nodes = set(self.nodes.keys())
+        disconnected = all_nodes - visited
+        
+        return len(disconnected) == 0, list(disconnected) if disconnected else None
+
 def parse_input(data: str) -> Graph:
     """Parse input data to construct graph"""
     graph = Graph()
@@ -146,11 +201,17 @@ def parse_input(data: str) -> Graph:
         resistance = float(match.group(4))
         graph.add_edge(edge_id, node1_id, node2_id, resistance)
     
+    # Check graph connectivity after parsing
+    is_connected, disconnected_nodes = graph.is_connected()
+    if not is_connected:
+        print(f"Warning: Graph is not fully connected!")
+        print(f"Disconnected nodes: {[graph.id_to_name[nid] for nid in disconnected_nodes]}")
+    
     return graph
 
 # Example usage
 if __name__ == "__main__":
-    with open('/home/taosimin/iEDA24/iEDA/bin/aes_pg_netlist.yaml', 'r', encoding='utf-8') as file:
+    with open('/home/taosimin/iEDA24/iEDA/bin/aes_pg_netlist_06_23.yaml', 'r', encoding='utf-8') as file:
         input_data = file.read()
 
         graph = parse_input(input_data)

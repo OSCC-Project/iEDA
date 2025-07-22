@@ -25,3 +25,12 @@ rpt*/
 target/
 *-stamp/
 tmp/
+scripts
+*.patch
+CMakePresets.json
+.venv/
+__pycache__
+mcp_iEDA.egg-info/
+
+# Prevent accidental re-addition of removed submodules
+src/third_party/mt-kahypar/

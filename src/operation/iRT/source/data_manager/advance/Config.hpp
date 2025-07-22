@@ -32,18 +32,22 @@ class Config
   std::string bottom_routing_layer;  // optional
   std::string top_routing_layer;     // optional
   int32_t output_inter_result;       // optional
+  int32_t enable_notification;       // optional
   int32_t enable_timing;             // optional
+  int32_t enable_fast_mode;          // optional
   int32_t enable_lsa;                // optional
   /////////////////////////////////////////////
   // **********        RT         ********** //
   std::string log_file_path;         // building
   int32_t bottom_routing_layer_idx;  // building
   int32_t top_routing_layer_idx;     // building
+  // **********    DataManager    ********** //
+  std::string dm_temp_directory_path;  // building
   // **********     DRCEngine     ********** //
   std::string de_temp_directory_path;  // building
-  // **********     GDSPlotter     ********** //
+  // **********     GDSPlotter    ********** //
   std::string gp_temp_directory_path;  // building
-  // **********   PinAccessor     ********** //
+  // **********    PinAccessor    ********** //
   std::string pa_temp_directory_path;  // building
   // ********     SupplyAnalyzer    ******** //
   std::string sa_temp_directory_path;  // building
@@ -51,15 +55,15 @@ class Config
   std::string tg_temp_directory_path;  // building
   // **********   LayerAssigner   ********** //
   std::string la_temp_directory_path;  // building
-  // **********   GlobalRouter    ********** //
-  std::string gr_temp_directory_path;  // building
+  // **********    SpaceRouter    ********** //
+  std::string sr_temp_directory_path;  // building
   // **********   TrackAssigner   ********** //
   std::string ta_temp_directory_path;  // building
   // **********   DetailedRouter  ********** //
   std::string dr_temp_directory_path;  // building
-  // **********  ViolationRepairer  ********** //
+  // ********** ViolationReporter ********** //
   std::string vr_temp_directory_path;  // building
-  // **********   EarlyRouter    ********** //
+  // **********    EarlyRouter    ********** //
   std::string er_temp_directory_path;  // building
   /////////////////////////////////////////////
 };

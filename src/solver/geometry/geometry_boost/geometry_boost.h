@@ -42,6 +42,7 @@ class GeometryBoost : public EngineGeometry
   ~GeometryBoost();
 
   GeometryPolygonSet& get_polyset() { return _polyset; }
+  GeometryPolygonSet& get_polyset_overlap() { return _polyset_overlap; }
   GeometryPolygonSet copyPolyset() { return _polyset; }
 
   void addRect(int llx, int lly, int urx, int ury) override;
@@ -63,6 +64,7 @@ class GeometryBoost : public EngineGeometry
 
  private:
   GeometryPolygonSet _polyset;
+  GeometryPolygonSet _polyset_overlap;
   std::vector<GeometryPolygon> _polygon_list;
   PolygonRTree _polygon_rtree;
   std::vector<GeometryRect> _wire_list;

@@ -60,7 +60,7 @@
 #include <utility>
 #include <variant>
 
-#include "../../../database/interaction/RT_DRC/Boost.hpp"
+#include "../../../database/interaction/Boost.hpp"
 #include "libfort/fort.hpp"
 
 #define RT_ERROR 1E-5

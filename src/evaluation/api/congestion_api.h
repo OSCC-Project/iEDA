@@ -53,6 +53,14 @@ class CongestionAPI
   int32_t findBBoxLy(std::string net_name);
   int32_t findBBoxUx(std::string net_name);
   int32_t findBBoxUy(std::string net_name);
+  double findXEntropy(std::string net_name);
+  double findYEntropy(std::string net_name);
+  double findAvgXNNDistance(std::string net_name);
+  double findStdXNNDistance(std::string net_name);
+  double findRatioXNNDistance(std::string net_name);
+  double findAvgYNNDistance(std::string net_name);
+  double findStdYNNDistance(std::string net_name);
+  double findRatioYNNDistance(std::string net_name);
 
   std::string egrUnionMap(std::string stage, std::string rt_dir_path);
 

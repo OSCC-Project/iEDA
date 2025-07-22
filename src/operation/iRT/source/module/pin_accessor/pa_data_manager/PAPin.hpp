@@ -28,14 +28,23 @@ class PAPin : public Pin
   ~PAPin() = default;
   // getter
   std::vector<AccessPoint>& get_access_point_list() { return _access_point_list; }
-  PlanarCoord& get_key_grid_coord() { return _key_grid_coord; }
+  std::set<PlanarCoord, CmpPlanarCoordByXASC>& get_grid_coord_set() { return _grid_coord_set; }
+  std::vector<LayerCoord>& get_pin_shape_coord_list() { return _pin_shape_coord_list; }
+  std::vector<LayerCoord>& get_target_coord_list() { return _target_coord_list; }
+  AccessPoint& get_best_access_point() { return _best_access_point; }
   // setter
   void set_access_point_list(const std::vector<AccessPoint>& access_point_list) { _access_point_list = access_point_list; }
-  void set_key_grid_coord(const PlanarCoord& key_grid_coord) { _key_grid_coord = key_grid_coord; }
+  void set_grid_coord_set(const std::set<PlanarCoord, CmpPlanarCoordByXASC>& grid_coord_set) { _grid_coord_set = grid_coord_set; }
+  void set_pin_shape_coord_list(const std::vector<LayerCoord>& pin_shape_coord_list) { _pin_shape_coord_list = pin_shape_coord_list; }
+  void set_target_coord_list(const std::vector<LayerCoord>& target_coord_list) { _target_coord_list = target_coord_list; }
+  void set_best_access_point(const AccessPoint& best_access_point) { _best_access_point = best_access_point; }
   // function
  private:
   std::vector<AccessPoint> _access_point_list;
-  PlanarCoord _key_grid_coord;
+  std::set<PlanarCoord, CmpPlanarCoordByXASC> _grid_coord_set;
+  std::vector<LayerCoord> _pin_shape_coord_list;
+  std::vector<LayerCoord> _target_coord_list;
+  AccessPoint _best_access_point;
 };
 
 }  // namespace irt

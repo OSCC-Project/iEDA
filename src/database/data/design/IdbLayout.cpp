@@ -53,6 +53,7 @@ IdbLayout::IdbLayout()
   _cell_master_list = new IdbCellMasterList();
   _via_list = new IdbVias();
   _via_rule_list = new IdbViaRuleList();
+  _max_via_stack = nullptr;
 }
 
 IdbLayout::~IdbLayout()

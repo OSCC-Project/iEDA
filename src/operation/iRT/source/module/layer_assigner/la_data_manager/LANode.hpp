@@ -39,13 +39,21 @@ class LANode : public LayerCoord
   LANode() = default;
   ~LANode() = default;
   // getter
+  double get_boundary_wire_unit() const { return _boundary_wire_unit; }
+  double get_internal_wire_unit() const { return _internal_wire_unit; }
+  double get_internal_via_unit() const { return _internal_via_unit; }
   std::map<Orientation, LANode*>& get_neighbor_node_map() { return _neighbor_node_map; }
   std::map<Orientation, int32_t>& get_orient_supply_map() { return _orient_supply_map; }
-  std::map<Orientation, int32_t>& get_orient_demand_map() { return _orient_demand_map; }
+  std::map<Orientation, std::set<int32_t>>& get_orient_net_map() { return _orient_net_map; }
+  std::map<int32_t, std::set<Orientation>>& get_net_orient_map() { return _net_orient_map; }
   // setter
+  void set_boundary_wire_unit(const double boundary_wire_unit) { _boundary_wire_unit = boundary_wire_unit; }
+  void set_internal_wire_unit(const double internal_wire_unit) { _internal_wire_unit = internal_wire_unit; }
+  void set_internal_via_unit(const double internal_via_unit) { _internal_via_unit = internal_via_unit; }
   void set_neighbor_node_map(const std::map<Orientation, LANode*>& neighbor_node_map) { _neighbor_node_map = neighbor_node_map; }
   void set_orient_supply_map(const std::map<Orientation, int32_t>& orient_supply_map) { _orient_supply_map = orient_supply_map; }
-  void set_orient_demand_map(const std::map<Orientation, int32_t>& orient_demand_map) { _orient_demand_map = orient_demand_map; }
+  void set_orient_net_map(const std::map<Orientation, std::set<int32_t>>& orient_net_map) { _orient_net_map = orient_net_map; }
+  void set_net_orient_map(const std::map<int32_t, std::set<Orientation>>& net_orient_map) { _net_orient_map = net_orient_map; }
   // function
   LANode* getNeighborNode(Orientation orientation)
   {
@@ -55,21 +63,73 @@ class LANode : public LayerCoord
     }
     return neighbor_node;
   }
-  double getOverflowCost(Orientation orientation, double overflow_cost)
+  double getOverflowCost(int32_t curr_net_idx, Orientation orientation, double overflow_unit)
   {
-    double cost = 0;
-    if (orientation != Orientation::kAbove && orientation != Orientation::kBelow) {
-      int32_t node_demand = 0;
-      if (RTUTIL.exist(_orient_demand_map, orientation)) {
-        node_demand = _orient_demand_map[orientation];
-      }
-      int32_t node_supply = 0;
-      if (RTUTIL.exist(_orient_supply_map, orientation)) {
-        node_supply = _orient_supply_map[orientation];
-      }
-      cost += (calcCost(node_demand + 1, node_supply) * overflow_cost);
+    if (!validDemandUnit()) {
+      RTLOG.error(Loc::current(), "The demand unit is error!");
     }
+    double boundary_overflow = 0;
+    if (orientation == Orientation::kEast || orientation == Orientation::kWest || orientation == Orientation::kSouth || orientation == Orientation::kNorth) {
+      double boundary_demand = 0;
+      if (RTUTIL.exist(_orient_net_map, orientation)) {
+        std::set<int32_t>& net_set = _orient_net_map[orientation];
+        boundary_demand += (static_cast<double>(net_set.size()) * _boundary_wire_unit);
+        if (RTUTIL.exist(net_set, curr_net_idx)) {
+          boundary_demand -= _boundary_wire_unit;
+        }
+      }
+      double boundary_supply = 0;
+      if (RTUTIL.exist(_orient_supply_map, orientation)) {
+        boundary_supply = (_orient_supply_map[orientation] * _boundary_wire_unit);
+      }
+      boundary_overflow = calcCost(boundary_demand + _boundary_wire_unit, boundary_supply);
+    }
+    double internal_overflow = 0;
+    {
+      double internal_demand = 0;
+      for (auto& [orient, net_set] : _orient_net_map) {
+        if (orient == Orientation::kAbove || orient == Orientation::kBelow) {
+          continue;
+        }
+        internal_demand += (static_cast<double>(net_set.size()) * _internal_wire_unit);
+        if (RTUTIL.exist(net_set, curr_net_idx)) {
+          internal_demand -= _internal_wire_unit;
+        }
+      }
+      for (auto& [net_idx, orient_set] : _net_orient_map) {
+        if (net_idx == curr_net_idx) {
+          continue;
+        }
+        if (RTUTIL.exist(orient_set, Orientation::kAbove) || RTUTIL.exist(orient_set, Orientation::kBelow)) {
+          internal_demand += _internal_via_unit;
+        }
+      }
+      double internal_supply = 0;
+      for (auto& [orient, supply] : _orient_supply_map) {
+        internal_supply += (supply * _internal_wire_unit);
+      }
+      if (orientation == Orientation::kEast || orientation == Orientation::kWest || orientation == Orientation::kSouth || orientation == Orientation::kNorth) {
+        internal_overflow = calcCost(internal_demand + _internal_wire_unit, internal_supply);
+      } else if (orientation == Orientation::kAbove || orientation == Orientation::kBelow) {
+        internal_overflow = calcCost(internal_demand + _internal_via_unit, internal_supply);
+      }
+    }
+    double cost = 0;
+    cost += (overflow_unit * (boundary_overflow + internal_overflow));
     return cost;
+  }
+  bool validDemandUnit()
+  {
+    if (_boundary_wire_unit <= 0) {
+      return false;
+    }
+    if (_internal_wire_unit <= 0) {
+      return false;
+    }
+    if (_internal_via_unit <= 0) {
+      return false;
+    }
+    return true;
   }
   double calcCost(double demand, double supply)
   {
@@ -83,11 +143,83 @@ class LANode : public LayerCoord
     }
     return cost;
   }
-  void updateDemand(std::set<Orientation> orient_set, ChangeType change_type)
+  double getDemand()
+  {
+    if (!validDemandUnit()) {
+      RTLOG.error(Loc::current(), "The demand unit is error!");
+    }
+    double boundary_demand = 0;
+    for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
+      if (RTUTIL.exist(_orient_net_map, orient)) {
+        boundary_demand += (static_cast<double>(_orient_net_map[orient].size()) * _boundary_wire_unit);
+      }
+    }
+    double internal_demand = 0;
+    for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
+      if (RTUTIL.exist(_orient_net_map, orient)) {
+        internal_demand += (static_cast<double>(_orient_net_map[orient].size()) * _internal_wire_unit);
+      }
+    }
+    for (auto& [net_idx, orient_set] : _net_orient_map) {
+      if (RTUTIL.exist(orient_set, Orientation::kAbove) || RTUTIL.exist(orient_set, Orientation::kBelow)) {
+        internal_demand += _internal_via_unit;
+      }
+    }
+    return (boundary_demand + internal_demand);
+  }
+  double getOverflow()
+  {
+    if (!validDemandUnit()) {
+      RTLOG.error(Loc::current(), "The demand unit is error!");
+    }
+    double boundary_overflow = 0;
+    for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
+      double boundary_demand = 0;
+      if (RTUTIL.exist(_orient_net_map, orient)) {
+        boundary_demand = (static_cast<double>(_orient_net_map[orient].size()) * _boundary_wire_unit);
+      }
+      double boundary_supply = 0;
+      if (RTUTIL.exist(_orient_supply_map, orient)) {
+        boundary_supply = (_orient_supply_map[orient] * _boundary_wire_unit);
+      }
+      boundary_overflow += std::max(0.0, boundary_demand - boundary_supply);
+    }
+    double internal_overflow = 0;
+    {
+      double internal_demand = 0;
+      for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
+        if (RTUTIL.exist(_orient_net_map, orient)) {
+          internal_demand += (static_cast<double>(_orient_net_map[orient].size()) * _internal_wire_unit);
+        }
+      }
+      for (auto& [net_idx, orient_set] : _net_orient_map) {
+        if (RTUTIL.exist(orient_set, Orientation::kAbove) || RTUTIL.exist(orient_set, Orientation::kBelow)) {
+          internal_demand += _internal_via_unit;
+        }
+      }
+      double internal_supply = 0;
+      for (auto& [orient, supply] : _orient_supply_map) {
+        internal_supply += (supply * _internal_wire_unit);
+      }
+      internal_overflow += std::max(0.0, internal_demand - internal_supply);
+    }
+    return (boundary_overflow + internal_overflow);
+  }
+  void updateDemand(int32_t net_idx, std::set<Orientation> orient_set, ChangeType change_type)
   {
     for (const Orientation& orient : orient_set) {
-      if (orient == Orientation::kEast || orient == Orientation::kWest || orient == Orientation::kSouth || orient == Orientation::kNorth) {
-        _orient_demand_map[orient] += (change_type == ChangeType::kAdd ? 1 : -1);
+      if (change_type == ChangeType::kAdd) {
+        _orient_net_map[orient].insert(net_idx);
+        _net_orient_map[net_idx].insert(orient);
+      } else {
+        _orient_net_map[orient].erase(net_idx);
+        if (_orient_net_map[orient].empty()) {
+          _orient_net_map.erase(orient);
+        }
+        _net_orient_map[net_idx].erase(orient);
+        if (_net_orient_map[net_idx].empty()) {
+          _net_orient_map.erase(net_idx);
+        }
       }
     }
   }
@@ -109,9 +241,13 @@ class LANode : public LayerCoord
 #endif
 
  private:
+  double _boundary_wire_unit = -1;
+  double _internal_wire_unit = -1;
+  double _internal_via_unit = -1;
   std::map<Orientation, LANode*> _neighbor_node_map;
   std::map<Orientation, int32_t> _orient_supply_map;
-  std::map<Orientation, int32_t> _orient_demand_map;
+  std::map<Orientation, std::set<int32_t>> _orient_net_map;
+  std::map<int32_t, std::set<Orientation>> _net_orient_map;
 #if 1  // astar
   // single path
   LANodeState _state = LANodeState::kNone;

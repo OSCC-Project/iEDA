@@ -180,12 +180,12 @@ void ToolManager::guiCaptrueDesign(std::string path)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// iPL
-bool ToolManager::autoRunPlacer(std::string config)
+bool ToolManager::autoRunPlacer(std::string config, bool enableJsonOutput)
 {
   //   plInst->initPlacer(config);
   //   bool flag = plInst->runPlacement(config);
   //   plInst->destroyPlacer();
-  return plInst->runPlacement(config);
+  return plInst->runPlacement(config, enableJsonOutput);
   ;
 }
 bool ToolManager::runPlacerFiller(std::string config)
@@ -284,9 +284,9 @@ bool ToolManager::autoRunRouter(std::string config_file_path)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// idrc
-bool ToolManager::autoRunDRC(std::string config, std::string path)
+bool ToolManager::autoRunDRC(std::string config, std::string path, bool has_init)
 {
-  return drcInst->runDRC(config, path);
+  return drcInst->runDRC(config, path, has_init);
 }
 
 bool ToolManager::readDrcDetailFromFile(std::string path)

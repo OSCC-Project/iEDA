@@ -239,9 +239,10 @@ void Evaluator::initLevel() const
   auto* design = CTSAPIInst.get_design();
   auto& clk_nets = design->get_nets();
   for (auto clk_net : clk_nets) {
-    if (!clk_net->is_newly()) {
-      continue;
-    }
+    // Commented below code to fix max_level error in cts output
+    // if (!clk_net->is_newly()) {
+    //   continue;
+    // }
     recursiveSetLevel(clk_net);
   }
 }
@@ -425,7 +426,7 @@ void Evaluator::plotPath(const string& inst_name, const string& file) const
         }
       }
       auto driver_inst = driver_pin->get_instance();
-      GDSPloter::insertWire(ofs, driver_inst->get_location(), path_inst->get_location());
+      GDSPloter::insertWire(ofs, driver_pin->get_location(), before_load_pin->get_location());
       path_inst = driver_inst;
     } else {
       break;

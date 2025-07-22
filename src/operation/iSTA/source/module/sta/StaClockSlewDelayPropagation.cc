@@ -76,6 +76,12 @@ unsigned StaClockSlewDelayPropagation::operator()(StaVertex* the_vertex) {
       continue;
     }
 
+    if (src_arc->isInstArc() &&
+        !src_arc->get_snk()->get_design_obj()->get_net()) {
+      // skip the instance output not connected to the net.
+      continue;
+    }
+
     // get the next bfs vertex and add it to the queue.
     auto* snk_vertex = src_arc->get_snk();
     if (!isIdealClock()) {

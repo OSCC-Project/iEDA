@@ -41,14 +41,16 @@ wire_declaration = {"wire" ~ bus_slice? ~ wire_list ~ semicolon_opt }
 port_or_wire_declaration = _{ port_declaration | wire_declaration }
 port_or_wire_block_declaration = { port_or_wire_declaration* }
 
-assign_declaration = { "assign" ~ assign_port_or_wire_id ~ "=" ~ (scalar_constant | assign_port_or_wire_id) ~ semicolon_opt }
+concate_wire_list = _{ "{" ~ wire_list_with_scalar_constant ~ "}" }
+
+assign_declaration = { "assign" ~ assign_port_or_wire_id ~ "=" ~ (scalar_constant | assign_port_or_wire_id | concate_wire_list) ~ semicolon_opt }
 
 //(ps:first_port_connection) first rule adapt to .REN(n_Logic1_ ) or .REN( ) or .io_interrupt(1'b0)
 //(ps:first_port_connection) second rule adapt to .FBDIV({  \u0_rcg/n33 ,  \u0_rcg/n33 ,  \u0_rcg/n33 })
 //(ps:first_port_connection) or .io_master_bid({ 1'b0,1'b0,io_master_bid_041461 }) (begin)
 //or .io_master_bresp({ io_master_bresp_041461_1_, 1'b0 }) (end) or .rid_nic400_axi4_ps2({ 1'b0,1'b0,rid_nic400_axi4_ps2_1_,1'b0 }) (begin_end)
 first_port_connection_single_connect = { "." ~ port_or_wire_id ~ "(" ~ ( scalar_constant | port_or_wire_id )? ~ ")" }
-first_port_connection_multiple_connect = { "." ~ port_or_wire_id ~ "(" ~ "{" ~ wire_list_with_scalar_constant ~ "}" ~ ")" }
+first_port_connection_multiple_connect = { "." ~ port_or_wire_id ~ "(" ~ concate_wire_list ~ ")" }
 first_port_connection = _{ first_port_connection_single_connect | first_port_connection_multiple_connect }
 port_connection = _{ "," ~ first_port_connection }
 port_block_connection = !{ "(" ~ first_port_connection? ~ port_connection* ~ ")"  ~ semicolon_opt }

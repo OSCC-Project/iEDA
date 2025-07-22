@@ -25,9 +25,9 @@
 #include "timing_engine.h"
 
 using namespace ista;
-using namespace std;
 
 namespace ito {
+using namespace std;
 
 class TimingEngineBuilder
 {

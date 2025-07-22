@@ -43,6 +43,7 @@
 #include "db_layout/IdbDie.h"
 #include "db_layout/IdbGCellGrid.h"
 #include "db_layout/IdbLayer.h"
+#include "db_layout/IdbMaxViaStack.h"
 #include "db_layout/IdbRow.h"
 #include "db_layout/IdbSite.h"
 #include "db_layout/IdbTerm.h"
@@ -72,6 +73,7 @@ class IdbLayout
   IdbCellMasterList* get_cell_master_list() { return _cell_master_list; }
   IdbVias* get_via_list() { return _via_list; }
   IdbViaRuleList* get_via_rule_list() { return _via_rule_list; }
+  IdbMaxViaStack* get_max_via_stack() { return _max_via_stack; }
 
   // setter
   void set_manufacture_grid(int32_t value) { _manufacture_grid = value; }
@@ -86,9 +88,10 @@ class IdbLayout
   void set_cell_master_list(IdbCellMasterList* master_list) { _cell_master_list = master_list; }
   void set_via_list(IdbVias* via_list) { _via_list = via_list; }
   void set_via_rule_list(IdbViaRuleList* via_rule_list) { _via_rule_list = via_rule_list; }
+  void set_max_via_stack(IdbMaxViaStack* max_via_stack) { _max_via_stack = max_via_stack; }
   // operator
   int32_t transAreaDB(double value) { return std::round(std::pow(_units->get_micron_dbu(), 2) * value); }
-  int32_t transUnitDB(double value) { return std::round(_units->get_micron_dbu() * value); }
+  int32_t transUnitDB(double value) { return std::round(_units->get_micron_dbu() * value); }      // get (class IdbUnits -> (int32) _micron_dbu) * value
 
  private:
   int32_t _manufacture_grid;  //<---------tbd---------------
@@ -103,6 +106,7 @@ class IdbLayout
   IdbCellMasterList* _cell_master_list;
   IdbVias* _via_list;
   IdbViaRuleList* _via_rule_list;
+  IdbMaxViaStack* _max_via_stack;
 };
 
 }  // namespace idb

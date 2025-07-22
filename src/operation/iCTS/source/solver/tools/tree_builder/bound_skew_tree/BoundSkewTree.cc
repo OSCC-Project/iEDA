@@ -88,7 +88,10 @@ BoundSkewTree::BoundSkewTree(const std::string& net_name, Pin* driver_pin, const
       }
       Timing::updatePinCap(pin);
       if (!Timing::skewFeasible(pin, _skew_bound)) {
+        // LOG_ERROR << "pin " << pin->get_name() << " skew is not feasible with error: " << Timing::calcSkew(pin) - _skew_bound;
+#ifdef DEBUG_ICTS_BST
         LOG_ERROR << "pin " << pin->get_name() << " skew is not feasible with error: " << Timing::calcSkew(pin) - _skew_bound;
+#endif
         pin->set_min_delay(pin->get_max_delay() - _skew_bound);
       }
     }
@@ -156,7 +159,10 @@ double BoundSkewTree::mergeCost(Area* left, Area* right) const
   Pt l_pt, r_pt;
   for (auto left_pt : left_mr) {
     for (auto right_pt : right_mr) {
-      min_dist = std::min(min_dist, Geom::distance(left_pt, right_pt));
+      if (Geom::distance(left_pt, right_pt) >= min_dist) {
+        continue;
+      }
+      min_dist = Geom::distance(left_pt, right_pt);
       l_pt = left_pt;
       r_pt = right_pt;
     }
@@ -860,10 +866,7 @@ void BoundSkewTree::addJsPts(Area* parent, Area* left, Area* right)
     }
     Geom::sortPtsByFront(new_js[side]);
   }
-  FOR_EACH_SIDE(side)
-  {
-    _join_segment[side] = new_js[side];
-  }
+  FOR_EACH_SIDE(side) { _join_segment[side] = new_js[side]; }
 }
 double BoundSkewTree::delayFromJs(const size_t& js_side, const size_t& side, const size_t& idx, const size_t& timing_type,
                                   const Side<double>& delay_from) const
@@ -1066,10 +1069,7 @@ bool BoundSkewTree::jrCornerExist(const size_t& end_side) const
 }
 void BoundSkewTree::calcBalancePt(Area* cur)
 {
-  FOR_EACH_SIDE(end_side)
-  {
-    _bal_points[end_side].clear();
-  }
+  FOR_EACH_SIDE(end_side) { _bal_points[end_side].clear(); }
   if (Equal(cur->get_radius(), 0)) {
     return;
   }

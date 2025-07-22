@@ -46,7 +46,7 @@ class FixFanout {
 
   IdbInstance *makeInstance(string master_name, string inst_name);
 
-  void disconnectPin(IdbPin *dpin);
+  void disconnectPin(IdbPin *dpin, IdbNet *dnet);
 
   void connect(IdbInstance *dinst, IdbPin *dpin, IdbNet *dnet);
 

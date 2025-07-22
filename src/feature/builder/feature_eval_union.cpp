@@ -102,7 +102,7 @@ UnionEvalSummary FeatureBuilder::buildUnionEvalSummary(int32_t grid_size, std::s
 bool FeatureBuilder::initEvalTool()
 {
   UNION_API_INST->initIDB();
-  UNION_API_INST->initEGR(true);
+  UNION_API_INST->initEGR(false);
   UNION_API_INST->initFlute();
 
   return true;
@@ -127,15 +127,16 @@ bool FeatureBuilder::buildNetEval(std::string csv_path)
 
   CONGESTION_API_INST->evalNetInfoPure();
   WIRELENGTH_API_INST->evalNetInfoPure();
-  auto net_power_data = ieval::TimingAPI::getInst()->evalNetPower();
+  // auto net_power_data = ieval::TimingAPI::getInst()->evalNetPower();
 
   std::ofstream csv_file(csv_path, std::ios::out | std::ios::binary);
   if (!csv_file) {
     return false;
   }
 
-  csv_file << "net_name,net_type,pin_num,aspect_ratio,bbox_width,bbox_height,bbox_area,lx,ly,ux,uy,lness,hpwl,rsmt,grwl,hpwl_power,flute_"
-              "power,egr_power\n";
+  csv_file
+      << "net_name,net_type,pin_num,aspect_ratio,bbox_width,bbox_height,bbox_area,lx,ly,ux,uy,lness,hpwl,rsmt,grwl,hpwl_power,flute_"
+         "power,egr_power,x_entropy,y_entropy,x_avg_nn_dist,x_std_nn_dist,x_ratio_nn_dist,y_avg_nn_dist,y_std_nn_dist,y_ratio_nn_dist\n";
 
   const size_t buffer_size = 1024 * 1024;  // 1MB buffer
   std::vector<char> buffer(buffer_size);
@@ -150,7 +151,7 @@ bool FeatureBuilder::buildNetEval(std::string csv_path)
     std::string net_type;
 
     int pin_num = CONGESTION_API_INST->findPinNumber(net_name);
-    if (pin_num < 4) {
+    if (pin_num < 3) {
       continue;
     }
     int aspect_ratio = CONGESTION_API_INST->findAspectRatio(net_name);
@@ -167,29 +168,45 @@ bool FeatureBuilder::buildNetEval(std::string csv_path)
     int32_t flute = WIRELENGTH_API_INST->findNetFLUTE(net_name);
     int32_t grwl = WIRELENGTH_API_INST->findNetGRWL(net_name);
 
+    double x_entropy = CONGESTION_API_INST->findXEntropy(net_name);
+    double y_entropy = CONGESTION_API_INST->findYEntropy(net_name);
+    double avg_x_nn_dist = CONGESTION_API_INST->findAvgXNNDistance(net_name);
+    double std_x_nn_dist = CONGESTION_API_INST->findStdXNNDistance(net_name);
+    double ratio_x_nn_dist = CONGESTION_API_INST->findRatioXNNDistance(net_name);
+    double avg_y_nn_dist = CONGESTION_API_INST->findAvgYNNDistance(net_name);
+    double std_y_nn_dist = CONGESTION_API_INST->findStdYNNDistance(net_name);
+    double ratio_y_nn_dist = CONGESTION_API_INST->findRatioYNNDistance(net_name);
+
     // Remove backslashes in net_name to match timing && power evaluation data
     net_name.erase(std::remove(net_name.begin(), net_name.end(), '\\'), net_name.end());
 
-    if (ieval::TimingAPI::getInst()->isClockNet(net_name)) {
-      net_type = "clock";
-    } else {
-      net_type = "signal";
-    }
+    // if (ieval::TimingAPI::getInst()->isClockNet(net_name)) {
+    //   net_type = "clock";
+    // } else {
+    //   net_type = "signal";
+    // }
+    net_type = "signal";
 
-    if (net_power_data["HPWL"].find(net_name) == net_power_data["HPWL"].end()
-        || net_power_data["FLUTE"].find(net_name) == net_power_data["FLUTE"].end()
-        || net_power_data["EGR"].find(net_name) == net_power_data["EGR"].end()) {
-      std::cerr << "Error: net_name '" << net_name << "' not found in net_power_data.\n";
-      std::exit(EXIT_FAILURE);
-    }
+    // if (net_power_data["HPWL"].find(net_name) == net_power_data["HPWL"].end()
+    //     || net_power_data["FLUTE"].find(net_name) == net_power_data["FLUTE"].end()
+    //     || net_power_data["EGR"].find(net_name) == net_power_data["EGR"].end()) {
+    //   std::cerr << "Error: net_name '" << net_name << "' not found in net_power_data.\n";
+    //   std::exit(EXIT_FAILURE);
+    // }
 
-    double hpwl_power = net_power_data["HPWL"][net_name];
-    double flute_power = net_power_data["FLUTE"][net_name];
-    double egr_power = net_power_data["EGR"][net_name];
+    // double hpwl_power = net_power_data["HPWL"][net_name];
+    // double flute_power = net_power_data["FLUTE"][net_name];
+    // double egr_power = net_power_data["EGR"][net_name];
+
+    double hpwl_power = 0.0;
+    double flute_power = 0.0;
+    double egr_power = 0.0;
 
     csv_file << net_name << ',' << net_type << "," << pin_num << ',' << aspect_ratio << ',' << bbox_width << "," << bbox_height << ","
              << bbox_area << "," << bbox_lx << "," << bbox_ly << "," << bbox_ux << "," << bbox_uy << "," << l_ness << ',' << hpwl << ','
-             << flute << ',' << grwl << ',' << hpwl_power << ',' << flute_power << "," << egr_power << '\n';
+             << flute << ',' << grwl << ',' << hpwl_power << ',' << flute_power << "," << egr_power << "," << x_entropy << ',' << y_entropy
+             << ',' << avg_x_nn_dist << "," << std_x_nn_dist << "," << ratio_x_nn_dist << "," << avg_y_nn_dist << "," << std_y_nn_dist
+             << "," << ratio_y_nn_dist << '\n';
 
     if (oss.tellp() >= buffer_size / 2) {
       csv_file << oss.str();

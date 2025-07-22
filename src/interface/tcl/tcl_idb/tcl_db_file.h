@@ -122,6 +122,20 @@ class CmdSaveDef : public TclCmd
   // private data
 };
 
+class CmdSaveLef : public TclCmd
+{
+ public:
+  explicit CmdSaveLef(const char* cmd_name);
+  ~CmdSaveLef() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
 class CmdSaveNetlist : public TclCmd
 {
  public:

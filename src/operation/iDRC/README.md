@@ -1,86 +1,84 @@
-# iDRC 功能文档
+# iDRC: Design Rule Check
 
-## 一、概述
+## 1. Overview
 
-iDRC是iEDA工具链中的设计规则检查工具，目前支持28nm工艺下各Metal层与Cut层的设计规则检查。主要实现的设计规则检查包括：短路违规检查、金属最小间距检查、最小宽度检查、最小面积检查、孔洞面积检查、最小步长（MinStep）检查、通孔包围（Enclosure）相关检查、金属最小线端（EOL）间隔检查、金属最小凹槽（Notch）间隔检查、金属最小Jog间隔检查、金属最小CornerFill间隔检查、Cut层最小间隔相关检查。
+iDRC is a design rule check tool in the iEDA toolchain. Currently, it supports design rule checks for each Metal layer and Cut layer under the 28nm process. The main design rule checks implemented include: short circuit violation check, metal minimum spacing check, minimum width check, minimum area check, hole area check, minimum step (MinStep) check, via enclosure related checks, metal minimum end-of-line (EOL) spacing check, metal minimum notch spacing check, metal minimum jog spacing check, metal minimum corner fill spacing check, and Cut layer minimum spacing related checks.
 
+## 2. Supported Check Types
+### Shape Type Rules
+Implements checks for non-Spacing type rules, mainly including checks for MinStep, Width, Area, and Enclosure related rules;
+| Check Type | Introduction                                                                                                                                                                                                                                                                                                                                           |
+| :-----------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Minimum Step (MinStep) Rule | This rule requires that the outer edge of the metal line cannot have a consecutive number of edges whose side length is smaller than the specified value in the TechFile and exceeds the limit specified in the TechFile; as shown in Figure 1.1 |
+| Via Enclosure Rule | The via enclosure rule stipulates the minimum distance between the metal on the upper and lower layers of a certain Cut and the edge of the Cut. Exceeding these distances will result in an enclosure violation, as shown in Figure 1.2 |
+| Minimum Width Rule | The minimum width rule is used to constrain the interior facing edge distance (Distance of interior facing edge) of the conductor pattern in the layout, as shown in Figure 1.3(a). It stipulates that the interior facing edge distance of the conductor pattern must not be smaller than the minimum width parameter value specified in the TechFile, including the length of the conductor, the width of the conductor, and the interior diagonal width of the conductor, as shown in (b), (c), and (d) in Figure 1.3. |
+| Minimum Area Rule | The minimum area rule stipulates that the conductor area of each process layer cannot be smaller than the minimum area parameter value specified in the TechFile, as shown by the Area indication in the left figure of Figure 1.4 |
+| Minimum Hole Area Rule | The minimum enclosed area stipulates that the hole area formed by the conductor enclosure cannot be smaller than the minimum area parameter value specified in the TechFile, as shown by the Enclosed Area indication in the right figure of Figure 1.4. |
 
-## 二、支持的检查类型
-### Shape类型规则
-实现针对非Spacing类型规则的检查，主要包括MinStep、Width、Area、Enclosure相关规则的检查；
-| 检查类型              |      介绍                                                                                                                                                                                                                                                                                                                                             |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-|  最小步长（MinStep）规则  |  该规则要求金属线外边缘不可以有超过 TechFile 限定个数的边长小于TechFile规定值的连续边；如图1.1所示                                                                                            |
-| 通孔包围（Enclosure）规则   |     通孔包围规则规定了某一个Cut上下层的金属包围与Cut边缘的最小距离，超过这些距离会发生Enclosure违例，如图1.2所示     |
-|  最小宽度规则      | 最小宽度规则是用于约束版图中导体图形的内边间距(Distance of interior facing edge)如图1.3(a)所示，它规定了导体图形的内边间距不得小于TechFile规定的最小宽度参数值，包括导体的长度，导体的宽度，导体的内对角宽度，如下图1.3中(b),(c),(d)所示。                                             |
-|   最小面积规则    |最小面积规则规定了各个工艺层的导体面积不能小于TechFile中指定的最小面积参参数值，如下图1.4左图中的Area示意                                                |
-|  最小孔洞面积规则   | 最小包围面积规定了由导体环绕包围形成的孔洞面积不能小于TechFile指定的最小面积参数值，如下图1.4右图中的Enclosed Area示意。                                             |
+<center><img src="../../../docs/resources/idrc/minstep.png" style="zoom:80%;" /></center>
 
-<div align=center> <img src="doc/md/图片/minstep.png" style="zoom:80%;" />
+​                                               Figure 1.1 Check Object Corresponding to the Minimum Step Rule
 
-​                                               图1.1 最小步长规则对应的检查对象
+<center><img src="../../../docs/resources/idrc/enclosure.png" style="zoom:60%;" /></center>
 
-<div align=center> <img src="doc/md/图片/enclosure.png" style="zoom:60%;" />
+​                                               Figure 1.2 Check Object Corresponding to the Via Enclosure Rule
 
-​                                               图1.2 通孔包围规则对应的检查对象
+<center><img src="../../../docs/resources/idrc/fig1.3.png" style="zoom:60%;" /></center>
 
-<div align=center> <img src="doc/md/图片/图片1.3.png" style="zoom:60%;" />
+​                                               Figure 1.3 Interior Facing Edge Distance of Conductor Pattern (Check Object Corresponding to the Minimum Width Rule)
 
-​                                               图1.3 导体图形的内边间距（最小宽度规则对应的检查对象）
-​                                                 
+<center><img src="../../../docs/resources/idrc/fig1.4.png" style="zoom:50%;" /></center>
 
-<div align=center> <img src="doc/md/图片/图片1.4.png" style="zoom:50%;" />
+​                                               Figure 1.4 Left: Area of Conductor Pattern (Check Object Corresponding to the Minimum Area Rule)
 
-​                                               图1.4 左图为导体图形的面积（最小面积规则对应的检查对象）
+​                                                         Right: Hole Area Surrounded by Conductor Pattern (Check Object Corresponding to the Minimum Enclosed Area Rule)
 
-​                                                         右图为导体图形包围形成的孔洞面积（最小包围面积规则对应的检查对象）
+### Spacing Type Rules
+| Term | Term Explanation                                                                                                                                                                                                                                                                                                                                                     |
+| :-----------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Short Circuit Violation | When the conductor geometries belonging to different nets overlap in any form, a short circuit will occur. For example, the line segments (Wire) belonging to different nets, the Pins and vias belonging to different nets, the contact between the net pattern and the obstacle Block are not allowed and are regarded as short circuit violations, as shown in Figure 1.5. |
+| Metal Minimum Spacing Rule | The minimum spacing rule can be understood as the exterior facing edge distance (Distance of exterior facing edge) between the conductor patterns in the layout must not be smaller than the minimum spacing parameter value of the current process layer specified in the TechFile. The exterior facing edge distance between conductors, as shown in Figure 1.2(a), the spacing rules include checking the spacing between conductors in the X direction, Y direction, and corner spacing, as shown in Figure 1.6. |
+| Metal Minimum End-of-Line (EOL) Spacing Rule | This rule requires that no other metal lines can overlap with the area at the end of the metal line required in the TechFile; the possible size of the area is affected by factors such as the length of the adjacent edge of the end-of-line (EOL), whether there are vias nearby, and adjacent metal lines, as shown in Figure 1.7. |
+| Metal Minimum Notch Spacing Rule | This rule requires that the bottom length of the notch formed by the metal line under the conditions specified in the TechFile must not be smaller than the specified value, as shown in Figure 1.8. |
+| Metal Minimum Jog Spacing Rule | This rule requires certain specific spacing requirements between some metals existing between a wider metal line and its adjacent metal line with a Parallel Run Length length that meets the requirements of the TechFile, as shown in Figure 1.9. |
+| Metal Minimum CornerFill Spacing Rule | This rule requires that when there is a notch-shaped area at the corner of the outer edge of the metal line that meets the requirements of the TechFile, a virtual piece of metal is created at the notch, and the spacing between the virtual metal and other metals is checked, as shown in Figure 1.10. |
+| Cut Minimum Spacing Rule | This rule requires that the spacing between any two Cuts in the same Cut layer cannot be smaller than the specified value. Although the Spacing calculation of the Cut layer is generally defaulted to the edge-to-edge Euclidean distance, in some cases, it will change due to certain fields in the rule. In some cases, the maximum projected lengths of the two in the X and Y directions will be used instead of the Euclidean distance to calculate the Spacing, as shown in Figure 1.11. |
 
-### Spacing类型规则
-| 名词              | 名词解释                                                                                                                                                                                                                                                                                                                                                     |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 短路违规          | 当所属不同线网的导体几何图形产生任何形式的交叠，都会产生短路，比如，所属不同线网的线段(Wire)，所属不同线网的Pin和通孔Via，线网图形和障碍物Block，它们之间的触碰都是不允许的，都被视为短路违规如下图1.5所示。                                                                                                                                                     |
-| 金属最小间距规则      | 最小间距规则可以理解为版图中导体图形间的外边间距(Distance of exterior facing edge)不得小于TechFile中规定的当前工艺层的最小间距参数值,导体间的外边间距，如下图1.2(a)所示，间距规则包括检查导体间X方向的间距，Y方向间距，与角间距，如图1.6所示。                                             |
-| 金属最小线端（EOL）间隔规则    | 该规则要求在TechFile中要求的金属线末端的区域内不可以有其他的金属线与该区域产生交叠；区域的可能大小受到线端边（EOL）的邻接边长度、附近是否有通孔以及相邻金属线等因素影响，如图1.7所示。                      |
-| 金属最小凹槽（Notch）间隔规则    | 该规则要求在符合TechFile规定条件的由金属线形成凹槽区域中，凹槽的底部长度不得小于规定值，如图1.8所示。                    |
-| 金属最小Jog间隔规则    | 该规则要求在一个较宽金属线与其邻近的Parallel Run Length长度符合 TechFile要求的金属线之间存在的某些特定的金属之间的间隔要求，如图1.9所示。            |
-| 金属最小CornerFill间隔规则    | 该规则要求在金属线外边缘存在符合TechFile要求的拐角处缺口型区域时，在该缺口处虚拟出一块金属，检查该虚拟出的金属与其他金属的间隔，如图1.10所示。          |
-| Cut最小间隔规则    | 该规则要求同一Cut层中的任何两个Cut之间的间隔不能小于规定值,Cut层的Spacing计算虽然一般默认为edge-to-edge的欧式距离，但有些情况下会因为规则中的某些字段而发生改变，某些情况下会以两者在X、Y方向上的最大投影长度来代替欧式距离来计算Spacing，如图1.11所示。          |
+<center><img src="../../../docs/resources/idrc/fig1.1.png" style="zoom:80%;" /></center>
 
-<div align=center> <img src="doc/md/图片/图片1.1.png" style="zoom:80%;" />
+​                                               Figure 1.5 Short Circuit Violation
 
-​                                               图1.5 短路违规情况
+<center><img src="../../../docs/resources/idrc/fig1.2.png" style="zoom:80%;" /></center>
 
-<div align=center> <img src="doc/md/图片/图1.2.png" style="zoom:80%;" />
+​                                               Figure 1.6 Schematic Diagram of the Exterior Facing Edge Spacing of the Conductor Pattern (Check Object Corresponding to the Minimum Spacing Rule)
 
-​                                               图1.6 导体图形外边间距示意图（最小间距规则对应检查对象）
+<center><img src="../../../docs/resources/idrc/EOL.png" style="zoom:80%;" /></center>
 
-<div align=center> <img src="doc/md/图片/EOL.png" style="zoom:80%;" />
+​                                               Figure 1.7 Check Object Corresponding to the Metal Minimum End-of-Line (EOL) Spacing Rule
 
-​                                               图1.7  金属最小线端（EOL）间隔规则对应的检查对象
+<center><img src="../../../docs/resources/idrc/notch.png" style="zoom:80%;" /></center>
 
-<div align=center> <img src="doc/md/图片/notch.png" style="zoom:80%;" />
+​                                               Figure 1.8 Check Object Corresponding to the Metal Minimum Notch Spacing Rule
 
-​                                               图1.8 金属最小凹槽（Notch）间隔规则对应的检查对象
+<center><img src="../../../docs/resources/idrc/jog.png" style="zoom:50%;" /></center>
 
-<div align=center> <img src="doc/md/图片/jog.png" style="zoom:50%;" />
+​                                               Figure 1.9 Check Object Corresponding to the Metal Minimum Jog Spacing Rule
 
-​                                               图1.9 金属最小Jog间隔规则对应的检查对象
+<center><img src="../../../docs/resources/idrc/corner_fill.png" style="zoom:50%;" /></center>
 
-<div align=center> <img src="doc/md/图片/corner_fill.png" style="zoom:50%;" />
+​                                               Figure 1.10 Check Object Corresponding to the Metal Minimum CornerFill Spacing Rule
 
-​                                               图1.10 金属最小CornerFill间隔规则对应的检查对象
+<center><img src="../../../docs/resources/idrc/cut_spacing.png" style="zoom:100%;" /></center>
 
-<div align=center> <img src="doc/md/图片/cut_spacing.png" style="zoom:100%;" />
+​                                               Figure 1.11 Check Object Corresponding to the Cut Minimum Spacing Rule
 
-​                                               图1.11 Cut最小间隔规则对应的检查对象
+## Design Requirements and Goals
 
-## 设计需求和目标
+> *Describe requirements and goals.*
 
-> *描述需求和目标。*
+* **iDRC needs to support reading DEF files for design rule checks**: In the EDA toolchain, DEF files play an important role in the process of connecting different tools and exchanging data. As a DRC tool, it should support the application scenario of reading DEF files for DRC checks. iDRC obtains the graphic information and process rule information of the layout by reading DEF files and related LEF files through iDB. Based on the data information of DEF and LEF, it realizes various types of checks supporting 28nm process rules.
 
-* **iDRC需要支持读入DEF文件进行设计规则检查**  ：在EDA工具链中，DEF文件在衔接不同工具间流程和数据交换过程中扮演着一个重要角色，作为一个DRC工具应该支持读入DEF文件进行DRC检查的应用场景。 iDRC通过iDB读入DEF文件和相关LEF文件获得版图的图形信息和工艺规则信息，基于DEF与LEF的数据信息，实现支持28nm工艺规则的各类型检查。
+* **iDRC needs to support the design rule check mode interacting with iRT**: The design rule check result is an important evaluation for the routing tool iRT. Based on the design rule check result, iRT can optimize and iterate the routing result. Therefore, iDRC should provide an interaction interface with iRT. iDRC should support conducting design rule checks from the iRT routing result and feeding back the check result to the operation process of iRT.
 
-* **iDRC需要支持与iRT交互的设计规则检查模式** ：设计规则检查结果对于绕线工具iRT而言是一个重要的的评估，基于设计规则检查结果iRT可以对绕线结果进行优化迭代，所以iDRC应该提供与iRT的交互接口，iDRC应该支持从iRT绕线结果进行设计规则检查并把检查结果反馈给iRT的运转流程。
-
-## 检查结果报告
-iDRC提供全局报告与详细报告两种形式的报告文件，全局报告文件以文本形式给出，包含各类规则的违例个数；详细报告文件包含了每个违例的详细信息，违例的标注框（标注出违例在版图上的具体位置）、违例的类型、层信息等，支持使用可视化界面读取查看。
+## Check Result Reports
+iDRC provides two forms of report files: global report and detailed report. The global report file is given in text form and contains the number of violations of various rules; the detailed report file contains detailed information of each violation, the marked box of the violation (indicating the specific location of the violation on the layout), the type of violation, layer information, etc., and supports reading and viewing using a visual interface.

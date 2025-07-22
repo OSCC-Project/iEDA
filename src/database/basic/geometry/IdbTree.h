@@ -52,12 +52,12 @@ TreeNode* clone(TreeNode*, List&, TreeNode*);  // Clone function
 struct TreeNode
 {
 
-  int _data;                       // Data
-  TreeNode* _parent;               // Parent node
-  List _children;                  // Children nodes
-  TreeNode(int, TreeNode*);        // Constructor
-  void SetParent(TreeNode&);       // Set parent node
-  void InsertChildren(TreeNode&);  // Insert child node
+  int _data;                             // Data
+  TreeNode* _parent;                     // Parent node
+  List _children;                        // Children nodes
+  TreeNode(int type = 0, TreeNode* = 0); // Constructor
+  void SetParent(TreeNode&);             // Set parent node
+  void InsertChildren(TreeNode&);        // Insert child node
 };
 
 class Tree

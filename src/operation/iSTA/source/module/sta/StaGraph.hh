@@ -171,7 +171,8 @@ class StaGraph {
       _vertex2obj;  //!< vertex to design obj.
   ieda::BTreeMap<StaVertex*, std::unique_ptr<StaVertex>>
       _main2assistant;  //!< for inout node, set one node main, another
-                        //!< assistant.
+                        //!< assistant. for inout port, we set input as main,
+                        //!< output as assistant
   ieda::BTreeMap<StaVertex*, StaVertex*>
       _assistant2main;  //!< assistant to main map.
 };

@@ -49,9 +49,9 @@ void WirelengthEval::destroyInst()
   }
 }
 
-int32_t WirelengthEval::evalTotalHPWL(PointSets point_sets)
+int64_t WirelengthEval::evalTotalHPWL(PointSets point_sets)
 {
-  int32_t total_hpwl = 0;
+  int64_t total_hpwl = 0;
 
   for (const auto& point_set : point_sets) {
     total_hpwl += evalNetHPWL(point_set);
@@ -60,9 +60,9 @@ int32_t WirelengthEval::evalTotalHPWL(PointSets point_sets)
   return total_hpwl;
 }
 
-int32_t WirelengthEval::evalTotalFLUTE(PointSets point_sets)
+int64_t WirelengthEval::evalTotalFLUTE(PointSets point_sets)
 {
-  int32_t total_stwl = 0;
+  int64_t total_stwl = 0;
 
   for (const auto& point_set : point_sets) {
     total_stwl += evalNetFLUTE(point_set);
@@ -71,9 +71,9 @@ int32_t WirelengthEval::evalTotalFLUTE(PointSets point_sets)
   return total_stwl;
 }
 
-int32_t WirelengthEval::evalTotalHTree(PointSets point_sets)
+int64_t WirelengthEval::evalTotalHTree(PointSets point_sets)
 {
-  int32_t total_htree = 0;
+  int64_t total_htree = 0;
 
   for (const auto& point_set : point_sets) {
     total_htree += evalNetHTree(point_set);
@@ -82,9 +82,9 @@ int32_t WirelengthEval::evalTotalHTree(PointSets point_sets)
   return total_htree;
 }
 
-int32_t WirelengthEval::evalTotalVTree(PointSets point_sets)
+int64_t WirelengthEval::evalTotalVTree(PointSets point_sets)
 {
-  int32_t total_vtree = 0;
+  int64_t total_vtree = 0;
 
   for (const auto& point_set : point_sets) {
     total_vtree += evalNetVTree(point_set);
@@ -93,27 +93,27 @@ int32_t WirelengthEval::evalTotalVTree(PointSets point_sets)
   return total_vtree;
 }
 
-int32_t WirelengthEval::evalTotalHPWL()
+int64_t WirelengthEval::evalTotalHPWL()
 {
   return evalTotalHPWL(EVAL_INIT_IDB_INST->getPointSets());
 }
 
-int32_t WirelengthEval::evalTotalFLUTE()
+int64_t WirelengthEval::evalTotalFLUTE()
 {
   return evalTotalFLUTE(EVAL_INIT_IDB_INST->getPointSets());
 }
 
-int32_t WirelengthEval::evalTotalHTree()
+int64_t WirelengthEval::evalTotalHTree()
 {
   return evalTotalHTree(EVAL_INIT_IDB_INST->getPointSets());
 }
 
-int32_t WirelengthEval::evalTotalVTree()
+int64_t WirelengthEval::evalTotalVTree()
 {
   return evalTotalVTree(EVAL_INIT_IDB_INST->getPointSets());
 }
 
-int32_t WirelengthEval::evalTotalEGRWL()
+int64_t WirelengthEval::evalTotalEGRWL()
 {
   return evalTotalEGRWL(EVAL_INIT_EGR_INST->getEGRDirPath() + "/early_router/route.guide");
 }
@@ -355,7 +355,7 @@ int32_t WirelengthEval::evalPathVTree(PointSet point_set, PointPair point_pair)
   return path_vtree;
 }
 
-float WirelengthEval::evalTotalEGRWL(std::string guide_path)
+double WirelengthEval::evalTotalEGRWL(std::string guide_path)
 {
   return EVAL_INIT_EGR_INST->parseEGRWL(guide_path);
 }

@@ -35,10 +35,10 @@ PdnPlan::~PdnPlan()
 
 int32_t PdnPlan::transUnitDB(double value)
 {
-  auto idb_design = dmInst->get_idb_design();
-  auto idb_layout = idb_design->get_layout();
+  auto idb_design = dmInst->get_idb_design(); //return IdbDesign* _idb_def_service->get_design()
+  auto idb_layout = idb_design->get_layout(); //class IdbDefService -> get_layout(), return IdbLayout* _layout
 
-  return idb_layout != nullptr ? idb_layout->transUnitDB(value) : -1;
+  return idb_layout != nullptr ? idb_layout->transUnitDB(value) : -1; //IdbLayout -> transUnitDB(double value), 即_micron_dbu微米数*value
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -137,7 +137,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
             if (design_net) {
               auto* rc_net = getSta()->getRcNet(design_net);
               rc_net->updateRcTiming(spef_net);
-              if (rc_net->rct()) {
+              if (rc_net->rct() && rc_net->rct()->get_root()) {
                 std::lock_guard<std::mutex> lock(all_nets_mutex);
                 if (rc_net) {
                   all_nets.emplace_back(rc_net);
@@ -210,7 +210,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
 #endif
       // printYaml(*rust_spef_net);
       rust_free_spef_net(rust_spef_net);
-      
+
     } else {
       LOG_FATAL << "build rc tree not found design net " << spef_name;
     }

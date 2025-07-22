@@ -20,6 +20,7 @@
  */
 #pragma once
 
+#include <limits>
 #include <unordered_map>
 #include <utility>
 #include <limits>
@@ -76,8 +77,8 @@ class EvalNet
     auto x = 0;
     auto y = 0;
     for (auto pin : pins) {
-      x += pin->get_instance()->get_location().x();
-      y += pin->get_instance()->get_location().y();
+      x += pin->get_location().x();
+      y += pin->get_location().y();
     }
     return Point(x / static_cast<int>(pins.size()), y / static_cast<int>(pins.size()));
   }
@@ -104,10 +105,10 @@ class EvalNet
   {
     auto center = getCenterPoint();
     double dist = 0;
-    for (auto* inst : _net->get_instances()) {
-      dist += 1.0 * Point::manhattanDistance(center, inst->get_location()) / CTSAPIInst.getDbUnit();
+    for (auto* pin : _net->get_pins()) {
+      dist += 1.0 * Point::manhattanDistance(center, pin->get_location()) / CTSAPIInst.getDbUnit();
     }
-    return dist / static_cast<double>(_net->get_instances().size());
+    return dist / static_cast<double>(_net->get_pins().size());
   }
   double getHPWL() const
   {
@@ -115,8 +116,8 @@ class EvalNet
     int l_y = std::numeric_limits<int>::max();
     int r_x = std::numeric_limits<int>::min();
     int r_y = std::numeric_limits<int>::min();
-    for (auto* inst : _net->get_instances()) {
-      auto loc = inst->get_location();
+    for (auto* pin : _net->get_pins()) {
+      auto loc = pin->get_location();
       l_x = std::min(l_x, loc.x());
       l_y = std::min(l_y, loc.y());
       r_x = std::max(r_x, loc.x());

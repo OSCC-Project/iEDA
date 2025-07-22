@@ -79,7 +79,11 @@ unsigned TclFpPlaceInst::exec()
   if (source != nullptr) {
     source_str = source;
   }
-  dmInst->placeInst(instance_name, llx, lly, orient, cellmaster, source_str);
+  string cell_master_str = "";
+  if (cellmaster != nullptr) {
+    cell_master_str = cellmaster;
+  }
+  dmInst->placeInst(instance_name, llx, lly, orient, cell_master_str, source_str);
 
   return 1;
 }

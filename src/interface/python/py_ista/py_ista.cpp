@@ -240,6 +240,8 @@ bool initLog(std::string log_dir)
 {
   char config[] = "test";
   char* argv[] = {config};
+
+  ieda::Log::makeSureDirectoryExist(log_dir);
   ieda::Log::init(argv, log_dir);
 
   return true;

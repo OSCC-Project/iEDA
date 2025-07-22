@@ -26,6 +26,7 @@
 
 #include "IDBWrapper.hh"
 
+#include <cstdlib>
 #include <regex>
 
 #include "utility/Utility.hh"
@@ -333,7 +334,7 @@ void IDBWrapper::wrapCells(IdbLayout* idb_layout)
     }
 
     // lable io cell from idb.
-    if(idb_cell->is_pad() || idb_cell->is_endcap()){    
+    if (idb_cell->is_pad() || idb_cell->is_endcap()) {
       cell_ptr->set_type(CELL_TYPE::kIOCell);
     }
 
@@ -366,20 +367,19 @@ void IDBWrapper::wrapRoutingInfo(IdbLayout* idb_layout)
 
   IdbLayers* idb_layers = idb_layout->get_layers();
   int route_layer_num = idb_layers->get_routing_layers_number();
-  for (int i = 0; i < route_layer_num; ++i){
+  for (int i = 0; i < route_layer_num; ++i) {
     IdbLayerRouting* layer = dynamic_cast<IdbLayerRouting*>(idb_layers->find_routing_layer(i));
     bool is_hor = layer->is_horizontal();
-    if (is_hor){
+    if (is_hor) {
       count_h++;
       route_cap_h += layer->get_prefer_track_grid()->get_track_num();
-      if (count_h == 2){
+      if (count_h == 2) {
         partial_route_cap_h = route_cap_h;
       }
-    }
-    else{
+    } else {
       count_v++;
       route_cap_v += layer->get_prefer_track_grid()->get_track_num();
-      if (count_v == 2){
+      if (count_v == 2) {
         partial_route_cap_v = route_cap_v;
       }
     }
@@ -446,7 +446,9 @@ void IDBWrapper::wrapIdbInstance(IdbInstance* idb_inst)
   Cell* cell_ptr = ipl_layout->find_cell(idb_inst->get_cell_master()->get_name());
   LOG_ERROR_IF(!cell_ptr) << "Cell Master has not been created!";
   inst_ptr->set_cell_master(cell_ptr);
-
+  if ("IO_BOND_pad_vddio_e0" == inst_name) {
+    LOG_INFO << "IO_BOND_pad_vddio_e0";
+  }
   // set instace coordinate.
   auto bbox = idb_inst->get_bounding_box();
   inst_ptr->set_shape(bbox->get_low_x(), bbox->get_low_y(), bbox->get_high_x(), bbox->get_high_y());
@@ -469,9 +471,9 @@ void IDBWrapper::wrapIdbInstance(IdbInstance* idb_inst)
     if (idb_inst->is_fixed()) {
       inst_ptr->set_instance_type(INSTANCE_TYPE::kOutside);
     } else {
-      if(cell_ptr->isIOCell()){
-         inst_ptr->set_instance_type(INSTANCE_TYPE::kOutside);
-      }else if(!checkInCore(idb_inst)) {
+      if (cell_ptr->isIOCell()) {
+        inst_ptr->set_instance_type(INSTANCE_TYPE::kOutside);
+      } else if (!checkInCore(idb_inst)) {
         inst_ptr->set_shape(-1, -1, -1, -1);  // set an unlegal coordinate.
       }
     }
@@ -487,14 +489,14 @@ void IDBWrapper::wrapIdbInstance(IdbInstance* idb_inst)
     }
   }
 
-  if(cell_ptr->isIOCell()){
-    if(!inst_ptr->isOutsideInstance()){
-       LOG_WARNING << "Inst: " << inst_ptr->get_name() << " is io_cell but it is not fixed outside. " << "Shape: " 
-                   << " (" << bbox->get_low_x() << "," << bbox->get_low_y() << ") "
-                   << " (" << bbox->get_high_x() << "," << bbox->get_high_y() << ")"
-                   << " iPL regard as " 
-                   << " (" << inst_ptr->get_coordi().get_x() << "," << inst_ptr->get_coordi().get_y() << ") "
-                   << " (" << inst_ptr->get_shape().get_ur_x() << "," << inst_ptr->get_shape().get_ur_y() << ")"; 
+  if (cell_ptr->isIOCell()) {
+    if (!inst_ptr->isOutsideInstance()) {
+      LOG_WARNING << "Inst: " << inst_ptr->get_name() << " is io_cell but it is not fixed outside. " << "Shape: "
+                  << " (" << bbox->get_low_x() << "," << bbox->get_low_y() << ") "
+                  << " (" << bbox->get_high_x() << "," << bbox->get_high_y() << ")"
+                  << " iPL regard as "
+                  << " (" << inst_ptr->get_coordi().get_x() << "," << inst_ptr->get_coordi().get_y() << ") "
+                  << " (" << inst_ptr->get_shape().get_ur_x() << "," << inst_ptr->get_shape().get_ur_y() << ")";
     }
   }
 
@@ -762,7 +764,7 @@ void IDBWrapper::writeBackSourceDatabase()
     }
 
     // iPL should not change fixed instances.
-    if(inst->isFixed()){
+    if (inst->isFixed()) {
       continue;
     }
 
@@ -863,7 +865,9 @@ void IDBWrapper::writeBackSourceDatabase()
 
 void IDBWrapper::writeDef(std::string file_name = "")
 {
-  _idbw_database->_idb_builder->saveDef("./" + file_name);
+  if (const auto ret = _idbw_database->_idb_builder->saveDef("./" + file_name); !ret) {
+    LOG_FATAL << "Fail to write DEF file!";
+  }
 }
 
 std::string IDBWrapper::fixSlash(std::string raw_str)
@@ -948,6 +952,10 @@ bool IDBWrapper::isCoreOverlap(IdbInstance* idb_inst)
       || (bounding_box->get_low_y() >= core_upper.get_y() && bounding_box->get_high_y() <= die_upper.get_y())) {
     return false;
   } else {
+    if (bounding_box->get_low_x() >= die_upper.get_x() || bounding_box->get_high_x() <= die_lower.get_x()
+        || bounding_box->get_low_y() >= die_upper.get_y() || bounding_box->get_high_y() <= die_lower.get_y()) {
+      return false;
+    }
     return true;
   }
 }
@@ -972,11 +980,15 @@ Rectangle<int32_t> IDBWrapper::obtainCrossRect(IdbInstance* idb_inst, Rectangle<
 {
   auto* bounding_box = idb_inst->get_bounding_box();
 
-  int32_t min_x = (bounding_box->get_low_x() < core_shape.get_ll_x()) ? core_shape.get_ll_x() : bounding_box->get_low_x();
-  int32_t min_y = (bounding_box->get_low_y() < core_shape.get_ll_y()) ? core_shape.get_ll_y() : bounding_box->get_low_y();
-  int32_t max_x = (bounding_box->get_high_x() > core_shape.get_ur_x()) ? core_shape.get_ur_x() : bounding_box->get_high_x();
-  int32_t max_y = (bounding_box->get_high_y() > core_shape.get_ur_y()) ? core_shape.get_ur_y() : bounding_box->get_high_y();
+  int32_t min_x = std::max(bounding_box->get_low_x(), core_shape.get_ll_x());
+  int32_t min_y = std::max(bounding_box->get_low_y(), core_shape.get_ll_y());
+  int32_t max_x = std::min(bounding_box->get_high_x(), core_shape.get_ur_x());
+  int32_t max_y = std::min(bounding_box->get_high_y(), core_shape.get_ur_y());
 
+  if (min_x > max_x || min_y > max_y) {
+    LOG_ERROR << "Cross instance is out of core boundary.";
+    exit(0);
+  }
   return Rectangle<int32_t>(min_x, min_y, max_x, max_y);
 }
 

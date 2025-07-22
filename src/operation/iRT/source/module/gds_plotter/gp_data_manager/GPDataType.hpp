@@ -27,14 +27,17 @@ enum class GPDataType
   kClose,
   kInfo,
   kNeighbor,
-  kGraphShape,
+  kShadow,
   kKey,
   kPath,
+  kPatch,
   kShape,
   kAccessPoint,
   kBestCoord,
   kAxis,
-  kViolation
+  kOverflow,
+  kRouteViolation,
+  kPatchViolation
 };
 
 struct GetGPDataTypeName
@@ -58,14 +61,17 @@ struct GetGPDataTypeName
       case GPDataType::kNeighbor:
         data_type_name = "neighbor";
         break;
-      case GPDataType::kGraphShape:
-        data_type_name = "graph_shape";
+      case GPDataType::kShadow:
+        data_type_name = "shadow";
         break;
       case GPDataType::kKey:
         data_type_name = "key";
         break;
       case GPDataType::kPath:
         data_type_name = "path";
+        break;
+      case GPDataType::kPatch:
+        data_type_name = "patch";
         break;
       case GPDataType::kShape:
         data_type_name = "shape";
@@ -76,8 +82,14 @@ struct GetGPDataTypeName
       case GPDataType::kAxis:
         data_type_name = "axis";
         break;
-      case GPDataType::kViolation:
-        data_type_name = "violation";
+      case GPDataType::kOverflow:
+        data_type_name = "overflow";
+        break;
+      case GPDataType::kRouteViolation:
+        data_type_name = "route_violation";
+        break;
+      case GPDataType::kPatchViolation:
+        data_type_name = "patch_violation";
         break;
       default:
         RTLOG.error(Loc::current(), "Unrecognized type!");

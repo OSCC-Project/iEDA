@@ -21,16 +21,16 @@ class WirelengthEval
   static WirelengthEval* getInst();
   static void destroyInst();
 
-  int32_t evalTotalHPWL(PointSets point_sets);
-  int32_t evalTotalFLUTE(PointSets point_sets);
-  int32_t evalTotalHTree(PointSets point_sets);
-  int32_t evalTotalVTree(PointSets point_sets);
+  int64_t evalTotalHPWL(PointSets point_sets);
+  int64_t evalTotalFLUTE(PointSets point_sets);
+  int64_t evalTotalHTree(PointSets point_sets);
+  int64_t evalTotalVTree(PointSets point_sets);
 
-  int32_t evalTotalHPWL();
-  int32_t evalTotalFLUTE();
-  int32_t evalTotalHTree();
-  int32_t evalTotalVTree();
-  int32_t evalTotalEGRWL();
+  int64_t evalTotalHPWL();
+  int64_t evalTotalFLUTE();
+  int64_t evalTotalHTree();
+  int64_t evalTotalVTree();
+  int64_t evalTotalEGRWL();
 
   int32_t evalNetHPWL(PointSet point_set);
   int32_t evalNetFLUTE(PointSet point_set);
@@ -42,7 +42,7 @@ class WirelengthEval
   int32_t evalPathHTree(PointSet point_set, PointPair point_pair);
   int32_t evalPathVTree(PointSet point_set, PointPair point_pair);
 
-  float evalTotalEGRWL(std::string guide_path);
+  double evalTotalEGRWL(std::string guide_path);
   float evalNetEGRWL(std::string guide_path, std::string net_name);
   float evalPathEGRWL(std::string guide_path, std::string net_name, std::string load_name);
 

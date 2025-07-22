@@ -27,5 +27,5 @@ target_include_directories(ilm_feature
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${EVALUTION_INCLUDE}
+    ${HOME_DATABASE}/interaction/RT_DRC
 )
-set(CMAKE_BUILD_TYPE "debug")

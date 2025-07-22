@@ -8,6 +8,7 @@
 
 #include "IRMatrix.hh"
 #include "log/Log.hh"
+#include "string/Str.hh"
 
 namespace iir {
 
@@ -45,7 +46,7 @@ Eigen::Map<Eigen::SparseMatrix<double>> IRMatrix::buildConductanceMatrix(
  * @return Eigen::VectorXd
  */
 Eigen::VectorXd IRMatrix::buildCurrentVector(void* instance_current_map,
-                                             std::size_t node_num) {
+                                             std::size_t node_num, std::string net_name) {
   Eigen::VectorXd J_vector;
   J_vector.setZero(node_num);
 
@@ -53,7 +54,15 @@ Eigen::VectorXd IRMatrix::buildCurrentVector(void* instance_current_map,
   uintptr_t node_id;
   double current_value;
   while (hashmap_iterator_next(iter, &node_id, &current_value)) {
-    J_vector(node_id) = -current_value;
+    if (ieda::Str::contain(net_name.c_str(), "VDD")) {
+      J_vector(node_id) = -current_value;
+    } else if (ieda::Str::contain(net_name.c_str(), "VSS")) {
+      J_vector(node_id) = current_value;
+    } else {
+      LOG_FATAL << "unknown net name: " << net_name
+                << ", please check the net name.";
+    }
+    
   }
 
   destroy_hashmap_iterator(iter);

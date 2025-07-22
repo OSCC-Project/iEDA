@@ -149,4 +149,14 @@ class TclPdnAddSegmentVia : public TclCmd
   unsigned exec();
 };
 
+class TclRunPNP : public TclCmd
+{
+ public:
+  explicit TclRunPNP(const char* cmd_name);
+  ~TclRunPNP() override = default;
+
+  unsigned check();
+  unsigned exec();
+};
+
 }  // namespace tcl

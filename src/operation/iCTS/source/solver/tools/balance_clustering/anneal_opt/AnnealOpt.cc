@@ -41,9 +41,9 @@ void AnnealOptInterface::automaticTemperature()
  * @brief interface to run the AnnealOpt solver
  *
  * @param log
- * @return std::vector<std::vector<Inst*>>
+ * @return std::vector<std::vector<Pin*>>
  */
-std::vector<std::vector<Inst*>> AnnealOptInterface::run(const bool& log)
+std::vector<std::vector<Pin*>> AnnealOptInterface::run(const bool& log)
 {
   initCostMap();
   if (_auto_temp) {
@@ -112,7 +112,7 @@ std::vector<std::vector<Inst*>> AnnealOptInterface::run(const bool& log)
   }
   // remove empty
   best_solution.erase(
-      std::remove_if(best_solution.begin(), best_solution.end(), [](const std::vector<Inst*>& cluster) { return cluster.empty(); }),
+      std::remove_if(best_solution.begin(), best_solution.end(), [](const std::vector<Pin*>& cluster) { return cluster.empty(); }),
       best_solution.end());
   return best_solution;
 }
@@ -122,7 +122,7 @@ std::vector<std::vector<Inst*>> AnnealOptInterface::run(const bool& log)
  * @param new_solution
  * @param op
  */
-void AnnealOptInterface::updateSolution(const std::vector<std::vector<Inst*>>& new_solution, const Operation& op)
+void AnnealOptInterface::updateSolution(const std::vector<std::vector<Pin*>>& new_solution, const Operation& op)
 {
   _cur_solution = new_solution;
   _cur_cost = _new_cost;
@@ -132,19 +132,19 @@ void AnnealOptInterface::updateSolution(const std::vector<std::vector<Inst*>>& n
  * @brief commit the operation
  *
  * @param op
- * @return std::vector<std::vector<Inst*>>
+ * @return std::vector<std::vector<Pin*>>
  */
-std::vector<std::vector<Inst*>> AnnealOptInterface::commitOperation(Operation& op)
+std::vector<std::vector<Pin*>> AnnealOptInterface::commitOperation(Operation& op)
 {
   auto cluster_id = op.cluster_id;
   auto neighbor_id = op.neighbor_id;
-  auto inst_id = op.inst_id;
+  auto pin_id = op.pin_id;
 
   auto pre_both_cost = _cost_map[cluster_id] + _cost_map[neighbor_id];
 
   auto new_solution = _cur_solution;
-  auto* inst = new_solution[cluster_id][inst_id];
-  new_solution[cluster_id].erase(new_solution[cluster_id].begin() + inst_id);
+  auto* inst = new_solution[cluster_id][pin_id];
+  new_solution[cluster_id].erase(new_solution[cluster_id].begin() + pin_id);
   new_solution[neighbor_id].push_back(inst);
   auto* from_net = buildNet(new_solution[cluster_id]);
   auto* to_net = buildNet(new_solution[neighbor_id]);
@@ -169,18 +169,18 @@ std::vector<std::vector<Inst*>> AnnealOptInterface::commitOperation(Operation& o
  *
  * @return Operation
  */
-Operation AnnealOptInterface::randomMove(const std::vector<std::vector<Inst*>>& clusters)
+Operation AnnealOptInterface::randomMove(const std::vector<std::vector<Pin*>>& clusters)
 {
   // random choose a cluster (not empty)
   auto cluster_id = randomChooseCluster(clusters, 0.03);
 
   // random choose a inst in the cluster octagon boundary
-  auto inst_id = randomChooseInst(clusters[cluster_id]);
+  auto pin_id = randomChoosePin(clusters[cluster_id]);
 
   // choose a neighbor cluster (closest cluster or empty cluster)
-  auto new_cluster_id = randomChooseNeighbor(clusters, cluster_id, inst_id);
+  auto new_cluster_id = randomChooseNeighbor(clusters, cluster_id, pin_id);
 
-  return Operation{cluster_id, new_cluster_id, inst_id};
+  return Operation{cluster_id, new_cluster_id, pin_id};
 }
 /**
  * @brief random choose a cluster in the clusters which cost is in the first [ratio * {clusters.size() - empty_num}] clusters
@@ -189,9 +189,9 @@ Operation AnnealOptInterface::randomMove(const std::vector<std::vector<Inst*>>& 
  * @param ratio
  * @return size_t
  */
-size_t AnnealOptInterface::randomChooseCluster(const std::vector<std::vector<Inst*>>& clusters, const double& ratio)
+size_t AnnealOptInterface::randomChooseCluster(const std::vector<std::vector<Pin*>>& clusters, const double& ratio)
 {
-  size_t empty_num = std::ranges::count_if(clusters, [&](const std::vector<Inst*>& cluster) { return cluster.empty(); });
+  size_t empty_num = std::ranges::count_if(clusters, [&](const std::vector<Pin*>& cluster) { return cluster.empty(); });
   auto num = static_cast<size_t>(std::ceil((_cur_solution.size() - empty_num) * ratio));
   std::vector<size_t> cluster_id;
   // choose the first num id from _sorted_cluster_id_map (only "num" clusters)
@@ -209,29 +209,29 @@ size_t AnnealOptInterface::randomChooseCluster(const std::vector<std::vector<Ins
  * @param cluster
  * @return size_t
  */
-size_t AnnealOptInterface::randomChooseInst(const std::vector<Inst*>& cluster)
+size_t AnnealOptInterface::randomChoosePin(const std::vector<Pin*>& cluster)
 {
   auto bound_id = findBoundId(cluster);
   std::uniform_int_distribution<size_t> inst_dist(0, bound_id.size() - 1);
-  auto inst_id = bound_id[inst_dist(_gen)];
-  return inst_id;
+  auto pin_id = bound_id[inst_dist(_gen)];
+  return pin_id;
 }
 /**
  * @brief random choose a neighbor cluster id
  *
  * @param clusters
  * @param cluster_id
- * @param inst_id
+ * @param pin_id
  * @return size_t
  */
-size_t AnnealOptInterface::randomChooseNeighbor(const std::vector<std::vector<Inst*>>& clusters, const size_t& cluster_id,
-                                                const size_t& inst_id)
+size_t AnnealOptInterface::randomChooseNeighbor(const std::vector<std::vector<Pin*>>& clusters, const size_t& cluster_id,
+                                                const size_t& pin_id)
 {
-  auto* inst = clusters[cluster_id][inst_id];
+  auto* inst = clusters[cluster_id][pin_id];
 
-  auto cluster_dist = [&](const Point& pt, const std::vector<Inst*>& cluster) {
+  auto cluster_dist = [&](const Point& pt, const std::vector<Pin*>& cluster) {
     std::vector<Point> bound;
-    std::ranges::transform(cluster, std::back_inserter(bound), [](const Inst* inst) { return inst->get_location(); });
+    std::ranges::transform(cluster, std::back_inserter(bound), [](const Pin* inst) { return inst->get_location(); });
     BalanceClustering::convexHull(bound);
     if (BalanceClustering::isContain(pt, bound)) {
       return 0;
@@ -243,7 +243,7 @@ size_t AnnealOptInterface::randomChooseNeighbor(const std::vector<std::vector<In
 
   std::vector<double> dist;
 
-  std::ranges::transform(clusters, std::back_inserter(dist), [&](const std::vector<Inst*>& cluster) {
+  std::ranges::transform(clusters, std::back_inserter(dist), [&](const std::vector<Pin*>& cluster) {
     return cluster.empty() ? 0 : cluster_dist(inst->get_location(), cluster);
   });
 
@@ -254,7 +254,7 @@ size_t AnnealOptInterface::randomChooseNeighbor(const std::vector<std::vector<In
 
   // new_cluster_id is random choose from the [empty_cluster (Up to 1), contain_cluster (All), closest_cluster (Up to 4)]
   auto empty_cluster_count = 0;
-  std::ranges::for_each(clusters, [&](const std::vector<Inst*>& cluster) { empty_cluster_count += cluster.empty() ? 1 : 0; });
+  std::ranges::for_each(clusters, [&](const std::vector<Pin*>& cluster) { empty_cluster_count += cluster.empty() ? 1 : 0; });
   auto contain_cluster_count = 0;
   std::ranges::for_each(dist, [&](const double& d) { contain_cluster_count += d == 0 ? 1 : 0; });
 
@@ -277,15 +277,15 @@ size_t AnnealOptInterface::randomChooseNeighbor(const std::vector<std::vector<In
  * @param cluster
  * @return std::vector<size_t>
  */
-std::vector<size_t> AnnealOptInterface::findBoundId(const std::vector<Inst*>& cluster)
+std::vector<size_t> AnnealOptInterface::findBoundId(const std::vector<Pin*>& cluster)
 {
   std::vector<Point> points;
-  std::ranges::transform(cluster, std::back_inserter(points), [](const Inst* inst) { return inst->get_location(); });
+  std::ranges::transform(cluster, std::back_inserter(points), [](const Pin* inst) { return inst->get_location(); });
 
   auto bound = points;
   BalanceClustering::convexHull(bound);
 
-  auto is_on_bound = [&](const Inst* inst, std::vector<Point>& boundary) {
+  auto is_on_bound = [&](const Pin* inst, std::vector<Point>& boundary) {
     auto loc = inst->get_location();
     auto x = loc.x();
     auto y = loc.y();
@@ -370,12 +370,12 @@ void AnnealOptInterface::updateCostMap(const Operation& op)
  * @param cluster
  * @return Point
  */
-Point AnnealOptInterface::center(const std::vector<Inst*>& cluster)
+Point AnnealOptInterface::center(const std::vector<Pin*>& cluster)
 {
   int64_t x = 0;
   int64_t y = 0;
-  x = std::accumulate(cluster.begin(), cluster.end(), x, [](int64_t total, const Inst* inst) { return total + inst->get_location().x(); });
-  y = std::accumulate(cluster.begin(), cluster.end(), y, [](int64_t total, const Inst* inst) { return total + inst->get_location().y(); });
+  x = std::accumulate(cluster.begin(), cluster.end(), x, [](int64_t total, const Pin* inst) { return total + inst->get_location().x(); });
+  y = std::accumulate(cluster.begin(), cluster.end(), y, [](int64_t total, const Pin* inst) { return total + inst->get_location().y(); });
 
   return Point(x / cluster.size(), y / cluster.size());
 }
@@ -385,14 +385,12 @@ Point AnnealOptInterface::center(const std::vector<Inst*>& cluster)
  * @param cluster
  * @return Net*
  */
-Net* AnnealOptInterface::buildNet(const std::vector<Inst*>& cluster)
+Net* AnnealOptInterface::buildNet(const std::vector<Pin*>& cluster)
 {
   if (cluster.empty()) {
     return nullptr;
   }
-  std::vector<Pin*> load_pins;
-  std::ranges::transform(cluster, std::back_inserter(load_pins), [](Inst* inst) { return inst->get_load_pin(); });
-
+  std::vector<Pin*> load_pins = cluster;
   TreeBuilder::localPlace(load_pins);
   auto* temp_buf = TreeBuilder::defaultTree("temp", load_pins, TimingPropagator::getSkewBound(), std::nullopt, TopoType::kBiPartition);
   temp_buf->set_cell_master(TimingPropagator::getMinSizeCell());
@@ -407,11 +405,11 @@ Net* AnnealOptInterface::buildNet(const std::vector<Inst*>& cluster)
  * @param clusters
  * @return std::vector<Net*>
  */
-std::vector<Net*> AnnealOptInterface::buildNets(const std::vector<std::vector<Inst*>>& clusters)
+std::vector<Net*> AnnealOptInterface::buildNets(const std::vector<std::vector<Pin*>>& clusters)
 {
   std::vector<Net*> temp_nets;
   // for all not empty clusters, build salt net
-  std::ranges::for_each(clusters, [&](const std::vector<Inst*>& cluster) {
+  std::ranges::for_each(clusters, [&](const std::vector<Pin*>& cluster) {
     if (cluster.empty()) {
       return;
     }

@@ -50,7 +50,7 @@ void LayerAssigner::destroyInst()
 
 // function
 
-void LayerAssigner::route()
+void LayerAssigner::assign()
 {
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
@@ -66,8 +66,9 @@ void LayerAssigner::route()
   updateSummary(la_model);
   printSummary(la_model);
   outputGuide(la_model);
-  outputDemandCSV(la_model);
+  outputNetCSV(la_model);
   outputOverflowCSV(la_model);
+  outputJson(la_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -111,8 +112,9 @@ void LayerAssigner::setLAComParam(LAModel& la_model)
 {
   int32_t topo_spilt_length = 10;
   double prefer_wire_unit = 1;
-  double via_unit = 1;
-  double overflow_unit = 2;
+  double non_prefer_wire_unit = 2.5 * prefer_wire_unit;
+  double via_unit = 2 * non_prefer_wire_unit;
+  double overflow_unit = 4 * non_prefer_wire_unit;
   /**
    * topo_spilt_length, prefer_wire_unit, via_unit, overflow_unit
    */
@@ -156,6 +158,9 @@ void LayerAssigner::buildLayerNodeMap(LAModel& la_model)
         LANode& la_node = la_node_map[x][y];
         la_node.set_coord(x, y);
         la_node.set_layer_idx(layer_idx);
+        la_node.set_boundary_wire_unit(gcell_map[x][y].get_boundary_wire_unit());
+        la_node.set_internal_wire_unit(gcell_map[x][y].get_internal_wire_unit());
+        la_node.set_internal_via_unit(gcell_map[x][y].get_internal_via_unit());
       }
     }
   }
@@ -282,7 +287,7 @@ void LayerAssigner::routeLAModel(LAModel& la_model)
 
   Monitor stage_monitor;
   for (size_t i = 0; i < la_task_list.size(); i++) {
-    routeLANet(la_model, la_task_list[i]);
+    routeLATask(la_model, la_task_list[i]);
     if ((i + 1) % batch_size == 0 || (i + 1) == la_task_list.size()) {
       RTLOG.info(Loc::current(), "Routed ", (i + 1), "/", la_task_list.size(), "(", RTUTIL.getPercentage(i + 1, la_task_list.size()), ") nets",
                  stage_monitor.getStatsInfo());
@@ -292,32 +297,40 @@ void LayerAssigner::routeLAModel(LAModel& la_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void LayerAssigner::routeLANet(LAModel& la_model, LANet* la_net)
+void LayerAssigner::routeLATask(LAModel& la_model, LANet* la_task)
 {
+  initSingleTask(la_model, la_task);
   // 构建la_topo_list,并将通孔线段加入routing_segment_list
   std::vector<LATopo> la_topo_list;
   std::vector<Segment<LayerCoord>> routing_segment_list;
-  makeLATopoList(la_model, la_net, la_topo_list, routing_segment_list);
+  makeLATopoList(la_model, la_topo_list, routing_segment_list);
   for (LATopo& la_topo : la_topo_list) {
     routeLATopo(la_model, &la_topo);
     for (Segment<LayerCoord>& routing_segment : la_topo.get_routing_segment_list()) {
       routing_segment_list.push_back(routing_segment);
     }
   }
-  MTree<LayerCoord> coord_tree = getCoordTree(la_net, routing_segment_list);
+  MTree<LayerCoord> coord_tree = getCoordTree(la_model, routing_segment_list);
   updateDemandToGraph(la_model, ChangeType::kAdd, coord_tree);
-  uploadNetResult(la_net, coord_tree);
+  uploadNetResult(la_model, coord_tree);
+  resetSingleTask(la_model);
 }
 
-void LayerAssigner::makeLATopoList(LAModel& la_model, LANet* la_net, std::vector<LATopo>& la_topo_list, std::vector<Segment<LayerCoord>>& routing_segment_list)
+void LayerAssigner::initSingleTask(LAModel& la_model, LANet* la_task)
+{
+  la_model.set_curr_la_task(la_task);
+}
+
+void LayerAssigner::makeLATopoList(LAModel& la_model, std::vector<LATopo>& la_topo_list, std::vector<Segment<LayerCoord>>& routing_segment_list)
 {
   int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
   int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
   int32_t topo_spilt_length = la_model.get_la_com_param().get_topo_spilt_length();
+  LANet* curr_la_task = la_model.get_curr_la_task();
 
-  if (la_net->get_topo_tree().get_root() == nullptr) {
+  if (curr_la_task->get_topo_tree().get_root() == nullptr) {
     LATopo la_topo;
-    for (LAPin& la_pin : la_net->get_la_pin_list()) {
+    for (LAPin& la_pin : curr_la_task->get_la_pin_list()) {
       LAGroup la_group;
       la_group.get_coord_list().push_back(la_pin.get_access_point().getGridLayerCoord());
       la_topo.get_la_group_list().push_back(la_group);
@@ -340,7 +353,7 @@ void LayerAssigner::makeLATopoList(LAModel& la_model, LANet* la_net, std::vector
     // planar_topo_list
     std::vector<Segment<PlanarCoord>> planar_topo_list;
     {
-      for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(la_net->get_topo_tree())) {
+      for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(curr_la_task->get_topo_tree())) {
         PlanarCoord& first_coord = coord_segment.get_first()->value();
         PlanarCoord& second_coord = coord_segment.get_second()->value();
         int32_t first_x = first_coord.get_x();
@@ -381,7 +394,7 @@ void LayerAssigner::makeLATopoList(LAModel& la_model, LANet* la_net, std::vector
     // planar_pin_group_map
     std::map<PlanarCoord, std::vector<LAGroup>, CmpPlanarCoordByXASC> planar_pin_group_map;
     {
-      for (LAPin& la_pin : la_net->get_la_pin_list()) {
+      for (LAPin& la_pin : curr_la_task->get_la_pin_list()) {
         LayerCoord grid_coord = la_pin.get_access_point().getGridLayerCoord();
 
         LAGroup la_group;
@@ -424,7 +437,7 @@ void LayerAssigner::makeLATopoList(LAModel& la_model, LANet* la_net, std::vector
   // 构建topo的其他内容
   {
     for (LATopo& la_topo : la_topo_list) {
-      la_topo.set_net_idx(la_net->get_net_idx());
+      la_topo.set_net_idx(curr_la_task->get_net_idx());
       std::vector<PlanarCoord> coord_list;
       for (LAGroup& la_group : la_topo.get_la_group_list()) {
         for (LayerCoord& coord : la_group.get_coord_list()) {
@@ -438,18 +451,18 @@ void LayerAssigner::makeLATopoList(LAModel& la_model, LANet* la_net, std::vector
 
 void LayerAssigner::routeLATopo(LAModel& la_model, LATopo* la_topo)
 {
-  initSingleTask(la_model, la_topo);
+  initSingleTopo(la_model, la_topo);
   while (!isConnectedAllEnd(la_model)) {
     routeSinglePath(la_model);
     updatePathResult(la_model);
     resetStartAndEnd(la_model);
     resetSinglePath(la_model);
   }
-  updateTaskResult(la_model);
-  resetSingleTask(la_model);
+  updateTopoResult(la_model);
+  resetSingleTopo(la_model);
 }
 
-void LayerAssigner::initSingleTask(LAModel& la_model, LATopo* la_topo)
+void LayerAssigner::initSingleTopo(LAModel& la_model, LATopo* la_topo)
 {
   std::vector<GridMap<LANode>>& layer_node_map = la_model.get_layer_node_map();
 
@@ -546,14 +559,14 @@ void LayerAssigner::expandSearching(LAModel& la_model)
     if (neighbor_node->isClose()) {
       continue;
     }
-    double know_cost = getKnowCost(la_model, path_head_node, neighbor_node);
-    if (neighbor_node->isOpen() && know_cost < neighbor_node->get_known_cost()) {
-      neighbor_node->set_known_cost(know_cost);
+    double known_cost = getKnownCost(la_model, path_head_node, neighbor_node);
+    if (neighbor_node->isOpen() && known_cost < neighbor_node->get_known_cost()) {
+      neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
       // 对优先队列中的值修改了,需要重新建堆
       std::make_heap(open_queue.begin(), open_queue.end(), CmpLANodeCost());
     } else if (neighbor_node->isNone()) {
-      neighbor_node->set_known_cost(know_cost);
+      neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
       neighbor_node->set_estimated_cost(getEstimateCostToEnd(la_model, neighbor_node));
       pushToOpenList(la_model, neighbor_node);
@@ -623,8 +636,6 @@ void LayerAssigner::resetStartAndEnd(LAModel& la_model)
     }
   }
   if (start_node_list_list.size() == 1) {
-    // 初始化时,要把start_node_list_list的pin只留一个ap点
-    // 后续只要将end_node_list_list的pin保留一个ap点
     start_node_list_list.front().clear();
     start_node_list_list.front().push_back(path_node);
   }
@@ -650,7 +661,7 @@ void LayerAssigner::resetSinglePath(LAModel& la_model)
   la_model.set_end_node_list_idx(-1);
 }
 
-void LayerAssigner::updateTaskResult(LAModel& la_model)
+void LayerAssigner::updateTopoResult(LAModel& la_model)
 {
   la_model.get_curr_la_topo()->set_routing_segment_list(getRoutingSegmentList(la_model));
 }
@@ -677,7 +688,7 @@ std::vector<Segment<LayerCoord>> LayerAssigner::getRoutingSegmentList(LAModel& l
   return routing_segment_list;
 }
 
-void LayerAssigner::resetSingleTask(LAModel& la_model)
+void LayerAssigner::resetSingleTopo(LAModel& la_model)
 {
   la_model.set_curr_la_topo(nullptr);
   la_model.get_start_node_list_list().clear();
@@ -714,9 +725,9 @@ LANode* LayerAssigner::popFromOpenList(LAModel& la_model)
   return node;
 }
 
-// calculate known cost
+// calculate known
 
-double LayerAssigner::getKnowCost(LAModel& la_model, LANode* start_node, LANode* end_node)
+double LayerAssigner::getKnownCost(LAModel& la_model, LANode* start_node, LANode* end_node)
 {
   bool exist_neighbor = false;
   for (auto& [orientation, neighbor_ptr] : start_node->get_neighbor_node_map()) {
@@ -733,21 +744,22 @@ double LayerAssigner::getKnowCost(LAModel& la_model, LANode* start_node, LANode*
   cost += start_node->get_known_cost();
   cost += getNodeCost(la_model, start_node, RTUTIL.getOrientation(*start_node, *end_node));
   cost += getNodeCost(la_model, end_node, RTUTIL.getOrientation(*end_node, *start_node));
-  cost += getKnowWireCost(la_model, start_node, end_node);
-  cost += getKnowViaCost(la_model, start_node, end_node);
+  cost += getKnownWireCost(la_model, start_node, end_node);
+  cost += getKnownViaCost(la_model, start_node, end_node);
   return cost;
 }
 
 double LayerAssigner::getNodeCost(LAModel& la_model, LANode* curr_node, Orientation orientation)
 {
   double overflow_unit = la_model.get_la_com_param().get_overflow_unit();
+  int32_t curr_net_idx = la_model.get_curr_la_topo()->get_net_idx();
 
   double node_cost = 0;
-  node_cost += curr_node->getOverflowCost(orientation, overflow_unit);
+  node_cost += curr_node->getOverflowCost(curr_net_idx, orientation, overflow_unit);
   return node_cost;
 }
 
-double LayerAssigner::getKnowWireCost(LAModel& la_model, LANode* start_node, LANode* end_node)
+double LayerAssigner::getKnownWireCost(LAModel& la_model, LANode* start_node, LANode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   double prefer_wire_unit = la_model.get_la_com_param().get_prefer_wire_unit();
@@ -764,14 +776,14 @@ double LayerAssigner::getKnowWireCost(LAModel& la_model, LANode* start_node, LAN
   return wire_cost;
 }
 
-double LayerAssigner::getKnowViaCost(LAModel& la_model, LANode* start_node, LANode* end_node)
+double LayerAssigner::getKnownViaCost(LAModel& la_model, LANode* start_node, LANode* end_node)
 {
   double via_unit = la_model.get_la_com_param().get_via_unit();
   double via_cost = (via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));
   return via_cost;
 }
 
-// calculate estimate cost
+// calculate estimate
 
 double LayerAssigner::getEstimateCostToEnd(LAModel& la_model, LANode* curr_node)
 {
@@ -814,11 +826,11 @@ double LayerAssigner::getEstimateViaCost(LAModel& la_model, LANode* start_node, 
   return via_cost;
 }
 
-MTree<LayerCoord> LayerAssigner::getCoordTree(LANet* la_net, std::vector<Segment<LayerCoord>>& routing_segment_list)
+MTree<LayerCoord> LayerAssigner::getCoordTree(LAModel& la_model, std::vector<Segment<LayerCoord>>& routing_segment_list)
 {
   std::vector<LayerCoord> candidate_root_coord_list;
   std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
-  std::vector<LAPin>& la_pin_list = la_net->get_la_pin_list();
+  std::vector<LAPin>& la_pin_list = la_model.get_curr_la_task()->get_la_pin_list();
   for (size_t i = 0; i < la_pin_list.size(); i++) {
     LayerCoord coord = la_pin_list[i].get_access_point().getGridLayerCoord();
     candidate_root_coord_list.push_back(coord);
@@ -827,18 +839,25 @@ MTree<LayerCoord> LayerAssigner::getCoordTree(LANet* la_net, std::vector<Segment
   return RTUTIL.getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
 }
 
-void LayerAssigner::uploadNetResult(LANet* la_net, MTree<LayerCoord>& coord_tree)
+void LayerAssigner::uploadNetResult(LAModel& la_model, MTree<LayerCoord>& coord_tree)
 {
   for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
     Segment<LayerCoord>* segment = new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value());
-    RTDM.updateNetGlobalResultToGCellMap(ChangeType::kAdd, la_net->get_net_idx(), segment);
+    RTDM.updateNetGlobalResultToGCellMap(ChangeType::kAdd, la_model.get_curr_la_task()->get_net_idx(), segment);
   }
+}
+
+void LayerAssigner::resetSingleTask(LAModel& la_model)
+{
+  la_model.set_curr_la_task(nullptr);
 }
 
 #if 1  // update env
 
 void LayerAssigner::updateDemandToGraph(LAModel& la_model, ChangeType change_type, MTree<LayerCoord>& coord_tree)
 {
+  int32_t curr_net_idx = la_model.get_curr_la_task()->get_net_idx();
+
   std::vector<Segment<LayerCoord>> routing_segment_list;
   for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
     routing_segment_list.emplace_back(coord_segment.get_first()->value(), coord_segment.get_second()->value());
@@ -881,7 +900,7 @@ void LayerAssigner::updateDemandToGraph(LAModel& la_model, ChangeType change_typ
   std::vector<GridMap<LANode>>& layer_node_map = la_model.get_layer_node_map();
   for (auto& [usage_coord, orientation_list] : usage_map) {
     LANode& la_node = layer_node_map[usage_coord.get_layer_idx()][usage_coord.get_x()][usage_coord.get_y()];
-    la_node.updateDemand(orientation_list, change_type);
+    la_node.updateDemand(curr_net_idx, orientation_list, change_type);
   }
 }
 
@@ -895,21 +914,20 @@ void LayerAssigner::updateSummary(LAModel& la_model)
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   Die& die = RTDM.getDatabase().get_die();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
   Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
 
-  std::map<int32_t, int32_t>& routing_demand_map = summary.la_summary.routing_demand_map;
-  int32_t& total_demand = summary.la_summary.total_demand;
-  std::map<int32_t, int32_t>& routing_overflow_map = summary.la_summary.routing_overflow_map;
-  int32_t& total_overflow = summary.la_summary.total_overflow;
+  std::map<int32_t, double>& routing_demand_map = summary.la_summary.routing_demand_map;
+  double& total_demand = summary.la_summary.total_demand;
+  std::map<int32_t, double>& routing_overflow_map = summary.la_summary.routing_overflow_map;
+  double& total_overflow = summary.la_summary.total_overflow;
   std::map<int32_t, double>& routing_wire_length_map = summary.la_summary.routing_wire_length_map;
   double& total_wire_length = summary.la_summary.total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.la_summary.cut_via_num_map;
   int32_t& total_via_num = summary.la_summary.total_via_num;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.la_summary.clock_timing;
-  std::map<std::string, double>& power_map = summary.la_summary.power_map;
+  std::map<std::string, std::map<std::string, double>>& clock_timing_map = summary.la_summary.clock_timing_map;
+  std::map<std::string, double>& type_power_map = summary.la_summary.type_power_map;
 
   std::vector<GridMap<LANode>>& layer_node_map = la_model.get_layer_node_map();
   std::vector<LANet>& la_net_list = la_model.get_la_net_list();
@@ -922,26 +940,15 @@ void LayerAssigner::updateSummary(LAModel& la_model)
   total_wire_length = 0;
   cut_via_num_map.clear();
   total_via_num = 0;
-  clock_timing.clear();
-  power_map.clear();
+  clock_timing_map.clear();
+  type_power_map.clear();
 
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
     GridMap<LANode>& la_node_map = layer_node_map[layer_idx];
     for (int32_t x = 0; x < la_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < la_node_map.get_y_size(); y++) {
-        std::map<Orientation, int32_t>& orient_supply_map = la_node_map[x][y].get_orient_supply_map();
-        std::map<Orientation, int32_t>& orient_demand_map = la_node_map[x][y].get_orient_demand_map();
-        int32_t node_demand = 0;
-        int32_t node_overflow = 0;
-        if (routing_layer_list[layer_idx].isPreferH()) {
-          node_demand = (orient_demand_map[Orientation::kEast] + orient_demand_map[Orientation::kWest]);
-          node_overflow = std::max(0, orient_demand_map[Orientation::kEast] - orient_supply_map[Orientation::kEast])
-                          + std::max(0, orient_demand_map[Orientation::kWest] - orient_supply_map[Orientation::kWest]);
-        } else {
-          node_demand = (orient_demand_map[Orientation::kSouth] + orient_demand_map[Orientation::kNorth]);
-          node_overflow = std::max(0, orient_demand_map[Orientation::kSouth] - orient_supply_map[Orientation::kSouth])
-                          + std::max(0, orient_demand_map[Orientation::kNorth] - orient_supply_map[Orientation::kNorth]);
-        }
+        double node_demand = la_node_map[x][y].getDemand();
+        double node_overflow = la_node_map[x][y].getOverflow();
         routing_demand_map[layer_idx] += node_demand;
         total_demand += node_demand;
         routing_overflow_map[layer_idx] += node_overflow;
@@ -993,7 +1000,7 @@ void LayerAssigner::updateSummary(LAModel& la_model)
         routing_segment_list_list[net_idx].emplace_back(first_real_coord, second_real_coord);
       }
     }
-    RTI.updateTimingAndPower(real_pin_coord_map_list, routing_segment_list_list, clock_timing, power_map);
+    RTI.updateTimingAndPower(real_pin_coord_map_list, routing_segment_list_list, clock_timing_map, type_power_map);
   }
 }
 
@@ -1004,16 +1011,16 @@ void LayerAssigner::printSummary(LAModel& la_model)
   Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
 
-  std::map<int32_t, int32_t>& routing_demand_map = summary.la_summary.routing_demand_map;
-  int32_t& total_demand = summary.la_summary.total_demand;
-  std::map<int32_t, int32_t>& routing_overflow_map = summary.la_summary.routing_overflow_map;
-  int32_t& total_overflow = summary.la_summary.total_overflow;
+  std::map<int32_t, double>& routing_demand_map = summary.la_summary.routing_demand_map;
+  double& total_demand = summary.la_summary.total_demand;
+  std::map<int32_t, double>& routing_overflow_map = summary.la_summary.routing_overflow_map;
+  double& total_overflow = summary.la_summary.total_overflow;
   std::map<int32_t, double>& routing_wire_length_map = summary.la_summary.routing_wire_length_map;
   double& total_wire_length = summary.la_summary.total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.la_summary.cut_via_num_map;
   int32_t& total_via_num = summary.la_summary.total_via_num;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.la_summary.clock_timing;
-  std::map<std::string, double>& power_map = summary.la_summary.power_map;
+  std::map<std::string, std::map<std::string, double>>& clock_timing_map = summary.la_summary.clock_timing_map;
+  std::map<std::string, double>& type_power_map = summary.la_summary.type_power_map;
 
   fort::char_table routing_demand_map_table;
   {
@@ -1072,16 +1079,16 @@ void LayerAssigner::printSummary(LAModel& la_model)
                  << "tns"
                  << "wns"
                  << "freq" << fort::endr;
-    for (auto& [clock_name, timing_map] : clock_timing) {
+    for (auto& [clock_name, timing_map] : clock_timing_map) {
       timing_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
     }
     power_table << fort::header << "power_type";
-    for (auto& [type, power] : power_map) {
+    for (auto& [type, power] : type_power_map) {
       power_table << fort::header << type;
     }
     power_table << fort::endr;
     power_table << "power_value";
-    for (auto& [type, power] : power_map) {
+    for (auto& [type, power] : type_power_map) {
       power_table << power;
     }
     power_table << fort::endr;
@@ -1165,7 +1172,7 @@ void LayerAssigner::outputGuide(LAModel& la_model)
   RTUTIL.closeFileStream(guide_file_stream);
 }
 
-void LayerAssigner::outputDemandCSV(LAModel& la_model)
+void LayerAssigner::outputNetCSV(LAModel& la_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& la_temp_directory_path = RTDM.getConfig().la_temp_directory_path;
@@ -1175,24 +1182,15 @@ void LayerAssigner::outputDemandCSV(LAModel& la_model)
   }
   std::vector<GridMap<LANode>>& layer_node_map = la_model.get_layer_node_map();
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    std::ofstream* demand_csv_file
-        = RTUTIL.getOutputFileStream(RTUTIL.getString(la_temp_directory_path, "demand_map_", routing_layer.get_layer_name(), ".csv"));
-
+    std::ofstream* net_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(la_temp_directory_path, "net_map_", routing_layer.get_layer_name(), ".csv"));
     GridMap<LANode>& la_node_map = layer_node_map[routing_layer.get_layer_idx()];
     for (int32_t y = la_node_map.get_y_size() - 1; y >= 0; y--) {
       for (int32_t x = 0; x < la_node_map.get_x_size(); x++) {
-        std::map<Orientation, int32_t>& orient_demand_map = la_node_map[x][y].get_orient_demand_map();
-        int32_t total_demand = 0;
-        if (routing_layer.isPreferH()) {
-          total_demand = (orient_demand_map[Orientation::kEast] + orient_demand_map[Orientation::kWest]);
-        } else {
-          total_demand = (orient_demand_map[Orientation::kSouth] + orient_demand_map[Orientation::kNorth]);
-        }
-        RTUTIL.pushStream(demand_csv_file, total_demand, ",");
+        RTUTIL.pushStream(net_csv_file, la_node_map[x][y].getDemand(), ",");
       }
-      RTUTIL.pushStream(demand_csv_file, "\n");
+      RTUTIL.pushStream(net_csv_file, "\n");
     }
-    RTUTIL.closeFileStream(demand_csv_file);
+    RTUTIL.closeFileStream(net_csv_file);
   }
 }
 
@@ -1212,22 +1210,139 @@ void LayerAssigner::outputOverflowCSV(LAModel& la_model)
     GridMap<LANode>& la_node_map = layer_node_map[routing_layer.get_layer_idx()];
     for (int32_t y = la_node_map.get_y_size() - 1; y >= 0; y--) {
       for (int32_t x = 0; x < la_node_map.get_x_size(); x++) {
-        std::map<Orientation, int32_t>& orient_supply_map = la_node_map[x][y].get_orient_supply_map();
-        std::map<Orientation, int32_t>& orient_demand_map = la_node_map[x][y].get_orient_demand_map();
-        int32_t total_overflow = 0;
-        if (routing_layer.isPreferH()) {
-          total_overflow = std::max(0, orient_demand_map[Orientation::kEast] - orient_supply_map[Orientation::kEast])
-                           + std::max(0, orient_demand_map[Orientation::kWest] - orient_supply_map[Orientation::kWest]);
-        } else {
-          total_overflow = std::max(0, orient_demand_map[Orientation::kSouth] - orient_supply_map[Orientation::kSouth])
-                           + std::max(0, orient_demand_map[Orientation::kNorth] - orient_supply_map[Orientation::kNorth]);
-        }
-        RTUTIL.pushStream(overflow_csv_file, total_overflow, ",");
+        RTUTIL.pushStream(overflow_csv_file, la_node_map[x][y].getOverflow(), ",");
       }
       RTUTIL.pushStream(overflow_csv_file, "\n");
     }
     RTUTIL.closeFileStream(overflow_csv_file);
   }
+}
+
+void LayerAssigner::outputJson(LAModel& la_model)
+{
+  int32_t enable_notification = RTDM.getConfig().enable_notification;
+  if (!enable_notification) {
+    return;
+  }
+  std::map<std::string, std::string> json_path_map;
+  json_path_map["net_map"] = outputNetJson(la_model);
+  json_path_map["overflow_map"] = outputOverflowJson(la_model);
+  json_path_map["summary"] = outputSummaryJson(la_model);
+  RTI.sendNotification("LA", 1, json_path_map);
+}
+
+std::string LayerAssigner::outputNetJson(LAModel& la_model)
+{
+  Die& die = RTDM.getDatabase().get_die();
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
+  std::string& la_temp_directory_path = RTDM.getConfig().la_temp_directory_path;
+
+  std::vector<nlohmann::json> net_json_list;
+  {
+    nlohmann::json result_shape_json;
+    for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
+      std::string net_name = net_list[net_idx].get_net_name();
+      for (Segment<LayerCoord>* segment : segment_set) {
+        PlanarRect first_gcell = RTUTIL.getRealRectByGCell(segment->get_first(), gcell_axis);
+        PlanarRect second_gcell = RTUTIL.getRealRectByGCell(segment->get_second(), gcell_axis);
+        if (segment->get_first().get_layer_idx() != segment->get_second().get_layer_idx()) {
+          result_shape_json["result_shape"][net_name]["path"].push_back({first_gcell.get_ll_x(), first_gcell.get_ll_y(), first_gcell.get_ur_x(),
+                                                                         first_gcell.get_ur_y(),
+                                                                         routing_layer_list[segment->get_first().get_layer_idx()].get_layer_name()});
+          result_shape_json["result_shape"][net_name]["path"].push_back({second_gcell.get_ll_x(), second_gcell.get_ll_y(), second_gcell.get_ur_x(),
+                                                                         second_gcell.get_ur_y(),
+                                                                         routing_layer_list[segment->get_second().get_layer_idx()].get_layer_name()});
+        } else {
+          PlanarRect gcell = RTUTIL.getBoundingBox({first_gcell, second_gcell});
+          result_shape_json["result_shape"][net_name]["path"].push_back({gcell.get_ll_x(), gcell.get_ll_y(), gcell.get_ur_x(), gcell.get_ur_y(),
+                                                                         routing_layer_list[segment->get_first().get_layer_idx()].get_layer_name()});
+        }
+      }
+    }
+    net_json_list.push_back(result_shape_json);
+  }
+  std::string net_json_file_path = RTUTIL.getString(la_temp_directory_path, "net_map.json");
+  std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
+  (*net_json_file) << net_json_list;
+  RTUTIL.closeFileStream(net_json_file);
+  return net_json_file_path;
+}
+
+std::string LayerAssigner::outputOverflowJson(LAModel& la_model)
+{
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::string& la_temp_directory_path = RTDM.getConfig().la_temp_directory_path;
+
+  std::vector<GridMap<LANode>>& layer_node_map = la_model.get_layer_node_map();
+  std::vector<nlohmann::json> overflow_json_list;
+  for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
+    GridMap<LANode>& la_node_map = layer_node_map[layer_idx];
+    for (int32_t x = 0; x < la_node_map.get_x_size(); x++) {
+      for (int32_t y = 0; y < la_node_map.get_y_size(); y++) {
+        PlanarRect gcell = RTUTIL.getRealRectByGCell(PlanarCoord(x, y), gcell_axis);
+        overflow_json_list.push_back({gcell.get_ll_x(), gcell.get_ll_y(), gcell.get_ur_x(), gcell.get_ur_y(), routing_layer_list[layer_idx].get_layer_name(),
+                                      la_node_map[x][y].getOverflow()});
+      }
+    }
+  }
+  std::string overflow_json_file_path = RTUTIL.getString(la_temp_directory_path, "overflow_map.json");
+  std::ofstream* overflow_json_file = RTUTIL.getOutputFileStream(overflow_json_file_path);
+  (*overflow_json_file) << overflow_json_list;
+  RTUTIL.closeFileStream(overflow_json_file);
+  return overflow_json_file_path;
+}
+
+std::string LayerAssigner::outputSummaryJson(LAModel& la_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
+  Summary& summary = RTDM.getDatabase().get_summary();
+  std::string& la_temp_directory_path = RTDM.getConfig().la_temp_directory_path;
+
+  std::map<int32_t, double>& routing_demand_map = summary.la_summary.routing_demand_map;
+  double& total_demand = summary.la_summary.total_demand;
+  std::map<int32_t, double>& routing_overflow_map = summary.la_summary.routing_overflow_map;
+  double& total_overflow = summary.la_summary.total_overflow;
+  std::map<int32_t, double>& routing_wire_length_map = summary.la_summary.routing_wire_length_map;
+  double& total_wire_length = summary.la_summary.total_wire_length;
+  std::map<int32_t, int32_t>& cut_via_num_map = summary.la_summary.cut_via_num_map;
+  int32_t& total_via_num = summary.la_summary.total_via_num;
+  std::map<std::string, std::map<std::string, double>>& clock_timing_map = summary.la_summary.clock_timing_map;
+  std::map<std::string, double>& type_power_map = summary.la_summary.type_power_map;
+
+  nlohmann::json summary_json;
+  for (auto& [routing_layer_idx, demand] : routing_demand_map) {
+    summary_json["routing_demand_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = demand;
+  }
+  summary_json["total_demand"] = total_demand;
+  for (auto& [routing_layer_idx, overflow] : routing_overflow_map) {
+    summary_json["routing_overflow_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = overflow;
+  }
+  summary_json["total_overflow"] = total_overflow;
+  for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
+    summary_json["routing_wire_length_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = wire_length;
+  }
+  summary_json["total_wire_length"] = total_wire_length;
+  for (auto& [cut_layer_idx, via_num] : cut_via_num_map) {
+    summary_json["cut_via_num_map"][cut_layer_list[cut_layer_idx].get_layer_name()] = via_num;
+  }
+  summary_json["total_via_num"] = total_via_num;
+  for (auto& [clock_name, timing] : clock_timing_map) {
+    summary_json["clock_timing_map"]["clock_name"] = clock_name;
+    summary_json["clock_timing_map"]["timing"] = timing;
+  }
+  for (auto& [type, power] : type_power_map) {
+    summary_json["type_power_map"]["type"] = type;
+    summary_json["type_power_map"]["power"] = power;
+  }
+  std::string summary_json_file_path = RTUTIL.getString(la_temp_directory_path, "summary.json");
+  std::ofstream* summary_json_file = RTUTIL.getOutputFileStream(summary_json_file_path);
+  (*summary_json_file) << summary_json;
+  RTUTIL.closeFileStream(summary_json_file);
+  return summary_json_file_path;
 }
 
 #endif

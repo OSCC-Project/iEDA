@@ -1,10 +1,9 @@
-# [submodule "src/third_party/mt-kahypar"]
-# 	url  = https://gitee.com/i-eda/mt-kahypar
-# 	path = src/third_party/mt-kahypar
-
 [submodule "src/third_party/LSAssigner4iEDA"]
 	path = src/third_party/LSAssigner4iEDA
 	url = https://gitee.com/li-jinyuan/LSAssigner4iEDA
 	branch = main
 
-
+[submodule "scripts/foundry/ihp130"]
+	path = scripts/foundry/ihp130
+	url = https://github.com/IHP-GmbH/IHP-Open-PDK.git
+	branch = main

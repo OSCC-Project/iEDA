@@ -10,6 +10,7 @@ use super::c_str_to_r_str;
 use super::RustIRPGNetlist;
 
 pub const POWER_INNER_RESISTANCE: f64 = 1e-3;
+pub const RC_COEFF: f64 = 3.0; // RC coefficient, used to scale the resistance value from SPEF.
 
 /// RC node of the spef network.
 pub struct RCNode {
@@ -252,7 +253,9 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
             let node1_name = spef_index_to_string(node1_name_index);
             let node2_name_index: &str = &one_resistance.node2;
             let node2_name = spef_index_to_string(node2_name_index);
-            let resistance_val = one_resistance.res_or_cap;
+            let mut resistance_val = one_resistance.res_or_cap;
+
+            resistance_val *= RC_COEFF; // scale the resistance value.
 
             let mut node_id = one_net_data.get_node_id(&node1_name);
 

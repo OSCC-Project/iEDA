@@ -47,13 +47,9 @@
 #include "idm.h"
 #include "log/Log.hh"
 #include "model/ModelFactory.hh"
-#include "model/mplHelper/MplHelper.hh"
-#include "model/python/PyToolBase.hh"
 #include "report/CtsReport.hh"
+#include "sta/StaBuildClockTree.hh"
 #include "usage/usage.hh"
-#ifdef PY_MODEL
-#include "PyModel.h"
-#endif
 namespace icts {
 #define DBCONFIG (dmInst->get_config())
 
@@ -103,6 +99,7 @@ void CTSAPI::writeGDS()
   GDSPloter::plotDesign();
   GDSPloter::plotFlyLine();
   GDSPloter::writePyDesign();
+  GDSPloter::writeJsonDesign();
   GDSPloter::writePyFlyLine();
 }
 
@@ -218,13 +215,6 @@ void CTSAPI::init(const std::string& config_file, const std::string& work_dir)
 
   _evaluator = new Evaluator();
   _model_factory = new ModelFactory();
-#if (defined PY_MODEL) && (defined USE_EXTERNAL_MODEL)
-  auto external_models = _config->get_external_models();
-  for (auto [net_name, model_path] : external_models) {
-    auto* model = _model_factory->pyLoad(model_path);
-    _libs->insertModel(net_name, model);
-  }
-#endif
   startDbSta();
   TimingPropagator::init();
 }
@@ -619,12 +609,6 @@ icts::CtsCellLib* CTSAPI::getCellLib(const std::string& cell_master, const std::
   std::vector<std::vector<double>> x_slew = {x_cap_out};
   lib->set_slew_coef(_model_factory->cppLinearModel(x_slew, y_slew));
 
-#ifdef PY_MODEL
-  auto* delay_lib_model = _model_factory->pyFit(x_delay, y_delay, icts::FitType::kCatBoost);
-  lib->set_delay_lib_model(delay_lib_model);
-  auto* slew_lib_model = _model_factory->pyFit(x_slew, y_slew, icts::FitType::kCatBoost);
-  lib->set_slew_lib_model(slew_lib_model);
-#endif
   _libs->insertLib(cell_master, lib);
   return lib;
 }
@@ -830,8 +814,8 @@ void CTSAPI::buildRCTree(const icts::EvalNet& eval_net)
     if (parent == nullptr) {
       return;
     }
-    auto parent_name = parent->isPin() ? dynamic_cast<Pin*>(parent)->get_inst()->get_name() : parent->get_name();
-    auto child_name = node->isPin() ? dynamic_cast<Pin*>(node)->get_inst()->get_name() : node->get_name();
+    auto parent_name = parent->get_name();  // pin_full_name or node's 'steriner_{id}' name
+    auto child_name = node->get_name();
     ista::RctNode* front_node = makeRCTreeNode(eval_net, parent_name);
     ista::RctNode* back_node = makeRCTreeNode(eval_net, child_name);
     double len = TimingPropagator::calcLen(parent, node);
@@ -930,10 +914,7 @@ void CTSAPI::latencySkewLog() const
       ista::StaPathEnd* path_end;
       ista::StaPathData* path_data;
       FOREACH_PATH_GROUP_END(seq_path_group.get(), path_end)
-      FOREACH_PATH_END_DATA(path_end, mode, path_data)
-      {
-        seq_data_queue.push(path_data);
-      }
+      FOREACH_PATH_END_DATA(path_end, mode, path_data) { seq_data_queue.push(path_data); }
       auto* worst_seq_data = seq_data_queue.top();
       auto* launch_clock_data = worst_seq_data->get_launch_clock_data();
       auto* capture_clock_data = worst_seq_data->get_capture_clock_data();
@@ -1056,29 +1037,6 @@ void CTSAPI::toPyArray(const icts::Point& point, const std::string& label)
   CTSAPIInst.saveToLog(label, "=[[", point.x(), ",", point.y(), "]]");
 }
 
-// python API
-#ifdef PY_MODEL
-
-#ifdef USE_EXTERNAL_MODEL
-icts::ModelBase* CTSAPI::findExternalModel(const std::string& net_name)
-{
-  return _libs->findModel(net_name);
-}
-#endif
-
-/**
- * @brief Python interface for plot
- *
- * @param x
- * @param y
- */
-icts::ModelBase* CTSAPI::fitPyModel(const std::vector<std::vector<double>>& x, const std::vector<double>& y, const icts::FitType& fit_type)
-{
-  return _model_factory->pyFit(x, y, fit_type);
-}
-
-#endif
-
 // private STA
 void CTSAPI::readSTAFile()
 {
@@ -1102,22 +1060,16 @@ void CTSAPI::readSTAFile()
 ista::RctNode* CTSAPI::makeRCTreeNode(const icts::EvalNet& eval_net, const std::string& name)
 {
   auto* sta_net = findStaNet(eval_net);
-  auto* inst = eval_net.get_instance(name);
-  if (inst == nullptr) {
+  auto* cts_pin = _design->findPin(name);
+  if (cts_pin == nullptr) {
     std::vector<std::string> string_list = splitString(name, '_');
     if (string_list.size() == 2 && (string_list[0] == "steiner")) {
       return _timing_engine->makeOrFindRCTreeNode(sta_net, std::stoi(string_list[1]));
     } else {
       LOG_FATAL << "Unknown pin name: " << name;
     }
-  } else {
-    for (auto pin : eval_net.get_pins()) {
-      if (pin->get_instance() == inst) {
-        return makePinRCTreeNode(pin);
-      }
-    }
   }
-  return nullptr;
+  return makePinRCTreeNode(cts_pin);
 }
 
 ista::RctNode* CTSAPI::makePinRCTreeNode(icts::CtsPin* pin)
@@ -1219,5 +1171,6 @@ ieda_feature::CTSSummary CTSAPI::outputSummary()
 
   return summary;
 }
+
 
 }  // namespace icts

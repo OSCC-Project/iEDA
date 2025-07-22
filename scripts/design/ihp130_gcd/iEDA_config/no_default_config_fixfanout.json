@@ -1,0 +1,13 @@
+{
+    "file_path": {
+        "design_work_space": "${RESULT_DIR}/no",
+        "sdc_file": "unused",
+        "lib_files": "unused",
+        "lef_files": "unused",
+        "def_file": "unused",
+        "output_def": "unused",
+        "report_file": "${RESULT_DIR}/no/report.txt"
+    },
+    "insert_buffer": "sg13g2_buf_8",
+    "max_fanout": 30
+}

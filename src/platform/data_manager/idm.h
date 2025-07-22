@@ -47,7 +47,7 @@ using std::vector;
 
 using namespace idb;
 
-#define dmInst idm::DataManager::getInstance()
+#define dmInst idm::DataManager::getInstance()  //dmInst is DataManager*
 
 namespace idm {
 
@@ -65,8 +65,16 @@ class DataManager
   /// getter
   DataConfig& get_config() { return _config; };
   IdbBuilder* get_idb_builder() { return _idb_builder; }
+  void set_idb_builder(IdbBuilder* idb_builder) {
+    _idb_builder = idb_builder;
+  }
   IdbDefService* get_idb_def_service() { return _idb_def_service; }
+  void set_idb_def_service(IdbDefService* idb_def_service) {
+    _idb_def_service = idb_def_service;
+  }
   IdbLefService* get_idb_lef_service() { return _idb_lef_service; }
+  void set_idb_lef_service(IdbLefService* idb_lef_service) { _idb_lef_service = idb_lef_service; }
+  
   IdbDesign* get_idb_design() { return _idb_def_service != nullptr ? _idb_def_service->get_design() : nullptr; }
   IdbLayout* get_idb_layout() { return _idb_lef_service != nullptr ? _idb_lef_service->get_layout() : nullptr; }
   bool is_def_read() { return _idb_def_service != nullptr ? true : false; }
@@ -86,6 +94,7 @@ class DataManager
   /// iDB save
   bool save(string name, string def_path = "");
   bool saveDef(string def_path);
+  bool saveLef(string lef_path);
   void saveVerilog(string verilog_path, std::set<std::string>&& exclude_cell_names = {}, bool is_add_space_for_escape_name = false);
   bool saveGDSII(string path);
   bool saveJSON(string path, string options);
@@ -196,11 +205,11 @@ class DataManager
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // pa data
-  bool buildPA(const std::map<std::string, std::map<std::string, std::vector<ids::AccessPoint>>>& master_access_point_map);
-  std::vector<ids::AccessPoint> getMasterPaPointList(std::string master_name, std::string pin_name);
-  std::vector<ids::AccessPoint> getInstancePaPointList(std::string instance_name, std::string pin_name);
-  std::vector<ids::AccessPoint> getInstancePaPointList(std::string cell_master_name, std::string pin_name, int32_t inst_x, int32_t inst_y,
-                                                       idb::IdbOrient idb_orient);
+  // bool buildPA(const std::map<std::string, std::map<std::string, std::vector<ids::AccessPoint>>>& master_access_point_map);
+  // std::vector<ids::AccessPoint> getMasterPaPointList(std::string master_name, std::string pin_name);
+  // std::vector<ids::AccessPoint> getInstancePaPointList(std::string instance_name, std::string pin_name);
+  // std::vector<ids::AccessPoint> getInstancePaPointList(std::string cell_master_name, std::string pin_name, int32_t inst_x, int32_t inst_y,
+  //                                                      idb::IdbOrient idb_orient);
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -223,7 +232,7 @@ class DataManager
   IdbDesign* _design = nullptr;
   IdbLayout* _layout = nullptr;
   // pa
-  std::map<std::string, std::map<std::string, std::vector<ids::AccessPoint>>> _master_access_point_map;
+  // std::map<std::string, std::map<std::string, std::vector<ids::AccessPoint>>> _master_access_point_map;
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

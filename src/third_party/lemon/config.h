@@ -1,5 +1,5 @@
-#define LEMON_VERSION "1.3.1"
-#define LEMON_HAVE_LONG_LONG 1
+#define LEMON_VERSION ""
+/* #undef LEMON_HAVE_LONG_LONG */
 
 /* #undef LEMON_HAVE_LP */
 /* #undef LEMON_HAVE_MIP */
@@ -18,5 +18,5 @@
 /* #undef LEMON_DEFAULT_LP */
 /* #undef LEMON_DEFAULT_MIP */
 
-#define LEMON_USE_PTHREAD 1
+/* #undef LEMON_USE_PTHREAD */
 /* #undef LEMON_USE_WIN32_THREADS */

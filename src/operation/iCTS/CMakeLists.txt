@@ -1,15 +1,3 @@
-# # Python Model Option system python vertion
-# set(SYS_PYTHON3_VERSION 3.8)
-# set(PY_MODEL ON)
-# # Save timing data to csv for model training
-# set(SAVE_TRAINING_DATA ON)
-# # Use external python model
-# set(USE_EXTERNAL_MODEL ON)
-# # Print timing information to log
-# set(TIMING_LOG ON)
-# # Use routing
-# set(USE_ROUTING ON)
-
 # # DEBUG CTS
 # set(DEBUG_ICTS_API ON)
 # # DEBUG DATA MANAGER
@@ -20,7 +8,6 @@
 
 # # DEBUG MODEL
 # set(DEBUG_ICTS_MODEL ON)
-# set(DEBUG_ICTS_MPL_HELPER ON)
 
 # # DEBUG MODULE
 # set(DEBUG_ICTS_EVALUATOR ON)
@@ -40,24 +27,6 @@
 
 # # DEBUG TEST
 # set(DEBUG_ICTS_TEST ON)
-# set(DEBUG_ICTS_PYTHON ON)
-
-# Tool definitions
-if(PY_MODEL)
-  add_compile_definitions(PY_MODEL)
-endif()
-if(SAVE_TRAINING_DATA)
-  add_compile_definitions(SAVE_TRAINING_DATA)
-endif()
-if(USE_EXTERNAL_MODEL)
-  add_compile_definitions(USE_EXTERNAL_MODEL)
-endif()
-if(TIMING_LOG)
-  add_compile_definitions(TIMING_LOG)
-endif()
-if(USE_ROUTING)
-  add_compile_definitions(USE_ROUTING)
-endif()
 
 # Debug definitions
 if(DEBUG_ICTS_API)
@@ -77,9 +46,6 @@ if(DEBUG_ICTS_REPORT)
 endif()
 if(DEBUG_ICTS_MODEL)
   add_compile_definitions(DEBUG_ICTS_MODEL)
-endif()
-if(DEBUG_ICTS_MPL_HELPER)
-  add_compile_definitions(DEBUG_ICTS_MPL_HELPER)
 endif()
 if(DEBUG_ICTS_EVALUATOR)
   add_compile_definitions(DEBUG_ICTS_EVALUATOR)

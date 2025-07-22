@@ -1,0 +1,5 @@
+*.skew
+*.cap
+*.fanout
+*.rpt
+*.trans

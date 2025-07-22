@@ -125,7 +125,7 @@ unsigned CmdLmFeature::exec()
   TclOption* option = getOptionOrArg(TCL_DIRECTORY);
   if (option != nullptr) {
     auto path_option = option->getStringVal();
-    std::string path = path_option == nullptr ? "./large_model" : path_option;
+    std::string path = path_option == nullptr ? "./vectorization" : path_option;
 
     ilm::LargeModelApi lm_api;
     lm_api.buildLargeModelFeature(path);

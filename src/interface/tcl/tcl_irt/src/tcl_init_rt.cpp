@@ -32,10 +32,14 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-bottom_routing_layer", ValueType::kString));
   // std::string top_routing_layer;         // optional
   _config_list.push_back(std::make_pair("-top_routing_layer", ValueType::kString));
-  // int32_t output_inter_result;                    // optional
+  // int32_t output_inter_result;           // optional
   _config_list.push_back(std::make_pair("-output_inter_result", ValueType::kInt));
+  // int32_t enable_notification;           // optional
+  _config_list.push_back(std::make_pair("-enable_notification", ValueType::kInt));
   // int32_t enable_timing;                 // optional
   _config_list.push_back(std::make_pair("-enable_timing", ValueType::kInt));
+  // int32_t enable_fast_mode;              // optional
+  _config_list.push_back(std::make_pair("-enable_fast_mode", ValueType::kInt));
   // int32_t enable_lsa;                    // optional
   _config_list.push_back(std::make_pair("-enable_lsa", ValueType::kInt));
 
@@ -44,6 +48,9 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
 
 unsigned TclInitRT::exec()
 {
+  if (!check()) {
+    return 0;
+  }
   std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
   RTI.initRT(config_map);
   return 1;

@@ -45,6 +45,7 @@ class NesterovPlaceConfig
 
   // getter.
   int32_t get_thread_num() const { return _thread_num;}
+  int32_t get_info_iter_num() const { return _info_iter_num; }
   float   get_init_wirelength_coef() const { return _init_wirelength_coef; }
   float   get_reference_hpwl() const { return _reference_hpwl; }
   float   get_min_wirelength_force_bar() const { return _min_wirelength_force_bar; }
@@ -68,6 +69,7 @@ class NesterovPlaceConfig
 
   // setter.
   void set_thread_num(int32_t num_thread) { _thread_num = num_thread; }
+  void set_info_iter_num(int32_t info_iter_num) { _info_iter_num = info_iter_num; }
   void set_init_wirelength_coef(float coef) { _init_wirelength_coef = coef; }
   void set_reference_hpwl(float hpwl) { _reference_hpwl = hpwl; }
   void set_min_wirelength_force_bar(float bar) { _min_wirelength_force_bar = bar; }
@@ -91,7 +93,7 @@ class NesterovPlaceConfig
 
  private:
   int32_t _thread_num;
-
+  int32_t _info_iter_num;
   // about wirelength.
   float _init_wirelength_coef;
   float _reference_hpwl;

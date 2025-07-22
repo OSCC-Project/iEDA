@@ -49,12 +49,16 @@ void PlacerIO::destroyPlacer()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-bool PlacerIO::runPlacement(std::string config)
+bool PlacerIO::runPlacement(std::string config, bool enableJsonOutput)
 {
   if (!iPLAPIInst.isPlacerDBStarted()) {
     this->initPlacer(config);
   } else {
     iPLAPIInst.updatePlacerDB();
+  }
+
+  if (enableJsonOutput) {
+    iPLAPIInst.enableJsonOutput();
   }
 
   ieda::Stats stats;
@@ -257,7 +261,7 @@ bool PlacerIO::runIncrementalFlow(std::string config)
 
   iPLAPIInst.runIncrementalFlow();
 
-  iPLAPIInst.destoryInst();
+  // iPLAPIInst.destoryInst();
 
   flowConfigInst->add_status_runtime(stats.elapsedRunTime());
   flowConfigInst->set_status_memmory(stats.memoryDelta());
