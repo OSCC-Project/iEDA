@@ -489,6 +489,11 @@ unsigned PowerEngine::buildPGNetWireTopo() {
       dynamic_cast<ista::TimingIDBAdapter*>(_timing_engine->get_db_adapter());
   auto* idb_builder = idb_adapter->get_idb();
 
+  // for debug
+  // std::string def_file_path = "./output.def";
+  // idb_builder->saveDef(def_file_path);
+  // LOG_INFO << "save def file to " << def_file_path;
+
   // set layer name to id.
   IdbLayout* idb_layout = idb_builder->get_lef_service()->get_layout();
   vector<IdbLayer*>& routing_layers =

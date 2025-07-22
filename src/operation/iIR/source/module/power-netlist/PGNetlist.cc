@@ -283,7 +283,15 @@ void IRPGNetlistBuilder::build(
   for (auto [seg_id1, seg_id2] : intersect_segment_one_layer) {
     // connect the last point of seg_id1 and first point of seg_id2.
     auto* node1 = *(segment_to_point[seg_id1].rbegin());  // Get last element of first segment
+    LOG_INFO_IF(!node1) << "The nodes of segment " << seg_id1 << " (" << bg_segments[seg_id1].first.get<0>() << " "
+    << bg_segments[seg_id1].first.get<1>() << " " << bg_segments[seg_id1].first.get<2>() << ")" << " is nullptr.";
     auto* node2 = *(segment_to_point[seg_id2].begin());  // Get first element of second segment
+    LOG_INFO_IF(!node2) << "The nodes of segment " << seg_id2 << " (" << bg_segments[seg_id2].first.get<0>() << " "
+    << bg_segments[seg_id2].first.get<1>() << " " << bg_segments[seg_id2].first.get<2>() << ")" << " is nullptr.";
+
+    if (!node1 || !node2) {
+      continue;
+    }
 
     if (node1->get_coord().first == node2->get_coord().first) {
       LOG_FATAL_IF(node1->get_coord().second > node2->get_coord().second)
