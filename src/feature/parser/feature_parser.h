@@ -69,7 +69,6 @@ class FeatureParser
   bool readRouteData(std::string json_path, RouteAnalyseData* data);
 
   bool buildSummaryEval(std::string json_path);
-  bool buildSummaryEvalJsonl(std::string jsonl_path);
   bool buildSummaryTimingEval(std::string json_path);
   bool buildNetEval(std::string csv_path);
   bool buildCongMap(std::string stage, std::string csv_dir);
