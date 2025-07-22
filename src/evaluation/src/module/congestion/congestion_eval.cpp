@@ -324,7 +324,7 @@ string CongestionEval::evalRUDY(CongestionNets nets, CongestionRegion region, in
     }
   }
 
-  std::string output_path = createDirPath("RUDY_map") + "/" + output_filename;
+  std::string output_path = createDirPath("/RUDY_map") + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
   for (size_t row_index = density_grid.size(); row_index-- > 0;) {
@@ -436,7 +436,7 @@ string CongestionEval::evalLUTRUDY(CongestionNets nets, CongestionRegion region,
     }
   }
 
-  std::string output_path = createDirPath("RUDY_map") + "/" + output_filename;
+  std::string output_path = createDirPath("/RUDY_map") + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
   for (size_t row_index = density_grid.size(); row_index-- > 0;) {

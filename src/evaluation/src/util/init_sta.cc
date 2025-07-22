@@ -557,7 +557,7 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir)
   STA_INST->updateTiming();
   STA_INST->get_ista()->reportUsedLibs();
 
-  std::string path_dir = work_dir + "/vectorization";
+  std::string path_dir = work_dir;
   STA_INST->set_design_work_space(path_dir.c_str());
   STA_INST->reportWirePaths(10000);
 }

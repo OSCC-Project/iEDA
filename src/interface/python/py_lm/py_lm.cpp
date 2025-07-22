@@ -35,10 +35,10 @@ bool layout_graph(const std::string& path)
   return lm_api.buildLargeModelGraphData(path);
 }
 
-bool large_model_feature(std::string dir)
+bool generate_vectors(std::string dir)
 {
   if (dir == "") {
-    dir = "./vectorization";
+    dir = "./vectors";
   }
   ilm::LargeModelApi lm_api;
   return lm_api.buildLargeModelFeature(dir);

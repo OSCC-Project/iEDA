@@ -216,9 +216,9 @@ bool FeatureParser::buildSummaryEval(std::string json_path)
 
   root["Congestion"] = buildSummaryCongestion();
 
-  root["Timing"] = buildSummaryTiming();
+  // root["Timing"] = buildSummaryTiming();
 
-  root["Power"] = buildSummaryPower();
+  // root["Power"] = buildSummaryPower();
 
   file_stream << std::setw(4) << root;
 
@@ -228,35 +228,6 @@ bool FeatureParser::buildSummaryEval(std::string json_path)
   return true;
 }
 
-bool FeatureParser::buildSummaryEvalJsonl(std::string jsonl_path)
-{
-  std::ofstream& file_stream = ieda::getOutputFileStream(jsonl_path);
-
-  json wirelength;
-  wirelength["Wirelength"] = buildSummaryWirelength();
-  file_stream << wirelength << std::endl;
-
-  json density;
-  density["Density"] = buildSummaryDensity();
-  file_stream << density << std::endl;
-
-  json congestion;
-  congestion["Congestion"] = buildSummaryCongestion();
-  file_stream << congestion << std::endl;
-
-  // json timing;
-  // timing["Timing"] = buildSummaryTiming();
-  // file_stream << timing << std::endl;
-
-  // json power;
-  // power["Power"] = buildSummaryPower();
-  // file_stream << power << std::endl;
-
-  ieda::closeFileStream(file_stream);
-
-  std::cout << std::endl << "Save eval jsonl success, path = " << jsonl_path << std::endl;
-  return true;
-}
 
 bool FeatureParser::buildSummaryTimingEval(std::string json_path)
 {

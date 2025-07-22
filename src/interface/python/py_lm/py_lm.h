@@ -17,17 +17,16 @@
 #pragma once
 
 #include <string>
+
 #include "init_sta.hh"
 
 namespace python_interface {
 
 bool layout_patchs(const std::string& path);
 bool layout_graph(const std::string& path);
-bool large_model_feature(std::string dir);
-
+bool generate_vectors(std::string dir);
 
 // for large model wire timing graph.
 ieval::TimingWireGraph get_timing_wire_graph(std::string wire_graph_yaml_path);
-
 
 }  // namespace python_interface

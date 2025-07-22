@@ -60,7 +60,7 @@ bool LmLayoutFileIO::saveJsonNets()
 {
   ieda::Stats stats;
   LOG_INFO << "LM save json net start...";
-  makeDir(_dir + "/large_model/nets/");
+  makeDir(_dir + "/nets/");
 
   auto& net_map = _layout->get_graph().get_net_map();
   const int BATCH_SIZE = 1500;  // 可根据系统性能调整批量大小
@@ -229,7 +229,7 @@ bool LmLayoutFileIO::saveJsonNets()
         std::ranges::for_each(routing_graph.vertices, [&](const NetRoutingVertex& vertex) {
           json json_vertex;
           json_vertex["id"] = vertex.id;
-          json_vertex["is_pin"] = vertex.is_pin ? 1 : 0;  // 1: pin, 0: non-pin
+          json_vertex["is_pin"] = vertex.is_pin ? 1 : 0;                // 1: pin, 0: non-pin
           json_vertex["is_driver_pin"] = vertex.is_driver_pin ? 1 : 0;  // 1: driver pin, 0: load pin
           json_vertex["x"] = vertex.point.x;
           json_vertex["y"] = vertex.point.y;
@@ -292,7 +292,7 @@ bool LmLayoutFileIO::saveJsonNets()
 
     // 创建文件名格式: net_START_END.json
     std::string filename = "net_" + std::to_string(start_net_idx) + "_" + std::to_string(end_net_idx) + ".json";
-    std::string full_path = _dir + "/large_model/nets/" + filename;
+    std::string full_path = _dir + "/nets/" + filename;
 
     // 创建一个包含当前批次网络的数组
     json batch_json = json::array();
@@ -328,7 +328,7 @@ bool LmLayoutFileIO::saveJsonPatchs()
 {
   ieda::Stats stats;
   LOG_INFO << "LM save json patchs start...";
-  makeDir(_dir + "/large_model/patchs/");
+  makeDir(_dir + "/patchs/");
 
   if (!_patch_grid) {
     return false;
@@ -535,7 +535,7 @@ bool LmLayoutFileIO::saveJsonPatchs()
 
     // 创建文件名格式: patch_START_END.json
     std::string filename = "patch_" + std::to_string(start_patch_idx) + "_" + std::to_string(end_patch_idx) + ".json";
-    std::string full_path = _dir + "/large_model/patchs/" + filename;
+    std::string full_path = _dir + "/patchs/" + filename;
 
     // 创建一个包含当前批次patch的数组
     json batch_json = json::array();

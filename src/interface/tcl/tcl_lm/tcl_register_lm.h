@@ -35,7 +35,7 @@ int registerCmdLargeModel()
 {
   registerTclCmd(CmdLmLayoutPatchs, "layout_patchs");
   registerTclCmd(CmdLmLayoutGraph, "layout_graph");
-  registerTclCmd(CmdLmFeature, "large_model_feature");
+  registerTclCmd(CmdLmFeature, "generate_vectors");
 
   return EXIT_SUCCESS;
 }

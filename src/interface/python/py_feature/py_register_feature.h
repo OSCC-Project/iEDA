@@ -26,6 +26,9 @@ void register_feature(py::module& m)
 {
   m.def("feature_summary", feature_summary, py::arg("path"));
   m.def("feature_tool", feature_tool, py::arg("path"), py::arg("step"));
+  m.def("feature_pl_eval", feature_pl_eval, py::arg("json_path"), py::arg("grid_size"));
+  m.def("feature_cts_eval", feature_cts_eval, py::arg("json_path"), py::arg("grid_size"));
+
   m.def("feature_eval_map", feature_eval_map, py::arg("path"), py::arg("bin_cnt_x"), py::arg("bin_cnt_y"));
   m.def("feature_route", feature_route, py::arg("path"));
   m.def("feature_route_read", feature_route_read, py::arg("path"));

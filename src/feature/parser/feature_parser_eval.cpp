@@ -193,29 +193,29 @@ json FeatureParser::buildSummaryCongestion()
   congestion_info["overflow"]["max"]["vertical"] = congestion_summary.overflow_summary.max_overflow_vertical;
   congestion_info["overflow"]["max"]["union"] = congestion_summary.overflow_summary.max_overflow_union;
 
-  congestion_info["overflow"]["top average"]["horizontal"] = congestion_summary.overflow_summary.weighted_average_overflow_horizontal;
-  congestion_info["overflow"]["top average"]["vertical"] = congestion_summary.overflow_summary.weighted_average_overflow_vertical;
-  congestion_info["overflow"]["top average"]["union"] = congestion_summary.overflow_summary.weighted_average_overflow_union;
+  congestion_info["overflow"]["top_average"]["horizontal"] = congestion_summary.overflow_summary.weighted_average_overflow_horizontal;
+  congestion_info["overflow"]["top_average"]["vertical"] = congestion_summary.overflow_summary.weighted_average_overflow_vertical;
+  congestion_info["overflow"]["top_average"]["union"] = congestion_summary.overflow_summary.weighted_average_overflow_union;
 
   congestion_info["utilization"]["rudy"]["max"]["horizontal"] = congestion_summary.rudy_utilization_summary.max_utilization_horizontal;
   congestion_info["utilization"]["rudy"]["max"]["vertical"] = congestion_summary.rudy_utilization_summary.max_utilization_vertical;
   congestion_info["utilization"]["rudy"]["max"]["union"] = congestion_summary.rudy_utilization_summary.max_utilization_union;
-  congestion_info["utilization"]["rudy"]["top average"]["horizontal"]
+  congestion_info["utilization"]["rudy"]["top_average"]["horizontal"]
       = congestion_summary.rudy_utilization_summary.weighted_average_utilization_horizontal;
-  congestion_info["utilization"]["rudy"]["top average"]["vertical"]
+  congestion_info["utilization"]["rudy"]["top_average"]["vertical"]
       = congestion_summary.rudy_utilization_summary.weighted_average_utilization_vertical;
-  congestion_info["utilization"]["rudy"]["top average"]["union"]
+  congestion_info["utilization"]["rudy"]["top_average"]["union"]
       = congestion_summary.rudy_utilization_summary.weighted_average_utilization_union;
 
   congestion_info["utilization"]["lutrudy"]["max"]["horizontal"]
       = congestion_summary.lutrudy_utilization_summary.max_utilization_horizontal;
   congestion_info["utilization"]["lutrudy"]["max"]["vertical"] = congestion_summary.lutrudy_utilization_summary.max_utilization_vertical;
   congestion_info["utilization"]["lutrudy"]["max"]["union"] = congestion_summary.lutrudy_utilization_summary.max_utilization_union;
-  congestion_info["utilization"]["lutrudy"]["top average"]["horizontal"]
+  congestion_info["utilization"]["lutrudy"]["top_average"]["horizontal"]
       = congestion_summary.lutrudy_utilization_summary.weighted_average_utilization_horizontal;
-  congestion_info["utilization"]["lutrudy"]["top average"]["vertical"]
+  congestion_info["utilization"]["lutrudy"]["top_average"]["vertical"]
       = congestion_summary.lutrudy_utilization_summary.weighted_average_utilization_vertical;
-  congestion_info["utilization"]["lutrudy"]["top average"]["union"]
+  congestion_info["utilization"]["lutrudy"]["top_average"]["union"]
       = congestion_summary.lutrudy_utilization_summary.weighted_average_utilization_union;
 
   return congestion_info;

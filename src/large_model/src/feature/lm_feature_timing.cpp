@@ -41,7 +41,7 @@ void LmFeatureTiming::build()
 
   auto timing_wire_graph = eval_tp->getTimingWireGraph();
 
-  std::string yaml_graph_path = _dir + "/large_model/wire_graph";
+  std::string yaml_graph_path = _dir + "/wire_graph";
 
   if (!std::filesystem::exists(yaml_graph_path)) {
     std::filesystem::create_directories(yaml_graph_path);
@@ -77,8 +77,8 @@ void LmFeatureTiming::buildWireTimingPowerFeature(LmNet* lm_net, const std::stri
     double delay = eval_tp->getWireDelay(net_name, node_name);
     double power = 0.5 * toggle * voltage * capacitance;
 
-    LOG_INFO_EVERY_N(100) << "node " << node_name << " resistance " << resistance << " cap " << capacitance << " slew " << slew << " delay " << delay
-             << " power " << power;
+    LOG_INFO_EVERY_N(100) << "node " << node_name << " resistance " << resistance << " cap " << capacitance << " slew " << slew << " delay "
+                          << delay << " power " << power;
 
     return std::tuple(resistance, capacitance, slew, delay, power);
   };
