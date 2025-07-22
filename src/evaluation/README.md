@@ -141,6 +141,6 @@ evaluation/api文件夹提供外部使用的接口，根据指标进行分类，
 
 |  接口名   |                   输入参数                  |                     返回类型                     |    底层逻辑  |
 | :-----: | :--------------------------------------: | :------------------------------------------: | :------------------------------------------: |
-|  `save_pl_eval_union(string, string, int)` |    Jsonl文件保存路径，CSV文件保存路径，网格粒度              |      `bool`           |   分别保存`Place`阶段汇总性特征到Jsonl文件（设计级）和CSV文件（线网级）  |
-|  `save_cts_eval_union(string, string, int)` |    Jsonl文件保存路径，CSV文件保存路径，网格粒度            |      `bool`          | 分别保存`CTS`阶段汇总性特征到Jsonl文件（设计级）和CSV文件（线网级）   |
+|  `save_pl_eval(string, int)` |    Json文件保存路径，网格粒度              |      `bool`           |   保存`Place`阶段汇总性特征到Json文件  |
+|  `save_cts_eval(string, int)` |    Json文件保存路径, 网格粒度            |      `bool`          | 保存`CTS`阶段汇总性特征到Json文件   |
 

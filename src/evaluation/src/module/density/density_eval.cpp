@@ -412,7 +412,7 @@ std::string DensityEval::evalMargin(DensityCells cells, DensityRegion die, Densi
     }
   }
 
-  std::string output_path = createDirPath("margin_map") + "/" + output_filename;
+  std::string output_path = createDirPath("/margin_map") + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
   int32_t grid_cols = (die.ux - die.lx + grid_size - 1) / grid_size;

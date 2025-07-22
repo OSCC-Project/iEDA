@@ -146,7 +146,6 @@ namespace ipnp {
     _cong_eval.set_config(_pnp_config);
     _cong_eval.evalEGR(_idb_wrapper.get_idb_builder());
 
-    initIRAnalysis();
     _ir_eval.runIREval(_idb_wrapper.get_idb_builder());
   }
 
@@ -167,6 +166,7 @@ namespace ipnp {
     if (_idb_wrapper.get_idb_design()) {
 
       init();
+      initIRAnalysis();
       runSynthesis();
       runFastPlacer();
       runOptimize();

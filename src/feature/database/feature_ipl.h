@@ -23,18 +23,8 @@ namespace ieda_feature {
 struct PLCommonSummary
 {
   float place_density;
-  // float pin_density;
-  // int64_t HPWL;
-  // int64_t STWL;
-  // int64_t GRWL;
-
-  // int32_t egr_tof;
-  // int32_t egr_mof;
-  // float egr_ace;
-
-  // float tns;
-  // float wns;
-  // float suggest_freq;
+  int64_t HPWL;
+  int64_t STWL;
 };
 
 struct LGSummary

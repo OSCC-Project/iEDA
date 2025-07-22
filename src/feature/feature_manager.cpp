@@ -60,7 +60,7 @@ bool FeatureManager::save_eval_summary(std::string path, int32_t grid_size)
   _summary->set_timing_eval(timing_db);
 
   FeatureParser feature_parser(_summary);
-  return feature_parser.buildSummaryEvalJsonl(path);
+  return feature_parser.buildSummaryEval(path);
 }
 
 bool FeatureManager::save_eval_union(std::string jsonl_path, std::string csv_path, int32_t grid_size)
@@ -81,7 +81,7 @@ bool FeatureManager::save_eval_union(std::string jsonl_path, std::string csv_pat
   // bool csv_success = true;
 
   // FeatureParser feature_parser(_summary);
-  // bool jsonl_success = feature_parser.buildSummaryEvalJsonl(jsonl_path);
+  // bool jsonl_success = feature_parser.buildSummaryEval(jsonl_path);
   bool jsonl_success = true;
 
   builder.destroyEvalTool();
@@ -89,7 +89,7 @@ bool FeatureManager::save_eval_union(std::string jsonl_path, std::string csv_pat
   return jsonl_success && csv_success;
 }
 
-bool FeatureManager::save_pl_eval_union(std::string jsonl_path, std::string csv_path, int32_t grid_size)
+bool FeatureManager::save_pl_eval(std::string json_path, int32_t grid_size)
 {
   // EGR
   FeatureBuilder builder;
@@ -107,7 +107,6 @@ bool FeatureManager::save_pl_eval_union(std::string jsonl_path, std::string csv_
   _summary->set_congestion_eval(union_db.congestion_summary);
 
   // builder.evalTiming("EGR", true);
-
   // builder.evalTiming("HPWL");
   // builder.evalTiming("FLUTE");
   // builder.evalTiming("SALT");
@@ -116,15 +115,14 @@ bool FeatureManager::save_pl_eval_union(std::string jsonl_path, std::string csv_
   // _summary->set_timing_eval(union_timing_db);
 
   FeatureParser feature_parser(_summary);
-  bool jsonl_success = feature_parser.buildSummaryEvalJsonl(jsonl_path);
-  bool csv_success = builder.buildNetEval(csv_path);
+  bool json_success = feature_parser.buildSummaryEval(json_path);
 
   builder.destroyEvalTool();
 
-  return jsonl_success && csv_success;
+  return json_success;
 }
 
-bool FeatureManager::save_cts_eval_union(std::string jsonl_path, std::string csv_path, int32_t grid_size)
+bool FeatureManager::save_cts_eval(std::string json_path, int32_t grid_size)
 {
   // EGR
   FeatureBuilder builder;
@@ -141,23 +139,21 @@ bool FeatureManager::save_cts_eval_union(std::string jsonl_path, std::string csv
   _summary->set_density_eval(union_db.density_map_summary);
   _summary->set_congestion_eval(union_db.congestion_summary);
 
-  builder.evalTiming("EGR", true);
+  // builder.evalTiming("EGR", true);
 
-  builder.evalTiming("HPWL");
-  builder.evalTiming("FLUTE");
-  builder.evalTiming("SALT");
+  // builder.evalTiming("HPWL");
+  // builder.evalTiming("FLUTE");
+  // builder.evalTiming("SALT");
 
-  auto union_timing_db = builder.buildTimingUnionEvalSummary();
-  _summary->set_timing_eval(union_timing_db);
+  // auto union_timing_db = builder.buildTimingUnionEvalSummary();
+  // _summary->set_timing_eval(union_timing_db);
 
   FeatureParser feature_parser(_summary);
-  bool jsonl_success = feature_parser.buildSummaryEvalJsonl(jsonl_path);
-
-  bool csv_success = builder.buildNetEval(csv_path);
+  bool json_success = feature_parser.buildSummaryEval(json_path);
 
   builder.destroyEvalTool();
 
-  return jsonl_success && csv_success;
+  return json_success;
 }
 
 bool FeatureManager::save_timing_eval_summary(std::string path)
