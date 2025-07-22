@@ -166,6 +166,8 @@ void IRPGNetlistBuilder::build(
   auto& special_net_name = special_net->get_net_name();
   pg_netlist.set_net_name(special_net_name);
 
+  LOG_INFO << "building PG netlist for special net " << special_net_name << " start";
+
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_real_distribution<> dis(0.0, _c_instance_row_resistance * 0.1);
@@ -514,6 +516,8 @@ void IRPGNetlistBuilder::build(
   LOG_INFO << "instance pin edge num: "
            << pg_netlist.getEdgeNum() - via_edge_num - line_edge_num;
   LOG_INFO << "total edge num: " << pg_netlist.getEdgeNum();
+
+  LOG_INFO << "building PG netlist for special net " << special_net_name << " end";
 
   // for debug.
   // if (special_net_name == "VDD") {
