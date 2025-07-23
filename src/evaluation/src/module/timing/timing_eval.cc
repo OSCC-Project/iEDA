@@ -26,9 +26,9 @@ void TimingEval::runSTA()
   EVAL_INIT_STA_INST->runSTA();
 }
 
-void TimingEval::runLmSTA(ilm::LmLayout* lm_layout)
+void TimingEval::runVecSTA(ivec::VecLayout* vec_layout)
 {
-  EVAL_INIT_STA_INST->runLmSTA(lm_layout, "./");
+  EVAL_INIT_STA_INST->runVecSTA(vec_layout, "./");
 }
 
 void TimingEval::evalTiming(const std::string& routing_type, const bool& rt_done)
@@ -36,8 +36,9 @@ void TimingEval::evalTiming(const std::string& routing_type, const bool& rt_done
   EVAL_INIT_STA_INST->evalTiming(routing_type, rt_done);
 }
 
-// for large model(to weiguo)
-TimingWireGraph* TimingEval::getTimingWireGraph() {
+// for vectorization(to weiguo)
+TimingWireGraph* TimingEval::getTimingWireGraph()
+{
   auto timing_wire_graph = EVAL_INIT_STA_INST->getTimingWireGraph();
   auto timing_wire_graph_ptr = new TimingWireGraph(std::move(timing_wire_graph));
   return timing_wire_graph_ptr;
@@ -133,15 +134,18 @@ bool TimingEval::isClockNet(const std::string& net_name) const
   return EVAL_INIT_STA_INST->isClockNet(net_name);
 }
 
-std::map<int, double> TimingEval::patchTimingMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch) {
+std::map<int, double> TimingEval::patchTimingMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch)
+{
   return EVAL_INIT_STA_INST->patchTimingMap(patch);
 }
 
-std::map<int, double> TimingEval::patchPowerMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch) {
+std::map<int, double> TimingEval::patchPowerMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch)
+{
   return EVAL_INIT_STA_INST->patchPowerMap(patch);
 }
 
-std::map<int, double> TimingEval::patchIRDropMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch) {
+std::map<int, double> TimingEval::patchIRDropMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch)
+{
   return EVAL_INIT_STA_INST->patchIRDropMap(patch);
 }
 

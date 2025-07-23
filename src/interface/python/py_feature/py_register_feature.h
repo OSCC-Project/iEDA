@@ -35,9 +35,6 @@ void register_feature(py::module& m)
   m.def("feature_eval_summary", feature_eval_summary, py::arg("path"), py::arg("grid_size"));
   m.def("feature_timing_eval_summary", feature_timing_eval_summary, py::arg("path"));
   m.def("feature_net_eval", feature_net_eval, py::arg("path"));
-  m.def("feature_eval_union", feature_eval_union, py::arg("jsonl_path"), py::arg("csv_path"), py::arg("grid_size"));
-  m.def("feature_pl_eval_union", feature_pl_eval_union, py::arg("jsonl_path"), py::arg("csv_path"), py::arg("grid_size"));
-  m.def("feature_cts_eval_union", feature_cts_eval_union, py::arg("jsonl_path"), py::arg("csv_path"), py::arg("grid_size"));
   m.def("feature_cong_map", feature_cong_map, py::arg("step"), py::arg("dir"));
 }
 

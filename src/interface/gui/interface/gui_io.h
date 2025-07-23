@@ -15,15 +15,15 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
 #include "builder.h"
 #include "file_cts.h"
 #include "idrc_violation.h"
-#include "lm_net.h"
 #include "mainwindow.h"
+#include "vec_net.h"
 
 #define guiInst (igui::GuiIO::getInstance())
 using namespace idb;
@@ -51,7 +51,7 @@ namespace igui {
     void readDB(IdbBuilder* _builder);
     void readDrcDb(std::map<std::string, std::vector<idrc::DrcViolation*>>& drc_db, int max_num = -1);
     void readClockTreeDb(std::vector<iplf::CtsTreeNodeMap*>& node_list);
-    void readGraphDb(std::map<int, ilm::LmNet> net_map);
+    void readGraphDb(std::map<int, ivec::VecNet> net_map);
 
     bool captureDesign(std::string path);
 

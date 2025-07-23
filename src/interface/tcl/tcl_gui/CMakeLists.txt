@@ -12,7 +12,7 @@ target_link_libraries(tcl_gui
         str
         iGUI
         tcl_qt
-        ilm_api
+        ivec_api
 )
 
 target_include_directories(tcl_gui

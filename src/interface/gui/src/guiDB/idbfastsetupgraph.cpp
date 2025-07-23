@@ -18,7 +18,7 @@
 #include "idbfastsetup.h"
 #include "omp.h"
 /// this is hord code for debug graph
-void IdbSpeedUpSetup::showGraph(std::map<int, ilm::LmNet> net_map) {
+void IdbSpeedUpSetup::showGraph(std::map<int, ivec::VecNet> net_map) {
   std::cout << "begin show graph" << std::endl;
   for (auto [net_id, net] : net_map) {
     auto container = _gui_design->get_drc_container("Metal Short");

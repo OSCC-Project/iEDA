@@ -34,5 +34,5 @@ set(HOME_SOLVER ${PROJECT_SOURCE_DIR}/src/solver)
 #third party settings
 set(HOME_THIRDPARTY ${PROJECT_SOURCE_DIR}/src/third_party)
 
-#large_model settings
-set(HOME_LARGE_MODEL ${PROJECT_SOURCE_DIR}/src/large_model)
+#vectorization settings
+set(HOME_VECTORIZATION ${PROJECT_SOURCE_DIR}/src/vectorization)

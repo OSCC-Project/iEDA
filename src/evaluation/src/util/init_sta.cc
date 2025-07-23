@@ -32,11 +32,11 @@
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
 #include "idm.h"
-#include "lm_layout.h"
 #include "salt/base/flute.h"
 #include "salt/salt.h"
 #include "timing_db.hh"
 #include "usage/usage.hh"
+#include "vec_layout.h"
 
 namespace ieval {
 #define STA_INST (ista::TimingEngine::getOrCreateTimingEngine())
@@ -80,13 +80,13 @@ void InitSTA::runSTA()
   });
 }
 
-void InitSTA::runLmSTA(ilm::LmLayout* lm_layout, std::string work_dir)
+void InitSTA::runVecSTA(ivec::VecLayout* vec_layout, std::string work_dir)
 {
   initStaEngine();
 
-  buildLmRCTree(lm_layout, work_dir);
+  buildVecRCTree(vec_layout, work_dir);
 
-  updateResult("Large Model");
+  updateResult("Vectorization");
 }
 
 void InitSTA::evalTiming(const std::string& routing_type, const bool& rt_done)
@@ -414,7 +414,7 @@ void InitSTA::buildRCTree(const std::string& routing_type)
   STA_INST->updateTiming();
 }
 
-void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir)
+void InitSTA::buildVecRCTree(ivec::VecLayout* vec_layout, std::string work_dir)
 {
   // init
   auto* idb = dmInst->get_idb_builder();
@@ -426,13 +426,13 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir)
   auto idb_layer_1st = dmInst->get_config().get_routing_layer_1st();
   // find the first layer which get_name == "idb_layer_1st", erase the layers
   // before it
-  auto lm_layers = layers | std::views::drop_while([&](auto layer) { return layer->get_name() != idb_layer_1st; });
+  auto vec_layers = layers | std::views::drop_while([&](auto layer) { return layer->get_name() != idb_layer_1st; });
 
   // main flow
   auto idb_nets = idb_design->get_net_list()->get_net_list();
   auto* sta_netlist = STA_INST->get_netlist();
   ista::Net* sta_net = nullptr;
-  auto& wire_graph = lm_layout->get_graph().get_net_map();
+  auto& wire_graph = vec_layout->get_graph().get_net_map();
   for (size_t net_id = 0; net_id < idb_nets.size(); ++net_id) {
     auto* idb_net = idb_nets[net_id];
     std::string the_idb_net_name = idb_net->get_net_name();
@@ -443,10 +443,10 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir)
       continue;
     }
 
-    auto lm_net = wire_graph.at(net_id);
+    auto vec_net = wire_graph.at(net_id);
     auto idb_inst_pins = idb_net->get_instance_pin_list()->get_pin_list();
     auto io_pins = idb_net->get_io_pins()->get_pin_list();
-    auto& wires = lm_net.get_wires();
+    auto& wires = vec_net.get_wires();
     // Check corner case
     if (wires.size() == 1) {
       auto& wire = wires[0];
@@ -460,15 +460,15 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir)
     auto sta_pin_ports = sta_net->get_pin_ports();
     std::unordered_map<std::string, ista::DesignObject*> sta_pin_port_map;
     std::ranges::for_each(sta_pin_ports, [&](ista::DesignObject* pin_port) { sta_pin_port_map[pin_port->getFullName()] = pin_port; });
-    std::unordered_map<ilm::LmNode*, ista::RctNode*> lm_node_map;
-    auto make_or_find_rc_node = [&](ilm::LmNode* lm_node) {
-      if (lm_node_map.contains(lm_node)) {
-        return lm_node_map[lm_node];
+    std::unordered_map<ivec::VecNode*, ista::RctNode*> vec_node_map;
+    auto make_or_find_rc_node = [&](ivec::VecNode* vec_node) {
+      if (vec_node_map.contains(vec_node)) {
+        return vec_node_map[vec_node];
       }
-      int pin_id = lm_node->get_node_data()->get_pin_id();
+      int pin_id = vec_node->get_node_data()->get_pin_id();
       ista::RctNode* rc_node = nullptr;
       if (pin_id >= 0) {
-        auto pin_name_pair = lm_layout->findPinName(pin_id);
+        auto pin_name_pair = vec_layout->findPinName(pin_id);
         auto [inst_name, pin_type_name] = pin_name_pair;
         auto pin_name = !inst_name.empty() ? (inst_name + ":" + pin_type_name) : pin_type_name;
         pin_name.erase(std::remove(pin_name.begin(), pin_name.end(), '\\'), pin_name.end());
@@ -476,12 +476,12 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir)
         rc_node = STA_INST->makeOrFindRCTreeNode(sta_pin_port);
       } else {
         // steiner node
-        rc_node = STA_INST->makeOrFindRCTreeNode(sta_net, lm_node->get_node_id());
+        rc_node = STA_INST->makeOrFindRCTreeNode(sta_net, vec_node->get_node_id());
       }
-      lm_node_map[lm_node] = rc_node;
+      vec_node_map[vec_node] = rc_node;
       return rc_node;
     };
-    auto calc_res_cap = [&](ilm::LmNetWire& wire) {
+    auto calc_res_cap = [&](ivec::VecNetWire& wire) {
       auto connected_nodes = wire.get_connected_nodes();
       auto* source = connected_nodes.first;
       auto* target = connected_nodes.second;
@@ -501,7 +501,7 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir)
         wirelength += std::abs(x1 - x2) + std::abs(y1 - y2);
       });
 
-      auto* routing_layer = dynamic_cast<IdbLayerRouting*>(lm_layers[source_layer]);
+      auto* routing_layer = dynamic_cast<IdbLayerRouting*>(vec_layers[source_layer]);
 
       auto dbu = idb_layout->get_units()->get_micron_dbu();
       auto segment_width = ((double) routing_layer->get_width()) / dbu;
@@ -517,7 +517,7 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir)
 
       return std::make_pair(res, cap);
     };
-    std::ranges::for_each(wires, [&](ilm::LmNetWire& wire) {
+    std::ranges::for_each(wires, [&](ivec::VecNetWire& wire) {
       auto connected_nodes = wire.get_connected_nodes();
       auto* source = connected_nodes.first;
       auto* target = connected_nodes.second;
@@ -532,7 +532,7 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir)
     });
 
     std::vector<std::string> pin_names;
-    std::ranges::for_each(wires, [&pin_names, lm_layout](ilm::LmNetWire& wire) {
+    std::ranges::for_each(wires, [&pin_names, vec_layout](ivec::VecNetWire& wire) {
       auto connected_nodes = wire.get_connected_nodes();
       auto* source = connected_nodes.first;
       auto* target = connected_nodes.second;
@@ -541,7 +541,7 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir)
         int pin_id = connected_node->get_node_data()->get_pin_id();
 
         if (pin_id != -1) {
-          auto [inst_name, pin_type_name] = lm_layout->findPinName(pin_id);
+          auto [inst_name, pin_type_name] = vec_layout->findPinName(pin_id);
           auto pin_name = !inst_name.empty() ? (inst_name + ":" + pin_type_name) : pin_type_name;
 
           pin_names.push_back(pin_name);

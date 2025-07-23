@@ -250,7 +250,7 @@ unsigned CmdGuiShowGraph::exec()
     path = path_opt->getStringVal();
   }
   std::cout << "2222" << std::endl;
-  ilm::LargeModelApi lm_api;
+  ivec::VectorizationApi lm_api;
   auto data = lm_api.getGraph(path);
 
   std::cout << "11111" << std::endl;

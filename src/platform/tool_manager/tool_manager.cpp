@@ -131,7 +131,7 @@ void ToolManager::guiShowClockTree()
 #endif
 }
 
-void ToolManager::guiShowGraph(std::map<int, ilm::LmNet> graph)
+void ToolManager::guiShowGraph(std::map<int, ivec::VecNet> graph)
 {
 #ifdef BUILD_GUI
   guiInst->readGraphDb(graph);

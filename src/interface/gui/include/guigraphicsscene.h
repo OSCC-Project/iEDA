@@ -23,6 +23,7 @@
 #include "guidatabase.h"
 // #include "guidbinterface.h"
 #include <QTimer>
+#include <map>
 
 #include "builder.h"
 #include "file_cts.h"
@@ -33,8 +34,7 @@
 #include "line.h"
 #include "ruler.h"
 #include "shape.h"
-#include "lm_net.h"
-#include <map>
+#include "vec_net.h"
 
 class DbSetup;
 
@@ -65,7 +65,7 @@ class GuiGraphicsScene : public QGraphicsScene {
   void createDrc(std::map<std::string, std::vector<idrc::DrcViolation*>>& drc_db, int max_num = -1);
   void createClockTree(std::vector<iplf::CtsTreeNodeMap*>& node_list);
   void updateInstanceInFastMode(std::vector<iplf::FileInstance>& file_inst_list);
-  void createGraph(std::map<int, ilm::LmNet> net_map);
+  void createGraph(std::map<int, ivec::VecNet> net_map);
 
   void onDbChanged(DbSetup* db_setup);
   void fitView(qreal width, qreal height);

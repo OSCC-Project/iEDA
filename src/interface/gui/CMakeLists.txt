@@ -192,7 +192,7 @@ target_link_libraries(iGUI
     file_manager_placement
     tool_api_ipl
     ieda_feature
-    ilm_layout_db
+    ivec_db
 )
 if(OpenMP_CXX_FOUND)
 target_link_libraries(iGUI 

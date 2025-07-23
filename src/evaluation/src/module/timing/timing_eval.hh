@@ -18,8 +18,8 @@ namespace ista {
 enum class AnalysisMode;
 }
 
-namespace ilm {
-class LmLayout;
+namespace ivec {
+class VecLayout;
 }
 
 namespace ieval {
@@ -34,9 +34,9 @@ class TimingEval
   static TimingEval* getInst();
 
   void runSTA();
-  void runLmSTA(ilm::LmLayout* lm_layout);
+  void runVecSTA(ivec::VecLayout* vec_layout);
   void evalTiming(const std::string& routing_type, const bool& rt_done = false);
-  TimingWireGraph* getTimingWireGraph(); 
+  TimingWireGraph* getTimingWireGraph();
 
   static void destroyInst();
 

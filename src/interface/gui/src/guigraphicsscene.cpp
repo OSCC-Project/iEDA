@@ -160,7 +160,9 @@ void GuiGraphicsScene::createDrc(std::map<std::string, std::vector<idrc::DrcViol
   ((IdbSpeedUpSetup*)_db_setup)->showDrc(drc_db, max_num);
 }
 
-void GuiGraphicsScene::createGraph(std::map<int, ilm::LmNet> net_map) { ((IdbSpeedUpSetup*)_db_setup)->showGraph(net_map); }
+void GuiGraphicsScene::createGraph(std::map<int, ivec::VecNet> net_map) {
+  ((IdbSpeedUpSetup*)_db_setup)->showGraph(net_map);
+}
 
 void GuiGraphicsScene::createClockTree(std::vector<iplf::CtsTreeNodeMap*>& node_list) {
   ((IdbSpeedUpSetup*)_db_setup)->showClockTree(node_list);
