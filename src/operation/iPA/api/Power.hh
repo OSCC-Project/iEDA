@@ -28,11 +28,11 @@
 #include "core/PwrGraph.hh"
 #include "core/PwrGroupData.hh"
 #include "core/PwrSeqGraph.hh"
-#include "include/PwrConfig.hh"
-#include "ops/read_vcd/RustVCDParserWrapper.hh"
 #include "iIR/api/iIR.hh"
 #include "iIR/source/module/power-netlist/PGNetlist.hh"
+#include "include/PwrConfig.hh"
 #include "json/json.hpp"
+#include "ops/read_vcd/RustVCDParserWrapper.hh"
 
 using namespace iir;
 
@@ -51,10 +51,14 @@ class Power {
   static Power* getOrCreatePower(StaGraph* sta_graph);
   static void destroyPower();
 
-  void set_design_work_space(const char* design_work_space) { _design_work_space = design_work_space; }
+  void set_design_work_space(const char* design_work_space) {
+    _design_work_space = design_work_space;
+  }
   const char* get_design_work_space() { return _design_work_space.c_str(); }
 
-  void set_default_toggle(double default_toggle) { _default_toggle = default_toggle; }
+  void set_default_toggle(double default_toggle) {
+    _default_toggle = default_toggle;
+  }
   double get_default_toggle() { return _default_toggle; }
 
   void enableJsonReport() { _is_json_report_enabled = true; }
@@ -75,11 +79,11 @@ class Power {
 
   void set_rust_pg_rc_data(const void* rust_pg_rc_data) {
     _rust_pg_rc_data = rust_pg_rc_data;
-      // set rc data.
+    // set rc data.
     _ir_analysis.set_rc_data(_rust_pg_rc_data);
   }
   auto* get_rust_pg_rc_data() { return _rust_pg_rc_data; }
-  
+
   auto& get_leakage_powers() { return _leakage_powers; }
   auto& get_internal_powers() { return _internal_powers; }
   auto& get_switch_powers() { return _switch_powers; }
@@ -148,9 +152,7 @@ class Power {
     _rust_pg_rc_data = nullptr;
   }
 
-  double getNominalVoltage() {
-    return _ir_analysis.get_nominal_voltage();
-  }
+  double getNominalVoltage() { return _ir_analysis.get_nominal_voltage(); }
 
   auto& getNetInstanceIRDrop() {
     return _ir_analysis.get_net_to_instance_ir_drop();
@@ -163,7 +165,7 @@ class Power {
   void setBumpNodeLocs(
       const std::map<std::string, IRNodeLoc>& net_bump_node_locs) {
     _ir_analysis.set_net_bump_node_locs(net_bump_node_locs);
-  }  
+  }
   unsigned runIRAnalysis(std::string power_net_name);
   unsigned reportIRDropTable(const char* rpt_file_name);
   unsigned reportIRDropCSV(const char* rpt_file_name, std::string net_name);
@@ -174,9 +176,9 @@ class Power {
   std::map<ista::Instance::Coordinate, double> displayInstancePowerMap();
 
  private:
-  std::string _design_work_space; //!< The power report work space.
+  std::string _design_work_space;  //!< The power report work space.
   std::optional<std::pair<std::string, std::string>> _backup_work_dir;
-  double _default_toggle = 0.02; //!< The default toggle value.
+  double _default_toggle = 0.02;  //!< The default toggle value.
 
   PwrGraph _power_graph;         //< The power graph, mapped to sta graph.
   PwrSeqGraph _power_seq_graph;  //!< The power sequential graph, vertex is
@@ -194,8 +196,8 @@ class Power {
   std::map<PwrGroupData::PwrGroupType, std::vector<PwrGroupData*>>
       _type_to_group_data;  //!< The mapping of type to group data.
 
-  iIR _ir_analysis; //!< The IR Drop analysis top.
-  const void* _rust_pg_rc_data = nullptr; //!< The rust power/ground rc data.
+  iIR _ir_analysis;                        //!< The IR Drop analysis top.
+  const void* _rust_pg_rc_data = nullptr;  //!< The rust power/ground rc data.
 
   bool _is_json_report_enabled = false;  //!< Whether to enable json report.
 

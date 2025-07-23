@@ -25,6 +25,7 @@
 #include "tcl_gui.h"
 
 #include "gui_io.h"
+#include "lm_api.h"
 #include "tool_manager.h"
 
 namespace tcl {
@@ -217,6 +218,43 @@ unsigned CmdGuiShowPlacement::exec()
   guiInst->guiUpdateInstanceInFastMode(dir, true);
 
   iplf::tmInst->guiTimerStart(10);
+
+  return 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+CmdGuiShowGraph::CmdGuiShowGraph(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* path_opt = new TclStringOption(TCL_PATH, 1, nullptr);
+  addOption(path_opt);
+}
+
+unsigned CmdGuiShowGraph::check()
+{
+  // TclOption *file_name_option = getOptionOrArg("-path");
+  // LOG_FATAL_IF(!file_name_option);
+  return 1;
+}
+
+unsigned CmdGuiShowGraph::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+  std::cout << "333" << std::endl;
+  std::string path = "";
+  TclOption* path_opt = getOptionOrArg(TCL_PATH);
+  if (path_opt != nullptr) {
+    path = path_opt->getStringVal();
+  }
+  std::cout << "2222" << std::endl;
+  ivec::VectorizationApi lm_api;
+  auto data = lm_api.getGraph(path);
+
+  std::cout << "11111" << std::endl;
+  iplf::tmInst->guiShowGraph(data);
 
   return 1;
 }

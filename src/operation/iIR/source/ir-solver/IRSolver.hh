@@ -72,19 +72,19 @@ class IRLUSolver : public IRSolver {
  */
 class IRCGSolver : public IRSolver {
  public:
- IRCGSolver(double nominal_voltage) : _nominal_voltage(nominal_voltage) {}
- ~IRCGSolver() override = default;
+  IRCGSolver(double nominal_voltage) : _nominal_voltage(nominal_voltage) {}
+  ~IRCGSolver() override = default;
   std::vector<double> operator()(
       Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
       Eigen::VectorXd& J_vector) override;
 
-  private:
+ private:
   double _nominal_voltage;
 
   double _tolerance = 1e-15;
   int _max_iteration = 1000;
 
-  double _lambda = 0; //!< Regularization parameter.
+  double _lambda = 0;  //!< Regularization parameter.
 };
 
 }  // namespace iir

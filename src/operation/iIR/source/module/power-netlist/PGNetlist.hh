@@ -27,10 +27,10 @@
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/geometries/segment.hpp>
 #include <boost/geometry/index/rtree.hpp>
-#include <tuple>
-#include <vector>
 #include <list>
 #include <ranges>
+#include <tuple>
+#include <vector>
 
 #include "IdbLayer.h"
 #include "IdbLayout.h"
@@ -41,7 +41,6 @@
 #include "def_service.h"
 #include "lef_service.h"
 #include "log/Log.hh"
-
 
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
@@ -82,22 +81,20 @@ class IRPGNode {
   void set_is_via() { _is_via = true; }
   bool is_via() const { return _is_via; }
 
-
  private:
-  IRNodeCoord _coord;  //!< The coord of the node.
-  int _layer_id;       //!< The layer id of the node.
-  int _node_id = -1; //!< The node id of the pg nodes.
-  bool _is_instance_pin = false; //!< The node is instance VDD/GND.
-  bool _is_bump = false; //!< The node is bump VDD/GND.
-  bool _is_via = false; //!< The node is via.
+  IRNodeCoord _coord;             //!< The coord of the node.
+  int _layer_id;                  //!< The layer id of the node.
+  int _node_id = -1;              //!< The node id of the pg nodes.
+  bool _is_instance_pin = false;  //!< The node is instance VDD/GND.
+  bool _is_bump = false;          //!< The node is bump VDD/GND.
+  bool _is_via = false;           //!< The node is via.
 
-  const char* _node_name = nullptr; //!< The name of the node.
-
+  const char* _node_name = nullptr;  //!< The name of the node.
 };
 
 /**
  * @brief node comparator for store IR Node according to the coord order.
- * 
+ *
  */
 struct IRNodeComparator {
   bool operator()(const IRPGNode* lhs, const IRPGNode* rhs) const {
@@ -112,8 +109,9 @@ struct IRNodeComparator {
 };
 
 /**
- * @brief node comparator for store IR Node according to the row order for row edge connected.
- * 
+ * @brief node comparator for store IR Node according to the row order for row
+ * edge connected.
+ *
  */
 struct IRNodeRowComparator {
   bool operator()(const IRPGNode* lhs, const IRPGNode* rhs) const {
@@ -146,7 +144,7 @@ class IRPGEdge {
   int64_t _node1;  //!< The first node id.
   int64_t _node2;  //!< The second node id.
 
-  double _resistance = 0.0; //!< The edge resistance.
+  double _resistance = 0.0;  //!< The edge resistance.
 };
 
 /**
@@ -184,9 +182,7 @@ class IRPGNetlist {
   }
   auto& get_nodes() { return _nodes; }
   auto& get_nodes_image() { return _nodes_image; }
-  IRPGNode* getNode(unsigned index) {
-    return _nodes_image[index];
-  }
+  IRPGNode* getNode(unsigned index) { return _nodes_image[index]; }
 
   auto getEdgeNode(IRPGEdge& pg_edge) {
     auto node1_id = pg_edge.get_node1();
@@ -209,31 +205,31 @@ class IRPGNetlist {
     _node_id_to_name[node_id] = std::move(name);
   }
   auto& get_node_id_to_name() { return _node_id_to_name; }
-  auto& getNodeName(unsigned node_id) {
-    return _node_id_to_name[node_id];
-  }
+  auto& getNodeName(unsigned node_id) { return _node_id_to_name[node_id]; }
 
-  void addBumpNode(IRPGNode* bump_node) {
-    _bump_nodes.push_back(bump_node);
-  }
+  void addBumpNode(IRPGNode* bump_node) { _bump_nodes.push_back(bump_node); }
   auto& get_bump_nodes() { return _bump_nodes; }
 
   void printToYaml(std::string yaml_path);
 
  private:
-  std::list<IRPGNode> _nodes;  //!< The nodes of the netlist.
-  std::vector<IRPGNode*> _nodes_image; //!< The nodes image for fast access.
-  std::map<std::pair<IRNodeCoord, int>, IRPGNode*> _nodes_map; //!< The nodes map for fast access.
+  std::list<IRPGNode> _nodes;           //!< The nodes of the netlist.
+  std::vector<IRPGNode*> _nodes_image;  //!< The nodes image for fast access.
+  std::map<std::pair<IRNodeCoord, int>, IRPGNode*>
+      _nodes_map;                //!< The nodes map for fast access.
   std::vector<IRPGEdge> _edges;  //!< The edges of the netlist.
 
-  std::vector<IRPGNode*> _bump_nodes; //!< The bump nodes of the netlist.
+  std::vector<IRPGNode*> _bump_nodes;  //!< The bump nodes of the netlist.
 
-  std::map<unsigned, std::string> _node_id_to_name; //!< The node id to node name.
+  std::map<unsigned, std::string>
+      _node_id_to_name;  //!< The node id to node name.
 
   std::string _net_name;
 };
 
-using IRNodeLoc = std::pair<std::pair<double, double>, std::string>;  //!< The node location type, coord and layer id.
+using IRNodeLoc =
+    std::pair<std::pair<double, double>,
+              std::string>;  //!< The node location type, coord and layer id.
 
 /**
  * @brief The pg netlist builder.
@@ -257,12 +253,14 @@ class IRPGNetlistBuilder {
   auto& get_rust_pg_netlists() { return _rust_pg_netlists; }
 
   std::vector<BGSegment> buildBGSegments(idb::IdbSpecialNet* special_net,
-                                         unsigned& line_segment_num, std::vector<unsigned>& segment_widths);
+                                         unsigned& line_segment_num,
+                                         std::vector<unsigned>& segment_widths);
 
-  void build(idb::IdbSpecialNet* special_net, idb::IdbPin* io_pin,
-             std::function<double(unsigned, unsigned, unsigned)> calc_resistance);
+  void build(
+      idb::IdbSpecialNet* special_net, idb::IdbPin* io_pin,
+      std::function<double(unsigned, unsigned, unsigned)> calc_resistance);
   void createRustPGNetlist();
-  void createRustRCData();
+  unsigned createRustRCData();
 
   auto* get_rust_rc_data() const { return _rust_rc_data; }
 
@@ -307,8 +305,8 @@ class IRPGNetlistBuilder {
   double getViaResistance(unsigned bottom_layer_id);
 
   void clearRTree() {
-        _rtree.clear();  // Clear all data in rtree
-    }
+    _rtree.clear();  // Clear all data in rtree
+  }
 
   auto& get_net_bump_node_locs() { return _net_bump_node_locs; }
 
@@ -316,17 +314,19 @@ class IRPGNetlistBuilder {
   bgi::rtree<BGValue, bgi::quadratic<16>> _rtree;
   double _c_via_resistance = 0.01;
   double _c_instance_row_resistance = 0.01;
-  double _dbu = 2000; //!< The dbu for the design.
+  double _dbu = 2000;  //!< The dbu for the design.
 
-  std::map<std::string, unsigned> _layer_name_to_id; //!< The layer name to id map.
+  std::map<std::string, unsigned>
+      _layer_name_to_id;  //!< The layer name to id map.
 
-  std::set<std::string> _instance_names; //!< The instance have power.
+  std::set<std::string> _instance_names;  //!< The instance have power.
 
-  std::list<IRPGNetlist> _pg_netlists; //!< The builded pg netlist.
-  std::vector<const void*> _rust_pg_netlists; //!< The rust pg netlist.
+  std::list<IRPGNetlist> _pg_netlists;         //!< The builded pg netlist.
+  std::vector<const void*> _rust_pg_netlists;  //!< The rust pg netlist.
   const void* _rust_rc_data = nullptr;
 
-  std::map<std::string, IRNodeLoc> _net_bump_node_locs; //!< The net bump node locs.
+  std::map<std::string, IRNodeLoc>
+      _net_bump_node_locs;  //!< The net bump node locs.
 };
 
 }  // namespace iir

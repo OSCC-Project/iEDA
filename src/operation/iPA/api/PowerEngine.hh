@@ -43,14 +43,13 @@ struct ClusterConnection {
   unsigned _hop;
 };
 
-
 /**
  * @brief macro connection for iMP.
  *
  */
 struct MacroConnection {
-  const char* _src_macro_name;
-  const char* _dst_macro_name;
+  const char *_src_macro_name;
+  const char *_dst_macro_name;
   std::vector<unsigned> _stages_each_hop;
   unsigned _hop;
 };
@@ -82,10 +81,12 @@ class PowerEngine {
   std::vector<MacroConnection> buildMacroConnectionMap(unsigned max_hop);
 
   unsigned buildPGNetWireTopo();
-  unsigned readPGSpef(const char* spef_file) { return _ipower->readPGSpef(spef_file); }
+  unsigned readPGSpef(const char *spef_file) {
+    return _ipower->readPGSpef(spef_file);
+  }
 
   void resetIRAnalysisData();
-  auto* getRustPGRCData() { return _ipower->get_rust_pg_rc_data(); }
+  auto *getRustPGRCData() { return _ipower->get_rust_pg_rc_data(); }
   unsigned runIRAnalysis(std::string power_net_name) {
     if (!getRustPGRCData()) {
       buildPGNetWireTopo();
@@ -93,18 +94,18 @@ class PowerEngine {
       auto net_bump_node_locs = _pg_netlist_builder.get_net_bump_node_locs();
       _ipower->setBumpNodeLocs(net_bump_node_locs);
     }
+
     return _ipower->runIRAnalysis(power_net_name);
   }
-  std::map<ista::Instance*, double> getInstanceIRDrop(std::string power_net_name = "VDD");
+  std::map<ista::Instance *, double> getInstanceIRDrop(
+      std::string power_net_name = "VDD");
 
   std::map<ista::Instance::Coordinate, double> displayPowerMap() {
     return _ipower->displayInstancePowerMap();
   }
   std::map<ista::Instance::Coordinate, double> displayIRDropMap();
 
-  unsigned reportIRAnalysis() {
-    return _ipower->reportIRAnalysis();
-  }
+  unsigned reportIRAnalysis() { return _ipower->reportIRAnalysis(); }
 
 #ifdef USE_GPU
   std::vector<MacroConnection> buildMacroConnectionMapWithGPU(unsigned max_hop);

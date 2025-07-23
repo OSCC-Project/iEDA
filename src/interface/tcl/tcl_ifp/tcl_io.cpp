@@ -27,10 +27,12 @@ TclFpPlacePins::TclFpPlacePins(const char* cmd_name) : TclCmd(cmd_name)
   auto* tcl_layer = new TclStringOption("-layer", 0);
   auto* tcl_width = new TclIntOption("-width", 0);
   auto* tcl_height = new TclIntOption("-height", 0);
+  auto* tcl_sides = new TclStringListOption("-sides", 1);  /// -sides "left right top bottom"
 
   addOption(tcl_layer);
   addOption(tcl_width);
   addOption(tcl_height);
+  addOption(tcl_sides);
 }
 
 unsigned TclFpPlacePins::check()
@@ -47,12 +49,18 @@ unsigned TclFpPlacePins::exec()
   TclOption* tcl_layer = getOptionOrArg("-layer");
   TclOption* tcl_width = getOptionOrArg("-width");
   TclOption* tcl_height = getOptionOrArg("-height");
+  TclOption* tcl_sides = getOptionOrArg("-sides");
 
   auto layer = tcl_layer->getStringVal();
   auto width = tcl_width->getIntVal();
   auto height = tcl_height->getIntVal();
+  vector<string> sides = {};
 
-  fpApiInst->autoPlacePins(layer, width, height);
+  if (tcl_sides != nullptr) {
+    sides = tcl_sides->getStringList();
+  }
+
+  fpApiInst->autoPlacePins(layer, width, height, sides);
 
   std::cout << "Floorplan place pins." << std::endl;
   return 1;

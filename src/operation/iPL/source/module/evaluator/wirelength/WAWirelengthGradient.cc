@@ -228,8 +228,7 @@ void WAWirelengthGradient::updateWirelengthForce(float coeff_x, float coeff_y, f
 void WAWirelengthGradient::updateWirelengthForceDirect(float coeff_x, float coeff_y, float min_force_bar, int32_t thread_num, GridManager* grid_manager)
 {
   float util_max = std::max(grid_manager->get_h_util_max(), grid_manager->get_v_util_max());
-  // LOG_INFO << "H_UTIL_MAX = " << grid_manager->get_h_util_max() << "; v_UTIL_MAX = " << grid_manager->get_v_util_max();
-  // LOG_INFO << "H_UTIL_SUM = " << grid_manager->get_h_util_sum() << "; v_UTIL_SUM = " << grid_manager->get_v_util_sum();
+  LOG_INFO << "Congestion Utilizaiton: horizontal_max = " << grid_manager->get_h_util_max() << ",  vertical_max = " << grid_manager->get_v_util_max();
 
   // NOLINTNEXTLINE
   int32_t net_chunk_size = std::max(int(_topology_manager->get_network_list().size() / thread_num / 16), 1);

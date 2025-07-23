@@ -205,4 +205,54 @@ std::string DensityAPI::macroChannelMap(DensityCells cells, DensityRegion die, D
   return macro_channel_map;
 }
 
+std::map<int, int> DensityAPI::patchPinDensity(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, int> patch_pin_density;
+
+  EVAL_DENSITY_INST->initIDB();
+
+  DensityEval density_eval;
+  patch_pin_density = density_eval.patchPinDensity(EVAL_DENSITY_INST->getDensityPins(), 
+                                                  patch_coords);
+  return patch_pin_density;
+}
+
+std::map<int, double> DensityAPI::patchCellDensity(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, double> patch_cell_density;
+
+  EVAL_DENSITY_INST->initIDB();
+
+  DensityEval density_eval;
+  patch_cell_density = density_eval.patchCellDensity(EVAL_DENSITY_INST->getDensityCells(), 
+                                                  patch_coords);
+  return patch_cell_density;
+}
+
+
+std::map<int, double> DensityAPI::patchNetDensity(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, double> patch_net_density;
+
+  EVAL_DENSITY_INST->initIDB();
+
+  DensityEval density_eval;
+  patch_net_density = density_eval.patchNetDensity(EVAL_DENSITY_INST->getDensityNets(), 
+                                                  patch_coords);
+
+  return patch_net_density;                                                
+}
+
+std::map<int, int> DensityAPI::patchMacroMargin(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, int> patch_macro_margin;
+
+  EVAL_DENSITY_INST->initIDB();
+
+  DensityEval density_eval;
+  patch_macro_margin = density_eval.patchMacroMargin(EVAL_DENSITY_INST->getDensityCells(), EVAL_DENSITY_INST->getDensityRegionCore(), patch_coords);
+
+  return patch_macro_margin;
+}
+
 }  // namespace ieval

@@ -27,6 +27,7 @@
 #include <optional>
 
 #include "TimingDBAdapter.hh"
+#include "TimingIDBAdapter.hh"
 #include "sta/Sta.hh"
 #include "sta/StaIncremental.hh"
 
@@ -75,6 +76,7 @@ class TimingEngine {
   const char *get_design_work_space() { return _ista->get_design_work_space(); }
 
   TimingDBAdapter *get_db_adapter() { return _db_adapter.get(); }
+  auto* getIDBAdapter() { return dynamic_cast<TimingIDBAdapter*>(_db_adapter.get()); }
   void set_db_adapter(std::unique_ptr<TimingDBAdapter> db_adapter);
 
   TimingEngine &readLiberty(std::vector<std::string> &lib_files) {
@@ -229,7 +231,7 @@ class TimingEngine {
                : nullptr;
   }
   void resetRcTree(Net *net);
-  RctNode *makeOrFindRCTreeNode(Net *net, int id);
+  RctNode *makeOrFindRCTreeNode(Net *net, int64_t id);
   RctNode *makeOrFindRCTreeNode(DesignObject *pin_or_port);
   RctNode *makeOrFindVirtualRCTreeNode(const char *rc_tree_name,
                                        const char *node_name);
@@ -272,6 +274,11 @@ class TimingEngine {
     _ista->reportTiming(std::move(exclude_cell_names), is_derate, is_clock_cap,
                         is_copy);
     return *this;
+  }
+
+  unsigned reportWirePaths(unsigned n_worst_path_per_clock) {
+    _ista->set_n_worst_path_per_clock(n_worst_path_per_clock);
+    return  _ista->reportWirePaths();
   }
 
   std::vector<StaClock *> getClockList();

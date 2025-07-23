@@ -22,13 +22,15 @@
  * @date 2021-04-22
  */
 
+#include "StaDump.hh"
+
 #include <yaml-cpp/yaml.h>
 
 #include <fstream>
+#include <ranges>
 #include <regex>
 #include <string>
 
-#include "StaDump.hh"
 #include "ThreadPool/ThreadPool.h"
 
 namespace ista {
@@ -299,6 +301,88 @@ unsigned StaDumpDelayYaml::operator()(StaArc* the_arc) {
           rc_net->delayNs(*snk_obj, RcNet::DelayMethod::kECM).value_or(0.0);
       arc_node["D2MC"] =
           rc_net->delayNs(*snk_obj, RcNet::DelayMethod::kD2MC).value_or(0.0);
+    }
+  }
+
+  return 1;
+}
+
+/**
+ * @brief dump timing vertex data for AI EDA dataset.
+ *
+ * @param the_vertex
+ * @return unsigned
+ */
+unsigned StaDumpWireYaml::operator()(StaVertex* the_vertex) {
+  AnalysisMode analysis_mode = _analysis_mode;
+  TransType trans_type = _trans_type;
+
+  unsigned& node_id = _node_id;
+  std::string node_name = Str::printf("node_%d", node_id++);
+  _file << node_name << ":\n";
+
+  _file << "  Point: " << the_vertex->getNameWithCellName() << "\n";
+  auto vertex_load = the_vertex->getLoad(analysis_mode, trans_type);
+  _file << "  Capacitance: " << vertex_load << "\n";
+  auto vertex_slew = the_vertex->getSlewNs(analysis_mode, trans_type);
+  _file << "  slew: " << (vertex_slew ? *vertex_slew : 0.0) << "\n";
+  _file << "  trans_type: "
+        << ((trans_type == TransType::kRise) ? "rise" : "fall") << "\n";
+
+  return 1;
+}
+
+/**
+ * @brief dump timing arc data, for net arc, we need extract the wire topo, from
+ * driver pin to load pin.
+ * @param the_arc
+ * @return unsigned
+ */
+unsigned StaDumpWireYaml::operator()(StaArc* the_arc) {
+  AnalysisMode analysis_mode = _analysis_mode;
+  TransType trans_type = _trans_type;
+
+  auto vertex_slew = the_arc->get_src()->getSlewNs(analysis_mode, trans_type);
+
+  unsigned& arc_id = _arc_id;
+  const char* arc_type_str = the_arc->isNetArc() ? "net" : "inst";
+  std::string node_name = Str::printf("%s_arc_%d", arc_type_str, arc_id++);
+  _file << node_name << ":\n";
+
+  _file << "  Incr: " << FS_TO_NS(the_arc->get_arc_delay(analysis_mode, trans_type)) << "\n";
+
+  if (the_arc->isNetArc()) {
+    // for net arc, we need extract the wire topo.
+    auto* the_net_arc = dynamic_cast<StaNetArc*>(the_arc);
+    auto* the_net = the_net_arc->get_net();
+
+    auto* rc_net = getSta()->getRcNet(the_net);
+    if ((rc_net == nullptr) || (rc_net->rct() == nullptr)) {
+      return 0;
+    }
+    auto* snk_node = the_arc->get_snk();
+    auto snk_node_name = snk_node->get_design_obj()->getFullName();
+
+    auto wire_topo = rc_net->getWireTopo(snk_node_name.c_str());
+    auto& all_nodes_slew =
+        rc_net->getAllNodeSlew(*vertex_slew, analysis_mode, trans_type);
+    for (int edge_index = 0;
+         auto* wire_edge : wire_topo | std::ranges::views::reverse) {
+      std::string edge_index_name = Str::printf("edge_%d", edge_index++);
+
+      _file << "  " << edge_index_name << ":\n";
+
+      auto& from_node = wire_edge->get_from();
+      auto& to_node = wire_edge->get_to();
+
+      _file << "    wire_from_node: " << from_node.get_name() << "\n";
+      _file << "    wire_to_node: " << to_node.get_name() << "\n";
+      _file << "    wire_R: " << wire_edge->get_res() << "\n";
+      _file << "    wire_C: " << (from_node.nodeLoad() - to_node.nodeLoad()) << "\n";
+      _file << "    from_slew: " << all_nodes_slew[from_node.get_name()] << "\n";
+      _file << "    to_slew: " << all_nodes_slew[to_node.get_name()] << "\n";
+      _file << "    wire_delay: " << PS_TO_NS(to_node.delay() - from_node.delay())
+            << "\n";
     }
   }
 

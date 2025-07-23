@@ -41,8 +41,8 @@ class GuiSpeedupDrc : public GuiSpeedupItem {
   explicit GuiSpeedupDrc(int32_t z_order, GuiSpeedupItem* parent = nullptr,
                          GuiSpeedupItemType type = GuiSpeedupItemType::kNone)
       : GuiSpeedupItem(parent, type) {
-    setPen(QColor(255, 0, 0));
-    setBrush(QBrush(QColor(255, 0, 0), Qt::BrushStyle::NoBrush));
+    setPen(QColor(255, 255, 255));
+    setBrush(QBrush(QColor(255, 255, 255), Qt::BrushStyle::SolidPattern));
     _brush = brush();
     _pen   = pen();
     setZValue(100);

@@ -40,7 +40,7 @@ def run_ieda(iEDA: Path, script_path: str):
     os.system(f"{iEDA} -script {script_path}")
     os.system(f"echo {iEDA} -script {script_path} finished")
     
-async def serve(iEDA: Path):
+def serve(iEDA: Path, transport="stdio"):
     logger = logging.getLogger(__name__)
     
     server = Server("mcp-iEDA")
@@ -64,7 +64,39 @@ async def serve(iEDA: Path):
             raise ValueError(f"Unknown tool: {tool}")
 
     options = server.create_initialization_options()
-    async with stdio_server() as (read_stream, write_stream):
-        await server.run(read_stream, write_stream, options, raise_exceptions=True)
+        
+    if transport == "sse":
+        from mcp.server.sse import SseServerTransport
+        from starlette.applications import Starlette
+        from starlette.routing import Mount, Route
+
+        sse = SseServerTransport("/messages/")
+
+        async def handle_sse(request):
+            async with sse.connect_sse(
+                request.scope, request.receive, request._send
+            ) as streams:
+                await server.run(
+                    streams[0], streams[1], options
+                )
+
+        starlette_app = Starlette(
+            debug=True,
+            routes=[
+                Route("/sse", endpoint=handle_sse),
+                Mount("/messages/", app=sse.handle_post_message),
+            ],
+        )
+
+        import uvicorn
+
+        uvicorn.run(starlette_app, host="127.0.0.1", port=3002)
+    else:
+        import anyio
+        async def arun():
+            async with stdio_server() as (read_stream, write_stream):
+                await server.run(read_stream, write_stream, options, raise_exceptions=True)
+                
+        anyio.run(arun)
 
 
