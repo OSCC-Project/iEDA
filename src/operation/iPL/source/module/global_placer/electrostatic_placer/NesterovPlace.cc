@@ -1353,40 +1353,36 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
 
       updateTopologyManager();
 
-        sum_overflow = static_cast<float>(_nes_database->_bin_grid->get_overflow_area_without_filler()) / _total_inst_area;
-        // The following parameters threshold "iter_num" and "sum_overflow" for congestion optimization can be adjusted
-        if (_nes_config.isOptCongestion() && iter_num >= 200 && iter_num % 10 == 0){
+      sum_overflow = static_cast<float>(_nes_database->_bin_grid->get_overflow_area_without_filler()) / _total_inst_area;
+      // The following parameters threshold "iter_num" and "sum_overflow" for congestion optimization can be adjusted
+      if (_nes_config.isOptCongestion() && iter_num >= 200 && iter_num % 10 == 0) {
+        _nes_database->_bin_grid->evalRouteDem(_nes_database->_topology_manager->get_network_list(), _nes_config.get_thread_num());
+        _nes_database->_bin_grid->fastGaussianBlur();
+        _nes_database->_bin_grid->evalRouteUtil();
+        // _nes_database->_bin_grid->plotRouteUtil(iter_num);
+      }
+
+      if (!_nes_config.isOptCongestion()) {
+        _nes_database->_wirelength_gradient->updateWirelengthForce(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
+                                                                   _nes_config.get_min_wirelength_force_bar(),
+                                                                   _nes_config.get_thread_num());
+      } else {
+        if (sum_overflow > 0.5) {
+          _nes_database->_wirelength_gradient->updateWirelengthForce(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
+                                                                     _nes_config.get_min_wirelength_force_bar(),
+                                                                     _nes_config.get_thread_num());
+        } else {
+          // LUT-RUDY based congestion-driven optimization.
           _nes_database->_bin_grid->evalRouteDem(_nes_database->_topology_manager->get_network_list(), _nes_config.get_thread_num());
           _nes_database->_bin_grid->fastGaussianBlur();
           _nes_database->_bin_grid->evalRouteUtil();
-          // _nes_database->_bin_grid->plotRouteUtil(iter_num);
-        }
+          // _nes_database->_bin_grid->plotOverflowUtil(sum_overflow, iter_num);
 
-        if (!_nes_config.isOptCongestion()){
-          _nes_database->_wirelength_gradient->updateWirelengthForce(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
-            _nes_config.get_min_wirelength_force_bar(), _nes_config.get_thread_num());
-        }else{
-          if (sum_overflow > 0.5){
-            _nes_database->_wirelength_gradient->updateWirelengthForce(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
-                                                                 _nes_config.get_min_wirelength_force_bar(), _nes_config.get_thread_num());        
-          }else{
-            // LUT-RUDY based congestion-driven optimization.
-            _nes_database->_bin_grid->evalRouteDem(_nes_database->_topology_manager->get_network_list(), _nes_config.get_thread_num());
-            _nes_database->_bin_grid->fastGaussianBlur();
-            _nes_database->_bin_grid->evalRouteUtil();
-            // _nes_database->_bin_grid->plotOverflowUtil(sum_overflow, iter_num);
-
-            // TODO: GR based congestion-driven optimization.
-            // writeBackPlacerDB();
-            // PlacerDBInst.writeBackSourceDataBase();
-            // eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
-            // std::vector<float> gr_congestion = eval_api.evalGRCong();
-      
-            auto grid_manager = _nes_database->_bin_grid->get_grid_manager();
-            _nes_database->_wirelength_gradient->updateWirelengthForceDirect(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
-                                                                  _nes_config.get_min_wirelength_force_bar(), _nes_config.get_thread_num(), grid_manager);
-          }
-        }
+          // TODO: GR based congestion-driven optimization.
+          // writeBackPlacerDB();
+          // PlacerDBInst.writeBackSourceDataBase();
+          // eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
+          // std::vector<float> gr_congestion = eval_api.evalGRCong();
 
           auto grid_manager = _nes_database->_bin_grid->get_grid_manager();
           _nes_database->_wirelength_gradient->updateWirelengthForceDirect(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
@@ -1395,182 +1391,188 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
         }
       }
 
-      // update next target penalty object.
-      updatePenaltyGradient(inst_list, next_slp_sum_grad_list, next_slp_wirelength_grad_list, next_slp_density_grad_list,
-                            is_add_quad_penalty);
-
-      if (_nes_database->_is_diverged) {
-        break;
-      }
-
-      float current_steplength = solver->get_next_steplength();
-      solver->calculateNextSteplength(next_slp_sum_grad_list);
-      float next_steplength = solver->get_next_steplength();
-
-      if (next_steplength > current_steplength * 0.95) {
-        break;
-      } else {
-        solver->runBackTrackIter(_nes_config.get_thread_num());
-      }
-    }
-
-    if (num_backtrack == _nes_config.get_max_back_track()) {
-      LOG_ERROR << "Detect divergence,"
-                << " The reason may be high init_density_penalty value";
-      _nes_database->_is_diverged = true;
-    }
-
-    if (_nes_database->_is_diverged) {
-      break;
-    }
-
-    if (RECORD_ITER_INFO) {
-      if (iter_num == 1) {
-        info_stream << "WireLength Grad Sum,Density Grad Sum,Density Weight,StepLength" << std::endl;
-      }
-      printIterInfoToCsv(info_stream, iter_num);
-    }
-
-    if (_nes_config.isOptMaxWirelength()) {
-      if (cur_opt_overflow_step >= 0 && sum_overflow < opt_overflow_list[cur_opt_overflow_step]) {
-        // update net weight.
-        updateMaxLengthNetWeight();
-        --cur_opt_overflow_step;
-        LOG_INFO << "[NesterovSolve] Begin update netweight for max wirelength constraint.";
-      }
-    }
-
-    if (_nes_config.isOptTiming()) {
-      if (cur_opt_overflow_step >= 0 && sum_overflow < opt_overflow_list[cur_opt_overflow_step]) {
-        // update net weight.
-        updateTimingNetWeight();
-        --cur_opt_overflow_step;
-        LOG_INFO << "[NesterovSolve] Update netweight for timing improvement.";
-      }
-    }
-
-    updateWirelengthCoef(sum_overflow);
-    if (!max_phi_coef_record && sum_overflow < 0.35f) {
-      max_phi_coef_record = true;
-      _nes_config.set_max_phi_coef(0.985 * _nes_config.get_max_phi_coef());
-    }
-
-    hpwl = _nes_database->_wirelength->obtainTotalWirelength();
-
-    float phi_coef = obtainPhiCoef(static_cast<float>(hpwl - prev_hpwl) / _nes_config.get_reference_hpwl(), iter_num);
-    prev_hpwl = hpwl;
-    _nes_database->_density_penalty *= phi_coef;
-
-    // print info.
-    if (iter_num == 1 || iter_num % _nes_config.get_info_iter_num() == 0) {
-      LOG_INFO << "[NesterovSolve] Iter: " << iter_num << " overflow: " << sum_overflow << " HPWL: " << prev_hpwl;
-
-      if (PRINT_LONG_NET) {
-        long_net_stream << "CURRENT ITERATION: " << iter_num << std::endl;
-        long_net_stream << std::endl;
-        printAcrossLongNet(long_net_stream, long_width, long_height);
-      }
-
-      if (PLOT_IMAGE) {
-        plotInstImage("inst_" + std::to_string(iter_num));
-        plotBinForceLine("bin_" + std::to_string(iter_num));
-      }
-
-      if (isJsonOutputEnabled()) {
-        plotInstJson("inst_" + std::to_string(iter_num), iter_num, sum_overflow);
-
-        printDensityMapToCsv("density/density_map_" + std::to_string(iter_num));
-      }
-    }
-
-    if (iter_num == 1 || iter_num % 5 == 0) {
-      if (PRINT_COORDI) {
-        saveNesterovPlaceData(iter_num);
-      }
-    }
-
-    if (sum_overflow_threshold > sum_overflow) {
-      sum_overflow_threshold = sum_overflow;
-      hpwl_attach_sum_overflow = prev_hpwl;
-    }
-
-    if (sum_overflow < 0.32f && sum_overflow - sum_overflow_threshold >= 0.05f && hpwl_attach_sum_overflow * 1.25f < prev_hpwl) {
-      LOG_ERROR << "Detect divergence. \n"
-                << "    The reason may be max_phi_cof value: try to decrease max_phi_cof";
-      _nes_database->_is_diverged = true;
-      break;
-    }
-
-    _overflow_record_list.push_back(sum_overflow);
-    _hpwl_record_list.push_back(hpwl);
-
-    if (sum_overflow < _best_overflow) {
-      _best_hpwl = hpwl;
-      _best_overflow = sum_overflow;
-      best_position_list.swap(cur_position_list);
-    }
-
-    if (sum_overflow < _nes_config.get_target_overflow() * 4 && sum_overflow > _nes_config.get_target_overflow() * 1.1) {
-      if (checkDivergence(3, 0.03 * sum_overflow) || checkLongTimeOverflowUnchanged(100, 0.03 * sum_overflow)) {
-        // rollback to best pos.
-        for (size_t i = 0; i < inst_size; i++) {
-          updateDensityCenterCoordiLayoutInside(inst_list[i], best_position_list[i], core_shape);
-        }
-        sum_overflow = _best_overflow;
-        prev_hpwl = _best_hpwl;
-
-        stop_placement = true;
-      }
-    }
-
-    if (iter_num - last_perturb_iter > min_perturb_interval && checkPlateau(50, 0.01)) {
-      if (sum_overflow > 0.9) {
-        // quad mode
-        is_add_quad_penalty = true;
-        is_cal_phi = true;
-        LOG_INFO << "Try to enable quadratic penalty for density to accelerate convergence";
-        if (sum_overflow > 0.95) {
-          float noise_intensity = std::min(std::max(40 + (120 - 40) * (sum_overflow - 0.95) * 10, 40.0), 90.0)
-                                  * _nes_database->_placer_db->get_layout()->get_site_width();
-          entropyInjection(0.996, noise_intensity);
-          LOG_INFO << "Try to entropy injection with noise intensity = " << noise_intensity << " to help convergence";
-        }
-        last_perturb_iter = iter_num;
-      }
-    }
-
-    // minimun iteration is 30
-    if ((iter_num > 30 && sum_overflow <= _nes_config.get_target_overflow()) || stop_placement) {
-      if (PRINT_LONG_NET) {
-        long_net_stream << "CURRENT ITERATION: " << iter_num << std::endl;
-        long_net_stream << std::endl;
-        printAcrossLongNet(long_net_stream, long_width, long_height);
-        long_net_stream.close();
-      }
-
-      if (RECORD_ITER_INFO) {
-        info_stream.close();
-      }
-
-      if (PRINT_COORDI) {
-        saveNesterovPlaceData(iter_num);
-      }
-
-      LOG_INFO << "[NesterovSolve] Finished with Overflow:" << sum_overflow << " HPWL : " << prev_hpwl;
-      break;
+      auto grid_manager = _nes_database->_bin_grid->get_grid_manager();
+      _nes_database->_wirelength_gradient->updateWirelengthForceDirect(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
+                                                                       _nes_config.get_min_wirelength_force_bar(),
+                                                                       _nes_config.get_thread_num(), grid_manager);
     }
   }
+
+  // update next target penalty object.
+  updatePenaltyGradient(inst_list, next_slp_sum_grad_list, next_slp_wirelength_grad_list, next_slp_density_grad_list, is_add_quad_penalty);
 
   if (_nes_database->_is_diverged) {
-    LOG_ERROR << "Detect divergence, The reason may be parameters setting.";
-    exit(1);
+    break;
   }
 
-  notifyPLOverflowInfo(sum_overflow);
-  notifyPLPlaceDensity();
+  float current_steplength = solver->get_next_steplength();
+  solver->calculateNextSteplength(next_slp_sum_grad_list);
+  float next_steplength = solver->get_next_steplength();
 
-  // update PlacerDB.
-  writeBackPlacerDB();
+  if (next_steplength > current_steplength * 0.95) {
+    break;
+  } else {
+    solver->runBackTrackIter(_nes_config.get_thread_num());
+  }
+}
+
+if (num_backtrack == _nes_config.get_max_back_track()) {
+  LOG_ERROR << "Detect divergence,"
+            << " The reason may be high init_density_penalty value";
+  _nes_database->_is_diverged = true;
+}
+
+if (_nes_database->_is_diverged) {
+  break;
+}
+
+if (RECORD_ITER_INFO) {
+  if (iter_num == 1) {
+    info_stream << "WireLength Grad Sum,Density Grad Sum,Density Weight,StepLength" << std::endl;
+  }
+  printIterInfoToCsv(info_stream, iter_num);
+}
+
+if (_nes_config.isOptMaxWirelength()) {
+  if (cur_opt_overflow_step >= 0 && sum_overflow < opt_overflow_list[cur_opt_overflow_step]) {
+    // update net weight.
+    updateMaxLengthNetWeight();
+    --cur_opt_overflow_step;
+    LOG_INFO << "[NesterovSolve] Begin update netweight for max wirelength constraint.";
+  }
+}
+
+if (_nes_config.isOptTiming()) {
+  if (cur_opt_overflow_step >= 0 && sum_overflow < opt_overflow_list[cur_opt_overflow_step]) {
+    // update net weight.
+    updateTimingNetWeight();
+    --cur_opt_overflow_step;
+    LOG_INFO << "[NesterovSolve] Update netweight for timing improvement.";
+  }
+}
+
+updateWirelengthCoef(sum_overflow);
+if (!max_phi_coef_record && sum_overflow < 0.35f) {
+  max_phi_coef_record = true;
+  _nes_config.set_max_phi_coef(0.985 * _nes_config.get_max_phi_coef());
+}
+
+hpwl = _nes_database->_wirelength->obtainTotalWirelength();
+
+float phi_coef = obtainPhiCoef(static_cast<float>(hpwl - prev_hpwl) / _nes_config.get_reference_hpwl(), iter_num);
+prev_hpwl = hpwl;
+_nes_database->_density_penalty *= phi_coef;
+
+// print info.
+if (iter_num == 1 || iter_num % _nes_config.get_info_iter_num() == 0) {
+  LOG_INFO << "[NesterovSolve] Iter: " << iter_num << " overflow: " << sum_overflow << " HPWL: " << prev_hpwl;
+
+  if (PRINT_LONG_NET) {
+    long_net_stream << "CURRENT ITERATION: " << iter_num << std::endl;
+    long_net_stream << std::endl;
+    printAcrossLongNet(long_net_stream, long_width, long_height);
+  }
+
+  if (PLOT_IMAGE) {
+    plotInstImage("inst_" + std::to_string(iter_num));
+    plotBinForceLine("bin_" + std::to_string(iter_num));
+  }
+
+  if (isJsonOutputEnabled()) {
+    plotInstJson("inst_" + std::to_string(iter_num), iter_num, sum_overflow);
+
+    printDensityMapToCsv("density/density_map_" + std::to_string(iter_num));
+  }
+}
+
+if (iter_num == 1 || iter_num % 5 == 0) {
+  if (PRINT_COORDI) {
+    saveNesterovPlaceData(iter_num);
+  }
+}
+
+if (sum_overflow_threshold > sum_overflow) {
+  sum_overflow_threshold = sum_overflow;
+  hpwl_attach_sum_overflow = prev_hpwl;
+}
+
+if (sum_overflow < 0.32f && sum_overflow - sum_overflow_threshold >= 0.05f && hpwl_attach_sum_overflow * 1.25f < prev_hpwl) {
+  LOG_ERROR << "Detect divergence. \n"
+            << "    The reason may be max_phi_cof value: try to decrease max_phi_cof";
+  _nes_database->_is_diverged = true;
+  break;
+}
+
+_overflow_record_list.push_back(sum_overflow);
+_hpwl_record_list.push_back(hpwl);
+
+if (sum_overflow < _best_overflow) {
+  _best_hpwl = hpwl;
+  _best_overflow = sum_overflow;
+  best_position_list.swap(cur_position_list);
+}
+
+if (sum_overflow < _nes_config.get_target_overflow() * 4 && sum_overflow > _nes_config.get_target_overflow() * 1.1) {
+  if (checkDivergence(3, 0.03 * sum_overflow) || checkLongTimeOverflowUnchanged(100, 0.03 * sum_overflow)) {
+    // rollback to best pos.
+    for (size_t i = 0; i < inst_size; i++) {
+      updateDensityCenterCoordiLayoutInside(inst_list[i], best_position_list[i], core_shape);
+    }
+    sum_overflow = _best_overflow;
+    prev_hpwl = _best_hpwl;
+
+    stop_placement = true;
+  }
+}
+
+if (iter_num - last_perturb_iter > min_perturb_interval && checkPlateau(50, 0.01)) {
+  if (sum_overflow > 0.9) {
+    // quad mode
+    is_add_quad_penalty = true;
+    is_cal_phi = true;
+    LOG_INFO << "Try to enable quadratic penalty for density to accelerate convergence";
+    if (sum_overflow > 0.95) {
+      float noise_intensity = std::min(std::max(40 + (120 - 40) * (sum_overflow - 0.95) * 10, 40.0), 90.0)
+                              * _nes_database->_placer_db->get_layout()->get_site_width();
+      entropyInjection(0.996, noise_intensity);
+      LOG_INFO << "Try to entropy injection with noise intensity = " << noise_intensity << " to help convergence";
+    }
+    last_perturb_iter = iter_num;
+  }
+}
+
+// minimun iteration is 30
+if ((iter_num > 30 && sum_overflow <= _nes_config.get_target_overflow()) || stop_placement) {
+  if (PRINT_LONG_NET) {
+    long_net_stream << "CURRENT ITERATION: " << iter_num << std::endl;
+    long_net_stream << std::endl;
+    printAcrossLongNet(long_net_stream, long_width, long_height);
+    long_net_stream.close();
+  }
+
+  if (RECORD_ITER_INFO) {
+    info_stream.close();
+  }
+
+  if (PRINT_COORDI) {
+    saveNesterovPlaceData(iter_num);
+  }
+
+  LOG_INFO << "[NesterovSolve] Finished with Overflow:" << sum_overflow << " HPWL : " << prev_hpwl;
+  break;
+}
+}
+
+if (_nes_database->_is_diverged) {
+  LOG_ERROR << "Detect divergence, The reason may be parameters setting.";
+  exit(1);
+}
+
+notifyPLOverflowInfo(sum_overflow);
+notifyPLPlaceDensity();
+
+// update PlacerDB.
+writeBackPlacerDB();
 }
 
 void NesterovPlace::notifyPLOverflowInfo(float final_overflow)
