@@ -150,6 +150,10 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
             << segment_resistance << "\n";
 #endif
 
+  // _debug_csv_file << lef_resistance << "," << segment_length << ","
+  //           << *segment_width << "," << num_layer << ","
+  //           << segment_resistance << "\n";
+
   return segment_resistance;
 }
 
@@ -735,6 +739,7 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
 
   _ista->set_design_name(_idb_design->get_design_name().c_str());
   int dbu = _idb_design->get_units()->get_micron_dbu();
+  set_dbu(dbu);
   double width = _idb_design->get_layout()->get_die()->get_width() /
                  static_cast<double>(dbu);
   double height = _idb_design->get_layout()->get_die()->get_height() /

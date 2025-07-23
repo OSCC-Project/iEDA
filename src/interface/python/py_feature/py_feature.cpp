@@ -75,4 +75,9 @@ bool feature_timing_eval_summary(const std::string& path)
   return featureInst->save_timing_eval_summary(path);
 }
 
+bool feature_cong_map(const std::string& step, const std::string& dir)
+{
+  return featureInst->save_cong_map(step, dir);
+}
+
 }  // namespace python_interface

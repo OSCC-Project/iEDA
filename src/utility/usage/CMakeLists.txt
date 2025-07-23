@@ -7,3 +7,7 @@ if(BUILD_STATIC_LIB)
 else()
   ADD_LIBRARY(usage SHARED ${SRC})
 endif()
+target_include_directories(usage 
+    PUBLIC 
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)

@@ -31,4 +31,6 @@ namespace igui {
     _gui_win->updateTree();
   }
 
+  void GuiIO::readGraphDb(std::map<int, ivec::VecNet> net_map) { _gui_win->get_scene()->createGraph(net_map); }
+
 }  // namespace igui

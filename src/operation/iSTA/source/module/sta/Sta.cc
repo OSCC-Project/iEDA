@@ -1807,7 +1807,8 @@ void Sta::setReportSpec(std::vector<std::string> &&prop_froms,
  * @param rpt_file_name The report text file name.
  * @return unsigned 1 if success, 0 else fail.
  */
-unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
+unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate,
+                         bool only_wire_path) {
   auto report_path =
       [this](StaReportPathSummary &report_path_func) -> unsigned {
     unsigned is_ok = 1;
@@ -1831,7 +1832,7 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
     return is_ok;
   };
 
-  auto report_path_of_mode = [&report_path, this, rpt_file_name,
+  auto report_path_of_mode = [&report_path, this, rpt_file_name, only_wire_path,
                               is_derate](AnalysisMode mode) -> unsigned {
     unsigned is_ok = 1;
     if ((get_analysis_mode() == mode) ||
@@ -1860,6 +1861,11 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
         report_funcs.emplace_back(&report_path_dump);
       }
 
+      StaReportWirePathYaml report_wire_dump(rpt_file_name, mode, n_worst);
+      if (c_print_wire_yaml) {
+        report_funcs.emplace_back(&report_wire_dump);
+      }
+
       StaReportPathDetailJson report_path_detail_json(rpt_file_name, mode,
                                                       n_worst, is_derate);
 
@@ -1868,7 +1874,14 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
       }
 
       for (auto *report_fun : report_funcs) {
-        is_ok = report_path(*report_fun);
+        if (only_wire_path) {
+          if (dynamic_cast<StaReportWirePathYaml *>(report_fun)) {
+            is_ok = report_path(*report_fun);
+          }
+
+        } else {
+          is_ok = report_path(*report_fun);
+        }
       }
     }
 
@@ -1885,10 +1898,6 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
   LOG_INFO << "\n" << _report_tbl_summary->c_str();
   LOG_INFO << "\n" << _report_tbl_TNS->c_str();
 
-  Time::stop();
-  double elapsed_time = Time::elapsedTime();
-  LOG_INFO << "iSTA total elapsed time: " << elapsed_time << " seconds";  
-
   auto close_file = [](std::FILE *fp) { std::fclose(fp); };
 
   std::unique_ptr<std::FILE, decltype(close_file)> f(
@@ -1896,9 +1905,6 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
 
   std::fprintf(f.get(), "Generate the report at %s, GitVersion: %s.\n",
                Time::getNowWallTime(), GIT_VERSION);
-
-  std::fprintf(f.get(), "iSTA elapsed time: %.2f seconds.\n", elapsed_time);
-
   std::fprintf(f.get(), "%s", _report_tbl_summary->c_str());  // WNS
   // report_TNS;
   std::fprintf(f.get(), "%s", _report_tbl_TNS->c_str());
@@ -2179,11 +2185,8 @@ double Sta::getWNS(const char *clock_name, AnalysisMode mode) {
       FOREACH_PATH_END_DATA(path_end, mode, path_data) {
         seq_data_queue.push(path_data);
       }
-
-      if (!seq_data_queue.empty()) {
-        auto *worst_seq_data = seq_data_queue.top();
-        WNS = FS_TO_NS(worst_seq_data->getSlack());
-      }
+      auto *worst_seq_data = seq_data_queue.top();
+      WNS = FS_TO_NS(worst_seq_data->getSlack());
       break;
     }
   }
@@ -2801,35 +2804,6 @@ unsigned Sta::resetPathData() {
   return 1;
 }
 
-#if CUDA_PROPAGATION
-unsigned Sta::resetGPUData() {
-  _gpu_vertices.clear();
-  _gpu_arcs.clear();
-
-  GPU_Flatten_Data flatten_data;
-  _flatten_data = std::move(flatten_data);
-
-  GPU_Graph gpu_graph;
-  _gpu_graph = std::move(gpu_graph);
-
-  _lib_gpu_arcs.clear();
-
-  free_lib_data_gpu(_gpu_lib_data, _lib_gpu_tables, _lib_gpu_table_ptrs);
-
-  Lib_Data_GPU gpu_lib_data;
-  _gpu_lib_data = std::move(gpu_lib_data);
-
-  _lib_gpu_tables.clear();
-  _lib_gpu_table_ptrs.clear();
-
-  _arc_to_index.clear();
-  _at_to_index.clear();
-  _index_to_at.clear();
-
-  return 1;
-}
-#endif
-
 /**
  * @brief update the timing data.
  *
@@ -3098,7 +3072,7 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
   // reportTimingData(10);
 
 #if CUDA_PROPAGATION
-  printFlattenData();
+  // printFlattenData();
 #endif
 
   // dumpGraphData("/home/taosimin/ysyx_test25/2025-04-05/graph.yaml");
@@ -3117,7 +3091,8 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
  * @param n_worst_path_per_clock
  * @return unsigned
  */
-std::vector<StaPathWireTimingData> Sta::reportTimingData(unsigned n_worst_path_per_clock) {
+std::vector<StaPathWireTimingData> Sta::reportTimingData(
+    unsigned n_worst_path_per_clock) {
   LOG_INFO << "get wire timing start";
   std::vector<StaPathWireTimingData> path_timing_data;
 
@@ -3149,11 +3124,37 @@ std::vector<StaPathWireTimingData> Sta::reportTimingData(unsigned n_worst_path_p
 unsigned Sta::reportUsedLibs() {
   auto used_libs = getUsedLibs();
   for (auto *used_lib : used_libs) {
-    const char *lib_name = used_lib->get_file_name();
-    if (lib_name) {
-      LOG_INFO << "used lib: " << lib_name;
+    std::string lib_name = used_lib->get_file_name();
+    LOG_INFO << "used lib: " << lib_name;
+  }
+  return 1;
+}
+
+/**
+ * @brief report wire paths.
+ *
+ * @return unsigned
+ */
+unsigned Sta::reportWirePaths() {
+  LOG_INFO << "report wire paths start";
+  const char *design_work_space = get_design_work_space();
+
+  std::string path_dir = std::string(design_work_space) + "/wire_paths";
+
+  if (std::filesystem::exists(path_dir)) {
+    for (const auto &entry : std::filesystem::directory_iterator(path_dir)) {
+      if (entry.is_regular_file()) {
+        std::filesystem::remove(entry.path());
+      }
     }
   }
+
+  std::string rpt_file_name =
+      Str::printf("%s/%s.rpt", design_work_space, get_design_name().c_str());
+  reportPath(rpt_file_name.c_str(), false, true);
+
+  LOG_INFO << "report wire paths end";
+
   return 1;
 }
 

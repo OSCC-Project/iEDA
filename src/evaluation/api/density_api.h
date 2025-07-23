@@ -8,6 +8,7 @@
 #pragma once
 
 #include "density_db.h"
+#include <map>
 
 #define DENSITY_API_INST (ieval::DensityAPI::getInst())
 
@@ -38,6 +39,12 @@ class DensityAPI
   std::string macroChannelMap(DensityCells cells, DensityRegion die, DensityRegion core);
   std::string macroMaxContinuousSpaceMap(int32_t grid_size = 1);
   std::string macroHierarchyMap(int32_t grid_size = 1);
+
+  std::map<int, int> patchPinDensity(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
+  std::map<int, double> patchCellDensity(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
+  std::map<int, double> patchNetDensity(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
+  std::map<int, int> patchMacroMargin(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
+
 
  private:
   static DensityAPI* _density_api_inst;

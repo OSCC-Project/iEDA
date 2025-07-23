@@ -33,6 +33,8 @@
 
 using std::string;
 
+static bool b_init = false;
+
 namespace ieda {
 
 bool Log::_is_init = false;
@@ -59,12 +61,15 @@ void SignalHandle(const char* data, int size)
  */
 void Log::init(char* argv[], std::string log_dir)
 {
+  if (b_init) {
+    end();
+  }
+  std::filesystem::create_directories(log_dir.c_str());
   // Check if glog is already initialized
   if (isInit()) {
     LOG_WARNING << "Google logging is already initialized, skipping re-initialization.";
     return;
   }
-
 
   /*init google logging.*/
   google::InitGoogleLogging(argv[0]);
@@ -90,6 +95,7 @@ void Log::init(char* argv[], std::string log_dir)
   /*print core dump SIGSEGV signal*/
   google::InstallFailureWriter(&SignalHandle);
 
+  b_init = true;
   set_is_init();
 }
 
@@ -100,6 +106,7 @@ void Log::init(char* argv[], std::string log_dir)
 void Log::end()
 {
   google::ShutdownGoogleLogging();
+  b_init = false;
 }
 
 /**

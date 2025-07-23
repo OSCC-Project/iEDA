@@ -7,14 +7,33 @@
 
 #pragma once
 
+#include <map>
 #include <tuple>
+#include <unordered_map>
 
 #include "congestion_db.h"
-#include "map"
 
 namespace ieval {
 
 using namespace ::std;
+
+struct NetMetadata
+{
+  int32_t lx, ly, ux, uy;     // 预计算的net边界框
+  double hor_rudy, ver_rudy;  // 预计算的RUDY因子
+};
+
+// 辅助哈希函数
+struct CongestionPairHash
+{
+  template <typename T1, typename T2>
+  size_t operator()(const std::pair<T1, T2>& p) const
+  {
+    auto hash1 = std::hash<T1>{}(p.first);
+    auto hash2 = std::hash<T2>{}(p.second);
+    return hash1 ^ (hash2 << 1);
+  }
+};
 
 class CongestionEval
 {
@@ -89,6 +108,14 @@ class CongestionEval
   std::string getDefaultOutputDir();
   void setEGRDirPath(std::string egr_dir_path);
 
+  std::map<std::string, std::vector<std::vector<int>>> getEGRMap(bool is_run_egr = true);
+  std::map<std::string, std::vector<std::vector<int>>> getDemandSupplyDiffMap(bool is_run_egr = true);
+  std::map<int, double> patchRUDYCongestion(CongestionNets nets,
+                                            std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
+  std::map<int, double> patchEGRCongestion(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
+  std::map<int, std::map<std::string, double>> patchLayerEGRCongestion(
+      std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
+
  private:
   static CongestionEval* _congestion_eval;
 
@@ -125,6 +152,8 @@ class CongestionEval
   float evalAvgOverflow(string stage, string rt_dir_path, string overflow_type);
   float evalMaxUtilization(string stage, string rudy_dir_path, string utilization_type, bool use_lut = false);
   float evalAvgUtilization(string stage, string rudy_dir_path, string utilization_type, bool use_lut = false);
+  std::vector<NetMetadata> precomputeNetData(const CongestionNets& nets);
+
   double calculateEntropy(const std::vector<int32_t>& coords, int bin_count);
   std::tuple<double, double, double> calculateNearestNeighborStats(const std::vector<int32_t>& coords);
 };

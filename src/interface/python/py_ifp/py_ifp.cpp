@@ -40,9 +40,9 @@ bool fpMakeTracks(const std::string& layer, int x_start, int x_step, int y_start
   return make_ok;
 }
 
-bool fpPlacePins(const std::string& layer, int width, int height)
+bool fpPlacePins(const std::string& layer, int width, int height, std::vector<std::string>& sides)
 {
-  bool place_ok = fpApiInst->autoPlacePins(layer, width, height);
+  bool place_ok = fpApiInst->autoPlacePins(layer, width, height, sides);
   return place_ok;
 }
 

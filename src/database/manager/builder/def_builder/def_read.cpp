@@ -904,6 +904,10 @@ int32_t DefRead::parse_component(defiComponent* def_component)
 
   std::string inst_name = def_component->id();
   std::string new_inst_name = ieda::Str::trimEscape(inst_name);
+  if ("u_NV_NVDLA_cbuf/u_cbuf_ram_bank6_ram0/rmod/u_mema" == new_inst_name) {
+    int a = 0;
+    a += 1;
+  }
 
   IdbInstance* instance = instance_list->add_instance(new_inst_name);
   if (instance == nullptr) {
