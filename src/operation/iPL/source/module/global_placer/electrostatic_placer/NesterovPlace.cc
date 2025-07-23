@@ -1342,6 +1342,7 @@ namespace ipl {
     cur_position_list.resize(inst_size);
 
     if (_nes_config.isOptCongestion()){
+      LOG_INFO << "Evaluate BIN_GRID route capacity";
       _nes_database->_bin_grid->evalRouteCap(_nes_config.get_thread_num());
       // _nes_database->_bin_grid->plotRouteCap();
     }
@@ -1380,11 +1381,11 @@ namespace ipl {
         updateTopologyManager();
 
         sum_overflow = static_cast<float>(_nes_database->_bin_grid->get_overflow_area_without_filler()) / _total_inst_area;
-        if (_nes_config.isOptCongestion() && iter_num >= 340 && iter_num % 10 == 0){
+        if (_nes_config.isOptCongestion() && iter_num >= 200 && iter_num % 10 == 0){
           _nes_database->_bin_grid->evalRouteDem(_nes_database->_topology_manager->get_network_list(), _nes_config.get_thread_num());
           _nes_database->_bin_grid->fastGaussianBlur();
           _nes_database->_bin_grid->evalRouteUtil();
-          // _nes_database->_bin_grid->plotRouteUtil(iter_num);
+          _nes_database->_bin_grid->plotRouteUtil(iter_num);
         }
 
         if (!_nes_config.isOptCongestion()){
@@ -1395,12 +1396,13 @@ namespace ipl {
             _nes_database->_wirelength_gradient->updateWirelengthForce(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
                                                                  _nes_config.get_min_wirelength_force_bar(), _nes_config.get_thread_num());        
           }else{
-
+            // LUT-RUDY based congestion-driven optimization.
             _nes_database->_bin_grid->evalRouteDem(_nes_database->_topology_manager->get_network_list(), _nes_config.get_thread_num());
             _nes_database->_bin_grid->fastGaussianBlur();
             _nes_database->_bin_grid->evalRouteUtil();
             // _nes_database->_bin_grid->plotOverflowUtil(sum_overflow, iter_num);
 
+            // TODO: GR based congestion-driven optimization.
             // writeBackPlacerDB();
             // PlacerDBInst.writeBackSourceDataBase();
             // eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
