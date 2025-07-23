@@ -181,7 +181,7 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
         }
         for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(search_rect)) {
           for (Segment<LayerCoord>* segment : segment_set) {
-            for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+            for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
               if (!net_shape.get_is_routing()) {
                 continue;
               }
@@ -329,7 +329,7 @@ void SupplyAnalyzer::buildIgnoreNet(SAModel& sa_model)
       }
       for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_detailed_result_map()) {
         for (Segment<LayerCoord>* segment : segment_set) {
-          for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+          for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
             if (!net_shape.get_is_routing()) {
               continue;
             }
@@ -580,7 +580,7 @@ void SupplyAnalyzer::debugPlotSAModel(SAModel& sa_model)
   for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
     GPStruct detailed_result_struct(RTUTIL.getString("detailed_result(net_", net_idx, ")"));
     for (Segment<LayerCoord>* segment : segment_set) {
-      for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+      for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
         GPBoundary gp_boundary;
         gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
         gp_boundary.set_rect(net_shape.get_rect());

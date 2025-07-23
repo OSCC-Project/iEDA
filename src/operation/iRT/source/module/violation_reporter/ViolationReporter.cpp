@@ -534,7 +534,7 @@ std::string ViolationReporter::outputNetJson(VRModel& vr_model)
     for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
       std::string net_name = net_list[net_idx].get_net_name();
       for (Segment<LayerCoord>* segment : segment_set) {
-        for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+        for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
           std::string layer_name;
           if (net_shape.get_is_routing()) {
             layer_name = routing_layer_list[net_shape.get_layer_idx()].get_layer_name();
@@ -761,10 +761,29 @@ void ViolationReporter::debugPlotVRModel(VRModel& vr_model, std::string flag)
   }
 
   // routing result
+  for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
+    GPStruct global_result_struct(RTUTIL.getString("global_result(net_", net_idx, ")"));
+    for (Segment<LayerCoord>* segment : segment_set) {
+      for (NetShape& net_shape : RTDM.getNetGlobalShapeList(net_idx, *segment)) {
+        GPBoundary gp_boundary;
+        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kGlobalPath));
+        gp_boundary.set_rect(net_shape.get_rect());
+        if (net_shape.get_is_routing()) {
+          gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(net_shape.get_layer_idx()));
+        } else {
+          gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(net_shape.get_layer_idx()));
+        }
+        global_result_struct.push(gp_boundary);
+      }
+    }
+    gp_gds.addStruct(global_result_struct);
+  }
+
+  // routing result
   for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
     GPStruct detailed_result_struct(RTUTIL.getString("detailed_result(net_", net_idx, ")"));
     for (Segment<LayerCoord>* segment : segment_set) {
-      for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+      for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
         GPBoundary gp_boundary;
         gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kDetailedPath));
         gp_boundary.set_rect(net_shape.get_rect());

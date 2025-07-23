@@ -1856,7 +1856,7 @@ std::vector<PlanarRect> PinAccessor::getViolationOverlapRect(PABox& pa_box, Viol
       }
     }
     for (Segment<LayerCoord>* segment : pa_box.get_net_pin_access_result_map()[curr_net_idx][curr_pin_idx]) {
-      for (NetShape& net_shape : RTDM.getNetShapeList(curr_net_idx, *segment)) {
+      for (NetShape& net_shape : RTDM.getNetDetailedShapeList(curr_net_idx, *segment)) {
         if (!net_shape.get_is_routing()) {
           continue;
         }
@@ -1866,7 +1866,7 @@ std::vector<PlanarRect> PinAccessor::getViolationOverlapRect(PABox& pa_box, Viol
       }
     }
     for (Segment<LayerCoord>& segment : pa_box.get_net_task_access_result_map()[curr_net_idx][curr_task_idx]) {
-      for (NetShape& net_shape : RTDM.getNetShapeList(curr_net_idx, segment)) {
+      for (NetShape& net_shape : RTDM.getNetDetailedShapeList(curr_net_idx, segment)) {
         if (!net_shape.get_is_routing()) {
           continue;
         }
@@ -2651,7 +2651,7 @@ void PinAccessor::updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, 
 
 void PinAccessor::updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment)
 {
-  for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+  for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
     for (auto& [pa_node, orientation_set] : getNodeOrientationMap(pa_box, net_shape)) {
       for (Orientation orientation : orientation_set) {
         if (change_type == ChangeType::kAdd) {
@@ -2680,7 +2680,7 @@ void PinAccessor::updateRoutedRectToGraph(PABox& pa_box, ChangeType change_type,
 
 void PinAccessor::updateRoutedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
-  for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
+  for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, segment)) {
     for (auto& [pa_node, orientation_set] : getNodeOrientationMap(pa_box, net_shape)) {
       for (Orientation orientation : orientation_set) {
         if (change_type == ChangeType::kAdd) {
@@ -3029,7 +3029,7 @@ void PinAccessor::updateFixedRectToShadow(PABox& pa_box, ChangeType change_type,
 
 void PinAccessor::updateFixedRectToShadow(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment)
 {
-  for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+  for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
     if (!net_shape.get_is_routing()) {
       continue;
     }
@@ -3062,7 +3062,7 @@ void PinAccessor::updateRoutedRectToShadow(PABox& pa_box, ChangeType change_type
 
 void PinAccessor::updateRoutedRectToShadow(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
-  for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
+  for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, segment)) {
     if (!net_shape.get_is_routing()) {
       continue;
     }
@@ -3467,7 +3467,7 @@ std::string PinAccessor::outputNetJson(PAModel& pa_model)
       std::string net_name = net_list[net_idx].get_net_name();
       for (auto& [pin_idx, segment_set] : pin_access_result_map) {
         for (Segment<LayerCoord>* segment : segment_set) {
-          for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+          for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
             std::string layer_name;
             if (net_shape.get_is_routing()) {
               layer_name = routing_layer_list[net_shape.get_layer_idx()].get_layer_name();
@@ -3686,7 +3686,7 @@ void PinAccessor::debugPlotPAModel(PAModel& pa_model, std::string flag)
     GPStruct access_result_struct(RTUTIL.getString("access_result(net_", net_idx, ")"));
     for (auto& [pin_idx, segment_set] : pin_access_result_map) {
       for (Segment<LayerCoord>* segment : segment_set) {
-        for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+        for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
           GPBoundary gp_boundary;
           gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kDetailedPath));
           gp_boundary.set_rect(net_shape.get_rect());
@@ -3917,7 +3917,7 @@ void PinAccessor::debugPlotPABox(PABox& pa_box, std::string flag)
     GPStruct access_result_struct(RTUTIL.getString("access_result(net_", net_idx, ")"));
     for (auto& [pin_idx, segment_set] : pin_access_result_map) {
       for (Segment<LayerCoord>* segment : segment_set) {
-        for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+        for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
           GPBoundary gp_boundary;
           gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
           gp_boundary.set_rect(net_shape.get_rect());
@@ -4203,7 +4203,7 @@ void PinAccessor::debugPlotPABox(PABox& pa_box, std::string flag)
       task_struct.push(gp_boundary);
     }
     for (Segment<LayerCoord>& segment : pa_box.get_net_task_access_result_map()[pa_task->get_net_idx()][pa_task->get_task_idx()]) {
-      for (NetShape& net_shape : RTDM.getNetShapeList(pa_task->get_net_idx(), segment)) {
+      for (NetShape& net_shape : RTDM.getNetDetailedShapeList(pa_task->get_net_idx(), segment)) {
         GPBoundary gp_boundary;
         gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kDetailedPath));
         gp_boundary.set_rect(net_shape.get_rect());
