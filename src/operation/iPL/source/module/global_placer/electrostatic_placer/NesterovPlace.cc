@@ -1384,12 +1384,6 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
           // eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
           // std::vector<float> gr_congestion = eval_api.evalGRCong();
 
-          auto grid_manager = _nes_database->_bin_grid->get_grid_manager();
-          _nes_database->_wirelength_gradient->updateWirelengthForceDirect(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
-                                                                           _nes_config.get_min_wirelength_force_bar(),
-                                                                           _nes_config.get_thread_num(), grid_manager);
-        }
-      }
 
       auto grid_manager = _nes_database->_bin_grid->get_grid_manager();
       _nes_database->_wirelength_gradient->updateWirelengthForceDirect(_nes_database->_wirelength_coef, _nes_database->_wirelength_coef,
