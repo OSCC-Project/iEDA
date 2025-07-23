@@ -220,8 +220,8 @@ void IdbSpeedUpSetup::createChip() {
       createCore();
       createIO();
       createRow();
-      createInstance();
-      createSpecialNet();
+      //   createInstance();
+      //   createSpecialNet();
       createNet();
       createTrackGrid();
       createBlockage();
@@ -922,7 +922,11 @@ void IdbSpeedUpSetup::createNet() {
 
   // #pragma omp parallel for
 
+  int net_id = 0;
   for (IdbNet* net : net_list->get_net_list()) {
+    // if ("FE_OFN5472_FE_OFN426_n686" != net->get_net_name()) {
+    //   continue;
+    // }
     GuiSpeedupItemType gui_type = getNetGuiType(net);
 
     for (IdbRegularWire* wire : net->get_wire_list()->get_wire_list()) {

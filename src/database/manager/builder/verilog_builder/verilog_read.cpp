@@ -634,7 +634,8 @@ int32_t RustVerilogRead::build_assign()
         }
 
       } else if (rust_is_concat_expr(left_net_expr) && rust_is_concat_expr(right_net_expr)) {
-        std::function<std::vector<std::string>(RustVec&)> get_concat_net_names = [&get_concat_net_names](RustVec& verilog_id_concat) -> std::vector<std::string> {
+        std::function<std::vector<std::string>(RustVec&)> get_concat_net_names
+            = [&get_concat_net_names](RustVec& verilog_id_concat) -> std::vector<std::string> {
           std::vector<std::string> concat_net_names;
           void* one_net_expr;
           FOREACH_VEC_ELEM(&verilog_id_concat, void, one_net_expr)

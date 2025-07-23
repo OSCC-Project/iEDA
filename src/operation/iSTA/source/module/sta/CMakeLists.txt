@@ -32,3 +32,5 @@ target_link_libraries(sta
     propagation-gpu
 )
 endif()
+
+set(CMAKE_BUILD_TYPE "Debug")

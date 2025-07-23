@@ -43,7 +43,7 @@ class IoPlacer
   ~IoPlacer() {}
 
   /// operator
-  bool autoPlacePins(std::string layer_name, int width, int height);
+  bool autoPlacePins(std::string layer_name, int width, int height, std::vector<std::string> sides);
   bool placePort(std::string pin_name, int32_t x_offset, int32_t y_offset, int32_t rect_width, int32_t rect_height, std::string layer_name);
 
   bool autoPlacePad(std::vector<std::string> pad_masters = {}, std::vector<std::string> conner_masters = {});
@@ -55,7 +55,7 @@ class IoPlacer
 
   void set_pad_coords(vector<string> conner_masters = {});
   void placeIOFiller(std::vector<idb::IdbCellMaster*>& fillers, const std::string prefix, PadCoordinate coord);
-  void fillInterval(Interval interval, std::vector<idb::IdbCellMaster*> fillers, const std::string prefix,  PadCoordinate coord);
+  void fillInterval(Interval interval, std::vector<idb::IdbCellMaster*> fillers, const std::string prefix, PadCoordinate coord);
 
   int32_t transUnitDB(double value);
   idb::IdbOrient transferEdgeToOrient(Edge edge);

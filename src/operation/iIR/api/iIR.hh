@@ -34,7 +34,7 @@ namespace iir {
 /**
  * @brief The instance power data.
  *
- * 
+ *
  */
 struct IRInstancePower {
   const char* _instance_name;
@@ -47,7 +47,7 @@ struct IRInstancePower {
 
 /**
  * @brief The ir solver method enum.
- * 
+ *
  */
 enum class IRSolverMethod {
   kLUSolver,  // LU solver
@@ -58,14 +58,16 @@ using IRNodeLoc = std::pair<std::pair<double, double>, std::string>;
 
 /**
  * @brief The IR top interface.
- * 
+ *
  */
 class iIR {
  public:
   void set_rc_data(const void* rust_rc_data) { _rc_data = rust_rc_data; }
   auto* get_rc_data() { return _rc_data; }
 
-  void set_nominal_voltage(double nominal_voltage) { _nominal_voltage = nominal_voltage; }
+  void set_nominal_voltage(double nominal_voltage) {
+    _nominal_voltage = nominal_voltage;
+  }
   double get_nominal_voltage() { return _nominal_voltage; }
 
   auto& get_net_to_instance_ir_drop() { return _net_to_instance_ir_drop; }
@@ -73,16 +75,15 @@ class iIR {
   unsigned init();
   unsigned readSpef(std::string_view spef_file_path);
   unsigned readInstancePowerDB(std::string_view instance_power_file_path);
-  unsigned setInstancePowerData(std::vector<IRInstancePower> instance_power_data);
+  unsigned setInstancePowerData(
+      std::vector<IRInstancePower> instance_power_data);
 
   void set_net_bump_node_locs(
       const std::map<std::string, IRNodeLoc>& net_bump_node_locs) {
-        _net_bump_node_locs = net_bump_node_locs;
+    _net_bump_node_locs = net_bump_node_locs;
   }
 
-  auto& get_net_bump_node_locs() const {
-    return _net_bump_node_locs;
-  }
+  auto& get_net_bump_node_locs() const { return _net_bump_node_locs; }
 
   unsigned solveIRDrop(const char* net_name);
 
@@ -94,8 +95,10 @@ class iIR {
 
   std::map<std::string, std::map<std::string, double>> _net_to_instance_ir_drop;
 
-  std::map<std::string, IRNodeLoc> _net_bump_node_locs; //!< The net bump node locs.
+  std::map<std::string, IRNodeLoc>
+      _net_bump_node_locs;  //!< The net bump node locs.
 
-  IRSolverMethod _solver_method = IRSolverMethod::kLUSolver;  //!< The IR solver method.
+  IRSolverMethod _solver_method =
+      IRSolverMethod::kLUSolver;  //!< The IR solver method.
 };
 }  // namespace iir

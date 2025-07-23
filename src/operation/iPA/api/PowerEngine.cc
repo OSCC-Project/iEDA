@@ -22,10 +22,11 @@
  * @date 2024-02-26
  *
  */
+#include "PowerEngine.hh"
+
 #include <tuple>
 #include <vector>
 
-#include "PowerEngine.hh"
 #include "ThreadPool/ThreadPool.h"
 #ifdef USE_GPU
 #include "gpu-kernel/power_kernel.cuh"
@@ -378,7 +379,8 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMapWithGPU(
       << " is not equal to seq graph arc num " << seq_graph.getSeqArcNum();
 
   std::size_t output_connection_size = seq_arcs.size();
-  std::vector<GPU_Connection_Point> out_connection_points(output_connection_size);
+  std::vector<GPU_Connection_Point> out_connection_points(
+      output_connection_size);
   int connection_point_num = connection_points.size();
 
   auto& seq_vertexes = seq_graph.get_vertexes();
@@ -470,19 +472,21 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMapWithGPU(
 
 /**
  * @brief build pg net wire topology.
- * 
- * @return unsigned 
+ *
+ * @return unsigned
  */
 unsigned PowerEngine::buildPGNetWireTopo() {
   LOG_INFO << "build pg net wire topo start";
-  
+
   // set the instance names for build wire topo skip some no power instance.
-  std::vector<IRInstancePower> instance_power_data = _ipower->getInstancePowerData();
+  std::vector<IRInstancePower> instance_power_data =
+      _ipower->getInstancePowerData();
   std::set<std::string> instance_names;
-  std::ranges::for_each(instance_power_data, [&instance_names](auto& instance_power) {
-    std::string instance_name = instance_power._instance_name;
-    instance_names.insert(std::move(instance_name));
-  });
+  std::ranges::for_each(
+      instance_power_data, [&instance_names](auto& instance_power) {
+        std::string instance_name = instance_power._instance_name;
+        instance_names.insert(std::move(instance_name));
+      });
   _pg_netlist_builder.set_instance_names(std::move(instance_names));
 
   auto* idb_adapter =
@@ -511,10 +515,12 @@ unsigned PowerEngine::buildPGNetWireTopo() {
   _pg_netlist_builder.set_dbu(dbu);
 
   std::function<double(unsigned, unsigned, unsigned)> calc_resistance =
-      [idb_adapter, dbu](unsigned layer_id, unsigned distance_dbu, unsigned width_dbu) -> double {
+      [idb_adapter, dbu](unsigned layer_id, unsigned distance_dbu,
+                         unsigned width_dbu) -> double {
     double wire_length = double(distance_dbu) / dbu;
     double width = double(width_dbu) / dbu;
-    double resistance = idb_adapter->getResistance(layer_id, wire_length, width);
+    double resistance =
+        idb_adapter->getResistance(layer_id, wire_length, width);
     resistance *= c_resistance_coef;
 
     return resistance;
@@ -554,11 +560,11 @@ unsigned PowerEngine::buildPGNetWireTopo() {
 
 /**
  * @brief reset ir data for rerun ir analysis.
- * 
+ *
  */
 void PowerEngine::resetIRAnalysisData() {
   _pg_netlist_builder.clearRTree();
-  
+
   IRPGNetlistBuilder pg_netlist_builder;
   _pg_netlist_builder = std::move(pg_netlist_builder);
 
@@ -567,10 +573,11 @@ void PowerEngine::resetIRAnalysisData() {
 
 /**
  * @brief get instance ir drop map.
- * 
- * @return std::map<Instance*, double> 
+ *
+ * @return std::map<Instance*, double>
  */
-std::map<Instance*, double> PowerEngine::getInstanceIRDrop(std::string power_net_name) {
+std::map<Instance*, double> PowerEngine::getInstanceIRDrop(
+    std::string power_net_name) {
   std::map<Instance*, double> instance_to_ir_drop;
 
   auto instance_pin_to_ir_drop = _ipower->getInstanceIRDrop(power_net_name);
@@ -586,14 +593,14 @@ std::map<Instance*, double> PowerEngine::getInstanceIRDrop(std::string power_net
 
     instance_to_ir_drop[sta_inst] = inst_ir_drop;
   }
-  
+
   return instance_to_ir_drop;
 }
 
 /**
  * @brief function to display ir drop map.
- * 
- * @return std::map<Instance::Coordinate, double> 
+ *
+ * @return std::map<Instance::Coordinate, double>
  */
 std::map<Instance::Coordinate, double> PowerEngine::displayIRDropMap() {
   LOG_INFO << "display IR Drop map start";
@@ -603,7 +610,6 @@ std::map<Instance::Coordinate, double> PowerEngine::displayIRDropMap() {
   auto instance_to_ir_drop = getInstanceIRDrop();
 
   for (auto& [sta_inst, inst_ir_drop] : instance_to_ir_drop) {
-
     auto coord = sta_inst->get_coordinate().value();
 
     coord_to_ir_drop_map[coord] = inst_ir_drop;

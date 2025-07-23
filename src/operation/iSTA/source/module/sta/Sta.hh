@@ -506,7 +506,7 @@ class Sta {
   }
   auto& get_report_spec() { return _report_spec; }
 
-  unsigned reportPath(const char* rpt_file_name, bool is_derate = true);
+  unsigned reportPath(const char* rpt_file_name, bool is_derate = true, bool only_wire_path = false);
   unsigned reportTrans(const char* rpt_file_name);
   unsigned reportCap(const char* rpt_file_name, bool is_clock_cap);
   unsigned reportFanout(const char* rpt_file_name);
@@ -585,6 +585,7 @@ class Sta {
 
   std::vector<StaPathWireTimingData> reportTimingData(unsigned n_worst_path_per_clock);
   unsigned reportUsedLibs();
+  unsigned reportWirePaths();
 
   void dumpVertexData(std::vector<std::string> vertex_names);
   void dumpNetlistData();
