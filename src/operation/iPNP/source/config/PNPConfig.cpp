@@ -110,6 +110,15 @@ bool loadConfigFromJson(const std::string& config_file_path, PNPConfig* config) 
       }
     }
 
+    // Load report path if exists
+    if (json_data.contains("report_path") && json_data["report_path"].is_string()) {
+      config->set_report_path(json_data["report_path"].get<std::string>());
+    }
+
+    if (json_data.contains("pl_default_config_path") && json_data["pl_default_config_path"].is_string()) {
+      config->set_pl_default_config_path(json_data["pl_default_config_path"].get<std::string>());
+    }
+
     if (json_data.contains("grid")) {
       auto& grid = json_data["grid"];
       

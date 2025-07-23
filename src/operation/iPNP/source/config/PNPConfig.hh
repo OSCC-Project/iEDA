@@ -82,6 +82,9 @@ namespace ipnp {
     void set_pl_default_config_path(const std::string& pl_default_config_path) { _pl_default_config_path = pl_default_config_path; }
     const std::string& get_pl_default_config_path() const { return _pl_default_config_path; }
 
+    void set_report_path(const std::string& report_path) { _report_path = report_path; }
+    const std::string& get_report_path() const { return _report_path; }
+
     void set_sa_initial_temp(double initial_temp) { _sa_initial_temp = initial_temp; }
     double get_sa_initial_temp() const { return _sa_initial_temp; }
 
@@ -133,6 +136,7 @@ namespace ipnp {
     std::string _power_net_name;
     std::string _egr_map_path;
     std::string _pl_default_config_path;
+    std::string _report_path;
     
     // sa info
     double _sa_initial_temp;

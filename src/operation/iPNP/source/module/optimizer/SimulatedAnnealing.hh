@@ -75,6 +75,7 @@ namespace ipnp {
 
     
     OptimizationResult optimize(const GridManager& initial_grid, idb::IdbBuilder* idb_builder);
+    void set_config(PNPConfig* config) { _config = config; }
     CostResult evaluateCost(const GridManager& new_solution, const GridManager& current_solution, idb::IdbBuilder* idb_builder);
 
   private:
@@ -103,6 +104,8 @@ namespace ipnp {
     double normalizeIRDrop(double max_ir_drop, double min_ir_drop, double avg_ir_drop);
     double normalizeOverflow(int32_t overflow);
     bool isSameTemplate(const SingleTemplate& t1, const SingleTemplate& t2);
+
+    PNPConfig* _config = nullptr;
   };
 
 }  // namespace ipnp
