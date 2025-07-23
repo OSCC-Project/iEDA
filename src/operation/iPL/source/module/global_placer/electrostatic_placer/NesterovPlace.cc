@@ -1354,11 +1354,12 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
       updateTopologyManager();
 
         sum_overflow = static_cast<float>(_nes_database->_bin_grid->get_overflow_area_without_filler()) / _total_inst_area;
+        // The following parameters threshold "iter_num" and "sum_overflow" for congestion optimization can be adjusted
         if (_nes_config.isOptCongestion() && iter_num >= 200 && iter_num % 10 == 0){
           _nes_database->_bin_grid->evalRouteDem(_nes_database->_topology_manager->get_network_list(), _nes_config.get_thread_num());
           _nes_database->_bin_grid->fastGaussianBlur();
           _nes_database->_bin_grid->evalRouteUtil();
-          _nes_database->_bin_grid->plotRouteUtil(iter_num);
+          // _nes_database->_bin_grid->plotRouteUtil(iter_num);
         }
 
         if (!_nes_config.isOptCongestion()){
