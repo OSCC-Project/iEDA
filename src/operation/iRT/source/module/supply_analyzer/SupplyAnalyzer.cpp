@@ -202,15 +202,18 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
         }
       }
       std::vector<LayerRect> wire_list = getCrossingWireList(search_rect);
+      int32_t max_supply = std::max(0, static_cast<int32_t>(wire_list.size()) - supply_reduction);
+
       int32_t supply = 0;
       for (LayerRect& wire : wire_list) {
         if (isAccess(wire, obs_rect_list)) {
           supply++;
         }
       }
-      int32_t max_supply = std::max(0, static_cast<int32_t>(wire_list.size()) - supply_reduction);
-      first_orient_supply_map[first_orientation] = std::min(supply, max_supply);
-      second_orient_supply_map[second_orientation] = std::min(supply, max_supply);
+      if (supply > 0) {
+        first_orient_supply_map[first_orientation] = std::min(supply, max_supply);
+        second_orient_supply_map[second_orientation] = std::min(supply, max_supply);
+      }
     }
     analyzed_pair_num += grid_pair_list.size();
     RTLOG.info(Loc::current(), "Analyzed ", analyzed_pair_num, "/", total_pair_num, "(", RTUTIL.getPercentage(analyzed_pair_num, total_pair_num),
@@ -494,6 +497,17 @@ void SupplyAnalyzer::debugPlotSAModel(SAModel& sa_model)
   std::string& sa_temp_directory_path = RTDM.getConfig().sa_temp_directory_path;
 
   GPGDS gp_gds;
+
+  // base_region
+  {
+    GPStruct base_region_struct("base_region");
+    GPBoundary gp_boundary;
+    gp_boundary.set_layer_idx(0);
+    gp_boundary.set_data_type(0);
+    gp_boundary.set_rect(die.get_real_rect());
+    base_region_struct.push(gp_boundary);
+    gp_gds.addStruct(base_region_struct);
+  }
 
   // gcell_axis
   {

@@ -1650,6 +1650,17 @@ void TrackAssigner::debugPlotTAModel(TAModel& ta_model, std::string flag)
 
   GPGDS gp_gds;
 
+  // base_region
+  {
+    GPStruct base_region_struct("base_region");
+    GPBoundary gp_boundary;
+    gp_boundary.set_layer_idx(0);
+    gp_boundary.set_data_type(0);
+    gp_boundary.set_rect(die.get_real_rect());
+    base_region_struct.push(gp_boundary);
+    gp_gds.addStruct(base_region_struct);
+  }
+
   // gcell_axis
   {
     GPStruct gcell_axis_struct("gcell_axis");
@@ -1739,7 +1750,7 @@ void TrackAssigner::debugPlotTAModel(TAModel& ta_model, std::string flag)
     for (Segment<LayerCoord>* segment : segment_set) {
       for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
         GPBoundary gp_boundary;
-        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kPath));
+        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kDetailedPath));
         gp_boundary.set_rect(net_shape.get_rect());
         if (net_shape.get_is_routing()) {
           gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(net_shape.get_layer_idx()));
@@ -2166,7 +2177,7 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, std::string flag)
     for (Segment<LayerCoord>& segment : ta_panel.get_net_task_detailed_result_map()[ta_task->get_net_idx()][ta_task->get_task_idx()]) {
       for (NetShape& net_shape : RTDM.getNetShapeList(ta_task->get_net_idx(), segment)) {
         GPBoundary gp_boundary;
-        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kPath));
+        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kDetailedPath));
         gp_boundary.set_rect(net_shape.get_rect());
         if (net_shape.get_is_routing()) {
           gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(net_shape.get_layer_idx()));

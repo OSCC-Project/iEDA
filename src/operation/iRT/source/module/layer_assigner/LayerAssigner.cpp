@@ -1211,6 +1211,17 @@ void LayerAssigner::debugPlotLAModel(LAModel& la_model, std::string flag)
 
   GPGDS gp_gds;
 
+  // base_region
+  {
+    GPStruct base_region_struct("base_region");
+    GPBoundary gp_boundary;
+    gp_boundary.set_layer_idx(0);
+    gp_boundary.set_data_type(0);
+    gp_boundary.set_rect(die.get_real_rect());
+    base_region_struct.push(gp_boundary);
+    gp_gds.addStruct(base_region_struct);
+  }
+
   // gcell_axis
   {
     GPStruct gcell_axis_struct("gcell_axis");
