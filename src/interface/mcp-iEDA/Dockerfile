@@ -25,16 +25,9 @@ ADD . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-editable
 
-FROM python:3.12-slim-bookworm
-
 COPY --from=builder /opt/iEDA/bin/iEDA /app/iEDA
 
 ENV iEDA=/app/iEDA
-
-WORKDIR /app
- 
-COPY --from=uv /root/.local /root/.local
-COPY --from=uv --chown=app:app /app/.venv /app/.venv
 
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"

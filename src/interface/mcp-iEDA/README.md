@@ -4,7 +4,7 @@ Docker build:
 
 ```bash
 cd src/interface/mcp-iEDA
-docker build -t mcp-iEDA .
+docker build -t mcp-ieda:1.0 .
 ```
 
 ## Installation
@@ -53,7 +53,7 @@ you can add it to a file called `.vscode/mcp.json` in your workspace. The github
   "mcp-ieda": {
     "command": "docker",
     "args": ["run", "--rm", "-i", "--mount", 
-                "type=bind,src=${workspaceFolder},dst=/workspace", "mcp-iEDA"
+                "type=bind,src=${workspaceFolder},dst=/workspace", "mcp-ieda:1.0"
     ]
   }
 }
