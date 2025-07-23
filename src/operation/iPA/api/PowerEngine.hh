@@ -88,7 +88,6 @@ class PowerEngine {
   void resetIRAnalysisData();
   auto *getRustPGRCData() { return _ipower->get_rust_pg_rc_data(); }
   unsigned runIRAnalysis(std::string power_net_name) {
-    bool is_ok = false;
     if (!getRustPGRCData()) {
       buildPGNetWireTopo();
       // set IR bump node locs.
