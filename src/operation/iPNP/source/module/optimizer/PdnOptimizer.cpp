@@ -33,32 +33,14 @@
 namespace ipnp {
 
   PdnOptimizer::PdnOptimizer()
-    : _opt_score(0.0)
+    : _opt_score(0.0),
+      _initial_temp(100.0),
+      _cooling_rate(0.95),
+      _min_temp(0.1),
+      _iterations_per_temp(10),
+      _ir_drop_weight(0.6),
+      _overflow_weight(0.4)
   {
-    PNPConfig* temp_config = new PNPConfig();
-    if (temp_config->get_sa_initial_temp() && 
-        temp_config->get_sa_cooling_rate() && 
-        temp_config->get_sa_min_temp() && 
-        temp_config->get_sa_iterations_per_temp() && 
-        temp_config->get_sa_ir_drop_weight() && 
-      temp_config->get_sa_overflow_weight())
-    {
-      _initial_temp = temp_config->get_sa_initial_temp();
-      _cooling_rate = temp_config->get_sa_cooling_rate();
-      _min_temp = temp_config->get_sa_min_temp();
-      _iterations_per_temp = temp_config->get_sa_iterations_per_temp();
-      _ir_drop_weight = temp_config->get_sa_ir_drop_weight();
-      _overflow_weight = temp_config->get_sa_overflow_weight();
-    } else {
-      _initial_temp = 100.0;
-      _cooling_rate = 0.95;
-      _min_temp = 0.1;
-      _iterations_per_temp = 10;
-      _ir_drop_weight = 0.6;
-      _overflow_weight = 0.4;
-      LOG_WARNING << "iPNP instance not found, using default simulated annealing parameters.";
-    }
-    delete temp_config;
   }
 
   PdnOptimizer::~PdnOptimizer()
@@ -74,6 +56,29 @@ namespace ipnp {
   void PdnOptimizer::optimizeGlobal(GridManager initial_pdn, idb::IdbBuilder* idb_builder)
   {
     _input_pdn_grid = initial_pdn;
+    
+    // If there is a configuration, get the simulated annealing parameters from the configuration
+    if (_config) {
+      if (_config->get_sa_initial_temp()) {
+        _initial_temp = _config->get_sa_initial_temp();
+      }
+      if (_config->get_sa_cooling_rate()) {
+        _cooling_rate = _config->get_sa_cooling_rate();
+      }
+      if (_config->get_sa_min_temp()) {
+        _min_temp = _config->get_sa_min_temp();
+      }
+      if (_config->get_sa_iterations_per_temp()) {
+        _iterations_per_temp = _config->get_sa_iterations_per_temp();
+      }
+      if (_config->get_sa_ir_drop_weight()) {
+        _ir_drop_weight = _config->get_sa_ir_drop_weight();
+      }
+      if (_config->get_sa_overflow_weight()) {
+        _overflow_weight = _config->get_sa_overflow_weight();
+      }
+    }
+    
     LOG_INFO << "Starting global optimization..." << std::endl;
     LOG_INFO << "Simulated Annealing parameters: ";
     LOG_INFO << "  Initial temperature: " << _initial_temp;
@@ -84,6 +89,11 @@ namespace ipnp {
     LOG_INFO << "  Overflow weight: " << _overflow_weight;
 
     SimulatedAnnealing sa(_initial_temp, _cooling_rate, _min_temp, _iterations_per_temp, _ir_drop_weight, _overflow_weight);
+    
+    if (_config) {
+      LOG_INFO << "Using configuration from iPNP instance" << std::endl;
+      sa.set_config(_config);
+    }
 
     OptimizationResult result = sa.optimize(_input_pdn_grid, idb_builder);
 

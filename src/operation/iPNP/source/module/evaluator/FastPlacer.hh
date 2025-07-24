@@ -37,17 +37,21 @@ namespace ipl {
 }
 
 namespace ipnp {
+
+class PNPConfig;
+
 class FastPlacer
 {
  public:
-  FastPlacer() = default;
+  FastPlacer() : _config(nullptr) {}
   ~FastPlacer() = default;
 
   void runFastPlacer(idb::IdbBuilder* idb_builder);
-
+  
+  void set_config(PNPConfig* config) { _config = config; }
 
 private:
-  
+  PNPConfig* _config;
 };
 
 }  // namespace ipnp

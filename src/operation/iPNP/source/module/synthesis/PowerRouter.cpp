@@ -546,13 +546,13 @@ void PowerRouter::addVDDNet(idb::IdbDesign* idb_design, GridManager pnp_network)
   }
 
   addPowerStripesToDie(vdd_net, pnp_network);
-  LOG_INFO << "[iPNP info]: Add VDD Power Stripes success.";
+  LOG_INFO << "Add VDD Power Stripes success.";
 
   addPowerFollowPin(idb_design, vdd_net);
-  LOG_INFO << "[iPNP info]: Add VDD Power Follow Pin success.";
+  LOG_INFO << "Add VDD Power Follow Pin success.";
 
   addPowerPort(idb_design, pnp_network, "VDD", "M7");
-  LOG_INFO << "[iPNP info]: Add VDD Power Port success.";
+  LOG_INFO << "Add VDD Power Port success.";
 }
 
 void PowerRouter::addPowerNets(idb::IdbDesign* idb_design, GridManager pnp_network)

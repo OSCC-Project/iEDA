@@ -88,6 +88,7 @@ namespace ipnp {
     void setWeights(double ir_drop_weight, double overflow_weight);
 
     void setAnnealingParams(double initial_temp, double cooling_rate, double min_temp, int iterations_per_temp);
+    void set_config(PNPConfig* config) { _config = config; }
 
   private:
     GridManager _input_pdn_grid;
@@ -102,6 +103,8 @@ namespace ipnp {
 
     double _ir_drop_weight;
     double _overflow_weight;
+
+    PNPConfig* _config = nullptr;
   };
 
 }  // namespace ipnp
