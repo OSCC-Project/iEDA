@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY --from=builder /opt/iEDA /app/iEDA
 
 ENV iEDA=/app/iEDA/bin/iEDA
-ENV MCP_SERVER_TYPE=sse
+ENV MCP_SERVER_TYPE=stdio
 ENV MCP_SERVER_URL=0.0.0.0
 ENV MCP_SERVER_PORT=3002
 
