@@ -25,15 +25,17 @@ ADD . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-editable
 
-COPY --from=builder /opt/iEDA/bin/iEDA /app/iEDA
+COPY --from=builder /opt/iEDA /app/iEDA
 
-ENV iEDA=/app/iEDA
+ENV iEDA=/app/iEDA/bin/iEDA
 ENV MCP_SERVER_TYPE=sse
 ENV MCP_SERVER_URL=0.0.0.0
 ENV MCP_SERVER_PORT=3002
 
-# Place executables in the environment at the front of the path
-ENV PATH="/app/.venv/bin:$PATH"
+ENV WORKSPACE=/app/iEDA/scripts/design/sky130_gcd
 
-# when running the container, add --db-path and a bind mount to the host's db file
+# Place executables in the environment at the front of the path
+ENV PATH="/app/iEDA/bin:/app/.venv/bin:$PATH"
+
+# CMD ["iEDA", "-v"]
 ENTRYPOINT ["mcp-iEDA"]

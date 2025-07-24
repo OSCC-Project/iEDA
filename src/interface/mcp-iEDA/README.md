@@ -38,6 +38,10 @@ you can add it to a file called `.vscode/mcp.json` in your workspace. The github
         "env": {
             "iEDA": "${workspaceFolder}/scripts/design/sky130_gcd/iEDA",
         }
+    },
+    "mcp-ieda-sse": {
+        "type": "sse",
+        "url": "http://localhost:3002/sse"
     }
 }
 ```
@@ -52,7 +56,18 @@ you can add it to a file called `.vscode/mcp.json` in your workspace. The github
 "mcpServers": {
   "mcp-ieda": {
     "command": "docker",
-    "args": ["run", "-p", "3002:3002", "--rm", "-it", "mcp-ieda:1.0"
+    "args": [
+        "run", 
+        "-p", 
+        "3002:3002",
+        "-v",
+        "/lib/x86_64-linux-gnu/libgomp.so.1:/lib/x86_64-linux-gnu/libgomp.so.1",
+        "-v",
+        "/lib/x86_64-linux-gnu/libunwind.so.8:/lib/x86_64-linux-gnu/libunwind.so.8",
+        "--rm",
+        "-it",
+        "--mount", "type=bind,src=${workspaceFolder},dst=/workspace",
+        "mcp-ieda:1.0"
     ]
   }
 }
