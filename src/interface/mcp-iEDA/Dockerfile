@@ -28,6 +28,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY --from=builder /opt/iEDA/bin/iEDA /app/iEDA
 
 ENV iEDA=/app/iEDA
+ENV MCP_SERVER_TYPE=sse
+ENV MCP_SERVER_URL=0.0.0.0
+ENV MCP_SERVER_PORT=3002
 
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"

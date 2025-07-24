@@ -40,6 +40,19 @@ def run_ieda(iEDA: Path, script_path: str):
     os.system(f"{iEDA} -script {script_path}")
     os.system(f"echo {iEDA} -script {script_path} finished")
     
+    
+def get_server_url() -> str:
+    """
+    Get the server URL from environment variable or default to 'http://localhost'.
+    """
+    return os.getenv("MCP_SERVER_URL", "localhost")
+
+def get_server_port() -> int:
+    """
+    Get the server port from environment variable or default to 3002.
+    """
+    return int(os.getenv("MCP_SERVER_PORT", 3002))
+    
 def serve(iEDA: Path, transport="stdio"):
     logger = logging.getLogger(__name__)
     
@@ -90,7 +103,10 @@ def serve(iEDA: Path, transport="stdio"):
 
         import uvicorn
 
-        uvicorn.run(starlette_app, host="127.0.0.1", port=3002)
+        server_url = get_server_url()
+        server_port = get_server_port()
+        logger.info(f"Starting iEDA MCP server at {server_url}")
+        uvicorn.run(starlette_app, host=server_url, port=server_port)
     else:
         import anyio
         async def arun():

@@ -4,12 +4,20 @@ import sys
 import os
 from .server import serve
 
+from dotenv import load_dotenv
+load_dotenv()
 
 def get_ieda_path() -> Path:
     ieda_path = os.getenv("iEDA")
     if not ieda_path:
         raise EnvironmentError("Environment variable 'iEDA' is not set.")
     return Path(ieda_path)
+
+def get_server_type() -> str:
+    server_type = os.getenv("MCP_SERVER_TYPE", "stdio")
+    if server_type not in ["stdio", "sse"]:
+        raise ValueError(f"Invalid MCP_SERVER_TYPE: {server_type}. Must be 'stdio' or 'sse'.")
+    return server_type
 
 
 def main(iEDA: Path | None = None, verbose: int = 2) -> None:
@@ -31,8 +39,11 @@ def main(iEDA: Path | None = None, verbose: int = 2) -> None:
         iEDA = get_ieda_path()
 
         logging.info(f"iEDA path: {iEDA}")
+        
+    server_type = get_server_type()
+    logging.info(f"Server type: {server_type}")
 
-    serve(iEDA)
+    serve(iEDA, server_type)
 
 
 if __name__ == "__main__":
