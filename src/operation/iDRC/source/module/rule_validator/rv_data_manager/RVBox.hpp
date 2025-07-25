@@ -57,7 +57,7 @@ class RVBox
   }
   void set_rv_summary(const RVSummary& rv_summary) { _rv_summary = rv_summary; }
   // function
-
+  std::string option;
  private:
   int32_t _box_idx = -1;
   PlanarRect _box_rect;

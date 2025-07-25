@@ -33,7 +33,7 @@ class RuleValidator
   static RuleValidator& getInst();
   static void destroyInst();
   // function
-  std::vector<Violation> verify(std::vector<DRCShape>& drc_env_shape_list, std::vector<DRCShape>& drc_result_shape_list);
+  std::vector<Violation> verify(std::vector<DRCShape>& drc_env_shape_list, std::vector<DRCShape>& drc_result_shape_list,const std::string option = "");
 
  private:
   // self

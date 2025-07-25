@@ -31,7 +31,7 @@
 namespace irt {
 
 // public
-
+#define INCREDRC
 void PinAccessor::initInst()
 {
   if (_pa_instance == nullptr) {
@@ -1726,7 +1726,11 @@ void PinAccessor::initSinglePatchTask(PABox& pa_box, PATask* pa_task)
   // single task
   pa_box.set_curr_patch_task(pa_task);
   pa_box.get_routing_patch_list().clear();
+#ifdef INCREDRC
+  pa_box.min_area = 1;
+#endif
   pa_box.set_patch_violation_list(getPatchViolationList(pa_box));
+  pa_box.min_area = 0;
   pa_box.get_tried_fix_violation_set().clear();
 }
 
@@ -1800,6 +1804,20 @@ std::vector<Violation> PinAccessor::getPatchViolationList(PABox& pa_box)
   de_task.set_net_result_map(net_result_map);
   de_task.set_net_patch_map(net_patch_map);
   de_task.set_need_checked_net_set(need_checked_net_set);
+  de_task.option = "";
+  #ifdef INCREDRC
+    std::ostringstream oss;
+    if (pa_box.min_area == 1) {
+      oss << "min_area";
+    } else {
+      oss << "net_idx:" << pa_box.get_curr_patch_task()->get_net_idx() << "layer_idx:" << pa_box.get_curr_patch_violation().get_violation_shape().get_layer_idx()
+          << "llx:" << pa_box.get_curr_patch_violation().get_violation_shape().get_real_rect().get_ll_x()
+          << "lly:" << pa_box.get_curr_patch_violation().get_violation_shape().get_real_rect().get_ll_y()
+          << "urx:" << pa_box.get_curr_patch_violation().get_violation_shape().get_real_rect().get_ur_x()
+          << "ury:" << pa_box.get_curr_patch_violation().get_violation_shape().get_real_rect().get_ur_y();
+    }
+    de_task.option = oss.str();
+  #endif
   return RTDE.getViolationList(de_task);
 }
 
@@ -1918,6 +1936,9 @@ void PinAccessor::addViolationToShadow(PABox& pa_box)
 void PinAccessor::patchSingleViolation(PABox& pa_box)
 {
   std::vector<PAPatch> pa_patch_list = getCandidatePatchList(pa_box);
+  #ifdef INCREDRC
+  pa_box.patch_violation = getPatchViolationList(pa_box);
+  #endif
   for (PAPatch& pa_patch : pa_patch_list) {
     buildSingleViolation(pa_box, pa_patch);
     if (pa_box.get_curr_is_solved()) {
@@ -2063,6 +2084,63 @@ std::vector<PAPatch> PinAccessor::getCandidatePatchList(PABox& pa_box)
 
 void PinAccessor::buildSingleViolation(PABox& pa_box, PAPatch& pa_patch)
 {
+#ifdef INCREDRC
+  {
+    pa_box.set_curr_candidate_patch(pa_patch);
+  }
+  std::vector<Violation> patch_violation_list = pa_box.patch_violation;
+  std::vector<Violation> curr_patch_violation_list;
+  {
+    pa_box.get_routing_patch_list().push_back(pa_patch.get_patch());
+    curr_patch_violation_list = getPatchViolationList(pa_box);
+    pa_box.get_routing_patch_list().pop_back();
+  }
+  {
+    std::map<ViolationType, std::pair<int32_t, int32_t>> env_type_origin_curr_map;
+    std::map<ViolationType, std::pair<int32_t, int32_t>> valid_type_origin_curr_map;
+    std::map<ViolationType, std::pair<int32_t, int32_t>> within_net_map;
+    for (Violation& origin_violation : patch_violation_list) {
+      if (!isValidPatchViolation(pa_box, origin_violation)) {
+        env_type_origin_curr_map[origin_violation.get_violation_type()].first++;
+      } else {
+        valid_type_origin_curr_map[origin_violation.get_violation_type()].first++;
+      }
+      if(origin_violation.get_violation_net_set().size()>1){
+        within_net_map[origin_violation.get_violation_type()].first++;
+      }
+    }
+    for (Violation& curr_violation : curr_patch_violation_list) {
+      if (!isValidPatchViolation(pa_box, curr_violation)) {
+        env_type_origin_curr_map[curr_violation.get_violation_type()].second++;
+      } else {
+        valid_type_origin_curr_map[curr_violation.get_violation_type()].second++;
+      }
+      if(curr_violation.get_violation_net_set().size()>1){
+        within_net_map[curr_violation.get_violation_type()].second++;
+      }
+    }
+    bool is_solved = true;
+    for (auto& [violation_type, origin_curr] : env_type_origin_curr_map) {
+      if (!is_solved) {
+        break;
+      }
+      is_solved = origin_curr.second <= origin_curr.first;
+    }
+    for (auto& [violation_type, origin_curr] : valid_type_origin_curr_map) {
+      if (!is_solved) {
+        break;
+      }
+      is_solved = origin_curr.second < origin_curr.first;
+    }
+    for(auto& [violation_type, origin_curr] : within_net_map){
+      if(!is_solved){
+        break;
+      }
+      is_solved = origin_curr.second <= origin_curr.first;
+    }
+    pa_box.set_curr_is_solved(is_solved);
+  }
+#else
   {
     pa_box.set_curr_candidate_patch(pa_patch);
   }
@@ -2103,12 +2181,15 @@ void PinAccessor::buildSingleViolation(PABox& pa_box, PAPatch& pa_patch)
     }
     pa_box.set_curr_is_solved(is_solved);
   }
+#endif
 }
 
 void PinAccessor::updateSingleViolation(PABox& pa_box)
 {
   pa_box.get_routing_patch_list().push_back(pa_box.get_curr_candidate_patch().get_patch());
+#ifndef INCREDRC
   pa_box.set_patch_violation_list(pa_box.get_curr_patch_violation_list());
+#endif
 }
 
 void PinAccessor::updateTriedFixViolation(PABox& pa_box)

@@ -1647,7 +1647,7 @@ void RTInterface::destroyIDRC()
 std::vector<Violation> RTInterface::getViolationList(std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
                                                      std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
                                                      std::map<int32_t, std::vector<Segment<LayerCoord>*>>& net_result_map,
-                                                     std::map<int32_t, std::vector<EXTLayerRect*>>& net_patch_map)
+                                                     std::map<int32_t, std::vector<EXTLayerRect*>>& net_patch_map,const std::string option)
 {
   std::vector<ids::Shape> ids_env_shape_list;
   for (std::pair<EXTLayerRect*, bool>& env_shape : env_shape_list) {
@@ -1673,7 +1673,7 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<std::pair<EXTLa
   }
   std::vector<ids::Violation> ids_violation_list;
   {
-    ids_violation_list = DRCI.getViolationList(ids_env_shape_list, ids_result_shape_list);
+    ids_violation_list = DRCI.getViolationList(ids_env_shape_list, ids_result_shape_list,option);
   }
   std::vector<Violation> violation_list;
   for (ids::Violation& ids_violation : ids_violation_list) {

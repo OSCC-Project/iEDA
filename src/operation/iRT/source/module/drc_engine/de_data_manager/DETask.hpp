@@ -51,6 +51,7 @@ class DETask
   void set_net_patch_map(const std::map<int32_t, std::vector<EXTLayerRect*>>& net_patch_map) { _net_patch_map = net_patch_map; }
   void set_need_checked_net_set(const std::set<int32_t>& need_checked_net_set) { _need_checked_net_set = need_checked_net_set; }
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
+  std::string option="";
   // function
  private:
   DEProcType _proc_type = DEProcType::kNone;

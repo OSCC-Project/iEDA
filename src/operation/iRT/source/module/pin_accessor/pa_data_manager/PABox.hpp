@@ -56,6 +56,8 @@ class PABox
   std::map<int32_t, std::map<int32_t, std::vector<EXTLayerRect>>>& get_best_net_task_access_patch_map() { return _best_net_task_access_patch_map; }
   std::map<PAPin*, AccessPoint>& get_best_pin_access_point_map() { return _best_pin_access_point_map; }
   std::vector<Violation>& get_best_route_violation_list() { return _best_route_violation_list; }
+  int min_area = 0;
+  std::vector<Violation> patch_violation;
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
   void set_pa_box_id(const PABoxId& pa_box_id) { _pa_box_id = pa_box_id; }

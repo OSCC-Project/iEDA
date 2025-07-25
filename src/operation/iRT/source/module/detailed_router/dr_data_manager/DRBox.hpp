@@ -55,6 +55,10 @@ class DRBox
   std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_best_net_task_detailed_result_map() { return _best_net_task_detailed_result_map; }
   std::map<int32_t, std::vector<EXTLayerRect>>& get_best_net_task_detailed_patch_map() { return _best_net_task_detailed_patch_map; }
   std::vector<Violation>& get_best_route_violation_list() { return _best_route_violation_list; }
+  std::map<int32_t,std::pair<std::set<int>,std::set<int>>> layer_axis_map;
+  int32_t min_area = 0;
+  std::vector<Violation> patch_violation;
+  
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
   void set_dr_box_id(const DRBoxId& dr_box_id) { _dr_box_id = dr_box_id; }

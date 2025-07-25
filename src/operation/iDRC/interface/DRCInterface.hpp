@@ -58,7 +58,7 @@ class DRCInterface
   void initDRC(std::map<std::string, std::any> config_map, bool enable_quiet);
   void checkDef();
   void destroyDRC();
-  std::vector<ids::Violation> getViolationList(const std::vector<ids::Shape>& ids_env_shape_list, const std::vector<ids::Shape>& ids_result_shape_list);
+  std::vector<ids::Violation> getViolationList(const std::vector<ids::Shape>& ids_env_shape_list, const std::vector<ids::Shape>& ids_result_shape_list,const std::string option = "");
 #endif
 
 #endif

@@ -118,7 +118,7 @@ void DRCInterface::destroyDRC()
 }
 
 std::vector<ids::Violation> DRCInterface::getViolationList(const std::vector<ids::Shape>& ids_env_shape_list,
-                                                           const std::vector<ids::Shape>& ids_result_shape_list)
+                                                           const std::vector<ids::Shape>& ids_result_shape_list,const std::string option)
 {
   std::vector<DRCShape> drc_env_shape_list;
   drc_env_shape_list.reserve(ids_env_shape_list.size());
@@ -131,7 +131,7 @@ std::vector<ids::Violation> DRCInterface::getViolationList(const std::vector<ids
     drc_result_shape_list.push_back(convertToDRCShape(ids_result_shape));
   }
   std::vector<ids::Violation> ids_violation_list;
-  for (Violation& violation : DRCRV.verify(drc_env_shape_list, drc_result_shape_list)) {
+  for (Violation& violation : DRCRV.verify(drc_env_shape_list, drc_result_shape_list,option)) {
     ids::Violation ids_violation;
     ids_violation.violation_type = GetViolationTypeName()(violation.get_violation_type());
     ids_violation.ll_x = violation.get_ll_x();
