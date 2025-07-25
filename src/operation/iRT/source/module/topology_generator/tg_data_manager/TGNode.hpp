@@ -56,16 +56,25 @@ class TGNode : public PlanarCoord
     }
     return neighbor_node;
   }
-  double getOverflowCost(int32_t net_idx, double overflow_unit)
+  double getOverflowCost(int32_t net_idx, Direction direction, double overflow_unit)
   {
     if (!validDemandUnit()) {
       RTLOG.error(Loc::current(), "The demand unit is error!");
     }
     std::map<Orientation, std::set<int32_t>> orient_net_map = _orient_net_map;
     std::map<int32_t, std::set<Orientation>> net_orient_map = _net_orient_map;
-    for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
-      orient_net_map[orient].insert(net_idx);
-      net_orient_map[net_idx].insert(orient);
+    if (direction == Direction::kHorizontal) {
+      for (Orientation orient : {Orientation::kEast, Orientation::kWest}) {
+        orient_net_map[orient].insert(net_idx);
+        net_orient_map[net_idx].insert(orient);
+      }
+    } else if (direction == Direction::kVertical) {
+      for (Orientation orient : {Orientation::kSouth, Orientation::kNorth}) {
+        orient_net_map[orient].insert(net_idx);
+        net_orient_map[net_idx].insert(orient);
+      }
+    } else {
+      RTLOG.error(Loc::current(), "The direction is error!");
     }
     double boundary_overflow = 0;
     for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
@@ -123,9 +132,9 @@ class TGNode : public PlanarCoord
     if (demand == supply) {
       cost = 1;
     } else if (demand > supply) {
-      cost = std::pow(demand - supply + 1, 2);
+      cost = std::pow(demand - supply + 1, 4);
     } else if (demand < supply) {
-      cost = std::pow(demand / supply, 2);
+      cost = std::pow(demand / supply, 4);
     }
     return cost;
   }

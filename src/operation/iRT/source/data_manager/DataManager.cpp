@@ -506,6 +506,7 @@ std::vector<NetShape> DataManager::getNetGlobalShapeList(int32_t net_idx, MTree<
 std::vector<NetShape> DataManager::getNetGlobalShapeList(int32_t net_idx, LayerCoord& first_coord, LayerCoord& second_coord)
 {
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
+  std::map<int32_t, std::vector<int32_t>>& routing_to_adjacent_cut_map = _database.get_routing_to_adjacent_cut_map();
 
   PlanarRect first_gcell = RTUTIL.getRealRectByGCell(first_coord, gcell_axis);
   int32_t first_layer_idx = first_coord.get_layer_idx();
@@ -515,9 +516,14 @@ std::vector<NetShape> DataManager::getNetGlobalShapeList(int32_t net_idx, LayerC
   std::vector<NetShape> net_shape_list;
   if (first_layer_idx != second_layer_idx) {
     RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
-    for (int32_t layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
-      LayerRect gcell_rect(first_gcell, layer_idx);
-      net_shape_list.emplace_back(net_idx, gcell_rect, true);
+    for (int32_t routing_layer_idx = first_layer_idx; routing_layer_idx < second_layer_idx; routing_layer_idx++) {
+      int32_t cut_layer_idx = -1;
+      {
+        std::vector<int32_t>& cut_layer_idx_list = routing_to_adjacent_cut_map[routing_layer_idx];
+        cut_layer_idx = *std::max_element(cut_layer_idx_list.begin(), cut_layer_idx_list.end());
+      }
+      LayerRect gcell_rect(first_gcell, cut_layer_idx);
+      net_shape_list.emplace_back(net_idx, gcell_rect, false);
     }
   } else {
     LayerRect gcell_rect(RTUTIL.getBoundingBox({first_gcell, second_gcell}), first_layer_idx);

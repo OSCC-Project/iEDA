@@ -673,7 +673,7 @@ double TopologyGenerator::getNodeCost(TGModel& tg_model, std::vector<Segment<Pla
   GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
   int32_t curr_net_idx = tg_model.get_curr_tg_task()->get_net_idx();
 
-  std::set<PlanarCoord, CmpPlanarCoordByXASC> coord_set;
+  double node_cost = 0;
   for (Segment<PlanarCoord>& coord_segment : routing_segment_list) {
     PlanarCoord& first_coord = coord_segment.get_first();
     PlanarCoord& second_coord = coord_segment.get_second();
@@ -686,15 +686,12 @@ double TopologyGenerator::getNodeCost(TGModel& tg_model, std::vector<Segment<Pla
     int32_t second_y = second_coord.get_y();
     RTUTIL.swapByASC(first_x, second_x);
     RTUTIL.swapByASC(first_y, second_y);
+    Direction direction = RTUTIL.getDirection(first_coord, second_coord);
     for (int32_t x = first_x; x <= second_x; x++) {
       for (int32_t y = first_y; y <= second_y; y++) {
-        coord_set.insert(PlanarCoord(x, y));
+        node_cost += tg_node_map[x][y].getOverflowCost(curr_net_idx, direction, overflow_unit);
       }
     }
-  }
-  double node_cost = 0;
-  for (const PlanarCoord& coord : coord_set) {
-    node_cost += tg_node_map[coord.get_x()][coord.get_y()].getOverflowCost(curr_net_idx, overflow_unit);
   }
   return node_cost;
 }

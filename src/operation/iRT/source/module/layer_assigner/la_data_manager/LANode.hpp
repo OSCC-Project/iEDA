@@ -148,9 +148,9 @@ class LANode : public LayerCoord
     if (demand == supply) {
       cost = 1;
     } else if (demand > supply) {
-      cost = std::pow(demand - supply + 1, 2);
+      cost = std::pow(demand - supply + 1, 4);
     } else if (demand < supply) {
-      cost = std::pow(demand / supply, 2);
+      cost = std::pow(demand / supply, 4);
     }
     return cost;
   }

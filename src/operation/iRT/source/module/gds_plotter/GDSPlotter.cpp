@@ -142,7 +142,7 @@ void GDSPlotter::buildGraphLypFile()
          {GPDataType::kPatch, true},          {GPDataType::kShape, true},      {GPDataType::kAccessPoint, false},
          {GPDataType::kAxis, false},          {GPDataType::kOverflow, false},  {GPDataType::kRouteViolation, false},
          {GPDataType::kPatchViolation, false}};
-  std::map<GPDataType, bool> cut_data_type_visible_map = {{GPDataType::kDetailedPath, true}, {GPDataType::kShape, true}};
+  std::map<GPDataType, bool> cut_data_type_visible_map = {{GPDataType::kGlobalPath, true}, {GPDataType::kDetailedPath, true}, {GPDataType::kShape, true}};
 
   // 0为base_region 最后一个为GCell 中间为cut+routing
   int32_t gds_layer_size = 2 + static_cast<int32_t>(_gds_routing_layer_map.size() + _gds_cut_layer_map.size());

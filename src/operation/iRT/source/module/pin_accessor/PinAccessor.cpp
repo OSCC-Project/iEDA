@@ -183,16 +183,12 @@ void PinAccessor::initAccessPointList(PAModel& pa_model)
       // 构建目标层
       std::vector<int32_t> point_layer_idx_list;
       if (curr_layer_idx < bottom_routing_layer_idx) {
-        point_layer_idx_list.push_back(bottom_routing_layer_idx);
         point_layer_idx_list.push_back(bottom_routing_layer_idx + 1);
       } else if (top_routing_layer_idx < curr_layer_idx) {
-        point_layer_idx_list.push_back(top_routing_layer_idx);
         point_layer_idx_list.push_back(top_routing_layer_idx - 1);
       } else if (curr_layer_idx < top_routing_layer_idx) {
-        point_layer_idx_list.push_back(curr_layer_idx);
         point_layer_idx_list.push_back(curr_layer_idx + 1);
       } else {
-        point_layer_idx_list.push_back(curr_layer_idx);
         point_layer_idx_list.push_back(curr_layer_idx - 1);
       }
       // 构建搜索形状
