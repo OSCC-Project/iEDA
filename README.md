@@ -4,7 +4,7 @@
 
 <!-- <img src="docs/resources/ieda_logo_b_2.png" width="15%" height="15%" alt="iEDA-logo" /> -->
 
-<img src="docs/resources/iEDA.png" width="15%" height="15%" alt="iEDA-logo" />
+<img src="docs/resources/ieda_logo_b_2.png" width="21%" height="15%" alt="iEDA-logo" />
  <h1>iEDA</h1>
 
 <h3> An open-source  EDA infracstructure and tools from Netlist to GDS for ASIC design.</h3>
