@@ -83,7 +83,7 @@ void DRCInterface::initDRC(std::map<std::string, std::any> config_map, bool enab
 void DRCInterface::checkDef()
 {
   std::map<std::string, std::vector<ids::Violation>> type_violation_map;
-  for (ids::Violation& ids_violation : getViolationList(buildEnvShapeList(), buildResultShapeList())) {
+  for (ids::Violation& ids_violation : getViolationList(buildEnvShapeList(), buildResultShapeList(), {}, {})) {
     type_violation_map[ids_violation.violation_type].push_back(ids_violation);
   }
   printSummary(type_violation_map);
@@ -118,7 +118,9 @@ void DRCInterface::destroyDRC()
 }
 
 std::vector<ids::Violation> DRCInterface::getViolationList(const std::vector<ids::Shape>& ids_env_shape_list,
-                                                           const std::vector<ids::Shape>& ids_result_shape_list,const std::string option)
+                                                           const std::vector<ids::Shape>& ids_result_shape_list,
+                                                           const std::set<std::string>& ids_check_type_set,
+                                                           const std::vector<ids::Shape>& ids_check_region_list)
 {
   std::vector<DRCShape> drc_env_shape_list;
   drc_env_shape_list.reserve(ids_env_shape_list.size());
@@ -130,8 +132,16 @@ std::vector<ids::Violation> DRCInterface::getViolationList(const std::vector<ids
   for (const ids::Shape& ids_result_shape : ids_result_shape_list) {
     drc_result_shape_list.push_back(convertToDRCShape(ids_result_shape));
   }
+  std::set<ViolationType> drc_check_type_set;
+  for (std::string ids_check_type : ids_check_type_set) {
+    drc_check_type_set.insert(GetViolationTypeByName()(ids_check_type));
+  }
+  std::vector<DRCShape> drc_check_region_list;
+  for (const ids::Shape& ids_check_region : ids_check_region_list) {
+    drc_check_region_list.push_back(convertToDRCShape(ids_check_region));
+  }
   std::vector<ids::Violation> ids_violation_list;
-  for (Violation& violation : DRCRV.verify(drc_env_shape_list, drc_result_shape_list,option)) {
+  for (Violation& violation : DRCRV.verify(drc_env_shape_list, drc_result_shape_list, drc_check_type_set, drc_check_region_list)) {
     ids::Violation ids_violation;
     ids_violation.violation_type = GetViolationTypeName()(violation.get_violation_type());
     ids_violation.ll_x = violation.get_ll_x();

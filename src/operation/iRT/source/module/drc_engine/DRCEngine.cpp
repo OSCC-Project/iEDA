@@ -146,8 +146,8 @@ void DRCEngine::buildIgnoredViolationSet()
 
 void DRCEngine::getViolationListByInterface(DETask& de_task)
 {
-  de_task.set_violation_list(
-      RTI.getViolationList(de_task.get_env_shape_list(), de_task.get_net_pin_shape_map(), de_task.get_net_result_map(), de_task.get_net_patch_map(),de_task.option));
+  de_task.set_violation_list(RTI.getViolationList(de_task.get_env_shape_list(), de_task.get_net_pin_shape_map(), de_task.get_net_result_map(),
+                                                  de_task.get_net_patch_map(), de_task.get_check_type_set(), de_task.get_check_region_list()));
 }
 
 void DRCEngine::filterViolationList(DETask& de_task)

@@ -33,7 +33,8 @@ class RuleValidator
   static RuleValidator& getInst();
   static void destroyInst();
   // function
-  std::vector<Violation> verify(std::vector<DRCShape>& drc_env_shape_list, std::vector<DRCShape>& drc_result_shape_list,const std::string option = "");
+  std::vector<Violation> verify(std::vector<DRCShape>& drc_env_shape_list, std::vector<DRCShape>& drc_result_shape_list,
+                                std::set<ViolationType>& drc_check_type_set, std::vector<DRCShape>& drc_check_region_list);
 
  private:
   // self
@@ -46,10 +47,12 @@ class RuleValidator
   RuleValidator& operator=(const RuleValidator& other) = delete;
   RuleValidator& operator=(RuleValidator&& other) = delete;
   // function
-  RVModel initRVModel(std::vector<DRCShape>& drc_env_shape_list, std::vector<DRCShape>& drc_result_shape_list);
+  RVModel initRVModel(std::vector<DRCShape>& drc_env_shape_list, std::vector<DRCShape>& drc_result_shape_list, std::set<ViolationType>& drc_check_type_set,
+                      std::vector<DRCShape>& drc_check_region_list);
   void setRVComParam(RVModel& rv_model);
   void buildRVBoxList(RVModel& rv_model);
   void verifyRVModel(RVModel& rv_model);
+  void buildRVBox(RVBox& rv_box);
   bool needVerifying(RVBox& rv_box);
   void buildViolationSet(RVBox& rv_box);
   void verifyRVBox(RVBox& rv_box);
@@ -79,6 +82,7 @@ class RuleValidator
   void verifyOutOfDie(RVBox& rv_box);
   void verifyParallelRunLengthSpacing(RVBox& rv_box);
   void verifySameLayerCutSpacing(RVBox& rv_box);
+  bool needVerifying(RVBox& rv_box, ViolationType violation_type);
   void processRVBox(RVBox& rv_box);
   void buildViolationList(RVBox& rv_box);
   void updateSummary(RVBox& rv_box);

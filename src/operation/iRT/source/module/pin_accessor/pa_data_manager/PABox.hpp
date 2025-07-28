@@ -56,8 +56,6 @@ class PABox
   std::map<int32_t, std::map<int32_t, std::vector<EXTLayerRect>>>& get_best_net_task_access_patch_map() { return _best_net_task_access_patch_map; }
   std::map<PAPin*, AccessPoint>& get_best_pin_access_point_map() { return _best_pin_access_point_map; }
   std::vector<Violation>& get_best_route_violation_list() { return _best_route_violation_list; }
-  int min_area = 0;
-  std::vector<Violation> patch_violation;
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
   void set_pa_box_id(const PABoxId& pa_box_id) { _pa_box_id = pa_box_id; }
@@ -143,13 +141,7 @@ class PABox
   void set_tried_fix_violation_set(const std::set<Violation, CmpViolation>& tried_fix_violation_set) { _tried_fix_violation_set = tried_fix_violation_set; }
   // single violation
   Violation& get_curr_patch_violation() { return _curr_patch_violation; }
-  PAPatch& get_curr_candidate_patch() { return _curr_candidate_patch; }
-  std::vector<Violation>& get_curr_patch_violation_list() { return _curr_patch_violation_list; }
-  bool get_curr_is_solved() const { return _curr_is_solved; }
   void set_curr_patch_violation(const Violation& curr_patch_violation) { _curr_patch_violation = curr_patch_violation; }
-  void set_curr_candidate_patch(const PAPatch& curr_candidate_patch) { _curr_candidate_patch = curr_candidate_patch; }
-  void set_curr_patch_violation_list(const std::vector<Violation>& curr_patch_violation_list) { _curr_patch_violation_list = curr_patch_violation_list; }
-  void set_curr_is_solved(const bool curr_is_solved) { _curr_is_solved = curr_is_solved; }
 #endif
 
  private:
@@ -195,9 +187,6 @@ class PABox
   std::set<Violation, CmpViolation> _tried_fix_violation_set;
   // single violation
   Violation _curr_patch_violation;
-  PAPatch _curr_candidate_patch;
-  std::vector<Violation> _curr_patch_violation_list;
-  bool _curr_is_solved = false;
 #endif
 };
 

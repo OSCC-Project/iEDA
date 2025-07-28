@@ -48,12 +48,12 @@ void RuleValidator::destroyInst()
 }
 
 // function
-std::vector<Violation> RuleValidator::verify(std::vector<DRCShape>& drc_env_shape_list, std::vector<DRCShape>& drc_result_shape_list, const std::string option)
+std::vector<Violation> RuleValidator::verify(std::vector<DRCShape>& drc_env_shape_list, std::vector<DRCShape>& drc_result_shape_list,
+                                             std::set<ViolationType>& drc_check_type_set, std::vector<DRCShape>& drc_check_region_list)
 {
   Monitor monitor;
   DRCLOG.info(Loc::current(), "Starting...");
-  RVModel rv_model = initRVModel(drc_env_shape_list, drc_result_shape_list);
-  rv_model.option = option;
+  RVModel rv_model = initRVModel(drc_env_shape_list, drc_result_shape_list, drc_check_type_set, drc_check_region_list);
   setRVComParam(rv_model);
   buildRVBoxList(rv_model);
   verifyRVModel(rv_model);
@@ -70,11 +70,14 @@ std::vector<Violation> RuleValidator::verify(std::vector<DRCShape>& drc_env_shap
 
 RuleValidator* RuleValidator::_rv_instance = nullptr;
 
-RVModel RuleValidator::initRVModel(std::vector<DRCShape>& drc_env_shape_list, std::vector<DRCShape>& drc_result_shape_list)
+RVModel RuleValidator::initRVModel(std::vector<DRCShape>& drc_env_shape_list, std::vector<DRCShape>& drc_result_shape_list,
+                                   std::set<ViolationType>& drc_check_type_set, std::vector<DRCShape>& drc_check_region_list)
 {
   RVModel rv_model;
   rv_model.set_drc_env_shape_list(drc_env_shape_list);
   rv_model.set_drc_result_shape_list(drc_result_shape_list);
+  rv_model.set_drc_check_type_set(drc_check_type_set);
+  rv_model.set_drc_check_region_list(drc_check_region_list);
   return rv_model;
 }
 
@@ -87,7 +90,7 @@ void RuleValidator::setRVComParam(RVModel& rv_model)
    * box_size, expand_size
    */
   // clang-format off
-  RVComParam rv_com_param(box_size,expand_size);
+  RVComParam rv_com_param(box_size, expand_size);
   // clang-format on
   DRCLOG.info(Loc::current(), "box_size: ", rv_com_param.get_box_size());
   DRCLOG.info(Loc::current(), "expand_size: ", rv_com_param.get_expand_size());
@@ -130,6 +133,7 @@ void RuleValidator::buildRVBoxList(RVModel& rv_model)
       rv_box.set_box_idx(grid_x + grid_y * grid_x_size);
       rv_box.get_box_rect().set_ll(grid_x * box_size + offset_x, grid_y * box_size + offset_y);
       rv_box.get_box_rect().set_ur((grid_x + 1) * box_size + offset_x, (grid_y + 1) * box_size + offset_y);
+      rv_box.set_rv_com_param(&rv_model.get_rv_com_param());
     }
   }
   for (DRCShape& drc_env_shape : rv_model.get_drc_env_shape_list()) {
@@ -166,6 +170,10 @@ void RuleValidator::buildRVBoxList(RVModel& rv_model)
       }
     }
   }
+  for (RVBox& rv_box : rv_box_list) {
+    rv_box.set_drc_check_type_set(&rv_model.get_drc_check_type_set());
+    rv_box.set_drc_check_region_list(&rv_model.get_drc_check_region_list());
+  }
   for (DRCShape& drc_result_shape : rv_model.get_drc_result_shape_list()) {
     if (drc_result_shape.get_net_idx() < 0) {
       DRCLOG.error(Loc::current(), "The drc_result_shape_list exist idx < 0!");
@@ -179,59 +187,56 @@ void RuleValidator::verifyRVModel(RVModel& rv_model)
   DRCLOG.info(Loc::current(), "Starting...");
 #pragma omp parallel for
   for (RVBox& rv_box : rv_model.get_rv_box_list()) {
-    rv_box.option = rv_model.option;
+    buildRVBox(rv_box);
     if (needVerifying(rv_box)) {
-      if (rv_model.option.find("net_idx") != std::string::npos) {
-        // 在这里处理当前的情况
-        int32_t net_idx;
-        int32_t layer_idx;
-        int32_t llx;
-        int32_t lly;
-        int32_t urx;
-        int32_t ury;
-        sscanf(rv_model.option.c_str(), "net_idx:%dlayer_idx:%dllx:%dlly:%durx:%dury:%d", &net_idx, &layer_idx, &llx, &lly, &urx, &ury);
-        PlanarRect vio_rect = PlanarRect(llx, lly, urx, ury);
-        RVBox temp_box = rv_box;
-        temp_box.get_drc_env_shape_list().clear();
-        temp_box.get_drc_result_shape_list().clear();
-        int32_t expand_size = 5 * DRCDM.getOnlyPitch();
-        PlanarRect searched_rect = DRCUTIL.getEnlargedRect(vio_rect, expand_size);
-        std::set<int> need_routing_layer;
-        std::set<int> need_cut_layer;
-        std::map<int32_t, std::vector<int32_t>>& routing_to_adjacent_cut_map = DRCDM.getDatabase().get_routing_to_adjacent_cut_map();
-        std::vector<int32_t>& cut_layer_idx_list = routing_to_adjacent_cut_map[layer_idx];
-        need_routing_layer.insert(layer_idx);
-        need_routing_layer.insert(layer_idx + 1);
-        if (layer_idx > 0) {
-          need_routing_layer.insert(layer_idx - 1);
-        }
-        need_cut_layer.insert(cut_layer_idx_list.begin(), cut_layer_idx_list.end());
-        for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
-          if (DRCUTIL.isClosedOverlap(searched_rect, drc_shape->get_rect())
-              && ((drc_shape->get_is_routing() == false && DRCUTIL.exist(need_cut_layer, drc_shape->get_layer_idx()))
-                  || (drc_shape->get_is_routing() && DRCUTIL.exist(need_routing_layer, drc_shape->get_layer_idx())))) {
-            temp_box.get_drc_env_shape_list().push_back(drc_shape);
-          }
-        }
-        for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
-          if (DRCUTIL.isClosedOverlap(searched_rect, drc_shape->get_rect())
-              && ((drc_shape->get_is_routing() == false && DRCUTIL.exist(need_cut_layer, drc_shape->get_layer_idx()))
-                  || (drc_shape->get_is_routing() && DRCUTIL.exist(need_routing_layer, drc_shape->get_layer_idx())))) {
-            temp_box.get_drc_result_shape_list().push_back(drc_shape);
-          }
-        }
-        buildViolationSet(temp_box);
-        buildViolationList(temp_box);
-        rv_box.set_violation_list(temp_box.get_violation_list());
-      } else {
-        buildViolationSet(rv_box);
-        buildViolationList(rv_box);
-        updateSummary(rv_box);
-        // debugViolationByType(rv_box, ViolationType::kNone);
-      }
+      buildViolationSet(rv_box);
+      buildViolationList(rv_box);
+      updateSummary(rv_box);
+      // debugViolationByType(rv_box, ViolationType::kNone);
     }
   }
   DRCLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+void RuleValidator::buildRVBox(RVBox& rv_box)
+{
+  std::map<int32_t, std::vector<int32_t>>& routing_to_adjacent_cut_map = DRCDM.getDatabase().get_routing_to_adjacent_cut_map();
+
+  std::vector<DRCShape>* drc_check_region_list = rv_box.get_drc_check_region_list();
+  int32_t expand_size = rv_box.get_rv_com_param()->get_expand_size();
+
+  if (!drc_check_region_list->empty()) {
+    std::vector<DRCShape*> drc_env_shape_list;
+    std::vector<DRCShape*> drc_result_shape_list;
+    for (DRCShape& drc_check_region : *drc_check_region_list) {
+      PlanarRect searched_rect = DRCUTIL.getEnlargedRect(drc_check_region.get_rect(), expand_size);
+      std::map<bool, std::set<int32_t>> type_layer_idx_map;
+      {
+        int32_t layer_idx = drc_check_region.get_layer_idx();
+        type_layer_idx_map[true].insert({layer_idx - 1, layer_idx, layer_idx + 1});
+        std::vector<int32_t>& cut_layer_idx_list = routing_to_adjacent_cut_map[layer_idx];
+        type_layer_idx_map[false].insert(cut_layer_idx_list.begin(), cut_layer_idx_list.end());
+      }
+      for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+        if (DRCUTIL.exist(type_layer_idx_map[drc_shape->get_is_routing()], drc_shape->get_layer_idx())
+            && DRCUTIL.isClosedOverlap(searched_rect, drc_shape->get_rect())) {
+          drc_env_shape_list.push_back(drc_shape);
+        }
+      }
+      for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+        if (DRCUTIL.exist(type_layer_idx_map[drc_shape->get_is_routing()], drc_shape->get_layer_idx())
+            && DRCUTIL.isClosedOverlap(searched_rect, drc_shape->get_rect())) {
+          drc_result_shape_list.push_back(drc_shape);
+        }
+      }
+    }
+    std::sort(drc_env_shape_list.begin(), drc_env_shape_list.end());
+    drc_env_shape_list.erase(std::unique(drc_env_shape_list.begin(), drc_env_shape_list.end()), drc_env_shape_list.end());
+    std::sort(drc_result_shape_list.begin(), drc_result_shape_list.end());
+    drc_result_shape_list.erase(std::unique(drc_result_shape_list.begin(), drc_result_shape_list.end()), drc_result_shape_list.end());
+    rv_box.set_drc_env_shape_list(drc_env_shape_list);
+    rv_box.set_drc_result_shape_list(drc_result_shape_list);
+  }
 }
 
 bool RuleValidator::needVerifying(RVBox& rv_box)
@@ -262,88 +267,96 @@ void RuleValidator::buildViolationSet(RVBox& rv_box)
 
 void RuleValidator::verifyRVBox(RVBox& rv_box)
 {
-  std::set<ViolationType>& exist_rule_set = DRCDM.getDatabase().get_exist_rule_set();
-  if (rv_box.option.find("min_area") == std::string::npos) {
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kAdjacentCutSpacing)) {
-      verifyAdjacentCutSpacing(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kCornerFillSpacing)) {
-      verifyCornerFillSpacing(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kCornerSpacing)) {
-      verifyCornerSpacing(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kCutEOLSpacing)) {
-      verifyCutEOLSpacing(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kCutShort)) {
-      verifyCutShort(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kDifferentLayerCutSpacing)) {
-      verifyDifferentLayerCutSpacing(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kEnclosure)) {
-      verifyEnclosure(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kEnclosureEdge)) {
-      verifyEnclosureEdge(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kEnclosureParallel)) {
-      verifyEnclosureParallel(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kEndOfLineSpacing)) {
-      verifyEndOfLineSpacing(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kFloatingPatch)) {
-      verifyFloatingPatch(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kJogToJogSpacing)) {
-      verifyJogToJogSpacing(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kMaximumWidth)) {
-      verifyMaximumWidth(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kMaxViaStack)) {
-      verifyMaxViaStack(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kMetalShort)) {
-      verifyMetalShort(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kMinHole)) {
-      verifyMinHole(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kMinimumArea)) {
-      verifyMinimumArea(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kMinimumCut)) {
-      verifyMinimumCut(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kMinimumWidth)) {
-      verifyMinimumWidth(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kMinStep)) {
-      verifyMinStep(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kNonsufficientMetalOverlap)) {
-      verifyNonsufficientMetalOverlap(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kNotchSpacing)) {
-      verifyNotchSpacing(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kOffGridOrWrongWay)) {
-      verifyOffGridOrWrongWay(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kOutOfDie)) {
-      verifyOutOfDie(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kParallelRunLengthSpacing)) {
-      verifyParallelRunLengthSpacing(rv_box);
-    }
-    if (DRCUTIL.exist(exist_rule_set, ViolationType::kSameLayerCutSpacing)) {
-      verifySameLayerCutSpacing(rv_box);
-    }
-  } else {
+  if (needVerifying(rv_box, ViolationType::kAdjacentCutSpacing)) {
+    verifyAdjacentCutSpacing(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kCornerFillSpacing)) {
+    verifyCornerFillSpacing(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kCornerSpacing)) {
+    verifyCornerSpacing(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kCutEOLSpacing)) {
+    verifyCutEOLSpacing(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kCutShort)) {
+    verifyCutShort(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kDifferentLayerCutSpacing)) {
+    verifyDifferentLayerCutSpacing(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kEnclosure)) {
+    verifyEnclosure(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kEnclosureEdge)) {
+    verifyEnclosureEdge(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kEnclosureParallel)) {
+    verifyEnclosureParallel(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kEndOfLineSpacing)) {
+    verifyEndOfLineSpacing(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kFloatingPatch)) {
+    verifyFloatingPatch(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kJogToJogSpacing)) {
+    verifyJogToJogSpacing(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kMaximumWidth)) {
+    verifyMaximumWidth(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kMaxViaStack)) {
+    verifyMaxViaStack(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kMetalShort)) {
+    verifyMetalShort(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kMinHole)) {
+    verifyMinHole(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kMinimumArea)) {
     verifyMinimumArea(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kMinimumCut)) {
+    verifyMinimumCut(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kMinimumWidth)) {
+    verifyMinimumWidth(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kMinStep)) {
+    verifyMinStep(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kNonsufficientMetalOverlap)) {
+    verifyNonsufficientMetalOverlap(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kNotchSpacing)) {
+    verifyNotchSpacing(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kOffGridOrWrongWay)) {
+    verifyOffGridOrWrongWay(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kOutOfDie)) {
+    verifyOutOfDie(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kParallelRunLengthSpacing)) {
+    verifyParallelRunLengthSpacing(rv_box);
+  }
+  if (needVerifying(rv_box, ViolationType::kSameLayerCutSpacing)) {
+    verifySameLayerCutSpacing(rv_box);
+  }
+}
+
+bool RuleValidator::needVerifying(RVBox& rv_box, ViolationType violation_type)
+{
+  std::set<ViolationType>& exist_rule_set = DRCDM.getDatabase().get_exist_rule_set();
+
+  std::set<ViolationType>* drc_check_type_set = rv_box.get_drc_check_type_set();
+
+  if (drc_check_type_set->empty()) {
+    return DRCUTIL.exist(exist_rule_set, violation_type);
+  } else {
+    return (DRCUTIL.exist(*drc_check_type_set, violation_type) && DRCUTIL.exist(exist_rule_set, violation_type));
   }
 }
 
