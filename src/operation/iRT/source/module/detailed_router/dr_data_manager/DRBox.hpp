@@ -52,11 +52,11 @@ class DRBox
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
   std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
   std::vector<DRShadow>& get_layer_shadow_map() { return _layer_shadow_map; }
+  std::map<int32_t, std::pair<std::set<int32_t>, std::set<int32_t>>>& get_layer_axis_map() { return _layer_axis_map; }
   std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_best_net_task_detailed_result_map() { return _best_net_task_detailed_result_map; }
   std::map<int32_t, std::vector<EXTLayerRect>>& get_best_net_task_detailed_patch_map() { return _best_net_task_detailed_patch_map; }
   std::vector<Violation>& get_best_route_violation_list() { return _best_route_violation_list; }
-  std::map<int32_t,std::pair<std::set<int>,std::set<int>>> layer_axis_map;
-  
+
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
   void set_dr_box_id(const DRBoxId& dr_box_id) { _dr_box_id = dr_box_id; }
@@ -88,6 +88,7 @@ class DRBox
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
   void set_layer_node_map(const std::vector<GridMap<DRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
   void set_layer_shadow_map(const std::vector<DRShadow>& layer_shadow_map) { _layer_shadow_map = layer_shadow_map; }
+  void set_layer_axis_map(const std::map<int32_t, std::pair<std::set<int32_t>, std::set<int32_t>>>& layer_axis_map) { _layer_axis_map = layer_axis_map; }
   void set_best_net_task_detailed_result_map(const std::map<int32_t, std::vector<Segment<LayerCoord>>>& best_net_task_detailed_result_map)
   {
     _best_net_task_detailed_result_map = best_net_task_detailed_result_map;
@@ -159,6 +160,7 @@ class DRBox
   ScaleAxis _box_track_axis;
   std::vector<GridMap<DRNode>> _layer_node_map;
   std::vector<DRShadow> _layer_shadow_map;
+  std::map<int32_t, std::pair<std::set<int32_t>, std::set<int32_t>>> _layer_axis_map;
   std::map<int32_t, std::vector<Segment<LayerCoord>>> _best_net_task_detailed_result_map;
   std::map<int32_t, std::vector<EXTLayerRect>> _best_net_task_detailed_patch_map;
   std::vector<Violation> _best_route_violation_list;

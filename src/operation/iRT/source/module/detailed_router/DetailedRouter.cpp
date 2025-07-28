@@ -601,14 +601,15 @@ void DetailedRouter::buildBoxTrackAxis(DRBox& dr_box)
   while (ur_y % manufacture_grid != 0) {
     ur_y--;
   }
+  std::map<int32_t, std::pair<std::set<int32_t>, std::set<int32_t>>>& layer_axis_map = dr_box.get_layer_axis_map();
   for (RoutingLayer& routing_layer : routing_layer_list) {
     for (int32_t x_scale : RTUTIL.getScaleList(ll_x, ur_x, routing_layer.getXTrackGridList())) {
       if (routing_layer.isPreferH())
-        dr_box.layer_axis_map[routing_layer.get_layer_idx()].first.insert(x_scale);
+        layer_axis_map[routing_layer.get_layer_idx()].first.insert(x_scale);
     }
     for (int32_t y_scale : RTUTIL.getScaleList(ll_y, ur_y, routing_layer.getYTrackGridList())) {
       if (!routing_layer.isPreferH())
-        dr_box.layer_axis_map[routing_layer.get_layer_idx()].second.insert(y_scale);
+        layer_axis_map[routing_layer.get_layer_idx()].second.insert(y_scale);
     }
   }
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
@@ -616,9 +617,9 @@ void DetailedRouter::buildBoxTrackAxis(DRBox& dr_box)
       for (LayerCoord& coord : dr_group.get_coord_list()) {
         int32_t layer_idx = coord.get_layer_idx();
         if (routing_layer_list[layer_idx].isPreferH()) {
-          dr_box.layer_axis_map[layer_idx].first.insert(coord.get_x());
+          layer_axis_map[layer_idx].first.insert(coord.get_x());
         } else {
-          dr_box.layer_axis_map[layer_idx].second.insert(coord.get_y());
+          layer_axis_map[layer_idx].second.insert(coord.get_y());
         }
       }
     }
@@ -688,6 +689,7 @@ void DetailedRouter::buildDRNodeNeighbor(DRBox& dr_box)
   int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
 
   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
+  std::map<int32_t, std::pair<std::set<int32_t>, std::set<int32_t>>>& layer_axis_map = dr_box.get_layer_axis_map();
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
     bool routing_hv = true;
     if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
@@ -697,30 +699,30 @@ void DetailedRouter::buildDRNodeNeighbor(DRBox& dr_box)
     for (int32_t x = 0; x < dr_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < dr_node_map.get_y_size(); y++) {
         std::map<Orientation, DRNode*>& neighbor_node_map = dr_node_map[x][y].get_neighbor_node_map();
-        std::set<int> curr_axis;
+        std::set<int32_t> curr_axis;
         std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-        std::set<int> neighbor_layer_x_axis_set;
-        std::set<int> neighbor_layer_y_axis_set;
+        std::set<int32_t> neighbor_layer_x_axis_set;
+        std::set<int32_t> neighbor_layer_y_axis_set;
         if (layer_idx != 0) {
-          for (int32_t x_scale : dr_box.layer_axis_map[layer_idx - 1].first) {
+          for (int32_t x_scale : layer_axis_map[layer_idx - 1].first) {
             neighbor_layer_x_axis_set.insert(x_scale);
           }
-          for (int32_t y_scale : dr_box.layer_axis_map[layer_idx - 1].second) {
+          for (int32_t y_scale : layer_axis_map[layer_idx - 1].second) {
             neighbor_layer_y_axis_set.insert(y_scale);
           }
         }
         if (layer_idx != static_cast<int32_t>(layer_node_map.size()) - 1) {
-          for (int32_t x_scale : dr_box.layer_axis_map[layer_idx + 1].first) {
+          for (int32_t x_scale : layer_axis_map[layer_idx + 1].first) {
             neighbor_layer_x_axis_set.insert(x_scale);
           }
-          for (int32_t y_scale : dr_box.layer_axis_map[layer_idx + 1].second) {
+          for (int32_t y_scale : layer_axis_map[layer_idx + 1].second) {
             neighbor_layer_y_axis_set.insert(y_scale);
           }
         }
         if (routing_layer_list[layer_idx].isPreferH()) {
-          curr_axis = dr_box.layer_axis_map[layer_idx].first;
+          curr_axis = layer_axis_map[layer_idx].first;
         } else {
-          curr_axis = dr_box.layer_axis_map[layer_idx].second;
+          curr_axis = layer_axis_map[layer_idx].second;
         }
         if (routing_hv) {
           if (!routing_layer_list[layer_idx].isPreferH()) {
@@ -1563,8 +1565,8 @@ void DetailedRouter::addViolationToShadow(DRBox& dr_box)
 
 void DetailedRouter::patchSingleViolation(DRBox& dr_box)
 {
-  std::vector<irt::EXTLayerRect>& routing_patch_list = dr_box.get_routing_patch_list();
-  std::set<irt::Violation, irt::CmpViolation>& tried_fix_violation_set = dr_box.get_tried_fix_violation_set();
+  std::vector<EXTLayerRect>& routing_patch_list = dr_box.get_routing_patch_list();
+  std::set<Violation, CmpViolation>& tried_fix_violation_set = dr_box.get_tried_fix_violation_set();
   LayerRect violation_rect = dr_box.get_curr_patch_violation().get_violation_shape().getRealLayerRect();
 
   std::vector<DRPatch> dr_patch_list = getCandidatePatchList(dr_box);

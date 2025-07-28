@@ -1920,8 +1920,8 @@ void PinAccessor::addViolationToShadow(PABox& pa_box)
 
 void PinAccessor::patchSingleViolation(PABox& pa_box)
 {
-  std::vector<irt::EXTLayerRect>& routing_patch_list = pa_box.get_routing_patch_list();
-  std::set<irt::Violation, irt::CmpViolation>& tried_fix_violation_set = pa_box.get_tried_fix_violation_set();
+  std::vector<EXTLayerRect>& routing_patch_list = pa_box.get_routing_patch_list();
+  std::set<Violation, CmpViolation>& tried_fix_violation_set = pa_box.get_tried_fix_violation_set();
   LayerRect violation_rect = pa_box.get_curr_patch_violation().get_violation_shape().getRealLayerRect();
 
   std::vector<PAPatch> pa_patch_list = getCandidatePatchList(pa_box);
