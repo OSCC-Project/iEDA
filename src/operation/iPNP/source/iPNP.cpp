@@ -142,9 +142,12 @@ namespace ipnp {
   }
 
   void iPNP::initIRAnalysis() {
-    // Initialize IREval
-    _ir_eval.initIREval(_idb_wrapper.get_idb_builder(), _pnp_config);
-
+    static bool is_init = false;
+    if (!is_init) {
+      // Initialize IREval
+      _ir_eval.initIREval(_idb_wrapper.get_idb_builder(), _pnp_config);
+      is_init = true;
+    }
   }
 
   void iPNP::runAnalysis()
@@ -255,6 +258,8 @@ namespace ipnp {
       initIRAnalysis();
       runSynthesis();
       runFastPlacer();
+      initIRAnalysis();
+      
       runOptimize();
       runAnalysis();
       outputDef();
