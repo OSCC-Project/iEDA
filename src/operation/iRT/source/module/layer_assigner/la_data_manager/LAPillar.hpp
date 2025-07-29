@@ -16,32 +16,32 @@
 // ***************************************************************************************
 #pragma once
 
+#include "LALayerCost.hpp"
+#include "PlanarCoord.hpp"
+
 namespace irt {
 
-class LAComParam
+class LAPillar
 {
  public:
-  LAComParam() = default;
-  LAComParam(int32_t topo_spilt_length, double via_unit, double overflow_unit)
-  {
-    _topo_spilt_length = topo_spilt_length;
-    _via_unit = via_unit;
-    _overflow_unit = overflow_unit;
-  }
-  ~LAComParam() = default;
+  LAPillar() = default;
+  ~LAPillar() = default;
   // getter
-  int32_t get_topo_spilt_length() const { return _topo_spilt_length; }
-  double get_via_unit() const { return _via_unit; }
-  double get_overflow_unit() const { return _overflow_unit; }
+  PlanarCoord& get_planar_coord() { return _planar_coord; }
+  std::set<int32_t>& get_pin_layer_idx_set() { return _pin_layer_idx_set; }
+  std::vector<LALayerCost>& get_layer_cost_list() { return _layer_cost_list; }
+  int32_t get_layer_idx() const { return _layer_idx; }
   // setter
-  void set_topo_spilt_length(const int32_t topo_spilt_length) { _topo_spilt_length = topo_spilt_length; }
-  void set_via_unit(const double via_unit) { _via_unit = via_unit; }
-  void set_overflow_unit(const double overflow_unit) { _overflow_unit = overflow_unit; }
+  void set_planar_coord(const PlanarCoord& planar_coord) { _planar_coord = planar_coord; }
+  void set_pin_layer_idx_set(const std::set<int32_t>& pin_layer_idx_set) { _pin_layer_idx_set = pin_layer_idx_set; }
+  void set_layer_cost_list(const std::vector<LALayerCost>& layer_cost_list) { _layer_cost_list = layer_cost_list; }
+  void set_layer_idx(const int32_t layer_idx) { _layer_idx = layer_idx; }
+  // function
 
  private:
-  int32_t _topo_spilt_length = 0;
-  double _via_unit = 0;
-  double _overflow_unit = 0;
+  PlanarCoord _planar_coord;
+  std::set<int32_t> _pin_layer_idx_set;
+  std::vector<LALayerCost> _layer_cost_list;
+  int32_t _layer_idx = -1;
 };
-
 }  // namespace irt

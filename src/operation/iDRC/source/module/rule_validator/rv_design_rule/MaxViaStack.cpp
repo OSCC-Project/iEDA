@@ -65,26 +65,21 @@ void RuleValidator::verifyMaxViaStack(RVBox& rv_box)
       std::map<int32_t, std::vector<std::pair<int32_t, PlanarRect>>> layer_net_stack_rect_map;
       layer_net_stack_rect_map[cut_layer_idx].push_back(net_stack_rect_pair);
       for (int32_t curr_cut_layer_idx = cut_layer_idx; curr_cut_layer_idx < top_cut_layer_idx; curr_cut_layer_idx++) {
-        std::vector<std::pair<BGRectInt, int32_t>> bg_rect_net_pair_list;
-        {
-          std::vector<PlanarRect> stack_rect_list;
-          for (auto& [net_idx, stack_rect] : layer_net_stack_rect_map[curr_cut_layer_idx]) {
-            stack_rect_list.push_back(stack_rect);
-          }
-          PlanarRect check_rect = DRCUTIL.getBoundingBox(stack_rect_list);
+        std::map<int32_t,std::set<PlanarRect,CmpPlanarRectByXASC>> net_used_rect_set;
+        for (auto& [net_idx, stack_rect] : layer_net_stack_rect_map[curr_cut_layer_idx]) {
+          std::vector<std::pair<BGRectInt, int32_t>> bg_rect_net_pair_list;
+          PlanarRect check_rect = stack_rect;
           cut_bg_rtree_map[curr_cut_layer_idx + 1].query(bgi::intersects(DRCUTIL.convertToBGRectInt(check_rect)), std::back_inserter(bg_rect_net_pair_list));
-        }
-        if (bg_rect_net_pair_list.empty()) {
-          break;
-        }
-        for (auto& [bg_env_rect, env_net_idx] : bg_rect_net_pair_list) {
-          PlanarRect env_rect = DRCUTIL.convertToPlanarRect(bg_env_rect);
-          for (auto& [net_idx, stack_rect] : layer_net_stack_rect_map[curr_cut_layer_idx]) {
+          for (auto& [bg_env_rect, env_net_idx] : bg_rect_net_pair_list) {
+            PlanarRect env_rect = DRCUTIL.convertToPlanarRect(bg_env_rect);
             if (!DRCUTIL.isOpenOverlap(stack_rect, env_rect)) {
               continue;
             }
+            if(DRCUTIL.exist(net_used_rect_set[env_net_idx], env_rect)) {
+              continue;
+            }
             layer_net_stack_rect_map[curr_cut_layer_idx + 1].push_back({env_net_idx, env_rect});
-            break;
+            net_used_rect_set[env_net_idx].insert(env_rect);
           }
         }
       }

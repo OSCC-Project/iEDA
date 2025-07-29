@@ -150,7 +150,7 @@ void DataManager::updateNetPinAccessResultToGCellMap(ChangeType change_type, int
   if (detection_distance == -1) {
     RTLOG.error(Loc::current(), "The detection_distance is not initialize!");
   }
-  for (NetShape& net_shape : getNetShapeList(net_idx, *segment)) {
+  for (NetShape& net_shape : getNetDetailedShapeList(net_idx, *segment)) {
     PlanarRect real_rect = RTUTIL.getEnlargedRect(net_shape, detection_distance);
     if (!RTUTIL.hasRegularRect(real_rect, die.get_real_rect())) {
       continue;
@@ -259,7 +259,7 @@ void DataManager::updateNetDetailedResultToGCellMap(ChangeType change_type, int3
   if (detection_distance == -1) {
     RTLOG.error(Loc::current(), "The detection_distance is not initialize!");
   }
-  for (NetShape& net_shape : getNetShapeList(net_idx, *segment)) {
+  for (NetShape& net_shape : getNetDetailedShapeList(net_idx, *segment)) {
     PlanarRect real_rect = RTUTIL.getEnlargedRect(net_shape, detection_distance);
     if (!RTUTIL.hasRegularRect(real_rect, die.get_real_rect())) {
       continue;
@@ -472,38 +472,98 @@ std::set<Violation*> DataManager::getViolationSet(EXTPlanarRect& region)
 
 #if 1  // 获得NetShapeList
 
-std::vector<NetShape> DataManager::getNetShapeList(int32_t net_idx, std::vector<Segment<LayerCoord>>& segment_list)
+std::vector<NetShape> DataManager::getNetGlobalShapeList(int32_t net_idx, std::vector<Segment<LayerCoord>>& segment_list)
 {
   std::vector<NetShape> net_shape_list;
   for (Segment<LayerCoord>& segment : segment_list) {
-    for (NetShape& net_shape : getNetShapeList(net_idx, segment)) {
+    for (NetShape& net_shape : getNetGlobalShapeList(net_idx, segment)) {
       net_shape_list.push_back(net_shape);
     }
   }
   return net_shape_list;
 }
 
-std::vector<NetShape> DataManager::getNetShapeList(int32_t net_idx, Segment<LayerCoord>& segment)
+std::vector<NetShape> DataManager::getNetGlobalShapeList(int32_t net_idx, Segment<LayerCoord>& segment)
 {
   std::vector<NetShape> net_shape_list;
-  for (NetShape& net_shape : getNetShapeList(net_idx, segment.get_first(), segment.get_second())) {
+  for (NetShape& net_shape : getNetGlobalShapeList(net_idx, segment.get_first(), segment.get_second())) {
     net_shape_list.push_back(net_shape);
   }
   return net_shape_list;
 }
 
-std::vector<NetShape> DataManager::getNetShapeList(int32_t net_idx, MTree<LayerCoord>& coord_tree)
+std::vector<NetShape> DataManager::getNetGlobalShapeList(int32_t net_idx, MTree<LayerCoord>& coord_tree)
 {
   std::vector<NetShape> net_shape_list;
   for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
-    for (NetShape& net_shape : getNetShapeList(net_idx, coord_segment.get_first()->value(), coord_segment.get_second()->value())) {
+    for (NetShape& net_shape : getNetGlobalShapeList(net_idx, coord_segment.get_first()->value(), coord_segment.get_second()->value())) {
       net_shape_list.push_back(net_shape);
     }
   }
   return net_shape_list;
 }
 
-std::vector<NetShape> DataManager::getNetShapeList(int32_t net_idx, LayerCoord& first_coord, LayerCoord& second_coord)
+std::vector<NetShape> DataManager::getNetGlobalShapeList(int32_t net_idx, LayerCoord& first_coord, LayerCoord& second_coord)
+{
+  ScaleAxis& gcell_axis = _database.get_gcell_axis();
+  std::map<int32_t, std::vector<int32_t>>& routing_to_adjacent_cut_map = _database.get_routing_to_adjacent_cut_map();
+
+  PlanarRect first_gcell = RTUTIL.getRealRectByGCell(first_coord, gcell_axis);
+  int32_t first_layer_idx = first_coord.get_layer_idx();
+  PlanarRect second_gcell = RTUTIL.getRealRectByGCell(second_coord, gcell_axis);
+  int32_t second_layer_idx = second_coord.get_layer_idx();
+
+  std::vector<NetShape> net_shape_list;
+  if (first_layer_idx != second_layer_idx) {
+    RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
+    for (int32_t routing_layer_idx = first_layer_idx; routing_layer_idx < second_layer_idx; routing_layer_idx++) {
+      int32_t cut_layer_idx = -1;
+      {
+        std::vector<int32_t>& cut_layer_idx_list = routing_to_adjacent_cut_map[routing_layer_idx];
+        cut_layer_idx = *std::max_element(cut_layer_idx_list.begin(), cut_layer_idx_list.end());
+      }
+      LayerRect gcell_rect(first_gcell, cut_layer_idx);
+      net_shape_list.emplace_back(net_idx, gcell_rect, false);
+    }
+  } else {
+    LayerRect gcell_rect(RTUTIL.getBoundingBox({first_gcell, second_gcell}), first_layer_idx);
+    net_shape_list.emplace_back(net_idx, gcell_rect, true);
+  }
+  return net_shape_list;
+}
+
+std::vector<NetShape> DataManager::getNetDetailedShapeList(int32_t net_idx, std::vector<Segment<LayerCoord>>& segment_list)
+{
+  std::vector<NetShape> net_shape_list;
+  for (Segment<LayerCoord>& segment : segment_list) {
+    for (NetShape& net_shape : getNetDetailedShapeList(net_idx, segment)) {
+      net_shape_list.push_back(net_shape);
+    }
+  }
+  return net_shape_list;
+}
+
+std::vector<NetShape> DataManager::getNetDetailedShapeList(int32_t net_idx, Segment<LayerCoord>& segment)
+{
+  std::vector<NetShape> net_shape_list;
+  for (NetShape& net_shape : getNetDetailedShapeList(net_idx, segment.get_first(), segment.get_second())) {
+    net_shape_list.push_back(net_shape);
+  }
+  return net_shape_list;
+}
+
+std::vector<NetShape> DataManager::getNetDetailedShapeList(int32_t net_idx, MTree<LayerCoord>& coord_tree)
+{
+  std::vector<NetShape> net_shape_list;
+  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
+    for (NetShape& net_shape : getNetDetailedShapeList(net_idx, coord_segment.get_first()->value(), coord_segment.get_second()->value())) {
+      net_shape_list.push_back(net_shape);
+    }
+  }
+  return net_shape_list;
+}
+
+std::vector<NetShape> DataManager::getNetDetailedShapeList(int32_t net_idx, LayerCoord& first_coord, LayerCoord& second_coord)
 {
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();

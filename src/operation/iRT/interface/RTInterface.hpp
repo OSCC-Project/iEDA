@@ -40,6 +40,7 @@ namespace irt {
 class RoutingLayer;
 class CutLayer;
 class Violation;
+enum class ViolationType;
 class LayerCoord;
 class LayerRect;
 template <typename T>
@@ -136,7 +137,8 @@ class RTInterface
   std::vector<Violation> getViolationList(std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
                                           std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
                                           std::map<int32_t, std::vector<Segment<LayerCoord>*>>& net_result_map,
-                                          std::map<int32_t, std::vector<EXTLayerRect*>>& net_patch_map);
+                                          std::map<int32_t, std::vector<EXTLayerRect*>>& net_patch_map, std::set<ViolationType>& check_type_set,
+                                          std::vector<LayerRect>& check_region_list);
   ids::Shape getIDSShape(int32_t net_idx, LayerRect layer_rect, bool is_routing);
 #endif
 
