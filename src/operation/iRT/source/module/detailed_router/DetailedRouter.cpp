@@ -699,7 +699,6 @@ void DetailedRouter::buildDRNodeNeighbor(DRBox& dr_box)
     for (int32_t x = 0; x < dr_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < dr_node_map.get_y_size(); y++) {
         std::map<Orientation, DRNode*>& neighbor_node_map = dr_node_map[x][y].get_neighbor_node_map();
-        std::set<int32_t> curr_axis;
         std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
         std::set<int32_t> neighbor_layer_x_axis_set;
         std::set<int32_t> neighbor_layer_y_axis_set;
@@ -719,6 +718,7 @@ void DetailedRouter::buildDRNodeNeighbor(DRBox& dr_box)
             neighbor_layer_y_axis_set.insert(y_scale);
           }
         }
+        std::set<int32_t> curr_axis;
         if (routing_layer_list[layer_idx].isPreferH()) {
           curr_axis = layer_axis_map[layer_idx].first;
         } else {

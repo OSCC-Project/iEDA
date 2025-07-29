@@ -993,17 +993,58 @@ bool PinAccessor::needRouting(PABox& pa_box)
 
 void PinAccessor::buildBoxTrackAxis(PABox& pa_box)
 {
+  int32_t manufacture_grid = RTDM.getDatabase().get_manufacture_grid();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
 
   std::vector<int32_t> x_scale_list;
   std::vector<int32_t> y_scale_list;
 
   PlanarRect& box_real_rect = pa_box.get_box_rect().get_real_rect();
+  int32_t ll_x = box_real_rect.get_ll_x();
+  int32_t ll_y = box_real_rect.get_ll_y();
+  int32_t ur_x = box_real_rect.get_ur_x();
+  int32_t ur_y = box_real_rect.get_ur_y();
+  // 避免 off_grid
+  while (ll_x % manufacture_grid != 0) {
+    ll_x++;
+  }
+  while (ll_y % manufacture_grid != 0) {
+    ll_y++;
+  }
+  while (ur_x % manufacture_grid != 0) {
+    ur_x--;
+  }
+  while (ur_y % manufacture_grid != 0) {
+    ur_y--;
+  }
+  std::map<int32_t, std::pair<std::set<int32_t>, std::set<int32_t>>>& layer_axis_map = pa_box.get_layer_axis_map();
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    for (int32_t x_scale : RTUTIL.getScaleList(box_real_rect.get_ll_x(), box_real_rect.get_ur_x(), routing_layer.getXTrackGridList())) {
+    for (int32_t x_scale : RTUTIL.getScaleList(ll_x, ur_x, routing_layer.getXTrackGridList())) {
+      if (routing_layer.isPreferH())
+        layer_axis_map[routing_layer.get_layer_idx()].first.insert(x_scale);
+    }
+    for (int32_t y_scale : RTUTIL.getScaleList(ll_y, ur_y, routing_layer.getYTrackGridList())) {
+      if (!routing_layer.isPreferH())
+        layer_axis_map[routing_layer.get_layer_idx()].second.insert(y_scale);
+    }
+  }
+  for (PATask* pa_task : pa_box.get_pa_task_list()) {
+    for (PAGroup& pa_group : pa_task->get_pa_group_list()) {
+      for (LayerCoord& coord : pa_group.get_coord_list()) {
+        int32_t layer_idx = coord.get_layer_idx();
+        if (routing_layer_list[layer_idx].isPreferH()) {
+          layer_axis_map[layer_idx].first.insert(coord.get_x());
+        } else {
+          layer_axis_map[layer_idx].second.insert(coord.get_y());
+        }
+      }
+    }
+  }
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    for (int32_t x_scale : RTUTIL.getScaleList(ll_x, ur_x, routing_layer.getXTrackGridList())) {
       x_scale_list.push_back(x_scale);
     }
-    for (int32_t y_scale : RTUTIL.getScaleList(box_real_rect.get_ll_y(), box_real_rect.get_ur_y(), routing_layer.getYTrackGridList())) {
+    for (int32_t y_scale : RTUTIL.getScaleList(ll_y, ur_y, routing_layer.getYTrackGridList())) {
       y_scale_list.push_back(y_scale);
     }
   }
@@ -1064,6 +1105,7 @@ void PinAccessor::buildPANodeNeighbor(PABox& pa_box)
   int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
 
   std::vector<GridMap<PANode>>& layer_node_map = pa_box.get_layer_node_map();
+  std::map<int32_t, std::pair<std::set<int32_t>, std::set<int32_t>>>& layer_axis_map = pa_box.get_layer_axis_map();
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
     bool routing_hv = true;
     if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
@@ -1073,18 +1115,66 @@ void PinAccessor::buildPANodeNeighbor(PABox& pa_box)
     for (int32_t x = 0; x < pa_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < pa_node_map.get_y_size(); y++) {
         std::map<Orientation, PANode*>& neighbor_node_map = pa_node_map[x][y].get_neighbor_node_map();
+        std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+        std::set<int32_t> neighbor_layer_x_axis_set;
+        std::set<int32_t> neighbor_layer_y_axis_set;
+        if (layer_idx != 0) {
+          for (int32_t x_scale : layer_axis_map[layer_idx - 1].first) {
+            neighbor_layer_x_axis_set.insert(x_scale);
+          }
+          for (int32_t y_scale : layer_axis_map[layer_idx - 1].second) {
+            neighbor_layer_y_axis_set.insert(y_scale);
+          }
+        }
+        if (layer_idx != static_cast<int32_t>(layer_node_map.size()) - 1) {
+          for (int32_t x_scale : layer_axis_map[layer_idx + 1].first) {
+            neighbor_layer_x_axis_set.insert(x_scale);
+          }
+          for (int32_t y_scale : layer_axis_map[layer_idx + 1].second) {
+            neighbor_layer_y_axis_set.insert(y_scale);
+          }
+        }
+        std::set<int32_t> curr_axis;
+        if (routing_layer_list[layer_idx].isPreferH()) {
+          curr_axis = layer_axis_map[layer_idx].first;
+        } else {
+          curr_axis = layer_axis_map[layer_idx].second;
+        }
         if (routing_hv) {
-          if (x != 0) {
-            neighbor_node_map[Orientation::kWest] = &pa_node_map[x - 1][y];
-          }
-          if (x != (pa_node_map.get_x_size() - 1)) {
-            neighbor_node_map[Orientation::kEast] = &pa_node_map[x + 1][y];
-          }
-          if (y != 0) {
-            neighbor_node_map[Orientation::kSouth] = &pa_node_map[x][y - 1];
-          }
-          if (y != (pa_node_map.get_y_size() - 1)) {
-            neighbor_node_map[Orientation::kNorth] = &pa_node_map[x][y + 1];
+          if (!routing_layer_list[layer_idx].isPreferH()) {
+            if (RTUTIL.exist(curr_axis, pa_node_map[x][y].get_y())) {
+              if (x != 0) {
+                neighbor_node_map[Orientation::kWest] = &pa_node_map[x - 1][y];
+              }
+              if (x != (pa_node_map.get_x_size() - 1)) {
+                neighbor_node_map[Orientation::kEast] = &pa_node_map[x + 1][y];
+              }
+            }
+            if (RTUTIL.exist(neighbor_layer_x_axis_set, pa_node_map[x][y].get_x())) {
+              if (y != 0) {
+                neighbor_node_map[Orientation::kSouth] = &pa_node_map[x][y - 1];
+              }
+              if (y != (pa_node_map.get_y_size() - 1)) {
+                neighbor_node_map[Orientation::kNorth] = &pa_node_map[x][y + 1];
+              }
+            }
+          } else if (routing_layer_list[layer_idx].isPreferH()) {
+            if (RTUTIL.exist(curr_axis, pa_node_map[x][y].get_x())) {
+              if (y != 0) {
+                neighbor_node_map[Orientation::kSouth] = &pa_node_map[x][y - 1];
+              }
+              if (y != (pa_node_map.get_y_size() - 1)) {
+                neighbor_node_map[Orientation::kNorth] = &pa_node_map[x][y + 1];
+              }
+            }
+            if (RTUTIL.exist(neighbor_layer_y_axis_set, pa_node_map[x][y].get_y())) {
+              if (x != 0) {
+                neighbor_node_map[Orientation::kWest] = &pa_node_map[x - 1][y];
+              }
+              if (x != (pa_node_map.get_x_size() - 1)) {
+                neighbor_node_map[Orientation::kEast] = &pa_node_map[x + 1][y];
+              }
+            }
           }
         }
         if (layer_idx != 0) {
@@ -1731,7 +1821,7 @@ void PinAccessor::initSinglePatchTask(PABox& pa_box, PATask* pa_task)
 }
 
 std::vector<Violation> PinAccessor::getPatchViolationList(PABox& pa_box, const std::set<ViolationType>& check_type_set,
-                                                             const std::vector<LayerRect>& check_region_list)
+                                                          const std::vector<LayerRect>& check_region_list)
 {
   std::string top_name = RTUTIL.getString("pa_box_", pa_box.get_pa_box_id().get_x(), "_", pa_box.get_pa_box_id().get_y());
   std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;

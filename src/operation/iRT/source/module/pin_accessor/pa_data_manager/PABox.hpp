@@ -51,6 +51,7 @@ class PABox
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
   std::vector<GridMap<PANode>>& get_layer_node_map() { return _layer_node_map; }
   std::vector<PAShadow>& get_layer_shadow_map() { return _layer_shadow_map; }
+  std::map<int32_t, std::pair<std::set<int32_t>, std::set<int32_t>>>& get_layer_axis_map() { return _layer_axis_map; }
   std::map<PAPin*, AccessPoint>& get_pin_access_point_map() { return _pin_access_point_map; }
   std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& get_best_net_task_access_result_map() { return _best_net_task_access_result_map; }
   std::map<int32_t, std::map<int32_t, std::vector<EXTLayerRect>>>& get_best_net_task_access_patch_map() { return _best_net_task_access_patch_map; }
@@ -87,6 +88,7 @@ class PABox
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
   void set_layer_node_map(const std::vector<GridMap<PANode>>& layer_node_map) { _layer_node_map = layer_node_map; }
   void set_layer_shadow_map(const std::vector<PAShadow>& layer_shadow_map) { _layer_shadow_map = layer_shadow_map; }
+  void set_layer_axis_map(const std::map<int32_t, std::pair<std::set<int32_t>, std::set<int32_t>>>& layer_axis_map) { _layer_axis_map = layer_axis_map; }
   void set_pin_access_point_map(const std::map<PAPin*, AccessPoint>& pin_access_point_map) { _pin_access_point_map = pin_access_point_map; }
   void set_best_net_task_access_result_map(const std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& best_net_task_access_result_map)
   {
@@ -160,6 +162,7 @@ class PABox
   ScaleAxis _box_track_axis;
   std::vector<GridMap<PANode>> _layer_node_map;
   std::vector<PAShadow> _layer_shadow_map;
+  std::map<int32_t, std::pair<std::set<int32_t>, std::set<int32_t>>> _layer_axis_map;
   std::map<PAPin*, AccessPoint> _pin_access_point_map;
   std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>> _best_net_task_access_result_map;
   std::map<int32_t, std::map<int32_t, std::vector<EXTLayerRect>>> _best_net_task_access_patch_map;
