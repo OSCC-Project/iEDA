@@ -49,6 +49,8 @@ int registerCommands() {
 
 int main(int argc, char** argv) {
 
+  Log::init(argv, "/home/sujianrong/iEDA/src/operation/iPNP/example/result/log_info/");
+
   std::string hello_info =
       "\033[49;32m***************************\n"
       "    _ ____  _   ______  \n"
@@ -172,5 +174,7 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  Log::end();
+  
   return 0;
 }

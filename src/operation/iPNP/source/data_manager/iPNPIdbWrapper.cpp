@@ -59,32 +59,32 @@ namespace ipnp {
     delete power_router;
     delete power_via;
 
-    std::cout << "[iPNP info]: Added iPNP net." << std::endl;
+    LOG_INFO << "Added iPNP net.";
   }
 
   void iPNPIdbWrapper::writeIdbToDef(std::string def_file_path)
   {
     if (!_idb_design) {
-      std::cerr << "Error: IDB design is null in writeIdbToDef" << std::endl;
+      LOG_ERROR << "Error: IDB design is null in writeIdbToDef";
       return;
     }
 
     auto* db_builder = get_idb_builder();
     if (!db_builder) {
-      std::cerr << "Error: Failed to create IdbBuilder" << std::endl;
+      LOG_ERROR << "Error: Failed to create IdbBuilder";
       return;
     }
 
     auto* def_service = db_builder->get_def_service();
     if (!def_service) {
-      std::cerr << "Error: DEF service is null" << std::endl;
+      LOG_ERROR << "Error: DEF service is null";
       delete db_builder;
       return;
     }
 
     auto* layout = _idb_design->get_layout();
     if (!layout) {
-      std::cerr << "Error: Layout is null" << std::endl;
+      LOG_ERROR << "Error: Layout is null";
       delete db_builder;
       return;
     }
@@ -93,10 +93,10 @@ namespace ipnp {
 
     bool success = db_builder->saveDef(def_file_path);
     if (!success) {
-      std::cout << "Successfully wrote DEF file to: " << def_file_path << std::endl;
+      LOG_INFO << "Successfully wrote DEF file to: " << def_file_path;
     } 
     else {
-      std::cerr << "Error: Failed to save DEF file to: " << def_file_path << std::endl;
+      LOG_ERROR << "Error: Failed to save DEF file to: " << def_file_path;
     }
   }
 

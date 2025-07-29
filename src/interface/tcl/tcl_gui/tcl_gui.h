@@ -120,4 +120,18 @@ class CmdGuiShowPlacement : public TclCmd
   // private data
 };
 
+class CmdGuiShowGraph : public TclCmd
+{
+ public:
+  explicit CmdGuiShowGraph(const char* cmd_name);
+  ~CmdGuiShowGraph() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
 }  // namespace tcl

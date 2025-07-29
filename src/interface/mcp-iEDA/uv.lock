@@ -153,10 +153,14 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "mcp", extra = ["cli"] },
+    { name = "python-dotenv" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "mcp", extras = ["cli"] }]
+requires-dist = [
+    { name = "mcp", extras = ["cli"] },
+    { name = "python-dotenv" },
+]
 
 [[package]]
 name = "mdurl"

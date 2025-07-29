@@ -22,6 +22,7 @@
 #include "iIR/source/module/power-netlist/PGNetlist.hh"
 #include "log/Log.hh"
 #include "usage/usage.hh"
+#include "iIR/source/module/power-netlist/PGNetlist.hh"
 
 using namespace ipower;
 using namespace ieda;

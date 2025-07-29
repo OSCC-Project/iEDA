@@ -27,7 +27,6 @@
 #include <array>
 #include <filesystem>
 
-#include "Power.hh"
 #include "json/json.hpp"
 #include "ops/annotate_toggle_sp/AnnotateToggleSP.hh"
 #include "ops/build_graph/PwrBuildGraph.hh"
@@ -490,12 +489,17 @@ unsigned Power::reportSummaryPower(const char* rpt_file_name,
 
   LOG_INFO << "\n" << report_tbl->c_str();
 
+  Time::stop();
+  double elapsed_time = Time::elapsedTime();
+  LOG_INFO << "iPA total elapsed time: " << elapsed_time << " seconds";
+
   auto close_file = [](std::FILE* fp) { std::fclose(fp); };
 
   std::unique_ptr<std::FILE, decltype(close_file)> f(
       std::fopen(rpt_file_name, "w"), close_file);
 
   std::fprintf(f.get(), "Generate the report at %s\n", Time::getNowWallTime());
+  std::fprintf(f.get(), "iPA elapsed time: %.2f seconds.\n", elapsed_time);
 
   std::map<PwrAnalysisMode, std::string> analysis_mode_to_string = {
       {PwrAnalysisMode::kAveraged, "Averaged"},
@@ -556,7 +560,7 @@ unsigned Power::reportSummaryPowerJSON(const char* rpt_file_name,
   report_power(this);
   auto& report_summary_data = report_power.get_report_summary_data();
   nlohmann::json json_report = nlohmann::json::object();
-  auto &summary_json = json_report["summary"] = nlohmann::json::array();
+  auto& summary_json = json_report["summary"] = nlohmann::json::array();
 
   // lambda for print power data float to string.
   auto data_str = [](double data) { return Str::printf("%.3e", data); };
@@ -1070,6 +1074,9 @@ unsigned Power::reportPower(bool is_copy) {
   double time_delta = stats.elapsedRunTime();
   LOG_INFO << "power report time elapsed " << time_delta << "s";
 
+  // restart timer.
+  Time::start();
+
   return 1;
 }
 
@@ -1156,8 +1163,7 @@ unsigned Power::readPGSpef(const char* spef_file) {
  */
 unsigned Power::reportIRDropTable(const char* rpt_file_name) {
   auto create_report_table = [](const char* title) {
-    auto report_tbl =
-        std::make_unique<PwrReportInstanceTable>(title);
+    auto report_tbl = std::make_unique<PwrReportInstanceTable>(title);
 
     (*report_tbl) << TABLE_HEAD;
     /* Fill each cell with operator[] */
@@ -1168,13 +1174,16 @@ unsigned Power::reportIRDropTable(const char* rpt_file_name) {
     return report_tbl;
   };
 
+  Time::stop();
+  double elapsed_time = Time::elapsedTime();
+  LOG_INFO << "iIR total elapsed time: " << elapsed_time << " seconds";
   auto close_file = [](std::FILE* fp) { std::fclose(fp); };
 
   std::unique_ptr<std::FILE, decltype(close_file)> f(
       std::fopen(rpt_file_name, "w"), close_file);
 
-  std::fprintf(f.get(), "Generate the report at %s\n\n",
-               Time::getNowWallTime());
+  std::fprintf(f.get(), "Generate the report at %s\n", Time::getNowWallTime());
+  std::fprintf(f.get(), "iIR elapsed time: %.2f seconds.\n\n", elapsed_time);
 
   auto pg_net_bump_node_loc = _ir_analysis.get_net_bump_node_locs();
   for (auto [pg_net_name, net_bump_node_loc] : pg_net_bump_node_loc) {
@@ -1186,7 +1195,7 @@ unsigned Power::reportIRDropTable(const char* rpt_file_name) {
 
   double nominal_voltage = getNominalVoltage();
   std::fprintf(f.get(), "Nominal Voltage: %.3f V\n", nominal_voltage);
-  
+
   auto data_str = [](double data) { return Str::printf("%.3e", data); };
   auto net_to_instance_ir_drop = getNetInstanceIRDrop();
 

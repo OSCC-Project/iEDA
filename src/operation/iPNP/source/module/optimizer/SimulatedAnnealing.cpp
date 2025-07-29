@@ -25,6 +25,12 @@
 #include "SimulatedAnnealing.hh"
 #include "iPNPIdbWrapper.hh"
 #include "PNPConfig.hh"
+#include <fstream>
+#include <iomanip>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <string.h>
 namespace ipnp {
 
   SimulatedAnnealing::SimulatedAnnealing(double initial_temp, double cooling_rate,
@@ -45,6 +51,28 @@ namespace ipnp {
     _rng = std::mt19937(rd());
   }
 
+  // Helper function to create directories
+  bool create_directories(const std::string& path) {
+    size_t pos = 0;
+    std::string dir;
+    int ret = 0;
+
+    if (path[0] == '/') {
+      pos = 1;
+    }
+
+    while ((pos = path.find('/', pos)) != std::string::npos) {
+      dir = path.substr(0, pos++);
+      if (dir.empty()) continue;
+      
+      ret = mkdir(dir.c_str(), 0755);
+      if (ret != 0 && errno != EEXIST) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   OptimizationResult SimulatedAnnealing::optimize(const GridManager& initial_grid, idb::IdbBuilder* idb_builder)
   {
     GridManager current_solution = initial_grid;
@@ -53,6 +81,75 @@ namespace ipnp {
     CostResult current_result = evaluateCost(current_solution, current_solution, idb_builder);
     double current_cost = current_result.cost;
     double best_cost = current_cost;
+
+    // Get report_path directory from config
+    std::string report_path = "SA_report.txt";  
+    
+    // Use the passed config object
+    if (_config != nullptr && !_config->get_report_path().empty()) {
+    
+      std::string dir_path = _config->get_report_path();
+      
+      if (dir_path.back() != '/') {
+        dir_path += '/';
+      }
+      
+      report_path = dir_path + "SA_report.txt";
+      LOG_INFO << "Using directory from config for SA report: " << dir_path << std::endl;
+    } else {
+      LOG_INFO << "Report directory not found in config, using default: " << report_path << std::endl;
+    }
+    
+    LOG_INFO << "Report will be written to: " << report_path << std::endl;
+    
+    // Ensure the directory for the report file exists
+    std::string directory = report_path.substr(0, report_path.find_last_of('/'));
+    if (!directory.empty()) {
+      if (!create_directories(directory)) {
+        LOG_ERROR << "Failed to create directory: " << directory << ", error: " << strerror(errno) << std::endl;
+      } else {
+        LOG_INFO << "Directory ensured: " << directory << std::endl;
+      }
+    }
+
+    // Check if the file exists
+    struct stat buffer;
+    bool file_exists = (stat(report_path.c_str(), &buffer) == 0);
+    
+    if (file_exists) {
+      LOG_INFO << "Report file already exists, will overwrite it" << std::endl;
+    } else {
+      LOG_INFO << "Report file does not exist, will create it" << std::endl;
+    }
+
+    // Open report file for writing with explicit mode
+    std::ofstream report_file(report_path.c_str(), std::ios::out | std::ios::trunc);
+    if (!report_file.is_open()) {
+      LOG_ERROR << "Failed to open report file for writing: " << report_path << ", error: " << strerror(errno) << std::endl;
+      return { best_solution, best_cost };
+    } else {
+      LOG_INFO << "Successfully opened report file for writing" << std::endl;
+    }
+
+    // Set formatting for floating point numbers
+    report_file << std::fixed << std::setprecision(6);
+
+    // Write header and initial solution information
+    report_file << "======================================================================" << std::endl;
+    report_file << "                     SIMULATED ANNEALING REPORT                       " << std::endl;
+    report_file << "======================================================================" << std::endl;
+    report_file << std::endl;
+    report_file << "INITIAL SOLUTION:" << std::endl;
+    report_file << "  IR Drop          : " << std::setw(12) << current_result.ir_drop << std::endl;
+    report_file << "  Normalized IR    : " << std::setw(12) << current_result.normalized_ir_drop << std::endl;
+    report_file << "  Overflow         : " << std::setw(12) << current_result.overflow << std::endl;
+    report_file << "  Normalized OF    : " << std::setw(12) << current_result.normalized_overflow << std::endl;
+    report_file << "  Total Cost       : " << std::setw(12) << current_cost << std::endl;
+    report_file << "  IR Weight        : " << std::setw(12) << _ir_drop_weight << std::endl;
+    report_file << "  Overflow Weight  : " << std::setw(12) << _overflow_weight << std::endl;
+    report_file << std::endl;
+    report_file << "----------------------------------------------------------------------" << std::endl;
+    report_file << std::endl;
 
     LOG_INFO << "Initial solution: " << std::endl
       << "  IR Drop: " << current_result.ir_drop
@@ -77,6 +174,15 @@ namespace ipnp {
         CostResult new_result = evaluateCost(new_solution, current_solution, idb_builder);
         double new_cost = new_result.cost;
 
+        // Write iteration information to report file
+        report_file << "ITERATION: " << std::setw(5) << total_iterations 
+                    << " | TEMPERATURE: " << std::setw(12) << temperature << std::endl;
+        report_file << "  IR Drop          : " << std::setw(12) << new_result.ir_drop << std::endl;
+        report_file << "  Normalized IR    : " << std::setw(12) << new_result.normalized_ir_drop << std::endl;
+        report_file << "  Overflow         : " << std::setw(12) << new_result.overflow << std::endl;
+        report_file << "  Normalized OF    : " << std::setw(12) << new_result.normalized_overflow << std::endl;
+        report_file << "  Total Cost       : " << std::setw(12) << new_cost << std::endl;
+
         LOG_INFO << "Iter[" << total_iterations << "] Temp[" << temperature << "]";
         LOG_INFO << "  IR Drop: " << new_result.ir_drop;
         LOG_INFO << "  Normalized IR: " << new_result.normalized_ir_drop;
@@ -95,8 +201,11 @@ namespace ipnp {
           wrapper.set_idb_design(idb_builder->get_def_service()->get_design());
           wrapper.set_idb_builder(idb_builder);
           wrapper.saveToIdb(current_solution);
+          wrapper.writeIdbToDef("/home/sujianrong/iEDA/src/operation/iPNP/data/case/s9234/result/debug.def");
 
           LOG_INFO << "  Solution ACCEPTED! New current cost: " << current_cost << std::endl;
+          report_file << "  STATUS           : ACCEPTED" << std::endl;
+          report_file << "  New Current Cost : " << std::setw(12) << current_cost << std::endl;
 
           // Update global best solution
           if (new_cost < best_cost) {
@@ -106,15 +215,23 @@ namespace ipnp {
             LOG_INFO << "  NEW BEST SOLUTION! Cost: " << best_cost << std::endl;
             LOG_INFO << "  IR Drop: " << new_result.ir_drop << std::endl;
             LOG_INFO << "  Overflow: " << new_result.overflow << std::endl;
+            
+            report_file << "  BEST SOLUTION    : YES" << std::endl;
+            report_file << "  Best Cost        : " << std::setw(12) << best_cost << std::endl;
           }
           else {
             LOG_INFO << "  Solution accepted but not better than best. No change to best solution." << current_cost << std::endl;
+            report_file << "  BEST SOLUTION    : NO" << std::endl;
             no_improvement_count++;
           }
         }
         else {
+          report_file << "  STATUS           : REJECTED" << std::endl;
           no_improvement_count++;
         }
+        
+        report_file << "----------------------------------------------------------------------" << std::endl;
+        report_file << std::endl;
 
         total_iterations++;
       }
@@ -126,9 +243,28 @@ namespace ipnp {
         << ", Best cost so far: " << best_cost
         << ", No improvement count: " << no_improvement_count << " =====" << std::endl;
 
+      report_file << "=====================================================================" << std::endl;
+      report_file << "TEMPERATURE UPDATE: " << std::setw(12) << temperature << std::endl;
+      report_file << "  Current Cost     : " << std::setw(12) << current_cost << std::endl;
+      report_file << "  Best Cost        : " << std::setw(12) << best_cost << std::endl;
+      report_file << "  No Improvement   : " << std::setw(12) << no_improvement_count << std::endl;
+      report_file << "=====================================================================" << std::endl;
+      report_file << std::endl;
 
       LOG_INFO << "Temperature: " << temperature << ", Best cost: " << best_cost;
     }
+
+    // Write final results
+    report_file << "======================================================================" << std::endl;
+    report_file << "                     FINAL OPTIMIZATION RESULTS                       " << std::endl;
+    report_file << "======================================================================" << std::endl;
+    report_file << "  Best Cost        : " << std::setw(12) << best_cost << std::endl;
+    report_file << "  Total Iterations : " << std::setw(12) << total_iterations << std::endl;
+    report_file << "  Final Temperature: " << std::setw(12) << temperature << std::endl;
+    report_file << "======================================================================" << std::endl;
+    
+    // Close file
+    report_file.close();
 
     // Return optimization results
     OptimizationResult result;

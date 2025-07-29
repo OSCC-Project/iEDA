@@ -52,6 +52,27 @@ int main(const int argc, const char* argv[])
   return 1;
 }
 
+void TestEgrDataStructure()
+{
+  std::string congestion_dir = "/home/yhqiu/net_level_collect/benchmark/large_model_test/rt/rt_temp_directory/early_router";
+
+  ieval::CongestionAPI api;
+  std::map<std::string, std::vector<std::vector<int>>> egr_map = api.getEGRMap();
+
+  for (const auto& pair : egr_map) {
+    std::cout << "Layer: " << pair.first << std::endl;
+    const auto& matrix = pair.second;
+
+    for (size_t i = 0; i < matrix.size() && i < 3; ++i) {
+      for (const auto& value : matrix[i]) {
+        std::cout << value << " ";
+      }
+      std::cout << std::endl;
+    }
+    std::cout << std::endl;
+  }
+}
+
 void TestEgrMap()
 {
   ieval::CongestionAPI congestion_api;

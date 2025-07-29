@@ -33,14 +33,12 @@ void FastPlacer::runFastPlacer(idb::IdbBuilder* idb_builder)
 {
   std::string pl_json_file;
   
-  PNPConfig* temp_config = new PNPConfig();
-  if (!temp_config->get_pl_default_config_path().empty()) {
-    pl_json_file = temp_config->get_pl_default_config_path();
+  if (_config != nullptr && !_config->get_pl_default_config_path().empty()) {
+    pl_json_file = _config->get_pl_default_config_path();
   }
   else {
     pl_json_file = "../src/operation/iPNP/example/pl_default_config.json";
   }
-  delete temp_config;
   
   ipl::PLAPI& plapi = ipl::PLAPI::getInst();
 

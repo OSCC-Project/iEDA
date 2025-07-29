@@ -39,8 +39,9 @@ constexpr double c_default_clock_toggle = 2.0;
 constexpr double c_default_clock_sp = 0.5;
 constexpr double c_switch_power_K = 0.5;
 
-constexpr double c_default_toggle = 0.02;  //  time unit: ns, set by tcl cmd, not used anymore.
-constexpr double c_default_period = 10;  // time unit: ns
+constexpr double c_default_toggle =
+    0.02;  //  time unit: ns, set by tcl cmd, not used anymore.
+constexpr double c_default_period = 10;                  // time unit: ns
 constexpr double c_default_toggle_relative_clk = 0.125;  // time unit: period
 
 // for estimate IR

@@ -85,11 +85,11 @@ bool FpApi::makeTracks(std::string layer_name, int x_offset, int x_pitch, int y_
  * @return true
  * @return false
  */
-bool FpApi::autoPlacePins(std::string layer_name, int width, int height)
+bool FpApi::autoPlacePins(std::string layer_name, int width, int height, std::vector<std::string> sides)
 {
   IoPlacer io_placer;
 
-  return io_placer.autoPlacePins(layer_name, width, height);
+  return io_placer.autoPlacePins(layer_name, width, height, sides);
 }
 
 bool FpApi::placePort(std::string pin_name, int32_t x_offset, int32_t y_offset, int32_t rect_width, int32_t rect_height,

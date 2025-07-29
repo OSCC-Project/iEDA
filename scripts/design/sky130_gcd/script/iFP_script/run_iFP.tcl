@@ -62,6 +62,7 @@ source $::env(TCL_SCRIPT_DIR)/iFP_script/module/create_tracks.tcl
 
 #===========================================================
 ##   Place IO Port
+##         -sides "left right top bottom"
 #===========================================================
 auto_place_pins -layer met5 -width 2000 -height 2000
 

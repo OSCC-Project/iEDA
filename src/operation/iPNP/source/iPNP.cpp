@@ -32,6 +32,12 @@
 #include "IREval.hh"
 #include "PNPConfig.hh"
 #include "log/Log.hh"
+#include <fstream>
+#include <iomanip>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <string.h>
 
 namespace ipnp {
 
@@ -81,8 +87,9 @@ namespace ipnp {
   void iPNP::runOptimize()
   {
     saveToIdb();
-
     PdnOptimizer pdn_optimizer;
+    pdn_optimizer.set_config(_pnp_config);
+    
     pdn_optimizer.optimizeGlobal(_initialized_network, _idb_wrapper.get_idb_builder());
     _current_opt_network = pdn_optimizer.get_out_put_grid();
   }
@@ -90,6 +97,7 @@ namespace ipnp {
   void iPNP::runFastPlacer()
   {
     FastPlacer fast_placer;
+    fast_placer.set_config(_pnp_config);
     fast_placer.runFastPlacer(_idb_wrapper.get_idb_builder());
   }
 
@@ -146,8 +154,85 @@ namespace ipnp {
     _cong_eval.set_config(_pnp_config);
     _cong_eval.evalEGR(_idb_wrapper.get_idb_builder());
 
-    initIRAnalysis();
     _ir_eval.runIREval(_idb_wrapper.get_idb_builder());
+    
+    // Get analysis results
+    double max_ir_drop = _ir_eval.getMaxIRDrop();
+    double min_ir_drop = _ir_eval.getMinIRDrop();
+    double avg_ir_drop = _ir_eval.getAvgIRDrop();
+    int32_t overflow = _cong_eval.get_total_overflow_union();
+    
+    // Build final_report path
+    std::string final_report_path = "final_report.txt";
+    if (_pnp_config && !_pnp_config->get_report_path().empty()) {
+      std::string dir_path = _pnp_config->get_report_path();
+      if (dir_path.back() != '/') {
+        dir_path += '/';
+      }
+      final_report_path = dir_path + "final_report.txt";
+      LOG_INFO << "Using directory from config for final report: " << dir_path << std::endl;
+    }
+    
+    LOG_INFO << "Final report will be written to: " << final_report_path << std::endl;
+    
+    std::string directory = final_report_path.substr(0, final_report_path.find_last_of('/'));
+    if (!directory.empty()) {
+      auto create_directories = [](const std::string& path) -> bool {
+        size_t pos = 0;
+        std::string dir;
+        int ret = 0;
+        if (path[0] == '/') {
+          pos = 1;
+        }
+
+        while ((pos = path.find('/', pos)) != std::string::npos) {
+          dir = path.substr(0, pos++);
+          if (dir.empty()) continue;
+          
+          ret = mkdir(dir.c_str(), 0755);
+          if (ret != 0 && errno != EEXIST) {
+            return false;
+          }
+        }
+        return true;
+      };
+      
+      if (!create_directories(directory)) {
+        LOG_ERROR << "Failed to create directory: " << directory << ", error: " << strerror(errno) << std::endl;
+      } else {
+        LOG_INFO << "Directory ensured: " << directory << std::endl;
+      }
+    }
+    
+    // Open file for writing
+    std::ofstream report_file(final_report_path.c_str(), std::ios::out | std::ios::trunc);
+    if (!report_file.is_open()) {
+      LOG_ERROR << "Failed to open final report file for writing: " << final_report_path << std::endl;
+    } else {
+      LOG_INFO << "Successfully opened final report file for writing" << std::endl;
+      
+      report_file << std::fixed << std::setprecision(6);
+      
+      report_file << "======================================================================" << std::endl;
+      report_file << "                     FINAL POWER NETWORK ANALYSIS REPORT               " << std::endl;
+      report_file << "======================================================================" << std::endl;
+      report_file << std::endl;
+      
+      report_file << "IR DROP ANALYSIS:" << std::endl;
+      report_file << "  Maximum IR Drop  : " << std::setw(12) << max_ir_drop << std::endl;
+      report_file << "  Minimum IR Drop  : " << std::setw(12) << min_ir_drop << std::endl;
+      report_file << "  Average IR Drop  : " << std::setw(12) << avg_ir_drop << std::endl;
+      report_file << std::endl;
+      
+      report_file << "CONGESTION ANALYSIS:" << std::endl;
+      report_file << "  Total Overflow   : " << std::setw(12) << overflow << std::endl;
+      report_file << std::endl;
+      
+      report_file << "----------------------------------------------------------------------" << std::endl;
+      
+      report_file.close();
+      LOG_INFO << "Final analysis report written successfully" << std::endl;
+    }
   }
 
   void iPNP::outputDef()
@@ -167,6 +252,7 @@ namespace ipnp {
     if (_idb_wrapper.get_idb_design()) {
 
       init();
+      initIRAnalysis();
       runSynthesis();
       runFastPlacer();
       runOptimize();

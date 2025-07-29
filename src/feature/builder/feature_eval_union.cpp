@@ -24,7 +24,7 @@ UnionEvalSummary FeatureBuilder::buildUnionEvalSummary(int32_t grid_size, std::s
   UnionEvalSummary union_eval_summary;
 
   TotalWLSummary total_wl_summary;
-  ieval::TotalWLSummary eval_total_wl_summary = WIRELENGTH_API_INST->totalWLPure();
+  ieval::TotalWLSummary eval_total_wl_summary = WIRELENGTH_API_INST->totalWLPure(); 
   total_wl_summary.HPWL = eval_total_wl_summary.HPWL;
   total_wl_summary.FLUTE = eval_total_wl_summary.FLUTE;
   total_wl_summary.HTree = eval_total_wl_summary.HTree;

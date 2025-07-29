@@ -12,6 +12,7 @@
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+#include <unordered_set>
 
 #include "general_ops.h"
 #include "init_idb.h"
@@ -412,7 +413,7 @@ std::string DensityEval::evalMargin(DensityCells cells, DensityRegion die, Densi
     }
   }
 
-  std::string output_path = createDirPath("margin_map") + "/" + output_filename;
+  std::string output_path = createDirPath("/margin_map") + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
   int32_t grid_cols = (die.ux - die.lx + grid_size - 1) / grid_size;
@@ -515,5 +516,293 @@ std::vector<MarginGrid> DensityEval::initMarginGrid(DensityRegion die, int32_t g
 
   return margin_grids;
 }
+
+std::map<int, double> DensityEval::patchCellDensity(DensityCells cells, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, double> patch_cell_density;
+  DensityGridIndex index;
+  index.grid_size_x = EVAL_INIT_IDB_INST->getDieWidth() / 100 ;
+  index.grid_size_y = EVAL_INIT_IDB_INST->getDieHeight() / 100;
+  // 构建单元格网格索引
+  for (auto& cell : cells) {
+    int min_grid_x = cell.lx / index.grid_size_x;
+    int max_grid_x = (cell.lx + cell.width) / index.grid_size_x;  
+    int min_grid_y = cell.ly / index.grid_size_y;
+    int max_grid_y = (cell.ly + cell.height) / index.grid_size_y;
+
+    for (int x = min_grid_x; x <= max_grid_x; ++x) {
+      for (int y = min_grid_y; y <= max_grid_y; ++y) {
+        index.cell_grid[{x, y}].push_back(cell);
+      }
+    }
+  }
+
+  for (const auto& [patch_id, coord] : patch_coords) {
+      double density = 0.0;
+      auto [l_range, u_range] = coord;
+      
+      // 提取当前 patch 的物理边界
+      const int patch_lx = l_range.first;
+      const int patch_ly = l_range.second;
+      const int patch_ux = u_range.first;
+      const int patch_uy = u_range.second;
+
+      // 计算 patch 面积（保持与 pin 密度相同的左闭右开区间）
+      const int patch_width = patch_ux - patch_lx;
+      const int patch_height = patch_uy - patch_ly;
+      const int patch_area = patch_width * patch_height;
+
+      // 计算 patch 覆盖的网格范围
+      int min_grid_x = patch_lx / index.grid_size_x;
+      int max_grid_x = patch_ux / index.grid_size_x;
+      int min_grid_y = patch_ly / index.grid_size_y;
+      int max_grid_y = patch_uy / index.grid_size_y;
+
+      std::unordered_set<int> processed_cells; // 记录已处理的 cell ID, 避免重复多次处理同一cell
+
+      for (int x = min_grid_x; x <= max_grid_x; ++x) {
+          for (int y = min_grid_y; y <= max_grid_y; ++y) {
+              auto it = index.cell_grid.find({x, y});
+              if (it == index.cell_grid.end()) continue;
+   
+              for (const auto& cell : it->second) {
+                if (processed_cells.count(cell.id)) continue;
+                processed_cells.insert(cell.id);
+                // 计算重叠面积
+                const int overlap_lx = std::max(cell.lx, patch_lx);
+                const int overlap_ly = std::max(cell.ly, patch_ly);
+                const int overlap_ux = std::min(cell.lx + cell.width, patch_ux);
+                const int overlap_uy = std::min(cell.ly + cell.height, patch_uy);
+
+                // 有效重叠面积计算
+                const int overlap_width = std::max(0, overlap_ux - overlap_lx);
+                const int overlap_height = std::max(0, overlap_uy - overlap_ly);
+                const int overlap_area = overlap_width * overlap_height;
+
+                // 累加密度贡献（当且仅当有重叠时）
+                if (overlap_area > 0) {
+                    density += static_cast<double>(overlap_area) / patch_area;
+                }
+
+              }
+          }
+      }
+      
+      patch_cell_density[patch_id] = density;
+  }
+
+  return patch_cell_density;
+}
+
+
+std::map<int, int> DensityEval::patchPinDensity(DensityPins pins, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, int> patch_pin_density;
+
+  // 构建 pin 网格索引
+  DensityGridIndex index;
+  index.grid_size_x = EVAL_INIT_IDB_INST->getDieWidth() / 100 ;
+  index.grid_size_y = EVAL_INIT_IDB_INST->getDieHeight() / 100;
+
+  for (const auto& pin : pins) {
+      int grid_x = pin.lx / index.grid_size_x;
+      int grid_y = pin.ly / index.grid_size_y;
+      index.pin_grid[{grid_x, grid_y}].push_back(pin);
+  }
+
+  for (const auto& [patch_id, coord] : patch_coords) {
+      auto [l_range, u_range] = coord;
+      const int patch_lx = l_range.first;
+      const int patch_ly = l_range.second;
+      const int patch_ux = u_range.first;
+      const int patch_uy = u_range.second;
+
+      int pin_count = 0;
+
+      // 计算覆盖网格范围
+      int min_grid_x = patch_lx / index.grid_size_x;
+      int max_grid_x = patch_ux / index.grid_size_x;
+      int min_grid_y = patch_ly / index.grid_size_y;
+      int max_grid_y = patch_uy / index.grid_size_y;
+
+      for (int x = min_grid_x; x <= max_grid_x; ++x) {
+          for (int y = min_grid_y; y <= max_grid_y; ++y) {
+              auto it = index.pin_grid.find({x, y});
+              if (it == index.pin_grid.end()) continue;
+
+              for (const auto& pin : it->second) {
+                  if (pin.lx >= patch_lx && pin.ly >= patch_ly &&
+                      pin.lx <= patch_ux && pin.ly <= patch_uy) 
+                  {
+                      ++pin_count;
+                  }
+              }
+          }
+      }
+      patch_pin_density[patch_id] = pin_count;
+  }
+  return patch_pin_density;
+}
+
+std::map<int, double> DensityEval::patchNetDensity(DensityNets nets, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, double> patch_net_density;
+  DensityGridIndex index;
+  index.grid_size_x = EVAL_INIT_IDB_INST->getDieWidth() / 100 ;
+  index.grid_size_y = EVAL_INIT_IDB_INST->getDieHeight() / 100;
+
+  // 构建线网网格索引
+  for (const auto& net : nets) {
+    int min_grid_x = net.lx / index.grid_size_x;
+    int max_grid_x = net.ux / index.grid_size_x;  
+    int min_grid_y = net.ly / index.grid_size_y;
+    int max_grid_y = net.uy / index.grid_size_y;
+
+    for (int x = min_grid_x; x <= max_grid_x; ++x) {
+      for (int y = min_grid_y; y <= max_grid_y; ++y) {
+        index.net_grid[{x, y}].push_back(net);
+      }
+    }
+  }
+
+  for (const auto& [patch_id, coord] : patch_coords) {
+      double density = 0.0;
+      auto [l_range, u_range] = coord;
+      
+      // 提取当前 patch 的物理边界
+      const int patch_lx = l_range.first;
+      const int patch_ly = l_range.second;
+      const int patch_ux = u_range.first;
+      const int patch_uy = u_range.second;
+
+      // 计算 patch 面积（保持与 pin 密度相同的左闭右开区间）
+      const int patch_width = patch_ux - patch_lx;
+      const int patch_height = patch_uy - patch_ly;
+      const int patch_area = patch_width * patch_height;
+
+      // 计算 patch 覆盖的网格范围
+      int min_grid_x = patch_lx / index.grid_size_x;
+      int max_grid_x = patch_ux / index.grid_size_x;
+      int min_grid_y = patch_ly / index.grid_size_y;
+      int max_grid_y = patch_uy / index.grid_size_y;
+
+      std::unordered_set<int> processed_nets; // 记录已处理的 net ID, 避免重复多次处理同一 net
+
+      for (int x = min_grid_x; x <= max_grid_x; ++x) {
+          for (int y = min_grid_y; y <= max_grid_y; ++y) {
+              auto it = index.net_grid.find({x, y});
+              if (it == index.net_grid.end()) continue;
+
+              for (const auto& net : it->second) {
+                if (processed_nets.count(net.id)) continue;
+                processed_nets.insert(net.id);
+                // 计算重叠面积
+                const int overlap_lx = std::max(net.lx, patch_lx);
+                const int overlap_ly = std::max(net.ly, patch_ly);
+                const int overlap_ux = std::min(net.ux, patch_ux);
+                const int overlap_uy = std::min(net.uy, patch_uy);
+
+                // 有效重叠面积计算
+                const int overlap_width = std::max(0, overlap_ux - overlap_lx);
+                const int overlap_height = std::max(0, overlap_uy - overlap_ly);
+                const int overlap_area = overlap_width * overlap_height;
+
+                // 累加密度贡献（当且仅当有重叠时）
+                if (overlap_area > 0) {
+                    density += static_cast<double>(overlap_area) / patch_area;
+                }
+
+              }
+          }
+      }
+      
+      patch_net_density[patch_id] = density;
+  }
+
+  return patch_net_density;
+}
+
+std::map<int, int> DensityEval::patchMacroMargin(DensityCells cells, DensityRegion core, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+    std::map<int, int> patch_macro_margin;
+
+    std::vector<DensityCell> macros;
+    for (const auto& cell : cells) {
+      if (cell.type == "macro") {
+        macros.push_back(cell);
+      }
+    }
+
+    for (const auto& [patch_id, coord] : patch_coords) {
+      auto [l_range, u_range] = coord;
+      
+      // 提取当前 patch 的物理边界
+      const int patch_lx = l_range.first;
+      const int patch_ly = l_range.second;
+      const int patch_ux = u_range.first;
+      const int patch_uy = u_range.second;
+      // 计算核心区域的边界
+      int32_t h_right = core.ux;
+      int32_t h_left = core.lx;
+      int32_t v_up = core.uy;
+      int32_t v_down = core.ly;
+
+      if (patch_ux <= h_left || patch_lx >= h_right || patch_uy <= v_down || patch_ly >= v_up) {
+        patch_macro_margin[patch_id] = 0; // 确保所有情况都有赋值
+        continue;
+      }
+
+      const int patch_width = patch_ux - patch_lx;
+      const int patch_height = patch_uy - patch_ly;
+      const int patch_area = patch_width * patch_height;
+
+      bool overlap = false;
+      int overlap_area = 0;
+      int margin = 0;
+
+      for (size_t j = 0; j < macros.size(); ++j) {
+        int32_t rect_lx = std::max(patch_lx, macros[j].lx);
+        int32_t rect_ly = std::max(patch_ly, macros[j].ly);
+        int32_t rect_ux = std::min(patch_ux, macros[j].lx + macros[j].width);
+        int32_t rect_uy = std::min(patch_uy, macros[j].ly + macros[j].height);
+        if (rect_lx < rect_ux && rect_ly < rect_uy) {
+          overlap_area += (std::min(patch_ux, macros[j].lx + macros[j].width) - std::max(patch_lx, macros[j].lx))
+                          * (std::min(patch_uy, macros[j].ly + macros[j].height) - std::max(patch_ly, macros[j].ly));
+        }
+        if (overlap_area > 0.5 * patch_area) {
+          overlap = true;
+          break;
+        }
+      }
+      
+      if (!overlap) {
+        for (size_t j = 0; j < macros.size(); ++j) {
+          int32_t macro_middle_x = macros[j].lx + macros[j].width * 0.5;
+          int32_t macro_middle_y = macros[j].ly + macros[j].height * 0.5;
+          int32_t grid_middle_x = (patch_lx + patch_ux) * 0.5;
+          int32_t grid_middle_y = (patch_ly + patch_uy) * 0.5;
+          if (grid_middle_y >= macros[j].ly && grid_middle_y <= macros[j].ly + macros[j].height) {
+            if (macro_middle_x > grid_middle_x) {
+              h_right = std::min(h_right, macros[j].lx);
+            } else {
+              h_left = std::max(h_left, macros[j].lx + macros[j].width);
+            }
+          }
+          if (grid_middle_x >= macros[j].lx && grid_middle_x <= macros[j].lx + macros[j].width) {
+            if (macro_middle_y > grid_middle_y) {
+              v_up = std::min(v_up, macros[j].ly);
+            } else {
+              v_down = std::max(v_down, macros[j].ly + macros[j].height);
+            }
+          }
+        }
+        margin = h_right - h_left + v_up - v_down;
+      }
+
+      patch_macro_margin[patch_id] = margin;
+    }
+    return patch_macro_margin;
+}
+
 
 }  // namespace ieval
