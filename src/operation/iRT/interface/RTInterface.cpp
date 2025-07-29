@@ -1662,7 +1662,7 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<std::pair<EXTLa
   std::vector<ids::Shape> ids_result_shape_list;
   for (auto& [net_idx, segment_list] : net_result_map) {
     for (Segment<LayerCoord>* segment : segment_list) {
-      for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+      for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
         ids_result_shape_list.emplace_back(getIDSShape(net_idx, LayerRect(net_shape), net_shape.get_is_routing()));
       }
     }
