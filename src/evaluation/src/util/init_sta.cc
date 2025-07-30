@@ -1093,10 +1093,16 @@ TimingInstanceGraph InitSTA::getTimingInstanceGraph()
     if (the_arc->isNetArc()) {
 
       auto* src_node = the_arc->get_src();
-      auto src_instance_name = src_node->get_design_obj()->get_own_instance()->getFullName();
-
+      auto* src_instance = src_node->get_design_obj()->get_own_instance();
       auto* snk_node = the_arc->get_snk();
-      auto snk_instance_name = snk_node->get_design_obj()->get_own_instance()->getFullName();
+      auto* snk_instance = snk_node->get_design_obj()->get_own_instance();
+
+      if (!src_instance || !snk_instance) {
+        continue;
+      }
+
+      auto src_instance_name = src_instance->getFullName();
+      auto snk_instance_name = snk_instance->getFullName();
 
       unsigned src_node_index = create_node(src_instance_name);
       unsigned snk_node_index = create_node(snk_instance_name);
