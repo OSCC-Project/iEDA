@@ -44,6 +44,11 @@ TimingWireGraph* TimingAPI::getTimingWireGraph()
   return EVAL_STA_INST->getTimingWireGraph();
 }
 
+TimingInstanceGraph* TimingAPI::getTimingInstanceGraph()
+{
+  return EVAL_STA_INST->getTimingInstanceGraph();
+}
+
 void TimingAPI::destroyInst()
 {
   ieval::TimingEval::destroyInst();

@@ -21,6 +21,7 @@
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "LAModel.hpp"
+#include "LAPackage.hpp"
 #include "RTHeader.hpp"
 
 namespace irt {
@@ -55,36 +56,29 @@ class LayerAssigner
   void buildLayerNodeMap(LAModel& la_model);
   void buildLANodeNeighbor(LAModel& la_model);
   void buildOrientSupply(LAModel& la_model);
-  void buildTopoTree(LAModel& la_model);
+  void buildPlaneTree(LAModel& la_model);
   void routeLAModel(LAModel& la_model);
-  void routeLATask(LAModel& la_model, LANet* la_net);
+  void routeLATask(LAModel& la_model, LANet* la_task);
   void initSingleTask(LAModel& la_model, LANet* la_task);
-  void makeLATopoList(LAModel& la_model, std::vector<LATopo>& la_topo_list, std::vector<Segment<LayerCoord>>& routing_segment_list);
-  void routeLATopo(LAModel& la_model, LATopo* la_topo);
-  void initSingleTopo(LAModel& la_model, LATopo* la_topo);
-  bool isConnectedAllEnd(LAModel& la_model);
-  void routeSinglePath(LAModel& la_model);
-  void initPathHead(LAModel& la_model);
-  bool searchEnded(LAModel& la_model);
-  void expandSearching(LAModel& la_model);
-  void resetPathHead(LAModel& la_model);
-  void updatePathResult(LAModel& la_model);
-  std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(LANode* node);
-  void resetStartAndEnd(LAModel& la_model);
-  void resetSinglePath(LAModel& la_model);
-  void updateTopoResult(LAModel& la_model);
+  bool needRouting(LAModel& la_model);
+  void spiltPlaneTree(LAModel& la_model);
+  void insertMidPoint(LAModel& la_model, TNode<LayerCoord>* planar_node, TNode<LayerCoord>* child_node);
+  void buildPillarTree(LAModel& la_model);
+  LAPillar convertLAPillar(LayerCoord& layer_coord, std::map<PlanarCoord, std::set<int32_t>, CmpPlanarCoordByXASC>& coord_pin_layer_map);
+  void assignPillarTree(LAModel& la_model);
+  void assignForward(LAModel& la_model);
+  std::vector<int32_t> getCandidateLayerList(LAModel& la_model, LAPackage& la_package);
+  double getFullViaCost(LAModel& la_model, std::set<int32_t>& layer_idx_set, int32_t candidate_layer_idx);
+  void buildLayerCost(LAModel& la_model, LAPackage& la_package);
+  std::pair<int32_t, double> getParentPillarCost(LAModel& la_model, LAPackage& la_package, int32_t candidate_layer_idx);
+  double getExtraViaCost(LAModel& la_model, std::set<int32_t>& layer_idx_set, int32_t candidate_layer_idx);
+  double getSegmentCost(LAModel& la_model, LAPackage& la_package, int32_t candidate_layer_idx);
+  double getChildPillarCost(LAModel& la_model, LAPackage& la_package, int32_t candidate_layer_idx);
+  void assignBackward(LAModel& la_model);
+  int32_t getBestLayerBySelf(TNode<LAPillar>* pillar_node);
+  int32_t getBestLayerByChild(TNode<LAPillar>* parent_pillar_node);
+  void buildLayerTree(LAModel& la_model);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(LAModel& la_model);
-  void resetSingleTopo(LAModel& la_model);
-  void pushToOpenList(LAModel& la_model, LANode* curr_node);
-  LANode* popFromOpenList(LAModel& la_model);
-  double getKnownCost(LAModel& la_model, LANode* start_node, LANode* end_node);
-  double getNodeCost(LAModel& la_model, LANode* curr_node, Orientation orientation);
-  double getKnownWireCost(LAModel& la_model, LANode* start_node, LANode* end_node);
-  double getKnownViaCost(LAModel& la_model, LANode* start_node, LANode* end_node);
-  double getEstimateCostToEnd(LAModel& la_model, LANode* curr_node);
-  double getEstimateCost(LAModel& la_model, LANode* start_node, LANode* end_node);
-  double getEstimateWireCost(LAModel& la_model, LANode* start_node, LANode* end_node);
-  double getEstimateViaCost(LAModel& la_model, LANode* start_node, LANode* end_node);
   MTree<LayerCoord> getCoordTree(LAModel& la_model, std::vector<Segment<LayerCoord>>& routing_segment_list);
   void uploadNetResult(LAModel& la_model, MTree<LayerCoord>& coord_tree);
   void resetSingleTask(LAModel& la_model);
@@ -106,6 +100,7 @@ class LayerAssigner
 #endif
 
 #if 1  // debug
+  void debugPlotLAModel(LAModel& la_model, std::string flag);
   void debugCheckLAModel(LAModel& la_model);
 #endif
 };

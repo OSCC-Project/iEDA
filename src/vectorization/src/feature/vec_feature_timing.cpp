@@ -48,6 +48,19 @@ void VecFeatureTiming::build()
 
   std::string yaml_graph_file = yaml_graph_path + "/timing_wire_graph.yaml";
   SaveTimingGraph(timing_wire_graph, yaml_graph_file);
+
+  /// save timing instance graph.
+  auto timing_instance_graph = eval_tp->getTimingInstanceGraph();
+
+  yaml_graph_path = _dir + "/instance_graph";
+
+  if (!std::filesystem::exists(yaml_graph_path)) {
+    std::filesystem::create_directories(yaml_graph_path);
+  }
+
+
+  yaml_graph_file = yaml_graph_path + "/timing_instance_graph.yaml";
+  SaveTimingInstanceGraph(timing_instance_graph, yaml_graph_file);
 }
 
 void VecFeatureTiming::buildWireTimingPowerFeature(VecNet* vec_net, const std::string& net_name)

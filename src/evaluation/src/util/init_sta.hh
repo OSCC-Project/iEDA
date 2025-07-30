@@ -59,13 +59,26 @@ struct TimingWireEdge
   bool _is_net_edge = true;
 };
 
-struct TimingWireGraph
+
+/// @brief The timing instance node for wangrui used.
+struct TimingInstanceNode {
+  std::string _name; //!< instance name
+};
+
+struct TimingNetEdge {
+  int64_t _from_node = -1;
+  int64_t _to_node = -1;
+};
+
+template <typename T, typename U>
+struct TimingGraph
 {
-  std::vector<TimingWireNode> _nodes;  //!< each one is a graph node
-  std::vector<TimingWireEdge> _edges;
+  std::vector<T> _nodes;  //!< each one is a graph node
+  std::vector<U> _edges;
 
  private:
   std::map<std::string, unsigned> _node2index_map;  //!< node name to node index map.
+  std::map<std::pair<unsigned, unsigned>, unsigned> _edge2index_map;  //!< edge from/to node index to edge index map.
 
  public:
   std::optional<unsigned> findNode(std::string& node_name)
@@ -77,7 +90,7 @@ struct TimingWireGraph
     return _node2index_map[node_name];
   }
 
-  unsigned addNode(const TimingWireNode& node)
+  unsigned addNode(const T& node)
   {
     _nodes.push_back(node);
     unsigned index = _nodes.size() - 1;
@@ -86,15 +99,48 @@ struct TimingWireGraph
     return index;
   }
 
-  TimingWireEdge& addEdge(unsigned wire_from_node_index, unsigned wire_to_node_index)
+  U* findEdge(unsigned wire_from_node_index, unsigned wire_to_node_index)
   {
-    TimingWireEdge wire_graph_edge;
+    auto edge_key = std::make_pair(wire_from_node_index, wire_to_node_index);
+    if (_edge2index_map.find(edge_key) == _edge2index_map.end()) {
+      return nullptr;
+    }
+
+    return &(_edges[_edge2index_map[edge_key]]);
+  }
+
+  U& addEdge(unsigned wire_from_node_index, unsigned wire_to_node_index)
+  {
+    U wire_graph_edge;
 
     wire_graph_edge._from_node = wire_from_node_index;
     wire_graph_edge._to_node = wire_to_node_index;
 
+    auto edge_key = std::make_pair(wire_from_node_index, wire_to_node_index);
+    if (_edge2index_map.find(edge_key) != _edge2index_map.end())
+    {
+      return _edges[_edge2index_map[edge_key]];
+    }
+
+    _edge2index_map[edge_key] = _edges.size();
+
     return _edges.emplace_back(std::move(wire_graph_edge));
   }
+};
+
+
+/**
+ * @brief The timing wire graph for weiguo used.
+ */
+struct TimingWireGraph : public TimingGraph<TimingWireNode, TimingWireEdge> {
+
+};
+
+/**
+ * @brief The timing instance graph for wangrui used.
+ */
+struct TimingInstanceGraph : public TimingGraph<TimingInstanceNode, TimingNetEdge> {
+
 };
 
 /// @brief  save timing graph to yaml file.
@@ -104,6 +150,11 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
 
 /// @brief restore timing graph from yaml file.
 TimingWireGraph RestoreTimingGraph(const std::string& yaml_file_name);
+
+/// @brief save timing instance graph to yaml file.
+void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, const std::string& yaml_file_name);
+/// @brief restore timing instance graph from yaml file.
+TimingInstanceGraph RestoreTimingInstanceGraph(const std::string& yaml_file_name);
 
 class InitSTA
 {
@@ -146,6 +197,7 @@ class InitSTA
   double getWireDelay(const std::string& net_name, const std::string& wire_node_name) const;
   // double getWirePower(const std::string& net_name, const std::string& wire_node_name) const;
   TimingWireGraph getTimingWireGraph();
+  TimingInstanceGraph getTimingInstanceGraph();
 
   bool getRcNet(const std::string& net_name);
 
