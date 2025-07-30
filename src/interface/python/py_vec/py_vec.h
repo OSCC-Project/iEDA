@@ -28,5 +28,6 @@ bool generate_vectors(std::string dir);
 
 // for vectorization wire timing graph.
 ieval::TimingWireGraph get_timing_wire_graph(std::string wire_graph_yaml_path);
+ieval::TimingInstanceGraph get_timing_instance_graph(std::string instance_graph_yaml_path);
 
 }  // namespace python_interface

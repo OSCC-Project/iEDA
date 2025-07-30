@@ -43,6 +43,7 @@ void register_vectorization(py::module& m)
       .def_readwrite("edges", &ieval::TimingWireGraph::_edges);
 
   m.def("get_timing_wire_graph", &get_timing_wire_graph);
+  m.def("get_timing_instance_graph", &get_timing_instance_graph);
 }
 
 }  // namespace python_interface
