@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include "LAPillar.hpp"
 #include "LAPin.hpp"
 #include "Net.hpp"
 
@@ -32,7 +33,8 @@ class LANet
   ConnectType& get_connect_type() { return _connect_type; }
   std::vector<LAPin>& get_la_pin_list() { return _la_pin_list; }
   BoundingBox& get_bounding_box() { return _bounding_box; }
-  MTree<LayerCoord>& get_topo_tree() { return _topo_tree; }
+  MTree<LayerCoord>& get_planar_tree() { return _planar_tree; }
+  MTree<LAPillar>& get_pillar_tree() { return _pillar_tree; }
   // const getter
   const ConnectType& get_connect_type() const { return _connect_type; }
   const std::vector<LAPin>& get_la_pin_list() const { return _la_pin_list; }
@@ -43,7 +45,8 @@ class LANet
   void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
   void set_la_pin_list(const std::vector<LAPin>& la_pin_list) { _la_pin_list = la_pin_list; }
   void set_bounding_box(const BoundingBox& bounding_box) { _bounding_box = bounding_box; }
-  void set_topo_tree(const MTree<LayerCoord>& topo_tree) { _topo_tree = topo_tree; }
+  void set_planar_tree(const MTree<LayerCoord>& planar_tree) { _planar_tree = planar_tree; }
+  void set_pillar_tree(const MTree<LAPillar>& pillar_tree) { _pillar_tree = pillar_tree; }
   // function
 
  private:
@@ -52,7 +55,8 @@ class LANet
   ConnectType _connect_type = ConnectType::kNone;
   std::vector<LAPin> _la_pin_list;
   BoundingBox _bounding_box;
-  MTree<LayerCoord> _topo_tree;
+  MTree<LayerCoord> _planar_tree;
+  MTree<LAPillar> _pillar_tree;
 };
 
 struct CmpLANet

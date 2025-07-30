@@ -89,7 +89,7 @@ class SpaceRouter
   void pushToOpenList(SRBox& sr_box, SRNode* curr_node);
   SRNode* popFromOpenList(SRBox& sr_box);
   double getKnownCost(SRBox& sr_box, SRNode* start_node, SRNode* end_node);
-  double getNodeCost(SRBox& sr_box, SRNode* curr_node, Orientation orientation);
+  double getNodeCost(SRBox& sr_box, SRNode* curr_node, Direction direction);
   double getKnownWireCost(SRBox& sr_box, SRNode* start_node, SRNode* end_node);
   double getKnownViaCost(SRBox& sr_box, SRNode* start_node, SRNode* end_node);
   double getEstimateCostToEnd(SRBox& sr_box, SRNode* curr_node);

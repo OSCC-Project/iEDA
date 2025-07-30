@@ -1,10 +1,9 @@
 initLAModel:初始化la_net_list
 setLAComParam:设置布线参数
-initLATaskList：构建task,有序
+initLATaskList:构建task,有序
 buildLayerNodeMap:初始化graph
 buildLANodeNeighbor:构建graph的邻居
 buildOrientSupply:从supply_analyzer获取supply的access
-buildTopoTree：从顶层拿取topo树
+buildPlaneTree:从顶层拿取topo树
 routeLAModel:
     routeLATask:一个接一个的la_net进行布线
-updateLAModel:将结果更新到顶层
