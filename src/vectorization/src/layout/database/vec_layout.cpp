@@ -29,6 +29,18 @@
 
 namespace ivec {
 
+void VecLayout::add_cell(VecCell cell)
+{
+  _cells.addCell(cell);
+
+  _cell_name_map.insert(std::make_pair(cell.name, cell.id));
+}
+
+void VecLayout::add_instance(VecInstance instance)
+{
+  _instances.addInstance(instance);
+}
+
 void VecLayout::add_layer_map(int id, std::string name)
 {
   _layer_name_map.insert(std::make_pair(name, id));
@@ -187,6 +199,16 @@ std::string VecLayout::findInstName(int id)
   }
 
   return "";
+}
+
+int VecLayout::findCellId(std::string name)
+{
+  auto it = _cell_name_map.find(name);
+  if (it != _cell_name_map.end()) {
+    return it->second;
+  }
+
+  return -1;
 }
 
 }  // namespace ivec

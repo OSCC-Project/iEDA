@@ -15,43 +15,38 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
-#include <string>
+/**
+ * @project		vectorization
+ * @date		29/7/2025
+ * @version		0.1
+ * @description
+ *
+ */
 
-#include "json.hpp"
-#include "vec_layout.h"
-#include "vec_net.h"
-#include "vec_node.h"
-#include "vec_patch.h"
-#include "vec_patch_grid.h"
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include "vec_cell.h"
+
+#include "Log.hh"
 
 namespace ivec {
-using json = nlohmann::ordered_json;
 
-class VecLayoutFileIO
+VecCell* VecCells::get_cell(int id)
 {
- public:
-  VecLayoutFileIO(std::string dir, VecLayout* layout, VecPatchGrid* patch_grid = nullptr)
-  {
-    _dir = dir;
-    _layout = layout;
-    _patch_grid = patch_grid;
+  auto it = _cell_map.find(id);
+  if (it != _cell_map.end()) {
+    return &it->second;
   }
-  ~VecLayoutFileIO() {}
 
-  bool saveJson();
+  return nullptr;
+}
 
- private:
-  std::string _dir = "";
-  VecLayout* _layout = nullptr;
-  VecPatchGrid* _patch_grid = nullptr;
-
-  bool saveJsonNets();
-  bool saveJsonPatchs();
-  bool saveJsonCells();
-  bool saveJsonInstances();
-
-  void makeDir(std::string dir);
-  json makeNodePair(VecNode* node1, VecNode* node2);
-};
+void VecCells::addCell(VecCell cell)
+{
+  if (get_cell(cell.id) == nullptr) {
+    auto [it, success] = _cell_map.insert(std::make_pair(cell.id, cell));
+  }
+}
 
 }  // namespace ivec

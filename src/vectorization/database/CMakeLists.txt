@@ -1,6 +1,8 @@
 add_library(ivec_db
     vec_node.cpp
     vec_net.cpp
+    vec_cell.cpp
+    vec_instance.cpp
 )
 
 target_link_libraries(ivec_db
