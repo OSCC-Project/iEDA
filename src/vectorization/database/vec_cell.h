@@ -15,43 +15,48 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
-#include <string>
+/**
+ * @project		vectorization
+ * @date		29/7/2025
+ * @version		0.1
+ * @description
+ *
+ */
 
-#include "json.hpp"
-#include "vec_layout.h"
-#include "vec_net.h"
-#include "vec_node.h"
-#include "vec_patch.h"
-#include "vec_patch_grid.h"
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include <map>
+#include <string>
+#include <vector>
 
 namespace ivec {
-using json = nlohmann::ordered_json;
 
-class VecLayoutFileIO
+struct VecCell
+{
+  int id;
+  std::string name;
+  int width;
+  int height;
+};
+
+class VecCells
 {
  public:
-  VecLayoutFileIO(std::string dir, VecLayout* layout, VecPatchGrid* patch_grid = nullptr)
-  {
-    _dir = dir;
-    _layout = layout;
-    _patch_grid = patch_grid;
-  }
-  ~VecLayoutFileIO() {}
+  VecCells() {}
+  ~VecCells() {}
 
-  bool saveJson();
+  // getter
+  std::map<int, VecCell>& get_cell_map() { return _cell_map; }
+  VecCell* get_cell(int id);
+
+  // setter
+  void addCell(VecCell cell);
+
+  // operator
 
  private:
-  std::string _dir = "";
-  VecLayout* _layout = nullptr;
-  VecPatchGrid* _patch_grid = nullptr;
-
-  bool saveJsonNets();
-  bool saveJsonPatchs();
-  bool saveJsonCells();
-  bool saveJsonInstances();
-
-  void makeDir(std::string dir);
-  json makeNodePair(VecNode* node1, VecNode* node2);
+  std::map<int, VecCell> _cell_map;
 };
 
 }  // namespace ivec

@@ -28,7 +28,9 @@
 #include "idm.h"
 #include "omp.h"
 #include "usage.hh"
+#include "vec_cell.h"
 #include "vec_grid_info.h"
+#include "vec_instance.h"
 
 namespace ivec {
 
@@ -36,11 +38,12 @@ void VecLayoutInit::init()
 {
   initViaIds();
 
+  initCells();
   initLayers();
   initDie();
   initTracks();
   //   initPDN();
-  //   initInstances();
+  initInstances();
   //   initIOPins();
 
   initNets();
@@ -131,6 +134,37 @@ void VecLayoutInit::initLayers()
   layout_layers.set_layer_order_top(index - 1);
 
   LOG_INFO << "Layer number : " << index;
+}
+
+void VecLayoutInit::initCells()
+{
+  auto idb2Vec = [](int i, idb::IdbCellMaster* idb_cell) -> VecCell {
+    VecCell vec_cell;
+    vec_cell.id = i;
+    vec_cell.name = idb_cell->get_name();
+    vec_cell.width = idb_cell->get_width();
+    vec_cell.height = idb_cell->get_height();
+
+    return vec_cell;
+  };
+
+  ieda::Stats stats;
+
+  LOG_INFO << "Vectorization init cells start...";
+
+  /// find base track
+  auto* idb_layout = dmInst->get_idb_layout();
+  auto* idb_cell_masters = idb_layout->get_cell_master_list();
+  for (int i = 0; i < idb_cell_masters->get_cell_master_num(); ++i) {
+    auto* idb_cell = idb_cell_masters->get_cell_master()[i];
+    VecCell vec_cell = idb2Vec(i, idb_cell);
+    _layout->add_cell(vec_cell);
+  }
+
+  LOG_INFO << "Vectorization memory usage " << stats.memoryDelta() << " MB";
+  LOG_INFO << "Vectorization elapsed time " << stats.elapsedRunTime() << " s";
+
+  LOG_INFO << "Vectorization init cells end...";
 }
 
 void VecLayoutInit::initTrackGrid(idb::IdbTrackGrid* idb_track_grid)
@@ -350,6 +384,30 @@ void VecLayoutInit::initPDN()
 
 void VecLayoutInit::initInstances()
 {
+  auto idb2vec = [](int inst_id, int cell_id, idb::IdbInstance* idb_inst) -> ivec::VecInstance {
+    ivec::VecInstance vec_inst;
+
+    vec_inst.id = inst_id;
+    vec_inst.cell_id = cell_id;
+    vec_inst.name = idb_inst->get_name();
+
+    vec_inst.x = idb_inst->get_coordinate()->get_x();
+    vec_inst.y = idb_inst->get_coordinate()->get_y();
+
+    vec_inst.width = idb_inst->get_cell_master()->get_width();
+    vec_inst.height = idb_inst->get_cell_master()->get_height();
+
+    vec_inst.llx = idb_inst->get_bounding_box()->get_low_x();
+    vec_inst.lly = idb_inst->get_bounding_box()->get_low_y();
+    vec_inst.urx = idb_inst->get_bounding_box()->get_high_x();
+    vec_inst.ury = idb_inst->get_bounding_box()->get_high_y();
+
+    vec_inst.orient = idb::IdbEnum::GetInstance()->get_site_property()->get_orient_name(idb_inst->get_orient());
+    vec_inst.status = idb::IdbEnum::GetInstance()->get_instance_property()->get_status_str(idb_inst->get_status());
+
+    return vec_inst;
+  };
+
   ieda::Stats stats;
 
   LOG_INFO << "Vectorization init instances start...";
@@ -369,14 +427,17 @@ void VecLayoutInit::initInstances()
   for (int i = 0; i < inst_total; ++i) {
     auto* idb_inst = idb_insts->get_instance_list()[i];
     _layout->add_instance_map(i, idb_inst->get_name());
+    auto vec_inst = idb2vec(i, _layout->findCellId(idb_inst->get_cell_master()->get_name()), idb_inst);
+    auto cell_id = _layout->findCellId(idb_inst->get_cell_master()->get_name());
+    _layout->add_instance(idb2vec(i, cell_id, idb_inst));
 
-    auto* idb_inst_pins = idb_inst->get_pin_list();
-    for (auto* idb_pin : idb_inst_pins->get_pin_list()) {
-      if (false == idb_pin->is_net_pin()) {
-        auto type = idb_pin->is_special_net_pin() ? VecNodeTYpe::vec_pdn : VecNodeTYpe::kNone;
-        transPin(idb_pin, -1, type, i);
-      }
-    }
+    // auto* idb_inst_pins = idb_inst->get_pin_list();
+    // for (auto* idb_pin : idb_inst_pins->get_pin_list()) {
+    //   if (false == idb_pin->is_net_pin()) {
+    //     auto type = idb_pin->is_special_net_pin() ? VecNodeTYpe::vec_pdn : VecNodeTYpe::kNone;
+    //     transPin(idb_pin, -1, type, i);
+    //   }
+    // }
 
     // for (auto* layer_shape : idb_inst->get_obs_box_list()) {
     //   auto* layer = layer_shape->get_layer();
