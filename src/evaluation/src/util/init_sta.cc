@@ -1058,7 +1058,6 @@ TimingWireGraph InitSTA::getTimingWireGraph()
   return timing_wire_graph;
 }
 
-
 TimingInstanceGraph InitSTA::getTimingInstanceGraph()
 {
   LOG_INFO << "get timing instance graph start";
@@ -1091,7 +1090,6 @@ TimingInstanceGraph InitSTA::getTimingInstanceGraph()
   FOREACH_ARC(the_timing_graph, the_arc)
   {
     if (the_arc->isNetArc()) {
-
       auto* src_node = the_arc->get_src();
       auto* src_instance = src_node->get_design_obj()->get_own_instance();
       auto* snk_node = the_arc->get_snk();
@@ -1108,7 +1106,6 @@ TimingInstanceGraph InitSTA::getTimingInstanceGraph()
       unsigned snk_node_index = create_node(snk_instance_name);
 
       timing_instance_graph.addEdge(src_node_index, snk_node_index);
-
     }
   }
 
@@ -1126,7 +1123,6 @@ TimingInstanceGraph InitSTA::getTimingInstanceGraph()
 
   return timing_instance_graph;
 }
-
 
 bool InitSTA::getRcNet(const std::string& net_name)
 {
@@ -1410,8 +1406,8 @@ std::map<int, double> InitSTA::patchTimingMap(std::map<int, std::pair<std::pair<
   int64_t min_y = INT64_MAX;
   int64_t max_y = INT64_MIN;
   for (const auto& [coord, _] : inst_timing_map) {
-    int64_t x = static_cast<int64_t>(coord.first) * dbu;
-    int64_t y = static_cast<int64_t>(coord.second) * dbu;
+    int64_t x = static_cast<int64_t>(coord.first * dbu);
+    int64_t y = static_cast<int64_t>(coord.second * dbu);
     min_x = std::min(min_x, x);
     max_x = std::max(max_x, x);
     min_y = std::min(min_y, y);
@@ -1515,8 +1511,8 @@ std::map<int, double> InitSTA::patchPowerMap(std::map<int, std::pair<std::pair<i
 
   // 填充网格
   for (const auto& [coord, power] : inst_power_map) {
-    int64_t x = static_cast<int64_t>(coord.first) * dbu;
-    int64_t y = static_cast<int64_t>(coord.second) * dbu;
+    int64_t x = static_cast<int64_t>(coord.first * dbu);
+    int64_t y = static_cast<int64_t>(coord.second * dbu);
     int64_t grid_x = (x - min_x) / grid_size_x;
     int64_t grid_y = (y - min_y) / grid_size_y;
     grid[grid_x][grid_y].push_back({{x, y}, power});
