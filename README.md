@@ -166,7 +166,7 @@ Roadmap -->
 
 ## **Contribution Guide**
 
-Fork this iEDA repository，after adding and commiting code, please summit [Pull Request](https://gitee.com/oscc-project/iEDA/pulls)。
+Fork this iEDA repository，after adding and commiting code, please submit [Pull Request](https://gitee.com/oscc-project/iEDA/pulls)。
 
 Please note the using [Coding Style][Code-conduct-md] of iEDA。
 
