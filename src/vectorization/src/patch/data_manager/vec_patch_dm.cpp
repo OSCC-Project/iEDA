@@ -20,6 +20,7 @@
 #include "usage.hh"
 #include "vec_patch_dm.h"
 #include "vec_patch_init.h"
+#include "vec_grid_info.h"
 
 namespace ivec {
 
@@ -30,10 +31,27 @@ bool VecPatchDataManager::buildPatchData()
   return true;
 }
 
+bool VecPatchDataManager::buildPatchData(int patch_row_step, int patch_col_step)
+{
+  init(patch_row_step, patch_col_step);
+
+  return true;
+}
+
+
 void VecPatchDataManager::init()
 {
   VecPatchInit patch_init(_layout, &_patch_grid);
   patch_init.init();
 }
+
+void VecPatchDataManager::init(int patch_row_step, int patch_col_step)
+{
+  VecPatchInfo::getInst(patch_row_step, patch_col_step);
+
+  VecPatchInit patch_init(_layout, &_patch_grid);
+  patch_init.init();
+}
+
 
 }  // namespace ivec
