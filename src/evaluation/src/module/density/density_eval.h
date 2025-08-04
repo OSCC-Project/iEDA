@@ -62,9 +62,9 @@ class DensityEval
   std::string evalGlobalNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, std::string stage, bool neighbor);
   std::string evalAllNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, std::string stage, bool neighbor);
 
-  std::string evalHorizonMargin(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size);
-  std::string evalVerticalMargin(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size);
-  std::string evalAllMargin(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size);
+  std::string evalHorizonMargin(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size, std::string stage);
+  std::string evalVerticalMargin(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size, std::string stage);
+  std::string evalAllMargin(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size, std::string stage);
 
   void initIDB();
   void destroyIDB();

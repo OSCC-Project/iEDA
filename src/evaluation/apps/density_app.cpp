@@ -173,8 +173,9 @@ void TestMarginMap()
   cells.push_back(cell2);
 
   int32_t grid_size = 25;
+  std::string stage = "place";
 
-  ieval::MacroMarginSummary macro_margin_summary = density_api.macroMarginMap(cells, die, core, grid_size);
+  ieval::MacroMarginSummary macro_margin_summary = density_api.macroMarginMap(cells, die, core, grid_size, stage);
   std::cout << "Horizontal margin: " << macro_margin_summary.horizontal_margin << std::endl;
   std::cout << "Vertical margin: " << macro_margin_summary.vertical_margin << std::endl;
   std::cout << "Union margin: " << macro_margin_summary.union_margin << std::endl;

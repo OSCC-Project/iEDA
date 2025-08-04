@@ -324,7 +324,23 @@ string CongestionEval::evalRUDY(CongestionNets nets, CongestionRegion region, in
     }
   }
 
-  std::string output_path = createDirPath("/RUDY_map") + "/" + output_filename;
+  std::string stage;
+  size_t underscore_pos = output_filename.find('_');
+  if (underscore_pos != std::string::npos) {
+    stage = output_filename.substr(0, underscore_pos);
+  }
+
+  std::string save_dir;
+  if (stage.find("place") != std::string::npos || stage.find("pl") != std::string::npos) {
+    save_dir = "/pl/RUDY_map";
+  } else if (stage.find("cts") != std::string::npos) {
+    save_dir = "/cts/RUDY_map";
+  }  else {
+    save_dir = "other/RUDY_map";
+  }
+  
+
+  std::string output_path = createDirPath(save_dir) + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
   for (size_t row_index = density_grid.size(); row_index-- > 0;) {
@@ -436,7 +452,23 @@ string CongestionEval::evalLUTRUDY(CongestionNets nets, CongestionRegion region,
     }
   }
 
-  std::string output_path = createDirPath("/RUDY_map") + "/" + output_filename;
+  std::string stage;
+  size_t underscore_pos = output_filename.find('_');
+  if (underscore_pos != std::string::npos) {
+    stage = output_filename.substr(0, underscore_pos);
+  }
+
+  std::string save_dir;
+  if (stage.find("place") != std::string::npos || stage.find("pl") != std::string::npos) {
+    save_dir = "/pl/LUTRUDY_map";
+  } else if (stage.find("cts") != std::string::npos) {
+    save_dir = "/cts/LUTRUDY_map";
+  }  else {
+    save_dir = "other/LUTRUDY_map";
+  }
+  
+
+  std::string output_path = createDirPath(save_dir) + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
   for (size_t row_index = density_grid.size(); row_index-- > 0;) {
