@@ -46,11 +46,11 @@ std::map<int, VecNet> VectorizationApi::getGraph(std::string path)
   return vectorization.getGraph(path);
 }
 
-bool VectorizationApi::buildVectorizationFeature(const std::string dir)
+bool VectorizationApi::buildVectorizationFeature(const std::string dir, int patch_row_step, int patch_col_step)
 {
   Vectorization vectorization;
 
-  vectorization.buildFeature(dir);
+  vectorization.buildFeature(dir, patch_row_step, patch_col_step);
 
   return true;
 }

@@ -104,14 +104,32 @@ unsigned CmdVecLayoutGraph::exec()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 CmdVecFeature::CmdVecFeature(const char* cmd_name) : TclCmd(cmd_name)
 {
-  auto* option = new TclStringOption(TCL_DIRECTORY, 1, nullptr);
-  addOption(option);
+  auto* dir_option = new TclStringOption(TCL_DIRECTORY, 1, nullptr);
+  addOption(dir_option);
+
+  auto* row_step_option = new TclIntOption(TCL_PATCH_ROW_STEP, 0, 9);  
+  addOption(row_step_option);
+
+  auto* col_step_option = new TclIntOption(TCL_PATCH_COL_STEP, 0, 9);  
+  addOption(col_step_option);
 }
 
 unsigned CmdVecFeature::check()
 {
-  TclOption* option = getOptionOrArg(TCL_DIRECTORY);
-  LOG_FATAL_IF(!option);
+  TclOption* dir_option = getOptionOrArg(TCL_DIRECTORY);
+  LOG_FATAL_IF(!dir_option); 
+
+  TclOption* row_step_option = getOptionOrArg(TCL_PATCH_ROW_STEP);
+  if (row_step_option && row_step_option->getIntVal() <= 0) {
+    LOG_ERROR << "patch_row_step must be positive";
+    return 0;
+  }
+
+  TclOption* col_step_option = getOptionOrArg(TCL_PATCH_COL_STEP);
+  if (col_step_option && col_step_option->getIntVal() <= 0) {
+    LOG_ERROR << "patch_col_step must be positive";
+    return 0;
+  }
 
   return 1;
 }
@@ -122,13 +140,25 @@ unsigned CmdVecFeature::exec()
     return 0;
   }
 
-  TclOption* option = getOptionOrArg(TCL_DIRECTORY);
-  if (option != nullptr) {
-    auto path_option = option->getStringVal();
+  TclOption* dir_option = getOptionOrArg(TCL_DIRECTORY);
+  if (dir_option != nullptr) {
+    auto path_option = dir_option->getStringVal();
     std::string path = path_option == nullptr ? "./vectors" : path_option;
 
+    int patch_row_step = 9; 
+    TclOption* row_step_option = getOptionOrArg(TCL_PATCH_ROW_STEP);
+    if (row_step_option != nullptr) {
+      patch_row_step = row_step_option->getIntVal();
+    }
+
+    int patch_col_step = 9;  
+    TclOption* col_step_option = getOptionOrArg(TCL_PATCH_COL_STEP);
+    if (col_step_option != nullptr) {
+      patch_col_step = col_step_option->getIntVal();
+    }
+
     ivec::VectorizationApi vec_api;
-    vec_api.buildVectorizationFeature(path);
+    vec_api.buildVectorizationFeature(path, patch_row_step, patch_col_step);
   }
 
   return 1;

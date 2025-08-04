@@ -39,6 +39,7 @@ class VecDataManager
   bool buildGraphData();
   bool buildPatternData();
   bool buildPatchData(const std::string dir);
+  bool buildPatchData(const std::string dir, int patch_row_step, int patch_col_step);
   std::map<int, VecNet> getGraph(std::string path);
 
   bool checkData();

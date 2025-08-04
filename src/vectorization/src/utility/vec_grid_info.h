@@ -99,6 +99,16 @@ class VecPatchInfo
     return *_info_inst;
   }
 
+  static VecPatchInfo& getInst(int row_step, int col_step)
+  {
+    if (_info_inst == nullptr) {
+      _info_inst = new VecPatchInfo(row_step, col_step);
+    } else {
+      _info_inst->set_patch_size(row_step, col_step);
+    }
+    return *_info_inst;
+  }
+
   static void destroyInst();
 
   /// getter
@@ -120,9 +130,9 @@ class VecPatchInfo
 
  public:
   int patch_row_start = 0;
-  int patch_row_step = 9 * 2 * 10;  /// default 9T
+  int patch_row_step = 9 * 2 * 10;  /// default 9T/180T
   int patch_col_start = 0;
-  int patch_col_step = 9 * 2 * 10;  /// default 9T
+  int patch_col_step = 9 * 2 * 10;  /// default 9T/180T
   int patch_num_vertical = 0;       /// indicate how many patchs in vertical direciton
   int patch_num_horizontal = 0;     /// indicate how many patchs in horizontal direciton
 
@@ -130,6 +140,13 @@ class VecPatchInfo
   static VecPatchInfo* _info_inst;
 
   VecPatchInfo();
+  VecPatchInfo(int row_step, int col_step) : 
+      patch_row_start(0), patch_row_step(row_step), 
+      patch_col_start(0), patch_col_step(col_step),
+      patch_num_vertical(0), patch_num_horizontal(0)
+  {
+    set_patch_num();
+  }
   ~VecPatchInfo() {}
 
   void set_patch_num();
