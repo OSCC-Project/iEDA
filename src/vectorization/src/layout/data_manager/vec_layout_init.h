@@ -43,7 +43,7 @@ class VecLayoutInit
   void initDie();
   void initLayers();
   void initCells();
-  void initTracks(std::string layername = "M2");
+  void initTracks();
   void initTrackGrid(idb::IdbTrackGrid* idb_track_grid);
   void buildLayoutGrid();
   void initPDN();
