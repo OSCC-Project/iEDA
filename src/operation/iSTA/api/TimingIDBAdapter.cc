@@ -129,7 +129,8 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
 
   if (num_layer >= routing_layer_size ||
       routing_layer_id >= routing_layer_size || num_layer < 0) {
-    LOG_FATAL << "Layer id error = " << num_layer;
+    LOG_FATAL << "Layer id error = " << num_layer
+              << " routing layer size = " << routing_layer_size;
     return 0;
   }
 
@@ -146,8 +147,8 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
   segment_resistance = lef_resistance * segment_length / *segment_width;
 #if DEBUG_TIMING_IDB
   _debug_csv_file << lef_resistance << "," << segment_length << ","
-            << *segment_width << "," << num_layer << ","
-            << segment_resistance << "\n";
+                  << *segment_width << "," << num_layer << ","
+                  << segment_resistance << "\n";
 #endif
 
   // _debug_csv_file << lef_resistance << "," << segment_length << ","
@@ -160,8 +161,8 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
 /**
  * @brief get segment capacitance.
  *
- * @param num_layer  layer number = target routing layer id - first routing layer
- * id by data config
+ * @param num_layer  layer number = target routing layer id - first routing
+ * layer id by data config
  * @param segment_length unit is um (micro meter)
  * @param segment_width unit is um (micro meter)
  * @return double cap unit is pf
@@ -859,7 +860,7 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
         return;
       }
 
-      std::regex re(R"(\\)"); 
+      std::regex re(R"(\\)");
       std::string net_name = std::regex_replace(raw_name, re, "");
       Net* sta_net = design_netlist.findNet(net_name.c_str());
 
