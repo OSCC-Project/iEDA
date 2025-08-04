@@ -129,8 +129,7 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
 
   if (num_layer >= routing_layer_size ||
       routing_layer_id >= routing_layer_size || num_layer < 0) {
-    LOG_FATAL << "Layer id error = " << num_layer
-              << " routing layer size = " << routing_layer_size;
+    LOG_FATAL << "Layer id error = " << num_layer;
     return 0;
   }
 
