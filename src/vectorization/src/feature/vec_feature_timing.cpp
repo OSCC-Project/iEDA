@@ -46,7 +46,7 @@ void VecFeatureTiming::build()
     std::filesystem::create_directories(yaml_graph_path);
   }
 
-  std::string yaml_graph_file = yaml_graph_path + "/timing_wire_graph.yaml";
+  std::string yaml_graph_file = yaml_graph_path + "/timing_wire_graph.json";
   SaveTimingGraph(timing_wire_graph, yaml_graph_file);
 
   /// save timing instance graph.
@@ -59,7 +59,7 @@ void VecFeatureTiming::build()
   }
 
 
-  yaml_graph_file = yaml_graph_path + "/timing_instance_graph.yaml";
+  yaml_graph_file = yaml_graph_path + "/timing_instance_graph.json";
   SaveTimingInstanceGraph(timing_instance_graph, yaml_graph_file);
 }
 
