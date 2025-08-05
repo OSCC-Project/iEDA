@@ -8,6 +8,7 @@ add_subdirectory(tcl_instance)
 add_subdirectory(tcl_irt)
 add_subdirectory(tcl_ifp)
 add_subdirectory(tcl_ipdn)
+add_subdirectory(tcl_ipnp)
 if(BUILD_GUI)
 add_subdirectory(tcl_gui)
 endif()
@@ -55,11 +56,13 @@ target_link_libraries(ieda_tcl
         tcl_eval
         tcl_eco
         tcl_vec
+        tcl_ipnp
 )
 
 target_include_directories(ieda_tcl 
     PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tcl_ipnp
 
     ${HOME_UTILITY}/tcl
 

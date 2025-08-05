@@ -15,7 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file ShellCmd.hh
+ * @file PNPShellCmd.hh
  * @author Jianrong Su
  * @brief 
  * @version 1.0
@@ -25,8 +25,6 @@
 #pragma once
 
 #include "ScriptEngine.hh"
-#include "iPNP.hh"
-#include "PNPConfig.hh"
 
 namespace ipnp {
 
