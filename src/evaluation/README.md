@@ -55,8 +55,8 @@ evaluation/api文件夹提供外部使用的接口，根据指标进行分类，
 |  `cellDensityMap(DensityCells, DensityRegion, int, string )` |   单元列表，区域信息，网格粒度，设计阶段名称                 |      `struct{macro_density,stdcell_density,allcell_density}`            | 根据传入的数据结构直接计算各类版图级单元密度，输出二维图    |
 |  `pinDensityMap(DensityPins, DensityRegion, int, string, bool )` |   引脚列表，区域信息，网格粒度，设计阶段名称，当前网格是否累加周围一圈网格数值                 |      `struct{macro_pin,stdcell_pin,allcell_pin}`            | 根据传入的数据结构直接计算各类版图级引脚密度，输出二维图    |
 |  `netDensityMap(DensityNets, DensityRegion, int, string, bool )` |   线网列表，区域信息，网格粒度，设计阶段名称，当前网格是否累加周围一圈网格数值                 |      `struct{local_net,global_net,allnet}`            | 根据传入的数据结构直接计算各类版图级线网密度，输出二维图    |
-|  `macroMarginMap(int)` |  网格粒度              |      `struct{horizontal, vertical, union}`            | 从iDB获取数据，构建评估器数据，计算版图级宏单元间隙，输出二维图    |
-|  `macroMarginMap(DensityCells, DensityRegion, DensityRegion, int)` |  宏单元列表，Die信息，Core信息，网格粒度              |      `struct{horizontal, vertical, union}`            | 根据传入的数据结构直接计算版图级宏单元间隙，输出二维图    |
+|  `macroMarginMap(int, string)` |  网格粒度, 设计阶段名称              |      `struct{horizontal, vertical, union}`            | 从iDB获取数据，构建评估器数据，计算版图级宏单元间隙，输出二维图    |
+|  `macroMarginMap(DensityCells, DensityRegion, DensityRegion, int, string)` |  宏单元列表，Die信息，Core信息，网格粒度，设计阶段名称              |      `struct{horizontal, vertical, union}`            | 根据传入的数据结构直接计算版图级宏单元间隙，输出二维图    |
 |  `patchPinDensity(patch_id_coord_map)` |  所有网格(patch)组成的`map<id, coord_pair>`               |      `map<patch_id, pin_density>`            | 根据传入的网格划分信息，利用iDB初始化版图数据，返回网格id及其对应的单元引脚密度    |
 |  `patchCellDensity(patch_id_coord_map)` |  所有网格(patch)组成的`map<id, coord_pair>`               |      `map<patch_id, cell_density>`            | 根据传入的网格划分信息，利用iDB初始化版图数据，返回网格id及其对应的单元密度    |
 |  `patchNetDensity(patch_id_coord_map)` |  所有网格(patch)组成的`map<id, coord_pair>`               |      `map<patch_id, net_density>`            | 根据传入的网格划分信息，利用iDB初始化版图数据，返回网格id及其对应的线网密度    |

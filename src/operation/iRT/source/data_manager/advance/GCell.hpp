@@ -35,6 +35,7 @@ class GCell : public PlanarRect
   double get_internal_wire_unit() const { return _internal_wire_unit; }
   double get_internal_via_unit() const { return _internal_via_unit; }
   std::map<int32_t, std::map<Orientation, int32_t>>& get_routing_orient_supply_map() { return _routing_orient_supply_map; }
+  std::map<int32_t, std::map<int32_t, std::set<Orientation>>>& get_routing_ignore_net_orient_map() { return _routing_ignore_net_orient_map; }
   std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_global_result_map() { return _net_global_result_map; }
   std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_detailed_result_map() { return _net_detailed_result_map; }
   std::map<int32_t, std::set<EXTLayerRect*>>& get_net_detailed_patch_map() { return _net_detailed_patch_map; }
@@ -59,6 +60,10 @@ class GCell : public PlanarRect
   void set_routing_orient_supply_map(const std::map<int32_t, std::map<Orientation, int32_t>>& routing_orient_supply_map)
   {
     _routing_orient_supply_map = routing_orient_supply_map;
+  }
+  void set_routing_ignore_net_orient_map(const std::map<int32_t, std::map<int32_t, std::set<Orientation>>>& routing_ignore_net_orient_map)
+  {
+    _routing_ignore_net_orient_map = routing_ignore_net_orient_map;
   }
   void set_net_global_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& net_global_result_map)
   {
@@ -90,6 +95,8 @@ class GCell : public PlanarRect
   double _internal_via_unit = -1;
   // global supply
   std::map<int32_t, std::map<Orientation, int32_t>> _routing_orient_supply_map;
+  // global ignore net orient
+  std::map<int32_t, std::map<int32_t, std::set<Orientation>>> _routing_ignore_net_orient_map;
   // global routing result
   std::map<int32_t, std::set<Segment<LayerCoord>*>> _net_global_result_map;
   // detailed routing result

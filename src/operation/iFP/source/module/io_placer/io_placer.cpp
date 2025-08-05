@@ -121,11 +121,16 @@ bool IoPlacer::autoPlacePins(std::string layer_name, int width, int height, std:
       int y = idb_core->get_bounding_box()->get_low_y() + i * height_step;
 
       auto pin = pin_list[pin_index++];
-      pin->set_location(x, y);
 
       auto io_term = pin->get_term();
       io_term->set_placement_status_place();
       auto port = io_term->add_port(nullptr);
+      if (pin->get_term()->is_port_exist() || pin->is_special_net_pin()) {
+        port->set_placement_status_place();
+        port->set_coordinate(x, y);
+      } else {
+        pin->set_location(x, y);
+      }
       auto shape = port->add_layer_shape();
       shape->set_type_rect();
 
@@ -153,11 +158,17 @@ bool IoPlacer::autoPlacePins(std::string layer_name, int width, int height, std:
       int y = idb_core->get_bounding_box()->get_low_y() + i * height_step;
 
       auto pin = pin_list[pin_index++];
-      pin->set_location(x, y);
 
       auto io_term = pin->get_term();
       io_term->set_placement_status_place();
       auto port = io_term->add_port(nullptr);
+      if (pin->get_term()->is_port_exist() || pin->is_special_net_pin()) {
+        port->set_placement_status_place();
+        port->set_coordinate(x, y);
+      } else {
+        pin->set_location(x, y);
+      }
+
       auto shape = port->add_layer_shape();
       shape->set_type_rect();
 
@@ -185,11 +196,17 @@ bool IoPlacer::autoPlacePins(std::string layer_name, int width, int height, std:
       int y = idb_die->get_lly() + height / 2;
 
       auto pin = pin_list[pin_index++];
-      pin->set_location(x, y);
 
       auto io_term = pin->get_term();
       io_term->set_placement_status_place();
       auto port = io_term->add_port(nullptr);
+      if (pin->get_term()->is_port_exist() || pin->is_special_net_pin()) {
+        port->set_placement_status_place();
+        port->set_coordinate(x, y);
+      } else {
+        pin->set_location(x, y);
+      }
+
       auto shape = port->add_layer_shape();
       shape->set_type_rect();
 
@@ -217,11 +234,18 @@ bool IoPlacer::autoPlacePins(std::string layer_name, int width, int height, std:
       int y = idb_die->get_ury() - height / 2;
 
       auto pin = pin_list[pin_index++];
-      pin->set_location(x, y);
 
       auto io_term = pin->get_term();
       io_term->set_placement_status_place();
+
       auto port = io_term->add_port(nullptr);
+      if (pin->get_term()->is_port_exist() || pin->is_special_net_pin()) {
+        port->set_placement_status_place();
+        port->set_coordinate(x, y);
+      } else {
+        pin->set_location(x, y);
+      }
+
       auto shape = port->add_layer_shape();
       shape->set_type_rect();
 

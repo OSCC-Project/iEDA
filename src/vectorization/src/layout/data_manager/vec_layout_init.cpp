@@ -28,7 +28,9 @@
 #include "idm.h"
 #include "omp.h"
 #include "usage.hh"
+#include "vec_cell.h"
 #include "vec_grid_info.h"
+#include "vec_instance.h"
 
 namespace ivec {
 
@@ -36,11 +38,12 @@ void VecLayoutInit::init()
 {
   initViaIds();
 
+  initCells();
   initLayers();
   initDie();
   initTracks();
   //   initPDN();
-  //   initInstances();
+  initInstances();
   //   initIOPins();
 
   initNets();
@@ -133,6 +136,37 @@ void VecLayoutInit::initLayers()
   LOG_INFO << "Layer number : " << index;
 }
 
+void VecLayoutInit::initCells()
+{
+  auto idb2Vec = [](int i, idb::IdbCellMaster* idb_cell) -> VecCell {
+    VecCell vec_cell;
+    vec_cell.id = i;
+    vec_cell.name = idb_cell->get_name();
+    vec_cell.width = idb_cell->get_width();
+    vec_cell.height = idb_cell->get_height();
+
+    return vec_cell;
+  };
+
+  ieda::Stats stats;
+
+  LOG_INFO << "Vectorization init cells start...";
+
+  /// find base track
+  auto* idb_layout = dmInst->get_idb_layout();
+  auto* idb_cell_masters = idb_layout->get_cell_master_list();
+  for (int i = 0; i < idb_cell_masters->get_cell_master_num(); ++i) {
+    auto* idb_cell = idb_cell_masters->get_cell_master()[i];
+    VecCell vec_cell = idb2Vec(i, idb_cell);
+    _layout->add_cell(vec_cell);
+  }
+
+  LOG_INFO << "Vectorization memory usage " << stats.memoryDelta() << " MB";
+  LOG_INFO << "Vectorization elapsed time " << stats.elapsedRunTime() << " s";
+
+  LOG_INFO << "Vectorization init cells end...";
+}
+
 void VecLayoutInit::initTrackGrid(idb::IdbTrackGrid* idb_track_grid)
 {
   auto start = idb_track_grid->get_track()->get_start();
@@ -147,7 +181,7 @@ void VecLayoutInit::initTrackGrid(idb::IdbTrackGrid* idb_track_grid)
   }
 }
 
-void VecLayoutInit::initTracks(std::string layername)
+void VecLayoutInit::initTracks()
 {
   ieda::Stats stats;
 
@@ -156,9 +190,22 @@ void VecLayoutInit::initTracks(std::string layername)
   /// find base track
   auto* idb_layout = dmInst->get_idb_layout();
   auto* idb_layers = idb_layout->get_layers();
-  auto* idb_layer = idb_layers->find_layer(layername);
-  auto* idb_track_grid_prefer = (dynamic_cast<idb::IdbLayerRouting*>(idb_layer))->get_prefer_track_grid();
-  auto* idb_track_grid_nonprefer = (dynamic_cast<idb::IdbLayerRouting*>(idb_layer))->get_nonprefer_track_grid();
+
+  auto& routing_layer_list = idb_layers->get_routing_layers();
+
+  idb::IdbLayerRouting* idb_layer = nullptr;
+  if (routing_layer_list.size() >= 2) {
+    /// use 2nd routing layer pitch to divide grid
+    idb_layer = dynamic_cast<idb::IdbLayerRouting*>(routing_layer_list[1]);
+  } else {
+    /// use bottom routing layer pitch to divide grid
+    idb_layer = dynamic_cast<idb::IdbLayerRouting*>(routing_layer_list[0]);
+  }
+
+  LOG_INFO << "Vectorization init tracks by routing layer " << idb_layer->get_name();
+
+  auto* idb_track_grid_prefer = idb_layer->get_prefer_track_grid();
+  auto* idb_track_grid_nonprefer = idb_layer->get_nonprefer_track_grid();
 
   auto& layout_layers = _layout->get_layout_layers();
   auto& layout_layer_map = layout_layers.get_layout_layer_map();
@@ -202,7 +249,7 @@ void VecLayoutInit::transVia(idb::IdbVia* idb_via, int net_id, VecNodeTYpe type)
   auto order = _layout->findLayerId(cut_layer_shape.get_layer()->get_name());
   auto* layout_layer = layout_layers.findLayoutLayer(order);
   if (nullptr == layout_layer) {
-    LOG_WARNING << "Can not get layer order : " << cut_layer_shape.get_layer()->get_name();
+    LOG_WARNING << idb_via->get_name() << " can not get layer order : " << cut_layer_shape.get_layer()->get_name();
     return;
   }
   auto& grid = layout_layer->get_grid();
@@ -350,6 +397,30 @@ void VecLayoutInit::initPDN()
 
 void VecLayoutInit::initInstances()
 {
+  auto idb2vec = [](int inst_id, int cell_id, idb::IdbInstance* idb_inst) -> ivec::VecInstance {
+    ivec::VecInstance vec_inst;
+
+    vec_inst.id = inst_id;
+    vec_inst.cell_id = cell_id;
+    vec_inst.name = idb_inst->get_name();
+
+    vec_inst.x = idb_inst->get_coordinate()->get_x();
+    vec_inst.y = idb_inst->get_coordinate()->get_y();
+
+    vec_inst.width = idb_inst->get_cell_master()->get_width();
+    vec_inst.height = idb_inst->get_cell_master()->get_height();
+
+    vec_inst.llx = idb_inst->get_bounding_box()->get_low_x();
+    vec_inst.lly = idb_inst->get_bounding_box()->get_low_y();
+    vec_inst.urx = idb_inst->get_bounding_box()->get_high_x();
+    vec_inst.ury = idb_inst->get_bounding_box()->get_high_y();
+
+    vec_inst.orient = idb::IdbEnum::GetInstance()->get_site_property()->get_orient_name(idb_inst->get_orient());
+    vec_inst.status = idb::IdbEnum::GetInstance()->get_instance_property()->get_status_str(idb_inst->get_status());
+
+    return vec_inst;
+  };
+
   ieda::Stats stats;
 
   LOG_INFO << "Vectorization init instances start...";
@@ -369,14 +440,17 @@ void VecLayoutInit::initInstances()
   for (int i = 0; i < inst_total; ++i) {
     auto* idb_inst = idb_insts->get_instance_list()[i];
     _layout->add_instance_map(i, idb_inst->get_name());
+    auto vec_inst = idb2vec(i, _layout->findCellId(idb_inst->get_cell_master()->get_name()), idb_inst);
+    auto cell_id = _layout->findCellId(idb_inst->get_cell_master()->get_name());
+    _layout->add_instance(idb2vec(i, cell_id, idb_inst));
 
-    auto* idb_inst_pins = idb_inst->get_pin_list();
-    for (auto* idb_pin : idb_inst_pins->get_pin_list()) {
-      if (false == idb_pin->is_net_pin()) {
-        auto type = idb_pin->is_special_net_pin() ? VecNodeTYpe::vec_pdn : VecNodeTYpe::kNone;
-        transPin(idb_pin, -1, type, i);
-      }
-    }
+    // auto* idb_inst_pins = idb_inst->get_pin_list();
+    // for (auto* idb_pin : idb_inst_pins->get_pin_list()) {
+    //   if (false == idb_pin->is_net_pin()) {
+    //     auto type = idb_pin->is_special_net_pin() ? VecNodeTYpe::vec_pdn : VecNodeTYpe::kNone;
+    //     transPin(idb_pin, -1, type, i);
+    //   }
+    // }
 
     // for (auto* layer_shape : idb_inst->get_obs_box_list()) {
     //   auto* layer = layer_shape->get_layer();
@@ -430,7 +504,7 @@ void VecLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, VecNodeTYpe type,
     auto order = _layout->findLayerId(layer_shape->get_layer()->get_name());
     auto* layout_layer = layout_layers.findLayoutLayer(order);
     if (nullptr == layout_layer) {
-      LOG_WARNING << "Can not get layer order : " << layer_shape->get_layer()->get_name();
+      /// igore pin under bottom routing layer
       continue;
     }
     auto& grid = layout_layer->get_grid();

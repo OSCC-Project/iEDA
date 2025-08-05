@@ -121,6 +121,9 @@ void SpaceRouter::buildLayerNodeMap(SRModel& sr_model)
         sr_node.set_boundary_wire_unit(gcell_map[x][y].get_boundary_wire_unit());
         sr_node.set_internal_wire_unit(gcell_map[x][y].get_internal_wire_unit());
         sr_node.set_internal_via_unit(gcell_map[x][y].get_internal_via_unit());
+        if (RTUTIL.exist(gcell_map[x][y].get_routing_ignore_net_orient_map(), layer_idx)) {
+          sr_node.set_ignore_net_orient_map(gcell_map[x][y].get_routing_ignore_net_orient_map()[layer_idx]);
+        }
       }
     }
   }
@@ -180,9 +183,6 @@ void SpaceRouter::routeSRModel(SRModel& sr_model)
    */
   std::vector<SRIterParam> sr_iter_param_list;
   // clang-format off
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 30, 0, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 30, 10, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 30, 20, 3, overflow_unit, 3);
   sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 30, 0, 3, overflow_unit, 3);
   sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 30, 10, 3, overflow_unit, 3);
   sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 30, 20, 3, overflow_unit, 3);
@@ -679,6 +679,7 @@ void SpaceRouter::buildLayerNodeMap(SRModel& sr_model, SRBox& sr_box)
         sr_node.set_boundary_wire_unit(top_sr_node_map[sr_node.get_x()][sr_node.get_y()].get_boundary_wire_unit());
         sr_node.set_internal_wire_unit(top_sr_node_map[sr_node.get_x()][sr_node.get_y()].get_internal_wire_unit());
         sr_node.set_internal_via_unit(top_sr_node_map[sr_node.get_x()][sr_node.get_y()].get_internal_via_unit());
+        sr_node.set_ignore_net_orient_map(top_sr_node_map[sr_node.get_x()][sr_node.get_y()].get_ignore_net_orient_map());
       }
     }
   }
@@ -1084,6 +1085,8 @@ SRNode* SpaceRouter::popFromOpenList(SRBox& sr_box)
 
 double SpaceRouter::getKnownCost(SRBox& sr_box, SRNode* start_node, SRNode* end_node)
 {
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+
   bool exist_neighbor = false;
   for (auto& [orientation, neighbor_ptr] : start_node->get_neighbor_node_map()) {
     if (neighbor_ptr == end_node) {
@@ -1094,22 +1097,27 @@ double SpaceRouter::getKnownCost(SRBox& sr_box, SRNode* start_node, SRNode* end_
   if (!exist_neighbor) {
     RTLOG.error(Loc::current(), "The neighbor not exist!");
   }
-
+  Direction direction;
+  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
+    direction = routing_layer_list[start_node->get_layer_idx()].get_prefer_direction();
+  } else {
+    direction = Direction::kProximal;
+  }
   double cost = 0;
   cost += start_node->get_known_cost();
-  cost += getNodeCost(sr_box, start_node, RTUTIL.getOrientation(*start_node, *end_node));
-  cost += getNodeCost(sr_box, end_node, RTUTIL.getOrientation(*end_node, *start_node));
+  cost += getNodeCost(sr_box, start_node, direction);
+  cost += getNodeCost(sr_box, end_node, direction);
   cost += getKnownWireCost(sr_box, start_node, end_node);
   cost += getKnownViaCost(sr_box, start_node, end_node);
   return cost;
 }
 
-double SpaceRouter::getNodeCost(SRBox& sr_box, SRNode* curr_node, Orientation orientation)
+double SpaceRouter::getNodeCost(SRBox& sr_box, SRNode* curr_node, Direction direction)
 {
   double overflow_unit = sr_box.get_sr_iter_param()->get_overflow_unit();
 
   double node_cost = 0;
-  node_cost += curr_node->getOverflowCost(sr_box.get_curr_sr_task()->get_net_idx(), orientation, overflow_unit);
+  node_cost += curr_node->getOverflowCost(sr_box.get_curr_sr_task()->get_net_idx(), direction, overflow_unit);
   return node_cost;
 }
 
@@ -1948,6 +1956,17 @@ void SpaceRouter::debugPlotSRModel(SRModel& sr_model, std::string flag)
 
   GPGDS gp_gds;
 
+  // base_region
+  {
+    GPStruct base_region_struct("base_region");
+    GPBoundary gp_boundary;
+    gp_boundary.set_layer_idx(0);
+    gp_boundary.set_data_type(0);
+    gp_boundary.set_rect(die.get_real_rect());
+    base_region_struct.push(gp_boundary);
+    gp_gds.addStruct(base_region_struct);
+  }
+
   // gcell_axis
   {
     GPStruct gcell_axis_struct("gcell_axis");
@@ -2008,10 +2027,29 @@ void SpaceRouter::debugPlotSRModel(SRModel& sr_model, std::string flag)
   }
 
   // routing result
+  for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
+    GPStruct global_result_struct(RTUTIL.getString("global_result(net_", net_idx, ")"));
+    for (Segment<LayerCoord>* segment : segment_set) {
+      for (NetShape& net_shape : RTDM.getNetGlobalShapeList(net_idx, *segment)) {
+        GPBoundary gp_boundary;
+        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kGlobalPath));
+        gp_boundary.set_rect(net_shape.get_rect());
+        if (net_shape.get_is_routing()) {
+          gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(net_shape.get_layer_idx()));
+        } else {
+          gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(net_shape.get_layer_idx()));
+        }
+        global_result_struct.push(gp_boundary);
+      }
+    }
+    gp_gds.addStruct(global_result_struct);
+  }
+
+  // routing result
   for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
     GPStruct detailed_result_struct(RTUTIL.getString("detailed_result(net_", net_idx, ")"));
     for (Segment<LayerCoord>* segment : segment_set) {
-      for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+      for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
         GPBoundary gp_boundary;
         gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
         gp_boundary.set_rect(net_shape.get_rect());
@@ -2093,6 +2131,34 @@ void SpaceRouter::debugPlotSRModel(SRModel& sr_model, std::string flag)
               gp_text_orient_supply_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
               gp_text_orient_supply_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
               sr_node_map_struct.push(gp_text_orient_supply_map_info);
+            }
+
+            y -= y_reduced_span;
+            GPText gp_text_ignore_net_orient_map;
+            gp_text_ignore_net_orient_map.set_coord(real_rect.get_ll_x(), y);
+            gp_text_ignore_net_orient_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+            gp_text_ignore_net_orient_map.set_message("ignore_net_orient_map: ");
+            gp_text_ignore_net_orient_map.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+            gp_text_ignore_net_orient_map.set_presentation(GPTextPresentation::kLeftMiddle);
+            sr_node_map_struct.push(gp_text_ignore_net_orient_map);
+
+            if (!sr_node.get_ignore_net_orient_map().empty()) {
+              y -= y_reduced_span;
+              GPText gp_text_ignore_net_orient_map_info;
+              gp_text_ignore_net_orient_map_info.set_coord(real_rect.get_ll_x(), y);
+              gp_text_ignore_net_orient_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+              std::string ignore_net_orient_map_info_message = "--";
+              for (auto& [net_idx, orient_set] : sr_node.get_ignore_net_orient_map()) {
+                ignore_net_orient_map_info_message += RTUTIL.getString("(", net_idx);
+                for (Orientation orient : orient_set) {
+                  ignore_net_orient_map_info_message += RTUTIL.getString(",", GetOrientationName()(orient));
+                }
+                ignore_net_orient_map_info_message += RTUTIL.getString(")");
+              }
+              gp_text_ignore_net_orient_map_info.set_message(ignore_net_orient_map_info_message);
+              gp_text_ignore_net_orient_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+              gp_text_ignore_net_orient_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+              sr_node_map_struct.push(gp_text_ignore_net_orient_map_info);
             }
 
             y -= y_reduced_span;
@@ -2307,7 +2373,7 @@ void SpaceRouter::debugPlotSRBox(SRBox& sr_box, std::string flag)
   for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(sr_box.get_box_rect())) {
     GPStruct detailed_result_struct(RTUTIL.getString("detailed_result(net_", net_idx, ")"));
     for (Segment<LayerCoord>* segment : segment_set) {
-      for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+      for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
         GPBoundary gp_boundary;
         gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
         gp_boundary.set_rect(net_shape.get_rect());
@@ -2389,6 +2455,34 @@ void SpaceRouter::debugPlotSRBox(SRBox& sr_box, std::string flag)
               gp_text_orient_supply_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
               gp_text_orient_supply_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
               sr_node_map_struct.push(gp_text_orient_supply_map_info);
+            }
+
+            y -= y_reduced_span;
+            GPText gp_text_ignore_net_orient_map;
+            gp_text_ignore_net_orient_map.set_coord(real_rect.get_ll_x(), y);
+            gp_text_ignore_net_orient_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+            gp_text_ignore_net_orient_map.set_message("ignore_net_orient_map: ");
+            gp_text_ignore_net_orient_map.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+            gp_text_ignore_net_orient_map.set_presentation(GPTextPresentation::kLeftMiddle);
+            sr_node_map_struct.push(gp_text_ignore_net_orient_map);
+
+            if (!sr_node.get_ignore_net_orient_map().empty()) {
+              y -= y_reduced_span;
+              GPText gp_text_ignore_net_orient_map_info;
+              gp_text_ignore_net_orient_map_info.set_coord(real_rect.get_ll_x(), y);
+              gp_text_ignore_net_orient_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+              std::string ignore_net_orient_map_info_message = "--";
+              for (auto& [net_idx, orient_set] : sr_node.get_ignore_net_orient_map()) {
+                ignore_net_orient_map_info_message += RTUTIL.getString("(", net_idx);
+                for (Orientation orient : orient_set) {
+                  ignore_net_orient_map_info_message += RTUTIL.getString(",", GetOrientationName()(orient));
+                }
+                ignore_net_orient_map_info_message += RTUTIL.getString(")");
+              }
+              gp_text_ignore_net_orient_map_info.set_message(ignore_net_orient_map_info_message);
+              gp_text_ignore_net_orient_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+              gp_text_ignore_net_orient_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+              sr_node_map_struct.push(gp_text_ignore_net_orient_map_info);
             }
 
             y -= y_reduced_span;

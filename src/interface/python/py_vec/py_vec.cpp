@@ -35,13 +35,13 @@ bool layout_graph(const std::string& path)
   return lm_api.buildVectorizationGraphData(path);
 }
 
-bool generate_vectors(std::string dir)
+bool generate_vectors(std::string dir, int patch_row_step, int patch_col_step)
 {
   if (dir == "") {
     dir = "./vectors";
   }
   ivec::VectorizationApi lm_api;
-  return lm_api.buildVectorizationFeature(dir);
+  return lm_api.buildVectorizationFeature(dir, patch_row_step, patch_col_step);
 }
 
 ieval::TimingWireGraph get_timing_wire_graph(std::string wire_graph_yaml_path)
@@ -61,6 +61,25 @@ ieval::TimingWireGraph get_timing_wire_graph(std::string wire_graph_yaml_path)
   delete timing_wire_graph_ptr;
 
   return timing_wire_graph;
+}
+
+ieval::TimingInstanceGraph get_timing_instance_graph(std::string instance_graph_yaml_path)
+{
+  if (std::filesystem::exists(instance_graph_yaml_path)) {
+    auto timing_instance_graph = ieval::RestoreTimingInstanceGraph(instance_graph_yaml_path);
+    return timing_instance_graph;
+  }
+
+  ivec::VectorizationApi lm_api;
+  lm_api.runVecSTA();
+
+  auto* timing_instance_graph_ptr = ieval::TimingAPI::getInst()->getTimingInstanceGraph();
+  ieval::SaveTimingInstanceGraph(*timing_instance_graph_ptr, instance_graph_yaml_path);
+
+  auto timing_instance_graph = std::move(*timing_instance_graph_ptr);
+  delete timing_instance_graph_ptr;
+
+  return timing_instance_graph;
 }
 
 }  // namespace python_interface

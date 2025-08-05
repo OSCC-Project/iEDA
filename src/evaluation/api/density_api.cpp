@@ -137,9 +137,10 @@ NetMapSummary DensityAPI::netDensityMap(DensityNets nets, DensityRegion region, 
 MacroCustomizedSummary DensityAPI::macroCustomizedMap(int32_t grid_size)
 {
   MacroCustomizedSummary macro_customized_summary;
+  std::string stage = "place";  // Default stage, can be modified as needed 
 
   EVAL_DENSITY_INST->initIDB();
-  macro_customized_summary.margin_summary = macroMarginMap(grid_size);
+  macro_customized_summary.margin_summary = macroMarginMap(grid_size, stage);
   macro_customized_summary.macro_channel = macroChannelMap(grid_size);
   macro_customized_summary.max_continuous_space = macroMaxContinuousSpaceMap(grid_size);
   macro_customized_summary.macro_hierarchy = macroHierarchyMap(grid_size);
@@ -148,14 +149,14 @@ MacroCustomizedSummary DensityAPI::macroCustomizedMap(int32_t grid_size)
   return macro_customized_summary;
 }
 
-MacroMarginSummary DensityAPI::macroMarginMap(int32_t grid_size)
+MacroMarginSummary DensityAPI::macroMarginMap(int32_t grid_size, std::string stage)
 {
   MacroMarginSummary macro_margin_summary;
 
   EVAL_DENSITY_INST->initIDBRegion();
   EVAL_DENSITY_INST->initIDBCells();
   macro_margin_summary = macroMarginMap(EVAL_DENSITY_INST->getDensityCells(), EVAL_DENSITY_INST->getDensityRegion(),
-                                        EVAL_DENSITY_INST->getDensityRegionCore(), grid_size * EVAL_DENSITY_INST->getRowHeight());
+                                        EVAL_DENSITY_INST->getDensityRegionCore(), grid_size * EVAL_DENSITY_INST->getRowHeight(), stage);
 
   return macro_margin_summary;
 }
@@ -186,14 +187,14 @@ std::string DensityAPI::macroHierarchyMap(int32_t grid_size)
   return macro_hierarchy;
 }
 
-MacroMarginSummary DensityAPI::macroMarginMap(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size)
+MacroMarginSummary DensityAPI::macroMarginMap(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size, std::string stage)
 {
   MacroMarginSummary macro_margin_summary;
 
   DensityEval density_eval;
-  macro_margin_summary.horizontal_margin = density_eval.evalHorizonMargin(cells, die, core, grid_size);
-  macro_margin_summary.vertical_margin = density_eval.evalVerticalMargin(cells, die, core, grid_size);
-  macro_margin_summary.union_margin = density_eval.evalAllMargin(cells, die, core, grid_size);
+  macro_margin_summary.horizontal_margin = density_eval.evalHorizonMargin(cells, die, core, grid_size, stage);
+  macro_margin_summary.vertical_margin = density_eval.evalVerticalMargin(cells, die, core, grid_size, stage);
+  macro_margin_summary.union_margin = density_eval.evalAllMargin(cells, die, core, grid_size, stage);
 
   return macro_margin_summary;
 }

@@ -45,6 +45,12 @@ bool VecLayoutFileIO::saveJson()
 
   makeDir(_dir);
 
+  /// save cells
+  saveJsonCells();
+
+  /// save instances
+  saveJsonInstances();
+
   /// save graph
   saveJsonNets();
 
@@ -590,6 +596,87 @@ json VecLayoutFileIO::makeNodePair(VecNode* node1, VecNode* node2)
   json_node["l2"] = node2->get_layer_id();                 /// layer order
   json_node["p2"] = node2->get_node_data()->get_pin_id();  /// pin
   return json_node;
+}
+
+bool VecLayoutFileIO::saveJsonCells()
+{
+  ieda::Stats stats;
+  LOG_INFO << "Vectorization save json cells start...";
+  makeDir(_dir + "/cells/");
+
+  json json_cells;
+  {
+    auto& cell_map = _layout->get_cells().get_cell_map();
+    json_cells["cell_num"] = cell_map.size();
+
+    auto json_cell_list = json::array();
+    for (auto& [id, vec_cell] : cell_map) {
+      json json_cell;
+      json_cell["id"] = vec_cell.id;
+      json_cell["name"] = vec_cell.name;
+      json_cell["width"] = vec_cell.width;
+      json_cell["height"] = vec_cell.height;
+
+      json_cell_list.push_back(json_cell);
+    }
+
+    json_cells["cells"] = json_cell_list;
+  }
+
+  std::string filename = _dir + "/cells/cells.json";
+  std::ofstream file_stream(filename);
+  file_stream << json_cells;
+  file_stream.close();
+
+  LOG_INFO << "Vectorization memory usage " << stats.memoryDelta() << " MB";
+  LOG_INFO << "Vectorization elapsed time " << stats.elapsedRunTime() << " s";
+  LOG_INFO << "Vectorization save json cells end...";
+
+  return true;
+}
+
+bool VecLayoutFileIO::saveJsonInstances()
+{
+  ieda::Stats stats;
+  LOG_INFO << "Vectorization save json instances start...";
+  makeDir(_dir + "/instances/");
+
+  json json_insts;
+  {
+    auto& inst_map = _layout->get_instances().get_instance_map();
+    json_insts["instance_num"] = inst_map.size();
+
+    auto json_inst_list = json::array();
+    for (auto& [id, vec_inst] : inst_map) {
+      json json_inst;
+      json_inst["id"] = vec_inst.id;
+      json_inst["cell_id"] = vec_inst.cell_id;
+      json_inst["name"] = vec_inst.name;
+      json_inst["x"] = vec_inst.x;
+      json_inst["y"] = vec_inst.y;
+      json_inst["width"] = vec_inst.width;
+      json_inst["height"] = vec_inst.height;
+      json_inst["llx"] = vec_inst.llx;
+      json_inst["lly"] = vec_inst.lly;
+      json_inst["urx"] = vec_inst.urx;
+      json_inst["ury"] = vec_inst.ury;
+
+      json_inst_list.push_back(json_inst);
+    }
+
+    json_insts["instances"] = json_inst_list;
+  }
+
+  std::string filename = _dir + "/instances/instances.json";
+  std::ofstream file_stream(filename);
+  file_stream << json_insts;
+  file_stream.close();
+
+  LOG_INFO << "Vectorization memory usage " << stats.memoryDelta() << " MB";
+  LOG_INFO << "Vectorization elapsed time " << stats.elapsedRunTime() << " s";
+  LOG_INFO << "Vectorization save json instances end...";
+
+  return true;
 }
 
 }  // namespace ivec

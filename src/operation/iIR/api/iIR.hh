@@ -99,6 +99,6 @@ class iIR {
       _net_bump_node_locs;  //!< The net bump node locs.
 
   IRSolverMethod _solver_method =
-      IRSolverMethod::kLUSolver;  //!< The IR solver method.
+      IRSolverMethod::kCGSolver;  //!< The IR solver method.
 };
 }  // namespace iir

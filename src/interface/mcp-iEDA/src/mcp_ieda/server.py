@@ -26,19 +26,45 @@ from pydantic import BaseModel
 
 from pathlib import Path
 
+current_dir = os.path.split(os.path.abspath(__file__))[0]
+
 class iEDARun(BaseModel):
-    script_path: str
+    script_path: str 
     
+class iEDARunExample(BaseModel):
+    example_name: str 
 
 class iEDAMcpTools(str, Enum):
     """
     iEDA MCP tools
     """
     iEDA_RUN = "iEDA_RUN"
+    iEDA_RUN_EXAMPLE = "iEDA_RUN_EXAMPLE"
     
 def run_ieda(iEDA: Path, script_path: str):
-    os.system(f"{iEDA} -script {script_path}")
-    os.system(f"echo {iEDA} -script {script_path} finished")
+    """Run iEDA with the given script path."""
+    
+    import subprocess  
+    script = f"{iEDA} -script {script_path}"
+    
+    logging.info(f"Run iEDA with script: {script}")
+
+    process = subprocess.run(script, shell=True, check=True)
+    if process.returncode != 0:
+        raise RuntimeError(f"Subprocess failed with return code {process.returncode}")
+    
+    
+def get_server_url() -> str:
+    """
+    Get the server URL from environment variable or default to 'http://localhost'.
+    """
+    return os.getenv("MCP_SERVER_URL", "localhost")
+
+def get_server_port() -> int:
+    """
+    Get the server port from environment variable or default to 3002.
+    """
+    return int(os.getenv("MCP_SERVER_PORT", 3002))
     
 def serve(iEDA: Path, transport="stdio"):
     logger = logging.getLogger(__name__)
@@ -48,7 +74,8 @@ def serve(iEDA: Path, transport="stdio"):
     @server.list_tools()
     async def list_tools() -> list[Tool]:
         return [
-            Tool(name=iEDAMcpTools.iEDA_RUN, description="Run iEDA with script", inputSchema=iEDARun.schema())
+            Tool(name=iEDAMcpTools.iEDA_RUN, description="Run iEDA with script", inputSchema=iEDARun.schema()),
+            Tool(name=iEDAMcpTools.iEDA_RUN_EXAMPLE, description="Run iEDA example", inputSchema=iEDARunExample.schema())
         ]
 
     @server.call_tool()
@@ -60,6 +87,17 @@ def serve(iEDA: Path, transport="stdio"):
             logger.info(f"Run iEDA with script: {script_path}")
             run_ieda(iEDA, script_path)
             return [TextContent(type="text", text=f"Run iEDA with script: {script_path} successfully")]
+        elif tool == iEDAMcpTools.iEDA_RUN_EXAMPLE:
+            example_name = arguments.get("example_name")
+            if not example_name:
+                raise ValueError("Missing 'example_name' in arguments")
+            logger.info(f"Run iEDA example: {example_name}")
+            example_script_path = f"{current_dir}/./example/{example_name}/run_iEDA.tcl"
+            if os.path.exists(example_script_path):
+                run_ieda(iEDA, example_script_path)
+                return [TextContent(type="text", text=f"Run iEDA example: {example_name} successfully")]
+            else:
+                return [TextContent(type="text", text=f"Example: {example_script_path} not found")]
         else:
             raise ValueError(f"Unknown tool: {tool}")
 
@@ -90,7 +128,10 @@ def serve(iEDA: Path, transport="stdio"):
 
         import uvicorn
 
-        uvicorn.run(starlette_app, host="127.0.0.1", port=3002)
+        server_url = get_server_url()
+        server_port = get_server_port()
+        logger.info(f"Starting iEDA MCP server at {server_url}")
+        uvicorn.run(starlette_app, host=server_url, port=server_port)
     else:
         import anyio
         async def arun():

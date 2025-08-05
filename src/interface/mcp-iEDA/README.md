@@ -6,6 +6,7 @@ Docker build:
 cd src/interface/mcp-iEDA
 docker build -t mcp-ieda:1.0 .
 ```
+you can modify the Dockerfile to suit your needs, such as change MCP_SERVER_TYPE to "stdio" or "sse". If you want to use "sse" mode, you need config mcp server use mcp-ieda-sse method below.
 
 ## Installation
 
@@ -37,7 +38,13 @@ you can add it to a file called `.vscode/mcp.json` in your workspace. The github
         ],
         "env": {
             "iEDA": "${workspaceFolder}/scripts/design/sky130_gcd/iEDA",
+            "WORKSPACE":"${workspaceFolder}/scripts/design/sky130_gcd",
+            "MCP_SERVER_TYPE":"stdio"
         }
+    },
+    "mcp-ieda-sse": {
+        "type": "sse",
+        "url": "http://localhost:3002/sse"
     }
 }
 ```
@@ -46,17 +53,27 @@ you can add it to a file called `.vscode/mcp.json` in your workspace. The github
 <details>
 <summary>Using docker</summary>
 
-* Note: replace '/Users/username' with the a path that you want to be accessible by this tool
-
 ```json
 "mcpServers": {
   "mcp-ieda": {
     "command": "docker",
-    "args": ["run", "--rm", "-i", "--mount", 
-                "type=bind,src=${workspaceFolder},dst=/workspace", "mcp-ieda:1.0"
+    "args": [
+        "run", 
+        "-p", 
+        "3002:3002",
+        "-v",
+        "/lib/x86_64-linux-gnu/libgomp.so.1:/lib/x86_64-linux-gnu/libgomp.so.1",
+        "-v",
+        "/lib/x86_64-linux-gnu/libunwind.so.8:/lib/x86_64-linux-gnu/libunwind.so.8",
+        "--rm",
+        "-i",
+        "mcp-ieda:1.0"
     ]
   }
 }
 ```
 </details>
+
+## Example
+If you config mcp server as above, you can run mcp server by prompt in VSCode Copilot on Agent mode : "run iEDA example gcd".
 

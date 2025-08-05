@@ -183,16 +183,12 @@ void PinAccessor::initAccessPointList(PAModel& pa_model)
       // 构建目标层
       std::vector<int32_t> point_layer_idx_list;
       if (curr_layer_idx < bottom_routing_layer_idx) {
-        point_layer_idx_list.push_back(bottom_routing_layer_idx);
         point_layer_idx_list.push_back(bottom_routing_layer_idx + 1);
       } else if (top_routing_layer_idx < curr_layer_idx) {
-        point_layer_idx_list.push_back(top_routing_layer_idx);
         point_layer_idx_list.push_back(top_routing_layer_idx - 1);
       } else if (curr_layer_idx < top_routing_layer_idx) {
-        point_layer_idx_list.push_back(curr_layer_idx);
         point_layer_idx_list.push_back(curr_layer_idx + 1);
       } else {
-        point_layer_idx_list.push_back(curr_layer_idx);
         point_layer_idx_list.push_back(curr_layer_idx - 1);
       }
       // 构建搜索形状
@@ -993,17 +989,58 @@ bool PinAccessor::needRouting(PABox& pa_box)
 
 void PinAccessor::buildBoxTrackAxis(PABox& pa_box)
 {
+  int32_t manufacture_grid = RTDM.getDatabase().get_manufacture_grid();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
 
   std::vector<int32_t> x_scale_list;
   std::vector<int32_t> y_scale_list;
 
   PlanarRect& box_real_rect = pa_box.get_box_rect().get_real_rect();
+  int32_t ll_x = box_real_rect.get_ll_x();
+  int32_t ll_y = box_real_rect.get_ll_y();
+  int32_t ur_x = box_real_rect.get_ur_x();
+  int32_t ur_y = box_real_rect.get_ur_y();
+  // 避免 off_grid
+  while (ll_x % manufacture_grid != 0) {
+    ll_x++;
+  }
+  while (ll_y % manufacture_grid != 0) {
+    ll_y++;
+  }
+  while (ur_x % manufacture_grid != 0) {
+    ur_x--;
+  }
+  while (ur_y % manufacture_grid != 0) {
+    ur_y--;
+  }
+  std::map<int32_t, std::pair<std::set<int32_t>, std::set<int32_t>>>& layer_axis_map = pa_box.get_layer_axis_map();
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    for (int32_t x_scale : RTUTIL.getScaleList(box_real_rect.get_ll_x(), box_real_rect.get_ur_x(), routing_layer.getXTrackGridList())) {
+    for (int32_t x_scale : RTUTIL.getScaleList(ll_x, ur_x, routing_layer.getXTrackGridList())) {
+      if (routing_layer.isPreferH())
+        layer_axis_map[routing_layer.get_layer_idx()].first.insert(x_scale);
+    }
+    for (int32_t y_scale : RTUTIL.getScaleList(ll_y, ur_y, routing_layer.getYTrackGridList())) {
+      if (!routing_layer.isPreferH())
+        layer_axis_map[routing_layer.get_layer_idx()].second.insert(y_scale);
+    }
+  }
+  for (PATask* pa_task : pa_box.get_pa_task_list()) {
+    for (PAGroup& pa_group : pa_task->get_pa_group_list()) {
+      for (LayerCoord& coord : pa_group.get_coord_list()) {
+        int32_t layer_idx = coord.get_layer_idx();
+        if (routing_layer_list[layer_idx].isPreferH()) {
+          layer_axis_map[layer_idx].first.insert(coord.get_x());
+        } else {
+          layer_axis_map[layer_idx].second.insert(coord.get_y());
+        }
+      }
+    }
+  }
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    for (int32_t x_scale : RTUTIL.getScaleList(ll_x, ur_x, routing_layer.getXTrackGridList())) {
       x_scale_list.push_back(x_scale);
     }
-    for (int32_t y_scale : RTUTIL.getScaleList(box_real_rect.get_ll_y(), box_real_rect.get_ur_y(), routing_layer.getYTrackGridList())) {
+    for (int32_t y_scale : RTUTIL.getScaleList(ll_y, ur_y, routing_layer.getYTrackGridList())) {
       y_scale_list.push_back(y_scale);
     }
   }
@@ -1064,6 +1101,7 @@ void PinAccessor::buildPANodeNeighbor(PABox& pa_box)
   int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
 
   std::vector<GridMap<PANode>>& layer_node_map = pa_box.get_layer_node_map();
+  std::map<int32_t, std::pair<std::set<int32_t>, std::set<int32_t>>>& layer_axis_map = pa_box.get_layer_axis_map();
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
     bool routing_hv = true;
     if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
@@ -1073,18 +1111,66 @@ void PinAccessor::buildPANodeNeighbor(PABox& pa_box)
     for (int32_t x = 0; x < pa_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < pa_node_map.get_y_size(); y++) {
         std::map<Orientation, PANode*>& neighbor_node_map = pa_node_map[x][y].get_neighbor_node_map();
+        std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+        std::set<int32_t> neighbor_layer_x_axis_set;
+        std::set<int32_t> neighbor_layer_y_axis_set;
+        if (layer_idx != 0) {
+          for (int32_t x_scale : layer_axis_map[layer_idx - 1].first) {
+            neighbor_layer_x_axis_set.insert(x_scale);
+          }
+          for (int32_t y_scale : layer_axis_map[layer_idx - 1].second) {
+            neighbor_layer_y_axis_set.insert(y_scale);
+          }
+        }
+        if (layer_idx != static_cast<int32_t>(layer_node_map.size()) - 1) {
+          for (int32_t x_scale : layer_axis_map[layer_idx + 1].first) {
+            neighbor_layer_x_axis_set.insert(x_scale);
+          }
+          for (int32_t y_scale : layer_axis_map[layer_idx + 1].second) {
+            neighbor_layer_y_axis_set.insert(y_scale);
+          }
+        }
+        std::set<int32_t> curr_axis;
+        if (routing_layer_list[layer_idx].isPreferH()) {
+          curr_axis = layer_axis_map[layer_idx].first;
+        } else {
+          curr_axis = layer_axis_map[layer_idx].second;
+        }
         if (routing_hv) {
-          if (x != 0) {
-            neighbor_node_map[Orientation::kWest] = &pa_node_map[x - 1][y];
-          }
-          if (x != (pa_node_map.get_x_size() - 1)) {
-            neighbor_node_map[Orientation::kEast] = &pa_node_map[x + 1][y];
-          }
-          if (y != 0) {
-            neighbor_node_map[Orientation::kSouth] = &pa_node_map[x][y - 1];
-          }
-          if (y != (pa_node_map.get_y_size() - 1)) {
-            neighbor_node_map[Orientation::kNorth] = &pa_node_map[x][y + 1];
+          if (!routing_layer_list[layer_idx].isPreferH()) {
+            if (RTUTIL.exist(curr_axis, pa_node_map[x][y].get_y())) {
+              if (x != 0) {
+                neighbor_node_map[Orientation::kWest] = &pa_node_map[x - 1][y];
+              }
+              if (x != (pa_node_map.get_x_size() - 1)) {
+                neighbor_node_map[Orientation::kEast] = &pa_node_map[x + 1][y];
+              }
+            }
+            if (RTUTIL.exist(neighbor_layer_x_axis_set, pa_node_map[x][y].get_x())) {
+              if (y != 0) {
+                neighbor_node_map[Orientation::kSouth] = &pa_node_map[x][y - 1];
+              }
+              if (y != (pa_node_map.get_y_size() - 1)) {
+                neighbor_node_map[Orientation::kNorth] = &pa_node_map[x][y + 1];
+              }
+            }
+          } else if (routing_layer_list[layer_idx].isPreferH()) {
+            if (RTUTIL.exist(curr_axis, pa_node_map[x][y].get_x())) {
+              if (y != 0) {
+                neighbor_node_map[Orientation::kSouth] = &pa_node_map[x][y - 1];
+              }
+              if (y != (pa_node_map.get_y_size() - 1)) {
+                neighbor_node_map[Orientation::kNorth] = &pa_node_map[x][y + 1];
+              }
+            }
+            if (RTUTIL.exist(neighbor_layer_y_axis_set, pa_node_map[x][y].get_y())) {
+              if (x != 0) {
+                neighbor_node_map[Orientation::kWest] = &pa_node_map[x - 1][y];
+              }
+              if (x != (pa_node_map.get_x_size() - 1)) {
+                neighbor_node_map[Orientation::kEast] = &pa_node_map[x + 1][y];
+              }
+            }
           }
         }
         if (layer_idx != 0) {
@@ -1726,11 +1812,12 @@ void PinAccessor::initSinglePatchTask(PABox& pa_box, PATask* pa_task)
   // single task
   pa_box.set_curr_patch_task(pa_task);
   pa_box.get_routing_patch_list().clear();
-  pa_box.set_patch_violation_list(getPatchViolationList(pa_box));
+  pa_box.set_patch_violation_list(getPatchViolationList(pa_box, {ViolationType::kMinimumArea}, {}));
   pa_box.get_tried_fix_violation_set().clear();
 }
 
-std::vector<Violation> PinAccessor::getPatchViolationList(PABox& pa_box)
+std::vector<Violation> PinAccessor::getPatchViolationList(PABox& pa_box, const std::set<ViolationType>& check_type_set,
+                                                          const std::vector<LayerRect>& check_region_list)
 {
   std::string top_name = RTUTIL.getString("pa_box_", pa_box.get_pa_box_id().get_x(), "_", pa_box.get_pa_box_id().get_y());
   std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
@@ -1800,6 +1887,8 @@ std::vector<Violation> PinAccessor::getPatchViolationList(PABox& pa_box)
   de_task.set_net_result_map(net_result_map);
   de_task.set_net_patch_map(net_patch_map);
   de_task.set_need_checked_net_set(need_checked_net_set);
+  de_task.set_check_type_set(check_type_set);
+  de_task.set_check_region_list(check_region_list);
   return RTDE.getViolationList(de_task);
 }
 
@@ -1856,7 +1945,7 @@ std::vector<PlanarRect> PinAccessor::getViolationOverlapRect(PABox& pa_box, Viol
       }
     }
     for (Segment<LayerCoord>* segment : pa_box.get_net_pin_access_result_map()[curr_net_idx][curr_pin_idx]) {
-      for (NetShape& net_shape : RTDM.getNetShapeList(curr_net_idx, *segment)) {
+      for (NetShape& net_shape : RTDM.getNetDetailedShapeList(curr_net_idx, *segment)) {
         if (!net_shape.get_is_routing()) {
           continue;
         }
@@ -1866,7 +1955,7 @@ std::vector<PlanarRect> PinAccessor::getViolationOverlapRect(PABox& pa_box, Viol
       }
     }
     for (Segment<LayerCoord>& segment : pa_box.get_net_task_access_result_map()[curr_net_idx][curr_task_idx]) {
-      for (NetShape& net_shape : RTDM.getNetShapeList(curr_net_idx, segment)) {
+      for (NetShape& net_shape : RTDM.getNetDetailedShapeList(curr_net_idx, segment)) {
         if (!net_shape.get_is_routing()) {
           continue;
         }
@@ -1917,19 +2006,35 @@ void PinAccessor::addViolationToShadow(PABox& pa_box)
 
 void PinAccessor::patchSingleViolation(PABox& pa_box)
 {
+  std::vector<EXTLayerRect>& routing_patch_list = pa_box.get_routing_patch_list();
+  std::set<Violation, CmpViolation>& tried_fix_violation_set = pa_box.get_tried_fix_violation_set();
+  LayerRect violation_rect = pa_box.get_curr_patch_violation().get_violation_shape().getRealLayerRect();
+
   std::vector<PAPatch> pa_patch_list = getCandidatePatchList(pa_box);
-  for (PAPatch& pa_patch : pa_patch_list) {
-    buildSingleViolation(pa_box, pa_patch);
-    if (pa_box.get_curr_is_solved()) {
-      updateSingleViolation(pa_box);
-      break;
+  if (pa_patch_list.size() == 1) {
+    routing_patch_list.push_back(pa_patch_list.front().get_patch());
+  } else if (pa_patch_list.size() >= 2) {
+    std::vector<Violation> origin_patch_violation_list = getPatchViolationList(pa_box, {}, {violation_rect});
+
+    bool curr_is_solved = false;
+    for (PAPatch& pa_patch : pa_patch_list) {
+      std::vector<Violation> curr_patch_violation_list;
+      {
+        routing_patch_list.push_back(pa_patch.get_patch());
+        curr_patch_violation_list = getPatchViolationList(pa_box, {}, {violation_rect});
+        routing_patch_list.pop_back();
+      }
+      curr_is_solved = getSolvedStatus(pa_box, origin_patch_violation_list, curr_patch_violation_list);
+      if (curr_is_solved) {
+        routing_patch_list.push_back(pa_patch.get_patch());
+        break;
+      }
+    }
+    if (!curr_is_solved) {
+      routing_patch_list.push_back(pa_patch_list.front().get_patch());
     }
   }
-  if (!pa_patch_list.empty() && !pa_box.get_curr_is_solved()) {
-    buildSingleViolation(pa_box, pa_patch_list.front());
-    updateSingleViolation(pa_box);
-  }
-  updateTriedFixViolation(pa_box);
+  tried_fix_violation_set.insert(pa_box.get_curr_patch_violation());
 }
 
 std::vector<PAPatch> PinAccessor::getCandidatePatchList(PABox& pa_box)
@@ -2061,67 +2166,56 @@ std::vector<PAPatch> PinAccessor::getCandidatePatchList(PABox& pa_box)
   return candidate_patch_list;
 }
 
-void PinAccessor::buildSingleViolation(PABox& pa_box, PAPatch& pa_patch)
+bool PinAccessor::getSolvedStatus(PABox& pa_box, std::vector<Violation>& origin_patch_violation_list, std::vector<Violation>& curr_patch_violation_list)
 {
-  {
-    pa_box.set_curr_candidate_patch(pa_patch);
+  std::map<ViolationType, std::pair<int32_t, int32_t>> env_type_origin_curr_map;
+  std::map<ViolationType, std::pair<int32_t, int32_t>> valid_type_origin_curr_map;
+  std::map<ViolationType, std::pair<int32_t, int32_t>> within_net_map;
+  for (Violation& origin_violation : origin_patch_violation_list) {
+    if (!isValidPatchViolation(pa_box, origin_violation)) {
+      env_type_origin_curr_map[origin_violation.get_violation_type()].first++;
+    } else {
+      valid_type_origin_curr_map[origin_violation.get_violation_type()].first++;
+    }
+    if (origin_violation.get_violation_net_set().size() > 1) {
+      within_net_map[origin_violation.get_violation_type()].first++;
+    }
   }
-  {
-    pa_box.get_routing_patch_list().push_back(pa_patch.get_patch());
-    pa_box.set_curr_patch_violation_list(getPatchViolationList(pa_box));
-    pa_box.get_routing_patch_list().pop_back();
+  for (Violation& curr_violation : curr_patch_violation_list) {
+    if (!isValidPatchViolation(pa_box, curr_violation)) {
+      env_type_origin_curr_map[curr_violation.get_violation_type()].second++;
+    } else {
+      valid_type_origin_curr_map[curr_violation.get_violation_type()].second++;
+    }
+    if (curr_violation.get_violation_net_set().size() > 1) {
+      within_net_map[curr_violation.get_violation_type()].second++;
+    }
   }
-  {
-    std::map<ViolationType, std::pair<int32_t, int32_t>> env_type_origin_curr_map;
-    std::map<ViolationType, std::pair<int32_t, int32_t>> valid_type_origin_curr_map;
-    for (Violation& origin_violation : pa_box.get_patch_violation_list()) {
-      if (!isValidPatchViolation(pa_box, origin_violation)) {
-        env_type_origin_curr_map[origin_violation.get_violation_type()].first++;
-      } else {
-        valid_type_origin_curr_map[origin_violation.get_violation_type()].first++;
-      }
+  bool curr_is_solved = true;
+  for (auto& [violation_type, origin_curr] : env_type_origin_curr_map) {
+    if (!curr_is_solved) {
+      break;
     }
-    for (Violation& curr_violation : pa_box.get_curr_patch_violation_list()) {
-      if (!isValidPatchViolation(pa_box, curr_violation)) {
-        env_type_origin_curr_map[curr_violation.get_violation_type()].second++;
-      } else {
-        valid_type_origin_curr_map[curr_violation.get_violation_type()].second++;
-      }
-    }
-    bool is_solved = true;
-    for (auto& [violation_type, origin_curr] : env_type_origin_curr_map) {
-      if (!is_solved) {
-        break;
-      }
-      is_solved = origin_curr.second <= origin_curr.first;
-    }
-    for (auto& [violation_type, origin_curr] : valid_type_origin_curr_map) {
-      if (!is_solved) {
-        break;
-      }
-      is_solved = origin_curr.second < origin_curr.first;
-    }
-    pa_box.set_curr_is_solved(is_solved);
+    curr_is_solved = origin_curr.second <= origin_curr.first;
   }
-}
-
-void PinAccessor::updateSingleViolation(PABox& pa_box)
-{
-  pa_box.get_routing_patch_list().push_back(pa_box.get_curr_candidate_patch().get_patch());
-  pa_box.set_patch_violation_list(pa_box.get_curr_patch_violation_list());
-}
-
-void PinAccessor::updateTriedFixViolation(PABox& pa_box)
-{
-  pa_box.get_tried_fix_violation_set().insert(pa_box.get_curr_patch_violation());
+  for (auto& [violation_type, origin_curr] : valid_type_origin_curr_map) {
+    if (!curr_is_solved) {
+      break;
+    }
+    curr_is_solved = origin_curr.second < origin_curr.first;
+  }
+  for (auto& [violation_type, origin_curr] : within_net_map) {
+    if (!curr_is_solved) {
+      break;
+    }
+    curr_is_solved = origin_curr.second <= origin_curr.first;
+  }
+  return curr_is_solved;
 }
 
 void PinAccessor::resetSingleViolation(PABox& pa_box)
 {
   pa_box.set_curr_patch_violation(Violation());
-  pa_box.set_curr_candidate_patch(PAPatch());
-  pa_box.get_curr_patch_violation_list().clear();
-  pa_box.set_curr_is_solved(false);
 }
 
 void PinAccessor::clearViolationShadow(PABox& pa_box)
@@ -2651,7 +2745,7 @@ void PinAccessor::updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, 
 
 void PinAccessor::updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment)
 {
-  for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+  for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
     for (auto& [pa_node, orientation_set] : getNodeOrientationMap(pa_box, net_shape)) {
       for (Orientation orientation : orientation_set) {
         if (change_type == ChangeType::kAdd) {
@@ -2680,7 +2774,7 @@ void PinAccessor::updateRoutedRectToGraph(PABox& pa_box, ChangeType change_type,
 
 void PinAccessor::updateRoutedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
-  for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
+  for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, segment)) {
     for (auto& [pa_node, orientation_set] : getNodeOrientationMap(pa_box, net_shape)) {
       for (Orientation orientation : orientation_set) {
         if (change_type == ChangeType::kAdd) {
@@ -3029,7 +3123,7 @@ void PinAccessor::updateFixedRectToShadow(PABox& pa_box, ChangeType change_type,
 
 void PinAccessor::updateFixedRectToShadow(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment)
 {
-  for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+  for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
     if (!net_shape.get_is_routing()) {
       continue;
     }
@@ -3062,7 +3156,7 @@ void PinAccessor::updateRoutedRectToShadow(PABox& pa_box, ChangeType change_type
 
 void PinAccessor::updateRoutedRectToShadow(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
-  for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
+  for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, segment)) {
     if (!net_shape.get_is_routing()) {
       continue;
     }
@@ -3467,7 +3561,7 @@ std::string PinAccessor::outputNetJson(PAModel& pa_model)
       std::string net_name = net_list[net_idx].get_net_name();
       for (auto& [pin_idx, segment_set] : pin_access_result_map) {
         for (Segment<LayerCoord>* segment : segment_set) {
-          for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+          for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
             std::string layer_name;
             if (net_shape.get_is_routing()) {
               layer_name = routing_layer_list[net_shape.get_layer_idx()].get_layer_name();
@@ -3587,6 +3681,17 @@ void PinAccessor::debugPlotPAModel(PAModel& pa_model, std::string flag)
 
   GPGDS gp_gds;
 
+  // base_region
+  {
+    GPStruct base_region_struct("base_region");
+    GPBoundary gp_boundary;
+    gp_boundary.set_layer_idx(0);
+    gp_boundary.set_data_type(0);
+    gp_boundary.set_rect(die.get_real_rect());
+    base_region_struct.push(gp_boundary);
+    gp_gds.addStruct(base_region_struct);
+  }
+
   // gcell_axis
   {
     GPStruct gcell_axis_struct("gcell_axis");
@@ -3675,9 +3780,9 @@ void PinAccessor::debugPlotPAModel(PAModel& pa_model, std::string flag)
     GPStruct access_result_struct(RTUTIL.getString("access_result(net_", net_idx, ")"));
     for (auto& [pin_idx, segment_set] : pin_access_result_map) {
       for (Segment<LayerCoord>* segment : segment_set) {
-        for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+        for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
           GPBoundary gp_boundary;
-          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kPath));
+          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kDetailedPath));
           gp_boundary.set_rect(net_shape.get_rect());
           if (net_shape.get_is_routing()) {
             gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(net_shape.get_layer_idx()));
@@ -3906,7 +4011,7 @@ void PinAccessor::debugPlotPABox(PABox& pa_box, std::string flag)
     GPStruct access_result_struct(RTUTIL.getString("access_result(net_", net_idx, ")"));
     for (auto& [pin_idx, segment_set] : pin_access_result_map) {
       for (Segment<LayerCoord>* segment : segment_set) {
-        for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+        for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
           GPBoundary gp_boundary;
           gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
           gp_boundary.set_rect(net_shape.get_rect());
@@ -4192,9 +4297,9 @@ void PinAccessor::debugPlotPABox(PABox& pa_box, std::string flag)
       task_struct.push(gp_boundary);
     }
     for (Segment<LayerCoord>& segment : pa_box.get_net_task_access_result_map()[pa_task->get_net_idx()][pa_task->get_task_idx()]) {
-      for (NetShape& net_shape : RTDM.getNetShapeList(pa_task->get_net_idx(), segment)) {
+      for (NetShape& net_shape : RTDM.getNetDetailedShapeList(pa_task->get_net_idx(), segment)) {
         GPBoundary gp_boundary;
-        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kPath));
+        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kDetailedPath));
         gp_boundary.set_rect(net_shape.get_rect());
         if (net_shape.get_is_routing()) {
           gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(net_shape.get_layer_idx()));

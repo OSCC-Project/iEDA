@@ -24,6 +24,7 @@ class VecLayout;
 namespace ieval {
 
 class TimingWireGraph;
+class TimingInstanceGraph;
 
 class TimingAPI
 {
@@ -38,6 +39,7 @@ class TimingAPI
   void runVecSTA(ivec::VecLayout* vec_layout);
   void evalTiming(const std::string& routing_type, const bool& rt_done = false);
   TimingWireGraph* getTimingWireGraph();
+  TimingInstanceGraph* getTimingInstanceGraph();
 
   static void destroyInst();
 

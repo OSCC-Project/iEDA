@@ -25,6 +25,8 @@
 #include <map>
 #include <string>
 
+#include "vec_cell.h"
+#include "vec_instance.h"
 #include "vec_layer.h"
 #include "vec_net.h"
 
@@ -44,8 +46,12 @@ class VecLayout
   VecLayoutLayers& get_layout_layers() { return _layout_layers; }
   std::map<std::string, int>& get_net_name_map() { return _net_name_map; }
   VecGraph& get_graph() { return _graph; }
+  VecCells& get_cells() { return _cells; }
+  VecInstances& get_instances() { return _instances; }
 
   // setter
+  void add_cell(VecCell cell);
+  void add_instance(VecInstance instance);
   void add_layer_map(int id, std::string name);
   void add_via_map(int id, std::string name);
   void add_pdn_map(int id, std::string name);
@@ -66,8 +72,12 @@ class VecLayout
   std::pair<std::string, std::string> findPinName(int id);
   int findInstId(std::string name);
   std::string findInstName(int id);
+  int findCellId(std::string name);
 
  private:
+  VecCells _cells;
+  VecInstances _instances;
+
   VecLayoutLayers _layout_layers;
 
   std::map<std::string, int> _layer_name_map;  /// string : layer name, int : layer id begin from 1st routing layer, for example, if M1 is
@@ -86,6 +96,7 @@ class VecLayout
       _pin_id_map;                            /// std::pair<std::string, std::string> : instance name & pin name, int id in the map
   std::map<std::string, int> _inst_name_map;  /// string : instance name, int id in the map
   std::map<int, std::string> _inst_id_map;    /// string : instance name, int id in the map
+  std::map<std::string, int> _cell_name_map;  /// string : cell name, int id in the map
 
   VecGraph _graph;
 };

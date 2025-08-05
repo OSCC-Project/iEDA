@@ -95,19 +95,19 @@ std::string DensityEval::evalAllNetDensity(DensityNets nets, DensityRegion regio
   return evalNetDensity(nets, region, grid_size, neighbor, "all", stage + "_allnet_density.csv");
 }
 
-std::string DensityEval::evalHorizonMargin(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size)
+std::string DensityEval::evalHorizonMargin(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size, std::string stage)
 {
-  return evalMargin(cells, die, core, grid_size, "horizontal", "horizontal_margin.csv");
+  return evalMargin(cells, die, core, grid_size, "horizontal", stage + "_horizontal_margin.csv");
 }
 
-std::string DensityEval::evalVerticalMargin(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size)
+std::string DensityEval::evalVerticalMargin(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size, std::string stage)
 {
-  return evalMargin(cells, die, core, grid_size, "vertical", "vertical_margin.csv");
+  return evalMargin(cells, die, core, grid_size, "vertical", stage + "_vertical_margin.csv");
 }
 
-std::string DensityEval::evalAllMargin(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size)
+std::string DensityEval::evalAllMargin(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size, std::string stage)
 {
-  return evalMargin(cells, die, core, grid_size, "union", "union_margin.csv");
+  return evalMargin(cells, die, core, grid_size, "union", stage + "_union_margin.csv");
 }
 
 std::string DensityEval::evalDensity(DensityCells cells, DensityRegion region, int32_t grid_size, std::string cell_type,
@@ -148,7 +148,24 @@ std::string DensityEval::evalDensity(DensityCells cells, DensityRegion region, i
     }
   }
 
-  std::string output_path = createDirPath("/density_map") + "/" + output_filename;
+  std::string stage;
+  size_t underscore_pos = output_filename.find('_');
+  if (underscore_pos != std::string::npos) {
+    stage = output_filename.substr(0, underscore_pos);
+  }
+
+  std::string save_dir;
+  if (stage.find("place") != std::string::npos || stage.find("pl") != std::string::npos) {
+    save_dir = "/pl/density_map";
+  } else if (stage.find("cts") != std::string::npos) {
+    save_dir = "/cts/density_map";
+  } else if (stage.find("route") != std::string::npos) {
+    save_dir = "/route/density_map";
+  } else {
+    save_dir = "other/density_map";
+  }
+
+  std::string output_path = createDirPath(save_dir) + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
   for (size_t row_index = density_grid.size(); row_index-- > 0;) {
@@ -228,11 +245,28 @@ std::string DensityEval::evalPinDensity(DensityPins pins, DensityRegion region, 
     }
   }
 
+  std::string stage;
+  size_t underscore_pos = output_filename.find('_');
+  if (underscore_pos != std::string::npos) {
+    stage = output_filename.substr(0, underscore_pos);
+  }
+
+  std::string save_dir;
+  if (stage.find("place") != std::string::npos || stage.find("pl") != std::string::npos) {
+    save_dir = "/pl/density_map";
+  } else if (stage.find("cts") != std::string::npos) {
+    save_dir = "/cts/density_map";
+  } else if (stage.find("route") != std::string::npos) {
+    save_dir = "/route/density_map";
+  } else {
+    save_dir = "other/density_map";
+  }
+
   std::string output_path;
   if (neighbor) {
-    output_path = createDirPath("/density_map") + "/" + "neighbor_" + output_filename;
+    output_path = createDirPath(save_dir) + "/" + "neighbor_" + output_filename;
   } else {
-    output_path = createDirPath("/density_map") + "/" + output_filename;
+    output_path = createDirPath(save_dir) + "/" + output_filename;
   }
 
   std::ofstream csv_file(output_path);
@@ -281,6 +315,23 @@ std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, 
     }
   }
 
+  std::string stage;
+  size_t underscore_pos = output_filename.find('_');
+  if (underscore_pos != std::string::npos) {
+    stage = output_filename.substr(0, underscore_pos);
+  }
+
+  std::string save_dir;
+  if (stage.find("place") != std::string::npos || stage.find("pl") != std::string::npos) {
+    save_dir = "/pl/density_map";
+  } else if (stage.find("cts") != std::string::npos) {
+    save_dir = "/cts/density_map";
+  } else if (stage.find("route") != std::string::npos) {
+    save_dir = "/route/density_map";
+  } else {
+    save_dir = "other/density_map";
+  }
+
   std::string output_path;
   if (neighbor) {
     const std::vector<std::vector<int>> kernel = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
@@ -302,7 +353,7 @@ std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, 
         neighbor_net_count[row][col] = sum;
       }
     }
-    output_path = createDirPath("/density_map") + "/" + "neighbor_" + output_filename;
+    output_path = createDirPath(save_dir) + "/" + "neighbor_" + output_filename;
     std::ofstream csv_file(output_path);
     for (int32_t row = grid_rows - 1; row >= 0; --row) {
       for (int32_t col = 0; col < grid_cols; ++col) {
@@ -317,7 +368,7 @@ std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, 
   }
 
   else {
-    output_path = createDirPath("/density_map") + "/" + output_filename;
+    output_path = createDirPath(save_dir) + "/" + output_filename;
     std::ofstream csv_file(output_path);
     for (int32_t row = grid_rows - 1; row >= 0; --row) {
       for (int32_t col = 0; col < grid_cols; ++col) {
@@ -413,7 +464,20 @@ std::string DensityEval::evalMargin(DensityCells cells, DensityRegion die, Densi
     }
   }
 
-  std::string output_path = createDirPath("/margin_map") + "/" + output_filename;
+  std::string stage;
+  size_t underscore_pos = output_filename.find('_');
+  if (underscore_pos != std::string::npos) {
+    stage = output_filename.substr(0, underscore_pos);
+  }
+
+  std::string save_dir;
+  if (stage.find("place") != std::string::npos || stage.find("pl") != std::string::npos) {
+    save_dir = "/pl/margin_map";
+  } else{
+    save_dir = "other/margin_map";
+  }
+
+  std::string output_path = createDirPath(save_dir) + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
   int32_t grid_cols = (die.ux - die.lx + grid_size - 1) / grid_size;

@@ -29,7 +29,8 @@ enum class GPDataType
   kNeighbor,
   kShadow,
   kKey,
-  kPath,
+  kGlobalPath,
+  kDetailedPath,
   kPatch,
   kShape,
   kAccessPoint,
@@ -67,8 +68,11 @@ struct GetGPDataTypeName
       case GPDataType::kKey:
         data_type_name = "key";
         break;
-      case GPDataType::kPath:
-        data_type_name = "path";
+      case GPDataType::kGlobalPath:
+        data_type_name = "global_path";
+        break;
+      case GPDataType::kDetailedPath:
+        data_type_name = "detailed_path";
         break;
       case GPDataType::kPatch:
         data_type_name = "patch";
