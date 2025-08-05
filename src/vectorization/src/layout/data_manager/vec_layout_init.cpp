@@ -181,7 +181,7 @@ void VecLayoutInit::initTrackGrid(idb::IdbTrackGrid* idb_track_grid)
   }
 }
 
-void VecLayoutInit::initTracks(std::string layername)
+void VecLayoutInit::initTracks()
 {
   ieda::Stats stats;
 
@@ -190,9 +190,22 @@ void VecLayoutInit::initTracks(std::string layername)
   /// find base track
   auto* idb_layout = dmInst->get_idb_layout();
   auto* idb_layers = idb_layout->get_layers();
-  auto* idb_layer = idb_layers->find_layer(layername);
-  auto* idb_track_grid_prefer = (dynamic_cast<idb::IdbLayerRouting*>(idb_layer))->get_prefer_track_grid();
-  auto* idb_track_grid_nonprefer = (dynamic_cast<idb::IdbLayerRouting*>(idb_layer))->get_nonprefer_track_grid();
+
+  auto& routing_layer_list = idb_layers->get_routing_layers();
+
+  idb::IdbLayerRouting* idb_layer = nullptr;
+  if (routing_layer_list.size() >= 2) {
+    /// use 2nd routing layer pitch to divide grid
+    idb_layer = dynamic_cast<idb::IdbLayerRouting*>(routing_layer_list[1]);
+  } else {
+    /// use bottom routing layer pitch to divide grid
+    idb_layer = dynamic_cast<idb::IdbLayerRouting*>(routing_layer_list[0]);
+  }
+
+  LOG_INFO << "Vectorization init tracks by routing layer " << idb_layer->get_name();
+
+  auto* idb_track_grid_prefer = idb_layer->get_prefer_track_grid();
+  auto* idb_track_grid_nonprefer = idb_layer->get_nonprefer_track_grid();
 
   auto& layout_layers = _layout->get_layout_layers();
   auto& layout_layer_map = layout_layers.get_layout_layer_map();
@@ -236,7 +249,7 @@ void VecLayoutInit::transVia(idb::IdbVia* idb_via, int net_id, VecNodeTYpe type)
   auto order = _layout->findLayerId(cut_layer_shape.get_layer()->get_name());
   auto* layout_layer = layout_layers.findLayoutLayer(order);
   if (nullptr == layout_layer) {
-    LOG_WARNING << "Can not get layer order : " << cut_layer_shape.get_layer()->get_name();
+    LOG_WARNING << idb_via->get_name() << " can not get layer order : " << cut_layer_shape.get_layer()->get_name();
     return;
   }
   auto& grid = layout_layer->get_grid();
@@ -491,7 +504,7 @@ void VecLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, VecNodeTYpe type,
     auto order = _layout->findLayerId(layer_shape->get_layer()->get_name());
     auto* layout_layer = layout_layers.findLayoutLayer(order);
     if (nullptr == layout_layer) {
-      LOG_WARNING << "Can not get layer order : " << layer_shape->get_layer()->get_name();
+      /// igore pin under bottom routing layer
       continue;
     }
     auto& grid = layout_layer->get_grid();

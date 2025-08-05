@@ -32,12 +32,14 @@ class VecPatchDataManager
   VecPatchGrid& get_patch_grid() { return _patch_grid; }
 
   bool buildPatchData();
+  bool buildPatchData(int patch_row_step, int patch_col_step);
 
  private:
   VecLayout* _layout = nullptr;
   VecPatchGrid _patch_grid;
 
   void init();
+  void init(int patch_row_step, int patch_col_step);
 };
 
 }  // namespace ivec

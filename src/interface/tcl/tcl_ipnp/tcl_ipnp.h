@@ -14,20 +14,3 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
-
-#include <string>
-
-#include "init_sta.hh"
-
-namespace python_interface {
-
-bool layout_patchs(const std::string& path);
-bool layout_graph(const std::string& path);
-bool generate_vectors(std::string dir, int patch_row_step, int patch_col_step);
-
-// for vectorization wire timing graph.
-ieval::TimingWireGraph get_timing_wire_graph(std::string wire_graph_yaml_path);
-ieval::TimingInstanceGraph get_timing_instance_graph(std::string instance_graph_yaml_path);
-
-}  // namespace python_interface

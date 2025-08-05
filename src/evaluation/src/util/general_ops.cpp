@@ -45,14 +45,41 @@ std::string createDirPath(std::string dir_path)
 
   struct stat info;
   if (stat(full_path.c_str(), &info) == 0 && (info.st_mode & S_IFDIR)) {
-    return full_path;
+    return full_path;  
   }
 
-  if (mkdir(full_path.c_str(), 0777) == 0) {
-    return full_path;
+  if (createDirectoryRecursive(full_path)) {
+    return full_path; 
   }
 
-  return "";
+  return "";  
+}
+
+bool createDirectoryRecursive(const std::string& path)
+{
+  struct stat info;
+  if (stat(path.c_str(), &info) == 0 && (info.st_mode & S_IFDIR)) {
+    return true;  
+  }
+
+  size_t pos = path.find_last_of('/');
+  if (pos != std::string::npos && pos > 0) {
+    std::string parent_path = path.substr(0, pos);
+    
+    if (!createDirectoryRecursive(parent_path)) {
+      return false; 
+    }
+  }
+
+  if (mkdir(path.c_str(), 0777) == 0) {
+    return true;  
+  }
+
+  if (stat(path.c_str(), &info) == 0 && (info.st_mode & S_IFDIR)) {
+    return true;
+  }
+
+  return false;  
 }
 
 std::string getDefaultOutputPath()

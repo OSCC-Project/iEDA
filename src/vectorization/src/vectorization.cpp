@@ -70,7 +70,7 @@ std::map<int, VecNet> Vectorization::getGraph(std::string path)
   return _data_manager.getGraph(path);
 }
 
-void Vectorization::buildFeature(const std::string dir)
+void Vectorization::buildFeature(const std::string dir, int patch_row_step, int patch_col_step)
 {
   {
     /// build layout data
@@ -87,7 +87,8 @@ void Vectorization::buildFeature(const std::string dir)
   {
     /// build patch data
     MemoryMonitor monitor("buildPatchData", "./memory_usage.log");
-    buildPatchData(dir);
+    // buildPatchData(dir);
+    buildPatchData(dir, patch_row_step, patch_col_step);  // default patch size
   }
   // build pattern
   // _data_manager.buildPatternData();
@@ -133,6 +134,11 @@ bool Vectorization::runVecSTA(const std::string dir)
 bool Vectorization::buildPatchData(const std::string dir)
 {
   return _data_manager.buildPatchData(dir);
+}
+
+bool Vectorization::buildPatchData(const std::string dir, int patch_row_step, int patch_col_step)
+{
+  return _data_manager.buildPatchData(dir, patch_row_step, patch_col_step);
 }
 
 }  // namespace ivec
