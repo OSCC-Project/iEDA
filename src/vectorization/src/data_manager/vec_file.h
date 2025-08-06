@@ -47,6 +47,8 @@ class VecLayoutFileIO
 
   bool saveJsonNets();
   bool saveJsonPatchs();
+  bool saveJsonCells();
+  bool saveJsonInstances();
 
   void makeDir(std::string dir);
   json makeNodePair(VecNode* node1, VecNode* node2);

@@ -23,15 +23,15 @@
 
 #include "init_sta.hh"
 
-#include <yaml-cpp/yaml.h>
-
 #include <algorithm>
+#include <thread>
 
 #include "RTInterface.hpp"
 #include "api/PowerEngine.hh"
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
 #include "idm.h"
+#include "json/json.hpp"
 #include "salt/base/flute.h"
 #include "salt/salt.h"
 #include "timing_db.hh"
@@ -39,6 +39,9 @@
 #include "vec_layout.h"
 
 namespace ieval {
+
+using json = nlohmann::ordered_json;
+  
 #define STA_INST (ista::TimingEngine::getOrCreateTimingEngine())
 #define RT_INST (irt::RTInterface::getInst())
 #define PW_INST (ipower::PowerEngine::getOrCreatePowerEngine())
@@ -951,15 +954,15 @@ TimingWireGraph InitSTA::getTimingWireGraph()
   TimingWireGraph timing_wire_graph;
 
   /// create node in wire graph
-  auto create_node = [&timing_wire_graph](std::string& edge_node_name, bool is_pin, bool is_port) -> unsigned {
-    auto index = timing_wire_graph.findNode(edge_node_name);
+  auto create_node = [&timing_wire_graph](std::string& node_name, bool is_pin, bool is_port) -> unsigned {
+    auto index = timing_wire_graph.findNode(node_name);
     if (!index) {
-      TimingWireNode edge_node;
-      edge_node._name = edge_node_name;
-      edge_node._is_pin = is_pin;
-      edge_node._is_port = is_port;
+      TimingWireNode the_node;
+      the_node._name = node_name;
+      the_node._is_pin = is_pin;
+      the_node._is_port = is_port;
 
-      index = timing_wire_graph.addNode(edge_node);
+      index = timing_wire_graph.addNode(the_node);
     }
 
     return index.value();
@@ -1058,6 +1061,72 @@ TimingWireGraph InitSTA::getTimingWireGraph()
   return timing_wire_graph;
 }
 
+TimingInstanceGraph InitSTA::getTimingInstanceGraph()
+{
+  LOG_INFO << "get timing instance graph start";
+  ieda::Stats stats;
+
+  TimingInstanceGraph timing_instance_graph;
+
+  auto* ista = STA_INST->get_ista();
+  LOG_ERROR_IF(!ista->isBuildGraph()) << "timing graph is not build";
+
+  auto* the_timing_graph = &(ista->get_graph());
+
+  timing_instance_graph._edges.reserve(the_timing_graph->get_arcs().size() * 100);
+  timing_instance_graph._nodes.reserve(the_timing_graph->get_vertexes().size() * 10);
+
+  /// create node in instance graph
+  auto create_node = [&timing_instance_graph](std::string& node_name) -> unsigned {
+    auto index = timing_instance_graph.findNode(node_name);
+    if (!index) {
+      TimingInstanceNode the_node;
+      the_node._name = node_name;
+
+      index = timing_instance_graph.addNode(the_node);
+    }
+
+    return index.value();
+  };
+
+  ista::StaArc* the_arc;
+  FOREACH_ARC(the_timing_graph, the_arc)
+  {
+    if (the_arc->isNetArc()) {
+      auto* src_node = the_arc->get_src();
+      auto* src_instance = src_node->get_design_obj()->get_own_instance();
+      auto* snk_node = the_arc->get_snk();
+      auto* snk_instance = snk_node->get_design_obj()->get_own_instance();
+
+      if (!src_instance || !snk_instance) {
+        continue;
+      }
+
+      auto src_instance_name = src_instance->getFullName();
+      auto snk_instance_name = snk_instance->getFullName();
+
+      unsigned src_node_index = create_node(src_instance_name);
+      unsigned snk_node_index = create_node(snk_instance_name);
+
+      timing_instance_graph.addEdge(src_node_index, snk_node_index);
+    }
+  }
+
+  LOG_INFO << "timing instance graph nodes " << timing_instance_graph._nodes.size();
+  LOG_INFO << "timing instance graph edges " << timing_instance_graph._edges.size();
+
+  timing_instance_graph._nodes.shrink_to_fit();
+  timing_instance_graph._edges.shrink_to_fit();
+
+  LOG_INFO << "get timing instance graph end";
+
+  LOG_INFO << "get timing instance graph memory usage " << stats.memoryDelta() << " MB";
+  double total_time = stats.elapsedRunTime();
+  LOG_INFO << "get timing instance graph elapsed time " << total_time << " s";
+
+  return timing_instance_graph;
+}
+
 bool InitSTA::getRcNet(const std::string& net_name)
 {
   auto netlist = STA_INST->get_netlist();
@@ -1067,39 +1136,93 @@ bool InitSTA::getRcNet(const std::string& net_name)
   return rc_net ? true : false;
 }
 
-void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string& yaml_file_name)
+/// @brief Save wire timing graph to yaml file.
+void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string& json_file_name)
 {
-  LOG_INFO << "save wire timing graph start";
+  LOG_INFO << "save wire timing graph start";  
 
-  std::ofstream file(yaml_file_name, std::ios::trunc);
+  json nodes_json;
+  json edges_json;
 
-  for (unsigned node_id = 0; auto& node : timing_wire_graph._nodes) {
-    const char* node_name = Str::printf("node_%d", node_id++);
-    LOG_INFO_EVERY_N(1000) << "write node " << node_id << " total " << timing_wire_graph._nodes.size();
+  // for nodes
+  std::thread t1([&]() {
+    json j = json::array();
+    for (unsigned node_id = 0; auto& node : timing_wire_graph._nodes) {
+      j.push_back({{"id",  Str::printf("node_%d", node_id++)}, {"name", node._name}, {"is_pin", node._is_pin}, {"is_port", node._is_port}});
+    }
+    nodes_json = j;
+  });
 
-    file << node_name << ":" << "\n";
-    file << "  name: " << node._name << "\n";
-    file << "  is_pin: " << node._is_pin << "\n";
-    file << "  is_port: " << node._is_port << "\n";
-  }
+  // for edges
+  std::thread t2([&]() {
+    json j = json::array();
+    for (unsigned edge_id = 0; auto& edge : timing_wire_graph._edges) {
+      j.push_back({{"id",  Str::printf("edge_%d", edge_id++)}, {"from_node", edge._from_node}, {"to_node", edge._to_node}, {"is_net_edge", edge._is_net_edge}});
+    }
+    edges_json = j;
+  });
 
-  for (unsigned edge_id = 0; auto& edge : timing_wire_graph._edges) {
-    std::string edge_name = Str::printf("edge_%d", edge_id++);
+  // wait to finish
+  t1.join();
+  t2.join();
 
-    LOG_INFO_EVERY_N(1000) << "write edge " << edge_id << " total " << timing_wire_graph._edges.size();
+  // merge 
+  json graph_json;
+  graph_json["nodes"] = nodes_json;
+  graph_json["edges"] = edges_json;
 
-    file << edge_name << ":" << "\n";
-    file << "  from_node: " << edge._from_node << "\n";
-    file << "  to_node: " << edge._to_node << "\n";
-    file << "  is_net_edge: " << edge._is_net_edge << "\n";
-  }
+  std::ofstream file(json_file_name, std::ios::trunc);  
+  file << graph_json.dump(4) << std::endl;
 
-  // out << YAML::EndMap; // Close the YAML map
   file.close();
 
-  LOG_INFO << "output wire graph yaml file path: " << yaml_file_name;
+  LOG_INFO << "output wire graph json file path: " << json_file_name;
   LOG_INFO << "save wire timing graph end";
 }
+
+void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, const std::string& json_file_name)
+{
+  LOG_INFO << "save instance timing graph start";  
+
+  json nodes_json;
+  json edges_json;
+
+  // for nodes
+  std::thread t1([&]() {
+    json j = json::array();
+    for (unsigned node_id = 0; auto& node : timing_instance_graph._nodes) {
+      j.push_back({{"id",  Str::printf("node_%d", node_id++)}, {"name", node._name}});
+    }
+    nodes_json = j;
+  });
+
+  // for edges
+  std::thread t2([&]() {
+    json j = json::array();
+    for (unsigned edge_id = 0; auto& edge : timing_instance_graph._edges) {
+      j.push_back({{"id",  Str::printf("edge_%d", edge_id++)}, {"from_node", edge._from_node}, {"to_node", edge._to_node}});
+    }
+    edges_json = j;
+  });
+
+  // wait to finish
+  t1.join();
+  t2.join();
+
+  // merge 
+  json graph_json;
+  graph_json["nodes"] = nodes_json;
+  graph_json["edges"] = edges_json;
+  
+  std::ofstream file(json_file_name, std::ios::trunc);
+  file << graph_json.dump(4) << std::endl;
+
+  file.close();
+
+  LOG_INFO << "output instance graph json file path: " << json_file_name;
+  LOG_INFO << "save instance timing graph end";
+}
+
 /// @brief Restore wire timing graph from yaml file.
 /// @param yaml_file_name
 /// @return
@@ -1155,6 +1278,55 @@ TimingWireGraph RestoreTimingGraph(const std::string& yaml_file_name)
   LOG_INFO << "wire timing graph edges " << timing_wire_graph._edges.size();
 
   return timing_wire_graph;
+}
+
+/// @brief Restore timing instance graph from yaml file.
+/// @param yaml_file_name
+/// @return
+TimingInstanceGraph RestoreTimingInstanceGraph(const std::string& yaml_file_name)
+{
+  LOG_INFO << "restore timing instance graph start";
+  TimingInstanceGraph timing_instance_graph;
+
+  std::ifstream file(yaml_file_name);
+  string line;
+
+  bool is_node = true;
+  TimingInstanceNode instance_node;
+  TimingNetEdge net_edge;
+
+  while (getline(file, line)) {
+    if (is_node && (line.rfind("edge_", 0) == 0)) {
+      is_node = false;
+    }
+
+    if (is_node) {
+      if (line.find("name:") != string::npos) {
+        size_t pos = line.find(": ");
+        instance_node._name = line.substr(pos + 2);
+        timing_instance_graph._nodes.emplace_back(std::move(instance_node));
+      }
+
+    } else {
+      if (line.find("from_node:") != string::npos) {
+        size_t pos = line.find(": ");
+        net_edge._from_node = stoll(line.substr(pos + 2));
+      } else if (line.find("to_node:") != string::npos) {
+        size_t pos = line.find(": ");
+        net_edge._to_node = stoll(line.substr(pos + 2));
+
+        timing_instance_graph._edges.emplace_back(std::move(net_edge));
+      }
+    }
+  }
+  file.close();
+
+  LOG_INFO << "restore timing instance graph end";
+
+  LOG_INFO << "timing instance graph nodes " << timing_instance_graph._nodes.size();
+  LOG_INFO << "timing instance graph edges " << timing_instance_graph._edges.size();
+
+  return timing_instance_graph;
 }
 
 void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, const std::vector<std::string>& name_list,
@@ -1260,8 +1432,8 @@ std::map<int, double> InitSTA::patchTimingMap(std::map<int, std::pair<std::pair<
   int64_t min_y = INT64_MAX;
   int64_t max_y = INT64_MIN;
   for (const auto& [coord, _] : inst_timing_map) {
-    int64_t x = static_cast<int64_t>(coord.first) * dbu;
-    int64_t y = static_cast<int64_t>(coord.second) * dbu;
+    int64_t x = static_cast<int64_t>(coord.first * dbu);
+    int64_t y = static_cast<int64_t>(coord.second * dbu);
     min_x = std::min(min_x, x);
     max_x = std::max(max_x, x);
     min_y = std::min(min_y, y);
@@ -1365,8 +1537,8 @@ std::map<int, double> InitSTA::patchPowerMap(std::map<int, std::pair<std::pair<i
 
   // 填充网格
   for (const auto& [coord, power] : inst_power_map) {
-    int64_t x = static_cast<int64_t>(coord.first) * dbu;
-    int64_t y = static_cast<int64_t>(coord.second) * dbu;
+    int64_t x = static_cast<int64_t>(coord.first * dbu);
+    int64_t y = static_cast<int64_t>(coord.second * dbu);
     int64_t grid_x = (x - min_x) / grid_size_x;
     int64_t grid_y = (y - min_y) / grid_size_y;
     grid[grid_x][grid_y].push_back({{x, y}, power});

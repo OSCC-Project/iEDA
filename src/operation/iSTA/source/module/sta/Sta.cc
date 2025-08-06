@@ -1866,6 +1866,11 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate,
         report_funcs.emplace_back(&report_wire_dump);
       }
 
+      StaReportWirePathJson report_wire_dump_json(rpt_file_name, mode, n_worst);
+      if (c_print_wire_json) {
+        report_funcs.emplace_back(&report_wire_dump_json);
+      }
+
       StaReportPathDetailJson report_path_detail_json(rpt_file_name, mode,
                                                       n_worst, is_derate);
 
@@ -1875,7 +1880,7 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate,
 
       for (auto *report_fun : report_funcs) {
         if (only_wire_path) {
-          if (dynamic_cast<StaReportWirePathYaml *>(report_fun)) {
+          if (dynamic_cast<StaReportWirePathJson *>(report_fun)) {
             is_ok = report_path(*report_fun);
           }
 
@@ -3070,6 +3075,9 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
 
   // for test dump timing data in memory.
   // reportTimingData(10);
+
+  // for test dump json data.
+  // reportWirePaths();
 
 #if CUDA_PROPAGATION
   // printFlattenData();

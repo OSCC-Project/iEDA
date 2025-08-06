@@ -26,6 +26,7 @@
 
 #include <memory>
 
+#include "json/json.hpp"
 #include "StaPathData.hh"
 #include "report/ReportTable.hh"
 
@@ -236,6 +237,24 @@ class StaReportWirePathYaml : public StaReportPathDump {
   ~StaReportWirePathYaml() override = default;
 
   unsigned operator()(StaSeqPathData* seq_path_data) override;
+};
+
+/**
+ * @brief The report wire path in json format.
+ *
+ */
+class StaReportWirePathJson : public StaReportPathDump {
+ public:
+  StaReportWirePathJson(const char* rpt_file_name, AnalysisMode analysis_mode,
+                        unsigned n_worst);
+  ~StaReportWirePathJson() override = default;
+
+  using json = nlohmann::ordered_json;
+
+  unsigned operator()(StaSeqPathData* seq_path_data) override;
+
+  private:
+  json _json;
 };
 
 /**

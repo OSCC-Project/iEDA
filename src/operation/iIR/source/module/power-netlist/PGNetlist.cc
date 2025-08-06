@@ -180,7 +180,7 @@ void IRPGNetlistBuilder::build(
       buildBGSegments(special_net, line_segment_num, segment_widths);
 
   // FIXME(to taosimin), should not hard code the instance pin layer.
-  unsigned instance_pin_layer = 1;
+  unsigned instance_pin_layer = 2;
 
   // Firstly, get the wire topo point in line segment.
   std::set<std::tuple<int64_t, int64_t, int64_t>> pg_points;
@@ -257,7 +257,7 @@ void IRPGNetlistBuilder::build(
     auto distance = std::abs(x1 - x2) + std::abs(y1 - y2);
     // pg node layer from one first, we need minus one.
     double resistance =
-        calc_resistance(node1->get_layer_id(), distance, width_dbu);
+        calc_resistance(node1->get_layer_id() - 1, distance, width_dbu);
 
     return resistance;
   };

@@ -61,7 +61,12 @@ init_floorplan \
 source $::env(TCL_SCRIPT_DIR)/iFP_script/module/create_tracks.tcl
 
 #===========================================================
-##   Place IO Port
+##  add io port for pdn
+#===========================================================
+add_pdn_io -net_name VDD   -direction INOUT -is_power 1 
+add_pdn_io -net_name VSS   -direction INOUT -is_power 0
+#===========================================================
+##  Place IO Port
 ##         -sides "left right top bottom"
 #===========================================================
 auto_place_pins -layer met5 -width 2000 -height 2000
@@ -77,7 +82,7 @@ tapcell \
 #===========================================================
 ##   PDN 
 #===========================================================
-#source $::env(TCL_SCRIPT_DIR)/iFP_script/module/pdn.tcl 
+source $::env(TCL_SCRIPT_DIR)/iFP_script/module/pdn.tcl 
 
 #===========================================================
 ##   set clock net

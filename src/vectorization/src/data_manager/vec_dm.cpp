@@ -53,6 +53,12 @@ bool VecDataManager::buildPatchData(const std::string dir)
   return patch_dm->buildPatchData();
 }
 
+bool VecDataManager::buildPatchData(const std::string dir, int patch_row_step, int patch_col_step)
+{
+  patch_dm = new VecPatchDataManager(&layout_dm.get_layout());
+  return patch_dm->buildPatchData(patch_row_step, patch_col_step);
+}
+
 bool VecDataManager::checkData()
 {
   auto& graph = layout_dm.get_graph();

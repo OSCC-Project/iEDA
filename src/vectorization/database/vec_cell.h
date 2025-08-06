@@ -15,19 +15,48 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
+/**
+ * @project		vectorization
+ * @date		29/7/2025
+ * @version		0.1
+ * @description
+ *
+ */
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include <map>
 #include <string>
+#include <vector>
 
-#include "init_sta.hh"
+namespace ivec {
 
-namespace python_interface {
+struct VecCell
+{
+  int id;
+  std::string name;
+  int width;
+  int height;
+};
 
-bool layout_patchs(const std::string& path);
-bool layout_graph(const std::string& path);
-bool generate_vectors(std::string dir, int patch_row_step, int patch_col_step);
+class VecCells
+{
+ public:
+  VecCells() {}
+  ~VecCells() {}
 
-// for vectorization wire timing graph.
-ieval::TimingWireGraph get_timing_wire_graph(std::string wire_graph_path);
-ieval::TimingInstanceGraph get_timing_instance_graph(std::string instance_graph_path);
+  // getter
+  std::map<int, VecCell>& get_cell_map() { return _cell_map; }
+  VecCell* get_cell(int id);
 
-}  // namespace python_interface
+  // setter
+  void addCell(VecCell cell);
+
+  // operator
+
+ private:
+  std::map<int, VecCell> _cell_map;
+};
+
+}  // namespace ivec

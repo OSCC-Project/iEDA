@@ -22,7 +22,7 @@
  * @date 2025-06-30
  */
 
-#include "ShellCmd.hh"
+#include "PNPShellCmd.hh"
 #include "log/Log.hh"
 #include "iPNP.hh"
 #include "iPNPApi.hh"

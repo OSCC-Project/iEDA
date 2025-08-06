@@ -26,7 +26,7 @@ void register_vectorization(py::module& m)
 {
   m.def("layout_patchs", layout_patchs, py::arg("path"));
   m.def("layout_graph", layout_graph, py::arg("path"));
-  m.def("generate_vectors", generate_vectors, py::arg("dir"));
+  m.def("generate_vectors", generate_vectors, py::arg("dir"), py::arg("patch_row_step") = 9, py::arg("patch_col_step") = 9);
 
   py::class_<ieval::TimingWireNode>(m, "TimingWireNode")
       .def_readwrite("name", &ieval::TimingWireNode::_name)
@@ -43,6 +43,7 @@ void register_vectorization(py::module& m)
       .def_readwrite("edges", &ieval::TimingWireGraph::_edges);
 
   m.def("get_timing_wire_graph", &get_timing_wire_graph);
+  m.def("get_timing_instance_graph", &get_timing_instance_graph);
 }
 
 }  // namespace python_interface

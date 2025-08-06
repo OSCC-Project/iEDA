@@ -44,6 +44,14 @@ TimingWireGraph* TimingEval::getTimingWireGraph()
   return timing_wire_graph_ptr;
 }
 
+// for vectorization(to wangrui)
+TimingInstanceGraph* TimingEval::getTimingInstanceGraph()
+{
+  auto timing_instance_graph = EVAL_INIT_STA_INST->getTimingInstanceGraph();
+  auto timing_instance_graph_ptr = new TimingInstanceGraph(std::move(timing_instance_graph));
+  return timing_instance_graph_ptr;
+}
+
 void TimingEval::destroyInst()
 {
   delete _timing_eval;

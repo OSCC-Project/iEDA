@@ -43,7 +43,7 @@ UnionEvalSummary FeatureBuilder::buildUnionEvalSummary(int32_t grid_size, std::s
   density_map_summary.net_map_summary.global_net_density = eval_density_map_summary.net_map_summary.global_net_density;
   density_map_summary.net_map_summary.allnet_density = eval_density_map_summary.net_map_summary.allnet_density;
   if (stage == "place") {
-    ieval::MacroMarginSummary eval_macro_margin_summary = DENSITY_API_INST->macroMarginMap(grid_size);
+    ieval::MacroMarginSummary eval_macro_margin_summary = DENSITY_API_INST->macroMarginMap(grid_size, stage);
     density_map_summary.macro_margin_summary.horizontal_margin = eval_macro_margin_summary.horizontal_margin;
     density_map_summary.macro_margin_summary.vertical_margin = eval_macro_margin_summary.vertical_margin;
     density_map_summary.macro_margin_summary.union_margin = eval_macro_margin_summary.union_margin;

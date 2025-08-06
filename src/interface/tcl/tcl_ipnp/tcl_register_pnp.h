@@ -16,18 +16,22 @@
 // ***************************************************************************************
 #pragma once
 
-#include <string>
+#include "ScriptEngine.hh"
+#include "UserShell.hh"
+#include "tcl_ipnp.h"
+#include "PNPShellCmd.hh"
 
-#include "init_sta.hh"
+using namespace ieda;
+using namespace ipnp;
 
-namespace python_interface {
+namespace tcl {
 
-bool layout_patchs(const std::string& path);
-bool layout_graph(const std::string& path);
-bool generate_vectors(std::string dir, int patch_row_step, int patch_col_step);
+int registerCmdPNP()
+{
+  registerTclCmd(CmdRunPnp, "run_pnp");
+  registerTclCmd(CmdAddVIA1, "add_via1");
 
-// for vectorization wire timing graph.
-ieval::TimingWireGraph get_timing_wire_graph(std::string wire_graph_path);
-ieval::TimingInstanceGraph get_timing_instance_graph(std::string instance_graph_path);
+  return EXIT_SUCCESS;
+}
 
-}  // namespace python_interface
+}  // namespace tcl 
