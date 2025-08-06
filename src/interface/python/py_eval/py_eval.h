@@ -18,14 +18,21 @@
 
 #include <string>
 #include <vector>
+
+#include "wirelength_db.h"
+#include "density_db.h"
+
 namespace python_interface {
 
 // wirelength evaluation
-void init_wirelength_eval();
-int64_t eval_total_wirelength(int wirelength_type);
+ieval::TotalWLSummary total_wirelength();
+
+// density evaluation
+ieval::DensityValue cell_density(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
+ieval::DensityValue pin_density(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
+ieval::DensityValue net_density(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
 
 // congestion evaluation
-void init_cong_eval(int bin_cnt_x, int bin_cnt_y);
 void eval_macro_density();
 void eval_macro_pin_density();
 void eval_cell_pin_density();
@@ -47,8 +54,6 @@ std::vector<float> eval_overflow();
 void init_timing_eval();
 
 // plot API
-void plot_bin_value(const std::string& plot_path, const std::string& file_name, int value_type);
-void plot_tile_value(const std::string& plot_path, const std::string& file_name);
 void plot_flow_value(const std::string& plot_path, const std::string& file_name, const std::string& step, const std::string& value);
 
 }  // namespace python_interface

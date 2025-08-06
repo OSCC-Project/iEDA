@@ -26,18 +26,37 @@ using namespace ieval;
 namespace python_interface {
 
 // wirelength evaluation
-void init_wirelength_eval()
+ieval::TotalWLSummary total_wirelength()
 {
+  ieval::TotalWLSummary total_wirelength_summary = WIRELENGTH_API_INST->totalWL();
+  
+  ieval::TotalWLSummary result;
+  result.HPWL = total_wirelength_summary.HPWL;
+  result.FLUTE = total_wirelength_summary.FLUTE;
+  result.HTree = total_wirelength_summary.HTree;
+  result.VTree = total_wirelength_summary.VTree;
+  result.GRWL = total_wirelength_summary.GRWL;
+  
+  return result;
 }
 
-int64_t eval_total_wirelength(int wirelength_type)
+// density evaluation
+ieval::DensityValue cell_density(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
 {
-  return 0;
+  ieval::DensityValue density_value = DENSITY_API_INST->cellDensity(bin_cnt_x, bin_cnt_y, save_path);
+  return density_value;
 }
 
-// congestion evaluation
-void init_cong_eval(int bin_cnt_x, int bin_cnt_y)
+ieval::DensityValue pin_density(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
 {
+  ieval::DensityValue density_value = DENSITY_API_INST->pinDensity(bin_cnt_x, bin_cnt_y, save_path);
+  return density_value;
+}
+
+ieval::DensityValue net_density(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
+{
+  ieval::DensityValue density_value = DENSITY_API_INST->netDensity(bin_cnt_x, bin_cnt_y, save_path);
+  return density_value;
 }
 
 void eval_macro_density()
@@ -107,15 +126,8 @@ void init_timing_eval()
 
 }
 
-// plot API
-void plot_bin_value(const std::string& plot_path, const std::string& file_name, int value_type)
-{
 
-}
-void plot_tile_value(const std::string& plot_path, const std::string& file_name)
-{
 
-}
 void plot_flow_value(const std::string& plot_path, const std::string& file_name, const std::string& step, const std::string& value)
 {
 

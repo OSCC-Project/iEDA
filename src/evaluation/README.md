@@ -61,6 +61,10 @@ evaluation/api文件夹提供外部使用的接口，根据指标进行分类，
 |  `patchCellDensity(patch_id_coord_map)` |  所有网格(patch)组成的`map<id, coord_pair>`               |      `map<patch_id, cell_density>`            | 根据传入的网格划分信息，利用iDB初始化版图数据，返回网格id及其对应的单元密度    |
 |  `patchNetDensity(patch_id_coord_map)` |  所有网格(patch)组成的`map<id, coord_pair>`               |      `map<patch_id, net_density>`            | 根据传入的网格划分信息，利用iDB初始化版图数据，返回网格id及其对应的线网密度    |
 |  `patchMacroMargin(patch_id_coord_map)` |  所有网格(patch)组成的`map<id, coord_pair>`               |      `map<patch_id, macro_margin>`            | 根据传入的网格划分信息，利用iDB初始化版图数据，返回网格id及其对应的宏单元间隙密度    |
+|  `cellDensity(int, int, string)` |  水平划分的网格数，竖直划分的网格数，密度图输出路径               |      `struct{max_density, avg_density}`            | 根据传入的网格划分信息，利用iDB初始化版图数据，输出密度图，返回最大单元密度和平均单元密度    |
+|  `pinDensity(int, int, string)` |  水平划分的网格数，竖直划分的网格数，密度图输出路径               |      `struct{max_density, avg_density}`            | 根据传入的网格划分信息，利用iDB初始化版图数据，输出密度图，返回最大引脚密度和平均引脚密度  |
+|  `netDensity(int, int, string)` |  水平划分的网格数，竖直划分的网格数，密度图输出路径               |      `struct{max_density, avg_density}`            | 根据传入的网格划分信息，利用iDB初始化版图数据，输出密度图，返回最大线网密度和平均线网密度   |
+
 
 ### Congestion API
 

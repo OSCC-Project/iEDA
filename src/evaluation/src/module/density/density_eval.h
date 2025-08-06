@@ -85,6 +85,10 @@ class DensityEval
   std::map<int, double> patchNetDensity(DensityNets nets, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
   std::map<int, int> patchMacroMargin(DensityCells cells, DensityRegion core, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
 
+  DensityValue calCellDensity(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
+  DensityValue calPinDensity(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
+  DensityValue calNetDensity(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
+
  private:
   static DensityEval* _density_eval;
 

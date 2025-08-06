@@ -21,15 +21,46 @@
 #include "py_eval.h"
 
 namespace python_interface {
+
 namespace py = pybind11;
 void register_eval(py::module& m)
 {
   // wirelength evaluation
-  m.def("init_wirelength_eval", init_wirelength_eval);
-  m.def("eval_total_wirelength", eval_total_wirelength, py::arg("wirelength_type"));
+  py::class_<ieval::TotalWLSummary>(m, "TotalWLSummary")
+      .def_readwrite("HPWL", &ieval::TotalWLSummary::HPWL)
+      .def_readwrite("FLUTE", &ieval::TotalWLSummary::FLUTE)
+      .def_readwrite("HTree", &ieval::TotalWLSummary::HTree)
+      .def_readwrite("VTree", &ieval::TotalWLSummary::VTree)
+      .def_readwrite("GRWL", &ieval::TotalWLSummary::GRWL);
 
+  m.def("total_wirelength_dict", []() -> py::dict {
+      ieval::TotalWLSummary summary = total_wirelength();
+      py::dict result;
+      result["1"] = summary.HPWL;   
+      result["2"] = summary.FLUTE;  
+      result["3"] = summary.HTree;  
+      result["4"] = summary.VTree;  
+      result["5"] = summary.GRWL;   
+      return result;
+  });
+
+  // density evaluation functions
+  m.def("cell_density", [](int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "") -> py::tuple {
+      auto [max_density, avg_density] = cell_density(bin_cnt_x, bin_cnt_y, save_path);
+      return py::make_tuple(max_density, avg_density);
+  }, py::arg("bin_cnt_x") = 256, py::arg("bin_cnt_y") = 256, py::arg("save_path") = "");
+
+  m.def("pin_density", [](int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "") -> py::tuple {
+      auto [max_density, avg_density] = pin_density(bin_cnt_x, bin_cnt_y, save_path);
+      return py::make_tuple(max_density, avg_density);
+  }, py::arg("bin_cnt_x") = 256, py::arg("bin_cnt_y") = 256, py::arg("save_path") = "");
+
+  m.def("net_density", [](int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "") -> py::tuple {
+      auto [max_density, avg_density] = net_density(bin_cnt_x, bin_cnt_y, save_path);
+      return py::make_tuple(max_density, avg_density);
+  }, py::arg("bin_cnt_x") = 256, py::arg("bin_cnt_y") = 256, py::arg("save_path") = "");
+    
   // congestion evalation
-  m.def("init_cong_eval", init_cong_eval, py::arg("bin_cnt_x"), py::arg("bin_cnt_y"));
   m.def("eval_macro_density", eval_macro_density);
   m.def("eval_macro_pin_density", eval_macro_pin_density);
   m.def("eval_cell_pin_density", eval_cell_pin_density);
@@ -51,8 +82,6 @@ void register_eval(py::module& m)
   m.def("init_timing_eval", init_timing_eval);
 
   // plot api
-  m.def("plot_bin_value", plot_bin_value, py::arg("plot_path"), py::arg("file_name"), py::arg("value_type"));
-  m.def("plot_tile_value", plot_tile_value, py::arg("plot_path"), py::arg("file_name"));
   m.def("plot_flow_value", plot_flow_value, py::arg("plot_path"), py::arg("file_name"), py::arg("step"), py::arg("value"));
   // m.def("eval_net_density", eval_net_density, py::arg("inst_status"));
   // m.def("eval_local_net_density", eval_local_net_density);

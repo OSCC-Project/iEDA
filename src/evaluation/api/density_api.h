@@ -45,6 +45,9 @@ class DensityAPI
   std::map<int, double> patchNetDensity(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
   std::map<int, int> patchMacroMargin(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
 
+  DensityValue cellDensity(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
+  DensityValue pinDensity(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
+  DensityValue netDensity(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
 
  private:
   static DensityAPI* _density_api_inst;
