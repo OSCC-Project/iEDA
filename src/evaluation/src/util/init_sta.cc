@@ -1223,7 +1223,7 @@ void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, c
 
   file.close();
 
-  LOG_INFO << "output instance graph yaml file path: " << json_file_name;
+  LOG_INFO << "output instance graph json file path: " << json_file_name;
   LOG_INFO << "save instance timing graph end";
 }
 
