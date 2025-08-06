@@ -23,8 +23,6 @@
 
 #include "init_sta.hh"
 
-#include <yaml-cpp/yaml.h>
-
 #include <algorithm>
 #include <thread>
 
@@ -1141,9 +1139,7 @@ bool InitSTA::getRcNet(const std::string& net_name)
 /// @brief Save wire timing graph to yaml file.
 void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string& json_file_name)
 {
-  LOG_INFO << "save wire timing graph start";
-
-  std::ofstream file(json_file_name, std::ios::trunc);
+  LOG_INFO << "save wire timing graph start";  
 
   json nodes_json;
   json edges_json;
@@ -1174,7 +1170,8 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
   json graph_json;
   graph_json["nodes"] = nodes_json;
   graph_json["edges"] = edges_json;
-  
+
+  std::ofstream file(json_file_name, std::ios::trunc);  
   file << graph_json.dump(4) << std::endl;
 
   file.close();
@@ -1185,9 +1182,7 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
 
 void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, const std::string& json_file_name)
 {
-  LOG_INFO << "save instance timing graph start";
-
-  std::ofstream file(json_file_name, std::ios::trunc);
+  LOG_INFO << "save instance timing graph start";  
 
   json nodes_json;
   json edges_json;
@@ -1219,6 +1214,7 @@ void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, c
   graph_json["nodes"] = nodes_json;
   graph_json["edges"] = edges_json;
   
+  std::ofstream file(json_file_name, std::ios::trunc);
   file << graph_json.dump(4) << std::endl;
 
   file.close();
