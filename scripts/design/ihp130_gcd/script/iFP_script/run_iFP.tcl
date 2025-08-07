@@ -9,8 +9,15 @@ set NETLIST_FILE        "$::env(NETLIST_FILE)"
 
 # input variables
 set TOP_NAME            "$::env(TOP_NAME)"
-set DIE_AREA            "$::env(DIE_AREA)"
-set CORE_AREA           "$::env(CORE_AREA)"
+set USE_FIXED_BBOX      "$::env(USE_FIXED_BBOX)"
+puts ">>> iFP: USE_FIXED_BBOX $USE_FIXED_BBOX"
+if { $USE_FIXED_BBOX == "False" } {
+   set CORE_UTIL        "$::env(CORE_UTIL)"
+} else {
+   set DIE_BBOX         "$::env(DIE_BBOX)"
+   set CORE_BBOX        "$::env(CORE_BBOX)"
+}
+
 
 # output files
 set OUTPUT_DEF          "$RESULT_DIR/iFP_result.def"
@@ -63,12 +70,23 @@ set PLACE_SITE CoreSite
 set IO_SITE sg13g2_ioSite
 set CORNER_SITE sg13g2_ioSite
 
-init_floorplan \
-   -die_area $DIE_AREA \
-   -core_area $CORE_AREA \
-   -core_site $PLACE_SITE \
-   -io_site $IO_SITE \
-   -corner_site $CORNER_SITE
+if { $USE_FIXED_BBOX == "False" } {
+   puts ">>> iFP: using core_util $CORE_UTIL"
+   init_floorplan \
+      -core_util $CORE_UTIL \
+      -core_site $PLACE_SITE \
+      -io_site $IO_SITE \
+      -corner_site $CORNER_SITE
+} else {
+   puts ">>> iFP: using fixed area die $DIE_BBOX, and core $CORE_BBOX"
+   init_floorplan \
+      -die_area $DIE_BBOX \
+      -core_area $CORE_BBOX \
+      -core_site $PLACE_SITE \
+      -io_site $IO_SITE \
+      -corner_site $CORNER_SITE
+}
+
 
 source $IEDA_TCL_SCRIPT_DIR/iFP_script/module/create_tracks.tcl
 

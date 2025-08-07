@@ -19,16 +19,27 @@
 #include "ifp_api.h"
 #include "tcl_ifp.h"
 #include "tool_manager.h"
+#include <cmath>
 namespace tcl {
 
 TclFpInit::TclFpInit(const char* cmd_name) : TclCmd(cmd_name)
 {
-  auto* tcl_file_name = new TclStringOption("-die_area", 0, nullptr);
+  auto* core_util = new TclDoubleOption("-core_util", 0);
+  auto* cell_area = new TclDoubleOption("-cell_area", 0);
+  auto* x_margin = new TclDoubleOption("-x_margin", 0, 10.0);
+  auto* y_margin = new TclDoubleOption("-y_margin", 0, 10.0);
+  auto* xy_ratio = new TclDoubleOption("-xy_ratio", 0, 1.0);
+  auto* tcl_die_area = new TclStringOption("-die_area", 0, nullptr);
   auto* tcl_core_area = new TclStringOption("-core_area", 0, nullptr);
   auto* tcl_core_site = new TclStringOption("-core_site", 0, nullptr);
   auto* tcl_io_site = new TclStringOption("-io_site", 0, nullptr);
   auto* tcl_corner_site = new TclStringOption("-corner_site", 0, nullptr);
-  addOption(tcl_file_name);
+  addOption(core_util);
+  addOption(cell_area);
+  addOption(x_margin);
+  addOption(y_margin);
+  addOption(xy_ratio);
+  addOption(tcl_die_area);
   addOption(tcl_core_area);
   addOption(tcl_core_site);
   addOption(tcl_io_site);
@@ -37,13 +48,22 @@ TclFpInit::TclFpInit(const char* cmd_name) : TclCmd(cmd_name)
 
 unsigned TclFpInit::check()
 {
-  TclOption* tcl_file_name = getOptionOrArg("-die_area");
+  TclOption* tcl_die_area = getOptionOrArg("-die_area");
   TclOption* tcl_core_area = getOptionOrArg("-core_area");
   TclOption* tcl_core_site = getOptionOrArg("-core_site");
+  TclOption* core_util = getOptionOrArg("-core_util");
   //   TclOption* tcl_io_site = getOptionOrArg("-io_site");
   //   TclOption* tcl_corner_site = getOptionOrArg("-corner_site");
-  LOG_FATAL_IF(!tcl_file_name);
-  LOG_FATAL_IF(!tcl_core_area);
+
+  // Check if either explicit areas are provided OR automatic calculation parameters are provided
+  bool has_explicit_areas = tcl_die_area && tcl_die_area->is_set_val() &&
+                            tcl_core_area && tcl_core_area->is_set_val();
+  bool has_auto_calc_params = core_util && core_util->is_set_val();
+  // Note: cell_area is now optional - if not provided, it will be retrieved from netlist
+
+  LOG_FATAL_IF(!has_explicit_areas && !has_auto_calc_params)
+    << "Either provide explicit -die_area and -core_area, or provide -core_util for automatic calculation (cell_area is optional)";
+
   LOG_FATAL_IF(!tcl_core_site);
   //   LOG_FATAL_IF(!tcl_io_site);
   //   LOG_FATAL_IF(!tcl_corner_site);
@@ -56,18 +76,64 @@ unsigned TclFpInit::exec()
     return 0;
   }
 
-  TclOption* tcl_file_name = getOptionOrArg("-die_area");
+  TclOption* tcl_die_area = getOptionOrArg("-die_area");
   TclOption* tcl_core_area = getOptionOrArg("-core_area");
   TclOption* tcl_core_site = getOptionOrArg("-core_site");
   TclOption* tcl_io_site = getOptionOrArg("-io_site");
   TclOption* tcl_corner_site = getOptionOrArg("-corner_site");
+  TclOption* core_util = getOptionOrArg("-core_util");
+  TclOption* cell_area = getOptionOrArg("-cell_area");
+  TclOption* x_margin = getOptionOrArg("-x_margin");
+  TclOption* y_margin = getOptionOrArg("-y_margin");
+  TclOption* xy_ratio = getOptionOrArg("-xy_ratio");
 
   ieda::Str str = ieda::Str();
 
-  // auto idb_design = dmInst->get_idb_design();
+  std::vector<double> die_area;
+  std::vector<double> core_area;
 
-  std::vector<double> die_area = str.splitDouble(tcl_file_name->getStringVal(), " ");
-  std::vector<double> core_area = str.splitDouble(tcl_core_area->getStringVal(), " ");
+  // Check if explicit areas are provided
+  bool has_explicit_areas = tcl_die_area && tcl_die_area->is_set_val() &&
+                            tcl_core_area && tcl_core_area->is_set_val();
+
+  if (has_explicit_areas) {
+    // Use explicitly provided areas
+    die_area = str.splitDouble(tcl_die_area->getStringVal(), " ");
+    core_area = str.splitDouble(tcl_core_area->getStringVal(), " ");
+  } else {
+    // Calculate die and core bounding box using core_util
+    double util = core_util->getDoubleVal();
+
+    // Get cell area - either from user input or get from iDB
+    double cell_area_val;
+    if (cell_area && cell_area->is_set_val()) {
+      cell_area_val = cell_area->getDoubleVal();
+    } else {
+      cell_area_val = dmInst->instanceArea(IdbInstanceType::kMax);
+    }
+
+    double x_margin_val = x_margin->getDoubleVal();
+    double y_margin_val = y_margin->getDoubleVal();
+    double ratio = xy_ratio->getDoubleVal();
+
+    // Calculate core area based on cell area and utilization
+    double total_core_area = cell_area_val / util;
+
+    // Calculate core dimensions based on aspect ratio
+    double core_height = sqrt(total_core_area / ratio);
+    double core_width = total_core_area / core_height;
+
+    // Calculate die dimensions by adding margins
+    double die_width = core_width + 2 * x_margin_val;
+    double die_height = core_height + 2 * y_margin_val;
+
+    // Set die area (llx, lly, urx, ury)
+    die_area = {0.0, 0.0, die_width, die_height};
+
+    // Set core area with margins
+    core_area = {x_margin_val, y_margin_val, x_margin_val + core_width, y_margin_val + core_height};
+  }
+
   string core_site = tcl_core_site->getStringVal();
   string io_site = tcl_io_site->getStringVal() == nullptr ? core_site : tcl_io_site->getStringVal();
   string corner_site = tcl_corner_site->getStringVal() == nullptr ? io_site : tcl_corner_site->getStringVal();
