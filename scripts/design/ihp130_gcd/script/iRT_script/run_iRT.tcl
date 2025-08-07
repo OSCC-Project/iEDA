@@ -62,6 +62,8 @@ def_init -path $INPUT_DEF
 #===========================================================
 ##   run Router
 #===========================================================
+init_notification
+
 init_rt -temp_directory_path $TOOL_REPORT_DIR \
         -bottom_routing_layer "Metal2" \
         -top_routing_layer "Metal5" \
