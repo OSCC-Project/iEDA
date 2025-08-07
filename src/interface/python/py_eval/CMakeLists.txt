@@ -13,5 +13,6 @@ target_link_libraries(py_eval
 )
 target_include_directories(py_eval
     PUBLIC
+    ${EVAL_DATA}
     ${CMAKE_CURRENT_SOURCE_DIR}
 )

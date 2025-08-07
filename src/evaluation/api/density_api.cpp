@@ -256,4 +256,28 @@ std::map<int, int> DensityAPI::patchMacroMargin(std::map<int, std::pair<std::pai
   return patch_macro_margin;
 }
 
+DensityValue DensityAPI::cellDensity(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
+{
+  EVAL_DENSITY_INST->initIDB();
+  DensityValue density_value = EVAL_DENSITY_INST->calCellDensity(bin_cnt_x, bin_cnt_y, save_path);
+  EVAL_DENSITY_INST->destroyIDB();
+  return density_value;
+}
+
+DensityValue DensityAPI::pinDensity(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
+{
+  EVAL_DENSITY_INST->initIDB();
+  DensityValue density_value = EVAL_DENSITY_INST->calPinDensity(bin_cnt_x, bin_cnt_y, save_path);
+  EVAL_DENSITY_INST->destroyIDB();
+  return density_value;
+}
+
+DensityValue DensityAPI::netDensity(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
+{
+  EVAL_DENSITY_INST->initIDB();
+  DensityValue density_value = EVAL_DENSITY_INST->calNetDensity(bin_cnt_x, bin_cnt_y, save_path);
+  EVAL_DENSITY_INST->destroyIDB();
+  return density_value;
+}
+
 }  // namespace ieval

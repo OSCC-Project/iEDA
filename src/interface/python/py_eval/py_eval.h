@@ -18,17 +18,35 @@
 
 #include <string>
 #include <vector>
+
+#include "wirelength_db.h"
+#include "density_db.h"
+#include "congestion_db.h"
+#include "timing_db.hh"
+
 namespace python_interface {
 
 // wirelength evaluation
-void init_wirelength_eval();
-int64_t eval_total_wirelength(int wirelength_type);
+ieval::TotalWLSummary total_wirelength();
+
+// density evaluation
+ieval::DensityValue cell_density(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
+ieval::DensityValue pin_density(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
+ieval::DensityValue net_density(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
 
 // congestion evaluation
-void init_cong_eval(int bin_cnt_x, int bin_cnt_y);
-void eval_macro_density();
-void eval_macro_pin_density();
-void eval_cell_pin_density();
+ieval::CongestionValue rudy_congestion(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
+ieval::CongestionValue lut_rudy_congestion(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
+ieval::CongestionValue egr_congestion(const std::string& save_path = "");
+
+// timing and power evaluation
+ieval::TimingSummary timing_power_hpwl();
+ieval::TimingSummary timing_power_stwl();
+ieval::TimingSummary timing_power_egr();
+
+
+
+
 void eval_macro_margin();
 void eval_macro_channel(float die_size_ratio = 0.5);
 void eval_continuous_white_space();
@@ -38,17 +56,7 @@ void eval_macro_connection(const std::string& plot_path, int level = 1, int forw
 void eval_macro_pin_connection(const std::string& plot_path, int level = 1, int forward = 1);
 void eval_macro_io_pin_connection(const std::string& plot_path, int level = 1, int forward = 1);
 
-void eval_inst_density(int inst_status, int eval_flip_flop = 0);
-void eval_pin_density(int inst_status, int level = 0);
-void eval_rudy_cong(int rudy_type, int direction);
 std::vector<float> eval_overflow();
 
-// timing evaluation
-void init_timing_eval();
-
-// plot API
-void plot_bin_value(const std::string& plot_path, const std::string& file_name, int value_type);
-void plot_tile_value(const std::string& plot_path, const std::string& file_name);
-void plot_flow_value(const std::string& plot_path, const std::string& file_name, const std::string& step, const std::string& value);
 
 }  // namespace python_interface

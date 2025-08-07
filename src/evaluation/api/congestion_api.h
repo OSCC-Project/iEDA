@@ -41,6 +41,10 @@ class CongestionAPI
   std::map<int, double> patchEGRCongestion(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
   std::map<int, std::map<std::string, double>> patchLayerEGRCongestion(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
 
+  CongestionValue rudyCongestion(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
+  CongestionValue lutRudyCongestion(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
+  CongestionValue egrCongestion(const std::string& save_path = "");
+
   void evalNetInfo();
   void evalNetInfoPure();
   int findPinNumber(std::string net_name);
