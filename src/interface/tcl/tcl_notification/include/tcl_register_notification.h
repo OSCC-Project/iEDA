@@ -16,18 +16,16 @@
 // ***************************************************************************************
 #pragma once
 
-#include <string>
+#include "tcl_notification.h"
 
-#include "init_sta.hh"
+using namespace ieda;
 
-namespace python_interface {
+namespace tcl {
 
-bool layout_patchs(const std::string& path);
-bool layout_graph(const std::string& path);
-bool generate_vectors(std::string dir, int patch_row_step, int patch_col_step);
+int registerCmdNotification()
+{
+  registerTclCmd(TclInitNotification, "init_notification");
+  return EXIT_SUCCESS;
+}
 
-// for vectorization wire timing graph.
-ieval::TimingWireGraph get_timing_wire_graph(std::string wire_graph_path);
-ieval::TimingInstanceGraph get_timing_instance_graph(std::string instance_graph_path);
-
-}  // namespace python_interface
+}  // namespace tcl

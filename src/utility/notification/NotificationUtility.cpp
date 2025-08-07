@@ -17,7 +17,7 @@
 #include "NotificationUtility.h"
 
 #include <curl/curl.h>
-#include <json/json.hpp>
+#include <json.hpp>
 #include <chrono>
 #include <iomanip>
 #include <sstream>
@@ -25,6 +25,7 @@
 #include <iostream>
 #include <algorithm>
 #include <thread>
+#include <typeinfo>
 
 using json = nlohmann::json;
 
@@ -87,6 +88,7 @@ bool NotificationUtility::initialize(const NotificationConfig& config) {
 
 bool NotificationUtility::initialize(const std::string& endpoint_url) {
     NotificationConfig config;
+    bool is_env_set = true;
 
     // Use provided URL or try to get from environment
     if (!endpoint_url.empty()) {
@@ -95,6 +97,9 @@ bool NotificationUtility::initialize(const std::string& endpoint_url) {
         const char* env_url = std::getenv("IEDA_ECOS_NOTIFICATION_URL");
         if (env_url) {
             config.endpoint_url = env_url;
+        } else {
+            std::cerr << "IEDA_ECOS_NOTIFICATION_URL is not set" << std::endl;
+            is_env_set = false;
         }
     }
 
@@ -103,9 +108,30 @@ bool NotificationUtility::initialize(const std::string& endpoint_url) {
     const char* env_project_id = std::getenv("ECOS_PROJECT_ID");
     const char* env_task_type = std::getenv("ECOS_TASK_TYPE");
 
-    if (env_task_id) config.task_id = env_task_id;
-    if (env_project_id) config.project_id = env_project_id;
-    if (env_task_type) config.task_type = env_task_type;
+    if (env_project_id)
+        config.project_id = env_project_id;
+    else {
+        std::cerr << "ECOS_PROJECT_ID is not set" << std::endl;
+        is_env_set = false;
+    }
+    if (env_task_id)
+        config.task_id = env_task_id;
+    else {
+        std::cerr << "ECOS_TASK_ID is not set" << std::endl;
+        is_env_set = false;
+    }
+    if (env_task_type)
+        config.task_type = env_task_type;
+    else {
+        std::cerr << "ECOS_TASK_TYPE is not set" << std::endl;
+        is_env_set = false;
+    }
+
+    if (!is_env_set) {
+        std::cerr << "Required environment variables for ECOS notifications are not set. Disabling notifications for this session." << std::endl;
+        setEnabled(false);
+        return false;
+    }
 
     return initialize(config);
 }
@@ -124,7 +150,7 @@ bool NotificationUtility::initialize(const std::string& endpoint_url,
 }
 
 NotificationUtility::HttpResponse NotificationUtility::sendNotification(const std::string& tool_name, 
-                                                                         const std::map<std::string, std::string>& metadata) {
+                                                                         const std::map<std::string, std::any>& metadata) {
     NotificationPayload payload;
     payload.tool_name = tool_name;
     payload.metadata = metadata;
@@ -314,10 +340,45 @@ std::string NotificationUtility::payloadToJson(const NotificationPayload& payloa
 
     // Add metadata
     if (!payload.metadata.empty()) {
-        j["metadata"] = payload.metadata;
+        json metadata_json;
+        for (const auto& [key, value] : payload.metadata) {
+            metadata_json[key] = convertAnyToJson(value);
+        }
+        j["metadata"] = metadata_json;
     }
 
     return j.dump();
+}
+
+nlohmann::json NotificationUtility::convertAnyToJson(const std::any& any_value) {
+    try {
+        // Try common types first
+        if (any_value.type() == typeid(std::string)) {
+            return std::any_cast<std::string>(any_value);
+        } else if (any_value.type() == typeid(int)) {
+            return std::any_cast<int>(any_value);
+        } else if (any_value.type() == typeid(int32_t)) {
+            return std::any_cast<int32_t>(any_value);
+        } else if (any_value.type() == typeid(int64_t)) {
+            return std::any_cast<int64_t>(any_value);
+        } else if (any_value.type() == typeid(double)) {
+            return std::any_cast<double>(any_value);
+        } else if (any_value.type() == typeid(float)) {
+            return std::any_cast<float>(any_value);
+        } else if (any_value.type() == typeid(bool)) {
+            return std::any_cast<bool>(any_value);
+        } else if (any_value.type() == typeid(const char*)) {
+            return std::string(std::any_cast<const char*>(any_value));
+        } else if (any_value.type() == typeid(std::map<std::string, std::string>)) {
+            return std::any_cast<std::map<std::string, std::string>>(any_value);
+        } else {
+            // For unknown types, try to convert to string representation
+            return std::string("unsupported_type:") + any_value.type().name();
+        }
+    } catch (const std::bad_any_cast& e) {
+        // If conversion fails, return error info
+        return std::string("conversion_error:") + e.what();
+    }
 }
 
 std::string NotificationUtility::getCurrentTimestamp() {

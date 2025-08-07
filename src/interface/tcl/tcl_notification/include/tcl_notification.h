@@ -16,18 +16,22 @@
 // ***************************************************************************************
 #pragma once
 
-#include <string>
+#include "tcl_util.h"
 
-#include "init_sta.hh"
+namespace tcl {
 
-namespace python_interface {
+class TclInitNotification : public TclCmd
+{
+ public:
+  explicit TclInitNotification(const char* cmd_name);
+  ~TclInitNotification() override = default;
 
-bool layout_patchs(const std::string& path);
-bool layout_graph(const std::string& path);
-bool generate_vectors(std::string dir, int patch_row_step, int patch_col_step);
+  unsigned check() override { return 1; };
 
-// for vectorization wire timing graph.
-ieval::TimingWireGraph get_timing_wire_graph(std::string wire_graph_path);
-ieval::TimingInstanceGraph get_timing_instance_graph(std::string instance_graph_path);
+  unsigned exec() override;
 
-}  // namespace python_interface
+ private:
+  std::vector<std::pair<std::string, ValueType>> _config_list;
+};
+
+}  // namespace tcl

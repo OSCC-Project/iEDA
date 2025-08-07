@@ -24,6 +24,7 @@
 #pragma once
 
 #include <yaml-cpp/yaml.h>
+#include "json/json.hpp"
 
 #include "StaFunc.hh"
 
@@ -98,6 +99,32 @@ class StaDumpWireYaml : public StaDumpDelayYaml {
 
   private:
   std::ofstream& _file;
+};
+
+/**
+ * @brief The class for dump wire data in json text file for training data.
+ * 
+ */
+class StaDumpWireJson : public StaDumpDelayYaml {
+ public:
+
+  using json = nlohmann::ordered_json;
+  StaDumpWireJson(json& parent_json) : _parent_json(parent_json) {}
+  ~StaDumpWireJson() override = default;  
+  
+  void set_analysis_mode(AnalysisMode analysis_mode) {
+    _analysis_mode = analysis_mode;
+  }
+  AnalysisMode get_analysis_mode() override { return _analysis_mode; }
+
+  void set_trans_type(TransType trans_type) { _trans_type = trans_type; }
+  auto get_trans_type() { return _trans_type; }
+  
+  unsigned operator()(StaVertex* the_vertex) override;
+  unsigned operator()(StaArc* the_arc) override;
+
+  private:
+  json& _parent_json;
 };
 
 /**
