@@ -13,6 +13,12 @@
 #include <vector>
 
 namespace ieval {
+
+struct CongestionValue {
+    double max_congestion;
+    double total_congestion;
+};
+
 struct CongestionPin
 {
   int32_t lx;

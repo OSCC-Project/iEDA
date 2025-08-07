@@ -40,6 +40,7 @@ ieval::TotalWLSummary total_wirelength()
   return result;
 }
 
+
 // density evaluation
 ieval::DensityValue cell_density(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
 {
@@ -59,18 +60,110 @@ ieval::DensityValue net_density(int bin_cnt_x, int bin_cnt_y, const std::string&
   return density_value;
 }
 
-void eval_macro_density()
+
+// congestion evaluation
+ieval::CongestionValue rudy_congestion(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
 {
+  ieval::CongestionValue congestion_value = CONGESTION_API_INST->rudyCongestion(bin_cnt_x, bin_cnt_y, save_path);
+  return congestion_value;
 }
 
-void eval_macro_pin_density()
+ieval::CongestionValue lut_rudy_congestion(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
 {
+  ieval::CongestionValue congestion_value = CONGESTION_API_INST->lutRudyCongestion(bin_cnt_x, bin_cnt_y, save_path);
+  return congestion_value;
 }
 
-void eval_cell_pin_density()
+ieval::CongestionValue egr_congestion(const std::string& save_path)
 {
+  ieval::CongestionValue congestion_value = CONGESTION_API_INST->egrCongestion(save_path);
+  return congestion_value;
 }
 
+
+// timing and power evaluation
+ieval::TimingSummary timing_power_hpwl()
+{
+    TimingPower_API_INST->evalTiming("HPWL", false);
+
+    std::map<std::string, ieval::TimingSummary> timing_summary = TimingPower_API_INST->evalDesign();
+    ieval::TimingSummary hpwl_timing_eval_summary;
+
+    auto hpwl_timing_summary = timing_summary.at("HPWL");
+
+    std::for_each(hpwl_timing_summary.clock_timings.begin(), hpwl_timing_summary.clock_timings.end(),
+                  [&hpwl_timing_eval_summary](const auto& clock_timing) {
+                      hpwl_timing_eval_summary.clock_timings.push_back({
+                          clock_timing.clock_name,
+                          clock_timing.setup_tns,
+                          clock_timing.setup_wns,
+                          clock_timing.hold_tns,
+                          clock_timing.hold_wns,
+                          clock_timing.suggest_freq
+                      });
+                  });
+
+    hpwl_timing_eval_summary.static_power = hpwl_timing_summary.static_power;
+    hpwl_timing_eval_summary.dynamic_power = hpwl_timing_summary.dynamic_power;
+
+    return hpwl_timing_eval_summary;
+}
+
+ieval::TimingSummary timing_power_stwl()
+{
+    TimingPower_API_INST->evalTiming("FLUTE", false);
+
+    std::map<std::string, ieval::TimingSummary> timing_summary = TimingPower_API_INST->evalDesign();
+    ieval::TimingSummary stwl_timing_eval_summary;
+
+    auto stwl_timing_summary = timing_summary.at("FLUTE");
+
+    std::for_each(stwl_timing_summary.clock_timings.begin(), stwl_timing_summary.clock_timings.end(),
+                  [&stwl_timing_eval_summary](const auto& clock_timing) {
+                      stwl_timing_eval_summary.clock_timings.push_back({
+                          clock_timing.clock_name,
+                          clock_timing.setup_tns,
+                          clock_timing.setup_wns,
+                          clock_timing.hold_tns,
+                          clock_timing.hold_wns,
+                          clock_timing.suggest_freq
+                      });
+                  });
+
+    stwl_timing_eval_summary.static_power = stwl_timing_summary.static_power;
+    stwl_timing_eval_summary.dynamic_power = stwl_timing_summary.dynamic_power;
+
+    return stwl_timing_eval_summary;
+}
+
+ieval::TimingSummary timing_power_egr()
+{
+    TimingPower_API_INST->evalTiming("EGR", false);
+
+    std::map<std::string, ieval::TimingSummary> timing_summary = TimingPower_API_INST->evalDesign();
+    ieval::TimingSummary egr_timing_eval_summary;
+
+    auto egr_timing_summary = timing_summary.at("EGR");
+
+    std::for_each(egr_timing_summary.clock_timings.begin(), egr_timing_summary.clock_timings.end(),
+                  [&egr_timing_eval_summary](const auto& clock_timing) {
+                      egr_timing_eval_summary.clock_timings.push_back({
+                          clock_timing.clock_name,
+                          clock_timing.setup_tns,
+                          clock_timing.setup_wns,
+                          clock_timing.hold_tns,
+                          clock_timing.hold_wns,
+                          clock_timing.suggest_freq
+                      });
+                  });
+
+    egr_timing_eval_summary.static_power = egr_timing_summary.static_power;
+    egr_timing_eval_summary.dynamic_power = egr_timing_summary.dynamic_power;
+
+    return egr_timing_eval_summary;
+}
+
+// other evaluation (TO BE DONE)
 void eval_macro_margin()
 {
 }
@@ -103,34 +196,11 @@ void eval_macro_io_pin_connection(const std::string& plot_path, int level, int f
 {
 }
 
-void eval_inst_density(int inst_status, int eval_flip_flop)
-{
-}
-
-void eval_pin_density(int inst_status, int level)
-{
-}
-
-void eval_rudy_cong(int rudy_type, int direction)
-{
-}
 
 std::vector<float> eval_overflow()
 {
   return {};
 }
 
-// timing evaluation
-void init_timing_eval()
-{
-
-}
-
-
-
-void plot_flow_value(const std::string& plot_path, const std::string& file_name, const std::string& step, const std::string& value)
-{
-
-}
 
 }  // namespace python_interface

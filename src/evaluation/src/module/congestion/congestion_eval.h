@@ -83,6 +83,10 @@ class CongestionEval
   CongestionNets getCongestionNets();
   CongestionRegion getCongestionRegion();
 
+  CongestionValue calRUDY(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
+  CongestionValue calLUTRUDY(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
+  CongestionValue calEGRCongestion(const std::string& save_path = "");
+
   void evalNetInfo();
   int findPinNumber(std::string net_name);
   int findAspectRatio(std::string net_name);

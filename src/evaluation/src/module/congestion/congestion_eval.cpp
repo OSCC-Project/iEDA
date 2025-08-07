@@ -915,6 +915,340 @@ int32_t CongestionEval::getRowHeight()
   return EVAL_INIT_IDB_INST->getRowHeight();
 }
 
+CongestionValue CongestionEval::calRUDY(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
+{
+  CongestionRegion region = getCongestionRegion();
+  CongestionNets nets = getCongestionNets();
+
+  std::vector<std::vector<double>> density_grid(bin_cnt_y, std::vector<double>(bin_cnt_x, 0.0));
+
+  double grid_size_x = static_cast<double>(region.ux - region.lx) / bin_cnt_x;
+  double grid_size_y = static_cast<double>(region.uy - region.ly) / bin_cnt_y;
+
+  for (const auto& net : nets) {
+    int32_t start_row = bin_cnt_y - 1;
+    int32_t end_row = 0;
+    int32_t start_col = bin_cnt_x - 1;
+    int32_t end_col = 0;
+    int32_t net_lx = INT32_MAX;
+    int32_t net_ly = INT32_MAX;
+    int32_t net_ux = INT32_MIN;
+    int32_t net_uy = INT32_MIN;
+
+    for (const auto& pin : net.pins) {
+      int32_t pin_col = static_cast<int32_t>((pin.lx - region.lx) / grid_size_x);
+      int32_t pin_row = static_cast<int32_t>((pin.ly - region.ly) / grid_size_y);
+      
+      pin_col = std::max(0, std::min(bin_cnt_x - 1, pin_col));
+      pin_row = std::max(0, std::min(bin_cnt_y - 1, pin_row));
+      
+      start_row = std::min(start_row, pin_row);
+      end_row = std::max(end_row, pin_row);
+      start_col = std::min(start_col, pin_col);
+      end_col = std::max(end_col, pin_col);
+      
+      net_lx = std::min(net_lx, pin.lx);
+      net_ly = std::min(net_ly, pin.ly);
+      net_ux = std::max(net_ux, pin.lx);
+      net_uy = std::max(net_uy, pin.ly);
+    }
+
+    double hor_rudy = 0.0;
+    if (net_uy == net_ly) {
+      hor_rudy = 1.0;
+    } else {
+      hor_rudy = 1.0 / static_cast<double>(net_uy - net_ly);
+    }
+    
+    double ver_rudy = 0.0;
+    if (net_ux == net_lx) {
+      ver_rudy = 1.0;
+    } else {
+      ver_rudy = 1.0 / static_cast<double>(net_ux - net_lx);
+    }
+
+    for (int32_t row = start_row; row <= end_row; ++row) {
+      for (int32_t col = start_col; col <= end_col; ++col) {
+        double grid_lx = region.lx + col * grid_size_x;
+        double grid_ly = region.ly + row * grid_size_y;
+        double grid_ux = std::min(region.lx + (col + 1) * grid_size_x, static_cast<double>(region.ux));
+        double grid_uy = std::min(region.ly + (row + 1) * grid_size_y, static_cast<double>(region.uy));
+        double grid_area = (grid_ux - grid_lx) * (grid_uy - grid_ly);
+
+        double overlap_lx = std::max(static_cast<double>(net_lx), grid_lx);
+        double overlap_ly = std::max(static_cast<double>(net_ly), grid_ly);
+        double overlap_ux = std::min(static_cast<double>(net_ux), grid_ux);
+        double overlap_uy = std::min(static_cast<double>(net_uy), grid_uy);
+
+        double overlap_area = 0.0;
+        if (overlap_lx == overlap_ux) {
+          overlap_area = overlap_uy - overlap_ly; 
+        } else if (overlap_ly == overlap_uy) {
+          overlap_area = overlap_ux - overlap_lx;
+        } else {
+          overlap_area = (overlap_ux - overlap_lx) * (overlap_uy - overlap_ly);
+        }
+
+        density_grid[row][col] += overlap_area * (hor_rudy + ver_rudy) / grid_area;
+      }
+    }
+  }
+
+  if (!save_path.empty()) {
+    std::ofstream csv_file(save_path);
+    if (csv_file.is_open()) {
+      for (size_t row_index = density_grid.size(); row_index-- > 0;) {
+        const auto& row = density_grid[row_index];
+        for (size_t i = 0; i < row.size(); ++i) {
+          csv_file << std::fixed << std::setprecision(6) << row[i];
+          if (i < row.size() - 1)
+            csv_file << ",";
+        }
+        csv_file << "\n";
+      }
+      csv_file.close();
+    }
+  }
+
+  double max_congestion = 0.0;
+  double total_congestion = 0.0;
+  
+  for (const auto& row : density_grid) {
+    for (double congestion : row) {
+      total_congestion += congestion;
+      max_congestion = std::max(max_congestion, congestion);
+    }
+  }
+  
+  CongestionValue result;
+  result.max_congestion = max_congestion;
+  result.total_congestion = total_congestion;
+  
+  return result;
+
+}
+
+CongestionValue CongestionEval::calLUTRUDY(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
+{
+  CongestionRegion region = getCongestionRegion();
+  CongestionNets nets = getCongestionNets();
+
+  std::vector<std::vector<double>> density_grid(bin_cnt_y, std::vector<double>(bin_cnt_x, 0.0));
+
+  double grid_size_x = static_cast<double>(region.ux - region.lx) / bin_cnt_x;
+  double grid_size_y = static_cast<double>(region.uy - region.ly) / bin_cnt_y;
+
+  for (const auto& net : nets) {
+    int32_t start_row = bin_cnt_y - 1;
+    int32_t end_row = 0;
+    int32_t start_col = bin_cnt_x - 1;
+    int32_t end_col = 0;
+    int32_t net_lx = INT32_MAX;
+    int32_t net_ly = INT32_MAX;
+    int32_t net_ux = INT32_MIN;
+    int32_t net_uy = INT32_MIN;
+
+    for (const auto& pin : net.pins) {
+      int32_t pin_col = static_cast<int32_t>((pin.lx - region.lx) / grid_size_x);
+      int32_t pin_row = static_cast<int32_t>((pin.ly - region.ly) / grid_size_y);
+      
+      pin_col = std::max(0, std::min(bin_cnt_x - 1, pin_col));
+      pin_row = std::max(0, std::min(bin_cnt_y - 1, pin_row));
+      
+      start_row = std::min(start_row, pin_row);
+      end_row = std::max(end_row, pin_row);
+      start_col = std::min(start_col, pin_col);
+      end_col = std::max(end_col, pin_col);
+      
+      net_lx = std::min(net_lx, pin.lx);
+      net_ly = std::min(net_ly, pin.ly);
+      net_ux = std::max(net_ux, pin.lx);
+      net_uy = std::max(net_uy, pin.ly);
+    }
+
+    int pin_num = net.pins.size();
+    int aspect_ratio = 1;
+    if (net_ux - net_lx >= net_uy - net_ly && net_uy - net_ly != 0) {
+      aspect_ratio = std::round((net_ux - net_lx) / static_cast<double>(net_uy - net_ly));
+    } else if (net_ux - net_lx < net_uy - net_ly && net_ux - net_lx != 0) {
+      aspect_ratio = std::round((net_uy - net_ly) / static_cast<double>(net_ux - net_lx));
+    }
+    double l_ness = 0.0;
+    if (pin_num < 3) {
+      l_ness = 1.0;
+    } else if (pin_num <= 15) {
+      std::vector<std::pair<int32_t, int32_t>> point_set;
+      for (const auto& pin : net.pins) {
+        point_set.push_back(std::make_pair(pin.lx, pin.ly));
+      }
+      l_ness = calculateLness(point_set, net_lx, net_ux, net_ly, net_uy);
+    } else {
+      l_ness = 0.5;
+    }
+
+    double hor_lutrudy = 0.0;
+    if (net_uy == net_ly) {
+      hor_lutrudy = 1.0;
+    } else {
+      hor_lutrudy = getLUT(pin_num, aspect_ratio, l_ness) / static_cast<double>(net_uy - net_ly);
+    }
+    double ver_lutrudy = 0.0;
+    if (net_ux == net_lx) {
+      ver_lutrudy = 1.0;
+    } else {
+      ver_lutrudy = getLUT(pin_num, aspect_ratio, l_ness) / static_cast<double>(net_ux - net_lx);
+    }
+
+    for (int32_t row = start_row; row <= end_row; ++row) {
+      for (int32_t col = start_col; col <= end_col; ++col) {
+        double grid_lx = region.lx + col * grid_size_x;
+        double grid_ly = region.ly + row * grid_size_y;
+        double grid_ux = std::min(region.lx + (col + 1) * grid_size_x, static_cast<double>(region.ux));
+        double grid_uy = std::min(region.ly + (row + 1) * grid_size_y, static_cast<double>(region.uy));
+        double grid_area = (grid_ux - grid_lx) * (grid_uy - grid_ly);
+
+        double overlap_lx = std::max(static_cast<double>(net_lx), grid_lx);
+        double overlap_ly = std::max(static_cast<double>(net_ly), grid_ly);
+        double overlap_ux = std::min(static_cast<double>(net_ux), grid_ux);
+        double overlap_uy = std::min(static_cast<double>(net_uy), grid_uy);
+
+        double overlap_area = 0.0;
+        if (overlap_lx == overlap_ux) {
+          overlap_area = overlap_uy - overlap_ly; 
+        } else if (overlap_ly == overlap_uy) {
+          overlap_area = overlap_ux - overlap_lx;
+        } else {
+          overlap_area = (overlap_ux - overlap_lx) * (overlap_uy - overlap_ly);
+        }
+
+        density_grid[row][col] += overlap_area * (hor_lutrudy + ver_lutrudy) / grid_area;
+      }
+    }
+  }
+
+  if (!save_path.empty()) {
+    std::ofstream csv_file(save_path);
+    if (csv_file.is_open()) {
+      for (size_t row_index = density_grid.size(); row_index-- > 0;) {
+        const auto& row = density_grid[row_index];
+        for (size_t i = 0; i < row.size(); ++i) {
+          csv_file << std::fixed << std::setprecision(6) << row[i];
+          if (i < row.size() - 1)
+            csv_file << ",";
+        }
+        csv_file << "\n";
+      }
+      csv_file.close();
+    }
+  }
+
+  double max_congestion = 0.0;
+  double total_congestion = 0.0;
+  
+  for (const auto& row : density_grid) {
+    for (double congestion : row) {
+      total_congestion += congestion;
+      max_congestion = std::max(max_congestion, congestion);
+    }
+  }
+  
+  CongestionValue result;
+  result.max_congestion = max_congestion;
+  result.total_congestion = total_congestion;
+  
+  return result;
+}
+
+
+CongestionValue CongestionEval::calEGRCongestion(const std::string& save_path)
+{
+  std::string rt_dir_path = getEGRDirPath();
+  
+  std::unordered_map<std::string, LayerDirection> layer_directions
+      = EVAL_INIT_EGR_INST->parseLayerDirection(rt_dir_path + "/early_router/route.guide");
+
+  std::vector<std::string> target_layers;
+  for (const auto& [layer, direction] : layer_directions) {
+    target_layers.push_back(layer);
+  }
+
+  std::string dir_path = rt_dir_path + "/early_router/";
+  std::vector<std::vector<double>> sum_matrix;
+  bool is_first_file = true;
+
+  for (const auto& entry : std::filesystem::directory_iterator(dir_path)) {
+    std::string filename = entry.path().filename().string();
+    if (filename.find("overflow_map_") != std::string::npos) {
+      for (const auto& layer : target_layers) {
+        if (filename.find(layer) != std::string::npos) {
+          std::ifstream file(entry.path());
+          std::string line;
+          size_t row = 0;
+          
+          while (std::getline(file, line)) {
+            std::istringstream iss(line);
+            std::string value;
+            int col = 0;
+            
+            while (std::getline(iss, value, ',')) {
+              double num_value = std::stod(value);
+              
+              if (is_first_file) {
+                if (row >= sum_matrix.size()) {
+                  sum_matrix.push_back(std::vector<double>());
+                }
+                sum_matrix[row].push_back(num_value);
+              } else {
+                if (row < sum_matrix.size() && col < sum_matrix[row].size()) {
+                  sum_matrix[row][col] += num_value;
+                }
+              }
+              col++;
+            }
+            row++;
+          }
+          is_first_file = false;
+          file.close();
+          break;
+        }
+      }
+    }
+  }
+
+  if (!save_path.empty()) {
+    std::ofstream out_file(save_path);
+    if (out_file.is_open()) {
+      for (const auto& row : sum_matrix) {
+        for (size_t i = 0; i < row.size(); ++i) {
+          out_file << std::fixed << std::setprecision(6) << row[i];
+          if (i < row.size() - 1) {
+            out_file << ",";
+          }
+        }
+        out_file << "\n";
+      }
+      out_file.close();
+    }
+  }
+
+  double max_congestion = 0.0;
+  double total_congestion = 0.0;
+  
+  for (const auto& row : sum_matrix) {
+    for (double congestion : row) {
+      total_congestion += congestion;
+      max_congestion = std::max(max_congestion, congestion);
+    }
+  }
+  
+  CongestionValue result;
+  result.max_congestion = max_congestion;
+  result.total_congestion = total_congestion;
+  
+  return result;
+
+}
+
 void CongestionEval::evalNetInfo()
 {
   CongestionNets nets = getCongestionNets();

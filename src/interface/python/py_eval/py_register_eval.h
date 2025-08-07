@@ -44,6 +44,7 @@ void register_eval(py::module& m)
       return result;
   });
 
+
   // density evaluation functions
   m.def("cell_density", [](int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "") -> py::tuple {
       auto [max_density, avg_density] = cell_density(bin_cnt_x, bin_cnt_y, save_path);
@@ -60,10 +61,109 @@ void register_eval(py::module& m)
       return py::make_tuple(max_density, avg_density);
   }, py::arg("bin_cnt_x") = 256, py::arg("bin_cnt_y") = 256, py::arg("save_path") = "");
     
+
   // congestion evalation
-  m.def("eval_macro_density", eval_macro_density);
-  m.def("eval_macro_pin_density", eval_macro_pin_density);
-  m.def("eval_cell_pin_density", eval_cell_pin_density);
+  m.def("rudy_congestion", [](int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "") -> py::tuple {
+      auto [max_congestion, total_congestion] = rudy_congestion(bin_cnt_x, bin_cnt_y, save_path);
+      return py::make_tuple(max_congestion, total_congestion);
+  }, py::arg("bin_cnt_x") = 256, py::arg("bin_cnt_y") = 256, py::arg("save_path") = "");
+
+  m.def("lut_rudy_congestion", [](int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "") -> py::tuple {
+      auto [max_congestion, total_congestion] = lut_rudy_congestion(bin_cnt_x, bin_cnt_y, save_path);
+      return py::make_tuple(max_congestion, total_congestion);
+  }, py::arg("bin_cnt_x") = 256, py::arg("bin_cnt_y") = 256, py::arg("save_path") = "");
+
+  m.def("egr_congestion", [](const std::string& save_path = "") -> py::tuple {
+      auto [max_congestion, total_congestion] = egr_congestion(save_path);
+      return py::make_tuple(max_congestion, total_congestion);
+  }, py::arg("save_path") = "");  
+
+
+  // timing and power evaluation
+  py::class_<ieval::ClockTiming>(m, "ClockTiming")
+      .def_readwrite("clock_name", &ieval::ClockTiming::clock_name)
+      .def_readwrite("setup_wns", &ieval::ClockTiming::setup_wns)
+      .def_readwrite("setup_tns", &ieval::ClockTiming::setup_tns)
+      .def_readwrite("hold_wns", &ieval::ClockTiming::hold_wns)
+      .def_readwrite("hold_tns", &ieval::ClockTiming::hold_tns)
+      .def_readwrite("suggest_freq", &ieval::ClockTiming::suggest_freq);
+
+  py::class_<ieval::TimingSummary>(m, "TimingSummary")
+      .def_readwrite("clock_timings", &ieval::TimingSummary::clock_timings)
+      .def_readwrite("static_power", &ieval::TimingSummary::static_power)
+      .def_readwrite("dynamic_power", &ieval::TimingSummary::dynamic_power);
+
+  m.def("timing_power_hpwl", []() -> py::dict {
+      ieval::TimingSummary summary = timing_power_hpwl();
+      py::dict result;
+      
+      py::list clock_list;
+      for (const auto& clock : summary.clock_timings) {
+          py::dict clock_dict;
+          clock_dict["clock_name"] = clock.clock_name;
+          clock_dict["setup_wns"] = clock.setup_wns;
+          clock_dict["setup_tns"] = clock.setup_tns;
+          clock_dict["hold_wns"] = clock.hold_wns;
+          clock_dict["hold_tns"] = clock.hold_tns;
+          clock_dict["suggest_freq"] = clock.suggest_freq;
+          clock_list.append(clock_dict);
+      }
+      result["clock_timings"] = clock_list;
+      
+      result["static_power"] = summary.static_power;
+      result["dynamic_power"] = summary.dynamic_power;
+      
+      return result;
+  });
+
+  m.def("timing_power_stwl", []() -> py::dict {
+      ieval::TimingSummary summary = timing_power_stwl();
+      py::dict result;
+      
+      py::list clock_list;
+      for (const auto& clock : summary.clock_timings) {
+          py::dict clock_dict;
+          clock_dict["clock_name"] = clock.clock_name;
+          clock_dict["setup_wns"] = clock.setup_wns;
+          clock_dict["setup_tns"] = clock.setup_tns;
+          clock_dict["hold_wns"] = clock.hold_wns;
+          clock_dict["hold_tns"] = clock.hold_tns;
+          clock_dict["suggest_freq"] = clock.suggest_freq;
+          clock_list.append(clock_dict);
+      }
+      result["clock_timings"] = clock_list;
+      
+      result["static_power"] = summary.static_power;
+      result["dynamic_power"] = summary.dynamic_power;
+      
+      return result;
+  });
+
+  m.def("timing_power_egr", []() -> py::dict {
+      ieval::TimingSummary summary = timing_power_egr();
+      py::dict result;
+      
+      py::list clock_list;
+      for (const auto& clock : summary.clock_timings) {
+          py::dict clock_dict;
+          clock_dict["clock_name"] = clock.clock_name;
+          clock_dict["setup_wns"] = clock.setup_wns;
+          clock_dict["setup_tns"] = clock.setup_tns;
+          clock_dict["hold_wns"] = clock.hold_wns;
+          clock_dict["hold_tns"] = clock.hold_tns;
+          clock_dict["suggest_freq"] = clock.suggest_freq;
+          clock_list.append(clock_dict);
+      }
+      result["clock_timings"] = clock_list;
+      
+      result["static_power"] = summary.static_power;
+      result["dynamic_power"] = summary.dynamic_power;
+      
+      return result;
+  });
+
+
+  // other evaluation (TO BE DONE)
   m.def("eval_macro_margin", eval_macro_margin);
   m.def("eval_continuous_white_space", eval_continuous_white_space);
   m.def("eval_macro_channel", eval_macro_channel, py::arg("die_size_ratio"));
@@ -73,34 +173,9 @@ void register_eval(py::module& m)
   m.def("eval_macro_pin_connection", eval_macro_pin_connection, py::arg("plot_path"), py::arg("level"), py::arg("forward"));
   m.def("eval_macro_io_pin_connection", eval_macro_io_pin_connection, py::arg("plot_path"), py::arg("level"), py::arg("forward"));
 
-  m.def("eval_inst_density", eval_inst_density, py::arg("inst_status"), py::arg("eval_flip_flop"));
-  m.def("eval_pin_density", eval_pin_density, py::arg("inst_status"), py::arg("level"));
-  m.def("eval_rudy_cong", eval_rudy_cong, py::arg("rudy_type"), py::arg("direction"));
   m.def("eval_overflow", eval_overflow);
 
-  // timing evaluation
-  m.def("init_timing_eval", init_timing_eval);
 
-  // plot api
-  m.def("plot_flow_value", plot_flow_value, py::arg("plot_path"), py::arg("file_name"), py::arg("step"), py::arg("value"));
-  // m.def("eval_net_density", eval_net_density, py::arg("inst_status"));
-  // m.def("eval_local_net_density", eval_local_net_density);
-  // m.def("eval_global_net_density", eval_global_net_density);
-  // m.def("eval_inst_num", eval_inst_num, py::arg("inst_status"));
-  // m.def("eval_net_num", eval_net_num, py::arg("net_type"));
-  // m.def("eval_pin_num", eval_pin_num, py::arg("inst_status"));
-  // m.def("eval_routing_layer_num", eval_routing_layer_num);
-  // m.def("eval_track_num", eval_track_num, py::arg("direction"));
-  // m.def("eval_track_remain_num", eval_track_remain_num);
-  // m.def("eval_track_overflow_num", eval_track_overflow_num);
-  // m.def("eval_chip_size", eval_chip_size, py::arg("region_type"));
-  // m.def("eval_inst_size", eval_inst_size, py::arg("inst_status");
-  // m.def("eval_net_size", eval_net_size);
-  // m.def("eval_area", eval_area, py::arg("inst_status"));
-  // m.def("eval_macro_peri_area", eval_macro_peri_area);
-  // m.def("eval_area_util", eval_area_util, py::arg("inst_status"));
-  // m.def("eval_macro_channel_util", eval_macro_channel_util, py::arg("dist_ratio"));
-  // m.def("eval_macro_channel_pin_util", eval_macro_channel_pin_util, py::arg("dist_ratio"));
 }
 
 }  // namespace python_interface
