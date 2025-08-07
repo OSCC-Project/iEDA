@@ -185,10 +185,6 @@ string CongestionEval::evalEGR(string rt_dir_path, string egr_type, string outpu
   //             << std::endl;
   // }
   std::vector<std::string> target_layers;
-  std::string dir_path = rt_dir_path + "/early_router/";
-  std::filesystem::path parent_path = std::filesystem::path(rt_dir_path).parent_path();
-  std::filesystem::path out_file_path = parent_path / output_filename;
-
   if (egr_type == "horizontal" || egr_type == "vertical") {
     LayerDirection target_direction = (egr_type == "horizontal") ? LayerDirection::Horizontal : LayerDirection::Vertical;
     for (const auto& [layer, direction] : layer_directions) {
@@ -204,6 +200,7 @@ string CongestionEval::evalEGR(string rt_dir_path, string egr_type, string outpu
 
   std::vector<std::vector<double>> sum_matrix;
   bool is_first_file = true;
+  std::string dir_path = rt_dir_path + "/early_router/";
 
   for (const auto& entry : std::filesystem::directory_iterator(dir_path)) {
     std::string filename = entry.path().filename().string();
@@ -238,7 +235,10 @@ string CongestionEval::evalEGR(string rt_dir_path, string egr_type, string outpu
     }
   }
 
-  std::ofstream out_file(out_file_path);
+  std::string save_dir = "/egr_congestion_map";
+  std::string output_path = createDirPath(save_dir) + "/" + output_filename;
+
+  std::ofstream out_file(output_path);
   for (const auto& row : sum_matrix) {
     for (size_t i = 0; i < row.size(); ++i) {
       out_file << row[i];
@@ -250,7 +250,7 @@ string CongestionEval::evalEGR(string rt_dir_path, string egr_type, string outpu
   }
   out_file.close();
 
-  return out_file_path.string();
+  return output_path;
 }
 
 string CongestionEval::evalRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size, string rudy_type, string output_filename)
@@ -330,16 +330,7 @@ string CongestionEval::evalRUDY(CongestionNets nets, CongestionRegion region, in
     stage = output_filename.substr(0, underscore_pos);
   }
 
-  std::string save_dir;
-  if (stage.find("place") != std::string::npos || stage.find("pl") != std::string::npos) {
-    save_dir = "/pl/RUDY_map";
-  } else if (stage.find("cts") != std::string::npos) {
-    save_dir = "/cts/RUDY_map";
-  }  else {
-    save_dir = "other/RUDY_map";
-  }
-  
-
+  std::string save_dir = "/RUDY_map";
   std::string output_path = createDirPath(save_dir) + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
@@ -458,16 +449,7 @@ string CongestionEval::evalLUTRUDY(CongestionNets nets, CongestionRegion region,
     stage = output_filename.substr(0, underscore_pos);
   }
 
-  std::string save_dir;
-  if (stage.find("place") != std::string::npos || stage.find("pl") != std::string::npos) {
-    save_dir = "/pl/LUTRUDY_map";
-  } else if (stage.find("cts") != std::string::npos) {
-    save_dir = "/cts/LUTRUDY_map";
-  }  else {
-    save_dir = "other/LUTRUDY_map";
-  }
-  
-
+  std::string save_dir = "/RUDY_map";
   std::string output_path = createDirPath(save_dir) + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
@@ -606,9 +588,8 @@ int32_t CongestionEval::evalTotalOverflow(string stage, string rt_dir_path, stri
   } else {
     return -1;
   }
-  std::filesystem::path parent_path = std::filesystem::path(rt_dir_path).parent_path();
-  std::filesystem::path file_path = parent_path / file_name;
-  std::string file_path_str = file_path.string();
+
+  std::string file_path_str = dmInst->get_config().get_feature_path() + "/egr_congestion_map/" + file_name;
 
   std::ifstream file(file_path_str);
   if (!file.is_open()) {
@@ -642,9 +623,8 @@ int32_t CongestionEval::evalMaxOverflow(string stage, string rt_dir_path, string
   } else {
     return -1;
   }
-  std::filesystem::path parent_path = std::filesystem::path(rt_dir_path).parent_path();
-  std::filesystem::path file_path = parent_path / file_name;
-  std::string file_path_str = file_path.string();
+  std::string file_path_str = dmInst->get_config().get_feature_path() + "/egr_congestion_map/" + file_name;
+
 
   std::ifstream file(file_path_str);
   if (!file.is_open()) {
@@ -679,9 +659,7 @@ float CongestionEval::evalAvgOverflow(string stage, string rt_dir_path, string o
   } else {
     return -1;
   }
-  std::filesystem::path parent_path = std::filesystem::path(rt_dir_path).parent_path();
-  std::filesystem::path file_path = parent_path / file_name;
-  std::string file_path_str = file_path.string();
+  std::string file_path_str = dmInst->get_config().get_feature_path() + "/egr_congestion_map/" + file_name;
 
   std::ifstream file(file_path_str);
   if (!file.is_open()) {

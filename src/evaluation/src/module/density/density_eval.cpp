@@ -154,17 +154,7 @@ std::string DensityEval::evalDensity(DensityCells cells, DensityRegion region, i
     stage = output_filename.substr(0, underscore_pos);
   }
 
-  std::string save_dir;
-  if (stage.find("place") != std::string::npos || stage.find("pl") != std::string::npos) {
-    save_dir = "/pl/density_map";
-  } else if (stage.find("cts") != std::string::npos) {
-    save_dir = "/cts/density_map";
-  } else if (stage.find("route") != std::string::npos) {
-    save_dir = "/route/density_map";
-  } else {
-    save_dir = "other/density_map";
-  }
-
+  std::string save_dir = "/density_map";
   std::string output_path = createDirPath(save_dir) + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
@@ -251,17 +241,7 @@ std::string DensityEval::evalPinDensity(DensityPins pins, DensityRegion region, 
     stage = output_filename.substr(0, underscore_pos);
   }
 
-  std::string save_dir;
-  if (stage.find("place") != std::string::npos || stage.find("pl") != std::string::npos) {
-    save_dir = "/pl/density_map";
-  } else if (stage.find("cts") != std::string::npos) {
-    save_dir = "/cts/density_map";
-  } else if (stage.find("route") != std::string::npos) {
-    save_dir = "/route/density_map";
-  } else {
-    save_dir = "other/density_map";
-  }
-
+  std::string save_dir="/density_map";
   std::string output_path;
   if (neighbor) {
     output_path = createDirPath(save_dir) + "/" + "neighbor_" + output_filename;
@@ -321,17 +301,7 @@ std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, 
     stage = output_filename.substr(0, underscore_pos);
   }
 
-  std::string save_dir;
-  if (stage.find("place") != std::string::npos || stage.find("pl") != std::string::npos) {
-    save_dir = "/pl/density_map";
-  } else if (stage.find("cts") != std::string::npos) {
-    save_dir = "/cts/density_map";
-  } else if (stage.find("route") != std::string::npos) {
-    save_dir = "/route/density_map";
-  } else {
-    save_dir = "other/density_map";
-  }
-
+  std::string save_dir="/density_map";
   std::string output_path;
   if (neighbor) {
     const std::vector<std::vector<int>> kernel = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
@@ -470,13 +440,7 @@ std::string DensityEval::evalMargin(DensityCells cells, DensityRegion die, Densi
     stage = output_filename.substr(0, underscore_pos);
   }
 
-  std::string save_dir;
-  if (stage.find("place") != std::string::npos || stage.find("pl") != std::string::npos) {
-    save_dir = "/pl/margin_map";
-  } else{
-    save_dir = "other/margin_map";
-  }
-
+  std::string save_dir="/margin_map";
   std::string output_path = createDirPath(save_dir) + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
