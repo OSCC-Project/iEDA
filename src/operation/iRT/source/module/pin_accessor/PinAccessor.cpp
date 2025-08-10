@@ -63,9 +63,9 @@ void PinAccessor::access()
   RTLOG.info(Loc::current(), "Starting...");
   PAModel pa_model = initPAModel();
   setPAComParam(pa_model);
-  buildBlockTrimRectMap(pa_model);
   initAccessPointList(pa_model);
   uploadAccessPointList(pa_model);
+  // debugPlotPAModel(pa_model, "init");
   routePAModel(pa_model);
   uploadAccessPoint(pa_model);
   uploadAccessResult(pa_model);
@@ -119,29 +119,6 @@ void PinAccessor::setPAComParam(PAModel& pa_model)
   // clang-format on
   RTLOG.info(Loc::current(), "max_candidate_point_num: ", pa_com_param.get_max_candidate_point_num());
   pa_model.set_pa_com_param(pa_com_param);
-}
-
-void PinAccessor::buildBlockTrimRectMap(PAModel& pa_model)
-{
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::map<int32_t, PlanarRect>& layer_enclosure_map = RTDM.getDatabase().get_layer_enclosure_map();
-  std::map<std::string, PlanarRect>& block_shape_map = RTDM.getDatabase().get_block_shape_map();
-
-  std::map<std::string, std::map<int32_t, PlanarRect>>& block_layer_trim_rect_map = pa_model.get_block_layer_trim_rect_map();
-
-  for (auto& [block_name, shape] : block_shape_map) {
-    for (auto& [routing_layer_idx, enclosure] : layer_enclosure_map) {
-      int32_t min_width = routing_layer_list[routing_layer_idx].get_min_width();
-      int32_t shrinked_x_size = std::max(min_width, enclosure.getXSpan());
-      int32_t shrinked_y_size = std::max(min_width, enclosure.getYSpan());
-
-      PlanarRect shrink_shape = shape;
-      if (RTUTIL.hasShrinkedRect(shrink_shape, shrinked_x_size, shrinked_y_size)) {
-        shrink_shape = RTUTIL.getShrinkedRect(shrink_shape, shrinked_x_size, shrinked_y_size);
-      }
-      block_layer_trim_rect_map[block_name][routing_layer_idx] = shrink_shape;
-    }
-  }
 }
 
 void PinAccessor::initAccessPointList(PAModel& pa_model)
@@ -245,8 +222,6 @@ std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(PAModel& pa_model, i
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::map<int32_t, PlanarRect>& layer_enclosure_map = RTDM.getDatabase().get_layer_enclosure_map();
 
-  std::map<std::string, std::map<int32_t, PlanarRect>>& block_layer_trim_rect_map = pa_model.get_block_layer_trim_rect_map();
-
   int32_t curr_layer_idx;
   {
     for (EXTLayerRect& pin_shape : pin_shape_list) {
@@ -260,15 +235,6 @@ std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(PAModel& pa_model, i
   {
     for (EXTLayerRect& pin_shape : pin_shape_list) {
       origin_pin_shape_list.push_back(pin_shape.get_real_rect());
-    }
-    // 对macro的pin先剪裁
-    std::string instance_name = RTUTIL.splitString(pa_pin->get_pin_name(), ':').front();
-    if (RTUTIL.exist(block_layer_trim_rect_map, instance_name)) {
-      std::vector<PlanarRect> trim_pin_shape_list
-          = RTUTIL.getOpenCuttingRectListByBoost(origin_pin_shape_list, {block_layer_trim_rect_map[instance_name][curr_layer_idx]});
-      if (!trim_pin_shape_list.empty()) {
-        origin_pin_shape_list = trim_pin_shape_list;
-      }
     }
   }
   // 当前层缩小后的结果

@@ -714,7 +714,6 @@ void DataManager::buildDatabase()
   buildLayerViaMasterList();
   buildLayerViaMasterInfo();
   buildObstacleList();
-  buildNetInfo();
   buildNetList();
   buildDetectionDistance();
   buildGCellMap();
@@ -1255,19 +1254,6 @@ void DataManager::checkObstacleList()
                   obstacle.get_real_ur_y(), ") ", routing_layer_list[obstacle.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(),
                   " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
     }
-  }
-}
-
-void DataManager::buildNetInfo()
-{
-  Die& die = _database.get_die();
-  std::map<std::string, PlanarRect>& block_shape_map = _database.get_block_shape_map();
-
-  for (auto& [block_name, shape] : block_shape_map) {
-    if (!RTUTIL.hasRegularRect(shape, die.get_real_rect())) {
-      RTLOG.error(Loc::current(), "This shape is outside the die!");
-    }
-    shape = RTUTIL.getRegularRect(shape, die.get_real_rect());
   }
 }
 

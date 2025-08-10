@@ -5,9 +5,9 @@ message(STATUS "############## RT: START CMAKE ##############")
 
 set(CMAKE_CXX_STANDARD 20)
 
-# ADD_COMPILE_OPTIONS("-Wconversion")
-# ADD_COMPILE_OPTIONS("-fsanitize=address")
-# LINK_LIBRARIES("-fsanitize=address")
+# add_compile_options("-Wconversion")
+# add_compile_options("-fsanitize=address")
+# link_libraries("-fsanitize=address")
 
 ############################ debug interface ############################
 

@@ -113,7 +113,6 @@ class DataManager
   void transObstacleList();
   void makeObstacleList();
   void checkObstacleList();
-  void buildNetInfo();
   void buildNetList();
   void buildPinList(Net& net);
   void transPinList(Net& net);
