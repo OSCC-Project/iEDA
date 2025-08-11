@@ -40,7 +40,11 @@ std::string getAbsoluteFilePath(std::string filename)
 
 std::string createDirPath(std::string dir_path)
 {
-  const std::string base_path = dmInst->get_config().get_feature_path();
+  std::string base_path = dmInst->get_config().get_feature_path();
+  if (base_path.empty()) {
+     base_path = dmInst->get_config().get_output_path();  
+  }
+
   std::string full_path = base_path + dir_path;
 
   struct stat info;
