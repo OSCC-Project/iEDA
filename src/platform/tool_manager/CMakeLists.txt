@@ -11,6 +11,7 @@ add_subdirectory(tool_api/idrc_io)
 add_subdirectory(tool_api/ipl_io)
 add_subdirectory(tool_api/ito_io)
 add_subdirectory(tool_api/ino_io)
+add_subdirectory(tool_api/ipnp_io)
 
 add_library(tool_manager
     tool_manager.cpp
@@ -33,6 +34,7 @@ target_link_libraries(tool_manager
         tool_api_ipw
         tool_api_ito
         tool_api_ino
+        tool_api_ipnp
 
         ipl-api
         ivec_db

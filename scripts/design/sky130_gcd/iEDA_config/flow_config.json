@@ -19,6 +19,7 @@
         "irt_path": "$CONFIG_DIR/rt_default_config.json",
         "idrc_path": "$CONFIG_DIR/drc_default_config.json",
         "icts_path": "$CONFIG_DIR/cts_default_config.json",
-        "ito_path": "$CONFIG_DIR/to_default_config.json"
+        "ito_path": "$CONFIG_DIR/to_default_config.json",
+        "ipnp_path": "$CONFIG_DIR/pnp_default_config.json"
     }
 }

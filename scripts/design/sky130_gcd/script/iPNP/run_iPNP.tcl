@@ -1,42 +1,47 @@
 #===========================================================
 ##   init flow config
 #===========================================================
-flow_init -config $::env(CONFIG_DIR)/flow_config.json
+flow_init -config /home/sujianrong/iEDA/scripts/design/sky130_gcd/iEDA_config/flow_config.json
 
 #===========================================================
 ##   read db config
 #===========================================================
-db_init -config $::env(CONFIG_DIR)/db_default_config.json
-
-#===========================================================
-##   reset data path
-#===========================================================
-source $::env(TCL_SCRIPT_DIR)/DB_script/db_path_setting.tcl
+db_init -config /home/sujianrong/iEDA/scripts/design/sky130_gcd/iEDA_config/db_default_config.json
 
 #===========================================================
 ##   read lef
 #===========================================================
-source $::env(TCL_SCRIPT_DIR)/DB_script/db_init_lef.tcl
+source /home/sujianrong/iEDA/scripts/design/sky130_gcd/script/DB_script/db_init_lef.tcl
 
 #===========================================================
-##   read def
+##   read lib
 #===========================================================
-def_init -path $::env(RESULT_DIR)/iFP_result.def
+source /home/sujianrong/iEDA/scripts/design/sky130_gcd/script/DB_script/db_init_lib.tcl
+
+#===========================================================
+##   read sdc
+#===========================================================
+source /home/sujianrong/iEDA/scripts/design/sky130_gcd/script/DB_script/db_init_sdc.tcl
+
+#===========================================================
+##   read def (use DEF from PNP config)
+#===========================================================
+def_init -path /home/sujianrong/iEDA/src/operation/iPNP/data/test/aes_no_pwr.def
 
 #===========================================================
 ##   run PNP
 #===========================================================
-run_pnp
+run_pnp -config /home/sujianrong/iEDA/src/operation/iPNP/example/pnp_config.json
 
 #===========================================================
 ##   def & netlist
 #===========================================================
-def_save -path $::env(RESULT_DIR)/iPNP_result.def
+def_save -path /home/sujianrong/iEDA/scripts/design/sky130_gcd/result/pnp/iPNP_result.def
 
 #===========================================================
 ##   save netlist 
 #===========================================================
-netlist_save -path $::env(RESULT_DIR)/iPNP_result.v -exclude_cell_names {}
+netlist_save -path /home/sujianrong/iEDA/scripts/design/sky130_gcd/result/pnp/iPNP_result.v -exclude_cell_names {}
 
 #===========================================================
 ##   Exit 

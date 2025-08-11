@@ -16,19 +16,27 @@
 // ***************************************************************************************
 #pragma once
 
-#include "ScriptEngine.hh"
-#include "tcl_definition.h"
+#include <string>
 
-using namespace ieda;
-namespace tcl {
+namespace iplf {
+#define pnpInst PnpIO::getInstance()
 
-class CmdRunPnp : public TclCmd {
-public:
-  explicit CmdRunPnp(const char* cmd_name);
-  ~CmdRunPnp() override = default;
+class PnpIO {
+ public:
+  static PnpIO* getInstance() {
+    if (!_instance) {
+      _instance = new PnpIO;
+    }
+    return _instance;
+  }
 
-  unsigned check() override;
-  unsigned exec() override;
+  bool runPNP(std::string config = "");
+
+ private:
+  static PnpIO* _instance;
+
+  PnpIO() = default;
+  ~PnpIO() = default;
 };
 
-}  // namespace tcl
+}  // namespace iplf

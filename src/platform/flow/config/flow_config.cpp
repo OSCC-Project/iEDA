@@ -63,6 +63,7 @@ bool PLFConfig::initConfig(string path)
     _config_path.irt_path = ieda::getJsonData(json, {"ConfigPath", "irt_path"});
     _config_path.idrc_path = ieda::getJsonData(json, {"ConfigPath", "idrc_path"});
     _config_path.ito_path = ieda::getJsonData(json, {"ConfigPath", "ito_path"});
+    _config_path.ipnp_path = ieda::getJsonData(json, {"ConfigPath", "ipnp_path"});
   }
 
   ieda::closeFileStream(config_stream);
