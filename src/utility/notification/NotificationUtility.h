@@ -23,6 +23,8 @@
 #include <future>
 #include <functional>
 #include <tuple>
+#include <any>
+#include <json.hpp>
 
 namespace ieda {
 
@@ -74,7 +76,7 @@ public:
      */
     struct NotificationPayload {
         std::string tool_name;              // Name of the tool/algorithm
-        std::map<std::string, std::string> metadata; // Generic metadata map
+        std::map<std::string, std::any> metadata; // Generic metadata map
         std::string timestamp;              // ISO 8601 timestamp
         
         NotificationPayload() = default;
@@ -127,7 +129,7 @@ public:
      * @return HttpResponse containing result (for sync mode) or empty response (for async mode)
      */
     HttpResponse sendNotification(const std::string& tool_name, 
-                                 const std::map<std::string, std::string>& metadata = {});
+                                 const std::map<std::string, std::any>& metadata = {});
 
     /**
      * @brief Send notification with custom payload
@@ -231,6 +233,13 @@ private:
      * @param payload_json JSON payload to send
      */
     void asyncNotificationWorker(const std::string& payload_json);
+
+    /**
+     * @brief Convert std::any to JSON-compatible value
+     * @param any_value The std::any value to convert
+     * @return JSON-compatible value
+     */
+    nlohmann::json convertAnyToJson(const std::any& any_value);
 
 private:
     static std::unique_ptr<NotificationUtility> _instance;

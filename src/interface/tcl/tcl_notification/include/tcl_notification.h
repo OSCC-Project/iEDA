@@ -15,29 +15,23 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
-/**
- * @File Name: tcl_eval.h
- * @Brief :
- * @Author : Yell (12112088@qq.com)
- * @Version : 1.0
- * @Creat Date : 2022-04-15
- *
- */
-#include "ScriptEngine.hh"
-#include "UserShell.hh"
-#include "tcl_eval.h"
 
-using namespace ieda;
+#include "tcl_util.h"
 
 namespace tcl {
 
-int registerCmdEval()
+class TclInitNotification : public TclCmd
 {
-  registerTclCmd(CmdEvalTimingRun, "run_timing_eval");
-  registerTclCmd(CmdEvalWirelengthRun, "run_wirelength_eval");
-  registerTclCmd(CmdEvalDensityRun, "run_density_eval");
+ public:
+  explicit TclInitNotification(const char* cmd_name);
+  ~TclInitNotification() override = default;
 
-  return EXIT_SUCCESS;
-}
+  unsigned check() override { return 1; };
+
+  unsigned exec() override;
+
+ private:
+  std::vector<std::pair<std::string, ValueType>> _config_list;
+};
 
 }  // namespace tcl

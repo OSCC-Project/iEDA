@@ -366,7 +366,7 @@ void SpaceRouter::splitNetResult(SRModel& sr_model)
   }
 
   for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
-    std::vector<Segment<LayerCoord>*> del_segment_list;
+    std::set<Segment<LayerCoord>*> del_segment_set;
     std::vector<Segment<LayerCoord>> new_segment_list;
     for (Segment<LayerCoord>* segment : segment_set) {
       LayerCoord& first_coord = segment->get_first();
@@ -393,7 +393,7 @@ void SpaceRouter::splitNetResult(SRModel& sr_model)
           x_scale_list.push_back(x_scale);
         }
         x_scale_list.push_back(second_x);
-        del_segment_list.push_back(segment);
+        del_segment_set.insert(segment);
         for (size_t i = 1; i < x_scale_list.size(); i++) {
           new_segment_list.emplace_back(LayerCoord(x_scale_list[i - 1], first_coord.get_y(), first_coord.get_layer_idx()),
                                         LayerCoord(x_scale_list[i], first_coord.get_y(), first_coord.get_layer_idx()));
@@ -417,14 +417,14 @@ void SpaceRouter::splitNetResult(SRModel& sr_model)
           y_scale_list.push_back(y_scale);
         }
         y_scale_list.push_back(second_y);
-        del_segment_list.push_back(segment);
+        del_segment_set.insert(segment);
         for (size_t i = 1; i < y_scale_list.size(); i++) {
           new_segment_list.emplace_back(LayerCoord(first_coord.get_x(), y_scale_list[i - 1], first_coord.get_layer_idx()),
                                         LayerCoord(first_coord.get_x(), y_scale_list[i], first_coord.get_layer_idx()));
         }
       }
     }
-    for (Segment<LayerCoord>* del_segment : del_segment_list) {
+    for (Segment<LayerCoord>* del_segment : del_segment_set) {
       RTDM.updateNetGlobalResultToGCellMap(ChangeType::kDel, net_idx, del_segment);
     }
     for (Segment<LayerCoord>& new_segment : new_segment_list) {

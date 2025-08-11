@@ -23,15 +23,15 @@
 
 #include "init_sta.hh"
 
-#include <yaml-cpp/yaml.h>
-
 #include <algorithm>
+#include <thread>
 
 #include "RTInterface.hpp"
 #include "api/PowerEngine.hh"
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
 #include "idm.h"
+#include "json/json.hpp"
 #include "salt/base/flute.h"
 #include "salt/salt.h"
 #include "timing_db.hh"
@@ -39,6 +39,9 @@
 #include "vec_layout.h"
 
 namespace ieval {
+
+using json = nlohmann::ordered_json;
+  
 #define STA_INST (ista::TimingEngine::getOrCreateTimingEngine())
 #define RT_INST (irt::RTInterface::getInst())
 #define PW_INST (ipower::PowerEngine::getOrCreatePowerEngine())
@@ -1134,66 +1137,89 @@ bool InitSTA::getRcNet(const std::string& net_name)
 }
 
 /// @brief Save wire timing graph to yaml file.
-void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string& yaml_file_name)
+void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string& json_file_name)
 {
-  LOG_INFO << "save wire timing graph start";
+  LOG_INFO << "save wire timing graph start";  
 
-  std::ofstream file(yaml_file_name, std::ios::trunc);
+  json nodes_json;
+  json edges_json;
 
-  for (unsigned node_id = 0; auto& node : timing_wire_graph._nodes) {
-    const char* node_name = Str::printf("node_%d", node_id++);
-    LOG_INFO_EVERY_N(1000) << "write node " << node_id << " total " << timing_wire_graph._nodes.size();
+  // for nodes
+  std::thread t1([&]() {
+    json j = json::array();
+    for (unsigned node_id = 0; auto& node : timing_wire_graph._nodes) {
+      j.push_back({{"id",  Str::printf("node_%d", node_id++)}, {"name", node._name}, {"is_pin", node._is_pin}, {"is_port", node._is_port}});
+    }
+    nodes_json = j;
+  });
 
-    file << node_name << ":" << "\n";
-    file << "  name: " << node._name << "\n";
-    file << "  is_pin: " << node._is_pin << "\n";
-    file << "  is_port: " << node._is_port << "\n";
-  }
+  // for edges
+  std::thread t2([&]() {
+    json j = json::array();
+    for (unsigned edge_id = 0; auto& edge : timing_wire_graph._edges) {
+      j.push_back({{"id",  Str::printf("edge_%d", edge_id++)}, {"from_node", edge._from_node}, {"to_node", edge._to_node}, {"is_net_edge", edge._is_net_edge}});
+    }
+    edges_json = j;
+  });
 
-  for (unsigned edge_id = 0; auto& edge : timing_wire_graph._edges) {
-    std::string edge_name = Str::printf("edge_%d", edge_id++);
+  // wait to finish
+  t1.join();
+  t2.join();
 
-    LOG_INFO_EVERY_N(1000) << "write edge " << edge_id << " total " << timing_wire_graph._edges.size();
+  // merge 
+  json graph_json;
+  graph_json["nodes"] = nodes_json;
+  graph_json["edges"] = edges_json;
 
-    file << edge_name << ":" << "\n";
-    file << "  from_node: " << edge._from_node << "\n";
-    file << "  to_node: " << edge._to_node << "\n";
-    file << "  is_net_edge: " << edge._is_net_edge << "\n";
-  }
+  std::ofstream file(json_file_name, std::ios::trunc);  
+  file << graph_json.dump(4) << std::endl;
 
   file.close();
 
-  LOG_INFO << "output wire graph yaml file path: " << yaml_file_name;
+  LOG_INFO << "output wire graph json file path: " << json_file_name;
   LOG_INFO << "save wire timing graph end";
 }
 
-void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, const std::string& yaml_file_name)
+void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, const std::string& json_file_name)
 {
-  LOG_INFO << "save instance timing graph start";
+  LOG_INFO << "save instance timing graph start";  
 
-  std::ofstream file(yaml_file_name, std::ios::trunc);
+  json nodes_json;
+  json edges_json;
 
-  for (unsigned node_id = 0; auto& node : timing_instance_graph._nodes) {
-    const char* node_name = Str::printf("node_%d", node_id++);
-    LOG_INFO_EVERY_N(1000) << "write node " << node_id << " total " << timing_instance_graph._nodes.size();
+  // for nodes
+  std::thread t1([&]() {
+    json j = json::array();
+    for (unsigned node_id = 0; auto& node : timing_instance_graph._nodes) {
+      j.push_back({{"id",  Str::printf("node_%d", node_id++)}, {"name", node._name}});
+    }
+    nodes_json = j;
+  });
 
-    file << node_name << ":" << "\n";
-    file << "  name: " << node._name << "\n";
-  }
+  // for edges
+  std::thread t2([&]() {
+    json j = json::array();
+    for (unsigned edge_id = 0; auto& edge : timing_instance_graph._edges) {
+      j.push_back({{"id",  Str::printf("edge_%d", edge_id++)}, {"from_node", edge._from_node}, {"to_node", edge._to_node}});
+    }
+    edges_json = j;
+  });
 
-  for (unsigned edge_id = 0; auto& edge : timing_instance_graph._edges) {
-    std::string edge_name = Str::printf("edge_%d", edge_id++);
+  // wait to finish
+  t1.join();
+  t2.join();
 
-    LOG_INFO_EVERY_N(1000) << "write edge " << edge_id << " total " << timing_instance_graph._edges.size();
-
-    file << edge_name << ":" << "\n";
-    file << "  from_node: " << edge._from_node << "\n";
-    file << "  to_node: " << edge._to_node << "\n";
-  }
+  // merge 
+  json graph_json;
+  graph_json["nodes"] = nodes_json;
+  graph_json["edges"] = edges_json;
+  
+  std::ofstream file(json_file_name, std::ios::trunc);
+  file << graph_json.dump(4) << std::endl;
 
   file.close();
 
-  LOG_INFO << "output instance graph yaml file path: " << yaml_file_name;
+  LOG_INFO << "output instance graph json file path: " << json_file_name;
   LOG_INFO << "save instance timing graph end";
 }
 

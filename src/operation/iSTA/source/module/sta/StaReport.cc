@@ -1018,7 +1018,7 @@ unsigned StaReportWirePathYaml::operator()(StaSeqPathData* seq_path_data) {
   static unsigned file_id = 1;
   std::string now_time = Time::getNowWallTime();
   std::string tmp = Str::replace(now_time, ":", "_");
-  const char* text_file_name = Str::printf(
+  std::string text_file_name = Str::printf(
       "%s/wire_path_%s_%d.yml", path_dir.c_str(), tmp.c_str(), file_id++);
 
   std::ofstream file(text_file_name, std::ios::trunc);
@@ -1052,6 +1052,65 @@ unsigned StaReportWirePathYaml::operator()(StaSeqPathData* seq_path_data) {
   // CPU_PROF_END(0, "dump one timing path wire yaml");
 
   return 1;
+}
+
+StaReportWirePathJson::StaReportWirePathJson(const char* rpt_file_name,
+                                     AnalysisMode analysis_mode,
+                                     unsigned n_worst)
+    : StaReportPathDump(rpt_file_name, analysis_mode, n_worst) {}
+
+/**
+ * @brief print timing path in json in wire level.
+ * 
+ * @param seq_path_data 
+ * @return unsigned 
+ */
+unsigned StaReportWirePathJson::operator()(StaSeqPathData* seq_path_data) { 
+  // CPU_PROF_START(0);
+  std::string design_work_space =
+      ista::Sta::getOrCreateSta()->get_design_work_space();
+  std::string path_dir = design_work_space + "/wire_paths";
+
+  std::filesystem::create_directories(path_dir);
+
+  static unsigned file_id = 1;
+  std::string text_file_name = Str::printf(
+      "%s/wire_path_%d.json", path_dir.c_str(), file_id++);
+  
+  json path_json = json::array();
+  StaDumpWireJson dump_wire_json(path_json);
+  std::stack<StaPathDelayData*> path_stack = seq_path_data->getPathDelayData();
+
+  StaVertex* last_vertex = nullptr;
+  while (!path_stack.empty()) {
+    auto* path_delay_data = path_stack.top();
+    auto* own_vertex = path_delay_data->get_own_vertex();
+    dump_wire_json.set_analysis_mode(path_delay_data->get_delay_type());
+    dump_wire_json.set_trans_type(path_delay_data->get_trans_type());
+
+    if (last_vertex) {
+      auto snk_arcs = last_vertex->getSnkArc(own_vertex);
+      auto* snk_arc = snk_arcs.empty() ? nullptr : snk_arcs.front();
+      snk_arc->exec(dump_wire_json);
+    }
+
+    own_vertex->exec(dump_wire_json);
+
+    last_vertex = own_vertex;
+
+    path_stack.pop();
+  }
+
+  std::ofstream file(text_file_name, std::ios::trunc);
+  file << path_json.dump(4) << std::endl;
+
+  file.close();
+  
+  LOG_INFO << "output json file path: " << text_file_name;
+
+  // CPU_PROF_END(0, "dump one timing path wire yaml");
+  return 1;
+
 }
 
 StaReportPathTimingData::StaReportPathTimingData(const char* rpt_file_name,

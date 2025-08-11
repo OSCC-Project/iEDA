@@ -146,13 +146,13 @@ struct TimingInstanceGraph : public TimingGraph<TimingInstanceNode, TimingNetEdg
 /// @brief  save timing graph to yaml file.
 /// @param timing_wire_graph
 /// @param yaml_file_name
-void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string& yaml_file_name);
+void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string& json_file_name);
 
 /// @brief restore timing graph from yaml file.
 TimingWireGraph RestoreTimingGraph(const std::string& yaml_file_name);
 
 /// @brief save timing instance graph to yaml file.
-void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, const std::string& yaml_file_name);
+void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, const std::string& json_file_name);
 /// @brief restore timing instance graph from yaml file.
 TimingInstanceGraph RestoreTimingInstanceGraph(const std::string& yaml_file_name);
 

@@ -31,6 +31,7 @@ void register_config(pybind11::module& m){
         py::arg("def_path") = "",
         py::arg("verilog_path") = "",
         py::arg("output_path") = "",
+        py::arg("feature_path") = "",
         py::arg("lib_paths") = std::vector<std::string>{},
         py::arg("sdc_path") = ""
     );

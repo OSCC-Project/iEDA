@@ -158,6 +158,40 @@ UtilizationSummary CongestionAPI::rudyUtilization(std::string stage, std::string
   return utilization_summary;
 }
 
+CongestionValue CongestionAPI::rudyCongestion(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
+{
+  CongestionValue congestion_value;
+
+  EVAL_CONGESTION_INST->initIDB();
+  congestion_value = EVAL_CONGESTION_INST->calRUDY(bin_cnt_x, bin_cnt_y, save_path);
+  EVAL_CONGESTION_INST->destroyIDB();
+
+  return congestion_value;
+}
+
+CongestionValue CongestionAPI::lutRudyCongestion(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
+{
+  CongestionValue congestion_value;
+
+  EVAL_CONGESTION_INST->initIDB();
+  congestion_value = EVAL_CONGESTION_INST->calLUTRUDY(bin_cnt_x, bin_cnt_y, save_path);
+  EVAL_CONGESTION_INST->destroyIDB();
+
+  return congestion_value;
+}
+
+CongestionValue CongestionAPI::egrCongestion(const std::string& save_path)
+{
+  CongestionValue congestion_value;
+
+  EVAL_CONGESTION_INST->initEGR();
+  congestion_value = EVAL_CONGESTION_INST->calEGRCongestion(save_path);
+  EVAL_CONGESTION_INST->destroyEGR();
+
+  return congestion_value;
+}
+
+
 void CongestionAPI::evalNetInfo()
 {
   EVAL_CONGESTION_INST->initIDB();
