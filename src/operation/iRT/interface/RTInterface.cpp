@@ -632,20 +632,13 @@ void RTInterface::wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRoutin
 {
   ScaleAxis& track_axis = routing_layer.get_track_axis();
 
-  for (idb::IdbTrackGrid* idb_track_grid : idb_layer->get_track_grid_list()) {
-    idb::IdbTrack* idb_track = idb_track_grid->get_track();
+  ScaleGrid x_track_grid;
+  x_track_grid.set_step_length(idb_layer->get_pitch_x());
+  track_axis.get_x_grid_list().push_back(x_track_grid);
 
-    ScaleGrid track_grid;
-    track_grid.set_start_line(static_cast<int32_t>(idb_track->get_start()));
-    track_grid.set_step_length(static_cast<int32_t>(idb_track->get_pitch()));
-    track_grid.set_step_num(static_cast<int32_t>(idb_track_grid->get_track_num()) - 1);
-
-    if (idb_track->get_direction() == idb::IdbTrackDirection::kDirectionX) {
-      track_axis.get_x_grid_list().push_back(track_grid);
-    } else if (idb_track->get_direction() == idb::IdbTrackDirection::kDirectionY) {
-      track_axis.get_y_grid_list().push_back(track_grid);
-    }
-  }
+  ScaleGrid y_track_grid;
+  y_track_grid.set_step_length(idb_layer->get_pitch_y());
+  track_axis.get_y_grid_list().push_back(y_track_grid);
 }
 
 void RTInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer)
