@@ -117,13 +117,12 @@ IdbCoordinate<int32_t>* TimingIDBAdapter::idbLocation(
  * @return double Ω
  */
 double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
-                                       std::optional<double> segment_width) {
+                                       std::optional<double> segment_width, int routing_layer_1st) {
   double segment_resistance = 0;
   IdbLayout* idb_layout = _idb_lef_service->get_layout();
   vector<IdbLayer*>& routing_layers =
       idb_layout->get_layers()->get_routing_layers();
 
-  int routing_layer_1st = 0;
   int routing_layer_id = num_layer - 1 + routing_layer_1st;
   int routing_layer_size = routing_layers.size();
 

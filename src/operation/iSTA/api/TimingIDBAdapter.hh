@@ -106,7 +106,7 @@ class TimingIDBAdapter : public TimingDBAdapter {
   IdbCoordinate<int32_t>* idbLocation(DesignObject* pin_or_port);
 
   double getResistance(int num_layer, double segment_length,
-                       std::optional<double> segment_width);
+                       std::optional<double> segment_width, int routing_layer_1st = 0);
   double getCapacitance(int num_layer, double segment_length,
                         std::optional<double> segment_width);
   double getAverageResistance(std::optional<double>& segment_width);
