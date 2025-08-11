@@ -519,8 +519,9 @@ unsigned PowerEngine::buildPGNetWireTopo() {
                          unsigned width_dbu) -> double {
     double wire_length = double(distance_dbu) / dbu;
     double width = double(width_dbu) / dbu;
+    int routing_layer_1st = 1; // 1st routing layer id is 1.
     double resistance =
-        idb_adapter->getResistance(layer_id, wire_length, width);
+        idb_adapter->getResistance(layer_id, wire_length, width, routing_layer_1st);
     resistance *= c_resistance_coef;
 
     return resistance;
