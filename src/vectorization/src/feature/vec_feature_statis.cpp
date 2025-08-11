@@ -224,7 +224,7 @@ void VecFeatureStatis::feature_patch()
   // 评估器特征计算，返回的是 patch_id 和 value 的 map
   std::map<int, double> cell_power_map = TimingPower_API_INST->patchPowerMap(patch_xy_map);
   std::map<int, double> cell_timing_map = TimingPower_API_INST->patchTimingMap(patch_xy_map);
-  //   std::map<int, double> cell_ir_map = TimingPower_API_INST->patchIRDropMap(patch_xy_map);
+    std::map<int, double> cell_ir_map = TimingPower_API_INST->patchIRDropMap(patch_xy_map);
 
   std::map<int, int> pin_density_map = DENSITY_API_INST->patchPinDensity(patch_xy_map);
   LOG_INFO << "finish pin_density_map, runtime: " << stats.elapsedRunTime();
@@ -273,10 +273,10 @@ void VecFeatureStatis::feature_patch()
       patch.power_map = cell_power_map[patch_id];
     }
 
-    // auto cell_ir_map_find = cell_ir_map.find(patch_id);
-    // if (cell_ir_map_find != cell_ir_map.end()) {
-    //   patch.ir_drop_map = cell_ir_map[patch_id];
-    // }
+    auto cell_ir_map_find = cell_ir_map.find(patch_id);
+    if (cell_ir_map_find != cell_ir_map.end()) {
+      patch.ir_drop_map = cell_ir_map[patch_id];
+    }
 
     for (auto& [layer_id, patch_layer] : patch.get_layer_map()) {
       patch_layer.wire_width = layout_layers.findLayoutLayer(layer_id)->get_wire_width();
