@@ -31,24 +31,6 @@ using std::vector;
 namespace iplf {
 #define flowConfigInst PLFConfig::getInstance()
 
-struct ToolsConfig
-{
-  string run_tcl;
-};
-
-struct FlowConfig
-{
-  string run_synthesis;
-  string run_floorplan;
-  string run_placer;
-  string run_cts;
-  string run_router;
-  string run_pa;
-  string run_drc;
-  string run_gui;
-  string run_to;
-};
-
 struct ConfigPath
 {
   string idb_path;
@@ -81,12 +63,6 @@ class PLFConfig
   static PLFConfig* getInstance()
   {
     if (_instance == nullptr) {
-      // _mutex.lock();
-      // if (_instance == NULL) {
-      // _instance = new PLFConfig();
-      // }
-      // _mutex.unlock();
-
       _instance = new PLFConfig();
     }
 
@@ -95,19 +71,6 @@ class PLFConfig
 
   /// getter
   string get_path() { return _path; }
-
-  bool is_flow_running(string flag) { return flag == "ON" ? true : false; }
-
-  bool is_run_tcl() { return is_flow_running(_tools_config.run_tcl); }
-
-  bool is_run_synthesis() { return is_flow_running(_flow_config.run_synthesis); }
-  bool is_run_floorplan() { return is_flow_running(_flow_config.run_floorplan); }
-  bool is_run_placer() { return is_flow_running(_flow_config.run_placer); }
-  bool is_run_cts() { return is_flow_running(_flow_config.run_cts); }
-  bool is_run_router() { return is_flow_running(_flow_config.run_router); }
-  bool is_run_drc() { return is_flow_running(_flow_config.run_drc); }
-  bool is_run_gui() { return is_flow_running(_flow_config.run_gui); }
-  bool is_run_to() { return is_flow_running(_flow_config.run_to); }
 
   string get_idb_path() { return _config_path.idb_path; }
   string get_ifp_path() { return _config_path.ifp_path; }
@@ -148,8 +111,6 @@ class PLFConfig
   // static std::mutex _mutex;
 
   string _path = "";
-  ToolsConfig _tools_config;
-  FlowConfig _flow_config;
   ConfigPath _config_path;
   FlowStatus _status;
   EnvironmentInfo _env_info;

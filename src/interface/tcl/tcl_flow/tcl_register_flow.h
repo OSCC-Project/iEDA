@@ -34,7 +34,6 @@ namespace tcl {
 
 int registerCmdFlow()
 {
-  registerTclCmd(CmdFlowAutoRun, "flow_run");
   registerTclCmd(CmdFlowExit, "flow_exit");
   registerTclCmd(CmdFlowConfig, "flow_config");
   return EXIT_SUCCESS;

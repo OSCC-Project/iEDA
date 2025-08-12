@@ -18,11 +18,7 @@
 #include <flow.h>
 
 namespace python_interface {
-bool flowAutoRun()
-{
-  iplf::plfInst->runFlow();
-  return true;
-}
+
 bool flowExit()
 {
   std::exit(0);

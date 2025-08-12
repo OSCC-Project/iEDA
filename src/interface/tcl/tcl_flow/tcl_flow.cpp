@@ -30,35 +30,6 @@
 
 namespace tcl {
 
-CmdFlowAutoRun::CmdFlowAutoRun(const char* cmd_name) : TclCmd(cmd_name)
-{
-  // auto* file_name_option = new TclStringOption(TCL_CONFIG, 1, nullptr);
-  // addOption(file_name_option);
-}
-
-unsigned CmdFlowAutoRun::check()
-{
-  // TclOption* file_name_option = getOptionOrArg(TCL_CONFIG);
-  // LOG_FATAL_IF(!file_name_option);
-  return 1;
-}
-
-unsigned CmdFlowAutoRun::exec()
-{
-  if (!check()) {
-    return 0;
-  }
-
-  // TclOption* option = getOptionOrArg(TCL_CONFIG);
-  // auto data_config  = option->getStringVal();
-  iplf::plfInst->runFlow();
-
-  return 1;
-}
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 CmdFlowExit::CmdFlowExit(const char* cmd_name) : TclCmd(cmd_name)
 {
 }
