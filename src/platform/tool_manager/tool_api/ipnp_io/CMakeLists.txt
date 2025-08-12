@@ -21,6 +21,6 @@ target_link_libraries(tool_api_ipnp
     PRIVATE
         flow_config
         idm
-        iPNPApi
+        ipnp_api
         pnp
 )

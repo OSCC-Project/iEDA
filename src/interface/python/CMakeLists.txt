@@ -23,7 +23,7 @@ add_subdirectory(py_report)
 add_subdirectory(py_feature)
 add_subdirectory(py_eval)
 add_subdirectory(py_vec)
-add_subdirectory(py_pnp)
+add_subdirectory(py_ipnp)
 
 # ADD SOURCE FILES
 # file(GLOB_RECURSE PYTHON_INTERFACE_SRC CONFIGURE_DEPENDS ./*.cpp ./*.cc)
@@ -52,5 +52,5 @@ target_link_libraries(ieda_py
     py_feature
     py_eval
     py_vec
-    py_pnp
+    py_ipnp
 )
