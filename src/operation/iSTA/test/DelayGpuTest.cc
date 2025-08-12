@@ -97,7 +97,7 @@ TEST_F(DelayGPUTest, skywater130) {
   LOG_INFO << "netlist net num : " << timing_engine->get_netlist()->getNetNum();
 }
 
-TEST_F(DelayGPUTest, T28) {
+TEST_F(DelayGPUTest, commerical) {
   Stats stats;
 
   auto* timing_engine = TimingEngine::getOrCreateTimingEngine();
@@ -105,72 +105,7 @@ TEST_F(DelayGPUTest, T28) {
   const char* design_work_space = "/home/longshuaiying/cuda_delay";
   timing_engine->set_design_work_space(design_work_space);
 
-  std::vector<const char*> lib_files{
-      "/home/taosimin/T28/ccslib/tcbn28hpcplusbwp30p140hvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/tcbn28hpcplusbwp30p140lvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp30p140mblvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/tcbn28hpcplusbwp30p140mbssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp30p140opphvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp30p140opplvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/tcbn28hpcplusbwp30p140oppssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp30p140oppuhvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp30p140oppulvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/tcbn28hpcplusbwp30p140ssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp30p140uhvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp30p140ulvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/tcbn28hpcplusbwp35p140hvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/tcbn28hpcplusbwp35p140lvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp35p140mbhvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp35p140mblvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/tcbn28hpcplusbwp35p140mbssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp35p140opphvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp35p140opplvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/tcbn28hpcplusbwp35p140oppssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp35p140oppuhvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp35p140oppulvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/tcbn28hpcplusbwp35p140ssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp35p140uhvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp35p140ulvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp40p140ehvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/tcbn28hpcplusbwp40p140hvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/tcbn28hpcplusbwp40p140lvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp40p140mbhvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/tcbn28hpcplusbwp40p140mbssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp40p140oppehvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp40p140opphvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp40p140opplvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/tcbn28hpcplusbwp40p140oppssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp40p140oppuhvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/tcbn28hpcplusbwp40p140ssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp40p140uhvtssg0p81v125c_ccs.lib",
-      "/home/taosimin/T28/ccslib/"
-      "ts5n28hpcplvta256x32m4fw_130a_ssg0p81v125c.lib",
-      "/home/taosimin/T28/ccslib/"
-      "ts5n28hpcplvta64x128m2fw_130a_ssg0p81v125c.lib",
-      "/home/taosimin/T28/ccslib/tphn28hpcpgv18ssg0p81v1p62v125c.lib",
-      "/home/taosimin/T28/ccslib/PLLTS28HPMLAINT_SS_0P81_125C.lib"};
+  std::vector<const char*> lib_files{};
   timing_engine->readLiberty(lib_files);
 
   timing_engine->get_ista()->set_analysis_mode(ista::AnalysisMode::kMaxMin);
@@ -178,12 +113,12 @@ TEST_F(DelayGPUTest, T28) {
 
   timing_engine->get_ista()->set_top_module_name("asic_top");
 
-  timing_engine->readDesign("/home/taosimin/T28/tapout/asic_top_1220.v");
+  timing_engine->readDesign("asic_top_1220.v");
   timing_engine->linkDesign("asic_top");
 
-  timing_engine->readSdc("/home/taosimin/T28/ieda_1204/asic_top_SYN_MAX.sdc");
+  timing_engine->readSdc("asic_top_SYN_MAX.sdc");
 
-  timing_engine->readSpef("/home/taosimin/T28/spef/asic_top.rcworst.125c.spef");
+  timing_engine->readSpef("asic_top.rcworst.125c.spef");
   LOG_INFO << "netlist instance num : "
            << timing_engine->get_netlist()->getInstanceNum();
   LOG_INFO << "netlist net num : " << timing_engine->get_netlist()->getNetNum();
