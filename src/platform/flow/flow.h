@@ -50,7 +50,6 @@ class Flow
 
   bool initFlow(string flow_config = "");
   void run(int argc, char** argv);
-  void runFlow();
   void runTcl(int argc, char** argv);
 
  private:

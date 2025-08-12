@@ -35,20 +35,6 @@ using ieda::TclStringOption;
 
 namespace tcl {
 
-class CmdFlowAutoRun : public TclCmd
-{
- public:
-  explicit CmdFlowAutoRun(const char* cmd_name);
-  ~CmdFlowAutoRun() override = default;
-
-  unsigned check() override;
-  unsigned exec() override;
-
- private:
-  // private function
-  // private data
-};
-
 class CmdFlowExit : public TclCmd
 {
  public:
