@@ -1,17 +1,4 @@
 {
-    "Tools": {
-        "TCL": "ON"
-    },
-    "Flow": {
-        "Synthesis": "ON",
-        "Floorplan": "ON",
-        "Placer": "ON",
-        "CTS": "ON",
-        "TO": "ON",
-        "Router": "ON",
-        "DRC": "ON",
-        "GUI": "ON"
-    },
     "ConfigPath": {
         "idb_path": "$CONFIG_DIR/db_default_config.json",
         "ifp_path": "$CONFIG_DIR/fp_default_config.json",
