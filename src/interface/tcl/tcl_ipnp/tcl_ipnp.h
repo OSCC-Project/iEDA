@@ -14,3 +14,21 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+#pragma once
+
+#include "ScriptEngine.hh"
+#include "tcl_definition.h"
+
+using namespace ieda;
+namespace tcl {
+
+class CmdRunPnp : public TclCmd {
+public:
+  explicit CmdRunPnp(const char* cmd_name);
+  ~CmdRunPnp() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+};
+
+}  // namespace tcl

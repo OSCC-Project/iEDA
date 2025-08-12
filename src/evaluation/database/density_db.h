@@ -14,6 +14,11 @@
 
 namespace ieval {
 
+struct DensityValue {
+    double max_density;
+    double avg_density;
+};
+
 struct DensityPin
 {
   std::string type;

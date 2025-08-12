@@ -29,7 +29,6 @@ namespace tcl {
 int registerCmdPNP()
 {
   registerTclCmd(CmdRunPnp, "run_pnp");
-  registerTclCmd(CmdAddVIA1, "add_via1");
 
   return EXIT_SUCCESS;
 }

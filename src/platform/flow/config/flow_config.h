@@ -58,6 +58,7 @@ struct ConfigPath
   string idrc_path;
   string icts_path;
   string ito_path;
+  string ipnp_path;
 };
 
 struct EnvironmentInfo
@@ -115,6 +116,7 @@ class PLFConfig
   string get_irt_path() { return _config_path.irt_path; }
   string get_idrc_path() { return _config_path.idrc_path; }
   string get_ito_path() { return _config_path.ito_path; }
+  string get_ipnp_path() { return _config_path.ipnp_path; }
 
   FlowStatus& get_status() { return _status; }
   string get_status_stage() { return _status.stage; }

@@ -15,29 +15,28 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
-/**
- * @File Name: tcl_eval.h
- * @Brief :
- * @Author : Yell (12112088@qq.com)
- * @Version : 1.0
- * @Creat Date : 2022-04-15
- *
- */
-#include "ScriptEngine.hh"
-#include "UserShell.hh"
-#include "tcl_eval.h"
 
-using namespace ieda;
+#include <string>
 
-namespace tcl {
+namespace iplf {
+#define pnpInst PnpIO::getInstance()
 
-int registerCmdEval()
-{
-  registerTclCmd(CmdEvalTimingRun, "run_timing_eval");
-  registerTclCmd(CmdEvalWirelengthRun, "run_wirelength_eval");
-  registerTclCmd(CmdEvalDensityRun, "run_density_eval");
+class PnpIO {
+ public:
+  static PnpIO* getInstance() {
+    if (!_instance) {
+      _instance = new PnpIO;
+    }
+    return _instance;
+  }
 
-  return EXIT_SUCCESS;
-}
+  bool runPNP(std::string config = "");
 
-}  // namespace tcl
+ private:
+  static PnpIO* _instance;
+
+  PnpIO() = default;
+  ~PnpIO() = default;
+};
+
+}  // namespace iplf

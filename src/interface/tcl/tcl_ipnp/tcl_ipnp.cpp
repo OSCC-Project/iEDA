@@ -15,3 +15,42 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
+#include "tcl_ipnp.h"
+#include "tool_manager.h"
+
+namespace tcl {
+
+CmdRunPnp::CmdRunPnp(const char* cmd_name) : TclCmd(cmd_name) {
+  auto* config_option = new TclStringOption("-config", 1, nullptr);
+  addOption(config_option);
+}
+
+unsigned CmdRunPnp::check() {
+  TclOption* config_option = getOptionOrArg("-config");
+  LOG_FATAL_IF(!config_option);
+  return 1;
+}
+
+unsigned CmdRunPnp::exec() {
+  if (!check()) {
+    return 0;
+  }
+
+  TclOption* config_option = getOptionOrArg("-config");
+  std::string config_file = config_option->getStringVal();
+
+  std::cout << "Running iPNP with config: " << config_file << std::endl;
+
+  bool success = iplf::tmInst->autoRunPNP(config_file);
+  
+  if (success) {
+    std::cout << "iPNP execution completed successfully" << std::endl;
+  } else {
+    std::cout << "iPNP execution failed" << std::endl;
+  }
+  
+  return success ? 1 : 0;
+}
+
+}  // namespace tcl
+

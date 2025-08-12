@@ -154,17 +154,7 @@ std::string DensityEval::evalDensity(DensityCells cells, DensityRegion region, i
     stage = output_filename.substr(0, underscore_pos);
   }
 
-  std::string save_dir;
-  if (stage.find("place") != std::string::npos || stage.find("pl") != std::string::npos) {
-    save_dir = "/pl/density_map";
-  } else if (stage.find("cts") != std::string::npos) {
-    save_dir = "/cts/density_map";
-  } else if (stage.find("route") != std::string::npos) {
-    save_dir = "/route/density_map";
-  } else {
-    save_dir = "other/density_map";
-  }
-
+  std::string save_dir = "/density_map";
   std::string output_path = createDirPath(save_dir) + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
@@ -251,17 +241,7 @@ std::string DensityEval::evalPinDensity(DensityPins pins, DensityRegion region, 
     stage = output_filename.substr(0, underscore_pos);
   }
 
-  std::string save_dir;
-  if (stage.find("place") != std::string::npos || stage.find("pl") != std::string::npos) {
-    save_dir = "/pl/density_map";
-  } else if (stage.find("cts") != std::string::npos) {
-    save_dir = "/cts/density_map";
-  } else if (stage.find("route") != std::string::npos) {
-    save_dir = "/route/density_map";
-  } else {
-    save_dir = "other/density_map";
-  }
-
+  std::string save_dir="/density_map";
   std::string output_path;
   if (neighbor) {
     output_path = createDirPath(save_dir) + "/" + "neighbor_" + output_filename;
@@ -321,17 +301,7 @@ std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, 
     stage = output_filename.substr(0, underscore_pos);
   }
 
-  std::string save_dir;
-  if (stage.find("place") != std::string::npos || stage.find("pl") != std::string::npos) {
-    save_dir = "/pl/density_map";
-  } else if (stage.find("cts") != std::string::npos) {
-    save_dir = "/cts/density_map";
-  } else if (stage.find("route") != std::string::npos) {
-    save_dir = "/route/density_map";
-  } else {
-    save_dir = "other/density_map";
-  }
-
+  std::string save_dir="/density_map";
   std::string output_path;
   if (neighbor) {
     const std::vector<std::vector<int>> kernel = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
@@ -470,13 +440,7 @@ std::string DensityEval::evalMargin(DensityCells cells, DensityRegion die, Densi
     stage = output_filename.substr(0, underscore_pos);
   }
 
-  std::string save_dir;
-  if (stage.find("place") != std::string::npos || stage.find("pl") != std::string::npos) {
-    save_dir = "/pl/margin_map";
-  } else{
-    save_dir = "other/margin_map";
-  }
-
+  std::string save_dir="/margin_map";
   std::string output_path = createDirPath(save_dir) + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
@@ -866,6 +830,190 @@ std::map<int, int> DensityEval::patchMacroMargin(DensityCells cells, DensityRegi
       patch_macro_margin[patch_id] = margin;
     }
     return patch_macro_margin;
+}
+
+DensityValue DensityEval::calCellDensity(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
+{
+  DensityRegion region = getDensityRegion();
+  DensityCells cells = getDensityCells();
+
+  std::vector<std::vector<double>> density_grid(bin_cnt_y, std::vector<double>(bin_cnt_x, 0.0));
+
+  double grid_size_x = static_cast<double>(region.ux - region.lx) / bin_cnt_x;
+  double grid_size_y = static_cast<double>(region.uy - region.ly) / bin_cnt_y;
+
+  for (const auto& cell : cells) {
+    int32_t start_row = std::max(0, static_cast<int32_t>((cell.ly - region.ly) / grid_size_y));
+    int32_t end_row = std::min(bin_cnt_y - 1, static_cast<int32_t>((cell.ly + cell.height - region.ly) / grid_size_y));
+
+    int32_t start_col = std::max(0, static_cast<int32_t>((cell.lx - region.lx) / grid_size_x));
+    int32_t end_col = std::min(bin_cnt_x - 1, static_cast<int32_t>((cell.lx + cell.width - region.lx) / grid_size_x));
+
+    for (int32_t row = start_row; row <= end_row; ++row) {
+      for (int32_t col = start_col; col <= end_col; ++col) {
+        double grid_lx = region.lx + col * grid_size_x;
+        double grid_ly = region.ly + row * grid_size_y;
+        double grid_ux = std::min(region.lx + (col + 1) * grid_size_x, static_cast<double>(region.ux));
+        double grid_uy = std::min(region.ly + (row + 1) * grid_size_y, static_cast<double>(region.uy));
+
+        double overlap_lx = std::max(static_cast<double>(cell.lx), grid_lx);
+        double overlap_ly = std::max(static_cast<double>(cell.ly), grid_ly);
+        double overlap_ux = std::min(static_cast<double>(cell.lx + cell.width), grid_ux);
+        double overlap_uy = std::min(static_cast<double>(cell.ly + cell.height), grid_uy);
+
+        double overlap_area = std::max(0.0, overlap_ux - overlap_lx) * std::max(0.0, overlap_uy - overlap_ly);
+        double grid_area = (grid_ux - grid_lx) * (grid_uy - grid_ly);
+
+        density_grid[row][col] += overlap_area / grid_area;
+      }
+    }
+  }
+
+  if (!save_path.empty()) {
+    std::ofstream csv_file(save_path);
+    if (csv_file.is_open()) {
+      for (size_t row_index = density_grid.size(); row_index-- > 0;) {
+        const auto& row = density_grid[row_index];
+        for (size_t i = 0; i < row.size(); ++i) {
+          csv_file << std::fixed << std::setprecision(6) << row[i];
+          if (i < row.size() - 1)
+            csv_file << ",";
+        }
+        csv_file << "\n";
+      }
+      csv_file.close();
+    }
+  }
+
+  double total_density = 0.0;
+  double max_density = 0.0;
+  
+  for (const auto& row : density_grid) {
+    for (double density : row) {
+      total_density += density;
+      max_density = std::max(max_density, density);
+    }
+  }
+  
+  DensityValue result;
+  result.max_density = max_density;
+  result.avg_density = total_density / (bin_cnt_x * bin_cnt_y);
+  
+  return result;
+}
+
+DensityValue DensityEval::calPinDensity(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
+{
+  DensityRegion region = getDensityRegion();
+  DensityPins pins = getDensityPins();
+
+  std::vector<std::vector<double>> density_grid(bin_cnt_y, std::vector<double>(bin_cnt_x, 0.0));
+
+  double grid_size_x = static_cast<double>(region.ux - region.lx) / bin_cnt_x;
+  double grid_size_y = static_cast<double>(region.uy - region.ly) / bin_cnt_y;
+
+  for (const auto& pin : pins) {
+    int32_t col = static_cast<int32_t>((pin.lx - region.lx) / grid_size_x);
+    int32_t row = static_cast<int32_t>((pin.ly - region.ly) / grid_size_y);
+
+    if (col >= 0 && col < bin_cnt_x && row >= 0 && row < bin_cnt_y) {
+      density_grid[row][col] += 1.0;
+    }
+  }
+
+  if (!save_path.empty()) {
+    std::ofstream csv_file(save_path);
+    if (csv_file.is_open()) {
+      for (size_t row_index = density_grid.size(); row_index-- > 0;) {
+        const auto& row = density_grid[row_index];
+        for (size_t i = 0; i < row.size(); ++i) {
+          csv_file << std::fixed << std::setprecision(6) << row[i];
+          if (i < row.size() - 1)
+            csv_file << ",";
+        }
+        csv_file << "\n";
+      }
+      csv_file.close();
+    }
+  }
+
+  double total_density = 0.0;
+  double max_density = 0.0;
+  
+  for (const auto& row : density_grid) {
+    for (double density : row) {
+      total_density += density;
+      max_density = std::max(max_density, density);
+    }
+  }
+  
+  DensityValue result;
+  result.max_density = max_density;
+  result.avg_density = total_density / (bin_cnt_x * bin_cnt_y);
+  
+  return result;
+}
+
+DensityValue DensityEval::calNetDensity(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
+{
+  DensityRegion region = getDensityRegion();
+  DensityNets nets = getDensityNets();
+
+  std::vector<std::vector<double>> density_grid(bin_cnt_y, std::vector<double>(bin_cnt_x, 0.0));
+
+  double grid_size_x = static_cast<double>(region.ux - region.lx) / bin_cnt_x;
+  double grid_size_y = static_cast<double>(region.uy - region.ly) / bin_cnt_y;
+
+  for (const auto& net : nets) {
+    int32_t start_col = std::max(0, static_cast<int32_t>((net.lx - region.lx) / grid_size_x));
+    int32_t end_col = std::min(bin_cnt_x - 1, static_cast<int32_t>((net.ux - region.lx) / grid_size_x));
+    int32_t start_row = std::max(0, static_cast<int32_t>((net.ly - region.ly) / grid_size_y));
+    int32_t end_row = std::min(bin_cnt_y - 1, static_cast<int32_t>((net.uy - region.ly) / grid_size_y));
+
+    bool is_local = (start_col == end_col) && (start_row == end_row);
+
+    if (is_local) {
+      density_grid[start_row][start_col] += 1.0;
+    } else {
+      for (int32_t row = start_row; row <= end_row; ++row) {
+        for (int32_t col = start_col; col <= end_col; ++col) {
+          density_grid[row][col] += 1.0;
+        }
+      }
+    }
+  }
+
+  if (!save_path.empty()) {
+    std::ofstream csv_file(save_path);
+    if (csv_file.is_open()) {
+      for (size_t row_index = density_grid.size(); row_index-- > 0;) {
+        const auto& row = density_grid[row_index];
+        for (size_t i = 0; i < row.size(); ++i) {
+          csv_file << std::fixed << std::setprecision(6) << row[i];
+          if (i < row.size() - 1)
+            csv_file << ",";
+        }
+        csv_file << "\n";
+      }
+      csv_file.close();
+    }
+  }
+
+  double total_density = 0.0;
+  double max_density = 0.0;
+  
+  for (const auto& row : density_grid) {
+    for (double density : row) {
+      total_density += density;
+      max_density = std::max(max_density, density);
+    }
+  }
+  
+  DensityValue result;
+  result.max_density = max_density;
+  result.avg_density = total_density / (bin_cnt_x * bin_cnt_y);
+  
+  return result;
 }
 
 

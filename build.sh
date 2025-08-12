@@ -316,12 +316,17 @@ perform_clean()
   local cmake_build_dir="$BUILD_DIR"
   local rust_target_dirs=$(find "$IEDA_WORKSPACE/src" -type d -name "target" \
     -exec test -f "{}/../Cargo.toml" \; -print 2>/dev/null)
+  local rust_tmp_dirs=$(find "$IEDA_WORKSPACE/src" -type d -name "tmp" \
+    -exec test -f "{}/../Cargo.toml" \; -print 2>/dev/null)
 
   local delete_list=()
   [[ -d "$cmake_build_dir" ]] && delete_list+=("$cmake_build_dir (CMake build)")
   [[ -n "$rust_target_dirs" ]] && while IFS= read -r dir; do
     delete_list+=("$dir (Rust build)")
   done <<< "$rust_target_dirs"
+  [[ -n "$rust_tmp_dirs" ]] && while IFS= read -r dir; do
+    delete_list+=("$dir (Rust build)")
+  done <<< "$rust_tmp_dirs"
 
   if [[ ${#delete_list[@]} -eq 0 ]]; then
     echo -e "${green}No build artifacts found, nothing to clean.${clear}"
@@ -336,6 +341,7 @@ perform_clean()
   if [[ $NON_INTERACTIVE == "ON" ]]; then
     [[ -d "$cmake_build_dir" ]] && rm -rf "$cmake_build_dir"
     [[ -n "$rust_target_dirs" ]] && xargs -I{} rm -rf {} <<< "$rust_target_dirs"
+    [[ -n "$rust_tmp_dirs" ]] && xargs -I{} rm -rf {} <<< "$rust_tmp_dirs"
   else
     read -p $'\nAre you sure to delete these? [y/N] ' confirm
     [[ $confirm == [yY] ]] || return 0
@@ -345,6 +351,9 @@ perform_clean()
     [[ -n "$rust_target_dirs" ]] && while IFS= read -r dir; do
       rm -rf "$dir" && echo "Deleted: $dir"
     done <<< "$rust_target_dirs"
+    [[ -n "$rust_tmp_dirs" ]] && while IFS= read -r dir; do
+      rm -rf "$dir" && echo "Deleted: $dir"
+    done <<< "$rust_tmp_dirs"
   fi
 
   echo -e "${green}Cleanup completed.${clear}"

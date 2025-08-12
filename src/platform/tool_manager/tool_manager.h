@@ -116,6 +116,9 @@ class ToolManager
   /// iPW
   bool autoRunPower(std::string config = "");
 
+  /// iPNP
+  bool autoRunPNP(std::string config = "");
+
   bool buildClockTree(std::string config = "", std::string data_path = "");
   bool saveClockTree(std::string data_path);
 
@@ -124,7 +127,6 @@ class ToolManager
   ToolManager();
   ~ToolManager() = default;
 
-  ///
 };
 
 }  // namespace iplf

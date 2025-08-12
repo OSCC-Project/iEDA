@@ -55,7 +55,9 @@ void DRCEngine::init()
   RTLOG.info(Loc::current(), "Starting...");
 
   RTI.initIDRC();
-  buildIgnoredViolationSet();
+  if (!RTDM.getConfig().enable_fast_mode) {
+    buildIgnoredViolationSet();
+  }
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }

@@ -556,7 +556,6 @@ void RTInterface::wrapDatabase()
   wrapLayerInfo();
   wrapLayerViaMasterList();
   wrapObstacleList();
-  wrapNetInfo();
   wrapNetList();
 }
 
@@ -633,20 +632,13 @@ void RTInterface::wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRoutin
 {
   ScaleAxis& track_axis = routing_layer.get_track_axis();
 
-  for (idb::IdbTrackGrid* idb_track_grid : idb_layer->get_track_grid_list()) {
-    idb::IdbTrack* idb_track = idb_track_grid->get_track();
+  ScaleGrid x_track_grid;
+  x_track_grid.set_step_length(idb_layer->get_pitch_x());
+  track_axis.get_x_grid_list().push_back(x_track_grid);
 
-    ScaleGrid track_grid;
-    track_grid.set_start_line(static_cast<int32_t>(idb_track->get_start()));
-    track_grid.set_step_length(static_cast<int32_t>(idb_track->get_pitch()));
-    track_grid.set_step_num(static_cast<int32_t>(idb_track_grid->get_track_num()) - 1);
-
-    if (idb_track->get_direction() == idb::IdbTrackDirection::kDirectionX) {
-      track_axis.get_x_grid_list().push_back(track_grid);
-    } else if (idb_track->get_direction() == idb::IdbTrackDirection::kDirectionY) {
-      track_axis.get_y_grid_list().push_back(track_grid);
-    }
-  }
+  ScaleGrid y_track_grid;
+  y_track_grid.set_step_length(idb_layer->get_pitch_y());
+  track_axis.get_y_grid_list().push_back(y_track_grid);
 }
 
 void RTInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer)
@@ -1076,23 +1068,6 @@ void RTInterface::wrapObstacleList()
     }
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
-}
-
-void RTInterface::wrapNetInfo()
-{
-  std::map<std::string, PlanarRect>& block_shape_map = RTDM.getDatabase().get_block_shape_map();
-  std::vector<idb::IdbInstance*>& idb_instance_list = dmInst->get_idb_def_service()->get_design()->get_instance_list()->get_instance_list();
-
-  for (idb::IdbInstance* idb_instance : idb_instance_list) {
-    if (idb_instance->get_cell_master()->is_core()) {
-      continue;
-    }
-    if (idb_instance->get_connected_pin_number() == 0) {
-      continue;
-    }
-    idb::IdbRect* idb_shape = idb_instance->get_bounding_box();
-    block_shape_map[idb_instance->get_name()] = {idb_shape->get_low_x(), idb_shape->get_low_y(), idb_shape->get_high_x(), idb_shape->get_high_y()};
-  }
 }
 
 void RTInterface::wrapNetList()
@@ -2132,12 +2107,18 @@ void RTInterface::routeTAPanel(TAPanel& ta_panel)
 void RTInterface::sendNotification(std::string stage, int32_t iter, std::map<std::string, std::string> json_path_map)
 {
   std::map<std::string, std::any> notification;
+  notification["step_name"] = "routing";
   notification["stage"] = stage;
-  notification["iter"] = iter;
-  notification["json_path"] = json_path_map;
-  // if (!ieda::NotificationUtility::getInstance().sendNotification("iRT", notification).success) {
-  //   RTLOG.warn(Loc::current(), "Failed to send notification!");
-  // }
+  notification["iter"] = std::to_string(iter);
+  notification["json_path_map"] = json_path_map;
+  if (!ieda::NotificationUtility::getInstance().sendNotification("iRT", notification).success) {
+    RTLOG.warn(Loc::current(), "Failed to send notification at stage :", stage, " iter :", iter);
+  } else {
+    RTLOG.info(Loc::current(), "Successfully sent notification at stage :", stage, " iter :", iter);
+  }
+  for (auto& [key, value] : json_path_map) {
+    RTLOG.info(Loc::current(), "  ", key, " : ", value);
+  }
 }
 
 #endif

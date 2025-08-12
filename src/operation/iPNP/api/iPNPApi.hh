@@ -34,9 +34,12 @@
 
 namespace ipnp {
 
+#define iPNPApiInst ipnp::iPNPApi::getInstance()
+
 class iPNP;
 
-class iPNPApi {
+class iPNPApi
+{
 public:
     static void setInstance(iPNP* ipnp);
     static iPNP* getInstance();
