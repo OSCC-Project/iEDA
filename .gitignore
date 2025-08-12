@@ -25,7 +25,7 @@ rpt*/
 target/
 *-stamp/
 tmp/
-# scripts
+scripts
 *.patch
 CMakePresets.json
 .venv/
