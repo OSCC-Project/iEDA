@@ -76,6 +76,7 @@ namespace ipnp {
 
     void readLefDef(std::vector<std::string> lef_files, std::string def_path);
     void setIdb(idb::IdbDesign* input_idb_design) { _idb_wrapper.set_idb_design(input_idb_design); }
+    void setIdbBuilder(idb::IdbBuilder* idb_builder) { _idb_wrapper.set_idb_builder(idb_builder); }
 
     void init();
     void initIRAnalysis();

@@ -32,37 +32,27 @@ PnpIO* PnpIO::_instance = nullptr;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool PnpIO::runPNP(std::string config)
 {
-  if (config.empty()) {
-    config = "../src/operation/iPNP/example/pnp_config.json";
-    std::cout << "Using default iPNP config: " << config << std::endl;
-  }
-
+  
   flowConfigInst->set_status_stage("iPNP - Power Network Planning");
 
   ieda::Stats stats;
 
-  try {
-    ipnp::iPNP ipnp_tool(config);
+  ipnp::iPNP ipnp(config);
 
-    ipnp::iPNPApi::setInstance(&ipnp_tool);
+  ipnp::iPNPApi::setInstance(&ipnp);
 
-    std::cout << "Running iPNP with config: " << config << std::endl;
+  std::cout << "Running iPNP with config: " << config << std::endl;
 
-    ipnp_tool.run();
+  ipnp::iPNPApi::run_pnp(dmInst->get_idb_builder());
 
-    std::cout << "iPNP completed successfully" << std::endl;
+  std::cout << "iPNP completed successfully" << std::endl;
 
-    flowConfigInst->add_status_runtime(stats.elapsedRunTime());
-    flowConfigInst->set_status_memmory(stats.memoryDelta());
+  flowConfigInst->add_status_runtime(stats.elapsedRunTime());
+  flowConfigInst->set_status_memmory(stats.memoryDelta());
 
-    return true;
+  return true;
 
-  } catch (const std::exception& e) {
-    std::cerr << "iPNP execution failed: " << e.what() << std::endl;
-    flowConfigInst->add_status_runtime(stats.elapsedRunTime());
-    flowConfigInst->set_status_memmory(stats.memoryDelta());
-    return false;
-  }
+  
 }
 
 }  // namespace iplf

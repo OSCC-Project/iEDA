@@ -25,6 +25,7 @@
 #include "iPNPApi.hh"
 
 #include "iPNP.hh"
+#include "log/Log.hh"
 
 namespace ipnp {
 
@@ -36,6 +37,33 @@ void iPNPApi::setInstance(iPNP* ipnp) {
 
 iPNP* iPNPApi::getInstance() {
     return _ipnp_instance;
+}
+
+void iPNPApi::run_pnp(idb::IdbBuilder* idb_builder) {
+    if (!_ipnp_instance) {
+        LOG_ERROR << "iPNP instance is not set. Please call setInstance() first." << std::endl;
+        return;
+    }
+    
+    if (!idb_builder) {
+        LOG_ERROR << "Input idb_builder is null." << std::endl;
+        return;
+    }
+    
+    auto* idb_design = idb_builder->get_def_service()->get_design();
+    if (!idb_design) {
+        LOG_ERROR << "Failed to get IDB design from builder." << std::endl;
+        return;
+    }
+    
+    _ipnp_instance->setIdb(idb_design);
+    _ipnp_instance->setIdbBuilder(idb_builder);
+
+    // run
+    _ipnp_instance->init();
+    _ipnp_instance->runSynthesis();
+    _ipnp_instance->saveToIdb();
+
 }
 
 } // namespace ipnp 

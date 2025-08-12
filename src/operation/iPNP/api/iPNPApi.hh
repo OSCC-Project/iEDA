@@ -32,6 +32,10 @@
 
 #include "log/Log.hh"
 
+namespace idb {
+    class IdbBuilder;
+}
+
 namespace ipnp {
 
 #define iPNPApiInst ipnp::iPNPApi::getInstance()
@@ -43,6 +47,8 @@ class iPNPApi
 public:
     static void setInstance(iPNP* ipnp);
     static iPNP* getInstance();
+
+    static void run_pnp(idb::IdbBuilder* idb_builder);
 
 private:
     static iPNP* _ipnp_instance;

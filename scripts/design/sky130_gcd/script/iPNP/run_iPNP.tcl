@@ -31,7 +31,7 @@ def_init -path /home/sujianrong/iEDA/src/operation/iPNP/data/test/aes_no_pwr.def
 #===========================================================
 ##   run PNP
 #===========================================================
-run_pnp -config /home/sujianrong/iEDA/src/operation/iPNP/example/pnp_config.json
+run_pnp -config /home/sujianrong/iEDA/scripts/design/sky130_gcd/iEDA_config/pnp_default_config.json
 
 #===========================================================
 ##   def & netlist
