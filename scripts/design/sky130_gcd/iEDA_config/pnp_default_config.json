@@ -1,0 +1,76 @@
+{
+    "timing": {
+        "design_workspace": ""
+    },
+    "power": {
+        "power_net_name": "VDD"
+    },
+    "egr": {
+        "map_path": ""
+    },
+    "grid": {
+        "power_layers": [
+            9,
+            8,
+            7,
+            6,
+            5,
+            4,
+            3
+        ],
+        "ho_region_num": 2,
+        "ver_region_num": 2
+    },
+    "simulated_annealing": {
+        "initial_temp": 100.0,
+        "cooling_rate": 0.95,
+        "min_temp": 0.1,
+        "iterations_per_temp": 10,
+        "ir_drop_weight": 0.6,
+        "overflow_weight": 0.4,
+        "modifiable_layer_min": 3,
+        "modifiable_layer_max": 6
+    },
+    "templates": {
+        "horizontal": [
+            {
+                "width": 8000.0,
+                "pg_offset": 1600.0,
+                "space": 19200.0,
+                "offset": 8000.0
+            },
+            {
+                "width": 8000.0,
+                "pg_offset": 1600.0,
+                "space": 38400.0,
+                "offset": 8000.0
+            },
+            {
+                "width": 8000.0,
+                "pg_offset": 1600.0,
+                "space": 38400.0,
+                "offset": 27200.0
+            }
+        ],
+        "vertical": [
+            {
+                "width": 8000.0,
+                "pg_offset": 1600.0,
+                "space": 19200.0,
+                "offset": 8000.0
+            },
+            {
+                "width": 8000.0,
+                "pg_offset": 1600.0,
+                "space": 38400.0,
+                "offset": 8000.0
+            },
+            {
+                "width": 8000.0,
+                "pg_offset": 1600.0,
+                "space": 38400.0,
+                "offset": 27200.0
+            }
+        ]
+    }
+}
