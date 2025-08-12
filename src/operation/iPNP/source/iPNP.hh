@@ -26,87 +26,81 @@
 
 #include <iostream>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-#include <memory>
 
-#include "GridManager.hh"
-#include "iPNPIdbWrapper.hh"
 #include "CongestionEval.hh"
+#include "GridManager.hh"
 #include "IREval.hh"
+#include "iPNPIdbWrapper.hh"
 
 namespace idb {
-  class IdbLayer;
-  class IdbSpecialWireSegment;
-  class IdbRegularWireSegment;
-  class IdbBlockageList;
-  class IdbInstance;
-  class IdbRect;
-  class IdbVia;
-  class IdbLayerCut;
-  class IdbPin;
-  class IdbSpecialNet;
-  class IdbLayerRouting;
-  class IdbSpecialWire;
-  class IdbDesign;
+class IdbLayer;
+class IdbSpecialWireSegment;
+class IdbRegularWireSegment;
+class IdbBlockageList;
+class IdbInstance;
+class IdbRect;
+class IdbVia;
+class IdbLayerCut;
+class IdbPin;
+class IdbSpecialNet;
+class IdbLayerRouting;
+class IdbSpecialWire;
+class IdbDesign;
 
-  enum class SegmentType : int8_t;
-  enum class IdbWireShapeType : uint8_t;
-  enum class IdbOrient : uint8_t;
+enum class SegmentType : int8_t;
+enum class IdbWireShapeType : uint8_t;
+enum class IdbOrient : uint8_t;
 
-  template <typename T>
-  class IdbCoordinate;
+template <typename T>
+class IdbCoordinate;
 }  // namespace idb
 
 namespace ipnp {
 
-  class PNPConfig;
+class PNPConfig;
 
-  class iPNP
-  {
-  public:
-    iPNP();
-    iPNP(const std::string& config_file);
-    ~iPNP();
+class iPNP
+{
+ public:
+  iPNP();
+  iPNP(const std::string& config_file);
+  ~iPNP();
 
-    PNPConfig* get_config() { return _pnp_config; }
-    GridManager get_initialized_network() { return _initialized_network; }
-    GridManager get_current_opt_network() { return _current_opt_network; }
+  PNPConfig* get_config() { return _pnp_config; }
+  GridManager get_initialized_network() { return _initialized_network; }
+  GridManager get_current_opt_network() { return _current_opt_network; }
 
-    void readLefDef(std::vector<std::string> lef_files, std::string def_path);
-    void setIdb(idb::IdbDesign* input_idb_design) { _idb_wrapper.set_idb_design(input_idb_design); }
-    void setIdbBuilder(idb::IdbBuilder* idb_builder) { _idb_wrapper.set_idb_builder(idb_builder); }
+  void init();
+  void initIRAnalysis();
+  void runSynthesis();
+  void runOptimize();  // including calling Evaluator and modify PDN
+  void runFastPlacer();
+  void saveToIdb() { _idb_wrapper.saveToIdb(_current_opt_network); }
+  void runAnalysis();
 
-    void init();
-    void initIRAnalysis();
-    void runSynthesis();
-    void runOptimize();  // including calling Evaluator and modify PDN
-    void runFastPlacer();
-    void saveToIdb() { _idb_wrapper.saveToIdb(_current_opt_network); }
-    void writeIdbToDef(std::string def_path) { _idb_wrapper.writeIdbToDef(def_path); }
-    void runAnalysis();
-    void outputDef();
+  void connect_M2_M1();
 
-    void connect_M2_M1();
+  void run();  // According to the config. e.g. which Evaluator, which opt algorithm.
 
-    void run();  // According to the config. e.g. which Evaluator, which opt algorithm.
+  // Set the output DEF file path
+  void set_output_def_path(const std::string& path) { _output_def_path = path; }
 
-    // Set the output DEF file path
-    void set_output_def_path(const std::string& path) { _output_def_path = path; }
+ private:
+  PNPConfig* _pnp_config = nullptr;
+  GridManager _input_network;
+  GridManager _initialized_network;
+  GridManager _current_opt_network;
+  idb::IdbInstanceList* _input_instance_list;
 
-  private:
-    PNPConfig* _pnp_config = nullptr;
-    GridManager _input_network;
-    GridManager _initialized_network;
-    GridManager _current_opt_network;
-    idb::IdbInstanceList* _input_instance_list;
+  iPNPIdbWrapper _idb_wrapper;
+  IREval _ir_eval;
+  CongestionEval _cong_eval;
 
-    iPNPIdbWrapper _idb_wrapper;
-    IREval _ir_eval;
-    CongestionEval _cong_eval;
-
-    std::string _output_def_path;
-  };
+  std::string _output_def_path;
+};
 
 }  // namespace ipnp

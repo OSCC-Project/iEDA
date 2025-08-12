@@ -10,7 +10,7 @@ target_link_libraries(tcl_ipnp
         tcl 
         shell-cmd 
         str
-        pnp
+        tcl_util
         iPNPApi
 )
 

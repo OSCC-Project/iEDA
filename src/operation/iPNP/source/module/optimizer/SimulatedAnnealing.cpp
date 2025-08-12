@@ -198,8 +198,7 @@ namespace ipnp {
 
           // Save to IDB only after accepting the solution
           iPNPIdbWrapper wrapper;
-          wrapper.set_idb_design(idb_builder->get_def_service()->get_design());
-          wrapper.set_idb_builder(idb_builder);
+
           wrapper.saveToIdb(current_solution);
           wrapper.writeIdbToDef("/home/sujianrong/iEDA/src/operation/iPNP/data/case/s9234/result/debug.def");
 
@@ -380,8 +379,6 @@ namespace ipnp {
   {
 
     iPNPIdbWrapper temp_wrapper;
-    temp_wrapper.set_idb_design(idb_builder->get_def_service()->get_design());
-    temp_wrapper.set_idb_builder(idb_builder);
     temp_wrapper.saveToIdb(new_solution);
 
     _cong_eval.evalEGR(idb_builder);

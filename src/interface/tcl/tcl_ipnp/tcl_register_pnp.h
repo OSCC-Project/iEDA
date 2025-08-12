@@ -19,18 +19,17 @@
 #include "ScriptEngine.hh"
 #include "UserShell.hh"
 #include "tcl_ipnp.h"
-#include "PNPShellCmd.hh"
 
 using namespace ieda;
-using namespace ipnp;
 
 namespace tcl {
 
 int registerCmdPNP()
 {
   registerTclCmd(CmdRunPnp, "run_pnp");
+  registerTclCmd(CmdAddVIA1, "add_via1");
 
   return EXIT_SUCCESS;
 }
 
-}  // namespace tcl 
+}  // namespace tcl

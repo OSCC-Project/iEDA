@@ -26,34 +26,41 @@
 #define IPNP_API_HH
 
 #pragma once
+#include <filesystem>
 #include <iostream>
 #include <string>
-#include <filesystem>
 
 #include "log/Log.hh"
 
 namespace idb {
-    class IdbBuilder;
+class IdbBuilder;
 }
+
+#define PNPApiInst (ipnp::PNPApi::getInstance())
 
 namespace ipnp {
 
-#define iPNPApiInst ipnp::iPNPApi::getInstance()
-
 class iPNP;
 
-class iPNPApi
+class PNPApi
 {
-public:
-    static void setInstance(iPNP* ipnp);
-    static iPNP* getInstance();
+ public:
+  static PNPApi* getInstance()
+  {
+    if (_instance == nullptr) {
+      _instance = new PNPApi();
+    }
 
-    static void run_pnp(idb::IdbBuilder* idb_builder);
+    return _instance;
+  }
 
-private:
-    static iPNP* _ipnp_instance;
+  static void run_pnp(std::string config);
+  static void connect_M2_M1(std::string config);
+
+ private:
+  static PNPApi* _instance;
 };
 
 }  // namespace ipnp
 
-#endif // IPNP_API_HH
+#endif  // IPNP_API_HH

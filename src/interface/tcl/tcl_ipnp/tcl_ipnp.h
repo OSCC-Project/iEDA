@@ -19,13 +19,25 @@
 #include "ScriptEngine.hh"
 #include "tcl_definition.h"
 
-using namespace ieda;
+using ieda::TclCmd;
+
 namespace tcl {
 
-class CmdRunPnp : public TclCmd {
-public:
+class CmdRunPnp : public TclCmd
+{
+ public:
   explicit CmdRunPnp(const char* cmd_name);
   ~CmdRunPnp() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+};
+
+class CmdAddVIA1 : public TclCmd
+{
+ public:
+  explicit CmdAddVIA1(const char* cmd_name);
+  ~CmdAddVIA1() override = default;
 
   unsigned check() override;
   unsigned exec() override;

@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @file iPNPIdbWrapper.cpp
- * @author Jianrong Su 
+ * @author Jianrong Su
  * @brief
  * @version 1.0
  * @date 2025-06-23
@@ -24,88 +24,54 @@
 
 #include "iPNPIdbWrapper.hh"
 
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include <iostream>
 #include <map>
 #include <string>
 #include <vector>
-#include <sys/stat.h>
-#include <unistd.h>
 
-#include "PowerVia.hh"
 #include "PowerRouter.hh"
+#include "PowerVia.hh"
 
 namespace ipnp {
 
-  void iPNPIdbWrapper::saveToIdb(GridManager pnp_network)
-  {
-    // clear VDD
-    auto* vdd_net = _idb_design->get_special_net_list()->find_net("VDD");
-    auto* vdd_wire_list = vdd_net->get_wire_list();
-    vdd_wire_list->reset();
+void iPNPIdbWrapper::saveToIdb(GridManager pnp_network)
+{
+  auto idb_design = dmInst->get_idb_design();
+  // clear VDD
+  auto* vdd_net = idb_design->get_special_net_list()->find_net("VDD");
+  auto* vdd_wire_list = vdd_net->get_wire_list();
+  vdd_wire_list->reset();
 
-    // clear VSS
-    auto* vss_net = _idb_design->get_special_net_list()->find_net("VSS");
-    auto* vss_wire_list = vss_net->get_wire_list();
-    vss_wire_list->reset();
+  // clear VSS
+  auto* vss_net = idb_design->get_special_net_list()->find_net("VSS");
+  auto* vss_wire_list = vss_net->get_wire_list();
+  vss_wire_list->reset();
 
-    // add power/ground network to idb
-    PowerRouter* power_router = new PowerRouter();
-    power_router->addPowerNets(_idb_design, pnp_network);
+  // add power/ground network to idb
+  PowerRouter* power_router = new PowerRouter();
+  power_router->addPowerNets(idb_design, pnp_network);
 
-    // add via to idb
-    PowerVia* power_via = new PowerVia();
-    _idb_design = power_via->connectAllPowerLayers(pnp_network, _idb_design);
-    
-    delete power_router;
-    delete power_via;
+  // add via to idb
+  PowerVia* power_via = new PowerVia();
+  idb_design = power_via->connectAllPowerLayers(pnp_network, idb_design);
 
-    LOG_INFO << "Added iPNP net.";
-  }
+  delete power_router;
+  delete power_via;
 
-  void iPNPIdbWrapper::writeIdbToDef(std::string def_file_path)
-  {
-    if (!_idb_design) {
-      LOG_ERROR << "Error: IDB design is null in writeIdbToDef";
-      return;
-    }
+  LOG_INFO << "Added iPNP net.";
+}
 
-    auto* db_builder = get_idb_builder();
-    if (!db_builder) {
-      LOG_ERROR << "Error: Failed to create IdbBuilder";
-      return;
-    }
+void iPNPIdbWrapper::connect_M2_M1_Layer()
+{
+  PowerVia* power_via = new PowerVia();
 
-    auto* def_service = db_builder->get_def_service();
-    if (!def_service) {
-      LOG_ERROR << "Error: DEF service is null";
-      delete db_builder;
-      return;
-    }
+  auto idb_design = dmInst->get_idb_design();
+  power_via->connectM2M1Layer(idb_design);
 
-    auto* layout = _idb_design->get_layout();
-    if (!layout) {
-      LOG_ERROR << "Error: Layout is null";
-      delete db_builder;
-      return;
-    }
-
-    def_service->set_layout(layout);
-
-    bool success = db_builder->saveDef(def_file_path);
-    if (!success) {
-      LOG_INFO << "Successfully wrote DEF file to: " << def_file_path;
-    } 
-    else {
-      LOG_ERROR << "Error: Failed to save DEF file to: " << def_file_path;
-    }
-  }
-
-  void iPNPIdbWrapper::connect_M2_M1_Layer()
-  {
-    PowerVia* power_via = new PowerVia();
-    _idb_design = power_via->connectM2M1Layer(_idb_design);
-
-    delete power_via;
-  }
+  delete power_via;
+}
 
 }  // namespace ipnp

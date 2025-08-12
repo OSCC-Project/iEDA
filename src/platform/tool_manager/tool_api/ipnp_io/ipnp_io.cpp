@@ -16,13 +16,13 @@
 // ***************************************************************************************
 #include "ipnp_io.h"
 
-#include "iPNPApi.hh"
-#include "iPNP.hh"  
+#include <iostream>
+
 #include "flow_config.h"
+#include "iPNP.hh"
+#include "iPNPApi.hh"
 #include "idm.h"
 #include "usage/usage.hh"
-
-#include <iostream>
 
 namespace iplf {
 PnpIO* PnpIO::_instance = nullptr;
@@ -32,18 +32,11 @@ PnpIO* PnpIO::_instance = nullptr;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool PnpIO::runPNP(std::string config)
 {
-  
   flowConfigInst->set_status_stage("iPNP - Power Network Planning");
 
   ieda::Stats stats;
 
-  ipnp::iPNP ipnp(config);
-
-  ipnp::iPNPApi::setInstance(&ipnp);
-
-  std::cout << "Running iPNP with config: " << config << std::endl;
-
-  ipnp::iPNPApi::run_pnp(dmInst->get_idb_builder());
+  PNPApiInst->run_pnp(config);
 
   std::cout << "iPNP completed successfully" << std::endl;
 
@@ -51,8 +44,6 @@ bool PnpIO::runPNP(std::string config)
   flowConfigInst->set_status_memmory(stats.memoryDelta());
 
   return true;
-
-  
 }
 
 }  // namespace iplf
