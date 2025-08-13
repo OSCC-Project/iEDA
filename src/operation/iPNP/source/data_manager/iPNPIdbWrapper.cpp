@@ -55,7 +55,7 @@ void iPNPIdbWrapper::saveToIdb(GridManager pnp_network)
 
   // add via to idb
   PowerVia* power_via = new PowerVia();
-  _idb_design = power_via->connectAllPowerLayers(pnp_network, _idb_design);
+  power_via->connectAllPowerLayers(pnp_network, _idb_design);
 
   delete power_router;
   delete power_via;
@@ -95,8 +95,7 @@ void iPNPIdbWrapper::writeIdbToDef(std::string def_file_path)
   bool success = db_builder->saveDef(def_file_path);
   if (!success) {
     LOG_INFO << "Successfully wrote DEF file to: " << def_file_path;
-  }
-  else {
+  } else {
     LOG_ERROR << "Error: Failed to save DEF file to: " << def_file_path;
   }
 }
@@ -104,7 +103,7 @@ void iPNPIdbWrapper::writeIdbToDef(std::string def_file_path)
 void iPNPIdbWrapper::connect_M2_M1_Layer()
 {
   PowerVia* power_via = new PowerVia();
-  _idb_design = power_via->connectM2M1Layer(_idb_design);
+  power_via->connectM2M1Layer(_idb_design);
 
   delete power_via;
 }
