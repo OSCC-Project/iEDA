@@ -74,13 +74,19 @@ class iPNP
   GridManager get_initialized_network() { return _initialized_network; }
   GridManager get_current_opt_network() { return _current_opt_network; }
 
+  void readLefDef(std::vector<std::string> lef_files, std::string def_path);
+  void setIdb(idb::IdbDesign* input_idb_design) { _idb_wrapper.set_idb_design(input_idb_design); }
+  void setIdbBuilder(idb::IdbBuilder* idb_builder) { _idb_wrapper.set_idb_builder(idb_builder); }
+
   void init();
   void initIRAnalysis();
   void runSynthesis();
   void runOptimize();  // including calling Evaluator and modify PDN
   void runFastPlacer();
   void saveToIdb() { _idb_wrapper.saveToIdb(_current_opt_network); }
+  void writeIdbToDef(std::string def_path) { _idb_wrapper.writeIdbToDef(def_path); }
   void runAnalysis();
+  void outputDef();
 
   void connect_M2_M1();
 

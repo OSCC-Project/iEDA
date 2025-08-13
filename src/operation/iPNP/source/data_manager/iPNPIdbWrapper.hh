@@ -31,7 +31,6 @@
 
 #include "GridManager.hh"
 #include "PowerRouter.hh"
-#include "idm.h"
 
 namespace idb {
 class IdbDesign;
@@ -63,29 +62,37 @@ class iPNPIdbWrapper
   ~iPNPIdbWrapper() = default;
 
   // get die infomation from iDB
-  int32_t get_input_die_llx() { return dmInst->get_idb_layout()->get_die()->get_llx(); }  // The smallest x-coordinate of the die rectangle
-  int32_t get_input_die_lly() { return dmInst->get_idb_layout()->get_die()->get_lly(); }  // The smallest y-coordinate of the die rectangle
-  int32_t get_input_die_urx() { return dmInst->get_idb_layout()->get_die()->get_urx(); }  // The largest x-coordinate of the die rectangle
-  int32_t get_input_die_ury() { return dmInst->get_idb_layout()->get_die()->get_ury(); }  // The largest y-coordinate of the die rectangle
-  int32_t get_input_die_width() { return dmInst->get_idb_layout()->get_die()->get_width(); }
-  int32_t get_input_die_height() { return dmInst->get_idb_layout()->get_die()->get_height(); }
-  uint64_t get_input_die_area() { return dmInst->get_idb_layout()->get_die()->get_area(); }
+  int32_t get_input_die_llx() { return _idb_design->get_layout()->get_die()->get_llx(); }  // The smallest x-coordinate of the die rectangle
+  int32_t get_input_die_lly() { return _idb_design->get_layout()->get_die()->get_lly(); }  // The smallest y-coordinate of the die rectangle
+  int32_t get_input_die_urx() { return _idb_design->get_layout()->get_die()->get_urx(); }  // The largest x-coordinate of the die rectangle
+  int32_t get_input_die_ury() { return _idb_design->get_layout()->get_die()->get_ury(); }  // The largest y-coordinate of the die rectangle
+  int32_t get_input_die_width() { return _idb_design->get_layout()->get_die()->get_width(); }
+  int32_t get_input_die_height() { return _idb_design->get_layout()->get_die()->get_height(); }
+  uint64_t get_input_die_area() { return _idb_design->get_layout()->get_die()->get_area(); }
 
   // get core infomation from iDB
-  int32_t get_input_core_lx() { return dmInst->get_idb_layout()->get_core()->get_bounding_box()->get_low_x(); }
-  int32_t get_input_core_ly() { return dmInst->get_idb_layout()->get_core()->get_bounding_box()->get_low_y(); }
-  int32_t get_input_core_hx() { return dmInst->get_idb_layout()->get_core()->get_bounding_box()->get_high_x(); }
-  int32_t get_input_core_hy() { return dmInst->get_idb_layout()->get_core()->get_bounding_box()->get_high_y(); }
-  int32_t get_input_core_width() { return dmInst->get_idb_layout()->get_core()->get_bounding_box()->get_width(); }
-  int32_t get_input_core_height() { return dmInst->get_idb_layout()->get_core()->get_bounding_box()->get_height(); }
-  uint64_t get_input_core_area() { return dmInst->get_idb_layout()->get_core()->get_bounding_box()->get_area(); }
+  int32_t get_input_core_lx() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_low_x(); }
+  int32_t get_input_core_ly() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_low_y(); }
+  int32_t get_input_core_hx() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_high_x(); }
+  int32_t get_input_core_hy() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_high_y(); }
+  int32_t get_input_core_width() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_width(); }
+  int32_t get_input_core_height() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_height(); }
+  uint64_t get_input_core_area() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_area(); }
+
+  auto* get_idb_design() { return _idb_design; }
+  void set_idb_design(idb::IdbDesign* idb_design) { _idb_design = idb_design; }
+
+  auto* get_idb_builder() { return _idb_builder; }
+  void set_idb_builder(idb::IdbBuilder* idb_builder) { _idb_builder = idb_builder; }
 
   void saveToIdb(GridManager pnp_network);
-  void writeIdbToDef(std::string def_path) { dmInst->saveDef(def_path); }
+  void writeIdbToDef(std::string def_file_path);
 
   void connect_M2_M1_Layer();
 
- private:
+private:
+  idb::IdbDesign* _idb_design = nullptr;
+  idb::IdbBuilder* _idb_builder = nullptr;
 };
 
 }  // namespace ipnp

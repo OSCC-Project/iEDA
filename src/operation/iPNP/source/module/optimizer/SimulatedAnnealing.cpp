@@ -198,7 +198,8 @@ namespace ipnp {
 
           // Save to IDB only after accepting the solution
           iPNPIdbWrapper wrapper;
-
+          wrapper.set_idb_design(idb_builder->get_def_service()->get_design());
+          wrapper.set_idb_builder(idb_builder);
           wrapper.saveToIdb(current_solution);
           wrapper.writeIdbToDef("/home/sujianrong/iEDA/src/operation/iPNP/data/case/s9234/result/debug.def");
 

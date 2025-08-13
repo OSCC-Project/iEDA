@@ -13,7 +13,6 @@ target_link_libraries(
   data_manager
   config
   idb
-  idm
   tcl
   log
   usage

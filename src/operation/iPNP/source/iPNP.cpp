@@ -55,6 +55,20 @@ iPNP::iPNP(const std::string& config_file)
   if (!loadConfigFromJson(config_file, _pnp_config)) {
     LOG_WARNING << "Initializing iPNP with default configuration" << std::endl;
   }
+
+  // If LEF and DEF file paths are specified in the configuration, read the DEF file
+  if (!_pnp_config->get_lef_files().empty() && !_pnp_config->get_def_path().empty()) {
+    readLefDef(_pnp_config->get_lef_files(), _pnp_config->get_def_path());
+    LOG_INFO << "DEF file read: " << _pnp_config->get_def_path() << std::endl;
+  }
+  
+  // Set output DEF file path
+  if (!_pnp_config->get_output_def_path().empty()) {
+    _output_def_path = _pnp_config->get_output_def_path();
+  }
+  else {
+    _output_def_path = "./output.def";
+  }
 }
 
 iPNP::~iPNP()
@@ -79,7 +93,7 @@ void iPNP::runOptimize()
   PdnOptimizer pdn_optimizer;
   pdn_optimizer.set_config(_pnp_config);
 
-  pdn_optimizer.optimizeGlobal(_initialized_network, dmInst->get_idb_builder());
+  pdn_optimizer.optimizeGlobal(_initialized_network, _idb_wrapper.get_idb_builder());
   _current_opt_network = pdn_optimizer.get_out_put_grid();
 }
 
@@ -87,7 +101,19 @@ void iPNP::runFastPlacer()
 {
   FastPlacer fast_placer;
   fast_placer.set_config(_pnp_config);
-  fast_placer.runFastPlacer(dmInst->get_idb_builder());
+  fast_placer.runFastPlacer(_idb_wrapper.get_idb_builder());
+}
+
+void iPNP::readLefDef(std::vector<std::string> lef_files, std::string def_path)
+{
+  auto* db_builder = new idb::IdbBuilder();
+  db_builder->buildLef(lef_files);
+  db_builder->buildDef(def_path);
+
+  auto* idb_design = db_builder->get_def_service()->get_design();
+
+  _idb_wrapper.set_idb_design(idb_design);
+  _idb_wrapper.set_idb_builder(db_builder);
 }
 
 void iPNP::init()
@@ -120,8 +146,7 @@ void iPNP::initIRAnalysis()
   static bool is_init = false;
   if (!is_init) {
     // Initialize IREval
-
-    _ir_eval.initIREval(dmInst->get_idb_builder(), _pnp_config);
+    _ir_eval.initIREval(_idb_wrapper.get_idb_builder(), _pnp_config);
     is_init = true;
   }
 }
@@ -131,9 +156,9 @@ void iPNP::runAnalysis()
   saveToIdb();
 
   _cong_eval.set_config(_pnp_config);
-  _cong_eval.evalEGR(dmInst->get_idb_builder());
+  _cong_eval.evalEGR(_idb_wrapper.get_idb_builder());
 
-  _ir_eval.runIREval(dmInst->get_idb_builder());
+  _ir_eval.runIREval(_idb_wrapper.get_idb_builder());
 
   // Get analysis results
   double max_ir_drop = _ir_eval.getMaxIRDrop();
@@ -215,6 +240,13 @@ void iPNP::runAnalysis()
   }
 }
 
+void iPNP::outputDef()
+{
+  readLefDef(_pnp_config->get_lef_files(), _pnp_config->get_def_path());
+  saveToIdb();
+  writeIdbToDef(_output_def_path);
+}
+
 void iPNP::connect_M2_M1()
 {
   _idb_wrapper.connect_M2_M1_Layer();
@@ -222,16 +254,21 @@ void iPNP::connect_M2_M1()
 
 void iPNP::run()
 {
-  if (dmInst->get_idb_builder()) {
+  if (_idb_wrapper.get_idb_design()) {
+    // initializing
     init();
     initIRAnalysis();
+
+    // running
     runSynthesis();
     runFastPlacer();
-    initIRAnalysis();
-
     runOptimize();
     runAnalysis();
-  } else {
+
+    // output
+    outputDef();
+  }
+  else {
     LOG_ERROR << "Warning: idb design is empty!" << std::endl;
   }
 }

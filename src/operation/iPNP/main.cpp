@@ -35,15 +35,15 @@
 #include "PNPConfig.hh"
 #include <ctime>
 #include "tcl/UserShell.hh"
-#include "pnp-cmd/PNPShellCmd.hh"
+#include "source/module/pnp-cmd/PNPShellCmd.hh"
 
 using namespace idb;
 using namespace ipnp;
 
 int registerCommands() {
-  registerTclCmd(CmdRunPnp, "run_pnp");
-  registerTclCmd(CmdAddVIA1, "add_via1");
-
+  registerTclCmd(ipnp::CmdRunPnp, "run_pnp");
+  registerTclCmd(ipnp::CmdAddVIA1, "add_via1");
+  
   return EXIT_SUCCESS;
 }
 
@@ -129,14 +129,7 @@ int main(int argc, char** argv) {
         return 1;
       }
 
-      // Create iPNP instance
-      ipnp::iPNP ipnp(config_file_path);
-      ipnp::iPNPApi::setInstance(&ipnp);
-
-      // Override output DEF file path from command line (if provided)
-      if (result.count("output")) {
-        ipnp.set_output_def_path(result["output"].as<std::string>());
-      }
+      LOG_INFO << "Running iPNP with configuration: " << config_file_path;
 
       std::string start_info =
           "\033[49;32m"
@@ -150,8 +143,7 @@ int main(int argc, char** argv) {
 
       std::cout << start_info << std::endl;
 
-      // Run iPNP
-      ipnp.run();
+      ipnp::PNPApi::run_pnp(config_file_path);
             
       std::string finish_info =
           "\033[49;32m"

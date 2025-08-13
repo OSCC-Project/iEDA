@@ -36,3 +36,4 @@ add_subdirectory(test)
 add_executable(iPNP main.cpp)
 
 target_link_libraries(iPNP pnp ipnp_api)
+
