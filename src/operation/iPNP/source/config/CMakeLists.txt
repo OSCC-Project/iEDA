@@ -1,2 +1,1 @@
-add_library(config PNPConfig.cpp)
-target_link_libraries(config)
+add_library(pnp-config PNPConfig.cpp)

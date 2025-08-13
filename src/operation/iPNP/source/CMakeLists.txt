@@ -7,11 +7,11 @@ add_library(pnp iPNP.cpp)
 target_link_libraries(
   pnp
   pnp-cmd
-  optimizer
-  evaluator
-  synthesis
-  data_manager
-  config
+  pnp-evaluator
+  pnp-optimizer
+  pnp-synthesis
+  pnp-data
+  pnp-config
   idb
   tcl
   log

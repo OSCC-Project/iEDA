@@ -1,11 +1,11 @@
-add_library(data_manager
+add_library(pnp-data
     GridManager.cpp
     SingleTemplate.cpp
     TemplateLib.cpp
     iPNPIdbWrapper.cpp
 )
 
-target_link_libraries(data_manager
+target_link_libraries(pnp-data
     PUBLIC
     idb
     synthesis

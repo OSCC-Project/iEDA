@@ -35,7 +35,7 @@
 #include "PNPConfig.hh"
 #include <ctime>
 #include "tcl/UserShell.hh"
-#include "source/module/pnp-cmd/PNPShellCmd.hh"
+#include "PNPShellCmd.hh"
 
 using namespace idb;
 using namespace ipnp;

@@ -20,7 +20,5 @@ target_include_directories(tool_api_ipnp
 target_link_libraries(tool_api_ipnp
     PRIVATE
         flow_config
-        idm
         ipnp_api
-        pnp
 )

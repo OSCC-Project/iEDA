@@ -35,8 +35,6 @@ target_link_libraries(tool_manager
         tool_api_ito
         tool_api_ino
         tool_api_ipnp
-
-        ipl-api
         ivec_db
 )
 
