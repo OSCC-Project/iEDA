@@ -29,14 +29,14 @@ void PdnApi::addIOPin(std::string pin_name, std::string net_name, std::string di
 {
   PdnPlan pdn_plan;
 
-  return pdn_plan.addIOPin(pin_name, net_name, direction, is_power);
+  pdn_plan.addIOPin(pin_name, net_name, direction, is_power);
 }
 
 void PdnApi::globalConnect(const std::string pdn_net_name, const std::string instance_pdn_pin_name, bool is_power)
 {
   PdnPlan pdn_plan;
 
-  return pdn_plan.globalConnect(pdn_net_name, instance_pdn_pin_name, is_power);
+  pdn_plan.globalConnect(pdn_net_name, instance_pdn_pin_name, is_power);
 }
 
 void PdnApi::placePdnPort(std::string pin_name, std::string io_cell_name, int32_t offset_x, int32_t offset_y, int32_t width, int32_t height,
@@ -44,7 +44,7 @@ void PdnApi::placePdnPort(std::string pin_name, std::string io_cell_name, int32_
 {
   PdnPlan pdn_plan;
 
-  return pdn_plan.placePdnPort(pin_name, io_cell_name, offset_x, offset_y, width, height, layer_name);
+  pdn_plan.placePdnPort(pin_name, io_cell_name, offset_x, offset_y, width, height, layer_name);
 }
 
 void PdnApi::createGrid(std::string power_net_name, std::string ground_net_name, std::string layer_name, double route_width,
@@ -52,7 +52,7 @@ void PdnApi::createGrid(std::string power_net_name, std::string ground_net_name,
 {
   PdnPlan pdn_plan;
 
-  return pdn_plan.createGrid(power_net_name, ground_net_name, layer_name, route_width, route_offset);
+  pdn_plan.createGrid(power_net_name, ground_net_name, layer_name, route_width, route_offset);
 }
 /**
  * @brief 创建电源网络
@@ -69,7 +69,7 @@ void PdnApi::createStripe(std::string power_net_name, std::string ground_net_nam
 {
   PdnPlan pdn_plan;
 
-  return pdn_plan.createStripe(power_net_name, ground_net_name, layer_name, route_width, pitchh, route_offset);
+  pdn_plan.createStripe(power_net_name, ground_net_name, layer_name, route_width, pitchh, route_offset);
 }
 
 void PdnApi::connectLayerList(std::vector<std::string>& layer_list)
@@ -96,21 +96,21 @@ void PdnApi::connectMacroToPdnGrid(std::vector<std::string> power_name, std::vec
 {
   PdnPlan pdn_plan;
 
-  return pdn_plan.connectMacroToPdnGrid(power_name, ground_name, layer_name_first, layer_name_second, orient);
+  pdn_plan.connectMacroToPdnGrid(power_name, ground_name, layer_name_first, layer_name_second, orient);
 }
 
 void PdnApi::connectIOPinToPowerStripe(std::vector<double>& point_list, const std::string layer_name)
 {
   PdnPlan pdn_plan;
 
-  return pdn_plan.connectIOPinToPowerStripe(point_list, layer_name);
+  pdn_plan.connectIOPinToPowerStripe(point_list, layer_name);
 }
 
 void PdnApi::connectPowerStripe(std::vector<double>& point_list, const std::string& net_name, const std::string& layer_name, int32_t width)
 {
   PdnPlan pdn_plan;
 
-  return pdn_plan.connectPowerStripe(point_list, net_name, layer_name, width);
+  pdn_plan.connectPowerStripe(point_list, net_name, layer_name, width);
 }
 
 bool PdnApi::addSegmentStripeList(std::vector<double>& point_list, std::string net_name, std::string layer_name, int32_t width)

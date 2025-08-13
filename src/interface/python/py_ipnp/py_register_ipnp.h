@@ -22,7 +22,7 @@
 namespace python_interface {
 namespace py = pybind11;
 
-void register_ipdn(py::module& m)
+void register_ipnp(py::module& m)
 {
   m.def("run_pnp", run_pnp, py::arg("config"));
 }

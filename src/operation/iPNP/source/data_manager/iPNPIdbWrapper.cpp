@@ -56,7 +56,7 @@ void iPNPIdbWrapper::saveToIdb(GridManager pnp_network)
 
   // add via to idb
   PowerVia* power_via = new PowerVia();
-  idb_design = power_via->connectAllPowerLayers(pnp_network, idb_design);
+  power_via->connectAllPowerLayers(pnp_network, idb_design);
 
   delete power_router;
   delete power_via;
