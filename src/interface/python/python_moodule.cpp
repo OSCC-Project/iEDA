@@ -26,6 +26,7 @@
 #include "py_register_ino.h"
 #include "py_register_inst.h"
 #include "py_register_ipdn.h"
+#include "py_register_ipnp.h"
 #include "py_register_ipl.h"
 #include "py_register_ipw.h"
 #include "py_register_irt.h"
@@ -49,6 +50,7 @@ PYBIND11_MODULE(ieda_py, m)
   register_ino(m);
   register_inst(m);
   register_ipdn(m);
+  register_ipnp(m);
   register_ipl(m);
   register_irt(m);
   register_ista(m);

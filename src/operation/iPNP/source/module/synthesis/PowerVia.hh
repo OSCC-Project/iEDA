@@ -63,15 +63,15 @@ namespace ipnp {
     PowerVia() = default;
     ~PowerVia() = default;
 
-    idb::IdbDesign* connectAllPowerLayers(GridManager& pnp_network, idb::IdbDesign* idb_design);
-    idb::IdbDesign* connectM2M1Layer(idb::IdbDesign* idb_design);
+    void connectAllPowerLayers(GridManager& pnp_network, idb::IdbDesign* idb_design);
+    void connectM2M1Layer(idb::IdbDesign* idb_design);
     
   private:
     
-    idb::IdbDesign* connectNetworkLayers(GridManager& pnp_network, PowerType net_type, idb::IdbDesign* idb_design);
-    idb::IdbDesign* connectLayers(std::string net_name, std::string top_layer_name, std::string bottom_layer_name, idb::IdbDesign* idb_design);
-    idb::IdbDesign* connect_Layer_Row(std::string net_name, std::string top_layer_name, std::string bottom_layer_name, idb::IdbDesign* idb_design);
-    idb::IdbDesign* connect_M2_M1(std::string net_name, idb::IdbDesign* idb_design);
+    void connectNetworkLayers(GridManager& pnp_network, PowerType net_type, idb::IdbDesign* idb_design);
+    void connectLayers(std::string net_name, std::string top_layer_name, std::string bottom_layer_name, idb::IdbDesign* idb_design);
+    void connect_Layer_Row(std::string net_name, std::string top_layer_name, std::string bottom_layer_name, idb::IdbDesign* idb_design);
+    void connect_M2_M1(std::string net_name, idb::IdbDesign* idb_design);
 
     
     int32_t transUnitDB(double value, idb::IdbDesign* idb_design);

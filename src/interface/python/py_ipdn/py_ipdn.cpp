@@ -22,7 +22,7 @@ namespace python_interface {
 
 bool pdnAddIO(const std::string& pin_name, const std::string& net_name, const std::string& direction, bool is_power)
 {
-  const std::string& pin = pin_name.empty() ? net_name : pin;
+  const std::string pin = pin_name.empty() ? net_name : pin_name;
   pdnApiInst->addIOPin(pin, net_name, direction, is_power);
   return true;
 }
