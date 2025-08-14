@@ -40,6 +40,7 @@ namespace ipnp {
 
 void PowerRouter::addPowerStripesToCore(idb::IdbSpecialNet* power_net, PNPGridManager pnp_network)
 {
+  auto idb_layers = dmInst->get_idb_layout()->get_layers();
   std::string net_name;
   if (power_net->is_vdd()) {
     net_name = "VDD";
@@ -59,9 +60,7 @@ void PowerRouter::addPowerStripesToCore(idb::IdbSpecialNet* power_net, PNPGridMa
     double y_base = pnp_network.get_core_lly();
 
     // Create a new routing layer
-    idb::IdbLayer* layer = new idb::IdbLayer();
-    layer->set_name("M" + std::to_string(power_layers[layer_idx]));
-    layer->set_type(idb::IdbLayerType::kLayerRouting);
+    idb::IdbLayer* layer = idb_layers->find_routing_layer(power_layers[layer_idx]);
 
     // Begin: convert pnp_network to wire
     auto* wire = new idb::IdbSpecialWire();
@@ -156,6 +155,8 @@ void PowerRouter::addPowerStripesToCore(idb::IdbSpecialNet* power_net, PNPGridMa
 
 void PowerRouter::addPowerStripesToDie(idb::IdbSpecialNet* power_net, PNPGridManager pnp_network)
 {
+  auto idb_layers = dmInst->get_idb_layout()->get_layers();
+
   std::string net_name;
   if (power_net->is_vdd()) {
     net_name = "VDD";
@@ -175,9 +176,7 @@ void PowerRouter::addPowerStripesToDie(idb::IdbSpecialNet* power_net, PNPGridMan
     double y_base = 0.0;
 
     // Create a new routing layer
-    idb::IdbLayer* layer = new idb::IdbLayer();
-    layer->set_name("M" + std::to_string(power_layers[layer_idx]));
-    layer->set_type(idb::IdbLayerType::kLayerRouting);
+    idb::IdbLayer* layer = idb_layers->find_routing_layer(power_layers[layer_idx]);
 
     // Begin: convert pnp_network to wire
     auto* wire = new idb::IdbSpecialWire();
@@ -284,12 +283,11 @@ void PowerRouter::addPowerFollowPin(idb::IdbSpecialNet* power_net)
   auto rows = idb_design->get_layout()->get_rows();
   auto wire_list = power_net->get_wire_list();
   auto row_list = rows->get_row_list();
+  auto idb_layers = dmInst->get_idb_layout()->get_layers();
 
-  for (int layer_idx = 2; layer_idx > 0; layer_idx--) {
+  for (int layer_idx = 0; layer_idx < 2; layer_idx++) {
     // Create a new routing layer
-    idb::IdbLayer* layer = new idb::IdbLayer();
-    layer->set_name("M" + std::to_string(layer_idx));
-    layer->set_type(idb::IdbLayerType::kLayerRouting);
+    idb::IdbLayer* layer = idb_layers->find_routing_layer(layer_idx);
 
     // Create a new wire
     auto* wire = new idb::IdbSpecialWire();

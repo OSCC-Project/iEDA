@@ -61,6 +61,7 @@ void PowerVia::connectM2M1Layer()
 
 void PowerVia::connectNetworkLayers(PNPGridManager& pnp_network, PowerType net_type)
 {
+  auto idb_layers = dmInst->get_idb_layout()->get_layers();
   std::string net_name = (net_type == PowerType::kVDD) ? "VDD" : "VSS";
 
   auto power_layers = pnp_network.get_power_layers();
@@ -68,14 +69,16 @@ void PowerVia::connectNetworkLayers(PNPGridManager& pnp_network, PowerType net_t
 
   // Connect power layers
   for (int i = 0; i < layer_count - 1; i++) {
-    std::string top_layer = "M" + std::to_string(power_layers[i]);
-    std::string bottom_layer = "M" + std::to_string(power_layers[i + 1]);
+    std::string top_layer = idb_layers->find_routing_layer(power_layers[i])->get_name();
+    std::string bottom_layer = idb_layers->find_routing_layer(power_layers[i + 1])->get_name();
+
     connectLayers(net_name, top_layer, bottom_layer);
   }
 
   // Connect power layer to M2 and M1 layer rows
-  std::string bottom_power_layer = "M" + std::to_string(power_layers[layer_count - 1]);
-  connect_Layer_Row(net_name, bottom_power_layer, "M2");
+  auto bottom_layer_name = dmInst->get_config().get_routing_layer_1st();
+  auto connected_layer = idb_layers->find_layer_by_order(idb_layers->get_layer_order(bottom_layer_name) + 2);
+  connect_Layer_Row(net_name, connected_layer->get_name(), bottom_layer_name);
 
   LOG_INFO << "Success : Connected all layers for " << net_name;
 }
