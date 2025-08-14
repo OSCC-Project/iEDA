@@ -285,9 +285,11 @@ void PowerRouter::addPowerFollowPin(idb::IdbSpecialNet* power_net)
   auto row_list = rows->get_row_list();
   auto idb_layers = dmInst->get_idb_layout()->get_layers();
 
-  for (int layer_idx = 0; layer_idx < 2; layer_idx++) {
+  for (int layer_idx = 2; layer_idx > 0; layer_idx--) {
     // Create a new routing layer
-    idb::IdbLayer* layer = idb_layers->find_routing_layer(layer_idx);
+    idb::IdbLayer* layer = new idb::IdbLayer();
+    layer->set_name("M" + std::to_string(layer_idx));
+    layer->set_type(idb::IdbLayerType::kLayerRouting);
 
     // Create a new wire
     auto* wire = new idb::IdbSpecialWire();
