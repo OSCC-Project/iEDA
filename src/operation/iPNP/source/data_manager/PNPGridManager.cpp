@@ -15,14 +15,15 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file GridManager.cpp
+ * @file PNPGridManager.cpp
  * @author Jianrong Su
  * @brief
  * @version 1.0
  * @date 2025-06-23
  */
 
-#include "GridManager.hh"
+#include "PNPGridManager.hh"
+
 #include "PNPConfig.hh"
 
 namespace ipnp {
@@ -31,32 +32,18 @@ PDNGridRegion::PDNGridRegion() : _shape(GridRegionShape::kRectangle)
 {
 }
 
-PDNRectanGridRegion::PDNRectanGridRegion() 
-: _x_left_bottom(), 
-_y_left_bottom(), 
-_x_right_top(),
-_y_right_top()
+PDNRectanGridRegion::PDNRectanGridRegion() : _x_left_bottom(), _y_left_bottom(), _x_right_top(), _y_right_top()
 {
 }
 
-void GridManager::init_GridManager_data()
+void PNPGridManager::init_PNPGridManager_data()
 {
-  _template_libs.gen_template_libs();
+  _template_libs.gen_template_libs_from_config();
+
   initialize_grid_data(_die_width, _die_height);
 }
 
-void GridManager::init_GridManager_data(const PNPConfig* config)
-{
-  if (config) {
-    _template_libs.gen_template_libs_from_config(config);
-  } else {
-    _template_libs.gen_template_libs();
-  }
-  
-  initialize_grid_data(_die_width, _die_height);
-}
-
-void GridManager::initialize_grid_data(int32_t width, int32_t height)
+void PNPGridManager::initialize_grid_data(int32_t width, int32_t height)
 {
   // Initialize 3D grid data
   _grid_data.resize(_layer_count);

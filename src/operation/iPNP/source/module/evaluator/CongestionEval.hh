@@ -29,26 +29,19 @@
 #include <string>
 #include <vector>
 
-#include "iPNPCommon.hh"
-
 namespace ipnp {
-
-class PNPConfig;
 
 class CongestionEval
 {
  public:
-  CongestionEval() : _config(nullptr), _total_overflow_union(0) {}
+  CongestionEval() = default;
   ~CongestionEval() = default;
 
-  void evalEGR(idb::IdbBuilder* idb_builder);
+  void evalEGR();
   int32_t get_total_overflow_union() { return _total_overflow_union; }
-  
-  void set_config(PNPConfig* config) { _config = config; }
-  
-private:
-  PNPConfig* _config;
-  int32_t _total_overflow_union;
+
+ private:
+  int32_t _total_overflow_union = 0;
 };
 
 }  // namespace ipnp

@@ -1,5 +1,5 @@
 add_library(ipnp_api 
-iPNPApi.cpp
+ipnp_api.cpp
 )
 
 target_link_libraries(ipnp_api 

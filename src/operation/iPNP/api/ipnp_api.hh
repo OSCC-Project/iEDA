@@ -15,7 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file iPNPApi.hh
+ * @file ipnp_api.hh
  * @author Jianrong Su
  * @brief
  * @version 1.0

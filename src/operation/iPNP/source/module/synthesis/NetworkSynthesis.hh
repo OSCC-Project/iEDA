@@ -28,28 +28,7 @@
 #include <fstream>
 #include <iostream>
 
-#include "GridManager.hh"
-#include "iPNPCommon.hh"
-
-namespace idb {
-class IdbSpecialNet;
-class IdbSpecialNetList;
-class IdbSpecialWireList;
-class IdbSpecialWire;
-class IdbSpecialWireSegment;
-class IdbLayer;
-class IdbVia;
-class IdbPin;
-class IdbRect;
-class IdbInstance;
-
-enum class SegmentType : int8_t;
-enum class IdbWireShapeType : uint8_t;
-enum class IdbOrient : uint8_t;
-
-template <typename T>
-class IdbCoordinate;
-}  // namespace idb
+#include "PNPGridManager.hh"
 
 namespace ipnp {
 
@@ -64,18 +43,18 @@ enum class SysnType
 class NetworkSynthesis
 {
  public:
-  NetworkSynthesis(SysnType sysn_type, GridManager grid_info);
+  NetworkSynthesis(SysnType sysn_type, PNPGridManager grid_info);
   ~NetworkSynthesis() = default;
 
-  GridManager get_network() { return _synthesized_network; }
+  PNPGridManager get_network() { return _synthesized_network; }
 
   void synthesizeNetwork();
 
-private:
+ private:
   void manualSetTemplates();
 
-  GridManager _input_grid_info;
-  GridManager _synthesized_network;
+  PNPGridManager _input_grid_info;
+  PNPGridManager _synthesized_network;
   SysnType _network_sys_type;
 };
 

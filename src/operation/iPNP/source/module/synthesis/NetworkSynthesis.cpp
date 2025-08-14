@@ -32,14 +32,17 @@
 #include <string>
 #include <vector>
 
+#include "IdbLayer.h"
+#include "IdbSpecialNet.h"
+#include "IdbSpecialWire.h"
+#include "IdbVias.h"
+#include "Log.hh"
 #include "idm.h"
 
 namespace ipnp {
 
-NetworkSynthesis::NetworkSynthesis(SysnType sysn_type, GridManager grid_info)
-  : _network_sys_type(sysn_type),
-  _input_grid_info(grid_info),
-  _synthesized_network(grid_info)
+NetworkSynthesis::NetworkSynthesis(SysnType sysn_type, PNPGridManager grid_info)
+    : _network_sys_type(sysn_type), _input_grid_info(grid_info), _synthesized_network(grid_info)
 {
   // initialize the synthesized network
   _synthesized_network.set_power_layers(_input_grid_info.get_power_layers());
@@ -85,22 +88,20 @@ void NetworkSynthesis::manualSetTemplates()
 
   auto horizontal_templates = _input_grid_info.get_horizontal_templates();
   auto vertical_templates = _input_grid_info.get_vertical_templates();
-  
+
   // distribute templates to each layer
   for (int layer_idx = 0; layer_idx < layer_count; ++layer_idx) {
     int power_layer = power_layers[layer_idx];
     bool use_horizontal = (layer_idx % 2 == 1);
-    
-    LOG_INFO << "Layer " << power_layer << " Using "
-      << (use_horizontal ? "horizontal" : "vertical") << " templates";
-    
+
+    LOG_INFO << "Layer " << power_layer << " Using " << (use_horizontal ? "horizontal" : "vertical") << " templates";
+
     for (int i = 0; i < ho_region_num; ++i) {
       for (int j = 0; j < ver_region_num; ++j) {
         if (use_horizontal) {
           // use horizontal template
           _synthesized_network.set_single_template(layer_idx, i, j, horizontal_templates[1]);
-        }
-        else {
+        } else {
           // use vertical template
           _synthesized_network.set_single_template(layer_idx, i, j, vertical_templates[1]);
           if (layer_idx == 2) {

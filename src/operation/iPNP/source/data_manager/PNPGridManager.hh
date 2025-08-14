@@ -15,7 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file GridManager.hh
+ * @file PNPGridManager.hh
  * @author Jianrong Su
  * @brief Grid manager for PDN
  * @version 1.0
@@ -26,14 +26,13 @@
 
 #include <map>
 #include <string>
-#include <vector>
 #include <utility>
+#include <vector>
+
 #include "SingleTemplate.hh"
 #include "TemplateLib.hh"
 
 namespace ipnp {
-
-class PNPConfig;  // Forward declaration
 
 enum class GridRegionShape
 {
@@ -104,11 +103,11 @@ class PDNRectanGridRegion : public PDNGridRegion
 /**
  * @brief Manager for PDN grid
  */
-class GridManager
+class PNPGridManager
 {
  public:
-   GridManager() = default;
-  ~GridManager() = default;
+  PNPGridManager() = default;
+  ~PNPGridManager() = default;
 
   // Getters
   const std::vector<int>& get_power_layers() const { return _power_layers; }
@@ -128,7 +127,8 @@ class GridManager
   const TemplateLib& get_template_libs() const { return _template_libs; }
 
   // Setters
-  void set_power_layers(std::vector<int> power_layers){
+  void set_power_layers(std::vector<int> power_layers)
+  {
     _power_layers = power_layers;
     _layer_count = power_layers.size();
   }
@@ -144,33 +144,33 @@ class GridManager
   void set_die_width(double die_width) { _die_width = die_width; }
   void set_die_height(double die_height) { _die_height = die_height; }
   void set_grid_data(std::vector<std::vector<std::vector<PDNRectanGridRegion>>> grid_data) { _grid_data = grid_data; }
-  void set_single_template(int layer_idx, int row, int col, const SingleTemplate& single_template) { _template_data[layer_idx][row][col] = single_template; }
+  void set_single_template(int layer_idx, int row, int col, const SingleTemplate& single_template)
+  {
+    _template_data[layer_idx][row][col] = single_template;
+  }
 
-  // Initialize with default templates
-  void init_GridManager_data();
-  
   // Initialize with templates from configuration
-  void init_GridManager_data(const PNPConfig* config);
-  
-private:
-  std::vector<int> _power_layers;   // layers that have power nets
-  int _layer_count;     // total number of layers
-  int _ho_region_num;   // number of horizontal regions
-  int _ver_region_num;  // number of vertical regions
+  void init_PNPGridManager_data();
+
+ private:
+  std::vector<int> _power_layers;  // layers that have power nets
+  int _layer_count;                // total number of layers
+  int _ho_region_num;              // number of horizontal regions
+  int _ver_region_num;             // number of vertical regions
 
   int32_t _core_width;   // width of the core
   int32_t _core_height;  // height of the core
-  int32_t _die_width;   // width of the core
-  int32_t _die_height;  // height of the core
-  int32_t _core_llx;    // left bottom x coordinate of the core 
-  int32_t _core_lly;    // left bottom y coordinate of the core
-  int32_t _core_urx;    // right top x coordinate of the core
-  int32_t _core_ury;    // right top y coordinate of the core
+  int32_t _die_width;    // width of the core
+  int32_t _die_height;   // height of the core
+  int32_t _core_llx;     // left bottom x coordinate of the core
+  int32_t _core_lly;     // left bottom y coordinate of the core
+  int32_t _core_urx;     // right top x coordinate of the core
+  int32_t _core_ury;     // right top y coordinate of the core
 
-  std::vector<std::pair<std::string, std::string>> _power_nets;  // only VDD VSS / VDD GND
-  std::vector<std::vector<std::vector<PDNRectanGridRegion>>> _grid_data;      // [layer][row][col]
-  std::vector<std::vector<std::vector<SingleTemplate>>> _template_data;       // [layer][row][col]
-  TemplateLib _template_libs;   // Template library manager
+  std::vector<std::pair<std::string, std::string>> _power_nets;           // only VDD VSS / VDD GND
+  std::vector<std::vector<std::vector<PDNRectanGridRegion>>> _grid_data;  // [layer][row][col]
+  std::vector<std::vector<std::vector<SingleTemplate>>> _template_data;   // [layer][row][col]
+  TemplateLib _template_libs;                                             // Template library manager
 
   void initialize_grid_data(int32_t width, int32_t height);
 };

@@ -24,15 +24,15 @@
 
 #include "PdnOptimizer.hh"
 
-#include "SimulatedAnnealing.hh"
+#include "PNP.hh"
 #include "PNPConfig.hh"
-#include "iPNPApi.hh"
-#include "iPNP.hh"
+#include "SimulatedAnnealing.hh"
+#include "idm.h"
 #include "log/Log.hh"
 
 namespace ipnp {
 
-  PdnOptimizer::PdnOptimizer()
+PdnOptimizer::PdnOptimizer()
     : _opt_score(0.0),
       _initial_temp(100.0),
       _cooling_rate(0.95),
@@ -40,87 +40,71 @@ namespace ipnp {
       _iterations_per_temp(10),
       _ir_drop_weight(0.6),
       _overflow_weight(0.4)
-  {
-  }
+{
+}
 
-  PdnOptimizer::~PdnOptimizer()
-  {
-  }
+PdnOptimizer::~PdnOptimizer()
+{
+}
 
+void PdnOptimizer::optimize(PNPGridManager initial_pdn)
+{
+  // TODO: Implement the two-stage PDN optimization process
+}
 
-  void PdnOptimizer::optimize(GridManager initial_pdn, idb::IdbBuilder* idb_builder)
-  {
-    // TODO: Implement the two-stage PDN optimization process
-  }
+void PdnOptimizer::optimizeGlobal(PNPGridManager initial_pdn)
+{
+  _input_pdn_grid = initial_pdn;
 
-  void PdnOptimizer::optimizeGlobal(GridManager initial_pdn, idb::IdbBuilder* idb_builder)
-  {
-    _input_pdn_grid = initial_pdn;
-    
-    // If there is a configuration, get the simulated annealing parameters from the configuration
-    if (_config) {
-      if (_config->get_sa_initial_temp()) {
-        _initial_temp = _config->get_sa_initial_temp();
-      }
-      if (_config->get_sa_cooling_rate()) {
-        _cooling_rate = _config->get_sa_cooling_rate();
-      }
-      if (_config->get_sa_min_temp()) {
-        _min_temp = _config->get_sa_min_temp();
-      }
-      if (_config->get_sa_iterations_per_temp()) {
-        _iterations_per_temp = _config->get_sa_iterations_per_temp();
-      }
-      if (_config->get_sa_ir_drop_weight()) {
-        _ir_drop_weight = _config->get_sa_ir_drop_weight();
-      }
-      if (_config->get_sa_overflow_weight()) {
-        _overflow_weight = _config->get_sa_overflow_weight();
-      }
-    }
-    
-    LOG_INFO << "Starting global optimization..." << std::endl;
-    LOG_INFO << "Simulated Annealing parameters: ";
-    LOG_INFO << "  Initial temperature: " << _initial_temp;
-    LOG_INFO << "  Cooling rate: " << _cooling_rate;
-    LOG_INFO << "  Minimum temperature: " << _min_temp;
-    LOG_INFO << "  Iterations per temperature: " << _iterations_per_temp;
-    LOG_INFO << "  IR drop weight: " << _ir_drop_weight;
-    LOG_INFO << "  Overflow weight: " << _overflow_weight;
+  _initial_temp = pnpConfig->get_sa_initial_temp();
 
-    SimulatedAnnealing sa(_initial_temp, _cooling_rate, _min_temp, _iterations_per_temp, _ir_drop_weight, _overflow_weight);
-    
-    if (_config) {
-      LOG_INFO << "Using configuration from iPNP instance" << std::endl;
-      sa.set_config(_config);
-    }
+  _cooling_rate = pnpConfig->get_sa_cooling_rate();
 
-    OptimizationResult result = sa.optimize(_input_pdn_grid, idb_builder);
+  _min_temp = pnpConfig->get_sa_min_temp();
 
-    _output_pdn_grid = result.best_grid;
-    _opt_score = result.best_cost;
-    _region_data = result.region_data;
+  _iterations_per_temp = pnpConfig->get_sa_iterations_per_temp();
 
-    LOG_INFO << "Global optimization complete. Score: " << _opt_score;
-  }
+  _ir_drop_weight = pnpConfig->get_sa_ir_drop_weight();
 
-  void PdnOptimizer::optimizeByRegion(GridManager initial_pdn, idb::IdbBuilder* idb_builder)
-  {
-    // TODO: Implement region-based PDN optimization process
-  }
+  _overflow_weight = pnpConfig->get_sa_overflow_weight();
 
-  void PdnOptimizer::setWeights(double ir_drop_weight, double overflow_weight)
-  {
-    _ir_drop_weight = ir_drop_weight;
-    _overflow_weight = overflow_weight;
-  }
+  LOG_INFO << "Starting global optimization..." << std::endl;
+  LOG_INFO << "Simulated Annealing parameters: ";
+  LOG_INFO << "  Initial temperature: " << _initial_temp;
+  LOG_INFO << "  Cooling rate: " << _cooling_rate;
+  LOG_INFO << "  Minimum temperature: " << _min_temp;
+  LOG_INFO << "  Iterations per temperature: " << _iterations_per_temp;
+  LOG_INFO << "  IR drop weight: " << _ir_drop_weight;
+  LOG_INFO << "  Overflow weight: " << _overflow_weight;
 
-  void PdnOptimizer::setAnnealingParams(double initial_temp, double cooling_rate, double min_temp, int iterations_per_temp)
-  {
-    _initial_temp = initial_temp;
-    _cooling_rate = cooling_rate;
-    _min_temp = min_temp;
-    _iterations_per_temp = iterations_per_temp;
-  }
+  SimulatedAnnealing sa(_initial_temp, _cooling_rate, _min_temp, _iterations_per_temp, _ir_drop_weight, _overflow_weight);
+
+  OptimizationResult result = sa.optimize(_input_pdn_grid);
+
+  _output_pdn_grid = result.best_grid;
+  _opt_score = result.best_cost;
+  _region_data = result.region_data;
+
+  LOG_INFO << "Global optimization complete. Score: " << _opt_score;
+}
+
+void PdnOptimizer::optimizeByRegion(PNPGridManager initial_pdn)
+{
+  // TODO: Implement region-based PDN optimization process
+}
+
+void PdnOptimizer::setWeights(double ir_drop_weight, double overflow_weight)
+{
+  _ir_drop_weight = ir_drop_weight;
+  _overflow_weight = overflow_weight;
+}
+
+void PdnOptimizer::setAnnealingParams(double initial_temp, double cooling_rate, double min_temp, int iterations_per_temp)
+{
+  _initial_temp = initial_temp;
+  _cooling_rate = cooling_rate;
+  _min_temp = min_temp;
+  _iterations_per_temp = iterations_per_temp;
+}
 
 }  // namespace ipnp

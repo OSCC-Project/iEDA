@@ -10,13 +10,11 @@
     },
     "grid": {
         "power_layers": [
-            9,
-            8,
-            7,
-            6,
-            5,
-            4,
-            3
+            "met5",
+            "met4",
+            "met3",
+            "met2",
+            "met1"
         ],
         "ho_region_num": 2,
         "ver_region_num": 2
@@ -28,8 +26,8 @@
         "iterations_per_temp": 10,
         "ir_drop_weight": 0.6,
         "overflow_weight": 0.4,
-        "modifiable_layer_min": 3,
-        "modifiable_layer_max": 6
+        "modifiable_layer_min": "met2",
+        "modifiable_layer_max": "met5"
     },
     "templates": {
         "horizontal": [

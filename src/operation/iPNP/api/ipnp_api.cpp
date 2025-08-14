@@ -15,16 +15,16 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file iPNPApi.hh
+ * @file ipnp_api.hh
  * @author Jianrong Su
  * @brief
  * @version 1.0
  * @date 2025-06-23
  */
 
-#include "iPNPApi.hh"
+#include "ipnp_api.hh"
 
-#include "iPNP.hh"
+#include "PNP.hh"
 #include "log/Log.hh"
 
 namespace ipnp {
@@ -33,7 +33,7 @@ PNPApi* PNPApi::_instance = nullptr;
 
 void PNPApi::run_pnp(std::string config)
 {
-  auto pnp = iPNP(config);
+  auto pnp = PNP(config);
   // run
   pnp.init();
   pnp.runSynthesis();
@@ -42,7 +42,7 @@ void PNPApi::run_pnp(std::string config)
 
 void PNPApi::connect_M2_M1(std::string config)
 {
-  auto pnp = iPNP(config);
+  auto pnp = PNP(config);
   // run
   pnp.init();
   pnp.connect_M2_M1();

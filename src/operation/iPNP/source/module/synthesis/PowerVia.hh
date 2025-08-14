@@ -17,7 +17,7 @@
 /**
  * @file PowerVia.hh
  * @author Jianrong Su
- * @brief 
+ * @brief
  * @version 1.0
  * @date 2025-06-23
  */
@@ -29,72 +29,62 @@
 #include <string>
 #include <vector>
 
-#include "GridManager.hh"
-#include "iPNPCommon.hh"
+#include "PNPGridManager.hh"
 
 namespace idb {
-  class IdbDesign;
-  class IdbSpecialNet;
-  class IdbSpecialNetList;
-  class IdbSpecialWireList;
-  class IdbSpecialWire;
-  class IdbSpecialWireSegment;
-  class IdbLayer;
-  class IdbLayerCut;
-  class IdbLayerRouting;
-  class IdbVia;
-  class IdbPin;
-  class IdbRect;
-  class IdbInstance;
+class IdbDesign;
+class IdbSpecialNet;
+class IdbSpecialNetList;
+class IdbSpecialWireList;
+class IdbSpecialWire;
+class IdbSpecialWireSegment;
+class IdbLayer;
+class IdbLayerCut;
+class IdbLayerRouting;
+class IdbVia;
+class IdbPin;
+class IdbRect;
+class IdbInstance;
 
-  enum class SegmentType : int8_t;
-  enum class IdbWireShapeType : uint8_t;
-  enum class IdbOrient : uint8_t;
+enum class SegmentType : int8_t;
+enum class IdbWireShapeType : uint8_t;
+enum class IdbOrient : uint8_t;
 
-  template <typename T>
-  class IdbCoordinate;
+template <typename T>
+class IdbCoordinate;
 }  // namespace idb
 
 namespace ipnp {
 
-  class PowerVia
-  {
-  public:
-    PowerVia() = default;
-    ~PowerVia() = default;
+class PowerVia
+{
+ public:
+  PowerVia() = default;
+  ~PowerVia() = default;
 
-    void connectAllPowerLayers(GridManager& pnp_network, idb::IdbDesign* idb_design);
-    void connectM2M1Layer(idb::IdbDesign* idb_design);
-    
-  private:
-    
-    void connectNetworkLayers(GridManager& pnp_network, PowerType net_type, idb::IdbDesign* idb_design);
-    void connectLayers(std::string net_name, std::string top_layer_name, std::string bottom_layer_name, idb::IdbDesign* idb_design);
-    void connect_Layer_Row(std::string net_name, std::string top_layer_name, std::string bottom_layer_name, idb::IdbDesign* idb_design);
-    void connect_M2_M1(std::string net_name, idb::IdbDesign* idb_design);
+  void connectAllPowerLayers(PNPGridManager& pnp_network);
+  void connectM2M1Layer();
 
-    
-    int32_t transUnitDB(double value, idb::IdbDesign* idb_design);
+ private:
+  void connectNetworkLayers(PNPGridManager& pnp_network, PowerType net_type);
+  void connectLayers(std::string net_name, std::string top_layer_name, std::string bottom_layer_name);
+  void connect_Layer_Row(std::string net_name, std::string top_layer_name, std::string bottom_layer_name);
+  void connect_M2_M1(std::string net_name);
 
-    idb::IdbVia* findVia(idb::IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design, idb::IdbDesign* idb_design);
+  int32_t transUnitDB(double value);
 
-    idb::IdbVia* createVia(idb::IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design, std::string via_name, idb::IdbDesign* idb_design);
+  idb::IdbVia* findVia(idb::IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design);
 
-    idb::IdbSpecialWireSegment* createSpecialWireVia(idb::IdbLayer* layer, int32_t route_width,
-      idb::IdbWireShapeType wire_shape_type,
-      idb::IdbCoordinate<int32_t>* coord,
-      idb::IdbVia* via);
+  idb::IdbVia* createVia(idb::IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design, std::string via_name);
 
-    bool getIntersectCoordinate(idb::IdbSpecialWireSegment* segment_top,
-      idb::IdbSpecialWireSegment* segment_bottom,
-      idb::IdbRect& intersection_rect);
+  idb::IdbSpecialWireSegment* createSpecialWireVia(idb::IdbLayer* layer, int32_t route_width, idb::IdbWireShapeType wire_shape_type,
+                                                   idb::IdbCoordinate<int32_t>* coord, idb::IdbVia* via);
 
-    bool addSingleVia(std::string net_name,
-      std::string top_layer,
-      std::string bottom_layer,
-      double x, double y,
-      int32_t width, int32_t height,
-      idb::IdbDesign* idb_design);
-  };
+  bool getIntersectCoordinate(idb::IdbSpecialWireSegment* segment_top, idb::IdbSpecialWireSegment* segment_bottom,
+                              idb::IdbRect& intersection_rect);
 
-}  // namespace ipnp 
+  bool addSingleVia(std::string net_name, std::string top_layer, std::string bottom_layer, double x, double y, int32_t width,
+                    int32_t height);
+};
+
+}  // namespace ipnp

@@ -37,11 +37,6 @@
 #include "api/Power.hh"
 #include "PNPConfig.hh"
 
-namespace idb {
-  class IdbDesign;
-  class IdbBuilder;
-}
-
 namespace ipower {
   class PowerEngine;
 }
@@ -54,8 +49,8 @@ namespace ipnp {
     IREval() = default;
     ~IREval() = default;
 
-    void initIREval(idb::IdbBuilder* idb_builder, PNPConfig* pnp_config = nullptr);
-    void runIREval(idb::IdbBuilder* idb_builder);
+    void initIREval();
+    void runIREval();
 
     // getter
     double getMaxIRDrop() const;

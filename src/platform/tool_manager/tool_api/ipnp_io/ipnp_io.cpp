@@ -19,8 +19,7 @@
 #include <iostream>
 
 #include "flow_config.h"
-#include "iPNP.hh"
-#include "iPNPApi.hh"
+#include "ipnp_api.hh"
 #include "usage/usage.hh"
 
 namespace iplf {

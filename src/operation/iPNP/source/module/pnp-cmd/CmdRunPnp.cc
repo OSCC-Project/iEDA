@@ -22,80 +22,81 @@
  * @date 2025-06-30
  */
 
-#include "PNPShellCmd.hh"
-#include "log/Log.hh"
-#include "iPNP.hh"
-#include "iPNPApi.hh"
 #include <filesystem>
 #include <iostream>
 
+#include "PNP.hh"
+#include "PNPShellCmd.hh"
+#include "ipnp_api.hh"
+#include "log/Log.hh"
+
 namespace ipnp {
 
-  CmdRunPnp::CmdRunPnp(const char* cmd_name) : TclCmd(cmd_name) {
+CmdRunPnp::CmdRunPnp(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* config_option = new TclStringOption("-config", 0, "");
+  addOption(config_option);
+}
 
-    auto* config_option = new TclStringOption("-config", 0, "");
-    addOption(config_option);
+unsigned CmdRunPnp::check()
+{
+  TclOption* config_option = getOptionOrArg("-config");
 
-  }
-
-  unsigned CmdRunPnp::check() {
-
-    TclOption* config_option = getOptionOrArg("-config");
-
-    if (config_option) {
-      auto* config_file = config_option->getStringVal();
-      if (!std::filesystem::exists(config_file)) {
-        LOG_ERROR << "Configuration file not found: " << config_file;
-        return 0;
-      }
-    }
-    return 1; // check success
-  }
-
-  unsigned CmdRunPnp::exec() {
-    if (!check()) {
+  if (config_option) {
+    auto* config_file = config_option->getStringVal();
+    if (!std::filesystem::exists(config_file)) {
+      LOG_ERROR << "Configuration file not found: " << config_file;
       return 0;
     }
+  }
+  return 1;  // check success
+}
 
-    TclOption* config_option = getOptionOrArg("-config");
-
-    if (config_option) {
-      auto* config_file = config_option->getStringVal();
-
-      LOG_INFO << "Running iPNP with configuration: " << config_file;
-
-      std::string start_info =
-        "\033[49;32m"
-        "    _ ____  _   ______     ______________    ____  ______\n"
-        "   (_) __ \\/ | / / __ \\   / ___/_  __/   |  / __ \\/_  __/\n"
-        "  / / /_/ /  |/ / /_/ /   \\__ \\ / / / /| | / /_/ / / /   \n"
-        " / / ____/ /|  / ____/   ___/ // / / ___ |/ _, _/ / /    \n"
-        "/_/_/   /_/ |_/_/       /____//_/ /_/  |_/_/ |_| /_/     \n"
-        "                                                         \n"
-        "\e[0m";
-
-      std::cout << start_info << std::endl;
-
-      // 直接调用静态方法
-      ipnp::PNPApi::run_pnp(config_file);
-
-      std::string finish_info =
-        "\033[49;32m"
-        "    _ ____  _   ______     ___________   ___________ __  __\n"
-        "   (_) __ \\/ | / / __ \\   / ____/  _/ | / /  _/ ___// / / /\n"
-        "  / / /_/ /  |/ / /_/ /  / /_   / //  |/ // / \\__ \\/ /_/ / \n"
-        " / / ____/ /|  / ____/  / __/ _/ // /|  // / ___/ / __  /  \n"
-        "/_/_/   /_/ |_/_/      /_/   /___/_/ |_/___//____/_/ /_/   \n"
-        "                                                           \n"
-        "\e[0m";
-
-      std::cout << finish_info << std::endl;
-    } else {
-      LOG_ERROR << "Configuration file is required for running iPNP.";
-      return 0;
-    }
-
-    return 1;
+unsigned CmdRunPnp::exec()
+{
+  if (!check()) {
+    return 0;
   }
 
-} // namespace ipnp 
+  TclOption* config_option = getOptionOrArg("-config");
+
+  if (config_option) {
+    auto* config_file = config_option->getStringVal();
+
+    LOG_INFO << "Running iPNP with configuration: " << config_file;
+
+    std::string start_info
+        = "\033[49;32m"
+          "    _ ____  _   ______     ______________    ____  ______\n"
+          "   (_) __ \\/ | / / __ \\   / ___/_  __/   |  / __ \\/_  __/\n"
+          "  / / /_/ /  |/ / /_/ /   \\__ \\ / / / /| | / /_/ / / /   \n"
+          " / / ____/ /|  / ____/   ___/ // / / ___ |/ _, _/ / /    \n"
+          "/_/_/   /_/ |_/_/       /____//_/ /_/  |_/_/ |_| /_/     \n"
+          "                                                         \n"
+          "\e[0m";
+
+    std::cout << start_info << std::endl;
+
+    // 直接调用静态方法
+    ipnp::PNPApi::run_pnp(config_file);
+
+    std::string finish_info
+        = "\033[49;32m"
+          "    _ ____  _   ______     ___________   ___________ __  __\n"
+          "   (_) __ \\/ | / / __ \\   / ____/  _/ | / /  _/ ___// / / /\n"
+          "  / / /_/ /  |/ / /_/ /  / /_   / //  |/ // / \\__ \\/ /_/ / \n"
+          " / / ____/ /|  / ____/  / __/ _/ // /|  // / ___/ / __  /  \n"
+          "/_/_/   /_/ |_/_/      /_/   /___/_/ |_/___//____/_/ /_/   \n"
+          "                                                           \n"
+          "\e[0m";
+
+    std::cout << finish_info << std::endl;
+  } else {
+    LOG_ERROR << "Configuration file is required for running iPNP.";
+    return 0;
+  }
+
+  return 1;
+}
+
+}  // namespace ipnp

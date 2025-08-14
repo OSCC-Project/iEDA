@@ -15,25 +15,36 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file iPNPCommon.hh
- * @author Xinhao li
+ * @file PNPIdbWrapper.hh
+ * @author Jianrong Su
  * @brief
- * @version 0.1
- * @date 2024-07-15
+ * @version 1.0
+ * @date 2025-06-23
  */
 
 #pragma once
 
-#include "IdbCellMaster.h"
-#include "IdbDesign.h"
-#include "IdbEnum.h"
-#include "IdbGeometry.h"
-#include "IdbInstance.h"
-#include "IdbLayer.h"
-#include "IdbLayout.h"
-#include "IdbNet.h"
-#include "IdbPins.h"
-#include "builder.h"
-#include "def_service.h"
-#include "lef_service.h"
-#include "log/Log.hh"
+#include <iostream>
+#include <map>
+#include <string>
+#include <vector>
+
+#include "PNPGridManager.hh"
+
+namespace ipnp {
+
+class PNPIdbWrapper
+{
+ public:
+  PNPIdbWrapper() = default;
+  ~PNPIdbWrapper() = default;
+
+  void saveToIdb(PNPGridManager pnp_network);
+  void writeIdbToDef(std::string def_file_path);
+
+  void connect_M2_M1_Layer();
+
+ private:
+};
+
+}  // namespace ipnp

@@ -5,3 +5,19 @@ add_library(pnp-synthesis
     PowerRouter.cpp
     PowerVia.cpp
 )
+
+target_link_libraries(pnp-synthesis
+    PUBLIC
+    pnp-config
+    idb
+    idm
+    pnp-data
+    log
+)
+
+target_include_directories(pnp-synthesis
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+set(CMAKE_BUILD_TYPE "debug")

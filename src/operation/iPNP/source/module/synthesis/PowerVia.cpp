@@ -32,31 +32,34 @@
 #include <string>
 #include <vector>
 
+#include "IdbLayer.h"
+#include "IdbSpecialNet.h"
+#include "IdbSpecialWire.h"
+#include "IdbViaMaster.h"
+#include "IdbVias.h"
+#include "Log.hh"
+#include "idm.h"
+
 namespace ipnp {
 
-void PowerVia::connectAllPowerLayers(GridManager& pnp_network, idb::IdbDesign* idb_design)
+void PowerVia::connectAllPowerLayers(PNPGridManager& pnp_network)
 {
-  if (!idb_design) {
-    LOG_INFO << "Error : Invalid IDB design object";
-    return;
-  }
+  connectNetworkLayers(pnp_network, PowerType::kVDD);
 
-  connectNetworkLayers(pnp_network, PowerType::kVDD, idb_design);
-
-  connectNetworkLayers(pnp_network, PowerType::kVSS, idb_design);
+  connectNetworkLayers(pnp_network, PowerType::kVSS);
 
   LOG_INFO << "Success : Connected all power layers";
 }
 
-void PowerVia::connectM2M1Layer(idb::IdbDesign* idb_design)
+void PowerVia::connectM2M1Layer()
 {
-  connect_M2_M1("VDD", idb_design);
-  connect_M2_M1("VSS", idb_design);
+  connect_M2_M1("VDD");
+  connect_M2_M1("VSS");
 
   LOG_INFO << "Success : Connected M2 and M1 layers";
 }
 
-void PowerVia::connectNetworkLayers(GridManager& pnp_network, PowerType net_type, idb::IdbDesign* idb_design)
+void PowerVia::connectNetworkLayers(PNPGridManager& pnp_network, PowerType net_type)
 {
   std::string net_name = (net_type == PowerType::kVDD) ? "VDD" : "VSS";
 
@@ -67,28 +70,26 @@ void PowerVia::connectNetworkLayers(GridManager& pnp_network, PowerType net_type
   for (int i = 0; i < layer_count - 1; i++) {
     std::string top_layer = "M" + std::to_string(power_layers[i]);
     std::string bottom_layer = "M" + std::to_string(power_layers[i + 1]);
-    connectLayers(net_name, top_layer, bottom_layer, idb_design);
+    connectLayers(net_name, top_layer, bottom_layer);
   }
 
   // Connect power layer to M2 and M1 layer rows
   std::string bottom_power_layer = "M" + std::to_string(power_layers[layer_count - 1]);
-  connect_Layer_Row(net_name, bottom_power_layer, "M2", idb_design);
+  connect_Layer_Row(net_name, bottom_power_layer, "M2");
 
   LOG_INFO << "Success : Connected all layers for " << net_name;
 }
 
-int32_t PowerVia::transUnitDB(double value, idb::IdbDesign* idb_design)
+int32_t PowerVia::transUnitDB(double value)
 {
-  if (!idb_design)
-    return -1;
-  auto idb_layout = idb_design->get_layout();
+  auto idb_layout = dmInst->get_idb_layout();
   return idb_layout != nullptr ? idb_layout->transUnitDB(value) : -1;
 }
 
-idb::IdbVia* PowerVia::findVia(idb::IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design, idb::IdbDesign* idb_design)
+idb::IdbVia* PowerVia::findVia(idb::IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design)
 {
-  if (!idb_design)
-    return nullptr;
+  auto idb_design = dmInst->get_idb_design();
+
   auto via_list = idb_design->get_via_list();
 
   // Via name format: cut_layer_name_widthxheight
@@ -99,17 +100,16 @@ idb::IdbVia* PowerVia::findVia(idb::IdbLayerCut* layer_cut, int32_t width_design
 
   // If not found, create a new via
   if (via_find == nullptr) {
-    via_find = createVia(layer_cut, width_design, height_design, via_name, idb_design);
+    via_find = createVia(layer_cut, width_design, height_design, via_name);
   }
 
   return via_find;
 }
 
-idb::IdbVia* PowerVia::createVia(idb::IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design, std::string via_name,
-                                 idb::IdbDesign* idb_design)
+idb::IdbVia* PowerVia::createVia(idb::IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design, std::string via_name)
 {
-  if (!idb_design)
-    return nullptr;
+  auto idb_design = dmInst->get_idb_design();
+
   auto via_list = idb_design->get_via_list();
 
   // Ensure via name is correctly formatted
@@ -185,12 +185,10 @@ bool PowerVia::getIntersectCoordinate(idb::IdbSpecialWireSegment* segment_top, i
 }
 
 bool PowerVia::addSingleVia(std::string net_name, std::string top_layer, std::string bottom_layer, double x, double y, int32_t width,
-                            int32_t height, idb::IdbDesign* idb_design)
+                            int32_t height)
 {
-  if (!idb_design)
-    return false;
-
-  auto idb_layout = idb_design->get_layout();
+  auto idb_design = dmInst->get_idb_design();
+  auto idb_layout = dmInst->get_idb_layout();
   auto idb_layer_list = idb_layout->get_layers();
   auto idb_pdn_list = idb_design->get_special_net_list();
 
@@ -223,8 +221,8 @@ bool PowerVia::addSingleVia(std::string net_name, std::string top_layer, std::st
   }
 
   // Convert coordinates to database units
-  int32_t dbu_x = transUnitDB(x, idb_design);
-  int32_t dbu_y = transUnitDB(y, idb_design);
+  int32_t dbu_x = transUnitDB(x);
+  int32_t dbu_y = transUnitDB(y);
 
   // Add via for each cut layer
   for (auto layer_cut : cut_layer_list) {
@@ -232,7 +230,7 @@ bool PowerVia::addSingleVia(std::string net_name, std::string top_layer, std::st
       continue;
 
     // Find or create via
-    idb::IdbVia* via = findVia(layer_cut, width, height, idb_design);
+    idb::IdbVia* via = findVia(layer_cut, width, height);
     if (via == nullptr) {
       LOG_INFO << "Error: Failed to create via for " << layer_cut->get_name();
       continue;
@@ -254,14 +252,11 @@ bool PowerVia::addSingleVia(std::string net_name, std::string top_layer, std::st
   return true;
 }
 
-void PowerVia::connectLayers(std::string net_name, std::string top_layer_name, std::string bottom_layer_name, idb::IdbDesign* idb_design)
+void PowerVia::connectLayers(std::string net_name, std::string top_layer_name, std::string bottom_layer_name)
 {
-  if (!idb_design) {
-    LOG_INFO << "Error : Invalid IDB design object";
-    return;
-  }
+  auto idb_design = dmInst->get_idb_design();
 
-  auto idb_layout = idb_design->get_layout();
+  auto idb_layout = dmInst->get_idb_layout();
   auto idb_layer_list = idb_layout->get_layers();
   auto idb_pdn_list = idb_design->get_special_net_list();
 
@@ -345,7 +340,7 @@ void PowerVia::connectLayers(std::string net_name, std::string top_layer_name, s
           }
 
           // Find or create via
-          idb::IdbVia* via_find = findVia(layer_cut_find, intersection_rect.get_width(), intersection_rect.get_height(), idb_design);
+          idb::IdbVia* via_find = findVia(layer_cut_find, intersection_rect.get_width(), intersection_rect.get_height());
 
           if (via_find == nullptr) {
             LOG_INFO << "Error : can not find VIA matchs.";
@@ -376,10 +371,10 @@ void PowerVia::connectLayers(std::string net_name, std::string top_layer_name, s
   LOG_INFO << "Success : connectLayers " << top_layer_name << " & " << bottom_layer_name;
 }
 
-void PowerVia::connect_Layer_Row(std::string net_name, std::string top_layer_name, std::string bottom_layer_name,
-                                 idb::IdbDesign* idb_design)
+void PowerVia::connect_Layer_Row(std::string net_name, std::string top_layer_name, std::string bottom_layer_name)
 {
-  auto idb_layout = idb_design->get_layout();
+  auto idb_layout = dmInst->get_idb_layout();
+  auto idb_design = dmInst->get_idb_design();
   auto idb_layer_list = idb_layout->get_layers();
   auto idb_pdn_list = idb_design->get_special_net_list();
 
@@ -469,7 +464,7 @@ void PowerVia::connect_Layer_Row(std::string net_name, std::string top_layer_nam
           }
 
           // Find or create via
-          idb::IdbVia* via_find = findVia(layer_cut, intersection_rect.get_width(), intersection_rect.get_height(), idb_design);
+          idb::IdbVia* via_find = findVia(layer_cut, intersection_rect.get_width(), intersection_rect.get_height());
 
           if (via_find == nullptr) {
             LOG_INFO << "Error : can not find VIA matchs.";
@@ -494,9 +489,10 @@ void PowerVia::connect_Layer_Row(std::string net_name, std::string top_layer_nam
   LOG_INFO << "Success : connectLayers " << top_layer_name << " & " << bottom_layer_name;
 }
 
-void PowerVia::connect_M2_M1(std::string net_name, idb::IdbDesign* idb_design)
+void PowerVia::connect_M2_M1(std::string net_name)
 {
-  auto idb_layout = idb_design->get_layout();
+  auto idb_layout = dmInst->get_idb_layout();
+  auto idb_design = dmInst->get_idb_design();
   auto idb_layer_list = idb_layout->get_layers();
   auto idb_pdn_list = idb_design->get_special_net_list();
   auto idb_via_list = idb_design->get_via_list();

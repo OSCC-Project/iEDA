@@ -27,31 +27,26 @@
 #include <string>
 
 namespace idb {
-  class IdbDesign;
-  class IdbBuilder;
-}
+class IdbDesign;
+class IdbBuilder;
+}  // namespace idb
 
 namespace ipl {
-  class PLAPI;
-  extern PLAPI& iPLAPIInst;
-}
+class PLAPI;
+extern PLAPI& iPLAPIInst;
+}  // namespace ipl
 
 namespace ipnp {
-
-class PNPConfig;
 
 class FastPlacer
 {
  public:
-  FastPlacer() : _config(nullptr) {}
+  FastPlacer() = default;
   ~FastPlacer() = default;
 
-  void runFastPlacer(idb::IdbBuilder* idb_builder);
-  
-  void set_config(PNPConfig* config) { _config = config; }
+  void runFastPlacer();
 
-private:
-  PNPConfig* _config;
+ private:
 };
 
 }  // namespace ipnp

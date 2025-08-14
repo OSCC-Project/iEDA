@@ -17,7 +17,7 @@
 
 #include "tcl_ipnp.h"
 
-#include "iPNPApi.hh"
+#include "ipnp_api.hh"
 #include "tcl_util.h"
 #include "tool_manager.h"
 
