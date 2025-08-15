@@ -64,7 +64,6 @@ unsigned CmdAddVIA1::exec()
 
     LOG_INFO << "Adding VIA1 connections between M2 and M1 layers with configuration: " << config_file;
 
-    // 直接调用静态方法
     ipnp::PNPApi::connect_M2_M1(config_file);
 
     LOG_INFO << "VIA1 connections added successfully.";

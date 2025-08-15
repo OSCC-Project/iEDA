@@ -24,6 +24,7 @@
 
 #include "PowerVia.hh"
 
+#include <algorithm>
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
@@ -65,18 +66,43 @@ void PowerVia::connectNetworkLayers(PNPGridManager& pnp_network, PowerType net_t
   std::string net_name = (net_type == PowerType::kVDD) ? "VDD" : "VSS";
 
   auto power_layers = pnp_network.get_power_layers();
-  int layer_count = pnp_network.get_layer_count();
 
   // Connect power layers
-  for (int i = 0; i < layer_count - 1; i++) {
-    std::string top_layer = "M" + std::to_string(power_layers[i]);
-    std::string bottom_layer = "M" + std::to_string(power_layers[i + 1]);
-    connectLayers(net_name, top_layer, bottom_layer);
+  for (size_t i = 0; i < power_layers.size() - 1; i++) {
+
+    auto* top_layer = idb_layers->find_routing_layer(power_layers[i]);
+    auto* bottom_layer = idb_layers->find_routing_layer(power_layers[i + 1]);
+
+    if (top_layer && bottom_layer) {
+      std::string top_layer_name = top_layer->get_name();
+      std::string bottom_layer_name = bottom_layer->get_name();
+
+      LOG_INFO << "Connecting layers: " << top_layer_name << " -> " << bottom_layer_name;
+      connectLayers(net_name, top_layer_name, bottom_layer_name);
+    }
+    else {
+      LOG_ERROR << "Cannot find routing layers for IDs: " << power_layers[i] << ", " << power_layers[i + 1];
+    }
   }
 
-  // Connect power layer to M2 and M1 layer rows
-  std::string bottom_power_layer = "M" + std::to_string(power_layers[layer_count - 1]);
-  connect_Layer_Row(net_name, bottom_power_layer, "M2");
+  // Connect power layer to rows
+  auto* bottom_power_layer = idb_layers->find_routing_layer(power_layers.back());
+  auto follow_pin_layers = pnpConfig->get_follow_pin_layers();
+  
+  int bottom_routing_id = *std::min_element(follow_pin_layers.begin(), follow_pin_layers.end());
+  auto* bottom_routing_layer = idb_layers->find_routing_layer(bottom_routing_id);
+
+  if (bottom_power_layer && bottom_routing_layer) {
+    std::string bottom_power_name = bottom_power_layer->get_name();
+    std::string bottom_routing_name = bottom_routing_layer->get_name();
+
+    LOG_INFO << "Connecting power layer to bottom routing layer: "
+      << bottom_power_name << " -> " << bottom_routing_name;
+    connect_Layer_Row(net_name, bottom_power_name, bottom_routing_name);
+  }
+  else {
+    LOG_WARNING << "Cannot find bottom power layer or bottom routing layer";
+  }
 
   LOG_INFO << "Success : Connected all layers for " << net_name;
 }
@@ -325,10 +351,6 @@ void PowerVia::connectLayers(std::string net_name, std::string top_layer_name, s
       // Calculate intersection area
       idb::IdbRect intersection_rect;
       if (getIntersectCoordinate(segment_top, segment_bottom, intersection_rect)) {
-        // Debug information
-        // LOG_INFO << "Found intersection at (" << intersection_rect.get_middle_point().get_x()
-        //   << ", " << intersection_rect.get_middle_point().get_y()
-        //   << ") with size " << intersection_rect.get_width() << "x" << intersection_rect.get_height();
 
         // Add via for each intermediate layer
         for (int32_t layer_order = layer_bottom->get_order(); layer_order <= (layer_top->get_order() - 2);) {
@@ -380,23 +402,24 @@ void PowerVia::connect_Layer_Row(std::string net_name, std::string top_layer_nam
   auto idb_pdn_list = idb_design->get_special_net_list();
 
   // Get layer information
-  idb::IdbLayerRouting* layer_M2 = dynamic_cast<idb::IdbLayerRouting*>(idb_layer_list->find_layer(bottom_layer_name));
+  idb::IdbLayerRouting* layer_bottom = dynamic_cast<idb::IdbLayerRouting*>(idb_layer_list->find_layer(bottom_layer_name));
   idb::IdbLayerRouting* layer_top = dynamic_cast<idb::IdbLayerRouting*>(idb_layer_list->find_layer(top_layer_name));
-  idb::IdbLayerRouting* layer_M9 = dynamic_cast<idb::IdbLayerRouting*>(idb_layer_list->find_layer("M9"));
 
   // Ensure layers exist and are different
-  if (layer_M2 == nullptr || layer_top == nullptr || layer_M2 == layer_top) {
+  if (layer_bottom == nullptr || layer_top == nullptr || layer_bottom == layer_top) {
     LOG_INFO << "Error : layers not exist or same layer.";
     return;
   }
 
   // Ensure bottom layer is below top layer
-  if (layer_top->get_order() < layer_M2->get_order()) {
-    std::swap(layer_top, layer_M2);
+  if (layer_top->get_order() < layer_bottom->get_order()) {
+    std::swap(layer_top, layer_bottom);
+    std::swap(top_layer_name, bottom_layer_name);
   }
 
   // Don't support two layers with the same direction
-  if ((layer_top->is_horizontal() && layer_M2->is_horizontal()) || (layer_top->is_vertical() && layer_M2->is_vertical())) {
+  if ((layer_top->is_horizontal() && layer_bottom->is_horizontal()) || 
+      (layer_top->is_vertical() && layer_bottom->is_vertical())) {
     LOG_INFO << "Error : layers have the same direction.";
     return;
   }
@@ -417,7 +440,6 @@ void PowerVia::connect_Layer_Row(std::string net_name, std::string top_layer_nam
 
   std::vector<idb::IdbSpecialWireSegment*> segment_list_top;
   std::vector<idb::IdbSpecialWireSegment*> segment_list_bottom;
-  idb::IdbSpecialWire* wire_top = nullptr;
 
   // Collect top and bottom layer segments
   for (idb::IdbSpecialWire* wire : wire_list->get_wire_list()) {
@@ -426,14 +448,32 @@ void PowerVia::connect_Layer_Row(std::string net_name, std::string top_layer_nam
         if (segment->get_layer()->compareLayer(layer_top)) {
           segment->set_bounding_box();
           segment_list_top.emplace_back(segment);
-          // wire_top = wire;
         }
-        if (segment->get_layer()->compareLayer(layer_M2)) {
+        if (segment->get_layer()->compareLayer(layer_bottom)) {
           segment->set_bounding_box();
           segment_list_bottom.emplace_back(segment);
         }
       }
     }
+  }
+
+  // Get power_layers configuration to determine wire index
+  auto power_layers = pnpConfig->get_power_layers();
+  auto idb_layers = dmInst->get_idb_layout()->get_layers();
+  
+  // Find the index of top_layer in power_layers
+  int top_layer_index = -1;
+  for (size_t i = 0; i < power_layers.size(); i++) {
+    auto* power_layer = idb_layers->find_routing_layer(power_layers[i]);
+    if (power_layer && power_layer->get_name() == top_layer_name) {
+      top_layer_index = static_cast<int>(i);
+      break;
+    }
+  }
+  
+  if (top_layer_index == -1) {
+    LOG_INFO << "Error : top layer " << top_layer_name << " not found in power_layers configuration.";
+    return;
   }
 
   // For each top layer segment
@@ -443,24 +483,28 @@ void PowerVia::connect_Layer_Row(std::string net_name, std::string top_layer_nam
       // Calculate intersection area
       idb::IdbRect intersection_rect;
       if (getIntersectCoordinate(segment_top, segment_bottom, intersection_rect)) {
-        int32_t layer_order_M2 = layer_M2->get_order();
+        int32_t layer_order_bottom = layer_bottom->get_order();
         int32_t layer_order_top = layer_top->get_order();
 
         // Create coordinate
         idb::IdbCoordinate<int32_t> middle = intersection_rect.get_middle_point();
         idb::IdbCoordinate<int32_t>* middle_ptr = new idb::IdbCoordinate<int32_t>(middle.get_x(), middle.get_y());
 
-        int wire_top_index = (layer_top->get_order() - layer_M9->get_order()) / (-2);
+        int current_wire_index = top_layer_index;
 
-        // Process each cut layer
-        for (int layer_cut_order = layer_order_top - 1; layer_cut_order > layer_order_M2 - 2; layer_cut_order -= 2) {
-          wire_top = wire_list->find_wire(wire_top_index);
+        // Process each cut layer between top and bottom
+        for (int layer_cut_order = layer_order_top - 1; layer_cut_order > layer_order_bottom; layer_cut_order -= 2) {
+          idb::IdbSpecialWire* wire_current = wire_list->find_wire(current_wire_index);
+          if (wire_current == nullptr) {
+            LOG_INFO << "Error : cannot find wire at index " << current_wire_index;
+            continue;
+          }
 
           // Get cut layer
           idb::IdbLayerCut* layer_cut = dynamic_cast<idb::IdbLayerCut*>(idb_layer_list->find_layer_by_order(layer_cut_order));
 
           if (layer_cut == nullptr) {
-            LOG_INFO << "Error : layer input illegal.";
+            LOG_INFO << "Error : layer input illegal for order " << layer_cut_order;
             continue;
           }
 
@@ -468,7 +512,7 @@ void PowerVia::connect_Layer_Row(std::string net_name, std::string top_layer_nam
           idb::IdbVia* via_find = findVia(layer_cut, intersection_rect.get_width(), intersection_rect.get_height());
 
           if (via_find == nullptr) {
-            LOG_INFO << "Error : can not find VIA matchs.";
+            LOG_INFO << "Error : can not find VIA matches for cut layer " << layer_cut->get_name();
             continue;
           }
 
@@ -480,8 +524,10 @@ void PowerVia::connect_Layer_Row(std::string net_name, std::string top_layer_nam
               = createSpecialWireVia(layer_top_via, 0, idb::IdbWireShapeType::kStripe, middle_ptr, via_find);
 
           // Add to wire
-          wire_top->add_segment(segment_via);
-          wire_top_index++;
+          wire_current->add_segment(segment_via);
+          
+          // Move to next wire (next layer down)
+          current_wire_index++;
         }
       }
     }
@@ -524,14 +570,14 @@ void PowerVia::connect_M2_M1(std::string net_name)
     return;
   }
 
-  // 首先检查是否已经存在VIAGEN12_RECT_1 via
+  // First check if VIAGEN12_RECT_1 via already exists
   idb::IdbVia* m2_m1_via = idb_via_list->find_via("VIAGEN12_RECT_1");
 
-  // 如果不存在，则需要创建
+  // If it doesn't exist, need to create it
   if (m2_m1_via == nullptr) {
     LOG_INFO << "VIAGEN12_RECT_1 not found, creating it...";
 
-    // 查找M3-M2 via作为模板
+    // Find M3-M2 via as template
     idb::IdbVia* m3_m2_via = nullptr;
 
     for (auto via : idb_via_list->get_via_list()) {
@@ -583,27 +629,27 @@ void PowerVia::connect_M2_M1(std::string net_name)
     LOG_INFO << "Using existing VIAGEN12_RECT_1 via for " << net_name;
   }
 
-  // 无论是新创建还是已存在，都使用m2_m1_via添加到网络中
+  // Whether newly created or already existing, use m2_m1_via to add to network
   for (idb::IdbSpecialWire* wire : wire_list->get_wire_list()) {
     auto segment_list = wire->get_segment_list();
 
     for (idb::IdbSpecialWireSegment* segment : segment_list) {
       if (segment->is_via() && segment->get_layer()->compareLayer(layer_M3)) {
-        // 在M2层添加通孔
+        // Add via on M2 layer
         idb::IdbSpecialWireSegment* new_segment = new idb::IdbSpecialWireSegment();
         new_segment->set_layer(layer_M2);
         new_segment->set_is_via(true);
         new_segment->set_route_width(0);
 
-        // 使用M2-M1 via
+        // Use M2-M1 via
         new_segment->set_via(m2_m1_via);
 
-        // 复制坐标点
+        // Copy coordinate points
         if (!segment->get_point_list().empty()) {
           new_segment->add_point(segment->get_point_list()[0]->get_x(), segment->get_point_list()[0]->get_y());
         }
 
-        // 添加到wire中
+        // Add to wire
         wire->add_segment(new_segment);
       }
     }

@@ -26,6 +26,7 @@
 
 #include <iostream>
 #include <list>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -85,6 +86,15 @@ class PNPConfig
   void set_ver_region_num(int ver_region_num) { _ver_region_num = ver_region_num; }
   int get_ver_region_num() const { return _ver_region_num; }
 
+  void set_follow_pin_layers(const std::vector<int>& follow_pin_layers) { _follow_pin_layers = follow_pin_layers; }
+  const std::vector<int>& get_follow_pin_layers() const { return _follow_pin_layers; }
+
+  void set_power_port_layer(int power_port_layer) { _power_port_layer = power_port_layer; }
+  int get_power_port_layer() const { return _power_port_layer; }
+
+  void set_follow_pin_width(double follow_pin_width) { _follow_pin_width = follow_pin_width; }
+  double get_follow_pin_width() const { return _follow_pin_width; }
+
   void set_liberty_files(const std::vector<std::string>& liberty_files) { _liberty_files = liberty_files; }
   const std::vector<std::string>& get_liberty_files() const { return _liberty_files; }
 
@@ -135,6 +145,9 @@ class PNPConfig
   void set_vertical_templates(const std::vector<TemplateConfig>& templates) { _vertical_templates = templates; }
   const std::vector<TemplateConfig>& get_vertical_templates() const { return _vertical_templates; }
 
+  void set_layer_specific_templates(const std::map<std::string, TemplateConfig>& templates) { _layer_specific_templates = templates; }
+  const std::map<std::string, TemplateConfig>& get_layer_specific_templates() const { return _layer_specific_templates; }
+
  private:
   static PNPConfig* _instance;
 
@@ -154,6 +167,9 @@ class PNPConfig
   std::vector<int> _power_layers;
   int _ho_region_num;
   int _ver_region_num;
+  std::vector<int> _follow_pin_layers;
+  int _power_port_layer;
+  double _follow_pin_width;
 
   std::string _timing_design_workspace;
   std::string _power_net_name;
@@ -174,6 +190,7 @@ class PNPConfig
   // template configuration
   std::vector<TemplateConfig> _horizontal_templates;
   std::vector<TemplateConfig> _vertical_templates;
+  std::map<std::string, TemplateConfig> _layer_specific_templates;
 };
 
 }  // namespace ipnp

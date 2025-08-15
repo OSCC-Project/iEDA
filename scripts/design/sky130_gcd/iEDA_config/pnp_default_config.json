@@ -11,12 +11,15 @@
     "grid": {
         "power_layers": [
             "met5",
-            "met4",
-            "met3",
-            "met2"
+            "met4"
         ],
-        "ho_region_num": 2,
-        "ver_region_num": 2
+        "follow_pin_layers": [
+            "met1"
+        ],
+        "follow_pin_width": 480.0,
+        "power_port_layer": "met5",
+        "ho_region_num": 1,
+        "ver_region_num": 1
     },
     "simulated_annealing": {
         "initial_temp": 100.0,
@@ -31,43 +34,22 @@
     "templates": {
         "horizontal": [
             {
-                "width": 8000.0,
-                "pg_offset": 1600.0,
-                "space": 19200.0,
-                "offset": 8000.0
-            },
-            {
-                "width": 8000.0,
-                "pg_offset": 1600.0,
-                "space": 38400.0,
-                "offset": 8000.0
-            },
-            {
-                "width": 8000.0,
-                "pg_offset": 1600.0,
-                "space": 38400.0,
-                "offset": 27200.0
+                "width": 1600.0,
+                "pg_offset": 6800.0,
+                "space": 13600.0,
+                "offset": 1200.0
             }
         ],
         "vertical": [
             {
-                "width": 8000.0,
-                "pg_offset": 1600.0,
-                "space": 19200.0,
-                "offset": 8000.0
-            },
-            {
-                "width": 8000.0,
-                "pg_offset": 1600.0,
-                "space": 38400.0,
-                "offset": 8000.0
-            },
-            {
-                "width": 8000.0,
-                "pg_offset": 1600.0,
-                "space": 38400.0,
-                "offset": 27200.0
+                "width": 1600.0,
+                "pg_offset": 6800.0,
+                "space": 13600.0,
+                "offset": 1200.0
             }
-        ]
+        ],
+        "layer_specific": {
+            
+        }
     }
 }

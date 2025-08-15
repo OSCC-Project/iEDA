@@ -143,6 +143,26 @@ bool PNPConfig::loadConfigFromJson(const std::string& config_file_path)
       if (grid.contains("ver_region_num") && grid["ver_region_num"].is_number()) {
         set_ver_region_num(grid["ver_region_num"].get<int>());
       }
+
+      if (grid.contains("follow_pin_layers") && grid["follow_pin_layers"].is_array()) {
+        std::vector<int> follow_pin_layers;
+        for (const auto& layer : grid["follow_pin_layers"]) {
+          std::string layer_tr = layer.get<std::string>();
+          auto idb_layer = idb_layers->find_layer(layer_tr);
+          follow_pin_layers.push_back(idb_layer->get_id());
+        }
+        set_follow_pin_layers(follow_pin_layers);
+      }
+
+      if (grid.contains("power_port_layer") && grid["power_port_layer"].is_string()) {
+        std::string layer_tr = grid["power_port_layer"].get<std::string>();
+        auto idb_layer = idb_layers->find_layer(layer_tr);
+        set_power_port_layer(idb_layer->get_id());
+      }
+
+      if (grid.contains("follow_pin_width") && grid["follow_pin_width"].is_number()) {
+        set_follow_pin_width(grid["follow_pin_width"].get<double>());
+      }
     }
 
     // Load template configurations
@@ -203,6 +223,37 @@ bool PNPConfig::loadConfigFromJson(const std::string& config_file_path)
           vertical_templates.push_back(template_config);
         }
         set_vertical_templates(vertical_templates);
+      }
+
+      // Load layer-specific templates
+      if (templates.contains("layer_specific") && templates["layer_specific"].is_object()) {
+        std::map<std::string, TemplateConfig> layer_specific_templates;
+        for (auto& [layer_name, template_data] : templates["layer_specific"].items()) {
+          TemplateConfig template_config;
+          
+          if (template_data.contains("direction") && template_data["direction"].is_string()) {
+            template_config.direction = template_data["direction"].get<std::string>();
+          }
+          
+          if (template_data.contains("width") && template_data["width"].is_number()) {
+            template_config.width = template_data["width"].get<double>();
+          }
+
+          if (template_data.contains("pg_offset") && template_data["pg_offset"].is_number()) {
+            template_config.pg_offset = template_data["pg_offset"].get<double>();
+          }
+
+          if (template_data.contains("space") && template_data["space"].is_number()) {
+            template_config.space = template_data["space"].get<double>();
+          }
+
+          if (template_data.contains("offset") && template_data["offset"].is_number()) {
+            template_config.offset = template_data["offset"].get<double>();
+          }
+
+          layer_specific_templates[layer_name] = template_config;
+        }
+        set_layer_specific_templates(layer_specific_templates);
       }
     }
 

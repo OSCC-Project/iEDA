@@ -35,6 +35,7 @@
 #include "IdbVias.h"
 #include "Log.hh"
 #include "idm.h"
+#include "PNPConfig.hh"
 
 namespace ipnp {
 
@@ -268,7 +269,8 @@ void PowerRouter::addPowerStripesToDie(idb::IdbSpecialNet* power_net, PNPGridMan
     wire_list->add_wire(wire, idb::IdbWiringStatement::kRouted);
   }
 
-  int wire_need_to_add = power_layers[0] - pnp_network.get_layer_count() - 2;
+  auto follow_pin_layers = pnpConfig->get_follow_pin_layers();
+  int wire_need_to_add = power_layers[0] - pnp_network.get_layer_count() - static_cast<int>(follow_pin_layers.size());
   while (wire_need_to_add > 0) {
     auto* wire = new idb::IdbSpecialWire();
     wire->set_wire_state(idb::IdbWiringStatement::kRouted);
@@ -285,11 +287,12 @@ void PowerRouter::addPowerFollowPin(idb::IdbSpecialNet* power_net)
   auto row_list = rows->get_row_list();
   auto idb_layers = dmInst->get_idb_layout()->get_layers();
 
-  for (int layer_idx = 2; layer_idx > 0; layer_idx--) {
-    // Create a new routing layer
-    idb::IdbLayer* layer = new idb::IdbLayer();
-    layer->set_name("M" + std::to_string(layer_idx));
-    layer->set_type(idb::IdbLayerType::kLayerRouting);
+  auto follow_pin_layers = pnpConfig->get_follow_pin_layers();
+  double follow_pin_width = pnpConfig->get_follow_pin_width();
+
+  for (const auto& layer_id : follow_pin_layers) {
+    
+    idb::IdbLayer* layer = idb_layers->find_routing_layer(layer_id);
 
     // Create a new wire
     auto* wire = new idb::IdbSpecialWire();
@@ -308,7 +311,7 @@ void PowerRouter::addPowerFollowPin(idb::IdbSpecialNet* power_net)
       // Create a new follow pin segment
       idb::IdbSpecialWireSegment* segment = new idb::IdbSpecialWireSegment();
       segment->set_layer(layer);
-      segment->set_route_width(300.0);
+      segment->set_route_width(follow_pin_width);
       segment->set_shape_type(idb::IdbWireShapeType::kFollowPin);
 
       // Set the segment coordinates
@@ -329,7 +332,7 @@ void PowerRouter::addPowerFollowPin(idb::IdbSpecialNet* power_net)
       // Create a new follow pin segment
       idb::IdbSpecialWireSegment* segment = new idb::IdbSpecialWireSegment();
       segment->set_layer(layer);
-      segment->set_route_width(300.0);
+      segment->set_route_width(follow_pin_width);
       segment->set_shape_type(idb::IdbWireShapeType::kFollowPin);
 
       // Set the segment coordinates
@@ -355,6 +358,23 @@ void PowerRouter::addPowerPort(PNPGridManager pnp_network, std::string pin_name,
   auto idb_layout = idb_design->get_layout();
   idb::IdbLayer* layer = idb_layout->get_layers()->find_layer(layer_name);
 
+  // Find the corresponding template index for power_port_layer in power_layers
+  auto power_layers = pnpConfig->get_power_layers();
+  int power_port_layer_id = pnpConfig->get_power_port_layer();
+  
+  int template_layer_idx = -1;
+  for (size_t i = 0; i < power_layers.size(); i++) {
+    if (power_layers[i] == power_port_layer_id) {
+      template_layer_idx = static_cast<int>(i);
+      break;
+    }
+  }
+  
+  if (template_layer_idx == -1) {
+    LOG_ERROR << "Power port layer ID " << power_port_layer_id << " not found in power_layers configuration!";
+    return;
+  }
+
   idb::IdbPin* io_pin = idb_design->get_io_pin_list()->find_pin(pin_name);
   if (io_pin == nullptr) {
     LOG_INFO << "Can not find " << pin_name << " in io_pin_list.";
@@ -366,6 +386,9 @@ void PowerRouter::addPowerPort(PNPGridManager pnp_network, std::string pin_name,
     io_pin->set_net_name(pin_name);
     io_pin->set_term();
     idb_design->get_io_pin_list()->get_pin_list().emplace_back(io_pin);
+  }
+  else {
+    io_pin->get_term()->get_port_list().clear();
   }
 
   // set term attribute
@@ -386,9 +409,9 @@ void PowerRouter::addPowerPort(PNPGridManager pnp_network, std::string pin_name,
   double x_base = 0.0;
   double y_base = 0.0;
 
-  if (template_data[2][0][0].get_direction() == StripeDirection::kHorizontal) {
+  if (template_data[template_layer_idx][0][0].get_direction() == StripeDirection::kHorizontal) {
     for (int i = 0; i < pnp_network.get_ho_region_num(); i++) {
-      SingleTemplate& single_template = template_data[2][i][0];
+      SingleTemplate& single_template = template_data[template_layer_idx][i][0];
       double width = single_template.get_width();
       double space = single_template.get_space();
       double offset = single_template.get_offset();
@@ -403,8 +426,8 @@ void PowerRouter::addPowerPort(PNPGridManager pnp_network, std::string pin_name,
 
       int port_count = 0;
 
-      int max_port_count = (grid_data[2][i][0].get_height() - offset) / space;
-      if (grid_data[2][i][0].get_height() - offset - max_port_count * space > 2 * width + pg_offset) {
+      int max_port_count = (grid_data[template_layer_idx][i][0].get_height() - offset) / space;
+      if (grid_data[template_layer_idx][i][0].get_height() - offset - max_port_count * space > 2 * width + pg_offset) {
         max_port_count++;
       }
       while (port_count < max_port_count) {
@@ -438,12 +461,12 @@ void PowerRouter::addPowerPort(PNPGridManager pnp_network, std::string pin_name,
         current_outermost += space;
         port_count++;
       }
-      y_base += grid_data[2][i][0].get_height();
+      y_base += grid_data[template_layer_idx][i][0].get_height();
     }
   }  // vertical
   else {
     for (int j = 0; j < pnp_network.get_ver_region_num(); j++) {
-      SingleTemplate& single_template = template_data[2][0][j];
+      SingleTemplate& single_template = template_data[template_layer_idx][0][j];
       double width = single_template.get_width();
       double space = single_template.get_space();
       double offset = single_template.get_offset();
@@ -458,8 +481,8 @@ void PowerRouter::addPowerPort(PNPGridManager pnp_network, std::string pin_name,
 
       int port_count = 0;
 
-      int max_port_count = (grid_data[2][0][j].get_width() - offset) / space;
-      if (grid_data[2][0][j].get_width() - offset - max_port_count * space > 2 * width + pg_offset) {
+      int max_port_count = (grid_data[template_layer_idx][0][j].get_width() - offset) / space;
+      if (grid_data[template_layer_idx][0][j].get_width() - offset - max_port_count * space > 2 * width + pg_offset) {
         max_port_count++;
       }
       while (port_count < max_port_count) {
@@ -493,7 +516,7 @@ void PowerRouter::addPowerPort(PNPGridManager pnp_network, std::string pin_name,
         current_outermost += space;
         port_count++;
       }
-      x_base += grid_data[2][0][j].get_width();
+      x_base += grid_data[template_layer_idx][0][j].get_width();
     }
   }
 }
@@ -522,7 +545,9 @@ void PowerRouter::addVSSNet(PNPGridManager pnp_network)
   addPowerFollowPin(vss_net);
   LOG_INFO << "Add VSS Power Follow Pin success.";
 
-  addPowerPort(pnp_network, "VSS", "M7");
+  auto idb_layers = dmInst->get_idb_layout()->get_layers();
+  auto* power_port_layer = idb_layers->find_routing_layer(pnpConfig->get_power_port_layer());
+  addPowerPort(pnp_network, "VSS", power_port_layer->get_name());
   LOG_INFO << "Add VSS Power Port success.";
 }
 
@@ -550,7 +575,9 @@ void PowerRouter::addVDDNet(PNPGridManager pnp_network)
   addPowerFollowPin(vdd_net);
   LOG_INFO << "Add VDD Power Follow Pin success.";
 
-  addPowerPort(pnp_network, "VDD", "M7");
+  auto idb_layers = dmInst->get_idb_layout()->get_layers();
+  auto* power_port_layer = idb_layers->find_routing_layer(pnpConfig->get_power_port_layer());
+  addPowerPort(pnp_network, "VDD", power_port_layer->get_name());
   LOG_INFO << "Add VDD Power Port success.";
 }
 

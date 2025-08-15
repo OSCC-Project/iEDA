@@ -43,7 +43,6 @@ void PNPApi::run_pnp(std::string config)
 void PNPApi::connect_M2_M1(std::string config)
 {
   auto pnp = PNP(config);
-  // run
   pnp.init();
   pnp.connect_M2_M1();
   pnp.saveToIdb();
