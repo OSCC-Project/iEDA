@@ -23,6 +23,7 @@
  */
 
 #include <algorithm>
+#include <ranges>
 #include <boost/graph/connected_components.hpp>
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 #include <boost/graph/kruskal_min_spanning_tree.hpp>

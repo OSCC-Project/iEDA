@@ -15,3 +15,4 @@ target_include_directories(ivec_db
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
+target_compile_features(ivec_db PUBLIC cxx_std_20)
