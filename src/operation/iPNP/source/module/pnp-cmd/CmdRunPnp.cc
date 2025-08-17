@@ -77,7 +77,6 @@ unsigned CmdRunPnp::exec()
 
     std::cout << start_info << std::endl;
 
-    // 直接调用静态方法
     ipnp::PNPApi::run_pnp(config_file);
 
     std::string finish_info

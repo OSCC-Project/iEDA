@@ -24,6 +24,7 @@
  */
 #include <map>
 #include <string>
+#include <cstdint>
 
 #include "vec_cell.h"
 #include "vec_instance.h"
