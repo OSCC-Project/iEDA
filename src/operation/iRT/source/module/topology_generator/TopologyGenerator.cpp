@@ -18,6 +18,7 @@
 
 #include "GDSPlotter.hpp"
 #include "RTInterface.hpp"
+#include "TGCandidate.hpp"
 #include "Utility.hpp"
 
 namespace irt {
@@ -242,12 +243,7 @@ void TopologyGenerator::generateTGModel(TGModel& tg_model)
 void TopologyGenerator::routeTGTask(TGModel& tg_model, TGNet* tg_task)
 {
   initSingleTask(tg_model, tg_task);
-  std::vector<Segment<PlanarCoord>> routing_segment_list;
-  for (Segment<PlanarCoord>& planar_topo : getPlanarTopoList(tg_model)) {
-    for (Segment<PlanarCoord>& routing_segment : getRoutingSegmentList(tg_model, planar_topo)) {
-      routing_segment_list.push_back(routing_segment);
-    }
-  }
+  std::vector<Segment<PlanarCoord>> routing_segment_list = getRoutingSegmentList(tg_model);
   MTree<PlanarCoord> coord_tree = getCoordTree(tg_model, routing_segment_list);
   updateDemandToGraph(tg_model, ChangeType::kAdd, coord_tree);
   uploadNetResult(tg_model, coord_tree);
@@ -257,6 +253,39 @@ void TopologyGenerator::routeTGTask(TGModel& tg_model, TGNet* tg_task)
 void TopologyGenerator::initSingleTask(TGModel& tg_model, TGNet* tg_task)
 {
   tg_model.set_curr_tg_task(tg_task);
+}
+
+std::vector<Segment<PlanarCoord>> TopologyGenerator::getRoutingSegmentList(TGModel& tg_model)
+{
+  std::vector<Segment<PlanarCoord>> planar_topo_list = getPlanarTopoList(tg_model);
+
+  std::vector<TGCandidate> tg_candidate_list;
+  for (size_t i = 0; i < planar_topo_list.size(); i++) {
+    for (std::vector<Segment<PlanarCoord>> routing_segment_list : getRoutingSegmentListList(tg_model, planar_topo_list[i])) {
+      tg_candidate_list.emplace_back(i, routing_segment_list, 0);
+    }
+  }
+#pragma omp parallel for
+  for (TGCandidate& tg_candidate : tg_candidate_list) {
+    tg_candidate.set_cost(getNodeCost(tg_model, tg_candidate.get_routing_segment_list()));
+  }
+  std::map<int32_t, TGCandidate*> topo_candidate_map;
+  for (TGCandidate& tg_candidate : tg_candidate_list) {
+    int32_t topo_idx = tg_candidate.get_topo_idx();
+    if (!RTUTIL.exist(topo_candidate_map, topo_idx)) {
+      topo_candidate_map[topo_idx] = &tg_candidate;
+    }
+    if (tg_candidate.get_cost() < topo_candidate_map[topo_idx]->get_cost()) {
+      topo_candidate_map[topo_idx] = &tg_candidate;
+    }
+  }
+  std::vector<Segment<PlanarCoord>> routing_segment_list;
+  for (auto& [topo_idx, min_candidate] : topo_candidate_map) {
+    for (Segment<PlanarCoord>& routing_segment : min_candidate->get_routing_segment_list()) {
+      routing_segment_list.push_back(routing_segment);
+    }
+  }
+  return routing_segment_list;
 }
 
 std::vector<Segment<PlanarCoord>> TopologyGenerator::getPlanarTopoList(TGModel& tg_model)
@@ -310,7 +339,7 @@ std::vector<Segment<PlanarCoord>> TopologyGenerator::getPlanarTopoList(TGModel& 
   return planar_topo_list;
 }
 
-std::vector<Segment<PlanarCoord>> TopologyGenerator::getRoutingSegmentList(TGModel& tg_model, Segment<PlanarCoord>& planar_topo)
+std::vector<std::vector<Segment<PlanarCoord>>> TopologyGenerator::getRoutingSegmentListList(TGModel& tg_model, Segment<PlanarCoord>& planar_topo)
 {
   std::vector<std::vector<Segment<PlanarCoord>>> routing_segment_list_list;
   for (auto getRoutingSegmentList : {std::bind(&TopologyGenerator::getRoutingSegmentListByStraight, this, std::placeholders::_1, std::placeholders::_2),
@@ -323,17 +352,7 @@ std::vector<Segment<PlanarCoord>> TopologyGenerator::getRoutingSegmentList(TGMod
       routing_segment_list_list.push_back(routing_segment_list);
     }
   }
-
-  double min_cost = DBL_MAX;
-  size_t min_i = 0;
-  for (size_t i = 0; i < routing_segment_list_list.size(); i++) {
-    double cost = getNodeCost(tg_model, routing_segment_list_list[i]);
-    if (cost < min_cost) {
-      min_cost = cost;
-      min_i = i;
-    }
-  }
-  return routing_segment_list_list[min_i];
+  return routing_segment_list_list;
 }
 
 std::vector<std::vector<Segment<PlanarCoord>>> TopologyGenerator::getRoutingSegmentListByStraight(TGModel& tg_model, Segment<PlanarCoord>& planar_topo)
