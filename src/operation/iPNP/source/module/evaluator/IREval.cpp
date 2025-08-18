@@ -59,15 +59,8 @@ void IREval::initIREval()
   }
   _timing_engine->set_design_work_space(design_work_space.c_str());
 
-  std::vector<const char*> lib_files;
-  if (!pnpConfig->get_liberty_files().empty()) {
-    const auto& liberty_files = pnpConfig->get_liberty_files();
-    lib_files.reserve(liberty_files.size());
-    for (const auto& lib : liberty_files) {
-      lib_files.push_back(lib.c_str());
-    }
-  }
-  _timing_engine->readLiberty(lib_files);
+  // Get library files from database manager instead of config
+  _timing_engine->readLiberty(dmInst->get_config().get_lib_paths());
 
   _timing_engine->get_ista()->set_analysis_mode(ista::AnalysisMode::kMaxMin);
   _timing_engine->get_ista()->set_n_worst_path_per_clock(1);
@@ -76,11 +69,7 @@ void IREval::initIREval()
   _timing_engine->setDefDesignBuilder(dmInst->get_idb_builder());
 
   // Read SDC file
-  std::string sdc_file;
-  if (!pnpConfig->get_sdc_file().empty()) {
-    sdc_file = pnpConfig->get_sdc_file();
-    _timing_engine->readSdc(sdc_file.c_str());
-  }
+  _timing_engine->readSdc(dmInst->get_config().get_sdc_path().c_str());
 
   _timing_engine->buildGraph();
   _timing_engine->get_ista()->updateTiming();
