@@ -371,6 +371,7 @@ void IRPGNetlistBuilder::build(
 
   // Finally, connect the instance pin list and PG Port.
   auto instance_pin_list = special_net->get_instance_pin_list()->get_pin_list();
+  std::set<std::string> connect_instance_names;  // for check the instance pin.
   for (auto* instance_pin : instance_pin_list) {
     // LOG_INFO << "connect instance pin: "
     //          << instance_pin->get_instance()->get_name() << ":"
@@ -384,13 +385,16 @@ void IRPGNetlistBuilder::build(
       continue;
     }
 
+    connect_instance_names.insert(instance_name);
+
     auto* instance_pin_coord = instance_pin->get_grid_coordinate();
     auto* instance_pin_node = &(pg_netlist.addNode(
         {instance_pin_coord->get_x(), instance_pin_coord->get_y()},
         instance_pin_layer));
     instance_pin_node->set_is_instance_pin();
-
-    std::string node_name = instance_name + ":" + instance_pin->get_pin_name();
+    
+    // update instance node name.
+    std::string node_name = instance_name + ":" + special_net_name;
     pg_netlist.addNodeIdToName(instance_pin_node->get_node_id(),
                                std::move(node_name));
     auto& stored_node_name =
@@ -451,6 +455,14 @@ void IRPGNetlistBuilder::build(
         // instance pin node has already been connected, break.
         break;
       }
+    }
+  }
+
+  // check the instance pin connect.
+  for (auto& instance_name : _instance_names) {
+    if (!connect_instance_names.contains(instance_name)) {
+      LOG_FATAL << "instance pin " << instance_name << ":" << special_net_name
+                << " is not connected in wire topo";
     }
   }
 

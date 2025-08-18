@@ -57,8 +57,9 @@ class TopologyGenerator
   void generateTGModel(TGModel& tg_model);
   void routeTGTask(TGModel& tg_model, TGNet* tg_net);
   void initSingleTask(TGModel& tg_model, TGNet* tg_net);
+  std::vector<Segment<PlanarCoord>> getRoutingSegmentList(TGModel& tg_model);
   std::vector<Segment<PlanarCoord>> getPlanarTopoList(TGModel& tg_model);
-  std::vector<Segment<PlanarCoord>> getRoutingSegmentList(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
+  std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListList(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
   std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByStraight(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
   std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByLPattern(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
   std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByZPattern(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);

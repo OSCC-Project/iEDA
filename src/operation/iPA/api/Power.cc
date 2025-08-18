@@ -820,8 +820,8 @@ std::vector<IRInstancePower> Power::getInstancePowerData() {
       continue;
     }
 
-    // skip the instance which power is 0.
-    if (group_data->get_total_power() < 1e-10) {
+    // // skip the instance which power is 0.
+    if (group_data->get_total_power() < 1e-15) {
       continue;
     }
 
