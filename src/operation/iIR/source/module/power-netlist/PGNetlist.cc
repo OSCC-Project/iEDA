@@ -457,7 +457,7 @@ void IRPGNetlistBuilder::build(
   idb::IdbLayerShape* port_layer_shape = nullptr;
   idb::IdbCoordinate<int32_t> middle_point;
   int layer_id = 0;
-  if (io_pin->get_port_box_list().size() > 0) {
+  if (io_pin->get_port_box_list().size() > 1) {
     port_layer_shape = io_pin->get_port_box_list().front();
     // connect io node to the segment node.
     auto layer_name = port_layer_shape->get_layer()->get_name();
@@ -465,6 +465,7 @@ void IRPGNetlistBuilder::build(
     auto bounding_box = port_layer_shape->get_bounding_box();
     middle_point = bounding_box.get_middle_point();
   } else {
+    // for idb, maybe need chooset to term to get the port layer shape.
     auto* io_port = io_pin->get_term()->get_port_list().front();
     if (io_port->get_layer_shape().size() == 0) {
       LOG_FATAL << "io port layer shape is empty";
