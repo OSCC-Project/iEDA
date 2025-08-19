@@ -12,17 +12,17 @@ add_subdirectory(${IRT_MODULE}/early_router)
 
 add_library(irt_module INTERFACE)
 
-target_link_libraries(irt_module 
+target_link_libraries(irt_module
     INTERFACE
-        irt_drc_engine
-        irt_gds_plotter
-        irt_pin_accessor
-        irt_supply_analyzer
-        irt_topology_generator
-        irt_layer_assigner
-        irt_space_router
-        irt_track_assigner
-        irt_detailed_router
-        irt_violation_reporter
-        irt_early_router
+    irt_drc_engine
+    irt_gds_plotter
+    irt_pin_accessor
+    irt_supply_analyzer
+    irt_topology_generator
+    irt_layer_assigner
+    irt_space_router
+    irt_track_assigner
+    irt_detailed_router
+    irt_violation_reporter
+    irt_early_router
 )

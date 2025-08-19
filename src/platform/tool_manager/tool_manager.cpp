@@ -24,6 +24,7 @@
 #include "ifp_io.h"
 #include "ino_io.h"
 #include "ipl_io.h"
+#include "ipnp_io.h"
 #include "ipw_io.h"
 #include "irt_io.h"
 #include "ista_io.h"
@@ -128,6 +129,13 @@ void ToolManager::guiShowClockTree()
 {
 #ifdef BUILD_GUI
   guiInst->readClockTreeDb(ctsInst->get_node_list());
+#endif
+}
+
+void ToolManager::guiShowGraph(std::map<int, ivec::VecNet> graph)
+{
+#ifdef BUILD_GUI
+  guiInst->readGraphDb(graph);
 #endif
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -332,6 +340,12 @@ bool ToolManager::saveClockTree(std::string data_path)
 bool ToolManager::autoRunPower(std::string config)
 {
   return powerInst->autoRunPower(config);
+}
+
+/// iPNP
+bool ToolManager::autoRunPNP(std::string config)
+{
+  return pnpInst->runPNP(config);
 }
 
 }  // namespace iplf

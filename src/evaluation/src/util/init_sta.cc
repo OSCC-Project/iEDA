@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -23,16 +23,25 @@
 
 #include "init_sta.hh"
 
+#include <algorithm>
+#include <thread>
+
 #include "RTInterface.hpp"
 #include "api/PowerEngine.hh"
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
 #include "idm.h"
+#include "json/json.hpp"
 #include "salt/base/flute.h"
 #include "salt/salt.h"
 #include "timing_db.hh"
+#include "usage/usage.hh"
+#include "vec_layout.h"
 
 namespace ieval {
+
+using json = nlohmann::ordered_json;
+  
 #define STA_INST (ista::TimingEngine::getOrCreateTimingEngine())
 #define RT_INST (irt::RTInterface::getInst())
 #define PW_INST (ipower::PowerEngine::getOrCreatePowerEngine())
@@ -74,6 +83,15 @@ void InitSTA::runSTA()
   });
 }
 
+void InitSTA::runVecSTA(ivec::VecLayout* vec_layout, std::string work_dir)
+{
+  initStaEngine();
+
+  buildVecRCTree(vec_layout, work_dir);
+
+  updateResult("Vectorization");
+}
+
 void InitSTA::evalTiming(const std::string& routing_type, const bool& rt_done)
 {
   initStaEngine();
@@ -107,10 +125,9 @@ void InitSTA::leaglization(const std::vector<std::shared_ptr<salt::Pin>>& pins)
     return;
   }
 
-  // find all duplicated locations, and move them to a new location, objective: no duplicated locations and minimum total movement
-  // x: pin->loc.x
-  // y: pin->loc.y
-  // Step 1: Group pins by their (x, y) locations
+  // find all duplicated locations, and move them to a new location, objective:
+  // no duplicated locations and minimum total movement x: pin->loc.x y:
+  // pin->loc.y Step 1: Group pins by their (x, y) locations
   std::map<std::pair<int, int>, std::vector<std::shared_ptr<salt::Pin>>> loc_map;
   for (const auto& pin : pins) {
     std::pair<int, int> coord = {pin->loc.x, pin->loc.y};
@@ -244,7 +261,8 @@ void InitSTA::callRT(const std::string& routing_type)
 
 void InitSTA::buildRCTree(const std::string& routing_type)
 {
-  LOG_FATAL_IF(routing_type != "WLM" && routing_type != "HPWL" && routing_type != "FLUTE" && routing_type != "SALT")
+  LOG_FATAL_IF(routing_type != "WLM" && routing_type != "HPWL" && routing_type != "FLUTE" && routing_type != "SALT"
+               && routing_type != "WireGraph")
       << "The routing type: " << routing_type << " is not supported.";
 
   auto* idb_adapter = dynamic_cast<ista::TimingIDBAdapter*>(STA_INST->get_db_adapter());
@@ -261,14 +279,15 @@ void InitSTA::buildRCTree(const std::string& routing_type)
     return 1.0 * dist / dbu;
   };
 
-  // 2. cap and res calculation, if is clock net, return the last layer, otherwise return the first layer
+  // 2. cap and res calculation, if is clock net, return the last layer,
+  // otherwise return the first layer
 
   std::optional<double> width = std::nullopt;
   auto* idb_layout = dmInst->get_idb_lef_service()->get_layout();
   auto routing_layers = idb_layout->get_layers()->get_routing_layers();
   auto logic_layer = routing_layers.size() >= 2 ? 2 : 1;
-  auto clock_layer
-      = routing_layers.size() >= 4 ? routing_layers.size() - 4 : logic_layer;  // Hard Code, consider the clock layer is the last 3rd layer
+  auto clock_layer = routing_layers.size() >= 4 ? routing_layers.size() - 4 : logic_layer;  // Hard Code, consider the clock layer
+                                                                                            // is the last 3rd layer
   auto calc_res = [&](const bool& is_clock, const double& wirelength) {
     if (!is_clock) {
       return idb_adapter->getResistance(logic_layer, wirelength, width);
@@ -283,10 +302,12 @@ void InitSTA::buildRCTree(const std::string& routing_type)
   };
 
   // main flow
-  auto* netlist = STA_INST->get_netlist();
+  auto idb_nets = idb_design->get_net_list()->get_net_list();
+  auto* sta_netlist = STA_INST->get_netlist();
   ista::Net* sta_net = nullptr;
-  FOREACH_NET(netlist, sta_net)
-  {
+  for (size_t net_id = 0; net_id < idb_nets.size(); ++net_id) {
+    auto* idb_net = idb_nets[net_id];
+    sta_net = sta_netlist->findNet(idb_net->get_net_name().c_str());
     STA_INST->resetRcTree(sta_net);
     // WLM
     if (routing_type == "WLM") {
@@ -394,6 +415,154 @@ void InitSTA::buildRCTree(const std::string& routing_type)
     STA_INST->updateRCTreeInfo(sta_net);
   }
   STA_INST->updateTiming();
+}
+
+void InitSTA::buildVecRCTree(ivec::VecLayout* vec_layout, std::string work_dir)
+{
+  // init
+  auto* idb = dmInst->get_idb_builder();
+  auto* idb_design = idb->get_def_service()->get_design();
+
+  auto* idb_layout = dmInst->get_idb_layout();
+  auto idb_layers = idb_layout->get_layers();
+  auto layers = idb_layers->get_layers();
+  auto idb_layer_1st = dmInst->get_config().get_routing_layer_1st();
+  // find the first layer which get_name == "idb_layer_1st", erase the layers
+  // before it
+  auto vec_layers = layers | std::views::drop_while([&](auto layer) { return layer->get_name() != idb_layer_1st; });
+
+  // main flow
+  auto idb_nets = idb_design->get_net_list()->get_net_list();
+  auto* sta_netlist = STA_INST->get_netlist();
+  ista::Net* sta_net = nullptr;
+  auto& wire_graph = vec_layout->get_graph().get_net_map();
+  for (size_t net_id = 0; net_id < idb_nets.size(); ++net_id) {
+    auto* idb_net = idb_nets[net_id];
+    std::string the_idb_net_name = idb_net->get_net_name();
+    the_idb_net_name = ieda::Str::replace(the_idb_net_name, R"(\\)", "");
+    sta_net = sta_netlist->findNet(the_idb_net_name.c_str());
+
+    if (!wire_graph.contains(net_id)) {
+      continue;
+    }
+
+    auto vec_net = wire_graph.at(net_id);
+    auto idb_inst_pins = idb_net->get_instance_pin_list()->get_pin_list();
+    auto io_pins = idb_net->get_io_pins()->get_pin_list();
+    auto& wires = vec_net.get_wires();
+    // Check corner case
+    if (wires.size() == 1) {
+      auto& wire = wires[0];
+      auto connected_nodes = wire.get_connected_nodes();
+      auto* source = connected_nodes.first;
+      auto* target = connected_nodes.second;
+      if (source == target) {
+        continue;
+      }
+    }
+    auto sta_pin_ports = sta_net->get_pin_ports();
+    std::unordered_map<std::string, ista::DesignObject*> sta_pin_port_map;
+    std::ranges::for_each(sta_pin_ports, [&](ista::DesignObject* pin_port) { sta_pin_port_map[pin_port->getFullName()] = pin_port; });
+    std::unordered_map<ivec::VecNode*, ista::RctNode*> vec_node_map;
+    auto make_or_find_rc_node = [&](ivec::VecNode* vec_node) {
+      if (vec_node_map.contains(vec_node)) {
+        return vec_node_map[vec_node];
+      }
+      int pin_id = vec_node->get_node_data()->get_pin_id();
+      ista::RctNode* rc_node = nullptr;
+      if (pin_id >= 0) {
+        auto pin_name_pair = vec_layout->findPinName(pin_id);
+        auto [inst_name, pin_type_name] = pin_name_pair;
+        auto pin_name = !inst_name.empty() ? (inst_name + ":" + pin_type_name) : pin_type_name;
+        pin_name.erase(std::remove(pin_name.begin(), pin_name.end(), '\\'), pin_name.end());
+        auto* sta_pin_port = sta_pin_port_map[pin_name];
+        rc_node = STA_INST->makeOrFindRCTreeNode(sta_pin_port);
+      } else {
+        // steiner node
+        rc_node = STA_INST->makeOrFindRCTreeNode(sta_net, vec_node->get_node_id());
+      }
+      vec_node_map[vec_node] = rc_node;
+      return rc_node;
+    };
+    auto calc_res_cap = [&](ivec::VecNetWire& wire) {
+      auto connected_nodes = wire.get_connected_nodes();
+      auto* source = connected_nodes.first;
+      auto* target = connected_nodes.second;
+      auto source_layer = source->get_layer_id();
+      auto target_layer = target->get_layer_id();
+      if (source_layer != target_layer) {
+        // is via
+        return std::make_pair(0.0, 0.0);
+      }
+      auto& paths = wire.get_paths();
+      int wirelength = 0;
+      std::ranges::for_each(paths, [&](auto& path) {
+        auto x1 = path.first->get_x();
+        auto y1 = path.first->get_y();
+        auto x2 = path.second->get_x();
+        auto y2 = path.second->get_y();
+        wirelength += std::abs(x1 - x2) + std::abs(y1 - y2);
+      });
+
+      auto* routing_layer = dynamic_cast<IdbLayerRouting*>(vec_layers[source_layer]);
+
+      auto dbu = idb_layout->get_units()->get_micron_dbu();
+      auto segment_width = ((double) routing_layer->get_width()) / dbu;
+
+      double wirelength_um = ((double) wirelength) / dbu;
+
+      auto lef_resistance = routing_layer->get_resistance();
+      auto lef_capacitance = routing_layer->get_capacitance();
+      auto lef_edge_capacitance = routing_layer->get_edge_capacitance();
+
+      auto res = lef_resistance * wirelength_um / segment_width;
+      auto cap = (lef_capacitance * wirelength_um * segment_width) + (lef_edge_capacitance * 2 * (wirelength_um + segment_width));
+
+      return std::make_pair(res, cap);
+    };
+    std::ranges::for_each(wires, [&](ivec::VecNetWire& wire) {
+      auto connected_nodes = wire.get_connected_nodes();
+      auto* source = connected_nodes.first;
+      auto* target = connected_nodes.second;
+
+      auto* front_node = make_or_find_rc_node(source);
+      auto* back_node = make_or_find_rc_node(target);
+
+      auto [res, cap] = calc_res_cap(wire);
+      STA_INST->makeResistor(sta_net, front_node, back_node, res);
+      STA_INST->incrCap(front_node, cap / 2, true);
+      STA_INST->incrCap(back_node, cap / 2, true);
+    });
+
+    std::vector<std::string> pin_names;
+    std::ranges::for_each(wires, [&pin_names, vec_layout](ivec::VecNetWire& wire) {
+      auto connected_nodes = wire.get_connected_nodes();
+      auto* source = connected_nodes.first;
+      auto* target = connected_nodes.second;
+
+      for (auto* connected_node : {source, target}) {
+        int pin_id = connected_node->get_node_data()->get_pin_id();
+
+        if (pin_id != -1) {
+          auto [inst_name, pin_type_name] = vec_layout->findPinName(pin_id);
+          auto pin_name = !inst_name.empty() ? (inst_name + ":" + pin_type_name) : pin_type_name;
+
+          pin_names.push_back(pin_name);
+        }
+      }
+    });
+
+    LOG_INFO << "Net " << idb_net->get_net_name() << " has " << pin_names.size() << " pins";
+
+    // update rc tree
+    STA_INST->updateRCTreeInfo(sta_net);
+  }
+  STA_INST->updateTiming();
+  STA_INST->get_ista()->reportUsedLibs();
+
+  std::string path_dir = work_dir;
+  STA_INST->set_design_work_space(path_dir.c_str());
+  STA_INST->reportWirePaths(10000);
 }
 
 void InitSTA::initPowerEngine()
@@ -551,6 +720,156 @@ double InitSTA::reportTNS(const char* clock_name, ista::AnalysisMode mode)
   return STA_INST->getTNS(clock_name, mode);
 }
 
+double InitSTA::getNetResistance(const std::string& net_name) const
+{
+  auto netlist = STA_INST->get_netlist();
+  ista::Net* ista_net = netlist->findNet(net_name.c_str());
+  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  if (rc_net && ista_net->getDriver()) {
+    double resistance = rc_net->getNetResistance();
+    return resistance;
+  }
+
+  return 0.0;
+}
+double InitSTA::getNetCapacitance(const std::string& net_name) const
+{
+  auto netlist = STA_INST->get_netlist();
+  ista::Net* ista_net = netlist->findNet(net_name.c_str());
+  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  if (rc_net && ista_net->getDriver()) {
+    double load = rc_net->load();
+    return load;
+  }
+
+  return 0.0;
+}
+
+double InitSTA::getNetSlew(const std::string& net_name) const
+{
+  auto netlist = STA_INST->get_netlist();
+  ista::Net* ista_net = netlist->findNet(net_name.c_str());
+  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  if (!ista_net->getDriver()) {
+    return 0.0;
+  }
+
+  if (!rc_net) {
+    return 0.0;
+  }
+
+  double driver_slew = 0.0;
+  auto* driver = rc_net->get_net()->getDriver();
+  if (driver && driver->isPin()) {
+    driver_slew = STA_INST->getSlew(driver->getFullName().c_str(), ista::AnalysisMode::kMax, ista::TransType::kRise);
+  }
+  // get driver slew for net slew.
+  auto loads = ista_net->getLoads();
+
+  double sum_load_slew = 0.0;
+  for (auto* load : loads) {
+    std::string load_name = load->getFullName();
+    sum_load_slew += rc_net->slew(load_name.c_str(), driver_slew, ista::AnalysisMode::kMax, ista::TransType::kRise).value_or(0.0);
+  }
+  double net_avg_slew = (sum_load_slew / loads.size()) - driver_slew;
+  return net_avg_slew;
+}
+
+std::map<std::string, double> InitSTA::getAllNodesSlew(const std::string& net_name) const
+{
+  auto netlist = STA_INST->get_netlist();
+  ista::Net* ista_net = netlist->findNet(net_name.c_str());
+  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  double driver_slew = 0.0;
+  auto* driver = rc_net->get_net()->getDriver();
+  if (driver && driver->isPin()) {
+    driver_slew = STA_INST->getSlew(driver->getFullName().c_str(), ista::AnalysisMode::kMax, ista::TransType::kRise);
+  }
+
+  std::map<std::string, double> all_node_slews;
+
+  if (rc_net->rct()) {
+    all_node_slews = rc_net->getAllNodeSlew(driver_slew, ista::AnalysisMode::kMax, ista::TransType::kRise);
+  }
+
+  return all_node_slews;
+}
+
+double InitSTA::getNetDelay(const std::string& net_name) const
+{
+  auto netlist = STA_INST->get_netlist();
+  ista::Net* ista_net = netlist->findNet(net_name.c_str());
+  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  // get load average delay for net delay.
+  auto loads = ista_net->getLoads();
+
+  double sum_load_delay = 0.0;
+  for (auto* load : loads) {
+    std::string load_name = load->getFullName();
+    sum_load_delay += rc_net->delay(load_name.c_str()).value_or(0.0);
+  }
+
+  double net_avg_delay = sum_load_delay / loads.size();
+  return net_avg_delay;
+}
+
+std::pair<double, double> InitSTA::getNetToggleAndVoltage(const std::string& net_name) const
+{
+  return PW_INST->get_power()->getNetToggleAndVoltageData(net_name.c_str());
+}
+
+double InitSTA::getNetPower(const std::string& net_name) const
+{
+  // get net power from updated results.
+  auto& nets_power = _net_power.begin()->second;
+  if (nets_power.contains(net_name)) {
+    double net_power = nets_power.at(net_name);
+    return net_power;
+  } else {
+    return 0.0;
+  }
+}
+
+double InitSTA::getWireResistance(const std::string& net_name, const std::string& wire_node_name) const
+{
+  auto netlist = STA_INST->get_netlist();
+  ista::Net* ista_net = netlist->findNet(net_name.c_str());
+  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  LOG_FATAL_IF(!rc_net) << "net " << net_name << " not found rc net.";
+
+  double resistance = rc_net->getNodeResistance(wire_node_name.c_str());
+  return resistance;
+}
+
+double InitSTA::getWireCapacitance(const std::string& net_name, const std::string& wire_node_name) const
+{
+  auto netlist = STA_INST->get_netlist();
+  ista::Net* ista_net = netlist->findNet(net_name.c_str());
+  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  LOG_FATAL_IF(!rc_net) << "net " << net_name << " not found rc net.";
+
+  double load = rc_net->getNodeLoad(wire_node_name.c_str());
+  return load;
+}
+
+double InitSTA::getWireDelay(const std::string& net_name, const std::string& wire_node_name) const
+{
+  auto netlist = STA_INST->get_netlist();
+  ista::Net* ista_net = netlist->findNet(net_name.c_str());
+  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  auto delay = rc_net->delay(wire_node_name.c_str());
+
+  return delay.value_or(0.0);
+}
+
 void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, int32_t dbu_unit)
 {
   // get sta_netlist
@@ -599,7 +918,8 @@ void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, int32
 
       int64_t wire_length = 0;
       wire_length = std::abs(first_pin->x - second_pin->x) + std::abs(first_pin->y - second_pin->y);
-      // wire_length = first_pin->get_coord().computeDist(second_pin->get_coord());
+      // wire_length =
+      // first_pin->get_coord().computeDist(second_pin->get_coord());
 
       std::optional<double> width = std::nullopt;
 
@@ -624,6 +944,389 @@ void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, int32
   }
   STA_INST->updateTiming();
   STA_INST->reportTiming();
+}
+
+TimingWireGraph InitSTA::getTimingWireGraph()
+{
+  LOG_INFO << "get wire timing graph start";
+  ieda::Stats stats;
+
+  TimingWireGraph timing_wire_graph;
+
+  /// create node in wire graph
+  auto create_node = [&timing_wire_graph](std::string& node_name, bool is_pin, bool is_port) -> unsigned {
+    auto index = timing_wire_graph.findNode(node_name);
+    if (!index) {
+      TimingWireNode the_node;
+      the_node._name = node_name;
+      the_node._is_pin = is_pin;
+      the_node._is_port = is_port;
+
+      index = timing_wire_graph.addNode(the_node);
+    }
+
+    return index.value();
+  };
+
+  /// the node is StaNode
+  auto create_inst_node = [&create_node](auto* the_node) -> unsigned {
+    std::string node_name = the_node->getName();
+    auto* design_obj = the_node->get_design_obj();
+    bool is_pin = design_obj ? design_obj->isPin() : false;
+    bool is_port = design_obj ? design_obj->isPort() : false;
+
+    auto wire_node_index = create_node(node_name, is_pin, is_port);
+    return wire_node_index;
+  };
+
+  /// the node is RC Node
+  auto create_net_node = [&create_node](auto& the_node) -> unsigned {
+    std::string node_name = the_node.get_name();
+    bool is_pin = the_node.get_obj() ? the_node.get_obj()->isPin() : false;
+    bool is_port = the_node.get_obj() ? the_node.get_obj()->isPort() : false;
+
+    auto wire_node_index = create_node(node_name, is_pin, is_port);
+    return wire_node_index;
+  };
+
+  auto* ista = STA_INST->get_ista();
+  LOG_ERROR_IF(!ista->isBuildGraph()) << "timing graph is not build";
+
+  auto* the_timing_graph = &(ista->get_graph());
+  ista::StaArc* the_arc;
+
+  timing_wire_graph._edges.reserve(the_timing_graph->get_arcs().size() * 100);
+  timing_wire_graph._nodes.reserve(the_timing_graph->get_vertexes().size() * 10);
+  FOREACH_ARC(the_timing_graph, the_arc)
+  {
+    if (the_arc->isNetArc()) {
+      // for net arc, we need extract the wire topo.
+      auto* the_net_arc = dynamic_cast<StaNetArc*>(the_arc);
+      auto* the_net = the_net_arc->get_net();
+
+      auto* rc_net = ista->getRcNet(the_net);
+
+      if (rc_net) {
+        auto* snk_node = the_arc->get_snk();
+        auto snk_node_name = snk_node->get_design_obj()->getFullName();
+
+        auto vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMax, TransType::kRise);
+        if (!vertex_slew) {
+          vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMax, TransType::kFall);
+        }
+
+        auto wire_topo = rc_net->getWireTopo(snk_node_name.c_str());
+        for (auto* wire_edge : wire_topo | std::ranges::views::reverse) {
+          ieda::Stats stats2;
+          auto& from_node = wire_edge->get_from();
+          auto& to_node = wire_edge->get_to();
+
+          auto wire_from_node_index = create_net_node(from_node);
+          auto wire_to_node_index = create_net_node(to_node);
+
+          timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
+        }
+      } else {
+        auto wire_from_node_index = create_inst_node(the_arc->get_src());
+        auto wire_to_node_index = create_inst_node(the_arc->get_snk());
+
+        auto& inst_wire_edge = timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
+        inst_wire_edge._is_net_edge = true;
+      }
+
+    } else {
+      auto wire_from_node_index = create_inst_node(the_arc->get_src());
+      auto wire_to_node_index = create_inst_node(the_arc->get_snk());
+
+      auto& inst_wire_edge = timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
+      inst_wire_edge._is_net_edge = false;
+    }
+  }
+
+  LOG_INFO << "wire timing graph nodes " << timing_wire_graph._nodes.size();
+  LOG_INFO << "wire timing graph edges " << timing_wire_graph._edges.size();
+
+  timing_wire_graph._nodes.shrink_to_fit();
+  timing_wire_graph._edges.shrink_to_fit();
+
+  LOG_INFO << "get wire timing graph end";
+
+  LOG_INFO << "get wire timing graph memory usage " << stats.memoryDelta() << " MB";
+  double total_time = stats.elapsedRunTime();
+  LOG_INFO << "get wire timing graph elapsed time " << total_time << " s";
+
+  // for debug
+  // SaveTimingGraph(timing_wire_graph, "./timing_wire_graph.yaml");
+
+  return timing_wire_graph;
+}
+
+TimingInstanceGraph InitSTA::getTimingInstanceGraph()
+{
+  LOG_INFO << "get timing instance graph start";
+  ieda::Stats stats;
+
+  TimingInstanceGraph timing_instance_graph;
+
+  auto* ista = STA_INST->get_ista();
+  LOG_ERROR_IF(!ista->isBuildGraph()) << "timing graph is not build";
+
+  auto* the_timing_graph = &(ista->get_graph());
+
+  timing_instance_graph._edges.reserve(the_timing_graph->get_arcs().size() * 100);
+  timing_instance_graph._nodes.reserve(the_timing_graph->get_vertexes().size() * 10);
+
+  /// create node in instance graph
+  auto create_node = [&timing_instance_graph](std::string& node_name) -> unsigned {
+    auto index = timing_instance_graph.findNode(node_name);
+    if (!index) {
+      TimingInstanceNode the_node;
+      the_node._name = node_name;
+
+      index = timing_instance_graph.addNode(the_node);
+    }
+
+    return index.value();
+  };
+
+  ista::StaArc* the_arc;
+  FOREACH_ARC(the_timing_graph, the_arc)
+  {
+    if (the_arc->isNetArc()) {
+      auto* src_node = the_arc->get_src();
+      auto* src_instance = src_node->get_design_obj()->get_own_instance();
+      auto* snk_node = the_arc->get_snk();
+      auto* snk_instance = snk_node->get_design_obj()->get_own_instance();
+
+      if (!src_instance || !snk_instance) {
+        continue;
+      }
+
+      auto src_instance_name = src_instance->getFullName();
+      auto snk_instance_name = snk_instance->getFullName();
+
+      unsigned src_node_index = create_node(src_instance_name);
+      unsigned snk_node_index = create_node(snk_instance_name);
+
+      timing_instance_graph.addEdge(src_node_index, snk_node_index);
+    }
+  }
+
+  LOG_INFO << "timing instance graph nodes " << timing_instance_graph._nodes.size();
+  LOG_INFO << "timing instance graph edges " << timing_instance_graph._edges.size();
+
+  timing_instance_graph._nodes.shrink_to_fit();
+  timing_instance_graph._edges.shrink_to_fit();
+
+  LOG_INFO << "get timing instance graph end";
+
+  LOG_INFO << "get timing instance graph memory usage " << stats.memoryDelta() << " MB";
+  double total_time = stats.elapsedRunTime();
+  LOG_INFO << "get timing instance graph elapsed time " << total_time << " s";
+
+  return timing_instance_graph;
+}
+
+bool InitSTA::getRcNet(const std::string& net_name)
+{
+  auto netlist = STA_INST->get_netlist();
+  ista::Net* ista_net = netlist->findNet(net_name.c_str());
+  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  return rc_net ? true : false;
+}
+
+/// @brief Save wire timing graph to yaml file.
+void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string& json_file_name)
+{
+  LOG_INFO << "save wire timing graph start";  
+
+  json nodes_json;
+  json edges_json;
+
+  // for nodes
+  std::thread t1([&]() {
+    json j = json::array();
+    for (unsigned node_id = 0; auto& node : timing_wire_graph._nodes) {
+      j.push_back({{"id",  Str::printf("node_%d", node_id++)}, {"name", node._name}, {"is_pin", node._is_pin}, {"is_port", node._is_port}});
+    }
+    nodes_json = j;
+  });
+
+  // for edges
+  std::thread t2([&]() {
+    json j = json::array();
+    for (unsigned edge_id = 0; auto& edge : timing_wire_graph._edges) {
+      j.push_back({{"id",  Str::printf("edge_%d", edge_id++)}, {"from_node", edge._from_node}, {"to_node", edge._to_node}, {"is_net_edge", edge._is_net_edge}});
+    }
+    edges_json = j;
+  });
+
+  // wait to finish
+  t1.join();
+  t2.join();
+
+  // merge 
+  json graph_json;
+  graph_json["nodes"] = nodes_json;
+  graph_json["edges"] = edges_json;
+
+  std::ofstream file(json_file_name, std::ios::trunc);  
+  file << graph_json.dump(4) << std::endl;
+
+  file.close();
+
+  LOG_INFO << "output wire graph json file path: " << json_file_name;
+  LOG_INFO << "save wire timing graph end";
+}
+
+void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, const std::string& json_file_name)
+{
+  LOG_INFO << "save instance timing graph start";  
+
+  json nodes_json;
+  json edges_json;
+
+  // for nodes
+  std::thread t1([&]() {
+    json j = json::array();
+    for (unsigned node_id = 0; auto& node : timing_instance_graph._nodes) {
+      j.push_back({{"id",  Str::printf("node_%d", node_id++)}, {"name", node._name}});
+    }
+    nodes_json = j;
+  });
+
+  // for edges
+  std::thread t2([&]() {
+    json j = json::array();
+    for (unsigned edge_id = 0; auto& edge : timing_instance_graph._edges) {
+      j.push_back({{"id",  Str::printf("edge_%d", edge_id++)}, {"from_node", edge._from_node}, {"to_node", edge._to_node}});
+    }
+    edges_json = j;
+  });
+
+  // wait to finish
+  t1.join();
+  t2.join();
+
+  // merge 
+  json graph_json;
+  graph_json["nodes"] = nodes_json;
+  graph_json["edges"] = edges_json;
+  
+  std::ofstream file(json_file_name, std::ios::trunc);
+  file << graph_json.dump(4) << std::endl;
+
+  file.close();
+
+  LOG_INFO << "output instance graph json file path: " << json_file_name;
+  LOG_INFO << "save instance timing graph end";
+}
+
+/// @brief Restore wire timing graph from yaml file.
+/// @param yaml_file_name
+/// @return
+TimingWireGraph RestoreTimingGraph(const std::string& yaml_file_name)
+{
+  LOG_INFO << "restore wire timing graph start";
+  TimingWireGraph timing_wire_graph;
+
+  std::ifstream file(yaml_file_name);
+  string line;
+
+  bool is_node = true;
+  TimingWireNode wire_node;
+  TimingWireEdge wire_edge;
+
+  while (getline(file, line)) {
+    if (is_node && (line.rfind("edge_", 0) == 0)) {
+      is_node = false;
+    }
+
+    if (is_node) {
+      if (line.find("name:") != string::npos) {
+        size_t pos = line.find(": ");
+        wire_node._name = line.substr(pos + 2);
+      } else if (line.find("is_pin:") != string::npos) {
+        size_t pos = line.find(": ");
+        wire_node._is_pin = stoi(line.substr(pos + 2));
+      } else if (line.find("is_port:") != string::npos) {
+        size_t pos = line.find(": ");
+        wire_node._is_port = stoi(line.substr(pos + 2));
+        timing_wire_graph._nodes.emplace_back(std::move(wire_node));
+      }
+
+    } else {
+      if (line.find("from_node:") != string::npos) {
+        size_t pos = line.find(": ");
+        wire_edge._from_node = stoll(line.substr(pos + 2));
+      } else if (line.find("to_node:") != string::npos) {
+        size_t pos = line.find(": ");
+        wire_edge._to_node = stoll(line.substr(pos + 2));
+      } else if (line.find("is_net_edge:") != string::npos) {
+        size_t pos = line.find(": ");
+        wire_edge._is_net_edge = stoi(line.substr(pos + 2));
+        timing_wire_graph._edges.emplace_back(std::move(wire_edge));
+      }
+    }
+  }
+  file.close();
+
+  LOG_INFO << "restore wire timing graph end";
+
+  LOG_INFO << "wire timing graph nodes " << timing_wire_graph._nodes.size();
+  LOG_INFO << "wire timing graph edges " << timing_wire_graph._edges.size();
+
+  return timing_wire_graph;
+}
+
+/// @brief Restore timing instance graph from yaml file.
+/// @param yaml_file_name
+/// @return
+TimingInstanceGraph RestoreTimingInstanceGraph(const std::string& yaml_file_name)
+{
+  LOG_INFO << "restore timing instance graph start";
+  TimingInstanceGraph timing_instance_graph;
+
+  std::ifstream file(yaml_file_name);
+  string line;
+
+  bool is_node = true;
+  TimingInstanceNode instance_node;
+  TimingNetEdge net_edge;
+
+  while (getline(file, line)) {
+    if (is_node && (line.rfind("edge_", 0) == 0)) {
+      is_node = false;
+    }
+
+    if (is_node) {
+      if (line.find("name:") != string::npos) {
+        size_t pos = line.find(": ");
+        instance_node._name = line.substr(pos + 2);
+        timing_instance_graph._nodes.emplace_back(std::move(instance_node));
+      }
+
+    } else {
+      if (line.find("from_node:") != string::npos) {
+        size_t pos = line.find(": ");
+        net_edge._from_node = stoll(line.substr(pos + 2));
+      } else if (line.find("to_node:") != string::npos) {
+        size_t pos = line.find(": ");
+        net_edge._to_node = stoll(line.substr(pos + 2));
+
+        timing_instance_graph._edges.emplace_back(std::move(net_edge));
+      }
+    }
+  }
+  file.close();
+
+  LOG_INFO << "restore timing instance graph end";
+
+  LOG_INFO << "timing instance graph nodes " << timing_instance_graph._nodes.size();
+  LOG_INFO << "timing instance graph edges " << timing_instance_graph._edges.size();
+
+  return timing_instance_graph;
 }
 
 void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, const std::vector<std::string>& name_list,
@@ -674,7 +1377,8 @@ void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, const
       }
 
       // int64_t wire_length = 0;
-      // wire_length = first_pin->get_coord().computeDist(second_pin->get_coord());
+      // wire_length =
+      // first_pin->get_coord().computeDist(second_pin->get_coord());
       int64_t wire_length = 0;
       wire_length = std::abs(first_pin->x - second_pin->x) + std::abs(first_pin->y - second_pin->y);
 
@@ -702,6 +1406,278 @@ void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, const
 bool InitSTA::isClockNet(const std::string& net_name) const
 {
   return STA_INST->isClockNet(net_name.c_str());
+}
+
+/**
+ * @brief The timing map of the patch.
+ *
+ * @param patch
+ * @return std::map<int, double>
+ */
+std::map<int, double> InitSTA::patchTimingMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch)
+{
+  std::map<int, double> patch_timing_map;
+  auto inst_timing_map = STA_INST->get_ista()->displayTimingMap(ista::AnalysisMode::kMax);
+  if (inst_timing_map.empty()) {
+    LOG_ERROR << "No instance timing map found.";
+    return patch_timing_map;
+  }
+
+  auto* idb_adapter = STA_INST->getIDBAdapter();
+  auto dbu = idb_adapter->get_dbu();
+
+  // 网格索引，减小搜索空间
+  int64_t min_x = INT64_MAX;
+  int64_t max_x = INT64_MIN;
+  int64_t min_y = INT64_MAX;
+  int64_t max_y = INT64_MIN;
+  for (const auto& [coord, _] : inst_timing_map) {
+    int64_t x = static_cast<int64_t>(coord.first * dbu);
+    int64_t y = static_cast<int64_t>(coord.second * dbu);
+    min_x = std::min(min_x, x);
+    max_x = std::max(max_x, x);
+    min_y = std::min(min_y, y);
+    max_y = std::max(max_y, y);
+  }
+
+  // 启发式确定网格大小
+  int64_t grid_size_x = (max_x - min_x) / 100;
+  int64_t grid_size_y = (max_y - min_y) / 100;
+
+  // 创建网格: 二维网格，每个网格内存有对应的insts
+  std::vector<std::vector<std::vector<std::pair<std::pair<int64_t, int64_t>, double>>>> grid;
+  int64_t grid_width = (max_x - min_x) / grid_size_x + 1;
+  int64_t grid_height = (max_y - min_y) / grid_size_y + 1;
+  grid.resize(grid_width, std::vector<std::vector<std::pair<std::pair<int64_t, int64_t>, double>>>(grid_height));
+
+  // 填充网格
+  for (const auto& [coord, slack] : inst_timing_map) {
+    int64_t x = static_cast<int64_t>(coord.first * dbu);
+    int64_t y = static_cast<int64_t>(coord.second * dbu);
+    int64_t grid_x = (x - min_x) / grid_size_x;
+    int64_t grid_y = (y - min_y) / grid_size_y;
+    grid[grid_x][grid_y].push_back({{x, y}, slack});
+  }
+
+  for (const auto& [patch_id, coord] : patch) {
+    auto [l_range, u_range] = coord;
+    const int64_t patch_lx = static_cast<int64_t>(l_range.first);
+    const int64_t patch_ly = static_cast<int64_t>(l_range.second);
+    const int64_t patch_ux = static_cast<int64_t>(u_range.first);
+    const int64_t patch_uy = static_cast<int64_t>(u_range.second);
+
+    // 计算覆盖的网格范围
+    int64_t start_grid_x = std::max(static_cast<int64_t>(0), (patch_lx - min_x) / grid_size_x);
+    int64_t end_grid_x = std::min(grid_width - 1, (patch_ux - min_x) / grid_size_x);
+    int64_t start_grid_y = std::max(static_cast<int64_t>(0), (patch_ly - min_y) / grid_size_y);
+    int64_t end_grid_y = std::min(grid_height - 1, (patch_uy - min_y) / grid_size_y);
+
+    double min_slack = std::numeric_limits<double>::max();
+
+    // 只检查覆盖的网格
+    for (int64_t gx = start_grid_x; gx <= end_grid_x; ++gx) {
+      for (int64_t gy = start_grid_y; gy <= end_grid_y; ++gy) {
+        for (const auto& [inst_coord, inst_slack] : grid[gx][gy]) {
+          int64_t inst_x = inst_coord.first;
+          int64_t inst_y = inst_coord.second;
+          if (patch_lx <= inst_x && inst_x <= patch_ux && patch_ly <= inst_y && inst_y <= patch_uy) {
+            min_slack = std::min(min_slack, inst_slack);
+          }
+        }
+      }
+    }
+
+    patch_timing_map[patch_id] = min_slack;
+  }
+
+  return patch_timing_map;
+}
+/**
+ * @brief The power map of the patch.
+ *
+ * @param patch
+ * @return std::map<int, double>
+ */
+std::map<int, double> InitSTA::patchPowerMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch)
+{
+  std::map<int, double> patch_power_map;
+  auto inst_power_map = PW_INST->get_power()->displayInstancePowerMap();
+
+  if (inst_power_map.empty()) {
+    LOG_ERROR << "No instance power map found.";
+    return patch_power_map;
+  }
+
+  auto* idb_adapter = STA_INST->getIDBAdapter();
+  auto dbu = idb_adapter->get_dbu();
+
+  // 网格索引，减小搜索空间
+  int64_t min_x = INT64_MAX;
+  int64_t max_x = INT64_MIN;
+  int64_t min_y = INT64_MAX;
+  int64_t max_y = INT64_MIN;
+  for (const auto& [coord, _] : inst_power_map) {
+    int64_t x = static_cast<int64_t>(coord.first * dbu);
+    int64_t y = static_cast<int64_t>(coord.second * dbu);
+    min_x = std::min(min_x, x);
+    max_x = std::max(max_x, x);
+    min_y = std::min(min_y, y);
+    max_y = std::max(max_y, y);
+  }
+
+  // 启发式确定网格大小
+  int64_t grid_size_x = (max_x - min_x) / 100;
+  int64_t grid_size_y = (max_y - min_y) / 100;
+
+  // 创建网格: 二维网格，每个网格内存有对应的insts
+  std::vector<std::vector<std::vector<std::pair<std::pair<int64_t, int64_t>, double>>>> grid;
+  int64_t grid_width = (max_x - min_x) / grid_size_x + 1;
+  int64_t grid_height = (max_y - min_y) / grid_size_y + 1;
+  grid.resize(grid_width, std::vector<std::vector<std::pair<std::pair<int64_t, int64_t>, double>>>(grid_height));
+
+  // 填充网格
+  for (const auto& [coord, power] : inst_power_map) {
+    int64_t x = static_cast<int64_t>(coord.first * dbu);
+    int64_t y = static_cast<int64_t>(coord.second * dbu);
+    int64_t grid_x = (x - min_x) / grid_size_x;
+    int64_t grid_y = (y - min_y) / grid_size_y;
+    grid[grid_x][grid_y].push_back({{x, y}, power});
+  }
+
+  for (const auto& [patch_id, coord] : patch) {
+    auto [l_range, u_range] = coord;
+    const int64_t patch_lx = static_cast<int64_t>(l_range.first);
+    const int64_t patch_ly = static_cast<int64_t>(l_range.second);
+    const int64_t patch_ux = static_cast<int64_t>(u_range.first);
+    const int64_t patch_uy = static_cast<int64_t>(u_range.second);
+
+    // 计算覆盖的网格范围
+    int64_t start_grid_x = std::max(static_cast<int64_t>(0), (patch_lx - min_x) / grid_size_x);
+    int64_t end_grid_x = std::min(grid_width - 1, (patch_ux - min_x) / grid_size_x);
+    int64_t start_grid_y = std::max(static_cast<int64_t>(0), (patch_ly - min_y) / grid_size_y);
+    int64_t end_grid_y = std::min(grid_height - 1, (patch_uy - min_y) / grid_size_y);
+
+    double total_power = 0.0;
+
+    // 只检查覆盖的网格
+    for (int64_t gx = start_grid_x; gx <= end_grid_x; ++gx) {
+      for (int64_t gy = start_grid_y; gy <= end_grid_y; ++gy) {
+        for (const auto& [inst_coord, inst_power] : grid[gx][gy]) {
+          int64_t inst_x = inst_coord.first;
+          int64_t inst_y = inst_coord.second;
+          if (patch_lx <= inst_x && inst_x <= patch_ux && patch_ly <= inst_y && inst_y <= patch_uy) {
+            total_power += inst_power;
+          }
+        }
+      }
+    }
+
+    patch_power_map[patch_id] = total_power;
+  }
+
+  return patch_power_map;
+}
+
+/**
+ * @brief The ir drop map of the patch.
+ *
+ * @param patch
+ * @return std::map<int, double>
+ */
+std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch)
+{
+  std::map<int, double> patch_ir_drop_map;
+  for (const auto& [patch_id, _] : patch) {
+    patch_ir_drop_map[patch_id] = 0.0;
+  }
+
+  // hard code std cell power net is VDD
+  std::string power_net_name = "VDD";
+  PW_INST->runIRAnalysis(power_net_name);
+  auto instance_to_ir_drop = PW_INST->getInstanceIRDrop();
+
+  if (instance_to_ir_drop.empty()) {
+    LOG_WARNING << "No IR drop data available, returning zero values for all patches";
+    return patch_ir_drop_map;
+  }
+
+  auto* idb_adapter = STA_INST->getIDBAdapter();
+  auto dbu = idb_adapter->get_dbu();
+
+  // 网格索引，减小搜索空间
+  int64_t min_x = INT64_MAX;
+  int64_t max_x = INT64_MIN;
+  int64_t min_y = INT64_MAX;
+  int64_t max_y = INT64_MIN;
+  std::vector<std::tuple<int64_t, int64_t, double>> instances;
+  instances.reserve(instance_to_ir_drop.size());
+
+  for (auto& [sta_inst, ir_drop] : instance_to_ir_drop) {
+    auto coord = sta_inst->get_coordinate().value();
+    int64_t x = static_cast<int64_t>(coord.first * dbu);
+    int64_t y = static_cast<int64_t>(coord.second * dbu);
+    instances.emplace_back(x, y, ir_drop);
+    min_x = std::min(min_x, x);
+    max_x = std::max(max_x, x);
+    min_y = std::min(min_y, y);
+    max_y = std::max(max_y, y);
+  }
+  // 启发式确定网格大小
+  int64_t grid_size_x = (max_x - min_x) / 100;
+  int64_t grid_size_y = (max_y - min_y) / 100;
+
+  // 创建网格
+  std::vector<std::vector<std::vector<std::pair<std::pair<int64_t, int64_t>, double>>>> grid;
+  int64_t grid_width = (max_x - min_x) / grid_size_x + 1;
+  int64_t grid_height = (max_y - min_y) / grid_size_y + 1;
+  grid.resize(grid_width, std::vector<std::vector<std::pair<std::pair<int64_t, int64_t>, double>>>(grid_height));
+
+  // 填充网格
+  for (const auto& [x, y, ir_drop] : instances) {
+    int64_t grid_x = (x - min_x) / grid_size_x;
+    int64_t grid_y = (y - min_y) / grid_size_y;
+    grid[grid_x][grid_y].push_back({{x, y}, ir_drop});
+  }
+
+  int processed_count = 0;
+  for (const auto& [patch_id, coord] : patch) {
+    auto [l_range, u_range] = coord;
+    const int64_t patch_lx = static_cast<int64_t>(l_range.first);
+    const int64_t patch_ly = static_cast<int64_t>(l_range.second);
+    const int64_t patch_ux = static_cast<int64_t>(u_range.first);
+    const int64_t patch_uy = static_cast<int64_t>(u_range.second);
+
+    // 计算覆盖的网格范围
+    int64_t start_grid_x = std::max(static_cast<int64_t>(0), (patch_lx - min_x) / grid_size_x);
+    int64_t end_grid_x = std::min(grid_width - 1, (patch_ux - min_x) / grid_size_x);
+    int64_t start_grid_y = std::max(static_cast<int64_t>(0), (patch_ly - min_y) / grid_size_y);
+    int64_t end_grid_y = std::min(grid_height - 1, (patch_uy - min_y) / grid_size_y);
+
+    double max_ir_drop = 0.0;
+
+    // 只检查覆盖的网格
+    for (int64_t gx = start_grid_x; gx <= end_grid_x; ++gx) {
+      for (int64_t gy = start_grid_y; gy <= end_grid_y; ++gy) {
+        for (const auto& [inst_coord, inst_ir_drop] : grid[gx][gy]) {
+          int64_t inst_x = inst_coord.first;
+          int64_t inst_y = inst_coord.second;
+          if (patch_lx <= inst_x && inst_x <= patch_ux && patch_ly <= inst_y && inst_y <= patch_uy) {
+            max_ir_drop = std::max(max_ir_drop, inst_ir_drop);
+          }
+        }
+      }
+    }
+
+    patch_ir_drop_map[patch_id] = max_ir_drop;
+
+    // 每处理5000个patch输出一次日志
+    processed_count++;
+    if (processed_count % 5000 == 0) {
+      LOG_INFO << "Processed " << processed_count << " patches out of " << patch.size();
+    }
+  }
+
+  return patch_ir_drop_map;
 }
 
 }  // namespace ieval

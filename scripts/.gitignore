@@ -1,8 +1,3 @@
-28nm
-110nm
-design/smic180
-design/sky130_gcd_0.6
-design/sky130_gcd_0.8
 __pycache__/
 *.py[cod]
 *$py.class

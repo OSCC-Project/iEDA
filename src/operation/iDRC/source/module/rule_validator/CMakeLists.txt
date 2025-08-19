@@ -2,8 +2,8 @@ if(DEBUG_IDRC_RULE_VALIDATOR)
     message(STATUS "DRC: DEBUG_IDRC_RULE_VALIDATOR")
     set(CMAKE_BUILD_TYPE "Debug")
 else()
-    message(STATUS "DRC: RELEASE_IDRC_RULE_VALIDATOR")   
-    set(CMAKE_BUILD_TYPE "Release")   
+    message(STATUS "DRC: RELEASE_IDRC_RULE_VALIDATOR")
+    set(CMAKE_BUILD_TYPE "Release")
 endif()
 
 add_library(idrc_rule_validator
@@ -11,6 +11,7 @@ add_library(idrc_rule_validator
     ${IDRC_MODULE}/rule_validator/RuleValidator.cpp
     ${IDRC_MODULE}/rule_validator/rv_design_rule/AdjacentCutSpacing.cpp
     ${IDRC_MODULE}/rule_validator/rv_design_rule/CornerFillSpacing.cpp
+    ${IDRC_MODULE}/rule_validator/rv_design_rule/CornerSpacing.cpp
     ${IDRC_MODULE}/rule_validator/rv_design_rule/CutEOLSpacing.cpp
     ${IDRC_MODULE}/rule_validator/rv_design_rule/CutShort.cpp
     ${IDRC_MODULE}/rule_validator/rv_design_rule/DifferentLayerCutSpacing.cpp
@@ -36,15 +37,15 @@ add_library(idrc_rule_validator
     ${IDRC_MODULE}/rule_validator/rv_design_rule/SameLayerCutSpacing.cpp
 )
 
-target_link_libraries(idrc_rule_validator 
+target_link_libraries(idrc_rule_validator
     PUBLIC
-        idrc_data_manager
-        idrc_module
-        idrc_toolkit
+    idrc_data_manager
+    idrc_module
+    idrc_toolkit
 )
 
-target_include_directories(idrc_rule_validator 
+target_include_directories(idrc_rule_validator
     PUBLIC
-        ${IDRC_MODULE}/rule_validator/rv_data_manager
-        ${IDRC_MODULE}/rule_validator
+    ${IDRC_MODULE}/rule_validator/rv_data_manager
+    ${IDRC_MODULE}/rule_validator
 )

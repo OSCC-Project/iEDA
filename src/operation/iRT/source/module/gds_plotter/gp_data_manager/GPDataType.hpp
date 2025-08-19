@@ -29,12 +29,14 @@ enum class GPDataType
   kNeighbor,
   kShadow,
   kKey,
-  kPath,
+  kGlobalPath,
+  kDetailedPath,
   kPatch,
   kShape,
   kAccessPoint,
   kBestCoord,
   kAxis,
+  kOverflow,
   kRouteViolation,
   kPatchViolation
 };
@@ -66,8 +68,11 @@ struct GetGPDataTypeName
       case GPDataType::kKey:
         data_type_name = "key";
         break;
-      case GPDataType::kPath:
-        data_type_name = "path";
+      case GPDataType::kGlobalPath:
+        data_type_name = "global_path";
+        break;
+      case GPDataType::kDetailedPath:
+        data_type_name = "detailed_path";
         break;
       case GPDataType::kPatch:
         data_type_name = "patch";
@@ -80,6 +85,9 @@ struct GetGPDataTypeName
         break;
       case GPDataType::kAxis:
         data_type_name = "axis";
+        break;
+      case GPDataType::kOverflow:
+        data_type_name = "overflow";
         break;
       case GPDataType::kRouteViolation:
         data_type_name = "route_violation";

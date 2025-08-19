@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <map>
+
 #include "congestion_db.h"
 
 namespace ieval {
@@ -33,6 +35,15 @@ class CongestionAPI
   OverflowSummary egrOverflow(std::string stage, std::string rt_dir_path);
   RUDYMapSummary rudyMap(std::string stage, CongestionNets congestion_nets, CongestionRegion region, int32_t grid_size);
   UtilizationSummary rudyUtilization(std::string stage, std::string rudy_dir_path, bool use_lut = false);
+
+  std::map<std::string, std::vector<std::vector<int>>> getEGRMap(bool is_run_egr = true);
+  std::map<int, double> patchRUDYCongestion(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
+  std::map<int, double> patchEGRCongestion(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
+  std::map<int, std::map<std::string, double>> patchLayerEGRCongestion(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
+
+  CongestionValue rudyCongestion(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
+  CongestionValue lutRudyCongestion(int bin_cnt_x = 256, int bin_cnt_y = 256, const std::string& save_path = "");
+  CongestionValue egrCongestion(const std::string& save_path = "");
 
   void evalNetInfo();
   void evalNetInfoPure();

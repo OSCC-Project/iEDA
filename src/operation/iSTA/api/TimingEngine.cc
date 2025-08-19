@@ -395,7 +395,7 @@ void TimingEngine::resetRcTree(Net* net) {
  * @param id
  * @return RctNode*
  */
-RctNode* TimingEngine::makeOrFindRCTreeNode(Net* net, int id) {
+RctNode* TimingEngine::makeOrFindRCTreeNode(Net* net, int64_t id) {
   StaBuildRCTree build_rc_tree;
   auto* rc_net = _timing_engine->get_ista()->getRcNet(net);
   if (!rc_net) {
@@ -410,7 +410,7 @@ RctNode* TimingEngine::makeOrFindRCTreeNode(Net* net, int id) {
   }
 
   auto* rc_tree = rc_net->rct();
-  std::string node_name = Str::printf("%s:%d", net->get_name(), id);
+  std::string node_name = Str::printf("%s:%lld", net->get_name(), id);
 
   auto* node = rc_tree->node(node_name);
   if (!node) {
@@ -562,10 +562,13 @@ void TimingEngine::makeVirtualRCTreeResistor(const char* rc_tree_name,
  */
 void TimingEngine::updateRCTreeInfo(Net* net) {
   auto* rc_net = _timing_engine->get_ista()->getRcNet(net);
+  
   if (rc_net) {
     rc_net->updateRcTreeInfo();
     auto* rct = rc_net->rct();
     if (rct) {
+      // check and break loop.
+      rc_net->checkLoop();
       rct->updateRcTiming();
     }
   }
@@ -636,7 +639,7 @@ void TimingEngine::buildRcTreeAndUpdateRcTreeInfo(
  * @return std::map<std::string, double>
  */
 std::map<std::string, double> TimingEngine::getVirtualRCTreeAllNodeSlew(
-    const char* rc_tree_name, double driver_slew) {
+    const char* rc_tree_name, double driver_slew, TransType trans_type) {
   if (!_virtual_rc_trees.contains(rc_tree_name)) {
     LOG_FATAL << "virtual RC tree " << rc_tree_name << " does not exist!";
   }
@@ -644,29 +647,7 @@ std::map<std::string, double> TimingEngine::getVirtualRCTreeAllNodeSlew(
   auto& virtual_rc_tree = _virtual_rc_trees[rc_tree_name];
 
   std::map<std::string, double> all_node_slews;
-  auto* rc_root = virtual_rc_tree.get_root();
-
-  all_node_slews[rc_root->get_name()] = driver_slew;
-
-  std::function<void(RctNode*, RctNode*)> get_snk_slew =
-      [&get_snk_slew, this, driver_slew, &all_node_slews](RctNode* parent_node,
-                                                          RctNode* src_node) {
-        auto& fanout_edges = src_node->get_fanout();
-        for (auto* fanout_edge : fanout_edges) {
-          auto& snk_node = fanout_edge->get_to();
-          if (fanout_edge->isBreak() || &snk_node == parent_node) {
-            continue;
-          }
-
-          auto snk_slew = snk_node.slew(AnalysisMode::kMax, TransType::kRise,
-                                        NS_TO_PS(driver_slew));
-          all_node_slews[snk_node.get_name()] = PS_TO_NS(snk_slew);
-
-          get_snk_slew(src_node, &snk_node);
-        }
-      };
-
-  get_snk_slew(nullptr, rc_root);
+  all_node_slews = virtual_rc_tree.getAllNodeSlew(driver_slew, AnalysisMode::kMax, trans_type);
 
   return all_node_slews;
 }
@@ -1188,31 +1169,21 @@ double TimingEngine::getInstDelay(const char* inst_name,
                                   TransType trans_type) {
   auto* ista = _ista;
   auto* design_netlist = ista->get_netlist();
-  auto* instance = design_netlist->findInstance(inst_name);
+
+  std::string src_pin_name = Str::printf("%s:%s", inst_name, src_port_name);
+  auto* src_pin = design_netlist->findPin(src_pin_name.c_str(), false, true).front();
+  std::string snk_pin_name = Str::printf("%s:%s", inst_name, snk_port_name);
+  auto* snk_pin = design_netlist->findPin(snk_pin_name.c_str(), false, true).front();
 
   auto& the_graph = ista->get_graph();
+  auto src_vertex = the_graph.findVertex(src_pin);
+  LOG_FATAL_IF(!src_vertex) << "src vertex " << src_pin_name << " not found ";
+  auto snk_vertex = the_graph.findVertex(snk_pin);
+  LOG_FATAL_IF(!snk_vertex) << "snk vertex " << snk_pin_name << " not found ";
 
-  Pin* pin;
-  int arc_delay = 0;
-  FOREACH_INSTANCE_PIN(instance, pin) {
-    if (pin->isInput()) {
-      auto the_vertex = the_graph.findVertex(pin);
-      LOG_FATAL_IF(!the_vertex);
-      FOREACH_SRC_ARC((*the_vertex), the_arc) {
-        auto* src_vertex = the_arc->get_src();
-        auto* snk_vertex = the_arc->get_snk();
-        std::string src_vertex_name = src_vertex->getName();
-        std::string snk_vertex_name = snk_vertex->getName();
-        auto* instance_arc = dynamic_cast<StaInstArc*>(the_arc);
+  auto* instance_arc = (*src_vertex)->getSnkArc(*snk_vertex).front();
+  double arc_delay = instance_arc->get_arc_delay(mode, trans_type);
 
-        if (src_vertex_name == src_port_name &&
-            snk_vertex_name == snk_port_name) {
-          arc_delay = instance_arc->get_arc_delay(mode, trans_type);
-          break;
-        }
-      }
-    }
-  }
   return FS_TO_NS(arc_delay);
 }
 

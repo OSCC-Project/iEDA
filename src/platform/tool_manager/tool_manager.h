@@ -31,6 +31,8 @@
 #include <string>
 #include <vector>
 
+#include "vec_net.h"
+
 namespace iplf {
 
 #define tmInst ToolManager::getInstance()
@@ -64,6 +66,7 @@ class ToolManager
   void guiReadDb();
   void guiShowDrc(std::string detail_drc_path = "", int max_num = 100000);
   void guiShowClockTree();
+  void guiShowGraph(std::map<int, ivec::VecNet> graph);
 
   void guiCaptrueDesign(std::string path = "");
   /// Eval
@@ -113,6 +116,9 @@ class ToolManager
   /// iPW
   bool autoRunPower(std::string config = "");
 
+  /// iPNP
+  bool autoRunPNP(std::string config = "");
+
   bool buildClockTree(std::string config = "", std::string data_path = "");
   bool saveClockTree(std::string data_path);
 
@@ -121,7 +127,6 @@ class ToolManager
   ToolManager();
   ~ToolManager() = default;
 
-  ///
 };
 
 }  // namespace iplf

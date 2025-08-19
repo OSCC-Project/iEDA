@@ -42,18 +42,6 @@ bool PLFConfig::initConfig(string path)
   {
     nlohmann::json json;
     config_stream >> json;
-    /// read tools option
-    _tools_config.run_tcl = ieda::getJsonData(json, {"Tools", "TCL"});
-
-    /// read flow
-    _flow_config.run_synthesis = ieda::getJsonData(json, {"Flow", "Synthesis"});
-    _flow_config.run_floorplan = ieda::getJsonData(json, {"Flow", "Floorplan"});
-    _flow_config.run_placer = ieda::getJsonData(json, {"Flow", "Placer"});
-    _flow_config.run_cts = ieda::getJsonData(json, {"Flow", "CTS"});
-    _flow_config.run_router = ieda::getJsonData(json, {"Flow", "Router"});
-    _flow_config.run_drc = ieda::getJsonData(json, {"Flow", "DRC"});
-    _flow_config.run_gui = ieda::getJsonData(json, {"Flow", "GUI"});
-    _flow_config.run_to = ieda::getJsonData(json, {"Flow", "TO"});
 
     /// read config path
     _config_path.idb_path = ieda::getJsonData(json, {"ConfigPath", "idb_path"});
@@ -63,6 +51,7 @@ bool PLFConfig::initConfig(string path)
     _config_path.irt_path = ieda::getJsonData(json, {"ConfigPath", "irt_path"});
     _config_path.idrc_path = ieda::getJsonData(json, {"ConfigPath", "idrc_path"});
     _config_path.ito_path = ieda::getJsonData(json, {"ConfigPath", "ito_path"});
+    _config_path.ipnp_path = ieda::getJsonData(json, {"ConfigPath", "ipnp_path"});
   }
 
   ieda::closeFileStream(config_stream);

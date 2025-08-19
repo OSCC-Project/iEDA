@@ -216,7 +216,7 @@ std::vector<std::string> get_used_libs() {
 
 /**
  * @brief Only build timing graph.
- * 
+ *
  */
 void build_timing_graph() {
   auto* ista = ista::Sta::getOrCreateSta();
@@ -225,21 +225,35 @@ void build_timing_graph() {
 
 /**
  * @brief Only update clock timing.
- * 
+ *
  */
 void update_clock_timing() {
   auto* ista = ista::Sta::getOrCreateSta();
-  ista->updateClockTiming(); 
+  ista->updateClockTiming();
 }
 
 /**
  * @brief Print the graph in yaml format.
- * 
- * @param graph_file 
+ *
+ * @param graph_file
  */
 void dump_graph_data(std::string graph_file) {
   auto* ista = ista::Sta::getOrCreateSta();
   ista->dumpGraphData(graph_file.c_str());
+}
+
+/**
+ * @brief Get the wire timing data object.
+ *
+ * @param n_worst_path_per_clock
+ * @return std::vector<StaPathWireTimingData>
+ */
+std::vector<StaPathWireTimingData> get_wire_timing_data(
+    unsigned n_worst_path_per_clock) {
+  auto* ista = ista::Sta::getOrCreateSta();
+  auto path_wire_timing_data = ista->reportTimingData(n_worst_path_per_clock);
+
+  return path_wire_timing_data;
 }
 
 }  // namespace ista

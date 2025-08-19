@@ -75,16 +75,9 @@ void sig_handler(int sig) {
 }
 
 int main(int argc, char** argv) {
-  // signal(SIGINT, sig_handler);
-  // signal(SIGILL, sig_handler);
-  // signal(SIGABRT, sig_handler);
-  // signal(SIGFPE, sig_handler);
-  // signal(SIGSEGV, sig_handler);
-  // signal(SIGTERM, sig_handler);
-  // signal(SIGQUIT, sig_handler);
-  // signal(SIGKILL, sig_handler);
-
   Log::init(argv);
+  // Start the timer
+  Time::start();
 
   std::string hello_info =
       "\033[49;32m********************************\n"

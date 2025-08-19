@@ -246,6 +246,7 @@ class RctNode {
   std::string _name;
 
   double _cap = 0.0;
+  double _res = 0.0;  //!< from driver to node resistance.
   double _load = 0.0;
   double _delay = 0.0;
   double _mc = 0.0;    //!< Elmore * cap
@@ -546,6 +547,9 @@ class RcTree {
 
   bool isHaveCoupledNodes() { return !_coupled_nodes.empty(); }
 
+  std::vector<RctEdge*> getWireTopo(const char* to_node_name);
+  std::map<std::string, double> getAllNodeSlew(double driver_slew, AnalysisMode analysis_mode, TransType trans_type);  
+
   void printGraphViz();
 
  private:
@@ -674,9 +678,15 @@ class RcNet {
   double load(AnalysisMode mode, TransType trans_type);
   double slewImpulse(DesignObject& to, AnalysisMode mode, TransType trans_type);
   std::set<RctNode*> getLoadNodes();
+  double getNodeLoad(const char* node_name);
 
   double getResistance(AnalysisMode mode, TransType trans_type,
                        DesignObject* load_obj);
+  double getNodeResistance(const char* node_name);
+  double getNetResistance();
+
+  std::optional<double> delay(const char* node_name,
+                              DelayMethod delay_method = DelayMethod::kElmore);
 
   std::optional<double> delay(DesignObject& to,
                               DelayMethod delay_method = DelayMethod::kElmore);
@@ -693,9 +703,17 @@ class RcNet {
       std::optional<LibCurrentData*> output_current, AnalysisMode mode,
       TransType trans_type);
 
+  std::optional<double> slew(const char* node_name, double from_slew,
+                             AnalysisMode mode, TransType trans_type);
+
   virtual std::optional<double> slew(
       DesignObject& to, double from_slew, std::optional<LibCurrentData*> output_current,
       AnalysisMode mode, TransType trans_type);
+
+  std::map<std::string, double>& getAllNodeSlew(double driver_slew,
+                                                  AnalysisMode mode,
+                                                  TransType trans_type);
+  std::vector<RctEdge*> getWireTopo(const char* to_node_name);
 
   void printRctInfo();
 
@@ -717,6 +735,8 @@ class RcNet {
 
  private:
   static std::unique_ptr<RCNetCommonInfo> _rc_net_common_info;
+
+  std::optional<std::map<std::string, double>> _all_node_slews;
 };
 
 #if CUDA_DELAY

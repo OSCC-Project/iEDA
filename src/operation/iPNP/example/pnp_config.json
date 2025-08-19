@@ -1,69 +1,7 @@
 {
   "design": {
     "lef_files": [
-      "/home/sujianrong/T28/tlef/tsmcn28_9lm6X2ZUTRDL.tlef",
-      "/home/sujianrong/T28/lef/PLLTS28HPMLAINT.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140opplvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140lvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140uhvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140hvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140oppuhvt.lef",
-      "/home/sujianrong/T28/lef/ts5n28hpcplvta256x32m4fw_130a.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140cg.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140oppuhvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140mbhvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140ulvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140uhvt.lef",
-      "/home/sujianrong/T28/lef/ts5n28hpcplvta64x100m2fw_130a.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140hvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140oppulvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140mb.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140cgcwhvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140lvt.lef",
-      "/home/sujianrong/T28/lef/tpbn28v_9lm.lef",
-      "/home/sujianrong/T28/lef/ts5n28hpcplvta64x128m2f_130a.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140uhvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140mblvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140cgcw.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140mbhvt.lef",
-      "/home/sujianrong/T28/lef/tpbn28v.lef",
-      "/home/sujianrong/T28/lef/ts5n28hpcplvta64x128m2fw_130a.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140lvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140ulvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140opphvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140cgehvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140mb.lef",
-      "/home/sujianrong/T28/lef/tphn28hpcpgv18_9lm.lef",
-      "/home/sujianrong/T28/lef/ts5n28hpcplvta64x88m2fw_130a.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140mb.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140cghvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140opp.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140cghvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140oppehvt.lef",
-      "/home/sujianrong/T28/lef/ts1n28hpcplvtb2048x48m8sw_180a.lef",
-      "/home/sujianrong/T28/lef/ts5n28hpcplvta64x92m2fw_130a.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140mblvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140cg.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140opplvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140cg.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140opphvt.lef",
-      "/home/sujianrong/T28/lef/ts1n28hpcplvtb512x128m4sw_180a.lef",
-      "/home/sujianrong/T28/lef/ts5n28hpcplvta64x96m2fw_130a.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140opphvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140hvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140oppuhvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140cguhvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140opp.lef",
-      "/home/sujianrong/T28/lef/ts1n28hpcplvtb512x64m4sw_180a.lef",
-      "/home/sujianrong/T28/lef/ts6n28hpcplvta2048x32m8sw_130a.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp30p140opp.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp35p140oppulvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140ehvt.lef",
-      "/home/sujianrong/T28/lef/tcbn28hpcplusbwp40p140opplvt.lef",
-      "/home/sujianrong/T28/lef/ts1n28hpcplvtb8192x64m8sw_180a.lef"
+ 
     ],
     "def_file": "/home/sujianrong/iEDA/src/operation/iPNP/data/test/aes_no_pwr.def",
     "output_def_file": "/home/sujianrong/iEDA/src/operation/iPNP/example/result/output.def",
@@ -71,23 +9,17 @@
   },
   "lib": {
     "liberty_files": [
-      "/home/sujianrong/T28/lib/tcbn28hpcplusbwp40p140ssg0p81v125c.lib",
-      "/home/sujianrong/T28/lib/tcbn28hpcplusbwp40p140hvtssg0p81v125c.lib",
-      "/home/sujianrong/T28/lib/tcbn28hpcplusbwp35p140ssg0p81v125c.lib",
-      "/home/sujianrong/T28/lib/tcbn28hpcplusbwp35p140lvtssg0p81v125c.lib",
-      "/home/sujianrong/T28/lib/tcbn28hpcplusbwp40p140lvtssg0p81v125c.lib",
-      "/home/sujianrong/T28/lib/tcbn28hpcplusbwp30p140lvtssg0p81v125c.lib",
-      "/home/sujianrong/T28/lib/tcbn28hpcplusbwp30p140ssg0p81v125c.lib" 
+
     ]
   },
   "timing": {
-    "design_workspace": "/home/sujianrong/iEDA/src/operation/iPNP/example/result/ir"
+    "design_workspace": "/home/taosimin/iEDA24/iEDA/src/operation/iPNP/test"
   },
   "power": {
     "power_net_name": "VDD"
   },
   "egr":{
-    "map_path":"/home/sujianrong/iEDA/src/operation/iPNP/example/result"
+    "map_path":"/home/taosimin/iEDA24/iEDA/src/operation/iPNP/test"
   },
   "grid": {
     "power_layers": [9,8,7,6,5,4,3],

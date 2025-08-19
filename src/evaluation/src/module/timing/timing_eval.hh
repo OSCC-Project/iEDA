@@ -17,7 +17,15 @@
 namespace ista {
 enum class AnalysisMode;
 }
+
+namespace ivec {
+class VecLayout;
+}
+
 namespace ieval {
+
+class TimingWireGraph;
+class TimingInstanceGraph;
 
 class TimingEval
 {
@@ -27,7 +35,10 @@ class TimingEval
   static TimingEval* getInst();
 
   void runSTA();
+  void runVecSTA(ivec::VecLayout* vec_layout);
   void evalTiming(const std::string& routing_type, const bool& rt_done = false);
+  TimingWireGraph* getTimingWireGraph();
+  TimingInstanceGraph* getTimingInstanceGraph();
 
   static void destroyInst();
 
@@ -49,6 +60,10 @@ class TimingEval
                     int32_t dbu_unit);
 
   bool isClockNet(const std::string& net_name) const;
+
+  std::map<int, double> patchTimingMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch);
+  std::map<int, double> patchPowerMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch);
+  std::map<int, double> patchIRDropMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch);
 
  private:
   static TimingEval* _timing_eval;

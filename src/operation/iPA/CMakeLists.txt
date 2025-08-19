@@ -26,9 +26,9 @@ include_directories(SYSTEM ${HOME_THIRDPARTY})
 include(${HOME_CMAKE}/operation/ista.cmake)
 
 include_directories(${PROJECT_SOURCE_DIR}/src/operation)
-include_directories(${PROJECT_SOURCE_DIR}/src/operation/iPW)
-include_directories(${PROJECT_SOURCE_DIR}/src/operation/iPW/source)
-include_directories(${PROJECT_SOURCE_DIR}/src/operation/iPW/source/module)
+include_directories(${PROJECT_SOURCE_DIR}/src/operation/iPA)
+include_directories(${PROJECT_SOURCE_DIR}/src/operation/iPA/source)
+include_directories(${PROJECT_SOURCE_DIR}/src/operation/iPA/source/module)
 
 include_directories(${HOME_THIRDPARTY}/pybind11)
 

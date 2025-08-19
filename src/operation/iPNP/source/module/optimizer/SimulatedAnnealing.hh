@@ -22,87 +22,80 @@
  * @date 2024-07-15
  */
 
- // SimulatedAnnealing.hh
+// SimulatedAnnealing.hh
 #pragma once
 
+#include <cmath>
 #include <iostream>
 #include <map>
+#include <random>
 #include <string>
 #include <vector>
-#include <random>
-#include <cmath>
 
-#include "GridManager.hh"
-#include "IREval.hh"
 #include "CongestionEval.hh"
-
-namespace idb {
-  class IdbBuilder;
-}
+#include "IREval.hh"
+#include "PNPGridManager.hh"
 
 namespace ipnp {
-  
 
-  struct RegionData {
-    double ir_drop;
-    int32_t overflow;
-  };
+struct RegionData
+{
+  double ir_drop;
+  int32_t overflow;
+};
 
-  struct OptimizationResult {
-    GridManager best_grid;
-    double best_cost;
-    std::vector<std::vector<std::vector<RegionData>>> region_data; // [layer][row][col]
-  };
+struct OptimizationResult
+{
+  PNPGridManager best_grid;
+  double best_cost;
+  std::vector<std::vector<std::vector<RegionData>>> region_data;  // [layer][row][col]
+};
 
-  struct CostResult {
-    double cost;
-    double ir_drop;
-    int32_t overflow;
-    double normalized_ir_drop;
-    double normalized_overflow;
-  };
+struct CostResult
+{
+  double cost;
+  double ir_drop;
+  int32_t overflow;
+  double normalized_ir_drop;
+  double normalized_overflow;
+};
 
-  class SimulatedAnnealing
-  {
-  public:
-    SimulatedAnnealing(double initial_temp,
-      double cooling_rate,
-      double min_temp,
-      int iterations_per_temp,
-      double ir_drop_weight,
-      double overflow_weight);
-    ~SimulatedAnnealing() = default;
+class SimulatedAnnealing
+{
+ public:
+  SimulatedAnnealing(double initial_temp, double cooling_rate, double min_temp, int iterations_per_temp, double ir_drop_weight,
+                     double overflow_weight);
+  ~SimulatedAnnealing() = default;
 
-    
-    OptimizationResult optimize(const GridManager& initial_grid, idb::IdbBuilder* idb_builder);
-    CostResult evaluateCost(const GridManager& new_solution, const GridManager& current_solution, idb::IdbBuilder* idb_builder);
+  OptimizationResult optimize(const PNPGridManager& initial_grid);
+  CostResult evaluateCost(const PNPGridManager& new_solution, const PNPGridManager& current_solution);
 
-  private:
-    CongestionEval _cong_eval;
-    IREval _ir_eval;
+ private:
+  CongestionEval _cong_eval;
+  IREval _ir_eval;
 
-    double _initial_temp;
-    double _cooling_rate;
-    double _min_temp;
-    int _iterations_per_temp;
-    int _max_no_improvement;
+  double _initial_temp;
+  double _cooling_rate;
+  double _min_temp;
+  int _iterations_per_temp;
+  int _max_no_improvement;
 
-    std::mt19937 _rng;
+  std::mt19937 _rng;
 
-    double _ir_drop_weight;
-    double _overflow_weight;
+  double _ir_drop_weight;
+  double _overflow_weight;
 
-    double _max_ir_drop;
-    double _min_ir_drop;
-    int32_t _max_overflow;
-    int32_t _min_overflow;
+  double _max_ir_drop;
+  double _min_ir_drop;
+  int32_t _max_overflow;
+  int32_t _min_overflow;
 
-    GridManager generateNeighbor(const GridManager& current);
-    bool acceptSolution(double current_cost, double new_cost, double temp);
-    bool shouldTerminate(int iterations, double temp, int no_improvement_count);
-    double normalizeIRDrop(double max_ir_drop, double min_ir_drop, double avg_ir_drop);
-    double normalizeOverflow(int32_t overflow);
-    bool isSameTemplate(const SingleTemplate& t1, const SingleTemplate& t2);
-  };
+  PNPGridManager generateNeighbor(const PNPGridManager& current);
+  bool acceptSolution(double current_cost, double new_cost, double temp);
+  bool shouldTerminate(int iterations, double temp, int no_improvement_count);
+  double normalizeIRDrop(double max_ir_drop, double min_ir_drop, double avg_ir_drop);
+  double normalizeOverflow(int32_t overflow);
+  bool isSameTemplate(const SingleTemplate& t1, const SingleTemplate& t2);
+};
 
 }  // namespace ipnp

@@ -117,13 +117,12 @@ IdbCoordinate<int32_t>* TimingIDBAdapter::idbLocation(
  * @return double Ω
  */
 double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
-                                       std::optional<double> segment_width) {
+                                       std::optional<double> segment_width, int routing_layer_1st) {
   double segment_resistance = 0;
   IdbLayout* idb_layout = _idb_lef_service->get_layout();
   vector<IdbLayer*>& routing_layers =
       idb_layout->get_layers()->get_routing_layers();
 
-  int routing_layer_1st = 0;
   int routing_layer_id = num_layer - 1 + routing_layer_1st;
   int routing_layer_size = routing_layers.size();
 
@@ -146,9 +145,13 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
   segment_resistance = lef_resistance * segment_length / *segment_width;
 #if DEBUG_TIMING_IDB
   _debug_csv_file << lef_resistance << "," << segment_length << ","
-            << *segment_width << "," << num_layer << ","
-            << segment_resistance << "\n";
+                  << *segment_width << "," << num_layer << ","
+                  << segment_resistance << "\n";
 #endif
+
+  // _debug_csv_file << lef_resistance << "," << segment_length << ","
+  //           << *segment_width << "," << num_layer << ","
+  //           << segment_resistance << "\n";
 
   return segment_resistance;
 }
@@ -156,8 +159,8 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
 /**
  * @brief get segment capacitance.
  *
- * @param num_layer  layer number = target routing layer id - first routing layer
- * id by data config
+ * @param num_layer  layer number = target routing layer id - first routing
+ * layer id by data config
  * @param segment_length unit is um (micro meter)
  * @param segment_width unit is um (micro meter)
  * @return double cap unit is pf
@@ -735,6 +738,7 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
 
   _ista->set_design_name(_idb_design->get_design_name().c_str());
   int dbu = _idb_design->get_units()->get_micron_dbu();
+  set_dbu(dbu);
   double width = _idb_design->get_layout()->get_die()->get_width() /
                  static_cast<double>(dbu);
   double height = _idb_design->get_layout()->get_die()->get_height() /
@@ -854,7 +858,7 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
         return;
       }
 
-      std::regex re(R"(\\)"); 
+      std::regex re(R"(\\)");
       std::string net_name = std::regex_replace(raw_name, re, "");
       Net* sta_net = design_netlist.findNet(net_name.c_str());
 

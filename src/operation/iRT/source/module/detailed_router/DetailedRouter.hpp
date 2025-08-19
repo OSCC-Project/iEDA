@@ -109,16 +109,14 @@ class DetailedRouter
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   void patchDRTask(DRBox& dr_box, DRTask* dr_task);
   void initSinglePatchTask(DRBox& dr_box, DRTask* dr_task);
-  std::vector<Violation> getPatchViolationList(DRBox& dr_box);
+  std::vector<Violation> getPatchViolationList(DRBox& dr_box, const std::set<ViolationType>& check_type_set, const std::vector<LayerRect>& check_region_list);
   bool searchViolation(DRBox& dr_box);
   bool isValidPatchViolation(DRBox& dr_box, Violation& violation);
   std::vector<PlanarRect> getViolationOverlapRect(DRBox& dr_box, Violation& violation);
   void addViolationToShadow(DRBox& dr_box);
   void patchSingleViolation(DRBox& dr_box);
   std::vector<DRPatch> getCandidatePatchList(DRBox& dr_box);
-  void buildSingleViolation(DRBox& dr_box, DRPatch& dr_patch);
-  void updateSingleViolation(DRBox& dr_box);
-  void updateTriedFixViolation(DRBox& dr_box);
+  bool getSolvedStatus(DRBox& dr_box, std::vector<Violation>& origin_patch_violation_list, std::vector<Violation>& curr_patch_violation_list);
   void resetSingleViolation(DRBox& dr_box);
   void clearViolationShadow(DRBox& dr_box);
   void updateTaskPatch(DRBox& dr_box);
@@ -174,8 +172,10 @@ class DetailedRouter
   void printSummary(DRModel& dr_model);
   void outputNetCSV(DRModel& dr_model);
   void outputViolationCSV(DRModel& dr_model);
-  void outputNetJson(DRModel& dr_model);
-  void outputViolationJson(DRModel& dr_model);
+  void outputJson(DRModel& dr_model);
+  std::string outputNetJson(DRModel& dr_model);
+  std::string outputViolationJson(DRModel& dr_model);
+  std::string outputSummaryJson(DRModel& dr_model);
 #endif
 
 #if 1  // debug

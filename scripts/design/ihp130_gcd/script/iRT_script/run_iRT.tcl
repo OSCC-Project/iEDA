@@ -62,20 +62,23 @@ def_init -path $INPUT_DEF
 #===========================================================
 ##   run Router
 #===========================================================
+init_notification
+
 init_rt -temp_directory_path $TOOL_REPORT_DIR \
         -bottom_routing_layer "Metal2" \
         -top_routing_layer "Metal5" \
         -thread_number $NUM_THREADS \
         -output_inter_result 0 \
+        -enable_notification 0 \
         -enable_timing 0 \
         -enable_fast_mode 0
 
 run_rt
 
+destroy_rt
+
 # report_timing -stage "dr"
 feature_tool -path $TOOL_METRICS_JSON -step route
-
-destroy_rt
 
 #===========================================================
 ##   save def & netlist

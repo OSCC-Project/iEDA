@@ -47,6 +47,8 @@ class InitIDB
   DensityCells getDensityCells() { return _density_cells; }
   DensityPins getDensityPins() { return _density_pins; }
   DensityNets getDensityNets() { return _density_nets; }
+  int32_t getDieHeight();
+  int32_t getDieWidth();
 
  private:
   static InitIDB* _init_idb;

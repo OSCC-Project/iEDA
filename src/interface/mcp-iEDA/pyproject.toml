@@ -1,3 +1,4 @@
+
 [project]
 name = "mcp-iEDA"
 version = "0.1.0"
@@ -9,7 +10,8 @@ license = { text = "Mulan PSL v2" }
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "mcp[cli]"
+    "mcp[cli]",
+    "python-dotenv"
 ]
 
 [project.scripts]

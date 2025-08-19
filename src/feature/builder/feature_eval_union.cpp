@@ -24,7 +24,7 @@ UnionEvalSummary FeatureBuilder::buildUnionEvalSummary(int32_t grid_size, std::s
   UnionEvalSummary union_eval_summary;
 
   TotalWLSummary total_wl_summary;
-  ieval::TotalWLSummary eval_total_wl_summary = WIRELENGTH_API_INST->totalWLPure();
+  ieval::TotalWLSummary eval_total_wl_summary = WIRELENGTH_API_INST->totalWLPure(); 
   total_wl_summary.HPWL = eval_total_wl_summary.HPWL;
   total_wl_summary.FLUTE = eval_total_wl_summary.FLUTE;
   total_wl_summary.HTree = eval_total_wl_summary.HTree;
@@ -43,7 +43,7 @@ UnionEvalSummary FeatureBuilder::buildUnionEvalSummary(int32_t grid_size, std::s
   density_map_summary.net_map_summary.global_net_density = eval_density_map_summary.net_map_summary.global_net_density;
   density_map_summary.net_map_summary.allnet_density = eval_density_map_summary.net_map_summary.allnet_density;
   if (stage == "place") {
-    ieval::MacroMarginSummary eval_macro_margin_summary = DENSITY_API_INST->macroMarginMap(grid_size);
+    ieval::MacroMarginSummary eval_macro_margin_summary = DENSITY_API_INST->macroMarginMap(grid_size, stage);
     density_map_summary.macro_margin_summary.horizontal_margin = eval_macro_margin_summary.horizontal_margin;
     density_map_summary.macro_margin_summary.vertical_margin = eval_macro_margin_summary.vertical_margin;
     density_map_summary.macro_margin_summary.union_margin = eval_macro_margin_summary.union_margin;

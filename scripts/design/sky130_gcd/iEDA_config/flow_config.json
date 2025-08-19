@@ -1,17 +1,4 @@
 {
-    "Tools": {
-        "TCL": "ON"
-    },
-    "Flow": {
-        "Synthesis": "ON",
-        "Floorplan": "ON",
-        "Placer": "ON",
-        "CTS": "ON",
-        "TO": "ON",
-        "Router": "ON",
-        "DRC": "ON",
-        "GUI": "ON"
-    },
     "ConfigPath": {
         "idb_path": "$CONFIG_DIR/db_default_config.json",
         "ifp_path": "$CONFIG_DIR/fp_default_config.json",
@@ -19,6 +6,7 @@
         "irt_path": "$CONFIG_DIR/rt_default_config.json",
         "idrc_path": "$CONFIG_DIR/drc_default_config.json",
         "icts_path": "$CONFIG_DIR/cts_default_config.json",
-        "ito_path": "$CONFIG_DIR/to_default_config.json"
+        "ito_path": "$CONFIG_DIR/to_default_config.json",
+        "ipnp_path": "$CONFIG_DIR/pnp_default_config.json"
     }
 }

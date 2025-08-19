@@ -1,5 +1,4 @@
-set(CMAKE_BUILD_TYPE "Release")
-# set(CMAKE_BUILD_TYPE "Debug")
+# set(CMAKE_BUILD_TYPE "Release")
 
 # general ops
 add_library(eval_util_general_ops
@@ -57,10 +56,12 @@ target_link_libraries(eval_util_init_ista
     PRIVATE
         ieda_feature
         idm
+        ivec_api
         irt_interface
         ista-engine
         power
         salt
+        ivec_layout_db
 )
 
 target_include_directories(eval_util_init_ista

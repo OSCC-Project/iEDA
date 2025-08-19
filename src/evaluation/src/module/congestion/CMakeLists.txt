@@ -4,6 +4,7 @@ add_library(eval_congestion_eval
 
 target_link_libraries(eval_congestion_eval 
     PRIVATE 
+        idm
         eval_util_init_egr     
         eval_util_wirelength_lut
         eval_util_general_ops 

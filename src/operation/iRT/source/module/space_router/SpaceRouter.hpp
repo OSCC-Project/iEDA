@@ -89,7 +89,7 @@ class SpaceRouter
   void pushToOpenList(SRBox& sr_box, SRNode* curr_node);
   SRNode* popFromOpenList(SRBox& sr_box);
   double getKnownCost(SRBox& sr_box, SRNode* start_node, SRNode* end_node);
-  double getNodeCost(SRBox& sr_box, SRNode* curr_node, Orientation orientation);
+  double getNodeCost(SRBox& sr_box, SRNode* curr_node, Direction direction);
   double getKnownWireCost(SRBox& sr_box, SRNode* start_node, SRNode* end_node);
   double getKnownViaCost(SRBox& sr_box, SRNode* start_node, SRNode* end_node);
   double getEstimateCostToEnd(SRBox& sr_box, SRNode* curr_node);
@@ -120,12 +120,16 @@ class SpaceRouter
   void outputGuide(SRModel& sr_model);
   void outputNetCSV(SRModel& sr_model);
   void outputOverflowCSV(SRModel& sr_model);
-  void outputNetJson(SRModel& sr_model);
-  void outputOverflowJson(SRModel& sr_model);
+  void outputJson(SRModel& sr_model);
+  std::string outputNetJson(SRModel& sr_model);
+  std::string outputOverflowJson(SRModel& sr_model);
+  std::string outputSummaryJson(SRModel& sr_model);
 #endif
 
 #if 1  // debug
+  void debugPlotSRModel(SRModel& sr_model, std::string flag);
   void debugCheckSRBox(SRBox& sr_box);
+  void debugPlotSRBox(SRBox& sr_box, std::string flag);
 #endif
 };
 

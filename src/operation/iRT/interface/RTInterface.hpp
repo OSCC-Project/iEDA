@@ -17,6 +17,7 @@
 #pragma once
 
 #include <any>
+#include <cstdint>
 #include <map>
 #include <set>
 #include <string>
@@ -40,6 +41,7 @@ namespace irt {
 class RoutingLayer;
 class CutLayer;
 class Violation;
+enum class ViolationType;
 class LayerCoord;
 class LayerRect;
 template <typename T>
@@ -78,6 +80,7 @@ class RTInterface
   void runRT();
   void destroyRT();
   void clearDef();
+  void outputDBJson(std::map<std::string, std::any> config_map);
 #endif
 
 #endif
@@ -102,7 +105,6 @@ class RTInterface
   void wrapLayerInfo();
   void wrapLayerViaMasterList();
   void wrapObstacleList();
-  void wrapNetInfo();
   void wrapNetList();
   bool isSkipping(idb::IdbNet* idb_net, bool with_log);
   void wrapPinList(Net& net, idb::IdbNet* idb_net);
@@ -135,7 +137,8 @@ class RTInterface
   std::vector<Violation> getViolationList(std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
                                           std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
                                           std::map<int32_t, std::vector<Segment<LayerCoord>*>>& net_result_map,
-                                          std::map<int32_t, std::vector<EXTLayerRect*>>& net_patch_map);
+                                          std::map<int32_t, std::vector<EXTLayerRect*>>& net_patch_map, std::set<ViolationType>& check_type_set,
+                                          std::vector<LayerRect>& check_region_list);
   ids::Shape getIDSShape(int32_t net_idx, LayerRect layer_rect, bool is_routing);
 #endif
 
@@ -156,7 +159,7 @@ class RTInterface
 #endif
 
 #if 1  // ecos
-  void sendNotification(std::string stage, std::string json_path);
+  void sendNotification(std::string stage, int32_t iter, std::map<std::string, std::string> json_path_map);
 #endif
 
 #endif

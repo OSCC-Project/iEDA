@@ -44,8 +44,7 @@ int registerCmdPDN()
   registerTclCmd(TclPdnConnectStripe, "connect_pdn_stripe");
   registerTclCmd(TclPdnAddSegmentStripe, "add_segment_stripe");
   registerTclCmd(TclPdnAddSegmentVia, "add_segment_via");
-  registerTclCmd(TclRunPNP, "run_pnp");
-  ///如要增加，直接拷贝即可
+  // registerTclCmd(TclRunPNP, "run_pnp");
 
   return EXIT_SUCCESS;
 }

@@ -47,6 +47,18 @@ PYBIND11_MODULE(ista_cpp, m) {
   m.def("build_timing_graph", build_timing_graph);
   m.def("update_clock_timing", update_clock_timing);
   m.def("dump_graph_data", dump_graph_data, ("graph_file"));
+
+  // get wire timing data
+  py::class_<StaWireTimingData>(m, "WireTimingData")
+  .def_readwrite("from_node_name", &StaWireTimingData::_from_node_name)
+  .def_readwrite("to_node_name", &StaWireTimingData::_to_node_name)
+  .def_readwrite("wire_resistance", &StaWireTimingData::_wire_resistance)
+  .def_readwrite("wire_capacitance", &StaWireTimingData::_wire_capacitance)
+  .def_readwrite("wire_from_slew", &StaWireTimingData::_wire_from_slew)
+  .def_readwrite("wire_to_slew", &StaWireTimingData::_wire_to_slew)
+  .def_readwrite("wire_delay", &StaWireTimingData::_wire_delay);
+
+  m.def("get_wire_timing_data", get_wire_timing_data, py::arg("n_worst_path_per_clock"));
 }
 
 }  // namespace ista

@@ -29,8 +29,8 @@
 #include <queue>
 #include <stack>
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include "Sta.hh"
 #include "StaDump.hh"
@@ -334,22 +334,24 @@ unsigned StaReportPathDetail::operator()(StaSeqPathData* seq_path_data) {
 
 #if CUDA_PROPAGATION
   auto& at_to_index = ista->get_at_to_index();
-#else 
-  std::map<ista::StaPathDelayData *, unsigned int> at_to_index;
+#else
+  std::map<ista::StaPathDelayData*, unsigned int> at_to_index;
 #endif
 
-  auto print_path_data = [&report_tbl, &fix_point_str, &is_derate, &at_to_index](
-                             auto& path_stack, auto clock_path_arrive_time) {
+  auto print_path_data = [&report_tbl, &fix_point_str, &is_derate,
+                          &at_to_index](auto& path_stack,
+                                        auto clock_path_arrive_time) {
     double last_arrive_time = 0;
     StaVertex* last_vertex = nullptr;
     while (!path_stack.empty()) {
       auto* path_delay_data = path_stack.top();
       std::string path_delay_index_str;
 #if CUDA_PROPAGATION
-      unsigned gpu_at_index = at_to_index[dynamic_cast<StaPathDelayData*>(path_delay_data)];
+      unsigned gpu_at_index =
+          at_to_index[dynamic_cast<StaPathDelayData*>(path_delay_data)];
       path_delay_index_str = Str::printf("(GPU AT %d)", gpu_at_index);
 #endif
-  
+
       auto* own_vertex = path_delay_data->get_own_vertex();
       auto trans_type = path_delay_data->get_trans_type();
       auto delay_type = path_delay_data->get_delay_type();
@@ -928,8 +930,7 @@ unsigned StaReportPathDump::operator()(StaSeqPathData* seq_path_data) {
     path_stack.pop();
   }
 
-  std::string design_work_space =
-      dump_yaml.getSta()->get_design_work_space();
+  std::string design_work_space = dump_yaml.getSta()->get_design_work_space();
   std::string path_dir = design_work_space + "/path";
   std::filesystem::create_directories(path_dir);
 
@@ -991,6 +992,163 @@ unsigned StaReportPathYaml::operator()(StaSeqPathData* seq_path_data) {
       "%s/path_delay_%s_%d.yaml", path_dir.c_str(), tmp.c_str(), file_id++);
 
   dump_delay_yaml.printText(text_file_name);
+
+  return 1;
+}
+
+StaReportWirePathYaml::StaReportWirePathYaml(const char* rpt_file_name,
+                                             AnalysisMode analysis_mode,
+                                             unsigned n_worst)
+    : StaReportPathDump(rpt_file_name, analysis_mode, n_worst) {}
+
+/**
+ * @brief print timing path in yaml in wire level.
+ *
+ * @param seq_path_data
+ * @return unsigned
+ */
+unsigned StaReportWirePathYaml::operator()(StaSeqPathData* seq_path_data) {
+  // CPU_PROF_START(0);
+  std::string design_work_space =
+      ista::Sta::getOrCreateSta()->get_design_work_space();
+  std::string path_dir = design_work_space + "/wire_paths";
+
+  std::filesystem::create_directories(path_dir);
+
+  static unsigned file_id = 1;
+  std::string now_time = Time::getNowWallTime();
+  std::string tmp = Str::replace(now_time, ":", "_");
+  std::string text_file_name = Str::printf(
+      "%s/wire_path_%s_%d.yml", path_dir.c_str(), tmp.c_str(), file_id++);
+
+  std::ofstream file(text_file_name, std::ios::trunc);
+  StaDumpWireYaml dump_wire_yaml(file);
+  std::stack<StaPathDelayData*> path_stack = seq_path_data->getPathDelayData();
+
+  StaVertex* last_vertex = nullptr;
+  while (!path_stack.empty()) {
+    auto* path_delay_data = path_stack.top();
+    auto* own_vertex = path_delay_data->get_own_vertex();
+    dump_wire_yaml.set_analysis_mode(path_delay_data->get_delay_type());
+    dump_wire_yaml.set_trans_type(path_delay_data->get_trans_type());
+
+    if (last_vertex) {
+      auto snk_arcs = last_vertex->getSnkArc(own_vertex);
+      auto* snk_arc = snk_arcs.empty() ? nullptr : snk_arcs.front();
+      snk_arc->exec(dump_wire_yaml);
+    }
+
+    own_vertex->exec(dump_wire_yaml);
+
+    last_vertex = own_vertex;
+
+    path_stack.pop();
+  }
+
+  file.close();
+
+  LOG_INFO << "output yaml file path: " << text_file_name;
+
+  // CPU_PROF_END(0, "dump one timing path wire yaml");
+
+  return 1;
+}
+
+StaReportWirePathJson::StaReportWirePathJson(const char* rpt_file_name,
+                                     AnalysisMode analysis_mode,
+                                     unsigned n_worst)
+    : StaReportPathDump(rpt_file_name, analysis_mode, n_worst) {}
+
+/**
+ * @brief print timing path in json in wire level.
+ * 
+ * @param seq_path_data 
+ * @return unsigned 
+ */
+unsigned StaReportWirePathJson::operator()(StaSeqPathData* seq_path_data) { 
+  // CPU_PROF_START(0);
+  std::string design_work_space =
+      ista::Sta::getOrCreateSta()->get_design_work_space();
+  std::string path_dir = design_work_space + "/wire_paths";
+
+  std::filesystem::create_directories(path_dir);
+
+  static unsigned file_id = 1;
+  std::string text_file_name = Str::printf(
+      "%s/wire_path_%d.json", path_dir.c_str(), file_id++);
+  
+  json path_json = json::array();
+  StaDumpWireJson dump_wire_json(path_json);
+  std::stack<StaPathDelayData*> path_stack = seq_path_data->getPathDelayData();
+
+  StaVertex* last_vertex = nullptr;
+  while (!path_stack.empty()) {
+    auto* path_delay_data = path_stack.top();
+    auto* own_vertex = path_delay_data->get_own_vertex();
+    dump_wire_json.set_analysis_mode(path_delay_data->get_delay_type());
+    dump_wire_json.set_trans_type(path_delay_data->get_trans_type());
+
+    if (last_vertex) {
+      auto snk_arcs = last_vertex->getSnkArc(own_vertex);
+      auto* snk_arc = snk_arcs.empty() ? nullptr : snk_arcs.front();
+      snk_arc->exec(dump_wire_json);
+    }
+
+    own_vertex->exec(dump_wire_json);
+
+    last_vertex = own_vertex;
+
+    path_stack.pop();
+  }
+
+  std::ofstream file(text_file_name, std::ios::trunc);
+  file << path_json.dump(4) << std::endl;
+
+  file.close();
+  
+  LOG_INFO << "output json file path: " << text_file_name;
+
+  // CPU_PROF_END(0, "dump one timing path wire yaml");
+  return 1;
+
+}
+
+StaReportPathTimingData::StaReportPathTimingData(const char* rpt_file_name,
+                                                 AnalysisMode analysis_mode,
+                                                 unsigned n_worst)
+    : StaReportPathSummary(rpt_file_name, analysis_mode, n_worst) {}
+
+/**
+ * @brief report path timing data in memory for python call.
+ *
+ * @param seq_path_data
+ * @return unsigned
+ */
+unsigned StaReportPathTimingData::operator()(StaSeqPathData* seq_path_data) {
+  StaDumpTimingData dump_timing_data;
+
+  std::stack<StaPathDelayData*> path_stack = seq_path_data->getPathDelayData();
+
+  StaVertex* last_vertex = nullptr;
+  while (!path_stack.empty()) {
+    auto* path_delay_data = path_stack.top();
+    auto* own_vertex = path_delay_data->get_own_vertex();
+    dump_timing_data.set_analysis_mode(path_delay_data->get_delay_type());
+    dump_timing_data.set_trans_type(path_delay_data->get_trans_type());
+
+    if (last_vertex) {
+      auto snk_arcs = last_vertex->getSnkArc(own_vertex);
+      auto* snk_arc = snk_arcs.empty() ? nullptr : snk_arcs.front();
+      snk_arc->exec(dump_timing_data);
+    }
+
+    last_vertex = own_vertex;
+
+    path_stack.pop();
+  }
+
+  auto wire_timing_datas = dump_timing_data.get_wire_timing_datas();
+  set_path_timing_data(std::move(wire_timing_datas));
 
   return 1;
 }

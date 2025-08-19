@@ -57,7 +57,6 @@ class PinAccessor
   std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);
   PANet convertToPANet(Net& net);
   void setPAComParam(PAModel& pa_model);
-  void buildBlockTrimRectMap(PAModel& pa_model);
   void initAccessPointList(PAModel& pa_model);
   std::vector<LayerRect> getLegalShapeList(PAModel& pa_model, int32_t net_idx, PAPin* pa_pin);
   std::vector<PlanarRect> getPlanarLegalRectList(PAModel& pa_model, int32_t curr_net_idx, PAPin* pa_pin, std::vector<EXTLayerRect>& pin_shape_list);
@@ -116,16 +115,14 @@ class PinAccessor
   double getEstimateViaCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   void patchPATask(PABox& pa_box, PATask* pa_task);
   void initSinglePatchTask(PABox& pa_box, PATask* pa_task);
-  std::vector<Violation> getPatchViolationList(PABox& pa_box);
+  std::vector<Violation> getPatchViolationList(PABox& pa_box, const std::set<ViolationType>& check_type_set, const std::vector<LayerRect>& check_region_list);
   bool searchViolation(PABox& pa_box);
   bool isValidPatchViolation(PABox& pa_box, Violation& violation);
   std::vector<PlanarRect> getViolationOverlapRect(PABox& pa_box, Violation& violation);
   void addViolationToShadow(PABox& pa_box);
   void patchSingleViolation(PABox& pa_box);
   std::vector<PAPatch> getCandidatePatchList(PABox& pa_box);
-  void buildSingleViolation(PABox& pa_box, PAPatch& pa_patch);
-  void updateSingleViolation(PABox& pa_box);
-  void updateTriedFixViolation(PABox& pa_box);
+  bool getSolvedStatus(PABox& pa_box, std::vector<Violation>& origin_patch_violation_list, std::vector<Violation>& curr_patch_violation_list);
   void resetSingleViolation(PABox& pa_box);
   void clearViolationShadow(PABox& pa_box);
   void updateTaskPatch(PABox& pa_box);
@@ -183,8 +180,10 @@ class PinAccessor
   void printSummary(PAModel& pa_model);
   void outputNetCSV(PAModel& pa_model);
   void outputViolationCSV(PAModel& pa_model);
-  void outputNetJson(PAModel& pa_model);
-  void outputViolationJson(PAModel& pa_model);
+  void outputJson(PAModel& pa_model);
+  std::string outputNetJson(PAModel& pa_model);
+  std::string outputViolationJson(PAModel& pa_model);
+  std::string outputSummaryJson(PAModel& pa_model);
 #endif
 
 #if 1  // debug

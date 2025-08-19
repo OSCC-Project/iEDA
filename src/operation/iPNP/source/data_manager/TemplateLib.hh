@@ -25,8 +25,9 @@
 #pragma once
 
 #include <vector>
-#include "SingleTemplate.hh"
+
 #include "PNPConfig.hh"
+#include "SingleTemplate.hh"
 
 namespace ipnp {
 
@@ -39,19 +40,15 @@ class TemplateLib
   TemplateLib() = default;
   ~TemplateLib() = default;
 
-  SingleTemplate gen_single_template(StripeDirection direction,
-    double width,
-    double pg_offset,
-    double space,
-    double offset);
+  SingleTemplate gen_single_template(StripeDirection direction, double width, double pg_offset, double space, double offset);
 
   // Generate template libraries using hardcoded values (legacy method)
   void gen_template_libs();
-  
-  // Generate template libraries from configuration
-  void gen_template_libs_from_config(const PNPConfig* config);
 
-  const std::vector<SingleTemplate>& get_horizontal_templates() const { return _horizontal_templates; }  
+  // Generate template libraries from configuration
+  void gen_template_libs_from_config();
+
+  const std::vector<SingleTemplate>& get_horizontal_templates() const { return _horizontal_templates; }
   const std::vector<SingleTemplate>& get_vertical_templates() const { return _vertical_templates; }
 
  private:

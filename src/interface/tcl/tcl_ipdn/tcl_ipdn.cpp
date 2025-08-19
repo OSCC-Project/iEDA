@@ -17,9 +17,9 @@
 #include "tcl_ipdn.h"
 
 #include "Str.hh"
-// #include "iPNPApi.hh"
 #include "idm.h"
 #include "ipdn_api.h"
+#include "ipnp_api.hh"
 #include "tool_manager.h"
 
 namespace tcl {

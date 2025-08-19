@@ -158,6 +158,40 @@ UtilizationSummary CongestionAPI::rudyUtilization(std::string stage, std::string
   return utilization_summary;
 }
 
+CongestionValue CongestionAPI::rudyCongestion(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
+{
+  CongestionValue congestion_value;
+
+  EVAL_CONGESTION_INST->initIDB();
+  congestion_value = EVAL_CONGESTION_INST->calRUDY(bin_cnt_x, bin_cnt_y, save_path);
+  EVAL_CONGESTION_INST->destroyIDB();
+
+  return congestion_value;
+}
+
+CongestionValue CongestionAPI::lutRudyCongestion(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
+{
+  CongestionValue congestion_value;
+
+  EVAL_CONGESTION_INST->initIDB();
+  congestion_value = EVAL_CONGESTION_INST->calLUTRUDY(bin_cnt_x, bin_cnt_y, save_path);
+  EVAL_CONGESTION_INST->destroyIDB();
+
+  return congestion_value;
+}
+
+CongestionValue CongestionAPI::egrCongestion(const std::string& save_path)
+{
+  CongestionValue congestion_value;
+
+  EVAL_CONGESTION_INST->initEGR();
+  congestion_value = EVAL_CONGESTION_INST->calEGRCongestion(save_path);
+  EVAL_CONGESTION_INST->destroyEGR();
+
+  return congestion_value;
+}
+
+
 void CongestionAPI::evalNetInfo()
 {
   EVAL_CONGESTION_INST->initIDB();
@@ -268,5 +302,46 @@ std::string CongestionAPI::egrUnionMap(std::string stage, std::string rt_dir_pat
 
   return union_egr_map_path;
 }
+
+std::map<std::string, std::vector<std::vector<int>>> CongestionAPI::getEGRMap(bool is_run_egr)
+{
+  return EVAL_CONGESTION_INST->getDemandSupplyDiffMap(is_run_egr);
+}
+
+
+std::map<int, double> CongestionAPI::patchRUDYCongestion(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, double> patch_rudy_congestion;
+
+  EVAL_CONGESTION_INST->initIDB();
+
+  CongestionEval congestion_eval;
+  patch_rudy_congestion = congestion_eval.patchRUDYCongestion(EVAL_CONGESTION_INST->getCongestionNets(), 
+                                                             patch_coords);
+  EVAL_CONGESTION_INST->destroyIDB();
+
+  return patch_rudy_congestion;
+}
+
+std::map<int, double> CongestionAPI::patchEGRCongestion(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, double> patch_egr_congestion;
+
+  CongestionEval congestion_eval;
+  patch_egr_congestion = congestion_eval.patchEGRCongestion(patch_coords);
+
+  return patch_egr_congestion;
+}
+
+std::map<int, std::map<std::string, double>> CongestionAPI::patchLayerEGRCongestion(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, std::map<std::string, double>> patch_layer_egr_congestion;
+
+  CongestionEval congestion_eval;
+  patch_layer_egr_congestion = congestion_eval.patchLayerEGRCongestion(patch_coords);
+
+  return patch_layer_egr_congestion;
+}
+
 
 }  // namespace ieval

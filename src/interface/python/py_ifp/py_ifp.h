@@ -22,9 +22,9 @@
 namespace python_interface {
 
 bool fpInit(const std::string& die_area, const std::string& core_area, const std::string& core_site, const std::string& io_site,
-            const std::string& corner_site);
+            const std::string& corner_site, double core_util, double x_margin, double y_margin, double xy_ratio, double cell_area);
 bool fpMakeTracks(const std::string& layer, int x_start, int x_step, int y_start, int y_step);
-bool fpPlacePins(const std::string& layer, int width, int height);
+bool fpPlacePins(const std::string& layer, int width, int height, std::vector<std::string>& sides);
 bool fpPlacePort(const std::string& pin_name, int offset_x, int offset_y, int width, int height, const std::string& layer);
 bool fpPlaceIOFiller(std::vector<std::string>& filler_types, const std::string& prefix);
 bool fpAddPlacementBlockage(const std::string& box);

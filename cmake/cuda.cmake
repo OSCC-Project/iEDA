@@ -1,6 +1,6 @@
 macro(ADD_CUDA_PROJ proj_name)
 
-  cmake_minimum_required(VERSION 3.24.0)
+cmake_minimum_required(VERSION 3.24)
 
 cmake_policy(SET CMP0128 NEW)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -17,7 +17,9 @@ set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
   set(CMAKE_CUDA_STANDARD 17)
   set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
-  enable_language(CUDA)
+set(CMAKE_CUDA_COMPILER /usr/local/cuda-12.1/bin/nvcc)
+
+enable_language(CUDA)
 
   include(CheckLanguage)
   check_language(CUDA)

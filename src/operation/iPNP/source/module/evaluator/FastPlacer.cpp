@@ -23,28 +23,27 @@
  */
 
 #include "FastPlacer.hh"
+
 #include "PLAPI.hh"
-#include "log/Log.hh"
 #include "PNPConfig.hh"
+#include "idm.h"
+#include "log/Log.hh"
 
 namespace ipnp {
 
-void FastPlacer::runFastPlacer(idb::IdbBuilder* idb_builder)
+void FastPlacer::runFastPlacer()
 {
   std::string pl_json_file;
-  
-  PNPConfig* temp_config = new PNPConfig();
-  if (!temp_config->get_pl_default_config_path().empty()) {
-    pl_json_file = temp_config->get_pl_default_config_path();
-  }
-  else {
+
+  if (!pnpConfig->get_pl_default_config_path().empty()) {
+    pl_json_file = pnpConfig->get_pl_default_config_path();
+  } else {
     pl_json_file = "../src/operation/iPNP/example/pl_default_config.json";
   }
-  delete temp_config;
-  
+
   ipl::PLAPI& plapi = ipl::PLAPI::getInst();
 
-  plapi.initAPI(pl_json_file, idb_builder);
+  plapi.initAPI(pl_json_file, dmInst->get_idb_builder());
   plapi.runGP();
   plapi.runLG();
   plapi.writeBackSourceDataBase();
@@ -52,6 +51,5 @@ void FastPlacer::runFastPlacer(idb::IdbBuilder* idb_builder)
 
   plapi.destoryInst();
 }
-
 
 }  // namespace ipnp

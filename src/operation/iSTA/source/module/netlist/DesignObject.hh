@@ -108,7 +108,7 @@ class DesignObject {
   virtual unsigned isPinBus() { return 0; }
 
   virtual Instance* get_own_instance() {
-    LOG_FATAL << "The func is not defined.";
+    // LOG_FATAL << "The func is not defined.";
     return nullptr;
   }
 

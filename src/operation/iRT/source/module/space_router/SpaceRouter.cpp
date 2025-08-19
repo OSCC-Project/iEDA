@@ -51,6 +51,9 @@ void SpaceRouter::destroyInst()
 
 void SpaceRouter::route()
 {
+  if (RTDM.getConfig().enable_fast_mode) {
+    return;
+  }
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
   SRModel sr_model = initSRModel();
@@ -118,6 +121,9 @@ void SpaceRouter::buildLayerNodeMap(SRModel& sr_model)
         sr_node.set_boundary_wire_unit(gcell_map[x][y].get_boundary_wire_unit());
         sr_node.set_internal_wire_unit(gcell_map[x][y].get_internal_wire_unit());
         sr_node.set_internal_via_unit(gcell_map[x][y].get_internal_via_unit());
+        if (RTUTIL.exist(gcell_map[x][y].get_routing_ignore_net_orient_map(), layer_idx)) {
+          sr_node.set_ignore_net_orient_map(gcell_map[x][y].get_routing_ignore_net_orient_map()[layer_idx]);
+        }
       }
     }
   }
@@ -177,38 +183,33 @@ void SpaceRouter::routeSRModel(SRModel& sr_model)
    */
   std::vector<SRIterParam> sr_iter_param_list;
   // clang-format off
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 0, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 20, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 40, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 60, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 80, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 0, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 20, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 40, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 60, 3, overflow_unit, 3);
-  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 100, 80, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 30, 0, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 30, 10, 3, overflow_unit, 3);
+  sr_iter_param_list.emplace_back(prefer_wire_unit, via_unit, 30, 20, 3, overflow_unit, 3);
   // clang-format on
   initRoutingState(sr_model);
   for (int32_t i = 0, iter = 1; i < static_cast<int32_t>(sr_iter_param_list.size()); i++, iter++) {
     Monitor iter_monitor;
     RTLOG.info(Loc::current(), "***** Begin iteration ", iter, "/", sr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, sr_iter_param_list.size()),
                ") *****");
+    // debugPlotSRModel(sr_model, "before");
     setSRIterParam(sr_model, iter, sr_iter_param_list[i]);
     initSRBoxMap(sr_model);
     resetRoutingState(sr_model);
     buildBoxSchedule(sr_model);
     splitNetResult(sr_model);
+    // debugPlotSRModel(sr_model, "middle");
     routeSRBoxMap(sr_model);
     uploadNetResult(sr_model);
     reviseNodeDemand(sr_model);
     updateBestResult(sr_model);
+    // debugPlotSRModel(sr_model, "after");
     updateSummary(sr_model);
     printSummary(sr_model);
     outputGuide(sr_model);
     outputNetCSV(sr_model);
     outputOverflowCSV(sr_model);
-    outputNetJson(sr_model);
-    outputOverflowJson(sr_model);
+    outputJson(sr_model);
     RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", sr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, sr_iter_param_list.size()), ")",
                iter_monitor.getStatsInfo(), "*****");
     if (stopIteration(sr_model)) {
@@ -239,31 +240,53 @@ void SpaceRouter::setSRIterParam(SRModel& sr_model, int32_t iter, SRIterParam& s
 void SpaceRouter::initSRBoxMap(SRModel& sr_model)
 {
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
-
-  int32_t x_gcell_num = 0;
-  for (ScaleGrid& x_grid : gcell_axis.get_x_grid_list()) {
-    x_gcell_num += x_grid.get_step_num();
-  }
-  int32_t y_gcell_num = 0;
-  for (ScaleGrid& y_grid : gcell_axis.get_y_grid_list()) {
-    y_gcell_num += y_grid.get_step_num();
-  }
-
   SRIterParam& sr_iter_param = sr_model.get_sr_iter_param();
+
   int32_t size = sr_iter_param.get_size();
   int32_t offset = sr_iter_param.get_offset();
-  int32_t x_box_num = static_cast<int32_t>(std::ceil((x_gcell_num - offset) / 1.0 / size));
-  int32_t y_box_num = static_cast<int32_t>(std::ceil((y_gcell_num - offset) / 1.0 / size));
-
+  while (offset >= size) {
+    offset -= size;
+  }
+  std::vector<int32_t> x_scale_list;
+  {
+    int32_t x_gcell_num = 0;
+    for (ScaleGrid& x_grid : gcell_axis.get_x_grid_list()) {
+      x_gcell_num += x_grid.get_step_num();
+    }
+    x_scale_list.push_back(0);
+    for (int32_t x_scale = offset; x_scale <= x_gcell_num; x_scale += size) {
+      x_scale_list.push_back(x_scale);
+    }
+    x_scale_list.push_back(x_gcell_num);
+    std::sort(x_scale_list.begin(), x_scale_list.end());
+    x_scale_list.erase(std::unique(x_scale_list.begin(), x_scale_list.end()), x_scale_list.end());
+  }
+  std::vector<int32_t> y_scale_list;
+  {
+    int32_t y_gcell_num = 0;
+    for (ScaleGrid& y_grid : gcell_axis.get_y_grid_list()) {
+      y_gcell_num += y_grid.get_step_num();
+    }
+    y_scale_list.push_back(0);
+    for (int32_t y_scale = offset; y_scale <= y_gcell_num; y_scale += size) {
+      y_scale_list.push_back(y_scale);
+    }
+    y_scale_list.push_back(y_gcell_num);
+    std::sort(y_scale_list.begin(), y_scale_list.end());
+    y_scale_list.erase(std::unique(y_scale_list.begin(), y_scale_list.end()), y_scale_list.end());
+  }
   GridMap<SRBox>& sr_box_map = sr_model.get_sr_box_map();
-  sr_box_map.init(x_box_num, y_box_num);
-
+  {
+    int32_t x_box_num = static_cast<int32_t>(x_scale_list.size()) - 1;
+    int32_t y_box_num = static_cast<int32_t>(y_scale_list.size()) - 1;
+    sr_box_map.init(x_box_num, y_box_num);
+  }
   for (int32_t x = 0; x < sr_box_map.get_x_size(); x++) {
     for (int32_t y = 0; y < sr_box_map.get_y_size(); y++) {
-      int32_t grid_ll_x = std::max(offset + x * size, 0);
-      int32_t grid_ll_y = std::max(offset + y * size, 0);
-      int32_t grid_ur_x = std::min(offset + (x + 1) * size - 1, x_gcell_num - 1);
-      int32_t grid_ur_y = std::min(offset + (y + 1) * size - 1, y_gcell_num - 1);
+      int32_t grid_ll_x = x_scale_list[x];
+      int32_t grid_ll_y = y_scale_list[y];
+      int32_t grid_ur_x = x_scale_list[x + 1] - 1;
+      int32_t grid_ur_y = y_scale_list[y + 1] - 1;
 
       PlanarRect ll_gcell_rect = RTUTIL.getRealRectByGCell(PlanarCoord(grid_ll_x, grid_ll_y), gcell_axis);
       PlanarRect ur_gcell_rect = RTUTIL.getRealRectByGCell(PlanarCoord(grid_ur_x, grid_ur_y), gcell_axis);
@@ -304,7 +327,9 @@ void SpaceRouter::buildBoxSchedule(SRModel& sr_model)
           sr_box_id_list.emplace_back(x, y);
         }
       }
-      sr_box_id_list_list.push_back(sr_box_id_list);
+      if (!sr_box_id_list.empty()) {
+        sr_box_id_list_list.push_back(sr_box_id_list);
+      }
     }
   }
   sr_model.set_sr_box_id_list_list(sr_box_id_list_list);
@@ -341,7 +366,7 @@ void SpaceRouter::splitNetResult(SRModel& sr_model)
   }
 
   for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
-    std::vector<Segment<LayerCoord>*> del_segment_list;
+    std::set<Segment<LayerCoord>*> del_segment_set;
     std::vector<Segment<LayerCoord>> new_segment_list;
     for (Segment<LayerCoord>* segment : segment_set) {
       LayerCoord& first_coord = segment->get_first();
@@ -368,7 +393,7 @@ void SpaceRouter::splitNetResult(SRModel& sr_model)
           x_scale_list.push_back(x_scale);
         }
         x_scale_list.push_back(second_x);
-        del_segment_list.push_back(segment);
+        del_segment_set.insert(segment);
         for (size_t i = 1; i < x_scale_list.size(); i++) {
           new_segment_list.emplace_back(LayerCoord(x_scale_list[i - 1], first_coord.get_y(), first_coord.get_layer_idx()),
                                         LayerCoord(x_scale_list[i], first_coord.get_y(), first_coord.get_layer_idx()));
@@ -392,14 +417,14 @@ void SpaceRouter::splitNetResult(SRModel& sr_model)
           y_scale_list.push_back(y_scale);
         }
         y_scale_list.push_back(second_y);
-        del_segment_list.push_back(segment);
+        del_segment_set.insert(segment);
         for (size_t i = 1; i < y_scale_list.size(); i++) {
           new_segment_list.emplace_back(LayerCoord(first_coord.get_x(), y_scale_list[i - 1], first_coord.get_layer_idx()),
                                         LayerCoord(first_coord.get_x(), y_scale_list[i], first_coord.get_layer_idx()));
         }
       }
     }
-    for (Segment<LayerCoord>* del_segment : del_segment_list) {
+    for (Segment<LayerCoord>* del_segment : del_segment_set) {
       RTDM.updateNetGlobalResultToGCellMap(ChangeType::kDel, net_idx, del_segment);
     }
     for (Segment<LayerCoord>& new_segment : new_segment_list) {
@@ -437,7 +462,9 @@ void SpaceRouter::routeSRBoxMap(SRModel& sr_model)
         buildOrientSupply(sr_model, sr_box);
         buildOrientDemand(sr_model, sr_box);
         // debugCheckSRBox(sr_box);
+        // debugPlotSRBox(sr_box, "before");
         routeSRBox(sr_box);
+        // debugPlotSRBox(sr_box, "after");
       }
       selectBestResult(sr_box);
       freeSRBox(sr_box);
@@ -575,18 +602,8 @@ void SpaceRouter::buildOverflow(SRModel& sr_model, SRBox& sr_box)
     GridMap<SRNode>& sr_node_map = layer_node_map[layer_idx];
     for (int32_t x = box_rect.get_grid_ll_x(); x <= box_rect.get_grid_ur_x(); x++) {
       for (int32_t y = box_rect.get_grid_ll_y(); y <= box_rect.get_grid_ur_y(); y++) {
-        double node_overflow = sr_node_map[x][y].getOverflow();
-        total_overflow += node_overflow;
-        if (node_overflow > 0) {
-          std::set<int32_t> overflow_net_set;
-          for (auto& [orient, net_set] : sr_node_map[x][y].get_orient_net_map()) {
-            overflow_net_set.insert(net_set.begin(), net_set.end());
-          }
-          for (auto& [net_idx, orient_set] : sr_node_map[x][y].get_net_orient_map()) {
-            overflow_net_set.insert(net_idx);
-          }
-          overflow_net_set_list.push_back(overflow_net_set);
-        }
+        total_overflow += sr_node_map[x][y].getOverflow();
+        overflow_net_set_list.push_back(sr_node_map[x][y].getOverflowNetSet());
       }
     }
   }
@@ -662,6 +679,7 @@ void SpaceRouter::buildLayerNodeMap(SRModel& sr_model, SRBox& sr_box)
         sr_node.set_boundary_wire_unit(top_sr_node_map[sr_node.get_x()][sr_node.get_y()].get_boundary_wire_unit());
         sr_node.set_internal_wire_unit(top_sr_node_map[sr_node.get_x()][sr_node.get_y()].get_internal_wire_unit());
         sr_node.set_internal_via_unit(top_sr_node_map[sr_node.get_x()][sr_node.get_y()].get_internal_via_unit());
+        sr_node.set_ignore_net_orient_map(top_sr_node_map[sr_node.get_x()][sr_node.get_y()].get_ignore_net_orient_map());
       }
     }
   }
@@ -1067,6 +1085,8 @@ SRNode* SpaceRouter::popFromOpenList(SRBox& sr_box)
 
 double SpaceRouter::getKnownCost(SRBox& sr_box, SRNode* start_node, SRNode* end_node)
 {
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+
   bool exist_neighbor = false;
   for (auto& [orientation, neighbor_ptr] : start_node->get_neighbor_node_map()) {
     if (neighbor_ptr == end_node) {
@@ -1077,22 +1097,27 @@ double SpaceRouter::getKnownCost(SRBox& sr_box, SRNode* start_node, SRNode* end_
   if (!exist_neighbor) {
     RTLOG.error(Loc::current(), "The neighbor not exist!");
   }
-
+  Direction direction;
+  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
+    direction = routing_layer_list[start_node->get_layer_idx()].get_prefer_direction();
+  } else {
+    direction = Direction::kProximal;
+  }
   double cost = 0;
   cost += start_node->get_known_cost();
-  cost += getNodeCost(sr_box, start_node, RTUTIL.getOrientation(*start_node, *end_node));
-  cost += getNodeCost(sr_box, end_node, RTUTIL.getOrientation(*end_node, *start_node));
+  cost += getNodeCost(sr_box, start_node, direction);
+  cost += getNodeCost(sr_box, end_node, direction);
   cost += getKnownWireCost(sr_box, start_node, end_node);
   cost += getKnownViaCost(sr_box, start_node, end_node);
   return cost;
 }
 
-double SpaceRouter::getNodeCost(SRBox& sr_box, SRNode* curr_node, Orientation orientation)
+double SpaceRouter::getNodeCost(SRBox& sr_box, SRNode* curr_node, Direction direction)
 {
   double overflow_unit = sr_box.get_sr_iter_param()->get_overflow_unit();
 
   double node_cost = 0;
-  node_cost += curr_node->getOverflowCost(sr_box.get_curr_sr_task()->get_net_idx(), orientation, overflow_unit);
+  node_cost += curr_node->getOverflowCost(sr_box.get_curr_sr_task()->get_net_idx(), direction, overflow_unit);
   return node_cost;
 }
 
@@ -1173,18 +1198,8 @@ void SpaceRouter::updateOverflow(SRBox& sr_box)
     GridMap<SRNode>& sr_node_map = layer_node_map[layer_idx];
     for (int32_t x = 0; x < sr_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < sr_node_map.get_y_size(); y++) {
-        double node_overflow = sr_node_map[x][y].getOverflow();
-        total_overflow += node_overflow;
-        if (node_overflow > 0) {
-          std::set<int32_t> overflow_net_set;
-          for (auto& [orient, net_set] : sr_node_map[x][y].get_orient_net_map()) {
-            overflow_net_set.insert(net_set.begin(), net_set.end());
-          }
-          for (auto& [net_idx, orient_set] : sr_node_map[x][y].get_net_orient_map()) {
-            overflow_net_set.insert(net_idx);
-          }
-          overflow_net_set_list.push_back(overflow_net_set);
-        }
+        total_overflow += sr_node_map[x][y].getOverflow();
+        overflow_net_set_list.push_back(sr_node_map[x][y].getOverflowNetSet());
       }
     }
   }
@@ -1369,8 +1384,7 @@ void SpaceRouter::selectBestResult(SRModel& sr_model)
   outputGuide(sr_model);
   outputNetCSV(sr_model);
   outputOverflowCSV(sr_model);
-  outputNetJson(sr_model);
-  outputOverflowJson(sr_model);
+  outputJson(sr_model);
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -1506,8 +1520,8 @@ void SpaceRouter::updateSummary(SRModel& sr_model)
   double& total_wire_length = summary.iter_sr_summary_map[sr_model.get_iter()].total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.iter_sr_summary_map[sr_model.get_iter()].cut_via_num_map;
   int32_t& total_via_num = summary.iter_sr_summary_map[sr_model.get_iter()].total_via_num;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.iter_sr_summary_map[sr_model.get_iter()].clock_timing;
-  std::map<std::string, double>& power_map = summary.iter_sr_summary_map[sr_model.get_iter()].power_map;
+  std::map<std::string, std::map<std::string, double>>& clock_timing_map = summary.iter_sr_summary_map[sr_model.get_iter()].clock_timing_map;
+  std::map<std::string, double>& type_power_map = summary.iter_sr_summary_map[sr_model.get_iter()].type_power_map;
 
   std::vector<GridMap<SRNode>>& layer_node_map = sr_model.get_layer_node_map();
   std::vector<SRNet>& sr_net_list = sr_model.get_sr_net_list();
@@ -1520,8 +1534,8 @@ void SpaceRouter::updateSummary(SRModel& sr_model)
   total_wire_length = 0;
   cut_via_num_map.clear();
   total_via_num = 0;
-  clock_timing.clear();
-  power_map.clear();
+  clock_timing_map.clear();
+  type_power_map.clear();
 
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
     GridMap<SRNode>& sr_node_map = layer_node_map[layer_idx];
@@ -1580,7 +1594,7 @@ void SpaceRouter::updateSummary(SRModel& sr_model)
         routing_segment_list_list[net_idx].emplace_back(first_real_coord, second_real_coord);
       }
     }
-    RTI.updateTimingAndPower(real_pin_coord_map_list, routing_segment_list_list, clock_timing, power_map);
+    RTI.updateTimingAndPower(real_pin_coord_map_list, routing_segment_list_list, clock_timing_map, type_power_map);
   }
 }
 
@@ -1599,8 +1613,8 @@ void SpaceRouter::printSummary(SRModel& sr_model)
   double& total_wire_length = summary.iter_sr_summary_map[sr_model.get_iter()].total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.iter_sr_summary_map[sr_model.get_iter()].cut_via_num_map;
   int32_t& total_via_num = summary.iter_sr_summary_map[sr_model.get_iter()].total_via_num;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.iter_sr_summary_map[sr_model.get_iter()].clock_timing;
-  std::map<std::string, double>& power_map = summary.iter_sr_summary_map[sr_model.get_iter()].power_map;
+  std::map<std::string, std::map<std::string, double>>& clock_timing_map = summary.iter_sr_summary_map[sr_model.get_iter()].clock_timing_map;
+  std::map<std::string, double>& type_power_map = summary.iter_sr_summary_map[sr_model.get_iter()].type_power_map;
 
   fort::char_table routing_demand_map_table;
   {
@@ -1659,16 +1673,16 @@ void SpaceRouter::printSummary(SRModel& sr_model)
                  << "tns"
                  << "wns"
                  << "freq" << fort::endr;
-    for (auto& [clock_name, timing_map] : clock_timing) {
+    for (auto& [clock_name, timing_map] : clock_timing_map) {
       timing_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
     }
     power_table << fort::header << "power_type";
-    for (auto& [type, power] : power_map) {
+    for (auto& [type, power] : type_power_map) {
       power_table << fort::header << type;
     }
     power_table << fort::endr;
     power_table << "power_value";
-    for (auto& [type, power] : power_map) {
+    for (auto& [type, power] : type_power_map) {
       power_table << power;
     }
     power_table << fort::endr;
@@ -1799,54 +1813,64 @@ void SpaceRouter::outputOverflowCSV(SRModel& sr_model)
   }
 }
 
-void SpaceRouter::outputNetJson(SRModel& sr_model)
+void SpaceRouter::outputJson(SRModel& sr_model)
+{
+  int32_t enable_notification = RTDM.getConfig().enable_notification;
+  if (!enable_notification) {
+    return;
+  }
+  std::map<std::string, std::string> json_path_map;
+  json_path_map["net_map"] = outputNetJson(sr_model);
+  json_path_map["overflow_map"] = outputOverflowJson(sr_model);
+  json_path_map["summary"] = outputSummaryJson(sr_model);
+  RTI.sendNotification("SR", sr_model.get_iter(), json_path_map);
+}
+
+std::string SpaceRouter::outputNetJson(SRModel& sr_model)
 {
   Die& die = RTDM.getDatabase().get_die();
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   std::string& sr_temp_directory_path = RTDM.getConfig().sr_temp_directory_path;
-  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
-  if (!output_inter_result) {
-    return;
-  }
+
   std::vector<nlohmann::json> net_json_list;
-  net_json_list.resize(net_list.size());
-  for (Net& net : net_list) {
-    net_json_list[net.get_net_idx()]["net_name"] = net.get_net_name();
-  }
-  for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
-    for (Segment<LayerCoord>* segment : segment_set) {
-      PlanarRect first_gcell = RTUTIL.getRealRectByGCell(segment->get_first(), gcell_axis);
-      PlanarRect second_gcell = RTUTIL.getRealRectByGCell(segment->get_second(), gcell_axis);
-      if (segment->get_first().get_layer_idx() != segment->get_second().get_layer_idx()) {
-        net_json_list[net_idx]["result"].push_back({first_gcell.get_ll_x(), first_gcell.get_ll_y(), first_gcell.get_ur_x(), first_gcell.get_ur_y(),
-                                                    routing_layer_list[segment->get_first().get_layer_idx()].get_layer_name()});
-        net_json_list[net_idx]["result"].push_back({second_gcell.get_ll_x(), second_gcell.get_ll_y(), second_gcell.get_ur_x(), second_gcell.get_ur_y(),
-                                                    routing_layer_list[segment->get_second().get_layer_idx()].get_layer_name()});
-      } else {
-        PlanarRect gcell = RTUTIL.getBoundingBox({first_gcell, second_gcell});
-        net_json_list[net_idx]["result"].push_back({gcell.get_ll_x(), gcell.get_ll_y(), gcell.get_ur_x(), gcell.get_ur_y(),
-                                                    routing_layer_list[segment->get_first().get_layer_idx()].get_layer_name()});
+  {
+    nlohmann::json result_shape_json;
+    for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
+      std::string net_name = net_list[net_idx].get_net_name();
+      for (Segment<LayerCoord>* segment : segment_set) {
+        PlanarRect first_gcell = RTUTIL.getRealRectByGCell(segment->get_first(), gcell_axis);
+        PlanarRect second_gcell = RTUTIL.getRealRectByGCell(segment->get_second(), gcell_axis);
+        if (segment->get_first().get_layer_idx() != segment->get_second().get_layer_idx()) {
+          result_shape_json["result_shape"][net_name]["path"].push_back({first_gcell.get_ll_x(), first_gcell.get_ll_y(), first_gcell.get_ur_x(),
+                                                                         first_gcell.get_ur_y(),
+                                                                         routing_layer_list[segment->get_first().get_layer_idx()].get_layer_name()});
+          result_shape_json["result_shape"][net_name]["path"].push_back({second_gcell.get_ll_x(), second_gcell.get_ll_y(), second_gcell.get_ur_x(),
+                                                                         second_gcell.get_ur_y(),
+                                                                         routing_layer_list[segment->get_second().get_layer_idx()].get_layer_name()});
+        } else {
+          PlanarRect gcell = RTUTIL.getBoundingBox({first_gcell, second_gcell});
+          result_shape_json["result_shape"][net_name]["path"].push_back({gcell.get_ll_x(), gcell.get_ll_y(), gcell.get_ur_x(), gcell.get_ur_y(),
+                                                                         routing_layer_list[segment->get_first().get_layer_idx()].get_layer_name()});
+        }
       }
     }
+    net_json_list.push_back(result_shape_json);
   }
   std::string net_json_file_path = RTUTIL.getString(sr_temp_directory_path, "net_map_", sr_model.get_iter(), ".json");
   std::ofstream* net_json_file = RTUTIL.getOutputFileStream(net_json_file_path);
   (*net_json_file) << net_json_list;
   RTUTIL.closeFileStream(net_json_file);
-  RTI.sendNotification(RTUTIL.getString("SR_", sr_model.get_iter(), "_net_map"), net_json_file_path);
+  return net_json_file_path;
 }
 
-void SpaceRouter::outputOverflowJson(SRModel& sr_model)
+std::string SpaceRouter::outputOverflowJson(SRModel& sr_model)
 {
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& sr_temp_directory_path = RTDM.getConfig().sr_temp_directory_path;
-  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
-  if (!output_inter_result) {
-    return;
-  }
+
   std::vector<GridMap<SRNode>>& layer_node_map = sr_model.get_layer_node_map();
   std::vector<nlohmann::json> overflow_json_list;
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
@@ -1863,12 +1887,376 @@ void SpaceRouter::outputOverflowJson(SRModel& sr_model)
   std::ofstream* overflow_json_file = RTUTIL.getOutputFileStream(overflow_json_file_path);
   (*overflow_json_file) << overflow_json_list;
   RTUTIL.closeFileStream(overflow_json_file);
-  RTI.sendNotification(RTUTIL.getString("SR_", sr_model.get_iter(), "_net_map"), overflow_json_file_path);
+  return overflow_json_file_path;
+}
+
+std::string SpaceRouter::outputSummaryJson(SRModel& sr_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
+  Summary& summary = RTDM.getDatabase().get_summary();
+  std::string& sr_temp_directory_path = RTDM.getConfig().sr_temp_directory_path;
+
+  std::map<int32_t, double>& routing_demand_map = summary.iter_sr_summary_map[sr_model.get_iter()].routing_demand_map;
+  double& total_demand = summary.iter_sr_summary_map[sr_model.get_iter()].total_demand;
+  std::map<int32_t, double>& routing_overflow_map = summary.iter_sr_summary_map[sr_model.get_iter()].routing_overflow_map;
+  double& total_overflow = summary.iter_sr_summary_map[sr_model.get_iter()].total_overflow;
+  std::map<int32_t, double>& routing_wire_length_map = summary.iter_sr_summary_map[sr_model.get_iter()].routing_wire_length_map;
+  double& total_wire_length = summary.iter_sr_summary_map[sr_model.get_iter()].total_wire_length;
+  std::map<int32_t, int32_t>& cut_via_num_map = summary.iter_sr_summary_map[sr_model.get_iter()].cut_via_num_map;
+  int32_t& total_via_num = summary.iter_sr_summary_map[sr_model.get_iter()].total_via_num;
+  std::map<std::string, std::map<std::string, double>>& clock_timing_map = summary.iter_sr_summary_map[sr_model.get_iter()].clock_timing_map;
+  std::map<std::string, double>& type_power_map = summary.iter_sr_summary_map[sr_model.get_iter()].type_power_map;
+
+  nlohmann::json summary_json;
+  summary_json["iter"] = sr_model.get_iter();
+  for (auto& [routing_layer_idx, demand] : routing_demand_map) {
+    summary_json["routing_demand_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = demand;
+  }
+  summary_json["total_demand"] = total_demand;
+  for (auto& [routing_layer_idx, overflow] : routing_overflow_map) {
+    summary_json["routing_overflow_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = overflow;
+  }
+  summary_json["total_overflow"] = total_overflow;
+  for (auto& [routing_layer_idx, wire_length] : routing_wire_length_map) {
+    summary_json["routing_wire_length_map"][routing_layer_list[routing_layer_idx].get_layer_name()] = wire_length;
+  }
+  summary_json["total_wire_length"] = total_wire_length;
+  for (auto& [cut_layer_idx, via_num] : cut_via_num_map) {
+    summary_json["cut_via_num_map"][cut_layer_list[cut_layer_idx].get_layer_name()] = via_num;
+  }
+  summary_json["total_via_num"] = total_via_num;
+  for (auto& [clock_name, timing] : clock_timing_map) {
+    summary_json["clock_timing_map"]["clock_name"] = clock_name;
+    summary_json["clock_timing_map"]["timing"] = timing;
+  }
+  for (auto& [type, power] : type_power_map) {
+    summary_json["type_power_map"]["type"] = type;
+    summary_json["type_power_map"]["power"] = power;
+  }
+
+  std::string summary_json_file_path = RTUTIL.getString(sr_temp_directory_path, "summary_", sr_model.get_iter(), ".json");
+  std::ofstream* summary_json_file = RTUTIL.getOutputFileStream(summary_json_file_path);
+  (*summary_json_file) << summary_json;
+  RTUTIL.closeFileStream(summary_json_file);
+  return summary_json_file_path;
 }
 
 #endif
 
 #if 1  // debug
+
+void SpaceRouter::debugPlotSRModel(SRModel& sr_model, std::string flag)
+{
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  Die& die = RTDM.getDatabase().get_die();
+  std::string& sr_temp_directory_path = RTDM.getConfig().sr_temp_directory_path;
+
+  int32_t point_size = 5;
+
+  GPGDS gp_gds;
+
+  // base_region
+  {
+    GPStruct base_region_struct("base_region");
+    GPBoundary gp_boundary;
+    gp_boundary.set_layer_idx(0);
+    gp_boundary.set_data_type(0);
+    gp_boundary.set_rect(die.get_real_rect());
+    base_region_struct.push(gp_boundary);
+    gp_gds.addStruct(base_region_struct);
+  }
+
+  // gcell_axis
+  {
+    GPStruct gcell_axis_struct("gcell_axis");
+    std::vector<int32_t> gcell_x_list = RTUTIL.getScaleList(die.get_real_ll_x(), die.get_real_ur_x(), gcell_axis.get_x_grid_list());
+    std::vector<int32_t> gcell_y_list = RTUTIL.getScaleList(die.get_real_ll_y(), die.get_real_ur_y(), gcell_axis.get_y_grid_list());
+    for (int32_t x : gcell_x_list) {
+      GPPath gp_path;
+      gp_path.set_layer_idx(0);
+      gp_path.set_data_type(1);
+      gp_path.set_segment(x, die.get_real_ll_y(), x, die.get_real_ur_y());
+      gcell_axis_struct.push(gp_path);
+    }
+    for (int32_t y : gcell_y_list) {
+      GPPath gp_path;
+      gp_path.set_layer_idx(0);
+      gp_path.set_data_type(1);
+      gp_path.set_segment(die.get_real_ll_x(), y, die.get_real_ur_x(), y);
+      gcell_axis_struct.push(gp_path);
+    }
+    gp_gds.addStruct(gcell_axis_struct);
+  }
+
+  // fixed_rect
+  for (auto& [is_routing, layer_net_rect_map] : RTDM.getTypeLayerNetFixedRectMap(die)) {
+    for (auto& [layer_idx, net_rect_map] : layer_net_rect_map) {
+      for (auto& [net_idx, rect_set] : net_rect_map) {
+        GPStruct fixed_rect_struct(RTUTIL.getString("fixed_rect(net_", net_idx, ")"));
+        for (EXTLayerRect* rect : rect_set) {
+          GPBoundary gp_boundary;
+          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
+          gp_boundary.set_rect(rect->get_real_rect());
+          if (is_routing) {
+            gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(layer_idx));
+          } else {
+            gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(layer_idx));
+          }
+          fixed_rect_struct.push(gp_boundary);
+        }
+        gp_gds.addStruct(fixed_rect_struct);
+      }
+    }
+  }
+
+  // access_point
+  for (auto& [net_idx, access_point_set] : RTDM.getNetAccessPointMap(die)) {
+    GPStruct access_point_struct(RTUTIL.getString("access_point(net_", net_idx, ")"));
+    for (AccessPoint* access_point : access_point_set) {
+      int32_t x = access_point->get_real_x();
+      int32_t y = access_point->get_real_y();
+
+      GPBoundary access_point_boundary;
+      access_point_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(access_point->get_layer_idx()));
+      access_point_boundary.set_data_type(static_cast<int32_t>(GPDataType::kAccessPoint));
+      access_point_boundary.set_rect(x - point_size, y - point_size, x + point_size, y + point_size);
+      access_point_struct.push(access_point_boundary);
+    }
+    gp_gds.addStruct(access_point_struct);
+  }
+
+  // routing result
+  for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
+    GPStruct global_result_struct(RTUTIL.getString("global_result(net_", net_idx, ")"));
+    for (Segment<LayerCoord>* segment : segment_set) {
+      for (NetShape& net_shape : RTDM.getNetGlobalShapeList(net_idx, *segment)) {
+        GPBoundary gp_boundary;
+        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kGlobalPath));
+        gp_boundary.set_rect(net_shape.get_rect());
+        if (net_shape.get_is_routing()) {
+          gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(net_shape.get_layer_idx()));
+        } else {
+          gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(net_shape.get_layer_idx()));
+        }
+        global_result_struct.push(gp_boundary);
+      }
+    }
+    gp_gds.addStruct(global_result_struct);
+  }
+
+  // routing result
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
+    GPStruct detailed_result_struct(RTUTIL.getString("detailed_result(net_", net_idx, ")"));
+    for (Segment<LayerCoord>* segment : segment_set) {
+      for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
+        GPBoundary gp_boundary;
+        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
+        gp_boundary.set_rect(net_shape.get_rect());
+        if (net_shape.get_is_routing()) {
+          gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(net_shape.get_layer_idx()));
+        } else {
+          gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(net_shape.get_layer_idx()));
+        }
+        detailed_result_struct.push(gp_boundary);
+      }
+    }
+    gp_gds.addStruct(detailed_result_struct);
+  }
+
+  // routing patch
+  for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
+    GPStruct detailed_patch_struct(RTUTIL.getString("detailed_patch(net_", net_idx, ")"));
+    for (EXTLayerRect* patch : patch_set) {
+      GPBoundary gp_boundary;
+      gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
+      gp_boundary.set_rect(patch->get_real_rect());
+      gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(patch->get_layer_idx()));
+      detailed_patch_struct.push(gp_boundary);
+    }
+    gp_gds.addStruct(detailed_patch_struct);
+  }
+
+  // layer_node_map
+  {
+    std::vector<GridMap<SRNode>>& layer_node_map = sr_model.get_layer_node_map();
+    // sr_node_map
+    {
+      GPStruct sr_node_map_struct("sr_node_map");
+      for (GridMap<SRNode>& sr_node_map : layer_node_map) {
+        for (int32_t grid_x = 0; grid_x < sr_node_map.get_x_size(); grid_x++) {
+          for (int32_t grid_y = 0; grid_y < sr_node_map.get_y_size(); grid_y++) {
+            SRNode& sr_node = sr_node_map[grid_x][grid_y];
+            PlanarRect real_rect = RTUTIL.getRealRectByGCell(sr_node.get_planar_coord(), gcell_axis);
+            int32_t y_reduced_span = std::max(1, real_rect.getYSpan() / 12);
+            int32_t y = real_rect.get_ur_y();
+
+            y -= y_reduced_span;
+            GPText gp_text_node_real_coord;
+            gp_text_node_real_coord.set_coord(real_rect.get_ll_x(), y);
+            gp_text_node_real_coord.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+            gp_text_node_real_coord.set_message(RTUTIL.getString("(", sr_node.get_x(), " , ", sr_node.get_y(), " , ", sr_node.get_layer_idx(), ")"));
+            gp_text_node_real_coord.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+            gp_text_node_real_coord.set_presentation(GPTextPresentation::kLeftMiddle);
+            sr_node_map_struct.push(gp_text_node_real_coord);
+
+            y -= y_reduced_span;
+            GPText gp_text_node_grid_coord;
+            gp_text_node_grid_coord.set_coord(real_rect.get_ll_x(), y);
+            gp_text_node_grid_coord.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+            gp_text_node_grid_coord.set_message(RTUTIL.getString("(", grid_x, " , ", grid_y, " , ", sr_node.get_layer_idx(), ")"));
+            gp_text_node_grid_coord.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+            gp_text_node_grid_coord.set_presentation(GPTextPresentation::kLeftMiddle);
+            sr_node_map_struct.push(gp_text_node_grid_coord);
+
+            y -= y_reduced_span;
+            GPText gp_text_orient_supply_map;
+            gp_text_orient_supply_map.set_coord(real_rect.get_ll_x(), y);
+            gp_text_orient_supply_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+            gp_text_orient_supply_map.set_message("orient_supply_map: ");
+            gp_text_orient_supply_map.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+            gp_text_orient_supply_map.set_presentation(GPTextPresentation::kLeftMiddle);
+            sr_node_map_struct.push(gp_text_orient_supply_map);
+
+            if (!sr_node.get_orient_supply_map().empty()) {
+              y -= y_reduced_span;
+              GPText gp_text_orient_supply_map_info;
+              gp_text_orient_supply_map_info.set_coord(real_rect.get_ll_x(), y);
+              gp_text_orient_supply_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+              std::string orient_supply_map_info_message = "--";
+              for (auto& [orient, supply] : sr_node.get_orient_supply_map()) {
+                orient_supply_map_info_message += RTUTIL.getString("(", GetOrientationName()(orient), ",", supply, ")");
+              }
+              gp_text_orient_supply_map_info.set_message(orient_supply_map_info_message);
+              gp_text_orient_supply_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+              gp_text_orient_supply_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+              sr_node_map_struct.push(gp_text_orient_supply_map_info);
+            }
+
+            y -= y_reduced_span;
+            GPText gp_text_ignore_net_orient_map;
+            gp_text_ignore_net_orient_map.set_coord(real_rect.get_ll_x(), y);
+            gp_text_ignore_net_orient_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+            gp_text_ignore_net_orient_map.set_message("ignore_net_orient_map: ");
+            gp_text_ignore_net_orient_map.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+            gp_text_ignore_net_orient_map.set_presentation(GPTextPresentation::kLeftMiddle);
+            sr_node_map_struct.push(gp_text_ignore_net_orient_map);
+
+            if (!sr_node.get_ignore_net_orient_map().empty()) {
+              y -= y_reduced_span;
+              GPText gp_text_ignore_net_orient_map_info;
+              gp_text_ignore_net_orient_map_info.set_coord(real_rect.get_ll_x(), y);
+              gp_text_ignore_net_orient_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+              std::string ignore_net_orient_map_info_message = "--";
+              for (auto& [net_idx, orient_set] : sr_node.get_ignore_net_orient_map()) {
+                ignore_net_orient_map_info_message += RTUTIL.getString("(", net_idx);
+                for (Orientation orient : orient_set) {
+                  ignore_net_orient_map_info_message += RTUTIL.getString(",", GetOrientationName()(orient));
+                }
+                ignore_net_orient_map_info_message += RTUTIL.getString(")");
+              }
+              gp_text_ignore_net_orient_map_info.set_message(ignore_net_orient_map_info_message);
+              gp_text_ignore_net_orient_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+              gp_text_ignore_net_orient_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+              sr_node_map_struct.push(gp_text_ignore_net_orient_map_info);
+            }
+
+            y -= y_reduced_span;
+            GPText gp_text_orient_net_map;
+            gp_text_orient_net_map.set_coord(real_rect.get_ll_x(), y);
+            gp_text_orient_net_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+            gp_text_orient_net_map.set_message("orient_net_map: ");
+            gp_text_orient_net_map.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+            gp_text_orient_net_map.set_presentation(GPTextPresentation::kLeftMiddle);
+            sr_node_map_struct.push(gp_text_orient_net_map);
+
+            if (!sr_node.get_orient_net_map().empty()) {
+              y -= y_reduced_span;
+              GPText gp_text_orient_net_map_info;
+              gp_text_orient_net_map_info.set_coord(real_rect.get_ll_x(), y);
+              gp_text_orient_net_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+              std::string orient_net_map_info_message = "--";
+              for (auto& [orient, net_set] : sr_node.get_orient_net_map()) {
+                orient_net_map_info_message += RTUTIL.getString("(", GetOrientationName()(orient));
+                for (int32_t net_idx : net_set) {
+                  orient_net_map_info_message += RTUTIL.getString(",", net_idx);
+                }
+                orient_net_map_info_message += RTUTIL.getString(")");
+              }
+              gp_text_orient_net_map_info.set_message(orient_net_map_info_message);
+              gp_text_orient_net_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+              gp_text_orient_net_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+              sr_node_map_struct.push(gp_text_orient_net_map_info);
+            }
+
+            y -= y_reduced_span;
+            GPText gp_text_net_orient_map;
+            gp_text_net_orient_map.set_coord(real_rect.get_ll_x(), y);
+            gp_text_net_orient_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+            gp_text_net_orient_map.set_message("net_orient_map: ");
+            gp_text_net_orient_map.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+            gp_text_net_orient_map.set_presentation(GPTextPresentation::kLeftMiddle);
+            sr_node_map_struct.push(gp_text_net_orient_map);
+
+            if (!sr_node.get_net_orient_map().empty()) {
+              y -= y_reduced_span;
+              GPText gp_text_net_orient_map_info;
+              gp_text_net_orient_map_info.set_coord(real_rect.get_ll_x(), y);
+              gp_text_net_orient_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+              std::string net_orient_map_info_message = "--";
+              for (auto& [net_idx, orient_set] : sr_node.get_net_orient_map()) {
+                net_orient_map_info_message += RTUTIL.getString("(", net_idx);
+                for (Orientation orient : orient_set) {
+                  net_orient_map_info_message += RTUTIL.getString(",", GetOrientationName()(orient));
+                }
+                net_orient_map_info_message += RTUTIL.getString(")");
+              }
+              gp_text_net_orient_map_info.set_message(net_orient_map_info_message);
+              gp_text_net_orient_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+              gp_text_net_orient_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+              sr_node_map_struct.push(gp_text_net_orient_map_info);
+            }
+
+            y -= y_reduced_span;
+            GPText gp_text_overflow;
+            gp_text_overflow.set_coord(real_rect.get_ll_x(), y);
+            gp_text_overflow.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+            gp_text_overflow.set_message(RTUTIL.getString("overflow: ", sr_node.getOverflow()));
+            gp_text_overflow.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+            gp_text_overflow.set_presentation(GPTextPresentation::kLeftMiddle);
+            sr_node_map_struct.push(gp_text_overflow);
+          }
+        }
+      }
+      gp_gds.addStruct(sr_node_map_struct);
+    }
+    // overflow
+    {
+      GPStruct overflow_struct("overflow");
+      for (GridMap<SRNode>& sr_node_map : layer_node_map) {
+        for (int32_t grid_x = 0; grid_x < sr_node_map.get_x_size(); grid_x++) {
+          for (int32_t grid_y = 0; grid_y < sr_node_map.get_y_size(); grid_y++) {
+            SRNode& sr_node = sr_node_map[grid_x][grid_y];
+            if (sr_node.getOverflow() <= 0) {
+              continue;
+            }
+            PlanarRect real_rect = RTUTIL.getRealRectByGCell(sr_node.get_planar_coord(), gcell_axis);
+
+            GPBoundary gp_boundary;
+            gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kOverflow));
+            gp_boundary.set_rect(real_rect);
+            gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+            overflow_struct.push(gp_boundary);
+          }
+        }
+      }
+      gp_gds.addStruct(overflow_struct);
+    }
+  }
+
+  std::string gds_file_path = RTUTIL.getString(sr_temp_directory_path, flag, "_sr_model.gds");
+  RTGP.plot(gp_gds, gds_file_path);
+}
 
 void SpaceRouter::debugCheckSRBox(SRBox& sr_box)
 {
@@ -1900,6 +2288,299 @@ void SpaceRouter::debugCheckSRBox(SRBox& sr_box)
       }
     }
   }
+}
+
+void SpaceRouter::debugPlotSRBox(SRBox& sr_box, std::string flag)
+{
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  std::string& sr_temp_directory_path = RTDM.getConfig().sr_temp_directory_path;
+
+  PlanarRect box_real_rect = sr_box.get_box_rect().get_real_rect();
+
+  int32_t point_size = 5;
+
+  GPGDS gp_gds;
+
+  // base_region
+  {
+    GPStruct base_region_struct("base_region");
+    GPBoundary gp_boundary;
+    gp_boundary.set_layer_idx(0);
+    gp_boundary.set_data_type(0);
+    gp_boundary.set_rect(box_real_rect);
+    base_region_struct.push(gp_boundary);
+    gp_gds.addStruct(base_region_struct);
+  }
+
+  // gcell_axis
+  {
+    GPStruct gcell_axis_struct("gcell_axis");
+    for (int32_t x : RTUTIL.getScaleList(box_real_rect.get_ll_x(), box_real_rect.get_ur_x(), gcell_axis.get_x_grid_list())) {
+      GPPath gp_path;
+      gp_path.set_layer_idx(0);
+      gp_path.set_data_type(1);
+      gp_path.set_segment(x, box_real_rect.get_ll_y(), x, box_real_rect.get_ur_y());
+      gcell_axis_struct.push(gp_path);
+    }
+    for (int32_t y : RTUTIL.getScaleList(box_real_rect.get_ll_y(), box_real_rect.get_ur_y(), gcell_axis.get_y_grid_list())) {
+      GPPath gp_path;
+      gp_path.set_layer_idx(0);
+      gp_path.set_data_type(1);
+      gp_path.set_segment(box_real_rect.get_ll_x(), y, box_real_rect.get_ur_x(), y);
+      gcell_axis_struct.push(gp_path);
+    }
+    gp_gds.addStruct(gcell_axis_struct);
+  }
+
+  // fixed_rect
+  for (auto& [is_routing, layer_net_rect_map] : RTDM.getTypeLayerNetFixedRectMap(sr_box.get_box_rect())) {
+    for (auto& [layer_idx, net_rect_map] : layer_net_rect_map) {
+      for (auto& [net_idx, rect_set] : net_rect_map) {
+        GPStruct fixed_rect_struct(RTUTIL.getString("fixed_rect(net_", net_idx, ")"));
+        for (EXTLayerRect* rect : rect_set) {
+          GPBoundary gp_boundary;
+          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
+          gp_boundary.set_rect(rect->get_real_rect());
+          if (is_routing) {
+            gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(layer_idx));
+          } else {
+            gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(layer_idx));
+          }
+          fixed_rect_struct.push(gp_boundary);
+        }
+        gp_gds.addStruct(fixed_rect_struct);
+      }
+    }
+  }
+
+  // access_point
+  for (auto& [net_idx, access_point_set] : RTDM.getNetAccessPointMap(sr_box.get_box_rect())) {
+    GPStruct access_point_struct(RTUTIL.getString("access_point(net_", net_idx, ")"));
+    for (AccessPoint* access_point : access_point_set) {
+      int32_t x = access_point->get_real_x();
+      int32_t y = access_point->get_real_y();
+
+      GPBoundary access_point_boundary;
+      access_point_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(access_point->get_layer_idx()));
+      access_point_boundary.set_data_type(static_cast<int32_t>(GPDataType::kAccessPoint));
+      access_point_boundary.set_rect(x - point_size, y - point_size, x + point_size, y + point_size);
+      access_point_struct.push(access_point_boundary);
+    }
+    gp_gds.addStruct(access_point_struct);
+  }
+
+  // net_detailed_result
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(sr_box.get_box_rect())) {
+    GPStruct detailed_result_struct(RTUTIL.getString("detailed_result(net_", net_idx, ")"));
+    for (Segment<LayerCoord>* segment : segment_set) {
+      for (NetShape& net_shape : RTDM.getNetDetailedShapeList(net_idx, *segment)) {
+        GPBoundary gp_boundary;
+        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
+        gp_boundary.set_rect(net_shape.get_rect());
+        if (net_shape.get_is_routing()) {
+          gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(net_shape.get_layer_idx()));
+        } else {
+          gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(net_shape.get_layer_idx()));
+        }
+        detailed_result_struct.push(gp_boundary);
+      }
+    }
+    gp_gds.addStruct(detailed_result_struct);
+  }
+
+  // net_detailed_patch
+  for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(sr_box.get_box_rect())) {
+    GPStruct detailed_patch_struct(RTUTIL.getString("detailed_patch(net_", net_idx, ")"));
+    for (EXTLayerRect* patch : patch_set) {
+      GPBoundary gp_boundary;
+      gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
+      gp_boundary.set_rect(patch->get_real_rect());
+      gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(patch->get_layer_idx()));
+      detailed_patch_struct.push(gp_boundary);
+    }
+    gp_gds.addStruct(detailed_patch_struct);
+  }
+
+  // layer_node_map
+  {
+    std::vector<GridMap<SRNode>>& layer_node_map = sr_box.get_layer_node_map();
+    // sr_node_map
+    {
+      GPStruct sr_node_map_struct("sr_node_map");
+      for (GridMap<SRNode>& sr_node_map : layer_node_map) {
+        for (int32_t grid_x = 0; grid_x < sr_node_map.get_x_size(); grid_x++) {
+          for (int32_t grid_y = 0; grid_y < sr_node_map.get_y_size(); grid_y++) {
+            SRNode& sr_node = sr_node_map[grid_x][grid_y];
+            PlanarRect real_rect = RTUTIL.getRealRectByGCell(sr_node.get_planar_coord(), gcell_axis);
+            int32_t y_reduced_span = std::max(1, real_rect.getYSpan() / 12);
+            int32_t y = real_rect.get_ur_y();
+
+            y -= y_reduced_span;
+            GPText gp_text_node_real_coord;
+            gp_text_node_real_coord.set_coord(real_rect.get_ll_x(), y);
+            gp_text_node_real_coord.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+            gp_text_node_real_coord.set_message(RTUTIL.getString("(", sr_node.get_x(), " , ", sr_node.get_y(), " , ", sr_node.get_layer_idx(), ")"));
+            gp_text_node_real_coord.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+            gp_text_node_real_coord.set_presentation(GPTextPresentation::kLeftMiddle);
+            sr_node_map_struct.push(gp_text_node_real_coord);
+
+            y -= y_reduced_span;
+            GPText gp_text_node_grid_coord;
+            gp_text_node_grid_coord.set_coord(real_rect.get_ll_x(), y);
+            gp_text_node_grid_coord.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+            gp_text_node_grid_coord.set_message(RTUTIL.getString("(", grid_x, " , ", grid_y, " , ", sr_node.get_layer_idx(), ")"));
+            gp_text_node_grid_coord.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+            gp_text_node_grid_coord.set_presentation(GPTextPresentation::kLeftMiddle);
+            sr_node_map_struct.push(gp_text_node_grid_coord);
+
+            y -= y_reduced_span;
+            GPText gp_text_orient_supply_map;
+            gp_text_orient_supply_map.set_coord(real_rect.get_ll_x(), y);
+            gp_text_orient_supply_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+            gp_text_orient_supply_map.set_message("orient_supply_map: ");
+            gp_text_orient_supply_map.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+            gp_text_orient_supply_map.set_presentation(GPTextPresentation::kLeftMiddle);
+            sr_node_map_struct.push(gp_text_orient_supply_map);
+
+            if (!sr_node.get_orient_supply_map().empty()) {
+              y -= y_reduced_span;
+              GPText gp_text_orient_supply_map_info;
+              gp_text_orient_supply_map_info.set_coord(real_rect.get_ll_x(), y);
+              gp_text_orient_supply_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+              std::string orient_supply_map_info_message = "--";
+              for (auto& [orient, supply] : sr_node.get_orient_supply_map()) {
+                orient_supply_map_info_message += RTUTIL.getString("(", GetOrientationName()(orient), ",", supply, ")");
+              }
+              gp_text_orient_supply_map_info.set_message(orient_supply_map_info_message);
+              gp_text_orient_supply_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+              gp_text_orient_supply_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+              sr_node_map_struct.push(gp_text_orient_supply_map_info);
+            }
+
+            y -= y_reduced_span;
+            GPText gp_text_ignore_net_orient_map;
+            gp_text_ignore_net_orient_map.set_coord(real_rect.get_ll_x(), y);
+            gp_text_ignore_net_orient_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+            gp_text_ignore_net_orient_map.set_message("ignore_net_orient_map: ");
+            gp_text_ignore_net_orient_map.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+            gp_text_ignore_net_orient_map.set_presentation(GPTextPresentation::kLeftMiddle);
+            sr_node_map_struct.push(gp_text_ignore_net_orient_map);
+
+            if (!sr_node.get_ignore_net_orient_map().empty()) {
+              y -= y_reduced_span;
+              GPText gp_text_ignore_net_orient_map_info;
+              gp_text_ignore_net_orient_map_info.set_coord(real_rect.get_ll_x(), y);
+              gp_text_ignore_net_orient_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+              std::string ignore_net_orient_map_info_message = "--";
+              for (auto& [net_idx, orient_set] : sr_node.get_ignore_net_orient_map()) {
+                ignore_net_orient_map_info_message += RTUTIL.getString("(", net_idx);
+                for (Orientation orient : orient_set) {
+                  ignore_net_orient_map_info_message += RTUTIL.getString(",", GetOrientationName()(orient));
+                }
+                ignore_net_orient_map_info_message += RTUTIL.getString(")");
+              }
+              gp_text_ignore_net_orient_map_info.set_message(ignore_net_orient_map_info_message);
+              gp_text_ignore_net_orient_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+              gp_text_ignore_net_orient_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+              sr_node_map_struct.push(gp_text_ignore_net_orient_map_info);
+            }
+
+            y -= y_reduced_span;
+            GPText gp_text_orient_net_map;
+            gp_text_orient_net_map.set_coord(real_rect.get_ll_x(), y);
+            gp_text_orient_net_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+            gp_text_orient_net_map.set_message("orient_net_map: ");
+            gp_text_orient_net_map.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+            gp_text_orient_net_map.set_presentation(GPTextPresentation::kLeftMiddle);
+            sr_node_map_struct.push(gp_text_orient_net_map);
+
+            if (!sr_node.get_orient_net_map().empty()) {
+              y -= y_reduced_span;
+              GPText gp_text_orient_net_map_info;
+              gp_text_orient_net_map_info.set_coord(real_rect.get_ll_x(), y);
+              gp_text_orient_net_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+              std::string orient_net_map_info_message = "--";
+              for (auto& [orient, net_set] : sr_node.get_orient_net_map()) {
+                orient_net_map_info_message += RTUTIL.getString("(", GetOrientationName()(orient));
+                for (int32_t net_idx : net_set) {
+                  orient_net_map_info_message += RTUTIL.getString(",", net_idx);
+                }
+                orient_net_map_info_message += RTUTIL.getString(")");
+              }
+              gp_text_orient_net_map_info.set_message(orient_net_map_info_message);
+              gp_text_orient_net_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+              gp_text_orient_net_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+              sr_node_map_struct.push(gp_text_orient_net_map_info);
+            }
+
+            y -= y_reduced_span;
+            GPText gp_text_net_orient_map;
+            gp_text_net_orient_map.set_coord(real_rect.get_ll_x(), y);
+            gp_text_net_orient_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+            gp_text_net_orient_map.set_message("net_orient_map: ");
+            gp_text_net_orient_map.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+            gp_text_net_orient_map.set_presentation(GPTextPresentation::kLeftMiddle);
+            sr_node_map_struct.push(gp_text_net_orient_map);
+
+            if (!sr_node.get_net_orient_map().empty()) {
+              y -= y_reduced_span;
+              GPText gp_text_net_orient_map_info;
+              gp_text_net_orient_map_info.set_coord(real_rect.get_ll_x(), y);
+              gp_text_net_orient_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+              std::string net_orient_map_info_message = "--";
+              for (auto& [net_idx, orient_set] : sr_node.get_net_orient_map()) {
+                net_orient_map_info_message += RTUTIL.getString("(", net_idx);
+                for (Orientation orient : orient_set) {
+                  net_orient_map_info_message += RTUTIL.getString(",", GetOrientationName()(orient));
+                }
+                net_orient_map_info_message += RTUTIL.getString(")");
+              }
+              gp_text_net_orient_map_info.set_message(net_orient_map_info_message);
+              gp_text_net_orient_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+              gp_text_net_orient_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+              sr_node_map_struct.push(gp_text_net_orient_map_info);
+            }
+
+            y -= y_reduced_span;
+            GPText gp_text_overflow;
+            gp_text_overflow.set_coord(real_rect.get_ll_x(), y);
+            gp_text_overflow.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+            gp_text_overflow.set_message(RTUTIL.getString("overflow: ", sr_node.getOverflow()));
+            gp_text_overflow.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+            gp_text_overflow.set_presentation(GPTextPresentation::kLeftMiddle);
+            sr_node_map_struct.push(gp_text_overflow);
+          }
+        }
+      }
+      gp_gds.addStruct(sr_node_map_struct);
+    }
+    // overflow
+    {
+      GPStruct overflow_struct("overflow");
+      for (GridMap<SRNode>& sr_node_map : layer_node_map) {
+        for (int32_t grid_x = 0; grid_x < sr_node_map.get_x_size(); grid_x++) {
+          for (int32_t grid_y = 0; grid_y < sr_node_map.get_y_size(); grid_y++) {
+            SRNode& sr_node = sr_node_map[grid_x][grid_y];
+            if (sr_node.getOverflow() <= 0) {
+              continue;
+            }
+            PlanarRect real_rect = RTUTIL.getRealRectByGCell(sr_node.get_planar_coord(), gcell_axis);
+
+            GPBoundary gp_boundary;
+            gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kOverflow));
+            gp_boundary.set_rect(real_rect);
+            gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(sr_node.get_layer_idx()));
+            overflow_struct.push(gp_boundary);
+          }
+        }
+      }
+      gp_gds.addStruct(overflow_struct);
+    }
+  }
+
+  std::string gds_file_path
+      = RTUTIL.getString(sr_temp_directory_path, flag, "_sr_box_", sr_box.get_sr_box_id().get_x(), "_", sr_box.get_sr_box_id().get_y(), ".gds");
+  RTGP.plot(gp_gds, gds_file_path);
 }
 
 #endif

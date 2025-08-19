@@ -35,6 +35,8 @@ namespace tcl {
 #define TCL_WORK_DIR "-work_dir"
 #define TCL_STEP "-step"
 #define TCL_ADD_SPACE "-add_space"
+#define TCL_PATCH_ROW_STEP "-patch_row_step"
+#define TCL_PATCH_COL_STEP "-patch_col_step"
 
 const char* const EMPTY_STR = "";
 

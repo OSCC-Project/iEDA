@@ -33,6 +33,7 @@
 
 using std::string;
 
+
 namespace ieda {
 
 bool Log::_is_init = false;
@@ -59,12 +60,12 @@ void SignalHandle(const char* data, int size)
  */
 void Log::init(char* argv[], std::string log_dir)
 {
+  std::filesystem::create_directories(log_dir.c_str());
   // Check if glog is already initialized
   if (isInit()) {
-    LOG_WARNING << "Google logging is already initialized, skipping re-initialization.";
-    return;
+    LOG_WARNING << "Google logging is already initialized, re-initialization to log dir: " << log_dir;
+    end();
   }
-
 
   /*init google logging.*/
   google::InitGoogleLogging(argv[0]);

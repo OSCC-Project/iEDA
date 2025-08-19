@@ -30,5 +30,5 @@ endif()
 
 target_include_directories(
   power PUBLIC ${PROJECT_SOURCE_DIR}/src/operation
-               ${PROJECT_SOURCE_DIR}/src/operation/iPW/source/module
+               ${PROJECT_SOURCE_DIR}/src/operation/iPA/source/module
                ${HOME_OPERATION}/iSTA)

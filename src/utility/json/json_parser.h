@@ -46,7 +46,7 @@
 
 namespace ieda {
 
-static nlohmann::json getJsonData(nlohmann::json value, std::vector<std::string> flag_list)
+static nlohmann::json getJsonData(nlohmann::json value, std::vector<std::string> flag_list, nlohmann::json default_value = "")
 {
   if (flag_list.empty()) {
     std::cout << "[json error] : The flag list is empty!" << std::endl;
@@ -69,8 +69,8 @@ static nlohmann::json getJsonData(nlohmann::json value, std::vector<std::string>
       key += ".";
     }
   }
-  std::cout << "[json error] : The configuration file key = " << key << " do not exist." << std::endl;
-  return value;
+  //   std::cout << "[json error] : The configuration file key = " << key << " do not exist." << std::endl;
+  return default_value;
 }
 
 template <typename T>

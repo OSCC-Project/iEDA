@@ -32,14 +32,17 @@
 #include <string>
 #include <vector>
 
+#include "IdbLayer.h"
+#include "IdbSpecialNet.h"
+#include "IdbSpecialWire.h"
+#include "IdbVias.h"
+#include "Log.hh"
 #include "idm.h"
 
 namespace ipnp {
 
-NetworkSynthesis::NetworkSynthesis(SysnType sysn_type, GridManager grid_info)
-  : _network_sys_type(sysn_type),
-  _input_grid_info(grid_info),
-  _synthesized_network(grid_info)
+NetworkSynthesis::NetworkSynthesis(SysnType sysn_type, PNPGridManager grid_info)
+    : _network_sys_type(sysn_type), _input_grid_info(grid_info), _synthesized_network(grid_info)
 {
   // initialize the synthesized network
   _synthesized_network.set_power_layers(_input_grid_info.get_power_layers());
@@ -85,39 +88,55 @@ void NetworkSynthesis::manualSetTemplates()
 
   auto horizontal_templates = _input_grid_info.get_horizontal_templates();
   auto vertical_templates = _input_grid_info.get_vertical_templates();
-  
+  auto layer_specific_templates = pnpConfig->get_layer_specific_templates();
+
+  auto* idb_layers = dmInst->get_idb_layout()->get_layers();
+
+  LOG_INFO << "Setting templates for " << layer_count << " power layers based on their actual directions";
+
   // distribute templates to each layer
   for (int layer_idx = 0; layer_idx < layer_count; ++layer_idx) {
-    int power_layer = power_layers[layer_idx];
-    bool use_horizontal = (layer_idx % 2 == 1);
+    int power_layer_id = power_layers[layer_idx];
     
-    LOG_INFO << "Layer " << power_layer << " Using "
-      << (use_horizontal ? "horizontal" : "vertical") << " templates";
+    auto* routing_layer = idb_layers->find_routing_layer(power_layer_id);
+    auto* idb_layer_routing = dynamic_cast<idb::IdbLayerRouting*>(routing_layer);
     
+    bool use_horizontal = idb_layer_routing->is_horizontal();
+    std::string layer_name = routing_layer->get_name();
+    
+    LOG_INFO << "Layer " << layer_name << " (ID: " << power_layer_id << ") Using " 
+             << (use_horizontal ? "horizontal" : "vertical") << " direction from layer properties";
+
     for (int i = 0; i < ho_region_num; ++i) {
       for (int j = 0; j < ver_region_num; ++j) {
-        if (use_horizontal) {
-          // use horizontal template
-          _synthesized_network.set_single_template(layer_idx, i, j, horizontal_templates[1]);
-        }
-        else {
-          // use vertical template
-          _synthesized_network.set_single_template(layer_idx, i, j, vertical_templates[1]);
-          if (layer_idx == 2) {
-            SingleTemplate template_m7;
-            template_m7.set_direction(StripeDirection::kVertical);
-            template_m7.set_width(900.0);
-            template_m7.set_pg_offset(1600.0);
-            template_m7.set_space(19200.0);
-            template_m7.set_offset(8000.0);
-            _synthesized_network.set_single_template(layer_idx, i, j, template_m7);
+        SingleTemplate template_to_use;
+        
+        auto it = layer_specific_templates.find(layer_name);
+        if (it != layer_specific_templates.end()) {
+          template_to_use.set_direction(it->second.direction == "horizontal" ? 
+                                      StripeDirection::kHorizontal : StripeDirection::kVertical);
+          template_to_use.set_width(it->second.width);
+          template_to_use.set_pg_offset(it->second.pg_offset);
+          template_to_use.set_space(it->second.space);
+          template_to_use.set_offset(it->second.offset);
+          
+          LOG_INFO << "Using layer-specific template for " << layer_name;
+        } else {
+          if (use_horizontal) {
+            template_to_use = horizontal_templates[0];
+          } else {
+            template_to_use = vertical_templates[0];
           }
+          
+          LOG_INFO << "Using default template for " << layer_name;
         }
+        
+        _synthesized_network.set_single_template(layer_idx, i, j, template_to_use);
       }
     }
   }
 
-  LOG_INFO << "Manual template setting completed with alternating horizontal and vertical templates.";
+  LOG_INFO << "Manual template setting completed based on actual layer directions from power_layers configuration.";
 }
 
 }  // namespace ipnp

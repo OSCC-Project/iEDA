@@ -137,9 +137,10 @@ NetMapSummary DensityAPI::netDensityMap(DensityNets nets, DensityRegion region, 
 MacroCustomizedSummary DensityAPI::macroCustomizedMap(int32_t grid_size)
 {
   MacroCustomizedSummary macro_customized_summary;
+  std::string stage = "place";  // Default stage, can be modified as needed 
 
   EVAL_DENSITY_INST->initIDB();
-  macro_customized_summary.margin_summary = macroMarginMap(grid_size);
+  macro_customized_summary.margin_summary = macroMarginMap(grid_size, stage);
   macro_customized_summary.macro_channel = macroChannelMap(grid_size);
   macro_customized_summary.max_continuous_space = macroMaxContinuousSpaceMap(grid_size);
   macro_customized_summary.macro_hierarchy = macroHierarchyMap(grid_size);
@@ -148,14 +149,14 @@ MacroCustomizedSummary DensityAPI::macroCustomizedMap(int32_t grid_size)
   return macro_customized_summary;
 }
 
-MacroMarginSummary DensityAPI::macroMarginMap(int32_t grid_size)
+MacroMarginSummary DensityAPI::macroMarginMap(int32_t grid_size, std::string stage)
 {
   MacroMarginSummary macro_margin_summary;
 
   EVAL_DENSITY_INST->initIDBRegion();
   EVAL_DENSITY_INST->initIDBCells();
   macro_margin_summary = macroMarginMap(EVAL_DENSITY_INST->getDensityCells(), EVAL_DENSITY_INST->getDensityRegion(),
-                                        EVAL_DENSITY_INST->getDensityRegionCore(), grid_size * EVAL_DENSITY_INST->getRowHeight());
+                                        EVAL_DENSITY_INST->getDensityRegionCore(), grid_size * EVAL_DENSITY_INST->getRowHeight(), stage);
 
   return macro_margin_summary;
 }
@@ -186,14 +187,14 @@ std::string DensityAPI::macroHierarchyMap(int32_t grid_size)
   return macro_hierarchy;
 }
 
-MacroMarginSummary DensityAPI::macroMarginMap(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size)
+MacroMarginSummary DensityAPI::macroMarginMap(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size, std::string stage)
 {
   MacroMarginSummary macro_margin_summary;
 
   DensityEval density_eval;
-  macro_margin_summary.horizontal_margin = density_eval.evalHorizonMargin(cells, die, core, grid_size);
-  macro_margin_summary.vertical_margin = density_eval.evalVerticalMargin(cells, die, core, grid_size);
-  macro_margin_summary.union_margin = density_eval.evalAllMargin(cells, die, core, grid_size);
+  macro_margin_summary.horizontal_margin = density_eval.evalHorizonMargin(cells, die, core, grid_size, stage);
+  macro_margin_summary.vertical_margin = density_eval.evalVerticalMargin(cells, die, core, grid_size, stage);
+  macro_margin_summary.union_margin = density_eval.evalAllMargin(cells, die, core, grid_size, stage);
 
   return macro_margin_summary;
 }
@@ -203,6 +204,80 @@ std::string DensityAPI::macroChannelMap(DensityCells cells, DensityRegion die, D
   std::string macro_channel_map;
 
   return macro_channel_map;
+}
+
+std::map<int, int> DensityAPI::patchPinDensity(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, int> patch_pin_density;
+
+  EVAL_DENSITY_INST->initIDB();
+
+  DensityEval density_eval;
+  patch_pin_density = density_eval.patchPinDensity(EVAL_DENSITY_INST->getDensityPins(), 
+                                                  patch_coords);
+  return patch_pin_density;
+}
+
+std::map<int, double> DensityAPI::patchCellDensity(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, double> patch_cell_density;
+
+  EVAL_DENSITY_INST->initIDB();
+
+  DensityEval density_eval;
+  patch_cell_density = density_eval.patchCellDensity(EVAL_DENSITY_INST->getDensityCells(), 
+                                                  patch_coords);
+  return patch_cell_density;
+}
+
+
+std::map<int, double> DensityAPI::patchNetDensity(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, double> patch_net_density;
+
+  EVAL_DENSITY_INST->initIDB();
+
+  DensityEval density_eval;
+  patch_net_density = density_eval.patchNetDensity(EVAL_DENSITY_INST->getDensityNets(), 
+                                                  patch_coords);
+
+  return patch_net_density;                                                
+}
+
+std::map<int, int> DensityAPI::patchMacroMargin(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, int> patch_macro_margin;
+
+  EVAL_DENSITY_INST->initIDB();
+
+  DensityEval density_eval;
+  patch_macro_margin = density_eval.patchMacroMargin(EVAL_DENSITY_INST->getDensityCells(), EVAL_DENSITY_INST->getDensityRegionCore(), patch_coords);
+
+  return patch_macro_margin;
+}
+
+DensityValue DensityAPI::cellDensity(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
+{
+  EVAL_DENSITY_INST->initIDB();
+  DensityValue density_value = EVAL_DENSITY_INST->calCellDensity(bin_cnt_x, bin_cnt_y, save_path);
+  EVAL_DENSITY_INST->destroyIDB();
+  return density_value;
+}
+
+DensityValue DensityAPI::pinDensity(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
+{
+  EVAL_DENSITY_INST->initIDB();
+  DensityValue density_value = EVAL_DENSITY_INST->calPinDensity(bin_cnt_x, bin_cnt_y, save_path);
+  EVAL_DENSITY_INST->destroyIDB();
+  return density_value;
+}
+
+DensityValue DensityAPI::netDensity(int bin_cnt_x, int bin_cnt_y, const std::string& save_path)
+{
+  EVAL_DENSITY_INST->initIDB();
+  DensityValue density_value = EVAL_DENSITY_INST->calNetDensity(bin_cnt_x, bin_cnt_y, save_path);
+  EVAL_DENSITY_INST->destroyIDB();
+  return density_value;
 }
 
 }  // namespace ieval

@@ -23,15 +23,12 @@
  */
 
 #include "TemplateLib.hh"
+
 #include "log/Log.hh"
 
 namespace ipnp {
 
-SingleTemplate TemplateLib::gen_single_template(StripeDirection direction,
-                                           double width,
-                                           double pg_offset,
-                                           double space,
-                                           double offset)
+SingleTemplate TemplateLib::gen_single_template(StripeDirection direction, double width, double pg_offset, double space, double offset)
 {
   SingleTemplate single_template(direction, PowerType::kVSS, width, pg_offset, space, offset);
   return single_template;
@@ -50,21 +47,15 @@ void TemplateLib::gen_template_libs()
   _vertical_templates.push_back(gen_single_template(StripeDirection::kVertical, 8000.0, 1600.0, 38400.0, 27200.0));
 }
 
-void TemplateLib::gen_template_libs_from_config(const PNPConfig* config)
+void TemplateLib::gen_template_libs_from_config()
 {
-  if (!config) {
-    LOG_WARNING << "PNPConfig is null, using default hardcoded templates." << std::endl;
-    gen_template_libs();
-    return;
-  }
-
   // Clear existing templates
   _horizontal_templates.clear();
   _vertical_templates.clear();
 
   // Get templates from config
-  const auto& horizontal_templates = config->get_horizontal_templates();
-  const auto& vertical_templates = config->get_vertical_templates();
+  const auto& horizontal_templates = pnpConfig->get_horizontal_templates();
+  const auto& vertical_templates = pnpConfig->get_vertical_templates();
 
   // Check if both template vectors are empty
   if (horizontal_templates.empty() && vertical_templates.empty()) {
@@ -75,32 +66,18 @@ void TemplateLib::gen_template_libs_from_config(const PNPConfig* config)
 
   // Process horizontal templates
   for (const auto& template_config : horizontal_templates) {
-    _horizontal_templates.push_back(
-      gen_single_template(
-        StripeDirection::kHorizontal,
-        template_config.width,
-        template_config.pg_offset,
-        template_config.space,
-        template_config.offset
-      )
-    );
+    _horizontal_templates.push_back(gen_single_template(StripeDirection::kHorizontal, template_config.width, template_config.pg_offset,
+                                                        template_config.space, template_config.offset));
   }
 
   // Process vertical templates
   for (const auto& template_config : vertical_templates) {
-    _vertical_templates.push_back(
-      gen_single_template(
-        StripeDirection::kVertical,
-        template_config.width,
-        template_config.pg_offset,
-        template_config.space,
-        template_config.offset
-      )
-    );
+    _vertical_templates.push_back(gen_single_template(StripeDirection::kVertical, template_config.width, template_config.pg_offset,
+                                                      template_config.space, template_config.offset));
   }
 
-  LOG_INFO << "Generated " << _horizontal_templates.size() << " horizontal templates and "
-           << _vertical_templates.size() << " vertical templates from configuration." << std::endl;
+  LOG_INFO << "Generated " << _horizontal_templates.size() << " horizontal templates and " << _vertical_templates.size()
+           << " vertical templates from configuration." << std::endl;
 }
 
-}  // namespace ipnp 
+}  // namespace ipnp

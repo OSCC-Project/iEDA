@@ -1,4 +1,4 @@
-# User guide of iPower
+# iPA: Power Analysis
 
 ## Introduction to the ipower
 

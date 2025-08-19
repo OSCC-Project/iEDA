@@ -22,58 +22,58 @@
  * @date 2025-07-01
  */
 
-#include <iostream>
-#include <string>
+#include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <set>
+#include <string>
 
-#include "iPNP.hh"
-#include "iPNPApi.hh"
-#include "log/Log.hh"
-#include "cxxopts.hpp"
+#include "PNP.hh"
 #include "PNPConfig.hh"
-#include <ctime>
+#include "PNPShellCmd.hh"
+#include "cxxopts.hpp"
+#include "ipnp_api.hh"
+#include "log/Log.hh"
 #include "tcl/UserShell.hh"
-#include "tcl-cmd/ShellCmd.hh"
 
 using namespace idb;
 using namespace ipnp;
 
-int registerCommands() {
-  registerTclCmd(CmdRunPnp, "run_pnp");
-  registerTclCmd(CmdAddVIA1, "add_via1");
+int registerCommands()
+{
+  registerTclCmd(ipnp::CmdRunPnp, "run_pnp");
+  registerTclCmd(ipnp::CmdAddVIA1, "add_via1");
 
   return EXIT_SUCCESS;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
+  Log::init(argv, "/home/sujianrong/iEDA/src/operation/iPNP/example/result/log_info/");
 
-  std::string hello_info =
-      "\033[49;32m***************************\n"
-      "    _ ____  _   ______  \n"
-      "   (_) __ \\/ | / / __ \\ \n"
-      "  / / /_/ /  |/ / /_/ / \n"
-      " / / ____/ /|  / ____/  \n"
-      "/_/_/   /_/ |_/_/       \n"
-      "                       \n"
-      "***************************\n"
-      "WELCOME TO iPNP interface. \e[0m";
+  std::string hello_info
+      = "\033[49;32m***************************\n"
+        "    _ ____  _   ______  \n"
+        "   (_) __ \\/ | / / __ \\ \n"
+        "  / / /_/ /  |/ / /_/ / \n"
+        " / / ____/ /|  / ____/  \n"
+        "/_/_/   /_/ |_/_/       \n"
+        "                       \n"
+        "***************************\n"
+        "WELCOME TO iPNP interface. \e[0m";
 
   std::cout << hello_info << std::endl;
 
   auto shell = ieda::UserShell::getShell();
-  
+
   shell->set_init_func(registerCommands);
 
   cxxopts::Options options("iPNP", "iPNP command line help.");
-  options.add_options()
-    ("c,config", "JSON configuration file", cxxopts::value<std::string>())
-    ("o,output", "Output DEF file path", cxxopts::value<std::string>())
-    ("i,interactive", "Run in interactive TCL shell mode", cxxopts::value<bool>()->default_value("false"))
-    ("s,script", "TCL script file to run", cxxopts::value<std::string>())
-    ("v,version", "Print version")
-    ("h,help", "Print help");
+  options.add_options()("c,config", "JSON configuration file", cxxopts::value<std::string>())(
+      "o,output", "Output DEF file path", cxxopts::value<std::string>())("i,interactive", "Run in interactive TCL shell mode",
+                                                                         cxxopts::value<bool>()->default_value("false"))(
+      "s,script", "TCL script file to run", cxxopts::value<std::string>())("v,version", "Print version")("h,help", "Print help");
 
   try {
     auto result = options.parse(argc, argv);
@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
 
     // Check if running in interactive mode
     bool interactive_mode = result["interactive"].as<bool>();
-    
+
     // Check if running script file
     bool script_mode = result.count("script");
     std::string script_file;
@@ -110,8 +110,7 @@ int main(int argc, char** argv) {
       auto tcl_argc = argc - 1;
       auto tcl_argv = argv + 1;
       shell->userMain(tcl_argc, tcl_argv);
-    }
-    else {
+    } else {
       // Get configuration file path
       std::string config_file_path;
       if (result.count("config")) {
@@ -127,39 +126,31 @@ int main(int argc, char** argv) {
         return 1;
       }
 
-      // Create iPNP instance
-      ipnp::iPNP ipnp(config_file_path);
-      ipnp::iPNPApi::setInstance(&ipnp);
+      LOG_INFO << "Running iPNP with configuration: " << config_file_path;
 
-      // Override output DEF file path from command line (if provided)
-      if (result.count("output")) {
-        ipnp.set_output_def_path(result["output"].as<std::string>());
-      }
-
-      std::string start_info =
-          "\033[49;32m"
-          "    _ ____  _   ______     ______________    ____  ______\n"
-          "   (_) __ \\/ | / / __ \\   / ___/_  __/   |  / __ \\/_  __/\n"
-          "  / / /_/ /  |/ / /_/ /   \\__ \\ / / / /| | / /_/ / / /   \n"
-          " / / ____/ /|  / ____/   ___/ // / / ___ |/ _, _/ / /    \n"
-          "/_/_/   /_/ |_/_/       /____//_/ /_/  |_/_/ |_| /_/     \n"
-          "                                                         \n"
-          "\e[0m";
+      std::string start_info
+          = "\033[49;32m"
+            "    _ ____  _   ______     ______________    ____  ______\n"
+            "   (_) __ \\/ | / / __ \\   / ___/_  __/   |  / __ \\/_  __/\n"
+            "  / / /_/ /  |/ / /_/ /   \\__ \\ / / / /| | / /_/ / / /   \n"
+            " / / ____/ /|  / ____/   ___/ // / / ___ |/ _, _/ / /    \n"
+            "/_/_/   /_/ |_/_/       /____//_/ /_/  |_/_/ |_| /_/     \n"
+            "                                                         \n"
+            "\e[0m";
 
       std::cout << start_info << std::endl;
 
-      // Run iPNP
-      ipnp.run();
-            
-      std::string finish_info =
-          "\033[49;32m"
-          "    _ ____  _   ______     ___________   ___________ __  __\n"
-          "   (_) __ \\/ | / / __ \\   / ____/  _/ | / /  _/ ___// / / /\n"
-          "  / / /_/ /  |/ / /_/ /  / /_   / //  |/ // / \\__ \\/ /_/ / \n"
-          " / / ____/ /|  / ____/  / __/ _/ // /|  // / ___/ / __  /  \n"
-          "/_/_/   /_/ |_/_/      /_/   /___/_/ |_/___//____/_/ /_/   \n"
-          "                                                           \n"
-          "\e[0m";
+      ipnp::PNPApi::run_pnp(config_file_path);
+
+      std::string finish_info
+          = "\033[49;32m"
+            "    _ ____  _   ______     ___________   ___________ __  __\n"
+            "   (_) __ \\/ | / / __ \\   / ____/  _/ | / /  _/ ___// / / /\n"
+            "  / / /_/ /  |/ / /_/ /  / /_   / //  |/ // / \\__ \\/ /_/ / \n"
+            " / / ____/ /|  / ____/  / __/ _/ // /|  // / ___/ / __  /  \n"
+            "/_/_/   /_/ |_/_/      /_/   /___/_/ |_/___//____/_/ /_/   \n"
+            "                                                           \n"
+            "\e[0m";
 
       std::cout << finish_info << std::endl;
     }
@@ -171,6 +162,8 @@ int main(int argc, char** argv) {
     std::cerr << "Error: " << e.what() << std::endl;
     return 1;
   }
+
+  Log::end();
 
   return 0;
 }

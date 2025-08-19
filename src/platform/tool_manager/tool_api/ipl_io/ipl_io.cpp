@@ -261,7 +261,7 @@ bool PlacerIO::runIncrementalFlow(std::string config)
 
   iPLAPIInst.runIncrementalFlow();
 
-  iPLAPIInst.destoryInst();
+  // iPLAPIInst.destoryInst();
 
   flowConfigInst->add_status_runtime(stats.elapsedRunTime());
   flowConfigInst->set_status_memmory(stats.memoryDelta());

@@ -1,0 +1,55 @@
+{
+    "timing": {
+        "design_workspace": ""
+    },
+    "power": {
+        "power_net_name": "VDD"
+    },
+    "egr": {
+        "map_path": ""
+    },
+    "grid": {
+        "power_layers": [
+            "met5",
+            "met4"
+        ],
+        "follow_pin_layers": [
+            "met1"
+        ],
+        "follow_pin_width": 480.0,
+        "power_port_layer": "met5",
+        "ho_region_num": 1,
+        "ver_region_num": 1
+    },
+    "simulated_annealing": {
+        "initial_temp": 100.0,
+        "cooling_rate": 0.95,
+        "min_temp": 0.1,
+        "iterations_per_temp": 10,
+        "ir_drop_weight": 0.6,
+        "overflow_weight": 0.4,
+        "modifiable_layer_min": "met2",
+        "modifiable_layer_max": "met5"
+    },
+    "templates": {
+        "horizontal": [
+            {
+                "width": 1600.0,
+                "pg_offset": 6800.0,
+                "space": 13600.0,
+                "offset": 1200.0
+            }
+        ],
+        "vertical": [
+            {
+                "width": 1600.0,
+                "pg_offset": 6800.0,
+                "space": 13600.0,
+                "offset": 1200.0
+            }
+        ],
+        "layer_specific": {
+            
+        }
+    }
+}

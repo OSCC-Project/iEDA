@@ -78,5 +78,7 @@ constexpr unsigned c_vertex_path_delay_data_bucket_size = 1;
 
 constexpr bool c_print_delay_yaml = false;
 constexpr bool c_print_net_yaml = false;
+constexpr bool c_print_wire_yaml = false;
+constexpr bool c_print_wire_json = true;
 
 }  // namespace ista

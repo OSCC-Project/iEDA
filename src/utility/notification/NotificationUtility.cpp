@@ -17,13 +17,15 @@
 #include "NotificationUtility.h"
 
 #include <curl/curl.h>
-#include <json/json.hpp>
+#include <json.hpp>
 #include <chrono>
 #include <iomanip>
 #include <sstream>
 #include <cstdlib>
 #include <iostream>
 #include <algorithm>
+#include <thread>
+#include <typeinfo>
 
 using json = nlohmann::json;
 
@@ -33,12 +35,7 @@ namespace ieda {
 std::unique_ptr<NotificationUtility> NotificationUtility::_instance = nullptr;
 std::mutex NotificationUtility::_instance_mutex;
 
-// Callback function for libcurl to write response data
-static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {
-    size_t total_size = size * nmemb;
-    userp->append(static_cast<char*>(contents), total_size);
-    return total_size;
-}
+
 
 NotificationUtility& NotificationUtility::getInstance() {
     std::lock_guard<std::mutex> lock(_instance_mutex);
@@ -91,18 +88,75 @@ bool NotificationUtility::initialize(const NotificationConfig& config) {
 
 bool NotificationUtility::initialize(const std::string& endpoint_url) {
     NotificationConfig config;
-    
+    bool is_env_set = true;
+
     // Use provided URL or try to get from environment
     if (!endpoint_url.empty()) {
         config.endpoint_url = endpoint_url;
     } else {
-        const char* env_url = std::getenv("IEDA_NOTIFICATION_URL");
+        const char* env_url = std::getenv("IEDA_ECOS_NOTIFICATION_URL");
         if (env_url) {
             config.endpoint_url = env_url;
+        } else {
+            std::cerr << "IEDA_ECOS_NOTIFICATION_URL is not set" << std::endl;
+            is_env_set = false;
         }
     }
-    
+
+    // Try to load task context from environment variables
+    const char* env_task_id = std::getenv("ECOS_TASK_ID");
+    const char* env_project_id = std::getenv("ECOS_PROJECT_ID");
+    const char* env_task_type = std::getenv("ECOS_TASK_TYPE");
+
+    if (env_project_id)
+        config.project_id = env_project_id;
+    else {
+        std::cerr << "ECOS_PROJECT_ID is not set" << std::endl;
+        is_env_set = false;
+    }
+    if (env_task_id)
+        config.task_id = env_task_id;
+    else {
+        std::cerr << "ECOS_TASK_ID is not set" << std::endl;
+        is_env_set = false;
+    }
+    if (env_task_type)
+        config.task_type = env_task_type;
+    else {
+        std::cerr << "ECOS_TASK_TYPE is not set" << std::endl;
+        is_env_set = false;
+    }
+
+    if (!is_env_set) {
+        std::cerr << "Required environment variables for ECOS notifications are not set. Disabling notifications for this session." << std::endl;
+        setEnabled(false);
+        return false;
+    }
+
     return initialize(config);
+}
+
+bool NotificationUtility::initialize(const std::string& endpoint_url,
+                                    const std::string& task_id,
+                                    const std::string& project_id,
+                                    const std::string& task_type) {
+    NotificationConfig config;
+    config.endpoint_url = endpoint_url;
+    config.task_id = task_id;
+    config.project_id = project_id;
+    config.task_type = task_type;
+
+    return initialize(config);
+}
+
+NotificationUtility::HttpResponse NotificationUtility::sendNotification(const std::string& tool_name, 
+                                                                         const std::map<std::string, std::any>& metadata) {
+    NotificationPayload payload;
+    payload.tool_name = tool_name;
+    payload.metadata = metadata;
+    payload.timestamp = getCurrentTimestamp();
+    
+    return sendNotification(payload);
 }
 
 NotificationUtility::HttpResponse NotificationUtility::sendNotification(const NotificationPayload& payload) {
@@ -132,31 +186,12 @@ NotificationUtility::HttpResponse NotificationUtility::sendNotification(const No
         
         HttpResponse response;
         response.success = true;
-        response.response_body = "Async notification queued";
         return response;
     } else {
         return performHttpRequest(payload_json);
     }
 }
 
-NotificationUtility::HttpResponse NotificationUtility::sendIterationNotification(
-    const std::string& algorithm_name,
-    int iteration,
-    int total_iterations,
-    const std::string& status,
-    const std::map<std::string, std::string>& metrics) {
-    
-    NotificationPayload payload;
-    payload.algorithm_name = algorithm_name;
-    payload.stage = "iteration";
-    payload.iteration_number = iteration;
-    payload.total_iterations = total_iterations;
-    payload.status = status;
-    payload.metrics = metrics;
-    payload.timestamp = getCurrentTimestamp();
-    
-    return sendNotification(payload);
-}
 
 bool NotificationUtility::isInitialized() const {
     std::lock_guard<std::mutex> lock(_config_mutex);
@@ -219,12 +254,21 @@ NotificationUtility::HttpResponse NotificationUtility::performHttpRequest(const 
         return response;
     }
     
-    std::string response_body;
     struct curl_slist* headers = nullptr;
     
     try {
+        // Build URL with query parameters for task context
+        std::string url = _config.endpoint_url;
+        if (!_config.task_id.empty() && !_config.project_id.empty()) {
+            char separator = (url.find('?') != std::string::npos) ? '&' : '?';
+            url = _config.endpoint_url + separator + "task_id=" + _config.task_id + "&project_id=" + _config.project_id;
+            if (!_config.task_type.empty()) {
+                url += "&task_type=" + _config.task_type;
+            }
+        }
+
         // Set URL
-        curl_easy_setopt(curl, CURLOPT_URL, _config.endpoint_url.c_str());
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         
         // Set POST method
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
@@ -243,10 +287,6 @@ NotificationUtility::HttpResponse NotificationUtility::performHttpRequest(const 
         }
         
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        
-        // Set response callback
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_body);
         
         // Set timeout
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, _config.timeout_seconds);
@@ -270,7 +310,6 @@ NotificationUtility::HttpResponse NotificationUtility::performHttpRequest(const 
         
         if (res == CURLE_OK) {
             curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response.response_code);
-            response.response_body = response_body;
             response.success = (response.response_code >= 200 && response.response_code < 300);
             
             if (!response.success) {
@@ -296,30 +335,50 @@ NotificationUtility::HttpResponse NotificationUtility::performHttpRequest(const 
 std::string NotificationUtility::payloadToJson(const NotificationPayload& payload) {
     json j;
 
-    j["algorithm_name"] = payload.algorithm_name;
-    j["stage"] = payload.stage;
-    j["iteration_number"] = payload.iteration_number;
-    j["total_iterations"] = payload.total_iterations;
-    j["status"] = payload.status;
+    j["tool_name"] = payload.tool_name;
     j["timestamp"] = payload.timestamp;
-
-    // Add metrics
-    if (!payload.metrics.empty()) {
-        j["metrics"] = payload.metrics;
-    }
 
     // Add metadata
     if (!payload.metadata.empty()) {
-        j["metadata"] = payload.metadata;
-    }
-
-    // Add progress percentage
-    if (payload.total_iterations > 0) {
-        double progress = static_cast<double>(payload.iteration_number) / payload.total_iterations * 100.0;
-        j["progress_percentage"] = progress;
+        json metadata_json;
+        for (const auto& [key, value] : payload.metadata) {
+            metadata_json[key] = convertAnyToJson(value);
+        }
+        j["metadata"] = metadata_json;
     }
 
     return j.dump();
+}
+
+nlohmann::json NotificationUtility::convertAnyToJson(const std::any& any_value) {
+    try {
+        // Try common types first
+        if (any_value.type() == typeid(std::string)) {
+            return std::any_cast<std::string>(any_value);
+        } else if (any_value.type() == typeid(int)) {
+            return std::any_cast<int>(any_value);
+        } else if (any_value.type() == typeid(int32_t)) {
+            return std::any_cast<int32_t>(any_value);
+        } else if (any_value.type() == typeid(int64_t)) {
+            return std::any_cast<int64_t>(any_value);
+        } else if (any_value.type() == typeid(double)) {
+            return std::any_cast<double>(any_value);
+        } else if (any_value.type() == typeid(float)) {
+            return std::any_cast<float>(any_value);
+        } else if (any_value.type() == typeid(bool)) {
+            return std::any_cast<bool>(any_value);
+        } else if (any_value.type() == typeid(const char*)) {
+            return std::string(std::any_cast<const char*>(any_value));
+        } else if (any_value.type() == typeid(std::map<std::string, std::string>)) {
+            return std::any_cast<std::map<std::string, std::string>>(any_value);
+        } else {
+            // For unknown types, try to convert to string representation
+            return std::string("unsupported_type:") + any_value.type().name();
+        }
+    } catch (const std::bad_any_cast& e) {
+        // If conversion fails, return error info
+        return std::string("conversion_error:") + e.what();
+    }
 }
 
 std::string NotificationUtility::getCurrentTimestamp() {
@@ -336,7 +395,7 @@ std::string NotificationUtility::getCurrentTimestamp() {
 }
 
 std::string NotificationUtility::loadAuthTokenFromEnv() {
-    const char* token = std::getenv("ID_SECRET");
+    const char* token = std::getenv("IEDA_ECOS_NOTIFICATION_SECRET");
     return token ? std::string(token) : std::string();
 }
 
@@ -353,6 +412,20 @@ void NotificationUtility::asyncNotificationWorker(const std::string& payload_jso
         std::cerr << "NotificationUtility: Exception in async worker: "
                   << e.what() << std::endl;
     }
+}
+
+void NotificationUtility::setTaskContext(const std::string& task_id,
+                                        const std::string& project_id,
+                                        const std::string& task_type) {
+    std::lock_guard<std::mutex> lock(_config_mutex);
+    _config.task_id = task_id;
+    _config.project_id = project_id;
+    _config.task_type = task_type;
+}
+
+std::tuple<std::string, std::string, std::string> NotificationUtility::getTaskContext() const {
+    std::lock_guard<std::mutex> lock(_config_mutex);
+    return std::make_tuple(_config.task_id, _config.project_id, _config.task_type);
 }
 
 } // namespace ieda

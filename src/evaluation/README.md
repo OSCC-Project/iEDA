@@ -55,12 +55,16 @@ evaluation/api文件夹提供外部使用的接口，根据指标进行分类，
 |  `cellDensityMap(DensityCells, DensityRegion, int, string )` |   单元列表，区域信息，网格粒度，设计阶段名称                 |      `struct{macro_density,stdcell_density,allcell_density}`            | 根据传入的数据结构直接计算各类版图级单元密度，输出二维图    |
 |  `pinDensityMap(DensityPins, DensityRegion, int, string, bool )` |   引脚列表，区域信息，网格粒度，设计阶段名称，当前网格是否累加周围一圈网格数值                 |      `struct{macro_pin,stdcell_pin,allcell_pin}`            | 根据传入的数据结构直接计算各类版图级引脚密度，输出二维图    |
 |  `netDensityMap(DensityNets, DensityRegion, int, string, bool )` |   线网列表，区域信息，网格粒度，设计阶段名称，当前网格是否累加周围一圈网格数值                 |      `struct{local_net,global_net,allnet}`            | 根据传入的数据结构直接计算各类版图级线网密度，输出二维图    |
-|  `macroMarginMap(int)` |  网格粒度              |      `struct{horizontal, vertical, union}`            | 从iDB获取数据，构建评估器数据，计算版图级宏单元间隙，输出二维图    |
-|  `macroMarginMap(DensityCells, DensityRegion, DensityRegion, int)` |  宏单元列表，Die信息，Core信息，网格粒度              |      `struct{horizontal, vertical, union}`            | 根据传入的数据结构直接计算版图级宏单元间隙，输出二维图    |
+|  `macroMarginMap(int, string)` |  网格粒度, 设计阶段名称              |      `struct{horizontal, vertical, union}`            | 从iDB获取数据，构建评估器数据，计算版图级宏单元间隙，输出二维图    |
+|  `macroMarginMap(DensityCells, DensityRegion, DensityRegion, int, string)` |  宏单元列表，Die信息，Core信息，网格粒度，设计阶段名称              |      `struct{horizontal, vertical, union}`            | 根据传入的数据结构直接计算版图级宏单元间隙，输出二维图    |
 |  `patchPinDensity(patch_id_coord_map)` |  所有网格(patch)组成的`map<id, coord_pair>`               |      `map<patch_id, pin_density>`            | 根据传入的网格划分信息，利用iDB初始化版图数据，返回网格id及其对应的单元引脚密度    |
 |  `patchCellDensity(patch_id_coord_map)` |  所有网格(patch)组成的`map<id, coord_pair>`               |      `map<patch_id, cell_density>`            | 根据传入的网格划分信息，利用iDB初始化版图数据，返回网格id及其对应的单元密度    |
 |  `patchNetDensity(patch_id_coord_map)` |  所有网格(patch)组成的`map<id, coord_pair>`               |      `map<patch_id, net_density>`            | 根据传入的网格划分信息，利用iDB初始化版图数据，返回网格id及其对应的线网密度    |
 |  `patchMacroMargin(patch_id_coord_map)` |  所有网格(patch)组成的`map<id, coord_pair>`               |      `map<patch_id, macro_margin>`            | 根据传入的网格划分信息，利用iDB初始化版图数据，返回网格id及其对应的宏单元间隙密度    |
+|  `cellDensity(int, int, string)` |  水平划分的网格数，竖直划分的网格数，密度图输出路径               |      `struct{max_density, avg_density}`            | 根据传入的网格划分信息，利用iDB初始化版图数据，输出密度图，返回最大单元密度和平均单元密度    |
+|  `pinDensity(int, int, string)` |  水平划分的网格数，竖直划分的网格数，密度图输出路径               |      `struct{max_density, avg_density}`            | 根据传入的网格划分信息，利用iDB初始化版图数据，输出密度图，返回最大引脚密度和平均引脚密度  |
+|  `netDensity(int, int, string)` |  水平划分的网格数，竖直划分的网格数，密度图输出路径               |      `struct{max_density, avg_density}`            | 根据传入的网格划分信息，利用iDB初始化版图数据，输出密度图，返回最大线网密度和平均线网密度   |
+
 
 ### Congestion API
 
@@ -104,7 +108,9 @@ evaluation/api文件夹提供外部使用的接口，根据指标进行分类，
 |  `findBBoxUx(string)` |     线网名称           |       线网外接矩形右上角x坐标            | 根据线网名称，查找线网外接矩形右上角x坐标  |
 |  `findBBoxUy(string)` |     线网名称           |       线网外接矩形右上角y坐标            | 根据线网名称，查找线网外接矩形右上角y坐标  |
 |  `egrUnionMap(string，string)` |   设计阶段名称(用于文件名)，iRT生成拥塞的文件目录          |       二维拥塞图路径            | 启动iRT进行早期全局布线且结果保存到指定拥塞文件目录下，计算各个布线层的GCell拥塞，输出按照所有方向累加后的二维拥塞图路径  |
-
+|  `rudyCongestion(int,int,string)` |     网格划分列数，网格划分行数，拥塞图保存路径           |       最大拥塞值，总拥塞值            | 根据划分的网格数计算RUDY拥塞，保存拥塞图，返回最大拥塞和总拥塞  |
+|  `lutRudyCongestion(int,int,string)` |     网格划分列数，网格划分行数，拥塞图保存路径           |       最大拥塞值，总拥塞值            | 根据划分的网格数计算LUT-RUDY拥塞（根据引脚个数、引脚分布、线网长宽比查表近似线长），保存拥塞图，返回最大拥塞和总拥塞 |
+|  `egrCongestion(string)` |     拥塞图保存路径           |       最大溢出值，总溢出值            | 调用egr评估拥塞，保存拥塞图，返回最大溢出值和总溢出值  |
 ### Timing(Power) API
 
 支持通过五种不同的线长模型（HPWL，FLUTE，SALT，EGR，DR）完成RC Tree的构建，并进行静态时序分析和功耗分析。支持时序、功耗各项指标的计算，支持设计级、线网级、路径级的时序和功耗指标查询。值得注意的是，时序评估器尚未支持直接基于布线结果(route.def)构建RCTree进行时序和功耗分析，目前EGR和DR需要调用iRT分别执行完对应GR和DR的流程，较为耗时。
@@ -141,6 +147,6 @@ evaluation/api文件夹提供外部使用的接口，根据指标进行分类，
 
 |  接口名   |                   输入参数                  |                     返回类型                     |    底层逻辑  |
 | :-----: | :--------------------------------------: | :------------------------------------------: | :------------------------------------------: |
-|  `save_pl_eval_union(string, string, int)` |    Jsonl文件保存路径，CSV文件保存路径，网格粒度              |      `bool`           |   分别保存`Place`阶段汇总性特征到Jsonl文件（设计级）和CSV文件（线网级）  |
-|  `save_cts_eval_union(string, string, int)` |    Jsonl文件保存路径，CSV文件保存路径，网格粒度            |      `bool`          | 分别保存`CTS`阶段汇总性特征到Jsonl文件（设计级）和CSV文件（线网级）   |
+|  `save_pl_eval(string, int)` |    Json文件保存路径，网格粒度              |      `bool`           |   保存`Place`阶段汇总性特征到Json文件  |
+|  `save_cts_eval(string, int)` |    Json文件保存路径, 网格粒度            |      `bool`          | 保存`CTS`阶段汇总性特征到Json文件   |
 

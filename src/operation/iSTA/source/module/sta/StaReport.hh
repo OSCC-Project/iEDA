@@ -26,6 +26,7 @@
 
 #include <memory>
 
+#include "json/json.hpp"
 #include "StaPathData.hh"
 #include "report/ReportTable.hh"
 
@@ -67,6 +68,7 @@ class StaReportPathSummary {
   [[nodiscard]] unsigned get_significant_digits() const {
     return _significant_digits;
   }
+  auto get_analysis_mode() const { return _analysis_mode; }
   void set_significant_digits(unsigned significant_digits) {
     _significant_digits = significant_digits;
   }
@@ -81,11 +83,11 @@ class StaReportPathSummary {
   virtual unsigned operator()(StaSeqPathGroup* seq_path_group);
 
  private:
-  const char* _rpt_file_name;        //!< The report file name.
-  AnalysisMode _analysis_mode;       //!< The max/min analysis mode.
-  unsigned _n_worst;                 //!< The top n path num.
-  unsigned _significant_digits = 3;  //!< The significant digits.
-  bool _json_report_enabled = false; //!< The flag to dump json file.
+  const char* _rpt_file_name;         //!< The report file name.
+  AnalysisMode _analysis_mode;        //!< The max/min analysis mode.
+  unsigned _n_worst;                  //!< The top n path num.
+  unsigned _significant_digits = 3;   //!< The significant digits.
+  bool _json_report_enabled = false;  //!< The flag to dump json file.
 };
 
 /**
@@ -170,6 +172,89 @@ class StaReportPathYaml : public StaReportPathDump {
   ~StaReportPathYaml() override = default;
 
   unsigned operator()(StaSeqPathData* seq_path_data) override;
+};
+
+/**
+ * @brief The wire timing data, wire maybe instance arc or net wire segment.
+ *
+ */
+struct StaWireTimingData {
+  std::string _from_node_name;
+  std::string _to_node_name;
+  double _wire_resistance = 0.0;
+  double _wire_capacitance = 0.0;
+  double _wire_from_slew = 0.0;
+  double _wire_to_slew = 0.0;
+  double _wire_delay = 0.0;
+};
+
+using StaPathWireTimingData = std::vector<StaWireTimingData>;
+
+/**
+ * @brief The report timing data for python api call.
+ *
+ */
+class StaReportPathTimingData : public StaReportPathSummary {
+ public:
+  StaReportPathTimingData(const char* rpt_file_name, AnalysisMode analysis_mode,
+                          unsigned n_worst);
+  ~StaReportPathTimingData() override = default;
+
+  void set_path_timing_data(std::vector<StaWireTimingData> path_timing_data) {
+    _path_timing_data = std::move(path_timing_data);
+  }
+  auto& get_path_timing_data() { return _path_timing_data; }
+
+  unsigned operator()(StaSeqPathData* seq_path_data) override;
+
+  std::vector<StaPathWireTimingData> getPathGroupTimingData(
+      StaSeqPathGroup* seq_path_group) {
+    std::vector<StaPathWireTimingData> path_timing_data;
+
+    StaPathEnd* path_end;
+    StaPathData* path_data;
+    AnalysisMode analysis_mode = get_analysis_mode();
+    FOREACH_PATH_GROUP_END(seq_path_group, path_end)
+    FOREACH_PATH_END_DATA(path_end, analysis_mode, path_data) {
+      (*this)(dynamic_cast<StaSeqPathData*>(path_data));
+      path_timing_data.push_back(std::move(_path_timing_data));
+    }
+    return path_timing_data;
+  }
+
+ private:
+  std::vector<StaWireTimingData> _path_timing_data;
+};
+
+/**
+ * @brief The report wire path in yaml format.
+ *
+ */
+class StaReportWirePathYaml : public StaReportPathDump {
+ public:
+  StaReportWirePathYaml(const char* rpt_file_name, AnalysisMode analysis_mode,
+                        unsigned n_worst);
+  ~StaReportWirePathYaml() override = default;
+
+  unsigned operator()(StaSeqPathData* seq_path_data) override;
+};
+
+/**
+ * @brief The report wire path in json format.
+ *
+ */
+class StaReportWirePathJson : public StaReportPathDump {
+ public:
+  StaReportWirePathJson(const char* rpt_file_name, AnalysisMode analysis_mode,
+                        unsigned n_worst);
+  ~StaReportWirePathJson() override = default;
+
+  using json = nlohmann::ordered_json;
+
+  unsigned operator()(StaSeqPathData* seq_path_data) override;
+
+  private:
+  json _json;
 };
 
 /**

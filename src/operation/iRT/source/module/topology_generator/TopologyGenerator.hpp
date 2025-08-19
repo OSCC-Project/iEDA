@@ -57,10 +57,16 @@ class TopologyGenerator
   void generateTGModel(TGModel& tg_model);
   void routeTGTask(TGModel& tg_model, TGNet* tg_net);
   void initSingleTask(TGModel& tg_model, TGNet* tg_net);
+  std::vector<Segment<PlanarCoord>> getRoutingSegmentList(TGModel& tg_model);
   std::vector<Segment<PlanarCoord>> getPlanarTopoList(TGModel& tg_model);
-  std::vector<Segment<PlanarCoord>> getRoutingSegmentList(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
-  std::vector<Segment<PlanarCoord>> getRoutingSegmentListByStraight(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
-  std::vector<Segment<PlanarCoord>> getRoutingSegmentListByLPattern(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
+  std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListList(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
+  std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByStraight(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
+  std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByLPattern(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
+  std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByZPattern(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
+  std::vector<int32_t> getMidIndexList(int32_t first_idx, int32_t second_idx);
+  std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByUPattern(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
+  std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByInner3Bends(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
+  std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByOuter3Bends(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
   double getNodeCost(TGModel& tg_model, std::vector<Segment<PlanarCoord>>& routing_segment_list);
   MTree<PlanarCoord> getCoordTree(TGModel& tg_model, std::vector<Segment<PlanarCoord>>& routing_segment_list);
   void uploadNetResult(TGModel& tg_model, MTree<PlanarCoord>& coord_tree);
@@ -76,11 +82,14 @@ class TopologyGenerator
   void outputGuide(TGModel& tg_model);
   void outputNetCSV(TGModel& tg_model);
   void outputOverflowCSV(TGModel& tg_model);
-  void outputNetJson(TGModel& tg_model);
-  void outputOverflowJson(TGModel& tg_model);
+  void outputJson(TGModel& tg_model);
+  std::string outputNetJson(TGModel& tg_model);
+  std::string outputOverflowJson(TGModel& tg_model);
+  std::string outputSummaryJson(TGModel& tg_model);
 #endif
 
 #if 1  // debug
+  void debugPlotTGModel(TGModel& tg_model, std::string flag);
   void debugCheckTGModel(TGModel& tg_model);
 #endif
 };

@@ -23,116 +23,106 @@
  */
 
 #include "IREval.hh"
-#include "iPNPIdbWrapper.hh"
+
+#include "PNPIdbWrapper.hh"
+#include "idm.h"
 #include "log/Log.hh"
 
 namespace ipnp {
 
-  void IREval::runIREval(idb::IdbBuilder* idb_builder)
-  {
-    _power_engine = ipower::PowerEngine::getOrCreatePowerEngine();
+void IREval::runIREval()
+{
+  _power_engine = ipower::PowerEngine::getOrCreatePowerEngine();
 
-    std::string power_net_name = "VDD";
+  std::string power_net_name = "VDD";
 
-    _power_engine->resetIRAnalysisData();
-    _power_engine->buildPGNetWireTopo();
-    _power_engine->runIRAnalysis(power_net_name);
+  _power_engine->resetIRAnalysisData();
+  _power_engine->buildPGNetWireTopo();
+  _power_engine->runIRAnalysis(power_net_name);
 
-    _power_engine->reportIRAnalysis();
+  _power_engine->reportIRAnalysis();
 
-    _coord_ir_map = _power_engine->displayIRDropMap();
+  _coord_ir_map = _power_engine->displayIRDropMap();
+}
+
+void IREval::initIREval()
+{
+  LOG_INFO << "Start initialize IREval";
+
+  _timing_engine = TimingEngine::getOrCreateTimingEngine();
+  _timing_engine->set_num_threads(48);
+
+  // Set working directory
+  std::string design_work_space = "./";
+  if (!pnpConfig->get_timing_design_workspace().empty()) {
+    design_work_space = pnpConfig->get_timing_design_workspace();
   }
+  _timing_engine->set_design_work_space(design_work_space.c_str());
 
-  void IREval::initIREval(idb::IdbBuilder* idb_builder, PNPConfig* pnp_config)
-  {
-    LOG_INFO << "Start initialize IREval";
+  // Get library files from database manager instead of config
+  _timing_engine->readLiberty(dmInst->get_config().get_lib_paths());
 
-    _timing_engine = TimingEngine::getOrCreateTimingEngine();
-    _timing_engine->set_num_threads(48);
+  _timing_engine->get_ista()->set_analysis_mode(ista::AnalysisMode::kMaxMin);
+  _timing_engine->get_ista()->set_n_worst_path_per_clock(1);
 
-    // Set working directory
-    std::string design_work_space = "./";
-    if (pnp_config && !pnp_config->get_timing_design_workspace().empty()) {
-      design_work_space = pnp_config->get_timing_design_workspace();
-    }
-    _timing_engine->set_design_work_space(design_work_space.c_str());
+  // Read DEF design
+  _timing_engine->setDefDesignBuilder(dmInst->get_idb_builder());
 
-    std::vector<const char*> lib_files;
-    if (pnp_config && !pnp_config->get_liberty_files().empty()) {
-      const auto& liberty_files = pnp_config->get_liberty_files();
-      lib_files.reserve(liberty_files.size());
-      for (const auto& lib : liberty_files) {
-        lib_files.push_back(lib.c_str());
-      }
-    }
-    _timing_engine->readLiberty(lib_files);
+  // Read SDC file
+  _timing_engine->readSdc(dmInst->get_config().get_sdc_path().c_str());
 
-    _timing_engine->get_ista()->set_analysis_mode(ista::AnalysisMode::kMaxMin);
-    _timing_engine->get_ista()->set_n_worst_path_per_clock(1);
+  _timing_engine->buildGraph();
+  _timing_engine->get_ista()->updateTiming();
+  _timing_engine->reportTiming();
 
-    // Read DEF design
-    _timing_engine->setDefDesignBuilder(idb_builder);
+  _ista = Sta::getOrCreateSta();
+  _ipower = ipower::Power::getOrCreatePower(&(_ista->get_graph()));
 
-    // Read SDC file
-    std::string sdc_file;
-    if (pnp_config && !pnp_config->get_sdc_file().empty()) {
-      sdc_file = pnp_config->get_sdc_file();
-      _timing_engine->readSdc(sdc_file.c_str());
-    }
+  _ipower->runCompleteFlow();
 
-    _timing_engine->buildGraph();
-    _timing_engine->get_ista()->updateTiming();
-    _timing_engine->reportTiming();
+  LOG_INFO << "End initialize IREval";
+}
 
-    _ista = Sta::getOrCreateSta();
-    _ipower = ipower::Power::getOrCreatePower(&(_ista->get_graph()));
-
-    _ipower->runCompleteFlow();
-
-    LOG_INFO << "End initialize IREval";
-
+double IREval::getMaxIRDrop() const
+{
+  if (_coord_ir_map.empty()) {
+    return 0.0;
   }
-
-  double IREval::getMaxIRDrop() const
-  {
-    if (_coord_ir_map.empty()) {
-      return 0.0;
+  double max_ir_drop = -std::numeric_limits<double>::max();
+  for (auto it = _coord_ir_map.begin(); it != _coord_ir_map.end(); ++it) {
+    if (it->second > max_ir_drop) {
+      max_ir_drop = it->second;
     }
-    double max_ir_drop = -std::numeric_limits<double>::max();
-    for (auto it = _coord_ir_map.begin(); it != _coord_ir_map.end(); ++it) {
-      if (it->second > max_ir_drop) {
-        max_ir_drop = it->second;
-      }
-    }
-    return max_ir_drop;
   }
+  return max_ir_drop;
+}
 
-  double IREval::getMinIRDrop() const
-  {
-    if (_coord_ir_map.empty()) {
-      return 0.0;
-    }
-    double min_ir_drop = std::numeric_limits<double>::max();
-    for (auto it = _coord_ir_map.begin(); it != _coord_ir_map.end(); ++it) {
-      if (it->second < min_ir_drop) {
-        min_ir_drop = it->second;
-      }
-    }
-    return min_ir_drop;
+double IREval::getMinIRDrop() const
+{
+  if (_coord_ir_map.empty()) {
+    return 0.0;
   }
+  double min_ir_drop = std::numeric_limits<double>::max();
+  for (auto it = _coord_ir_map.begin(); it != _coord_ir_map.end(); ++it) {
+    if (it->second < min_ir_drop) {
+      min_ir_drop = it->second;
+    }
+  }
+  return min_ir_drop;
+}
 
-  double IREval::getAvgIRDrop() const
-  {
-    if (_coord_ir_map.empty()) {
-      return 0.0;
-    }
-    double sum_ir_drop = 0.0;
-    int count = 0;
-    for (auto it = _coord_ir_map.begin(); it != _coord_ir_map.end(); ++it) {
-      sum_ir_drop += it->second;
-      count++;
-    }
-    return sum_ir_drop / count;
+double IREval::getAvgIRDrop() const
+{
+  if (_coord_ir_map.empty()) {
+    return 0.0;
   }
+  double sum_ir_drop = 0.0;
+  int count = 0;
+  for (auto it = _coord_ir_map.begin(); it != _coord_ir_map.end(); ++it) {
+    sum_ir_drop += it->second;
+    count++;
+  }
+  return sum_ir_drop / count;
+}
 
 }  // namespace ipnp

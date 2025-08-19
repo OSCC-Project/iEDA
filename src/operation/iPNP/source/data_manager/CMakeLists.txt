@@ -1,18 +1,20 @@
-add_library(data_manager
-    GridManager.cpp
+add_library(pnp-data
+    PNPGridManager.cpp
     SingleTemplate.cpp
     TemplateLib.cpp
-    iPNPIdbWrapper.cpp
+    PNPIdbWrapper.cpp
 )
 
-target_link_libraries(data_manager
+target_link_libraries(pnp-data
     PUBLIC
     idb
-    synthesis
-    
+    pnp-synthesis
+    pnp-config
+    log
+    idm
 )
 
-# target_include_directories(
-#     PUBLIC
-#     ${CMAKE_CURRENT_SOURCE_DIR}
-# )
+target_include_directories(pnp-data
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)

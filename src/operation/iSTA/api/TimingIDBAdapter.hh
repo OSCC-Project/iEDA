@@ -57,10 +57,10 @@ using idb::IdbLayerRouting;
 using idb::IdbLayout;
 using idb::IdbLefService;
 using idb::IdbNet;
-using idb::IdbSpecialNet;
 using idb::IdbNetList;
 using idb::IdbPin;
 using idb::IdbPlacementStatus;
+using idb::IdbSpecialNet;
 using idb::IdbTerm;
 
 #define DEBUG_TIMING_IDB 0
@@ -74,7 +74,8 @@ class TimingIDBAdapter : public TimingDBAdapter {
   explicit TimingIDBAdapter(Sta* ista) : TimingDBAdapter(ista) {
 #if DEBUG_TIMING_IDB
     _debug_csv_file.open("debug_timing_idb.csv", std::ios_base::trunc);
-    _debug_csv_file << "lef_resistance,segment_length,segment_width,layer,segment_resistance"
+    _debug_csv_file << "lef_resistance,segment_length,segment_width,layer,"
+                       "segment_resistance"
                     << std::endl;
 #endif
   }
@@ -92,6 +93,9 @@ class TimingIDBAdapter : public TimingDBAdapter {
   }
   IdbBuilder* get_idb() const { return _idb; }
 
+  void set_dbu(int dbu) { _dbu = dbu; }
+  int get_dbu() const { return _dbu; }
+
   bool isPlaced(DesignObject* pin_or_port) override;
   double dbuToMeters(int distance) const override;
 
@@ -102,7 +106,7 @@ class TimingIDBAdapter : public TimingDBAdapter {
   IdbCoordinate<int32_t>* idbLocation(DesignObject* pin_or_port);
 
   double getResistance(int num_layer, double segment_length,
-                       std::optional<double> segment_width);
+                       std::optional<double> segment_width, int routing_layer_1st = 0);
   double getCapacitance(int num_layer, double segment_length,
                         std::optional<double> segment_width);
   double getAverageResistance(std::optional<double>& segment_width);
@@ -220,6 +224,7 @@ class TimingIDBAdapter : public TimingDBAdapter {
 
   IdbBuilder* _idb = nullptr;
   IdbDesign* _idb_design = nullptr;
+  int _dbu = 2000;
   IdbDefService* _idb_def_service = nullptr;
   IdbLefService* _idb_lef_service = nullptr;
 

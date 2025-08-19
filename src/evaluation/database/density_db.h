@@ -14,6 +14,11 @@
 
 namespace ieval {
 
+struct DensityValue {
+    double max_density;
+    double avg_density;
+};
+
 struct DensityPin
 {
   std::string type;
@@ -28,6 +33,7 @@ struct DensityCell
   int32_t ly;
   int32_t width;
   int32_t height;
+  int id;
 };
 
 struct DensityNet
@@ -36,6 +42,7 @@ struct DensityNet
   int32_t ly;
   int32_t ux;
   int32_t uy;
+  int id; 
 };
 
 struct DensityRegion

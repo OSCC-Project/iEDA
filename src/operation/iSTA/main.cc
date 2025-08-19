@@ -51,6 +51,7 @@
 #include "sta/StaSlewPropagation.hh"
 #include "tcl/UserShell.hh"
 #include "usage/usage.hh"
+#include "time/Time.hh"
 
 DEFINE_string(confPath, "test.conf", "program configure file.");
 
@@ -74,9 +75,12 @@ int registerCommands() {
 }
 
 using ieda::Stats;
+using ieda::Time;
 
 int main(int argc, char** argv) {
   Log::init(argv);
+  // Start the timer
+  Time::start();
 
   // for debug
   // Log::setVerboseLogLevel("Arnoldi*", 1);

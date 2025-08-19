@@ -25,10 +25,34 @@
 namespace python_interface {
 
 bool fpInit(const std::string& die_area, const std::string& core_area, const std::string& core_site, const std::string& io_site,
-            const std::string& corner_site)
+            const std::string& corner_site, double core_util, double x_margin, double y_margin, double xy_ratio, double cell_area)
 {
-  auto die = ieda::Str::splitDouble(die_area.c_str(), " ");
-  auto core = ieda::Str::splitDouble(core_area.c_str(), " ");
+  std::vector<double> die = ieda::Str::splitDouble(die_area.c_str(), " ");
+  std::vector<double> core = ieda::Str::splitDouble(core_area.c_str(), " ");
+  if (die.empty() || core.empty()) {
+    // Get cell area - either from user input or get from iDB
+    if (cell_area <= 0) {
+      cell_area = dmInst->instanceArea(IdbInstanceType::kMax);
+    }
+
+    // Calculate core area based on cell area and utilization
+    double total_core_area = cell_area / core_util;
+
+    // Calculate core dimensions based on aspect ratio
+    double core_height = sqrt(total_core_area / xy_ratio);
+    double core_width = total_core_area / core_height;
+
+    // Calculate die dimensions by adding margins
+    double die_width = core_width + 2 * x_margin;
+    double die_height = core_height + 2 * y_margin;
+
+    // Set die area (llx, lly, urx, ury)
+    die = {0.0, 0.0, die_width, die_height};
+
+    // Set core area with margins
+    core = {x_margin, y_margin, x_margin + core_width, y_margin + core_height};
+  }
+
   fpApiInst->initDie(die[0], die[1], die[2], die[3]);
   fpApiInst->initCore(core[0], core[1], core[2], core[3], core_site, io_site, corner_site);
   return true;
@@ -40,9 +64,9 @@ bool fpMakeTracks(const std::string& layer, int x_start, int x_step, int y_start
   return make_ok;
 }
 
-bool fpPlacePins(const std::string& layer, int width, int height)
+bool fpPlacePins(const std::string& layer, int width, int height, std::vector<std::string>& sides)
 {
-  bool place_ok = fpApiInst->autoPlacePins(layer, width, height);
+  bool place_ok = fpApiInst->autoPlacePins(layer, width, height, sides);
   return place_ok;
 }
 

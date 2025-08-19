@@ -32,6 +32,7 @@ class Config
   std::string bottom_routing_layer;  // optional
   std::string top_routing_layer;     // optional
   int32_t output_inter_result;       // optional
+  int32_t enable_notification;       // optional
   int32_t enable_timing;             // optional
   int32_t enable_fast_mode;          // optional
   int32_t enable_lsa;                // optional
@@ -40,6 +41,8 @@ class Config
   std::string log_file_path;         // building
   int32_t bottom_routing_layer_idx;  // building
   int32_t top_routing_layer_idx;     // building
+  // **********    DataManager    ********** //
+  std::string dm_temp_directory_path;  // building
   // **********     DRCEngine     ********** //
   std::string de_temp_directory_path;  // building
   // **********     GDSPlotter    ********** //

@@ -29,9 +29,24 @@ void TimingAPI::runSTA()
   EVAL_STA_INST->runSTA();
 }
 
+void TimingAPI::runVecSTA(ivec::VecLayout* vec_layout)
+{
+  EVAL_STA_INST->runVecSTA(vec_layout);
+}
+
 void TimingAPI::evalTiming(const std::string& routing_type, const bool& rt_done)
 {
   EVAL_STA_INST->evalTiming(routing_type, rt_done);
+}
+
+TimingWireGraph* TimingAPI::getTimingWireGraph()
+{
+  return EVAL_STA_INST->getTimingWireGraph();
+}
+
+TimingInstanceGraph* TimingAPI::getTimingInstanceGraph()
+{
+  return EVAL_STA_INST->getTimingInstanceGraph();
 }
 
 void TimingAPI::destroyInst()
@@ -102,6 +117,21 @@ void TimingAPI::updateTiming(const std::vector<TimingNet*>& timing_net_list, con
 bool TimingAPI::isClockNet(const std::string& net_name) const
 {
   return EVAL_STA_INST->isClockNet(net_name);
+}
+
+std::map<int, double> TimingAPI::patchTimingMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch_xy_map)
+{
+  return EVAL_STA_INST->patchTimingMap(patch_xy_map);
+}
+
+std::map<int, double> TimingAPI::patchPowerMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch_xy_map)
+{
+  return EVAL_STA_INST->patchPowerMap(patch_xy_map);
+}
+
+std::map<int, double> TimingAPI::patchIRDropMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch_xy_map)
+{
+  return EVAL_STA_INST->patchIRDropMap(patch_xy_map);
 }
 
 }  // namespace ieval

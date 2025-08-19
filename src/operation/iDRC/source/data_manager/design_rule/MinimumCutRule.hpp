@@ -25,6 +25,15 @@ class MinimumCutRule
  public:
   MinimumCutRule() = default;
   ~MinimumCutRule() = default;
+  int32_t num_cuts = -1;
+  int32_t width = -1;
+  bool has_within_cut_distance = false;
+  /**/ int32_t within_cut_distance = -1;
+  bool has_from_above = false;
+  bool has_from_below = false;
+  bool has_length = false;
+  /**/ int32_t length = -1;
+  /**/ int32_t distance = -1;
 };
 
 }  // namespace idrc

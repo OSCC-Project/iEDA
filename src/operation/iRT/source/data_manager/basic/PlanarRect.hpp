@@ -96,7 +96,7 @@ inline int32_t PlanarRect::getWidth() const
   return std::min(getXSpan(), getYSpan());
 }
 
-inline Direction PlanarRect::getRectDirection(Direction point_direction = Direction::kNone) const
+inline Direction PlanarRect::getRectDirection(Direction point_direction) const
 {
   Direction direction = Direction::kNone;
 

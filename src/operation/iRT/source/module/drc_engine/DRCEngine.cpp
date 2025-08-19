@@ -55,15 +55,16 @@ void DRCEngine::init()
   RTLOG.info(Loc::current(), "Starting...");
 
   RTI.initIDRC();
-  buildIgnoredViolationSet();
+  if (!RTDM.getConfig().enable_fast_mode) {
+    buildIgnoredViolationSet();
+  }
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
 {
-  int32_t enable_fast_mode = RTDM.getConfig().enable_fast_mode;
-  if (enable_fast_mode) {
+  if (RTDM.getConfig().enable_fast_mode) {
     return {};
   }
   getViolationListByInterface(de_task);
@@ -147,8 +148,8 @@ void DRCEngine::buildIgnoredViolationSet()
 
 void DRCEngine::getViolationListByInterface(DETask& de_task)
 {
-  de_task.set_violation_list(
-      RTI.getViolationList(de_task.get_env_shape_list(), de_task.get_net_pin_shape_map(), de_task.get_net_result_map(), de_task.get_net_patch_map()));
+  de_task.set_violation_list(RTI.getViolationList(de_task.get_env_shape_list(), de_task.get_net_pin_shape_map(), de_task.get_net_result_map(),
+                                                  de_task.get_net_patch_map(), de_task.get_check_type_set(), de_task.get_check_region_list()));
 }
 
 void DRCEngine::filterViolationList(DETask& de_task)
@@ -235,6 +236,8 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
       case ViolationType::kCornerFillSpacing:
         new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
         layer_routing_list = expandLayer(violation, {-1, 0, +1});
+        break;
+      case ViolationType::kCornerSpacing:
         break;
       case ViolationType::kCutEOLSpacing:
         new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
@@ -325,6 +328,8 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
       case ViolationType::kCornerFillSpacing:
         new_real_rect = enlargeRect(new_real_rect, 0);
         layer_routing_list = expandLayer(violation, {0});
+        break;
+      case ViolationType::kCornerSpacing:
         break;
       case ViolationType::kCutEOLSpacing:
         new_real_rect = enlargeRect(new_real_rect, 0);
