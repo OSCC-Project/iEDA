@@ -30,15 +30,6 @@ bool readRustVCD(const char* vcd_path, const char* top_instance_name) {
   return ipower->readRustVCD(vcd_path, top_instance_name);
 }
 
-unsigned reportPower() {
-  Sta* ista = Sta::getOrCreateSta();
-  ipower::Power* ipower = ipower::Power::getOrCreatePower(&(ista->get_graph()));
-
-  ipower->runCompleteFlow();
-
-  return 1;
-}
-
 /**
  * @brief interface for python of report power.
  *
