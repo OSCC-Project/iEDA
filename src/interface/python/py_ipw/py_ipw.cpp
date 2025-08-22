@@ -135,20 +135,20 @@ std::vector<PathWireTimingPowerData> get_wire_timing_power_data(unsigned n_worst
       ret_wire_data._wire_to_slew = wire_timing_data._wire_to_slew;
 
       // for power
-      std::string& pin_port_name = wire_timing_data._from_node_name;
+      std::string& pin_port_name = ret_wire_data._from_node_name;
       auto pin_port_name_vec = Str::split(pin_port_name.c_str(), ":");
       bool is_pin_port = true;
       // judge if the pin_port_name is pin or port.
       if (pin_port_name_vec.size() == 2) {
-        pin_port_name = pin_port_name_vec[1];
-        if (std::isdigit(pin_port_name[0])) {
+        std::string second_name = pin_port_name_vec[1];
+        if (std::isdigit(second_name[0])) {
           is_pin_port = false;
         }
       }
       
       // update toggle and vdd
       if (is_pin_port) {
-        LOG_INFO << "update toggle and vdd for pin: " << pin_port_name;
+        // LOG_INFO << "update toggle and vdd for pin: " << pin_port_name;
         net_name = get_net_name(pin_port_name);
         auto [toggle, voltage] = power_engine->get_power()->getNetToggleAndVoltageData(net_name.c_str());
         net_toggle = toggle;
