@@ -148,6 +148,7 @@ std::vector<PathWireTimingPowerData> get_wire_timing_power_data(unsigned n_worst
       
       // update toggle and vdd
       if (is_pin_port) {
+        LOG_INFO << "update toggle and vdd for pin: " << pin_port_name;
         net_name = get_net_name(pin_port_name);
         auto [toggle, voltage] = power_engine->get_power()->getNetToggleAndVoltageData(net_name.c_str());
         net_toggle = toggle;
