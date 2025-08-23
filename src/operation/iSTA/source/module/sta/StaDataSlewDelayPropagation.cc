@@ -122,6 +122,7 @@ unsigned StaDataSlewDelayPropagation::operator()(StaArc* the_arc) {
       if (the_arc->isInstArc()) {
         auto* inst_arc = dynamic_cast<StaInstArc*>(the_arc);
         auto* lib_arc = inst_arc->get_lib_arc();
+        auto* lib_arc_set = dynamic_cast<StaInstArc*>(the_arc)->get_lib_arc_set();
         auto* the_lib = lib_arc->get_owner_cell()->get_owner_lib();
 
         if (the_arc->isCheckArc()) {
@@ -142,8 +143,11 @@ unsigned StaDataSlewDelayPropagation::operator()(StaArc* the_arc) {
             auto snk_slew_fs =
                 dynamic_cast<StaSlewData*>(snk_slew_data)->get_slew();
             auto snk_slew = FS_TO_NS(snk_slew_fs);
-            auto delay_ns = lib_arc->getDelayOrConstrainCheckNs(
+            auto delay_values = lib_arc_set->getDelayOrConstrainCheckNs(
                 snk_trans_type, in_slew, snk_slew);
+            double delay_ns = analysis_mode == AnalysisMode::kMax
+                                  ? delay_values.front()
+                                  : delay_values.back();
             auto delay = NS_TO_FS(delay_ns);
 
             StaArcDelayData* arc_delay = nullptr;
@@ -190,8 +194,11 @@ unsigned StaDataSlewDelayPropagation::operator()(StaArc* the_arc) {
           auto output_current =
               lib_arc->getOutputCurrent(out_trans_type, in_slew, load);
 
-          auto delay_ns = lib_arc->getDelayOrConstrainCheckNs(out_trans_type,
+          auto delay_values = lib_arc_set->getDelayOrConstrainCheckNs(out_trans_type,
                                                               in_slew, load);
+          double delay_ns = analysis_mode == AnalysisMode::kMax
+                                ? delay_values.front()
+                                : delay_values.back();
           auto delay = NS_TO_FS(delay_ns);
 
           construct_slew_delay_data(analysis_mode, out_trans_type, snk_vertex,

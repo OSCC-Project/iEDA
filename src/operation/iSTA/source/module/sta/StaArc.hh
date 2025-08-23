@@ -191,14 +191,15 @@ class StaNetArc : public StaArc {
  */
 class StaInstArc : public StaArc {
  public:
-  StaInstArc(StaVertex* src, StaVertex* snk, LibArc* lib_arc, Instance* inst);
+  StaInstArc(StaVertex* src, StaVertex* snk, LibArc* lib_arc,
+             LibArcSet* lib_arc_set, Instance* inst);
   ~StaInstArc() override = default;
-  // ~StaInstArc() override = default;
 
   unsigned isInstArc() const override { return 1; }
 
   LibArc* get_lib_arc() { return _lib_arc; }
   void set_lib_arc(LibArc* lib_arc) { _lib_arc = lib_arc; }
+  auto* get_lib_arc_set() { return _lib_arc_set; }
 
   unsigned isDelayArc() const override { return _lib_arc->isDelayArc(); }
   unsigned isCheckArc() const override { return _lib_arc->isCheckArc(); }
@@ -245,11 +246,12 @@ class StaInstArc : public StaArc {
 
  private:
   LibArc* _lib_arc;  //!< The mapped to lib arc.
+  LibArcSet* _lib_arc_set;  //!< The mapped to lib arc set.
   Instance* _inst;   //!< The owned inst.
 
 #if CUDA_PROPAGATION
   Lib_Arc_GPU* _lib_gpu_arc = nullptr;  //!< The gpu lib arc.
-  int _lib_arc_id = -1; //!< The arc id for gpu lib data.
+  int _lib_arc_id = -1;                 //!< The arc id for gpu lib data.
 #endif
 
   FORBIDDEN_COPY(StaInstArc);

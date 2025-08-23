@@ -96,7 +96,8 @@ unsigned StaBuildGraph::buildInst(StaGraph* the_graph, Instance* inst) {
 
   // lambda function, build one inst arc.
   auto build_inst_arc = [the_graph, inst](Pin* src_pin, Pin* snk_pin,
-                                          LibArc* cell_arc) {
+                                          LibArc* cell_arc,
+                                          LibArcSet* cell_arc_set) {
     auto src_vertex = the_graph->findVertex(src_pin);
     LOG_FATAL_IF(!src_vertex);
 
@@ -110,7 +111,7 @@ unsigned StaBuildGraph::buildInst(StaGraph* the_graph, Instance* inst) {
     }
 
     auto inst_arc =
-        std::make_unique<StaInstArc>(*src_vertex, *snk_vertex, cell_arc, inst);
+        std::make_unique<StaInstArc>(*src_vertex, *snk_vertex, cell_arc, cell_arc_set, inst);
     (*src_vertex)->addSrcArc(inst_arc.get());
     (*snk_vertex)->addSnkArc(inst_arc.get());
 
@@ -180,7 +181,7 @@ unsigned StaBuildGraph::buildInst(StaGraph* the_graph, Instance* inst) {
           continue;
         }
 
-        build_inst_arc(*src_pin, *snk_pin, cell_arc);
+        build_inst_arc(*src_pin, *snk_pin, cell_arc, cell_arc_set.get());
       }
     }
   }

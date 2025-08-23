@@ -1316,6 +1316,30 @@ LibArcSet& LibArcSet::operator=(LibArcSet&& rhs) noexcept
   return *this;
 }
 
+/**
+ * @brief get delay or constrain arc set value, should contain value vec.
+ * 
+ * @param trans_type 
+ * @param slew 
+ * @param load_or_constrain_slew 
+ * @return std::vector<double> 
+ */
+std::vector<double> LibArcSet::getDelayOrConstrainCheckNs(TransType trans_type, double slew, double load_or_constrain_slew) {
+  std::vector<double> values;
+  LOG_INFO_IF_EVERY_N(_arcs.size() > 1, 100) << "arc set size is " << _arcs.size();
+
+  for (auto& lib_arc : _arcs) {
+    double find_value = lib_arc->getDelayOrConstrainCheckNs(trans_type, slew, load_or_constrain_slew);
+    values.push_back(find_value);
+  }
+
+  // sort by descending.
+  std::ranges::sort(values, std::greater<double>());
+
+  return values;
+
+}
+
 LibPowerArc::LibPowerArc() : _owner_cell(nullptr)
 {
 }
