@@ -1326,7 +1326,7 @@ LibArcSet& LibArcSet::operator=(LibArcSet&& rhs) noexcept
  */
 std::vector<double> LibArcSet::getDelayOrConstrainCheckNs(TransType trans_type, double slew, double load_or_constrain_slew) {
   std::vector<double> values;
-  LOG_INFO_IF_EVERY_N(_arcs.size() > 1, 100) << "arc set size is " << _arcs.size();
+  // LOG_INFO_IF_EVERY_N(_arcs.size() > 1, 100) << "arc set size is " << _arcs.size();
 
   for (auto& lib_arc : _arcs) {
     double find_value = lib_arc->getDelayOrConstrainCheckNs(trans_type, slew, load_or_constrain_slew);
