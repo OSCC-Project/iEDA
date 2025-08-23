@@ -126,9 +126,8 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
   int routing_layer_id = num_layer - 1 + routing_layer_1st;
   int routing_layer_size = routing_layers.size();
 
-  if (num_layer >= routing_layer_size ||
-      routing_layer_id >= routing_layer_size || num_layer < 0) {
-    LOG_FATAL << "Layer id error = " << num_layer;
+  if (routing_layer_id >= routing_layer_size || routing_layer_id < 0) {
+    LOG_FATAL << "Layer id error = " << routing_layer_id << " num layer = " << num_layer;
     return 0;
   }
 
@@ -166,19 +165,17 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
  * @return double cap unit is pf
  */
 double TimingIDBAdapter::getCapacitance(int num_layer, double segment_length,
-                                        std::optional<double> segment_width) {
+                                        std::optional<double> segment_width, int routing_layer_1st) {
   double segment_capacitance = 0;
   IdbLayout* idb_layout = _idb_lef_service->get_layout();
   vector<IdbLayer*>& routing_layers =
       idb_layout->get_layers()->get_routing_layers();
 
-  int routing_layer_1st = 0;  // dmInst->get_routing_layer_1st();
   int routing_layer_id = num_layer - 1 + routing_layer_1st;
   int routing_layer_size = routing_layers.size();
 
-  if (num_layer >= routing_layer_size ||
-      routing_layer_id >= routing_layer_size || num_layer < 0) {
-    LOG_FATAL << "Layer id error = " << num_layer;
+  if (routing_layer_id >= routing_layer_size || routing_layer_id < 0) {
+    LOG_FATAL << "Layer id error = " << routing_layer_id << " num layer = " << num_layer;
     return 0;
   }
 
