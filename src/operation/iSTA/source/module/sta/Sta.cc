@@ -1903,6 +1903,10 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate,
   LOG_INFO << "\n" << _report_tbl_summary->c_str();
   LOG_INFO << "\n" << _report_tbl_TNS->c_str();
 
+  Time::stop();
+  double elapsed_time = Time::elapsedTime();
+  LOG_INFO << "iSTA total elapsed time: " << elapsed_time << " seconds";
+
   auto close_file = [](std::FILE *fp) { std::fclose(fp); };
 
   std::unique_ptr<std::FILE, decltype(close_file)> f(
@@ -1910,6 +1914,7 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate,
 
   std::fprintf(f.get(), "Generate the report at %s, GitVersion: %s.\n",
                Time::getNowWallTime(), GIT_VERSION);
+  std::fprintf(f.get(), "iSTA elapsed time: %.2f seconds.\n", elapsed_time);
   std::fprintf(f.get(), "%s", _report_tbl_summary->c_str());  // WNS
   // report_TNS;
   std::fprintf(f.get(), "%s", _report_tbl_TNS->c_str());
