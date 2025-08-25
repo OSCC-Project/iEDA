@@ -10,7 +10,7 @@ multiline_comment = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 COMMENT = _{ line_comment | multiline_comment }
 
 header_char = _{ ASCII_ALPHANUMERIC | "_" | "\\" | "/" | "[" | "]" | "," | "\"" | "-" | ":" | "." }
-char        = _{ ASCII_ALPHANUMERIC | "_" | "\\" | "/" | "[" | "]" | "," | "\"" }
+char        = _{ ASCII_ALPHANUMERIC | "_" | "\\" | "/" | "[" | "]" | "," | "\"" | "$" }
 
 section      = ${ "*" ~ section_name }
 section_name = ${ "NAME_MAP" | "PORTS" | "CONN" | "CAP" | "RES" | "END" }
