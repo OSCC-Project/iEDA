@@ -106,18 +106,18 @@ std::string getNetName(const std::string& pin_port_name)
   return net_name;
 }
 
-double getSegmentResistance(int layer_id, double segment_length) {
+double getSegmentResistance(int layer_id, double segment_length, int route_layer_id) {
   auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
   auto* idb_adapter = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter());
-  double resistance = idb_adapter->getResistance(layer_id, segment_length, std::nullopt);
+  double resistance = idb_adapter->getResistance(layer_id, segment_length, std::nullopt, route_layer_id);
 
   return resistance;
 }
 
-double getSegmentCapacitance(int layer_id, double segment_length) {
+double getSegmentCapacitance(int layer_id, double segment_length, int route_layer_id) {
   auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
   auto* idb_adapter = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter());
-  double capacitance = idb_adapter->getCapacitance(layer_id, segment_length, std::nullopt);
+  double capacitance = idb_adapter->getCapacitance(layer_id, segment_length, std::nullopt, route_layer_id);
 
   return capacitance;
 }

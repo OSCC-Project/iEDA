@@ -820,8 +820,8 @@ std::vector<IRInstancePower> Power::getInstancePowerData() {
       continue;
     }
 
-    // skip the instance which power is 0.
-    if (group_data->get_total_power() < 1e-10) {
+    // // skip the instance which power is 0.
+    if (group_data->get_total_power() < 1e-15) {
       continue;
     }
 
@@ -1222,6 +1222,8 @@ unsigned Power::reportIRDropTable(const char* rpt_file_name) {
     std::fprintf(f.get(), "Report : Net %s IR Drop Report, Unit V\n",
                  net_name.c_str());
     std::fprintf(f.get(), "%s\n", report_tbl->c_str());
+    LOG_INFO << "Instance IR Drop Report for net " << net_name << " :\n"
+             << report_tbl->c_str();
   }
 
   return 1;
