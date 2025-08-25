@@ -18,6 +18,7 @@
 
 #include "module/evaluator/density/Density.hh"
 #include "module/evaluator/wirelength/HPWirelength.hh"
+#include "module/evaluator/wirelength/AIWirelength.hh"
 #include "operation/BinOpt.hh"
 #include "operation/InstanceSwap.hh"
 #include "operation/LocalReorder.hh"
@@ -36,6 +37,10 @@ DetailPlacer::DetailPlacer(Config* pl_config, PlacerDB* placer_db)
 
   initDPDatabase(placer_db);
   _operator.initDPOperator(&_database, &_config);
+
+  // Initialize AI wirelength evaluator
+  _ai_wirelength_evaluator = std::make_unique<AIWirelength>(_operator.get_topo_manager());
+  _use_ai_wirelength = false;
 }
 
 DetailPlacer::~DetailPlacer()
@@ -593,8 +598,61 @@ void DetailPlacer::notifyPLPlaceDensity()
 
 int64_t DetailPlacer::calTotalHPWL()
 {
-  HPWirelength hpwl_eval(_operator.get_topo_manager());
-  return hpwl_eval.obtainTotalWirelength() + _database._outside_wl;
+  if (_use_ai_wirelength && _ai_wirelength_evaluator && _ai_wirelength_evaluator->isModelLoaded()) {
+    LOG_INFO << "Calculate Total Wirelength using AI model.";
+    return calTotalAIWirelength() + _database._outside_wl;
+  } else {
+    HPWirelength hpwl_eval(_operator.get_topo_manager());
+    return hpwl_eval.obtainTotalWirelength() + _database._outside_wl;
+  }
+}
+
+bool DetailPlacer::loadAIWirelengthModel(const std::string& model_path)
+{
+  if (_ai_wirelength_evaluator) {
+    bool success = _ai_wirelength_evaluator->loadModel(model_path);
+    if (success) {
+      LOG_INFO << "Successfully loaded AI wirelength model: " << model_path;
+    } else {
+      LOG_ERROR << "Failed to load AI wirelength model: " << model_path;
+    }
+    return success;
+  }
+  return false;
+}
+
+bool DetailPlacer::loadAIWirelengthNormalizationParams(const std::string& params_path)
+{
+  if (_ai_wirelength_evaluator) {
+    bool success = _ai_wirelength_evaluator->loadNormalizationParams(params_path);
+    if (success) {
+      LOG_INFO << "Successfully loaded AI wirelength normalization parameters: " << params_path;
+    } else {
+      LOG_ERROR << "Failed to load AI wirelength normalization parameters: " << params_path;
+    }
+    return success;
+  }
+  return false;
+}
+
+void DetailPlacer::setUseAIWirelength(bool use_ai)
+{
+  _use_ai_wirelength = use_ai;
+  if (_use_ai_wirelength) {
+    if (!_ai_wirelength_evaluator || !_ai_wirelength_evaluator->isModelLoaded()) {
+      LOG_WARNING << "AI wirelength model not loaded, falling back to HPWL";
+      _use_ai_wirelength = false;
+    }
+  }
+  LOG_INFO << "AI wirelength prediction " << (_use_ai_wirelength ? "enabled" : "disabled");
+}
+
+int64_t DetailPlacer::calTotalAIWirelength()
+{
+  if (_ai_wirelength_evaluator && _ai_wirelength_evaluator->isModelLoaded()) {
+    return _ai_wirelength_evaluator->obtainTotalWirelength();
+  }
+  return 0;
 }
 
 float DetailPlacer::calPeakBinDensity()

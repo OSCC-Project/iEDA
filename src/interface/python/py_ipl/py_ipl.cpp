@@ -60,6 +60,13 @@ bool placerReport()
   return run_ok;
 }
 
+bool placerAiRun(const std::string& config, const std::string& onnx_path, const std::string& normalization_path)
+{
+  bool run_ok = iplf::tmInst->runAiPlacer(config, onnx_path, normalization_path);
+  return run_ok;
+}
+
+
 bool placerInit(const std::string& config)
 {
   auto* inst = iplf::PlacerIO::getInstance();

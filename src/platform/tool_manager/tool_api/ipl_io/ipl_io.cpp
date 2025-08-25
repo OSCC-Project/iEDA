@@ -72,6 +72,26 @@ bool PlacerIO::runPlacement(std::string config, bool enableJsonOutput)
   return true;
 }
 
+bool PlacerIO::runAiPlacement(std::string config, std::string onnx_path, std::string normalization_path)
+{
+  if (!iPLAPIInst.isPlacerDBStarted()) {
+    this->initPlacer(config);
+  } else {
+    iPLAPIInst.updatePlacerDB();
+  }
+
+  ieda::Stats stats;
+  iPLAPIInst.runAiFlow(onnx_path, normalization_path);
+
+  flowConfigInst->add_status_runtime(stats.elapsedRunTime());
+  flowConfigInst->set_status_memmory(stats.memoryDelta());
+
+  // destroyPlacer();
+
+  return true;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
