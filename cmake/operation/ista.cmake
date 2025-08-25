@@ -1,5 +1,6 @@
 find_package(Eigen3 REQUIRED)
-include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
+# include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
+include_directories(/usr/local/include/eigen3)
 
 include_directories(${HOME_UTILITY}/stdBase)
 include_directories(${HOME_UTILITY}/stdBase/include)
