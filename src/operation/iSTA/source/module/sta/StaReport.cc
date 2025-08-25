@@ -778,12 +778,12 @@ unsigned StaReportPathDetailJson::operator()(StaSeqPathData* seq_path_data) {
   };
 
   auto print_path_data = [&](auto& path_stack, auto clock_path_arrive_time,
-                             nlohmann::json& path_json) {
+                             json& path_json) {
     double last_arrive_time = 0;
     StaVertex* last_vertex = nullptr;
 
     auto& detail_json = path_json["detail"];
-    auto& summary_json = path_json["summary"] = nlohmann::json::array();
+    auto& summary_json = path_json["summary"] = json::array();
 
     // Helper function to extract module name from hierarchical vertex name
     bool failed_extract_module_name = false;
@@ -866,7 +866,7 @@ unsigned StaReportPathDetailJson::operator()(StaSeqPathData* seq_path_data) {
   // The arrive time
   std::stack<StaPathDelayData*> path_stack = seq_path_data->getPathDelayData();
 
-  nlohmann::json path_json = nlohmann::json::object();
+  json path_json = json::object();
 
   // Set the clock domain
   auto* capture_clock = seq_path_data->get_capture_clock();
@@ -1055,17 +1055,17 @@ unsigned StaReportWirePathYaml::operator()(StaSeqPathData* seq_path_data) {
 }
 
 StaReportWirePathJson::StaReportWirePathJson(const char* rpt_file_name,
-                                     AnalysisMode analysis_mode,
-                                     unsigned n_worst)
+                                             AnalysisMode analysis_mode,
+                                             unsigned n_worst)
     : StaReportPathDump(rpt_file_name, analysis_mode, n_worst) {}
 
 /**
  * @brief print timing path in json in wire level.
- * 
- * @param seq_path_data 
- * @return unsigned 
+ *
+ * @param seq_path_data
+ * @return unsigned
  */
-unsigned StaReportWirePathJson::operator()(StaSeqPathData* seq_path_data) { 
+unsigned StaReportWirePathJson::operator()(StaSeqPathData* seq_path_data) {
   // CPU_PROF_START(0);
   std::string design_work_space =
       ista::Sta::getOrCreateSta()->get_design_work_space();
@@ -1074,9 +1074,9 @@ unsigned StaReportWirePathJson::operator()(StaSeqPathData* seq_path_data) {
   std::filesystem::create_directories(path_dir);
 
   static unsigned file_id = 1;
-  std::string text_file_name = Str::printf(
-      "%s/wire_path_%d.json", path_dir.c_str(), file_id++);
-  
+  std::string text_file_name =
+      Str::printf("%s/wire_path_%d.json", path_dir.c_str(), file_id++);
+
   json path_json = json::array();
   StaDumpWireJson dump_wire_json(path_json);
   std::stack<StaPathDelayData*> path_stack = seq_path_data->getPathDelayData();
@@ -1105,12 +1105,11 @@ unsigned StaReportWirePathJson::operator()(StaSeqPathData* seq_path_data) {
   file << path_json.dump(4) << std::endl;
 
   file.close();
-  
+
   LOG_INFO << "output json file path: " << text_file_name;
 
   // CPU_PROF_END(0, "dump one timing path wire yaml");
   return 1;
-
 }
 
 StaReportPathTimingData::StaReportPathTimingData(const char* rpt_file_name,

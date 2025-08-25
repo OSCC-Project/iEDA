@@ -506,7 +506,8 @@ class Sta {
   }
   auto& get_report_spec() { return _report_spec; }
 
-  unsigned reportPath(const char* rpt_file_name, bool is_derate = true, bool only_wire_path = false);
+  unsigned reportPath(const char* rpt_file_name, bool is_derate = true,
+                      bool only_wire_path = false);
   unsigned reportTrans(const char* rpt_file_name);
   unsigned reportCap(const char* rpt_file_name, bool is_clock_cap);
   unsigned reportFanout(const char* rpt_file_name);
@@ -583,7 +584,8 @@ class Sta {
                         bool is_derate = false, bool is_clock_cap = false,
                         bool is_copy = true);
 
-  std::vector<StaPathWireTimingData> reportTimingData(unsigned n_worst_path_per_clock);
+  std::vector<StaPathWireTimingData> reportTimingData(
+      unsigned n_worst_path_per_clock);
   unsigned reportUsedLibs();
   unsigned reportWirePaths();
 
@@ -625,9 +627,9 @@ class Sta {
 
   bool isJsonReportEnabled() const { return _is_json_report_enabled; }
 
-  nlohmann::json& getSummaryJsonReport() { return _summary_json_report; }
-  nlohmann::json& getSlackJsonReport() { return _slack_json_report; }
-  nlohmann::json& getDetailJsonReport() { return _detail_json_report; }
+  auto& getSummaryJsonReport() { return _summary_json_report; }
+  auto& getSlackJsonReport() { return _slack_json_report; }
+  auto& getDetailJsonReport() { return _detail_json_report; }
 
  private:
   Sta();
@@ -710,24 +712,24 @@ class Sta {
   // Singleton sta.
   static Sta* _sta;
 
-  bool _is_json_report_enabled = false;  //!< The json report enable flag.
-  nlohmann::json _summary_json_report =
-      nlohmann::json::array();  //!< The json data
-  nlohmann::json _slack_json_report =
-      nlohmann::json::array();  //!< The json data
-  nlohmann::json _detail_json_report = 
-      nlohmann::json::array();  //!< The json data for detailed report.
+  using json = nlohmann::ordered_json;
+
+  bool _is_json_report_enabled = true;        //!< The json report enable flag.
+  json _summary_json_report = json::array();  //!< The json data
+  json _slack_json_report = json::array();    //!< The json data
+  json _detail_json_report =
+      json::array();  //!< The json data for detailed report.
 
 #if CUDA_PROPAGATION
   std::vector<GPU_Vertex> _gpu_vertices;  //!< gpu flatten vertex, arc data.
   std::vector<GPU_Arc> _gpu_arcs;
   GPU_Flatten_Data _flatten_data;
-  GPU_Graph _gpu_graph;        //!< The gpu graph mapped to sta graph.
-  std::vector<Lib_Arc_GPU> _lib_gpu_arcs;  //!< The gpu lib arc data.
-  Lib_Data_GPU _gpu_lib_data;  //!< The gpu lib arc data.
-  std::vector<Lib_Table_GPU> _lib_gpu_tables; //!< The gpu lib table data.
-  std::vector<Lib_Table_GPU*> _lib_gpu_table_ptrs; //!< The gpu lib table data.
-  std::map<StaArc*, unsigned> _arc_to_index;     //!< The arc map to gpu index.
+  GPU_Graph _gpu_graph;  //!< The gpu graph mapped to sta graph.
+  std::vector<Lib_Arc_GPU> _lib_gpu_arcs;           //!< The gpu lib arc data.
+  Lib_Data_GPU _gpu_lib_data;                       //!< The gpu lib arc data.
+  std::vector<Lib_Table_GPU> _lib_gpu_tables;       //!< The gpu lib table data.
+  std::vector<Lib_Table_GPU*> _lib_gpu_table_ptrs;  //!< The gpu lib table data.
+  std::map<StaArc*, unsigned> _arc_to_index;  //!< The arc map to gpu index.
   std::map<StaPathDelayData*, unsigned>
       _at_to_index;  //!< The at map to gpu index.
   std::map<unsigned, StaPathDelayData*>
