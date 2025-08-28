@@ -26,11 +26,11 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include <cstdint>
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
-#include <cstdint>
 
 namespace ivec {
 
@@ -72,6 +72,7 @@ class VecNodeData
   int32_t get_pdn_id() { return _pdn_id; }
   int32_t get_pin_id() { return _pin_id; }
   int32_t get_instance_id() { return _inst_id; }
+  int32_t get_via_id() { return _via_id; }
   VecNodeTYpe get_type() { return _type; }
   VecNodeConnectType get_connect_type() { return _connect_type; }
   VecNodeFeature& get_feature() { return _feature; }
@@ -93,6 +94,7 @@ class VecNodeData
   void set_pdn_id(int32_t id) { _pdn_id = id; }
   void set_pin_id(int32_t id);
   void set_instance_id(int32_t id) { _inst_id = id; }
+  void set_via_id(int32_t id) { _via_id = id; }
   void set_type(VecNodeTYpe type);
   void set_connect_type(VecNodeConnectType type);
 
@@ -103,6 +105,7 @@ class VecNodeData
   int32_t _pdn_id = -1;
   int32_t _pin_id = -1;
   int32_t _inst_id = -1;
+  int32_t _via_id = -1;
   VecNodeTYpe _type = VecNodeTYpe::kNone;  /// multiple type in one node
   VecNodeConnectType _connect_type = VecNodeConnectType::kNone;
   VecNodeFeature _feature;
@@ -118,8 +121,8 @@ class VecNode
   uint64_t get_node_id();
   int64_t get_x();
   int64_t get_y();
-  int64_t get_row_id() { return _row_id; }
-  int64_t get_col_id() { return _col_id; }
+  int get_row_id() { return _row_id; }
+  int get_col_id() { return _col_id; }
   int16_t get_layer_id() { return _layer_id; }
   int32_t get_realx() { return _real_x; }
   int32_t get_realy() { return _real_y; }
@@ -127,8 +130,8 @@ class VecNode
   VecNodeData* get_node_data(int net_id = -1, bool b_create = false);
 
   // setter
-  void set_row_id(int64_t row_id) { _row_id = row_id; }
-  void set_col_id(int64_t col_id) { _col_id = col_id; }
+  void set_row_id(int row_id) { _row_id = row_id; }
+  void set_col_id(int col_id) { _col_id = col_id; }
   void set_layer_id(int16_t layer_id) { _layer_id = layer_id; }
   void set_real_coordinate(int32_t real_x, int32_t real_y)
   {
@@ -139,8 +142,8 @@ class VecNode
   // operator
 
  private:
-  int64_t _row_id = -1;  // node order of layer rows
-  int64_t _col_id = -1;  // node order of layer cols
+  int _row_id = -1;  // node order of layer rows
+  int _col_id = -1;  // node order of layer cols
   int16_t _layer_id = -1;
   VecNodeData* _node_data = nullptr;
   int32_t _real_x = -1;

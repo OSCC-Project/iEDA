@@ -36,6 +36,8 @@ class VectorizationApi
 
   std::map<int, VecNet> getGraph(std::string path = "");
 
+  bool netsToDef(std::string nets_dir);
+
  private:
 };
 

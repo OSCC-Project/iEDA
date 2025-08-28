@@ -192,7 +192,7 @@ class IdbNet : public IdbObject
   int32_t _xtalk;
   // NONDEFAULTRULE
   IdbInstanceType _source_type;
-  IdbConnectType _connect_type;
+  IdbConnectType _connect_type = IdbConnectType::kSignal;
   bool _fix_bump;
   double _frequency;
   IdbCoordinate<int32_t>* _average_coordinate;
