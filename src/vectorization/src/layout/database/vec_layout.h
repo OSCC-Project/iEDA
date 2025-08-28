@@ -22,9 +22,9 @@
  * @description
  *
  */
+#include <cstdint>
 #include <map>
 #include <string>
-#include <cstdint>
 
 #include "vec_cell.h"
 #include "vec_instance.h"
@@ -49,6 +49,7 @@ class VecLayout
   VecGraph& get_graph() { return _graph; }
   VecCells& get_cells() { return _cells; }
   VecInstances& get_instances() { return _instances; }
+  std::map<std::string, int>& get_via_name_map() { return _via_name_map; }
 
   // setter
   void add_cell(VecCell cell);

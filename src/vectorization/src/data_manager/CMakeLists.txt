@@ -11,9 +11,11 @@ target_link_libraries(ivec_dm
     ivec_patch_dm
     ivec_patch_db
     ivec_util
+    idm
 )
 
 target_include_directories(ivec_dm
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${HOME_UTILITY}/json
 )
