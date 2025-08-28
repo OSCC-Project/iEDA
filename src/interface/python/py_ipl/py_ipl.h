@@ -24,6 +24,7 @@ bool placerIncrementalFlow(const std::string& config);
 bool placerIncrementalLG();
 bool placerCheckLegality();
 bool placerReport();
+bool placerAiRun(const std::string& config, const std::string& onnx_path, const std::string& normalization_path);
 
 bool placerInit(const std::string& config);
 bool placerDestroy();

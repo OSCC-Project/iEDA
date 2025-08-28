@@ -1924,7 +1924,7 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate,
   }
 
   if (isJsonReportEnabled()) {
-    nlohmann::json dump_json;
+    json dump_json;
     dump_json["summary"] = _summary_json_report;
     dump_json["slack"] = _slack_json_report;
     dump_json["detail"] = _detail_json_report;

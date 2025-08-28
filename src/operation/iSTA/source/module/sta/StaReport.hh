@@ -143,6 +143,8 @@ class StaReportPathDetailJson : public StaReportPathDetail {
   ~StaReportPathDetailJson() override = default;
 
   unsigned operator()(StaSeqPathData* seq_path_data) override;
+
+  using json = nlohmann::ordered_json;
 };
 
 /**

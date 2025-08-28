@@ -457,6 +457,48 @@ void PLAPI::runFlow()
   writeBackSourceDataBase();
 }
 
+void PLAPI::runAiFlow(const std::string& onnx_path, const std::string& normalization_path)
+{
+  runGP();
+  notifyPLWLInfo(0);
+
+  if (PlacerDBInst.get_placer_config()->get_buffer_config().isMaxLengthOpt()) {
+    std::cout << std::endl;
+    runBufferInsertion();
+    printHPWLInfo();
+  }
+
+  if (PlacerDBInst.get_placer_config()->get_dp_config().isEnableNetworkflow()) {
+    std::cout << std::endl;
+    runNetworkFlowSpread();
+  }
+
+  std::cout << std::endl;
+  runLG();
+  notifyPLWLInfo(1);
+
+  std::cout << std::endl;
+  if (isSTAStarted()) {
+    runPostGP();
+  } else {
+    runAIDP(onnx_path, normalization_path);
+  }
+  notifyPLWLInfo(2);
+
+  std::cout << std::endl;
+
+  reportPLInfo();
+  std::cout << std::endl;
+  LOG_INFO << "Log has been writed to dir: ./result/pl/log/";
+
+
+  if (isSTAStarted()) {
+    _external_api->destroyTimingEval();
+  }
+
+  writeBackSourceDataBase();
+}
+
 void PLAPI::insertLayoutFiller()
 {
   notifyPLOriginInfo();
@@ -536,6 +578,34 @@ void PLAPI::runDP()
   if (!checkLegality()) {
     LOG_WARNING << "DP result is not legal";
   }
+}
+
+void PLAPI::runAIDP(const std::string& onnx_path, const std::string& normalization_path)
+{
+  bool legal_flag = checkLegality();
+  if (!legal_flag) {
+    LOG_WARNING << "Design Instances before detail placement are not legal";
+    return;
+  }
+
+  DetailPlacer detail_place(PlacerDBInst.get_placer_config(), &PlacerDBInst);
+
+  if (!detail_place.loadAIWirelengthModel(onnx_path)) {
+    LOG_ERROR << "Failed to load AI wirelength model: " << onnx_path;
+    LOG_INFO << "Falling back to traditional HPWL";
+  } else {
+    detail_place.setUseAIWirelength(true);
+  }
+
+  if(!detail_place.loadAIWirelengthNormalizationParams(normalization_path)){
+    LOG_ERROR << "Failed to load AI wirelength normalization parameters: " << normalization_path;
+  }
+
+  detail_place.runDetailPlace();
+
+  if (!checkLegality()) {
+    LOG_WARNING << "DP result is not legal";
+  }  
 }
 
 // run networkflow to spread cell
