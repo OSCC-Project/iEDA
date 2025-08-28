@@ -26,7 +26,9 @@
 namespace ista {
 
 Port::Port(const char* name, PortDir port_dir)
-    : DesignObject(name), _port_dir(port_dir), _net(nullptr) {}
+    : DesignObject(name), _port_dir(port_dir), _net(nullptr) {
+      set_cap(0.0);
+}
 
 Port::Port(Port&& other) noexcept
     : DesignObject(std::move(other)),

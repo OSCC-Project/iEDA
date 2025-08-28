@@ -842,7 +842,7 @@ double StaVertex::getLoad(AnalysisMode analysis_mode, TransType trans_type) {
     load_or_cap = rc_net ? rc_net->load(analysis_mode, trans_type)
                          : the_net->getLoad(analysis_mode, trans_type);
   } else {
-    load_or_cap = obj->cap();
+    load_or_cap = obj->cap(analysis_mode, trans_type);
   }
   return load_or_cap;
 }
