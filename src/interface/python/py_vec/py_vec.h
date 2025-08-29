@@ -26,6 +26,7 @@ bool layout_patchs(const std::string& path);
 bool layout_graph(const std::string& path);
 bool generate_vectors(std::string dir, int patch_row_step, int patch_col_step);
 bool read_vectors_nets(std::string dir);
+bool read_vectors_nets_patterns(std::string path);
 
 // for vectorization wire timing graph.
 ieval::TimingWireGraph get_timing_wire_graph(std::string wire_graph_path);

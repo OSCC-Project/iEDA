@@ -107,17 +107,17 @@ CmdVecFeature::CmdVecFeature(const char* cmd_name) : TclCmd(cmd_name)
   auto* dir_option = new TclStringOption(TCL_DIRECTORY, 1, nullptr);
   addOption(dir_option);
 
-  auto* row_step_option = new TclIntOption(TCL_PATCH_ROW_STEP, 0, 9);  
+  auto* row_step_option = new TclIntOption(TCL_PATCH_ROW_STEP, 0, 9);
   addOption(row_step_option);
 
-  auto* col_step_option = new TclIntOption(TCL_PATCH_COL_STEP, 0, 9);  
+  auto* col_step_option = new TclIntOption(TCL_PATCH_COL_STEP, 0, 9);
   addOption(col_step_option);
 }
 
 unsigned CmdVecFeature::check()
 {
   TclOption* dir_option = getOptionOrArg(TCL_DIRECTORY);
-  LOG_FATAL_IF(!dir_option); 
+  LOG_FATAL_IF(!dir_option);
 
   TclOption* row_step_option = getOptionOrArg(TCL_PATCH_ROW_STEP);
   if (row_step_option && row_step_option->getIntVal() <= 0) {
@@ -145,13 +145,13 @@ unsigned CmdVecFeature::exec()
     auto path_option = dir_option->getStringVal();
     std::string path = path_option == nullptr ? "./vectors" : path_option;
 
-    int patch_row_step = 9; 
+    int patch_row_step = 9;
     TclOption* row_step_option = getOptionOrArg(TCL_PATCH_ROW_STEP);
     if (row_step_option != nullptr) {
       patch_row_step = row_step_option->getIntVal();
     }
 
-    int patch_col_step = 9;  
+    int patch_col_step = 9;
     TclOption* col_step_option = getOptionOrArg(TCL_PATCH_COL_STEP);
     if (col_step_option != nullptr) {
       patch_col_step = col_step_option->getIntVal();
@@ -159,6 +159,74 @@ unsigned CmdVecFeature::exec()
 
     ivec::VectorizationApi vec_api;
     vec_api.buildVectorizationFeature(path, patch_row_step, patch_col_step);
+  }
+
+  return 1;
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+CmdReadVecNets::CmdReadVecNets(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* dir_option = new TclStringOption(TCL_DIRECTORY, 1, nullptr);
+  addOption(dir_option);
+}
+
+unsigned CmdReadVecNets::check()
+{
+  TclOption* dir_option = getOptionOrArg(TCL_DIRECTORY);
+  LOG_FATAL_IF(!dir_option);
+
+  return 1;
+}
+
+unsigned CmdReadVecNets::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+
+  TclOption* dir_option = getOptionOrArg(TCL_DIRECTORY);
+  if (dir_option != nullptr) {
+    auto path_option = dir_option->getStringVal();
+    std::string path = path_option == nullptr ? "./vectors/nets" : path_option;
+
+    ivec::VectorizationApi vec_api;
+    vec_api.readVectorsNets(path);
+  }
+
+  return 1;
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+CmdReadVecNetsPattern::CmdReadVecNetsPattern(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* path_option = new TclStringOption(TCL_PATH, 1, nullptr);
+  addOption(path_option);
+}
+
+unsigned CmdReadVecNetsPattern::check()
+{
+  TclOption* path_option = getOptionOrArg(TCL_PATH);
+  LOG_FATAL_IF(!path_option);
+
+  return 1;
+}
+
+unsigned CmdReadVecNetsPattern::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+
+  TclOption* path_option = getOptionOrArg(TCL_PATH);
+  if (path_option != nullptr) {
+    auto path = path_option->getStringVal();
+
+    ivec::VectorizationApi vec_api;
+    vec_api.readVectorsNetsPatterns(path);
   }
 
   return 1;

@@ -90,4 +90,10 @@ bool VecDataManager::readNetsToIDB(std::string dir)
   return file_io.readJsonNets();
 }
 
+bool VecDataManager::readNetsPatternToIDB(std::string path)
+{
+  VecLayoutFileIO file_io(path, &layout_dm.get_layout());
+  return file_io.readJsonNetsPattern();
+}
+
 }  // namespace ivec

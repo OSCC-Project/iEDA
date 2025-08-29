@@ -151,4 +151,14 @@ bool Vectorization::readNetsToIDB(const std::string dir)
   return b_success;
 }
 
+bool Vectorization::readNetsPatternToIDB(const std::string path)
+{
+  bool b_success = _data_manager.buildLayoutData();
+  if (b_success) {
+    b_success = _data_manager.readNetsPatternToIDB(path);
+  }
+
+  return b_success;
+}
+
 }  // namespace ivec

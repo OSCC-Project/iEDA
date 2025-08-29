@@ -310,9 +310,14 @@ IdbVia* IdbVias::createVia(string via_name, IdbLayerCut* layer_cut, int32_t widt
   if (via_rule == nullptr)
     return nullptr;
 
-  std::pair<int32_t, int32_t> row_col_pair = calculateRowsCols(layer_cut, width_design, height_design);
-  int32_t rows = row_col_pair.first;
-  int32_t cols = row_col_pair.second;
+  int32_t rows = 1;
+  int32_t cols = 1;
+
+  if (width_design != 0 && height_design != 0) {
+    std::pair<int32_t, int32_t> row_col_pair = calculateRowsCols(layer_cut, width_design, height_design);
+    rows = row_col_pair.first;
+    cols = row_col_pair.second;
+  }
 
   IdbLayerRouting* layer_bottom = via_rule->get_layer_bottom();
   IdbLayerRouting* layer_top = via_rule->get_layer_top();
