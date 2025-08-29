@@ -139,11 +139,11 @@ bool report_timing() {
  *
  * @return std::pair<int, int>
  */
-std::pair<int, int> get_core_size() {
+std::pair<double, double> get_die_size() {
   auto* ista = ista::Sta::getOrCreateSta();
-  auto core_size = ista->get_netlist()->get_core_size();
-  if (core_size) {
-    return {(int)(core_size->_width), (int)(core_size->_height)};
+  auto die_size = ista->get_netlist()->get_die_size();
+  if (die_size) {
+    return {die_size->_width, die_size->_height};
   }
 
   return {0.0, 0.0};

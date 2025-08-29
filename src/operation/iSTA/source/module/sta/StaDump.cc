@@ -797,18 +797,39 @@ StaDumpGraphJson::json StaDumpGraphJson::dumpNodeSlew(StaGraph* the_graph) {
 StaDumpGraphJson::json StaDumpGraphJson::dumpNodeFeature(StaGraph* the_graph) {
   auto& the_vertexes = the_graph->get_vertexes();
   json all_vertex_node_feature_array = json::array();
+  auto* nl = the_graph->get_nl();
+  auto [die_width, die_height] = nl->get_die_size().value();
 
   for (auto& the_vertex : the_vertexes) {
     json one_node_feature_array = json::array();
-    the_vertex->get_design_obj()->isPort()
-        ? one_node_feature_array.push_back(1.0)  // is_port
-        : one_node_feature_array.push_back(0.0);
-    the_vertex->get_design_obj()->isInput()
-        ? one_node_feature_array.push_back(1.0)  // is_input
-        : one_node_feature_array.push_back(0.0);
+    auto* the_obj = the_vertex->get_design_obj();
+    the_obj->isPort() ? one_node_feature_array.push_back(1.0)  // is_port
+                      : one_node_feature_array.push_back(0.0);
+    the_obj->isInput() ? one_node_feature_array.push_back(1.0)  // is_input
+                       : one_node_feature_array.push_back(0.0);
     // the distance to 4 die boundary, left, right, top, bottom TBD.
+    if (the_obj->get_coordinate()) {
+      auto [pin_x, pin_y] = the_obj->get_coordinate().value();
+      double left_bottom_distance = pin_x + pin_y;
+      double right_bottom_distance = die_width - pin_x + pin_y;
+      double left_top_distance = pin_x + die_height - pin_y;
+      double right_top_distance = die_width - pin_x + die_height - pin_y;
 
-    // TODO(to taosimin), min or max first?
+      // the order is lb(left bottom), rt, rb, lt
+      one_node_feature_array.push_back(left_bottom_distance);
+      one_node_feature_array.push_back(right_top_distance);
+      one_node_feature_array.push_back(right_bottom_distance);
+      one_node_feature_array.push_back(left_top_distance);
+
+    } else {
+      // assume the non-pin node is in the left bottom of the die.
+      one_node_feature_array.push_back(0.0);
+      one_node_feature_array.push_back(die_width + die_height);
+      one_node_feature_array.push_back(die_width);
+      one_node_feature_array.push_back(die_height);
+    }
+
+    // TODO(to taosimin), min or max first? assume max first
     double max_rise_cap =
         the_vertex->getLoad(AnalysisMode::kMax, TransType::kRise);
     double max_fall_cap =
@@ -961,8 +982,34 @@ a net’s drive pin and its sink pin.(driver -> sink)
  */
 StaDumpGraphJson::json StaDumpGraphJson::dumpNetInArcFeature(
     StaGraph* the_graph) {
-  // TBD dump net arc Manhattan distance
-  return json();
+  auto& the_arcs = the_graph->get_arcs();
+  json all_net_arc_feature_array = json::array();
+
+  for (auto& the_arc : the_arcs) {
+    if (the_arc->isNetArc()) {
+      json one_net_arc_feature_array = json::array();
+
+      auto* the_net_arc = dynamic_cast<StaNetArc*>(the_arc.get());
+      auto* src = the_net_arc->get_src();
+      auto* snk = the_net_arc->get_snk();
+
+      auto* src_obj = src->get_design_obj();
+      auto* snk_obj = snk->get_design_obj();
+
+      auto src_coord = src_obj->get_coordinate();
+      auto snk_coord = snk_obj->get_coordinate();
+
+      double distance_x = snk_coord->first - src_coord->first;
+      double distance_y = snk_coord->second - src_coord->second;
+
+      one_net_arc_feature_array.push_back(distance_x);
+      one_net_arc_feature_array.push_back(distance_y);
+
+      all_net_arc_feature_array.push_back(one_net_arc_feature_array);
+    }
+  }
+
+  return all_net_arc_feature_array;
 }
 
 /**
@@ -973,8 +1020,34 @@ StaDumpGraphJson::json StaDumpGraphJson::dumpNetInArcFeature(
  */
 StaDumpGraphJson::json StaDumpGraphJson::dumpNetOutArcFeature(
     StaGraph* the_graph) {
-  // TBD dump net arc Manhattan distance
-  return json();
+  auto& the_arcs = the_graph->get_arcs();
+  json all_net_arc_feature_array = json::array();
+
+  for (auto& the_arc : the_arcs) {
+    if (the_arc->isNetArc()) {
+      json one_net_arc_feature_array = json::array();
+
+      auto* the_net_arc = dynamic_cast<StaNetArc*>(the_arc.get());
+      auto* src = the_net_arc->get_src();
+      auto* snk = the_net_arc->get_snk();
+
+      auto* src_obj = src->get_design_obj();
+      auto* snk_obj = snk->get_design_obj();
+
+      auto src_coord = src_obj->get_coordinate();
+      auto snk_coord = snk_obj->get_coordinate();
+
+      double distance_x = src_coord->first - snk_coord->first;
+      double distance_y = src_coord->second - snk_coord->second;
+
+      one_net_arc_feature_array.push_back(distance_x);
+      one_net_arc_feature_array.push_back(distance_y);
+
+      all_net_arc_feature_array.push_back(one_net_arc_feature_array);
+    }
+  }
+
+  return all_net_arc_feature_array;
 }
 
 /**
