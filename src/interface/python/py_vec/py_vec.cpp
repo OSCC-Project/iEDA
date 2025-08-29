@@ -88,7 +88,16 @@ bool read_vectors_nets(std::string dir)
     return false;
   }
   ivec::VectorizationApi lm_api;
-  return lm_api.netsToDef(dir);
+  return lm_api.readVectorsNets(dir);
+}
+
+bool read_vectors_nets_patterns(std::string path)
+{
+  if (path == "") {
+    return false;
+  }
+  ivec::VectorizationApi lm_api;
+  return lm_api.readVectorsNetsPatterns(path);
 }
 
 }  // namespace python_interface

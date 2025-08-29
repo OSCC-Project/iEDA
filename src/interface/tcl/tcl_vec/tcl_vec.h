@@ -78,4 +78,32 @@ class CmdVecFeature : public TclCmd
   // private data
 };
 
+class CmdReadVecNets : public TclCmd
+{
+ public:
+  explicit CmdReadVecNets(const char* cmd_name);
+  ~CmdReadVecNets() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
+class CmdReadVecNetsPattern : public TclCmd
+{
+ public:
+  explicit CmdReadVecNetsPattern(const char* cmd_name);
+  ~CmdReadVecNetsPattern() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
 }  // namespace tcl

@@ -42,9 +42,9 @@ void VecLayoutFileIO::makeDir(std::string dir)
 
 bool VecLayoutFileIO::saveJson()
 {
-  LOG_INFO << "Vectorization save json start... dir = " << _dir;
+  LOG_INFO << "Vectorization save json start... dir = " << _path;
 
-  makeDir(_dir);
+  makeDir(_path);
 
   /// save tech
   saveJsonTech();
@@ -61,7 +61,7 @@ bool VecLayoutFileIO::saveJson()
   /// save patch
   saveJsonPatchs();
 
-  LOG_INFO << "Vectorization save json end... dir = " << _dir;
+  LOG_INFO << "Vectorization save json end... dir = " << _path;
 
   return true;
 }
@@ -70,7 +70,7 @@ bool VecLayoutFileIO::saveJsonNets()
 {
   ieda::Stats stats;
   LOG_INFO << "Vectorization save json net start...";
-  makeDir(_dir + "/nets/");
+  makeDir(_path + "/nets/");
 
   auto& net_map = _layout->get_graph().get_net_map();
   const int BATCH_SIZE = 1500;  // 可根据系统性能调整批量大小
@@ -302,7 +302,7 @@ bool VecLayoutFileIO::saveJsonNets()
 
     // 创建文件名格式: net_START_END.json
     std::string filename = "net_" + std::to_string(start_net_idx) + "_" + std::to_string(end_net_idx) + ".json";
-    std::string full_path = _dir + "/nets/" + filename;
+    std::string full_path = _path + "/nets/" + filename;
 
     // 创建一个包含当前批次网络的数组
     json batch_json = json::array();
@@ -339,7 +339,7 @@ bool VecLayoutFileIO::saveJsonPatchs()
 {
   ieda::Stats stats;
   LOG_INFO << "Vectorization save json patchs start...";
-  makeDir(_dir + "/patchs/");
+  makeDir(_path + "/patchs/");
 
   if (!_patch_grid) {
     return false;
@@ -546,7 +546,7 @@ bool VecLayoutFileIO::saveJsonPatchs()
 
     // 创建文件名格式: patch_START_END.json
     std::string filename = "patch_" + std::to_string(start_patch_idx) + "_" + std::to_string(end_patch_idx) + ".json";
-    std::string full_path = _dir + "/patchs/" + filename;
+    std::string full_path = _path + "/patchs/" + filename;
 
     // 创建一个包含当前批次patch的数组
     json batch_json = json::array();
@@ -615,7 +615,7 @@ bool VecLayoutFileIO::saveJsonTech()
 {
   ieda::Stats stats;
   LOG_INFO << "Vectorization save json tech start...";
-  makeDir(_dir + "/tech/");
+  makeDir(_path + "/tech/");
 
   json json_tech;
   {
@@ -654,7 +654,7 @@ bool VecLayoutFileIO::saveJsonTech()
     }
   }
 
-  std::string filename = _dir + "/tech/tech.json";
+  std::string filename = _path + "/tech/tech.json";
   std::ofstream file_stream(filename);
   file_stream << json_tech;
   //   file_stream << std::setw(4) << json_tech;
@@ -671,7 +671,7 @@ bool VecLayoutFileIO::saveJsonCells()
 {
   ieda::Stats stats;
   LOG_INFO << "Vectorization save json cells start...";
-  makeDir(_dir + "/tech/");
+  makeDir(_path + "/tech/");
 
   json json_cells;
   {
@@ -692,7 +692,7 @@ bool VecLayoutFileIO::saveJsonCells()
     json_cells["cells"] = json_cell_list;
   }
 
-  std::string filename = _dir + "/tech/cells.json";
+  std::string filename = _path + "/tech/cells.json";
   std::ofstream file_stream(filename);
   file_stream << json_cells;
   file_stream.close();
@@ -708,7 +708,7 @@ bool VecLayoutFileIO::saveJsonInstances()
 {
   ieda::Stats stats;
   LOG_INFO << "Vectorization save json instances start...";
-  makeDir(_dir + "/instances/");
+  makeDir(_path + "/instances/");
 
   json json_insts;
   {
@@ -736,7 +736,7 @@ bool VecLayoutFileIO::saveJsonInstances()
     json_insts["instances"] = json_inst_list;
   }
 
-  std::string filename = _dir + "/instances/instances.json";
+  std::string filename = _path + "/instances/instances.json";
   std::ofstream file_stream(filename);
   file_stream << json_insts;
   file_stream.close();
@@ -765,6 +765,9 @@ bool VecLayoutFileIO::readJsonNets()
   auto* idb_nets = dmInst->get_idb_design()->get_net_list();
   auto* idb_layers = dmInst->get_idb_layout()->get_layers();
   auto* idb_vias = dmInst->get_idb_layout()->get_via_list();
+
+  idb_nets->clear_wire_list();
+
   auto read_file = [&](std::string file) {
     LOG_INFO << "read " << file;
     nlohmann::json json;
@@ -872,7 +875,7 @@ bool VecLayoutFileIO::readJsonNets()
   omp_lock_t lck;
   omp_init_lock(&lck);
 
-  auto net_dir = _dir + "/nets/";
+  auto net_dir = _path + "/nets/";
 #pragma omp parallel for schedule(dynamic)
   for (auto& file : find_json_files(net_dir)) {
     // omp_set_lock(&lck);
@@ -883,6 +886,118 @@ bool VecLayoutFileIO::readJsonNets()
   }
 
   omp_destroy_lock(&lck);
+
+  LOG_INFO << "read nets success.";
+
+  return true;
+}
+
+bool VecLayoutFileIO::readJsonNetsPattern()
+{
+  namespace fs = std::filesystem;
+
+  auto* idb_nets = dmInst->get_idb_design()->get_net_list();
+  auto* idb_layers = dmInst->get_idb_layout()->get_layers();
+  auto* idb_vias = dmInst->get_idb_design()->get_via_list();
+
+  idb_nets->clear_wire_list();
+
+  LOG_INFO << "read " << _path;
+  nlohmann::json json;
+  std::ifstream file_stream(_path);
+  file_stream >> json;
+
+  /// parse vector nets
+  auto json_nets = json["nets"];
+  for (auto& json_net : json_nets) {
+    std::string net_name = json_net["net_name"];
+    auto* idb_net = idb_nets->find_net(net_name);
+    if (idb_net == nullptr) {
+      std::cout << "can not find net " << net_name << std::endl;
+      continue;
+    }
+
+    idb_net->clear_wire_list();
+    auto* idb_wire_list = idb_net->get_wire_list();
+
+    auto json_edges = json_net["edges"];
+    auto* idb_wire = idb_wire_list->add_wire();
+
+    bool path_new = false;
+    for (auto& json_edge : json_edges.items()) {
+      idb_wire->set_wire_state(idb::IdbWiringStatement::kRouted);
+
+      auto json_start = json_edge.value()["start"];
+      int x_start = json_start["x"];
+      int y_start = json_start["y"];
+      int layer_index_start = json_start["layer"];
+
+      auto json_end = json_edge.value()["end"];
+      int x_end = json_end["x"];
+      int y_end = json_end["y"];
+      int layer_index_end = json_end["layer"];
+
+      if (layer_index_start == layer_index_end) {
+        if (x_start == x_end && y_start == y_end) {
+          std::cout << "same node  " << x_start << "  " << y_start << " , " << x_end << "  " << y_end << std::endl;
+          continue;
+        }
+
+        if (x_start == x_end || y_start == y_end) {
+        } else {
+          std::cout << "illegal node  " << x_start << "  " << y_start << " ,  " << x_end << "  " << y_end << std::endl;
+          continue;
+        }
+
+        std::string layer_metal = _layout->findLayerName(layer_index_start);
+        auto* idb_layer_metal = idb_layers->find_layer(layer_metal);
+
+        auto* idb_segment = idb_wire->add_segment();
+
+        idb_segment->set_layer(idb_layer_metal);
+        idb_segment->add_point(x_start, y_start);
+        idb_segment->add_point(x_end, y_end);
+
+        if (path_new == false) {
+          idb_segment->set_layer_as_new();
+          path_new = true;
+        }
+      } else {
+        auto top_order = std::max(layer_index_start, layer_index_end);
+        auto bottom_order = std::min(layer_index_start, layer_index_end);
+
+        for (auto layer_order = bottom_order; layer_order <= top_order; layer_order += 2) {
+          std::string bottom_layer_name = _layout->findLayerName(layer_order);
+          auto* bottom_layer = idb_layers->find_layer(bottom_layer_name);
+          std::string top_layer_name = _layout->findLayerName(layer_order + 2);
+          auto* top_layer = idb_layers->find_layer(top_layer_name);
+
+          auto* idb_segment = idb_wire->add_segment();
+          idb_segment->set_layer(top_layer);
+          idb_segment->set_is_via(true);
+          idb_segment->add_point(x_start, y_start);
+
+          /// create default via
+          auto cut_order = (bottom_layer->get_order() + top_layer->get_order()) / 2;
+          auto idb_cut_layer = (IdbLayerCut*) idb_layers->find_layer_by_order(cut_order);
+          auto via_name = idb_cut_layer->get_name() + "_vector_default";
+          auto* idb_via = idb_vias->find_via(via_name);
+          if (idb_via == nullptr) {
+            idb_via = idb_vias->createVia(via_name, idb_cut_layer);
+          }
+          auto* idb_via_new = idb_segment->copy_via(idb_via);
+          idb_via_new->set_coordinate(x_start, y_start);
+
+          if (path_new == false) {
+            idb_segment->set_layer_as_new();
+            path_new = true;
+          }
+        }
+      }
+    }
+  }
+
+  file_stream.close();
 
   LOG_INFO << "read nets success.";
 

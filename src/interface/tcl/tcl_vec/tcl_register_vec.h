@@ -36,6 +36,8 @@ int registerCmdVectorization()
   registerTclCmd(CmdVecLayoutPatchs, "layout_patchs");
   registerTclCmd(CmdVecLayoutGraph, "layout_graph");
   registerTclCmd(CmdVecFeature, "generate_vectors");
+  registerTclCmd(CmdReadVecNets, "read_vectors_nets");
+  registerTclCmd(CmdReadVecNetsPattern, "read_vectors_nets_patterns");
 
   return EXIT_SUCCESS;
 }

@@ -68,11 +68,18 @@ bool VectorizationApi::runVecSTA(const std::string dir)
   return true;
 }
 
-bool VectorizationApi::netsToDef(std::string nets_dir)
+bool VectorizationApi::readVectorsNets(std::string nets_dir)
 {
   Vectorization vectorization;
   vectorization.buildLayoutData();
   return vectorization.readNetsToIDB(nets_dir);
+}
+
+bool VectorizationApi::readVectorsNetsPatterns(std::string path)
+{
+  Vectorization vectorization;
+  vectorization.buildLayoutData();
+  return vectorization.readNetsPatternToIDB(path);
 }
 
 }  // namespace ivec

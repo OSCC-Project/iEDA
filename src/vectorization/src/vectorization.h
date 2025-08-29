@@ -38,6 +38,7 @@ class Vectorization
 
   bool runVecSTA(const std::string dir);
   bool readNetsToIDB(const std::string dir);
+  bool readNetsPatternToIDB(const std::string path);
 
  private:
   VecDataManager _data_manager;  /// top module data manager
