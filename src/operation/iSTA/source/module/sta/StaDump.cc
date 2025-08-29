@@ -612,6 +612,7 @@ StaDumpGraphJson::json StaDumpGraphJson::dumpEdges(StaGraph* the_graph) {
 
   auto& the_arcs = the_graph->get_arcs();
   for (auto& the_arc : the_arcs) {
+    if (the_arc->isDelayArc()) {
     int src_id = vertex_id_map[the_arc->get_src()];
     int snk_id = vertex_id_map[the_arc->get_snk()];
 
@@ -619,13 +620,16 @@ StaDumpGraphJson::json StaDumpGraphJson::dumpEdges(StaGraph* the_graph) {
       edges["cell_out"]["src"].push_back(src_id);
       edges["cell_out"]["dst"].push_back(snk_id);
     } else if (the_arc->isNetArc()) {
-      edges["net_in"]["src"].push_back(src_id);
-      edges["net_in"]["dst"].push_back(snk_id);
+      edges["net_out"]["src"].push_back(src_id);
+      edges["net_out"]["dst"].push_back(snk_id);
 
       // reverse direction for net out
-      edges["net_out"]["src"].push_back(snk_id);
-      edges["net_out"]["dst"].push_back(src_id);
+      edges["net_in"]["src"].push_back(snk_id);
+      edges["net_in"]["dst"].push_back(src_id);
     }
+
+    }
+
   }
   return edges;
 }
@@ -686,14 +690,21 @@ StaDumpGraphJson::json StaDumpGraphJson::dumpNodeNetDelay(StaGraph* the_graph) {
     auto* the_net = the_obj->get_net();
     auto* rc_net = getSta()->getRcNet(the_net);
     auto* rc_tree = rc_net->rct();
-    double max_rise_delay =
-        rc_tree->delay(obj_name.c_str(), AnalysisMode::kMax, TransType::kRise);
-    double max_fall_delay =
-        rc_tree->delay(obj_name.c_str(), AnalysisMode::kMax, TransType::kFall);
-    double min_rise_delay =
-        rc_tree->delay(obj_name.c_str(), AnalysisMode::kMin, TransType::kRise);
-    double min_fall_delay =
-        rc_tree->delay(obj_name.c_str(), AnalysisMode::kMin, TransType::kFall);
+
+    double max_rise_delay = 0.0;
+    double max_fall_delay = 0.0;
+    double min_rise_delay = 0.0;
+    double min_fall_delay = 0.0;
+    if (rc_tree) {
+      max_rise_delay = rc_tree->delay(obj_name.c_str(), AnalysisMode::kMax,
+                                      TransType::kRise);
+      max_fall_delay = rc_tree->delay(obj_name.c_str(), AnalysisMode::kMax,
+                                      TransType::kFall);
+      min_rise_delay = rc_tree->delay(obj_name.c_str(), AnalysisMode::kMin,
+                                      TransType::kRise);
+      min_fall_delay = rc_tree->delay(obj_name.c_str(), AnalysisMode::kMin,
+                                      TransType::kFall);
+    }
 
     // min first
     one_vertex_net_delay_array.push_back(min_rise_delay);
@@ -999,8 +1010,8 @@ StaDumpGraphJson::json StaDumpGraphJson::dumpNetInArcFeature(
       auto src_coord = src_obj->get_coordinate();
       auto snk_coord = snk_obj->get_coordinate();
 
-      double distance_x = snk_coord->first - src_coord->first;
-      double distance_y = snk_coord->second - src_coord->second;
+      double distance_x = src_coord->first - snk_coord->first;
+      double distance_y = src_coord->second - snk_coord->second;
 
       one_net_arc_feature_array.push_back(distance_x);
       one_net_arc_feature_array.push_back(distance_y);
@@ -1037,8 +1048,8 @@ StaDumpGraphJson::json StaDumpGraphJson::dumpNetOutArcFeature(
       auto src_coord = src_obj->get_coordinate();
       auto snk_coord = snk_obj->get_coordinate();
 
-      double distance_x = src_coord->first - snk_coord->first;
-      double distance_y = src_coord->second - snk_coord->second;
+      double distance_x = snk_coord->first - src_coord->first;
+      double distance_y = snk_coord->second - src_coord->second;
 
       one_net_arc_feature_array.push_back(distance_x);
       one_net_arc_feature_array.push_back(distance_y);
@@ -1057,6 +1068,8 @@ StaDumpGraphJson::json StaDumpGraphJson::dumpNetOutArcFeature(
  * @return unsigned
  */
 unsigned StaDumpGraphJson::operator()(StaGraph* the_graph) {
+  LOG_INFO << "dump graph json start";
+
   unsigned num_nodes = the_graph->numVertex();
   _json_file["num_nodes"] = num_nodes;
 
@@ -1074,7 +1087,7 @@ unsigned StaDumpGraphJson::operator()(StaGraph* the_graph) {
   _json_file["node_features"]["n_net_delays"] = n_net_delays;
   _json_file["node_features"]["n_ats"] = n_ats;
   _json_file["node_features"]["n_slews"] = n_slews;
-  _json_file["node_features"]["n_node_features"] = n_node_features;
+  _json_file["node_features"]["nf"] = n_node_features;
   _json_file["node_features"]["n_is_timing_endpt"] = n_is_timing_endpt;
 
   // dump arc features
@@ -1087,6 +1100,8 @@ unsigned StaDumpGraphJson::operator()(StaGraph* the_graph) {
   _json_file["edge_features"]["cell_out"]["ef"] = e_inst_arc_features;
   _json_file["edge_features"]["net_in"]["ef"] = e_net_in_arc_features;
   _json_file["edge_features"]["net_out"]["ef"] = e_net_out_arc_features;
+
+  LOG_INFO << "dump graph json end";
 
   return 1;
 }
