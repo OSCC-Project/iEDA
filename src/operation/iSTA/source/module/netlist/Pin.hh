@@ -76,6 +76,9 @@ class Pin : public DesignObject {
   void set_pin_bus(PinBus* pin_bus) { _pin_bus = pin_bus; }
   auto* get_pin_bus() { return _pin_bus; }
 
+  void set_coordinate(double x, double y) override { _coordinate = {x, y}; }
+  std::optional<Coordinate> get_coordinate() override { return _coordinate; }
+
   std::string getFullName() override;
 
  private:
@@ -83,6 +86,8 @@ class Pin : public DesignObject {
   LibPort* _cell_port = nullptr;      //!< The pin corresponding to cell port.
   Instance* _own_instance = nullptr;  //!< The pin owned by the instance.
   PinBus* _pin_bus = nullptr;         //!< The pin owned by the pin bus.
+
+  std::optional<Coordinate> _coordinate; //!< The pin coordinate.
 
   unsigned _is_VDD : 1;  //!< The pin is at a constant logic value 1.
   unsigned _is_GND : 1;  //!< The pin is at a constant logic value 0.
