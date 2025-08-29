@@ -158,4 +158,35 @@ class StaDumpTimingData : public StaFunc {
   TransType _trans_type;
 };
 
+/**
+ * @brief dump the graph json for get graph timing data.
+ * 
+ */
+class StaDumpGraphJson : public StaFunc {
+ public:
+  using json = nlohmann::ordered_json;
+  StaDumpGraphJson(json& json_file) : _json_file(json_file) {}
+  ~StaDumpGraphJson() override = default;  
+
+  unsigned operator()(StaGraph* the_graph) override;
+
+ private:
+  json dumpEdges(StaGraph* the_graph);
+
+  json dumpNodeRAT(StaGraph* the_graph);
+  json dumpNodeNetDelay(StaGraph* the_graph);
+  json dumpNodeAT(StaGraph* the_graph);
+  json dumpNodeSlew(StaGraph* the_graph);
+  json dumpNodeFeature(StaGraph* the_graph);
+  json dumpNodeIsEndPoint(StaGraph* the_graph);
+
+  json dumpInstArcDelay(StaGraph* the_graph);
+  json dumpInstArcFeature(StaGraph* the_graph);
+
+  json dumpNetInArcFeature(StaGraph* the_graph);
+  json dumpNetOutArcFeature(StaGraph* the_graph);
+
+  json& _json_file;
+};
+
 }  // namespace ista

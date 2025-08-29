@@ -46,7 +46,7 @@ class Port : public DesignObject {
   explicit Port(const char* name, PortDir port_dir);
   Port(Port&& other) noexcept;
   Port& operator=(Port&& rhs) noexcept;
-  ~Port() override = default;
+  ~Port() override = default;  
 
   unsigned isPort() override { return 1; }
   unsigned isPin() override { return 0; }
@@ -72,12 +72,17 @@ class Port : public DesignObject {
   void set_port_bus(PortBus* port_bus) { _port_bus = port_bus; }
   auto* get_port_bus() { return _port_bus; }
 
+  void set_coordinate(double x, double y) override { _coordinate = {x, y}; }
+  std::optional<Coordinate> get_coordinate() override { return _coordinate; }
+
  private:
   std::map<ModeTransPair, double> _caps;
   PortDir _port_dir;  //!< The port direction.
   Net* _net;          //!< The port connected net.
 
   PortBus* _port_bus = nullptr;  //!< The port owned by the port bus.
+
+  std::optional<Coordinate> _coordinate; //!< The pin coordinate.
 
   FORBIDDEN_COPY(Port);
 };

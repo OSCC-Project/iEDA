@@ -39,6 +39,7 @@ class VecLayoutFileIO
   ~VecLayoutFileIO() {}
 
   bool saveJson();
+  bool readJsonNets();
 
  private:
   std::string _dir = "";
@@ -47,6 +48,7 @@ class VecLayoutFileIO
 
   bool saveJsonNets();
   bool saveJsonPatchs();
+  bool saveJsonTech();
   bool saveJsonCells();
   bool saveJsonInstances();
 

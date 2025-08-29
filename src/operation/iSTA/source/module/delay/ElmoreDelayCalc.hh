@@ -688,6 +688,8 @@ class RcNet {
   std::optional<double> delay(const char* node_name,
                               DelayMethod delay_method = DelayMethod::kElmore);
 
+  std::optional<double> delay(const char* node_name, AnalysisMode mode, TransType trans_type);
+
   std::optional<double> delay(DesignObject& to,
                               DelayMethod delay_method = DelayMethod::kElmore);
   std::optional<double> delayNs(DesignObject& to, DelayMethod delay_method) {

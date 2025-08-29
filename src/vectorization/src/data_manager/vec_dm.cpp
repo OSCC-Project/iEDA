@@ -84,4 +84,10 @@ void VecDataManager::saveData(const std::string dir)
   file_io.saveJson();
 }
 
+bool VecDataManager::readNetsToIDB(std::string dir)
+{
+  VecLayoutFileIO file_io(dir, &layout_dm.get_layout());
+  return file_io.readJsonNets();
+}
+
 }  // namespace ivec

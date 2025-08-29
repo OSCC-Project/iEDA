@@ -270,6 +270,8 @@ void VecLayoutInit::transVia(idb::IdbVia* idb_via, int net_id, VecNodeTYpe type)
     node_data->set_pdn_id(net_id);
   }
   node_data->set_connect_type(VecNodeConnectType::vec_via);
+  auto via_id = _layout->findViaId(idb_via->get_name());
+  node_data->set_via_id(via_id);
 
   /// botttom
   auto enclosure_bottom = idb_via->get_bottom_layer_shape();
@@ -282,7 +284,7 @@ void VecLayoutInit::transVia(idb::IdbVia* idb_via, int net_id, VecNodeTYpe type)
   auto enclosure_top = idb_via->get_top_layer_shape();
   for (auto* rect : enclosure_top.get_rect_list()) {
     transEnclosure(rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), enclosure_top.get_layer()->get_name(),
-                   net_id, row, col, type);
+                   net_id, row, col, type, via_id);
   }
 }
 
@@ -633,7 +635,7 @@ void VecLayoutInit::transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32
 }
 
 void VecLayoutInit::transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id, int via_row,
-                                   int via_col, VecNodeTYpe type)
+                                   int via_col, VecNodeTYpe type, int via_id)
 {
   auto& layout_layers = _layout->get_layout_layers();
 
@@ -661,6 +663,10 @@ void VecLayoutInit::transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int
 
       if (type == VecNodeTYpe::vec_pdn) {
         node_data->set_pdn_id(net_id);
+      }
+
+      if (via_id != -1) {
+        node_data->set_via_id(via_id);
       }
     }
   }
@@ -724,6 +730,7 @@ void VecLayoutInit::initNets()
     if (vec_net == nullptr) {
       continue;
     }
+    vec_net->set_net_name(idb_net->get_net_name());
 
     {
       auto instance_name = driver_pin->is_io_pin() ? "" : driver_pin->get_instance()->get_name();

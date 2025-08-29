@@ -158,6 +158,7 @@ class VecNet
 
   // getter
   int get_net_id() { return _net_id; }
+  std::string get_net_name() { return _net_name; }
   std::vector<VecNetWire>& get_wires() { return _wires; }
   std::vector<int>& get_pin_ids() { return _pin_ids; }
   VecNetFeature* get_feature(bool b_create = false);
@@ -165,6 +166,7 @@ class VecNet
   NetRoutingGraph get_routing_graph() { return _routing_graph; }
   // setter
   void set_net_id(int net_id) { _net_id = net_id; }
+  void set_net_name(std::string name) { _net_name = name; }
   void set_routing_graph(const NetRoutingGraph& routing_graph) { _routing_graph = routing_graph; }
 
   // operator
@@ -176,6 +178,7 @@ class VecNet
 
  private:
   int _net_id = -1;
+  std::string _net_name;
   std::vector<VecNetWire> _wires;
   std::vector<int> _pin_ids;
   std::map<int, VecPin> _pin_list;

@@ -1337,6 +1337,30 @@ std::optional<double> RcNet::delay(DesignObject& to, DelayMethod delay_method) {
   return delay(to.getFullName().c_str());
 }
 
+/**
+ * @brief get node elmore delay.
+ * 
+ * @param node_name 
+ * @param mode 
+ * @param trans_type 
+ * @return std::optional<double> 
+ */
+std::optional<double> RcNet::delay(const char* node_name, AnalysisMode mode,
+                                   TransType trans_type) {
+  if (_rct.index() == 0) {
+    return std::nullopt;
+  }
+
+  auto node = std::get<RcTree>(_rct).node(node_name);
+  std::optional<double> delay;
+  if (!node) {
+    return std::nullopt;
+  }
+  delay = node->delay(mode, trans_type);
+
+  return delay;
+}
+
 std::optional<std::pair<double, Eigen::MatrixXd>> RcNet::delay(
     DesignObject& to, double /* from_slew */,
     std::optional<LibCurrentData*> /* output_current */, AnalysisMode mode,

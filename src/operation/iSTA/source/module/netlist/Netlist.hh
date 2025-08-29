@@ -60,19 +60,19 @@ class Netlist : public DesignObject {
   friend InstanceIterator;
   friend NetIterator;
 
-  struct CoreSize {
+  struct DieSize {
     double _width;
     double _height;
   };
 
   unsigned isNetlist() override { return 1; }
 
-  auto get_core_size() { return _core_size; }
-  void set_core_size(double width, double height) {
-    CoreSize core_size;
-    core_size._width = width;
-    core_size._height = height;
-    _core_size = core_size;
+  auto get_die_size() { return _die_size; }
+  void set_die_size(double width, double height) {
+    DieSize die_size;
+    die_size._width = width;
+    die_size._height = height;
+    _die_size = die_size;
   }
 
   Port& addPort(Port&& port) {
@@ -197,8 +197,8 @@ class Netlist : public DesignObject {
   std::list<Instance> _instances;
   StrMap<Instance*> _str2instance;
 
-  std::optional<CoreSize>
-      _core_size;  //!< The core size(width * weight) for FP.
+  std::optional<DieSize>
+      _die_size;  //!< The core size(width * weight) for FP.
 
   FORBIDDEN_COPY(Netlist);
 };
