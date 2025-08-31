@@ -932,7 +932,7 @@ void RTInterface::wrapObstacleList()
         }
       }
     }
-    // io pin
+    // io pin without net
     for (idb::IdbPin* idb_io_pin : idb_io_pin_list) {
       if (!isSkipping(idb_io_pin->get_net(), false)) {
         continue;
@@ -1047,7 +1047,7 @@ void RTInterface::wrapObstacleList()
         }
       }
     }
-    // io pin
+    // io pin without net
     for (idb::IdbPin* idb_io_pin : idb_io_pin_list) {
       if (!isSkipping(idb_io_pin->get_net(), false)) {
         continue;
