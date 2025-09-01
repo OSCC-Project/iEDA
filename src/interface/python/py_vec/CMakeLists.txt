@@ -1,6 +1,14 @@
+set(CMAKE_BUILD_TYPE Debug)
+
+
 aux_source_directory(. PY_VEC_SRC)
 
 add_library(py_vec ${PY_VEC_SRC})
+
+target_compile_options(py_vec PRIVATE
+    $<$<CONFIG:Debug>:-g -O0>
+)
+
 
 target_link_libraries(py_vec
     PUBLIC

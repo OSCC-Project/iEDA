@@ -1903,6 +1903,10 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate,
   LOG_INFO << "\n" << _report_tbl_summary->c_str();
   LOG_INFO << "\n" << _report_tbl_TNS->c_str();
 
+  Time::stop();
+  double elapsed_time = Time::elapsedTime();
+  LOG_INFO << "iSTA total elapsed time: " << elapsed_time << " seconds";
+
   auto close_file = [](std::FILE *fp) { std::fclose(fp); };
 
   std::unique_ptr<std::FILE, decltype(close_file)> f(
@@ -1910,6 +1914,7 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate,
 
   std::fprintf(f.get(), "Generate the report at %s, GitVersion: %s.\n",
                Time::getNowWallTime(), GIT_VERSION);
+  std::fprintf(f.get(), "iSTA elapsed time: %.2f seconds.\n", elapsed_time);
   std::fprintf(f.get(), "%s", _report_tbl_summary->c_str());  // WNS
   // report_TNS;
   std::fprintf(f.get(), "%s", _report_tbl_TNS->c_str());
@@ -1919,7 +1924,7 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate,
   }
 
   if (isJsonReportEnabled()) {
-    nlohmann::json dump_json;
+    json dump_json;
     dump_json["summary"] = _summary_json_report;
     dump_json["slack"] = _slack_json_report;
     dump_json["detail"] = _detail_json_report;
@@ -3078,6 +3083,26 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
 
   // for test dump json data.
   // reportWirePaths();
+
+  // for test dump graph json data.
+  if (0) {
+    json graph_json;
+    StaDumpGraphJson dump_graph_json(graph_json);
+    auto& the_graph = get_graph();
+    dump_graph_json(&the_graph);
+
+    std::string graph_json_file_name =
+      Str::printf("%s/%s_graph.json", design_work_space, get_design_name().c_str());
+
+    std::ofstream out_file(graph_json_file_name);
+    if (out_file.is_open()) {
+      out_file << graph_json.dump(4);  // 4 spaces indent
+      LOG_INFO << "JSON report written to: " << graph_json_file_name;
+      out_file.close();
+    } else {
+      LOG_ERROR << "Failed to open JSON report file: " << graph_json_file_name;
+    }
+  }
 
 #if CUDA_PROPAGATION
   // printFlattenData();

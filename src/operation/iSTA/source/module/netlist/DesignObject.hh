@@ -26,6 +26,7 @@
 
 #include <string>
 #include <utility>
+#include <optional>
 
 #include "Type.hh"
 #include "log/Log.hh"
@@ -46,6 +47,8 @@ class DesignObject {
 
   DesignObject(DesignObject&& other) noexcept;
   DesignObject& operator=(DesignObject&& rhs) noexcept;
+
+  using Coordinate = std::pair<double, double>;
 
   virtual unsigned isNetlist() { return 0; }
 
@@ -111,6 +114,9 @@ class DesignObject {
     // LOG_FATAL << "The func is not defined.";
     return nullptr;
   }
+
+  virtual void set_coordinate(double /*x*/, double /*y*/) { LOG_FATAL << "The func is not defined."; }
+  virtual std::optional<Coordinate> get_coordinate() { return std::nullopt; }
 
  private:
   std::string _name;

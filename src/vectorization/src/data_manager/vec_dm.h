@@ -44,6 +44,8 @@ class VecDataManager
 
   bool checkData();
   void saveData(const std::string dir);
+  bool readNetsToIDB(std::string dir);
+  bool readNetsPatternToIDB(std::string path);
 
  public:
   VecLayoutDataManager layout_dm;

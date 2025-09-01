@@ -65,7 +65,7 @@ int StaArc::get_arc_delay(AnalysisMode analysis_mode, TransType trans_type) {
 
 /**
  * @brief init arc delay data.
- * 
+ *
  */
 void StaArc::initArcDelayData() {
   auto& delay_bucket = getDataBucket();
@@ -128,10 +128,11 @@ StaNetArc::StaNetArc(StaVertex* driver, StaVertex* load, Net* net)
     : StaArc(driver, load), _net(net) {}
 
 StaInstArc::StaInstArc(StaVertex* src, StaVertex* snk, LibArc* lib_arc,
-                       Instance* inst)
+                       LibArcSet* lib_arc_set, Instance* inst)
     : StaArc(src, snk),
       _lib_arc(lib_arc),
-      _inst(inst){}
+      _lib_arc_set(lib_arc_set),
+      _inst(inst) {}
 
 // for debug by printLIBTableGPU.(to be deleted)
 void printLibTableGPU(const Lib_Table_GPU& gpu_table) {
@@ -173,7 +174,5 @@ void printLibTableGPU(const Lib_Table_GPU& gpu_table) {
   }
   std::cout << ");" << std::endl;
 }
-
-
 
 }  // namespace ista

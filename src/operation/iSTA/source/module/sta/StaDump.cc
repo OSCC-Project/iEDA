@@ -594,4 +594,516 @@ unsigned StaDumpTimingData::operator()(StaArc* the_arc) {
   return 1;
 }
 
+/**
+ * @brief dump arc in edge connection in json.
+ *
+ * @param the_graph
+ * @return StaDumpGraphJson::json
+ */
+StaDumpGraphJson::json StaDumpGraphJson::dumpEdges(StaGraph* the_graph) {
+  auto& the_vertexes = the_graph->get_vertexes();
+  std::map<StaVertex*, int> vertex_id_map;
+  int vertex_index = 0;
+  for (auto& the_vertex : the_vertexes) {
+    vertex_id_map[the_vertex.get()] = vertex_index++;
+  }
+
+  json edges;
+
+  auto& the_arcs = the_graph->get_arcs();
+  for (auto& the_arc : the_arcs) {
+    if (the_arc->isDelayArc()) {
+    int src_id = vertex_id_map[the_arc->get_src()];
+    int snk_id = vertex_id_map[the_arc->get_snk()];
+
+    if (the_arc->isInstArc() && the_arc->isDelayArc()) {
+      edges["cell_out"]["src"].push_back(src_id);
+      edges["cell_out"]["dst"].push_back(snk_id);
+    } else if (the_arc->isNetArc()) {
+      edges["net_out"]["src"].push_back(src_id);
+      edges["net_out"]["dst"].push_back(snk_id);
+
+      // reverse direction for net out
+      edges["net_in"]["src"].push_back(snk_id);
+      edges["net_in"]["dst"].push_back(src_id);
+    }
+
+    }
+
+  }
+  return edges;
+}
+
+/**
+ * @brief dump all node require arrive time data in json.
+ *
+ * @param the_graph
+ * @return StaDumpGraphJson::json
+ */
+StaDumpGraphJson::json StaDumpGraphJson::dumpNodeRAT(StaGraph* the_graph) {
+  auto& the_vertexes = the_graph->get_vertexes();
+  const double inf = 1.1e20;
+  json all_vertex_rat_array = json::array();
+
+  for (auto& the_vertex : the_vertexes) {
+    json one_vertex_rat_array = json::array();
+
+    double max_rise_rat =
+        the_vertex->getReqTimeNs(AnalysisMode::kMax, TransType::kRise)
+            .value_or(inf);
+    double max_fall_rat =
+        the_vertex->getReqTimeNs(AnalysisMode::kMax, TransType::kFall)
+            .value_or(inf);
+    double min_rise_rat =
+        the_vertex->getReqTimeNs(AnalysisMode::kMin, TransType::kRise)
+            .value_or(inf);
+    double min_fall_rat =
+        the_vertex->getReqTimeNs(AnalysisMode::kMin, TransType::kFall)
+            .value_or(inf);
+    // min first
+    one_vertex_rat_array.push_back(min_rise_rat);
+    one_vertex_rat_array.push_back(min_fall_rat);
+    one_vertex_rat_array.push_back(max_rise_rat);
+    one_vertex_rat_array.push_back(max_fall_rat);
+
+    all_vertex_rat_array.push_back(one_vertex_rat_array);
+  }
+
+  return all_vertex_rat_array;
+}
+
+/**
+ * @brief dump node net delay data in json.
+ *
+ * @param the_graph
+ * @return StaDumpGraphJson::json
+ */
+StaDumpGraphJson::json StaDumpGraphJson::dumpNodeNetDelay(StaGraph* the_graph) {
+  auto& the_vertexes = the_graph->get_vertexes();
+  json all_vertex_node_net_delay_array = json::array();
+
+  for (auto& the_vertex : the_vertexes) {
+    json one_vertex_net_delay_array = json::array();
+
+    auto* the_obj = the_vertex->get_design_obj();
+    std::string obj_name = the_obj->getFullName();
+    auto* the_net = the_obj->get_net();
+    auto* rc_net = getSta()->getRcNet(the_net);
+    auto* rc_tree = rc_net->rct();
+
+    double max_rise_delay = 0.0;
+    double max_fall_delay = 0.0;
+    double min_rise_delay = 0.0;
+    double min_fall_delay = 0.0;
+    if (rc_tree) {
+      max_rise_delay = rc_tree->delay(obj_name.c_str(), AnalysisMode::kMax,
+                                      TransType::kRise);
+      max_fall_delay = rc_tree->delay(obj_name.c_str(), AnalysisMode::kMax,
+                                      TransType::kFall);
+      min_rise_delay = rc_tree->delay(obj_name.c_str(), AnalysisMode::kMin,
+                                      TransType::kRise);
+      min_fall_delay = rc_tree->delay(obj_name.c_str(), AnalysisMode::kMin,
+                                      TransType::kFall);
+    }
+
+    // min first
+    one_vertex_net_delay_array.push_back(min_rise_delay);
+    one_vertex_net_delay_array.push_back(min_fall_delay);
+    one_vertex_net_delay_array.push_back(max_rise_delay);
+    one_vertex_net_delay_array.push_back(max_fall_delay);
+
+    all_vertex_node_net_delay_array.push_back(one_vertex_net_delay_array);
+  }
+
+  return all_vertex_node_net_delay_array;
+}
+
+/**
+ * @brief dump all node arrive time data in json.
+ *
+ * @param the_graph
+ * @return StaDumpGraphJson::json
+ */
+StaDumpGraphJson::json StaDumpGraphJson::dumpNodeAT(StaGraph* the_graph) {
+  auto& the_vertexes = the_graph->get_vertexes();
+  const double inf = 1.1e20;
+  json all_vertex_at_array = json::array();
+
+  for (auto& the_vertex : the_vertexes) {
+    json one_vertex_at_array = json::array();
+
+    double max_rise_at =
+        the_vertex->getArriveTimeNs(AnalysisMode::kMax, TransType::kRise)
+            .value_or(inf);
+    double max_fall_at =
+        the_vertex->getArriveTimeNs(AnalysisMode::kMax, TransType::kFall)
+            .value_or(inf);
+    double min_rise_at =
+        the_vertex->getArriveTimeNs(AnalysisMode::kMin, TransType::kRise)
+            .value_or(inf);
+    double min_fall_at =
+        the_vertex->getArriveTimeNs(AnalysisMode::kMin, TransType::kFall)
+            .value_or(inf);
+
+    // min first
+    one_vertex_at_array.push_back(min_rise_at);
+    one_vertex_at_array.push_back(min_fall_at);
+    one_vertex_at_array.push_back(max_rise_at);
+    one_vertex_at_array.push_back(max_fall_at);
+
+    all_vertex_at_array.push_back(one_vertex_at_array);
+  }
+
+  return all_vertex_at_array;
+}
+
+/**
+ * @brief dump all node slew data in json.
+ *
+ * @param the_graph
+ * @return StaDumpGraphJson::json
+ */
+StaDumpGraphJson::json StaDumpGraphJson::dumpNodeSlew(StaGraph* the_graph) {
+  auto& the_vertexes = the_graph->get_vertexes();
+  const double inf = 1.1e20;
+  json all_vertex_slew_array = json::array();
+
+  for (auto& the_vertex : the_vertexes) {
+    json one_vertex_slew_array = json::array();
+
+    double max_rise_slew =
+        the_vertex->getSlewNs(AnalysisMode::kMax, TransType::kRise)
+            .value_or(inf);
+    double max_fall_slew =
+        the_vertex->getSlewNs(AnalysisMode::kMax, TransType::kFall)
+            .value_or(inf);
+    double min_rise_slew =
+        the_vertex->getSlewNs(AnalysisMode::kMin, TransType::kRise)
+            .value_or(inf);
+    double min_fall_slew =
+        the_vertex->getSlewNs(AnalysisMode::kMin, TransType::kFall)
+            .value_or(inf);
+
+    // min first
+    one_vertex_slew_array.push_back(min_rise_slew);
+    one_vertex_slew_array.push_back(min_fall_slew);
+    one_vertex_slew_array.push_back(max_rise_slew);
+    one_vertex_slew_array.push_back(max_fall_slew);
+
+    all_vertex_slew_array.push_back(one_vertex_slew_array);
+  }
+
+  return all_vertex_slew_array;
+}
+
+/**
+ * @brief dump the node feature data in json include is_pin_port,
+ * is_fanin_out(input or output), distance to 4 die boundary, pin capacitance.
+ * @ref Guo etc, DAC22 "A Timing Engine Inspired Graph Neural Network Model for
+ * Pre-Routing Slack Prediction"
+ *
+ * @param the_graph
+ * @return StaDumpGraphJson::json
+ */
+StaDumpGraphJson::json StaDumpGraphJson::dumpNodeFeature(StaGraph* the_graph) {
+  auto& the_vertexes = the_graph->get_vertexes();
+  json all_vertex_node_feature_array = json::array();
+  auto* nl = the_graph->get_nl();
+  auto [die_width, die_height] = nl->get_die_size().value();
+
+  for (auto& the_vertex : the_vertexes) {
+    json one_node_feature_array = json::array();
+    auto* the_obj = the_vertex->get_design_obj();
+    the_obj->isPort() ? one_node_feature_array.push_back(1.0)  // is_port
+                      : one_node_feature_array.push_back(0.0);
+    the_obj->isInput() ? one_node_feature_array.push_back(1.0)  // is_input
+                       : one_node_feature_array.push_back(0.0);
+    // the distance to 4 die boundary, left, right, top, bottom TBD.
+    if (the_obj->get_coordinate()) {
+      auto [pin_x, pin_y] = the_obj->get_coordinate().value();
+      double left_bottom_distance = pin_x + pin_y;
+      double right_bottom_distance = die_width - pin_x + pin_y;
+      double left_top_distance = pin_x + die_height - pin_y;
+      double right_top_distance = die_width - pin_x + die_height - pin_y;
+
+      // the order is lb(left bottom), rt, rb, lt
+      one_node_feature_array.push_back(left_bottom_distance);
+      one_node_feature_array.push_back(right_top_distance);
+      one_node_feature_array.push_back(right_bottom_distance);
+      one_node_feature_array.push_back(left_top_distance);
+
+    } else {
+      // assume the non-pin node is in the left bottom of the die.
+      one_node_feature_array.push_back(0.0);
+      one_node_feature_array.push_back(die_width + die_height);
+      one_node_feature_array.push_back(die_width);
+      one_node_feature_array.push_back(die_height);
+    }
+
+    // TODO(to taosimin), min or max first? assume max first
+    double max_rise_cap =
+        the_vertex->getLoad(AnalysisMode::kMax, TransType::kRise);
+    double max_fall_cap =
+        the_vertex->getLoad(AnalysisMode::kMax, TransType::kFall);
+    double min_rise_cap =
+        the_vertex->getLoad(AnalysisMode::kMin, TransType::kRise);
+    double min_fall_cap =
+        the_vertex->getLoad(AnalysisMode::kMin, TransType::kFall);
+
+    one_node_feature_array.push_back(min_rise_cap);
+    one_node_feature_array.push_back(min_fall_cap);
+
+    one_node_feature_array.push_back(max_rise_cap);
+    one_node_feature_array.push_back(max_fall_cap);
+
+    all_vertex_node_feature_array.push_back(one_node_feature_array);
+  }
+  return all_vertex_node_feature_array;
+}
+
+/**
+ * @brief dump the node is_end_point data in json.
+ *
+ * @param the_graph
+ * @return StaDumpGraphJson::json
+ */
+StaDumpGraphJson::json StaDumpGraphJson::dumpNodeIsEndPoint(
+    StaGraph* the_graph) {
+  auto& the_vertexes = the_graph->get_vertexes();
+  json all_vertex_node_is_ep_array = json::array();
+
+  for (auto& the_vertex : the_vertexes) {
+    all_vertex_node_is_ep_array.push_back(the_vertex->is_end() ? 1.0 : 0.0);
+  }
+  return all_vertex_node_is_ep_array;
+}
+
+/**
+ * @brief dump all instance arc delay data in json.
+ *
+ * @param the_graph
+ * @return StaDumpGraphJson::json
+ */
+StaDumpGraphJson::json StaDumpGraphJson::dumpInstArcDelay(StaGraph* the_graph) {
+  auto& the_arcs = the_graph->get_arcs();
+  json all_inst_arc_delay_array = json::array();
+
+  for (auto& the_arc : the_arcs) {
+    if (the_arc->isInstArc() && the_arc->isDelayArc()) {
+      json one_inst_arc_delay_array = json::array();
+
+      double max_rise_delay = FS_TO_NS(
+          the_arc->get_arc_delay(AnalysisMode::kMax, TransType::kRise));
+      double max_fall_delay = FS_TO_NS(
+          the_arc->get_arc_delay(AnalysisMode::kMax, TransType::kFall));
+      double min_rise_delay = FS_TO_NS(
+          the_arc->get_arc_delay(AnalysisMode::kMin, TransType::kRise));
+      double min_fall_delay = FS_TO_NS(
+          the_arc->get_arc_delay(AnalysisMode::kMin, TransType::kFall));
+
+      // min first
+      one_inst_arc_delay_array.push_back(min_rise_delay);
+      one_inst_arc_delay_array.push_back(min_fall_delay);
+      one_inst_arc_delay_array.push_back(max_rise_delay);
+      one_inst_arc_delay_array.push_back(max_fall_delay);
+
+      all_inst_arc_delay_array.push_back(one_inst_arc_delay_array);
+    }
+  }
+
+  return all_inst_arc_delay_array;
+}
+
+/**
+ * @brief dump inst arc lib table data in json.
+ * @ref Guo etc, DAC22 "A Timing Engine Inspired Graph Neural Network Model for
+ * Pre-Routing Slack Prediction"
+ * @param the_graph
+ * @return StaDumpGraphJson::json
+ */
+StaDumpGraphJson::json StaDumpGraphJson::dumpInstArcFeature(
+    StaGraph* the_graph) {
+  auto& the_arcs = the_graph->get_arcs();
+  json all_inst_arc_lib_data_array = json::array();
+
+  for (auto& the_arc : the_arcs) {
+    if (the_arc->isInstArc() && the_arc->isDelayArc()) {
+      json one_inst_arc_table_array = json::array();
+
+      auto* the_lib_arc =
+          dynamic_cast<StaInstArc*>(the_arc.get())->get_lib_arc();
+      auto* delay_model =
+          dynamic_cast<LibDelayTableModel*>(the_lib_arc->get_table_model());
+      auto& delay_tables = delay_model->get_tables();
+
+      std::vector<LibTable*> store_tables;
+      int duplicate = 2;  // hard code 2 table duplicate for 2 corner
+      for (int i = 0; i < duplicate; ++i) {
+        for (auto& delay_table : delay_tables) {
+          store_tables.push_back(delay_table.get());
+        }
+      }
+
+      for (auto* delay_table : store_tables) {
+        // copy axies
+        if (delay_table) {
+          double is_valid = 1.0;
+          one_inst_arc_table_array.push_back(is_valid);
+          auto& table_axes = delay_table->get_axes();
+          for (auto& table_axis : table_axes) {
+            auto& axis_values = table_axis->get_axis_values();
+            for (auto& axis_value : axis_values) {
+              double data_value = axis_value->getFloatValue();
+              one_inst_arc_table_array.push_back(data_value);
+            }
+          }
+        } else {
+          double is_valid = 0.0;
+          one_inst_arc_table_array.push_back(is_valid);
+          // hard code 2 axis, 7*2 data
+          for (int i = 0; i < 7 * 2; i++) {
+            double data_value = 0.0;
+            one_inst_arc_table_array.push_back(data_value);
+          }
+        }
+      }
+
+      // copy table values
+      for (auto* delay_table : store_tables) {
+        auto& table_values = delay_table->get_table_values();
+        for (auto& table_value : table_values) {
+          one_inst_arc_table_array.push_back(table_value->getFloatValue());
+        }
+      }
+
+      all_inst_arc_lib_data_array.push_back(one_inst_arc_table_array);
+    }
+  }
+
+  return all_inst_arc_lib_data_array;
+}
+
+/**
+ * @brief dump net arc feature, the Manhattan distance between the positions of
+a net’s drive pin and its sink pin.(driver -> sink)
+ * @ref Guo etc, DAC22 "A Timing Engine Inspired Graph Neural Network Model for
+ * Pre-Routing Slack Prediction"
+ * @param the_graph
+ * @return StaDumpGraphJson::json
+ */
+StaDumpGraphJson::json StaDumpGraphJson::dumpNetInArcFeature(
+    StaGraph* the_graph) {
+  auto& the_arcs = the_graph->get_arcs();
+  json all_net_arc_feature_array = json::array();
+
+  for (auto& the_arc : the_arcs) {
+    if (the_arc->isNetArc()) {
+      json one_net_arc_feature_array = json::array();
+
+      auto* the_net_arc = dynamic_cast<StaNetArc*>(the_arc.get());
+      auto* src = the_net_arc->get_src();
+      auto* snk = the_net_arc->get_snk();
+
+      auto* src_obj = src->get_design_obj();
+      auto* snk_obj = snk->get_design_obj();
+
+      auto src_coord = src_obj->get_coordinate();
+      auto snk_coord = snk_obj->get_coordinate();
+
+      double distance_x = src_coord->first - snk_coord->first;
+      double distance_y = src_coord->second - snk_coord->second;
+
+      one_net_arc_feature_array.push_back(distance_x);
+      one_net_arc_feature_array.push_back(distance_y);
+
+      all_net_arc_feature_array.push_back(one_net_arc_feature_array);
+    }
+  }
+
+  return all_net_arc_feature_array;
+}
+
+/**
+ * @brief The net out is net arc reverse, from sink->driver.
+ *
+ * @param the_graph
+ * @return StaDumpGraphJson::json
+ */
+StaDumpGraphJson::json StaDumpGraphJson::dumpNetOutArcFeature(
+    StaGraph* the_graph) {
+  auto& the_arcs = the_graph->get_arcs();
+  json all_net_arc_feature_array = json::array();
+
+  for (auto& the_arc : the_arcs) {
+    if (the_arc->isNetArc()) {
+      json one_net_arc_feature_array = json::array();
+
+      auto* the_net_arc = dynamic_cast<StaNetArc*>(the_arc.get());
+      auto* src = the_net_arc->get_src();
+      auto* snk = the_net_arc->get_snk();
+
+      auto* src_obj = src->get_design_obj();
+      auto* snk_obj = snk->get_design_obj();
+
+      auto src_coord = src_obj->get_coordinate();
+      auto snk_coord = snk_obj->get_coordinate();
+
+      double distance_x = snk_coord->first - src_coord->first;
+      double distance_y = snk_coord->second - src_coord->second;
+
+      one_net_arc_feature_array.push_back(distance_x);
+      one_net_arc_feature_array.push_back(distance_y);
+
+      all_net_arc_feature_array.push_back(one_net_arc_feature_array);
+    }
+  }
+
+  return all_net_arc_feature_array;
+}
+
+/**
+ * @brief dump the graph json for get graph timing data.
+ *
+ * @param the_graph
+ * @return unsigned
+ */
+unsigned StaDumpGraphJson::operator()(StaGraph* the_graph) {
+  LOG_INFO << "dump graph json start";
+
+  unsigned num_nodes = the_graph->numVertex();
+  _json_file["num_nodes"] = num_nodes;
+
+  _json_file["edges"] = dumpEdges(the_graph);
+
+  // dump node features
+  auto n_rats = dumpNodeRAT(the_graph);
+  auto n_net_delays = dumpNodeNetDelay(the_graph);
+  auto n_ats = dumpNodeAT(the_graph);
+  auto n_slews = dumpNodeSlew(the_graph);
+  auto n_node_features = dumpNodeFeature(the_graph);
+  auto n_is_timing_endpt = dumpNodeIsEndPoint(the_graph);
+
+  _json_file["node_features"]["n_rats"] = n_rats;
+  _json_file["node_features"]["n_net_delays"] = n_net_delays;
+  _json_file["node_features"]["n_ats"] = n_ats;
+  _json_file["node_features"]["n_slews"] = n_slews;
+  _json_file["node_features"]["nf"] = n_node_features;
+  _json_file["node_features"]["n_is_timing_endpt"] = n_is_timing_endpt;
+
+  // dump arc features
+  auto e_inst_arc_delays = dumpInstArcDelay(the_graph);
+  auto e_inst_arc_features = dumpInstArcFeature(the_graph);
+  auto e_net_in_arc_features = dumpNetInArcFeature(the_graph);
+  auto e_net_out_arc_features = dumpNetOutArcFeature(the_graph);
+
+  _json_file["edge_features"]["cell_out"]["e_cell_delays"] = e_inst_arc_delays;
+  _json_file["edge_features"]["cell_out"]["ef"] = e_inst_arc_features;
+  _json_file["edge_features"]["net_in"]["ef"] = e_net_in_arc_features;
+  _json_file["edge_features"]["net_out"]["ef"] = e_net_out_arc_features;
+
+  LOG_INFO << "dump graph json end";
+
+  return 1;
+}
+
 }  // namespace ista

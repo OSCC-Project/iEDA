@@ -30,7 +30,8 @@ void register_ipw(py::module& m)
 {
   m.def("read_vcd_cpp", &readRustVCD, py::arg("file_name"), py::arg("top_name"));
   m.def("read_pg_spef", &read_pg_spef, py::arg("pg_spef_file"));
-  m.def("report_power_cpp", &reportPower);
+  m.def("report_power_cpp", &report_power);
+  m.def("report_power", &report_power);
   m.def("report_ir_drop", &report_ir_drop, py::arg("power_nets"));
 
   // for dataflow.
@@ -43,12 +44,25 @@ void register_ipw(py::module& m)
   m.def("build_connection_map", &build_connection_map);
 
 
-py::class_<ipower::MacroConnection>(m, "MacroConnection")
+  py::class_<ipower::MacroConnection>(m, "MacroConnection")
     .def_readwrite("src_macro_name", &ipower::MacroConnection::_src_macro_name)
     .def_readwrite("dst_macro_name", &ipower::MacroConnection::_dst_macro_name)
     .def_readwrite("stages_each_hop", &ipower::MacroConnection::_stages_each_hop)
     .def_readwrite("hop", &ipower::MacroConnection::_hop);
   m.def("build_macro_connection_map", &build_macro_connection_map);
+
+    // get wire timing data
+  py::class_<WireTimingPowerData>(m, "WireTimingPowerData")
+  .def_readwrite("from_node_name", &WireTimingPowerData::_from_node_name)
+  .def_readwrite("to_node_name", &WireTimingPowerData::_to_node_name)
+  .def_readwrite("wire_resistance", &WireTimingPowerData::_wire_resistance)
+  .def_readwrite("wire_capacitance", &WireTimingPowerData::_wire_capacitance)
+  .def_readwrite("wire_from_slew", &WireTimingPowerData::_wire_from_slew)
+  .def_readwrite("wire_to_slew", &WireTimingPowerData::_wire_to_slew)
+  .def_readwrite("wire_delay", &WireTimingPowerData::_wire_delay)
+  .def_readwrite("wire_power", &WireTimingPowerData::_wire_power);
+
+  m.def("get_wire_timing_power_data", get_wire_timing_power_data);
 
 }
 

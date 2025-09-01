@@ -23,7 +23,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall -Werror=return-type")
 set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb -Werror=return-type")
-set(CMAKE_BUILD_TYPE "Release")
+
+if(NOT DEFINED CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type (default: Release)" FORCE)
+endif()
 
 if(DEFINED BUILD_AIEDA)
     option(BUILD_STATIC_LIB "Build static library OFF" OFF)
@@ -36,6 +39,7 @@ option(USE_PROFILER "Enable performance profiling (default OFF)" OFF)
 option(SANITIZER "Enable address sanitizer (default OFF)" OFF)
 option(BUILD_GUI "Enable GUI components (default OFF)" OFF)
 option(USE_GPU "Enable GPU acceleration (default OFF)" OFF)
+option(BUILD_AI_PREDICTOR "Enable AI predictor modules (default OFF)" OFF)
 option(COMPATIBILITY_MODE "Enable compatibility mode (disable aggressive optimizations)" ON)
 
 # Define GLOG_USE_GLOG_EXPORT for glog 0.7.1+ compatibility
@@ -63,6 +67,9 @@ if (BUILD_STATIC_LIB)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "Disable shared libs" FORCE)
     set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libstdc++ -static-libgcc")
+else()
+    # When building shared libraries, ensure position independent code
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
 if(NOT COMPATIBILITY_MODE)

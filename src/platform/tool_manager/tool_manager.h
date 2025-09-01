@@ -85,6 +85,7 @@ class ToolManager
   bool runPlacerIncrementalLegalization();
   bool checkLegality();
   bool reportPlacer();
+  bool runAiPlacer(std::string config = "", std::string onnx_path = "", std::string normalization_path="");
 
   // iNO
   bool RunNOFixFanout(std::string config = "");

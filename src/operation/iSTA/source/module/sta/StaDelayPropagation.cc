@@ -83,6 +83,7 @@ unsigned StaDelayPropagation::operator()(StaArc* the_arc) {
 
       if (the_arc->isInstArc()) {
         auto* lib_arc = dynamic_cast<StaInstArc*>(the_arc)->get_lib_arc();
+        auto* lib_arc_set = dynamic_cast<StaInstArc*>(the_arc)->get_lib_arc_set();
         /*The check arc is the end of the recursion .*/
         if (the_arc->isCheckArc()) {
           // Since slew is fitter accord trigger type, May be do not need below
@@ -102,8 +103,11 @@ unsigned StaDelayPropagation::operator()(StaArc* the_arc) {
             auto snk_slew_fs =
                 dynamic_cast<StaSlewData*>(snk_slew_data)->get_slew();
             auto snk_slew = FS_TO_NS(snk_slew_fs);
-            auto delay_ns = lib_arc->getDelayOrConstrainCheckNs(
+            auto delay_values = lib_arc_set->getDelayOrConstrainCheckNs(
                 snk_trans_type, in_slew, snk_slew);
+            double delay_ns = analysis_mode == AnalysisMode::kMax
+                                  ? delay_values.front()
+                                  : delay_values.back();
             auto delay = NS_TO_FS(delay_ns);
             construct_delay_data(analysis_mode, snk_trans_type, the_arc, delay);
           }
@@ -130,9 +134,13 @@ unsigned StaDelayPropagation::operator()(StaArc* the_arc) {
           if (!lib_arc->isMatchTimingType(out_trans_type)) {
             continue;
           }
-
-          auto delay_ns = lib_arc->getDelayOrConstrainCheckNs(out_trans_type,
+          
+          // assure delay values sort by descending order.
+          auto delay_values = lib_arc_set->getDelayOrConstrainCheckNs(out_trans_type,
                                                               in_slew, load);
+          double delay_ns = analysis_mode == AnalysisMode::kMax
+                                ? delay_values.front()
+                                : delay_values.back();
           auto delay = NS_TO_FS(delay_ns);
 
           construct_delay_data(analysis_mode, out_trans_type, the_arc, delay);

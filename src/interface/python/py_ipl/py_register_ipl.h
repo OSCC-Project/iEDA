@@ -28,6 +28,7 @@ void register_ipl(py::module& m)
   m.def("run_filler", placerRunFiller, py::arg("config"));
   m.def("run_incremental_flow", placerIncrementalFlow, py::arg("config"));
   m.def("run_incremental_lg", placerIncrementalLG);
+  m.def("run_ai_placement", placerAiRun, py::arg("config"), py::arg("onnx_path"), py::arg("normalization_path"));
 
   m.def("init_pl", placerInit, py::arg("config"));
   m.def("destroy_pl", placerDestroy);

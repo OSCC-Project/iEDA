@@ -392,6 +392,7 @@ class LibDelayTableModel final : public LibTableModel
   }
 
   LibTable* getTable(int index) override { return _tables[index].get(); }
+  auto& get_tables() { return _tables; }
 
   unsigned addCurrentTable(std::unique_ptr<LibCCSTable>&& table)
   {
@@ -910,6 +911,8 @@ class LibArcSet
 
   LibArc* front() { return _arcs.front().get(); }
   auto& get_arcs() { return _arcs; }
+
+  std::vector<double> getDelayOrConstrainCheckNs(TransType trans_type, double slew, double load_or_constrain_slew);
 
  private:
   Vector<std::unique_ptr<LibArc>> _arcs;

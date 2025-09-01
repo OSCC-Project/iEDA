@@ -1222,6 +1222,8 @@ unsigned Power::reportIRDropTable(const char* rpt_file_name) {
     std::fprintf(f.get(), "Report : Net %s IR Drop Report, Unit V\n",
                  net_name.c_str());
     std::fprintf(f.get(), "%s\n", report_tbl->c_str());
+    LOG_INFO << "Instance IR Drop Report for net " << net_name << " :\n"
+             << report_tbl->c_str();
   }
 
   return 1;

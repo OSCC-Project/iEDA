@@ -25,6 +25,7 @@
 
 #include "Log.hh"
 #include "idm.h"
+#include "json_parser.h"
 #include "omp.h"
 #include "usage.hh"
 #include "vec_grid_info.h"
@@ -41,9 +42,12 @@ void VecLayoutFileIO::makeDir(std::string dir)
 
 bool VecLayoutFileIO::saveJson()
 {
-  LOG_INFO << "Vectorization save json start... dir = " << _dir;
+  LOG_INFO << "Vectorization save json start... dir = " << _path;
 
-  makeDir(_dir);
+  makeDir(_path);
+
+  /// save tech
+  saveJsonTech();
 
   /// save cells
   saveJsonCells();
@@ -57,7 +61,7 @@ bool VecLayoutFileIO::saveJson()
   /// save patch
   saveJsonPatchs();
 
-  LOG_INFO << "Vectorization save json end... dir = " << _dir;
+  LOG_INFO << "Vectorization save json end... dir = " << _path;
 
   return true;
 }
@@ -66,7 +70,7 @@ bool VecLayoutFileIO::saveJsonNets()
 {
   ieda::Stats stats;
   LOG_INFO << "Vectorization save json net start...";
-  makeDir(_dir + "/nets/");
+  makeDir(_path + "/nets/");
 
   auto& net_map = _layout->get_graph().get_net_map();
   const int BATCH_SIZE = 1500;  // 可根据系统性能调整批量大小
@@ -103,7 +107,7 @@ bool VecLayoutFileIO::saveJsonNets()
       json json_net;
       {
         json_net["id"] = net_id;
-        json_net["name"] = idb_net->get_net_name();
+        json_net["name"] = vec_net.get_net_name();
 
         /// net feature
         {
@@ -298,7 +302,7 @@ bool VecLayoutFileIO::saveJsonNets()
 
     // 创建文件名格式: net_START_END.json
     std::string filename = "net_" + std::to_string(start_net_idx) + "_" + std::to_string(end_net_idx) + ".json";
-    std::string full_path = _dir + "/nets/" + filename;
+    std::string full_path = _path + "/nets/" + filename;
 
     // 创建一个包含当前批次网络的数组
     json batch_json = json::array();
@@ -312,6 +316,7 @@ bool VecLayoutFileIO::saveJsonNets()
     }
 
     std::ofstream file_stream(full_path);
+    // file_stream << std::setw(4) << batch_json;
     file_stream << batch_json;
     file_stream.close();
 
@@ -334,7 +339,7 @@ bool VecLayoutFileIO::saveJsonPatchs()
 {
   ieda::Stats stats;
   LOG_INFO << "Vectorization save json patchs start...";
-  makeDir(_dir + "/patchs/");
+  makeDir(_path + "/patchs/");
 
   if (!_patch_grid) {
     return false;
@@ -541,7 +546,7 @@ bool VecLayoutFileIO::saveJsonPatchs()
 
     // 创建文件名格式: patch_START_END.json
     std::string filename = "patch_" + std::to_string(start_patch_idx) + "_" + std::to_string(end_patch_idx) + ".json";
-    std::string full_path = _dir + "/patchs/" + filename;
+    std::string full_path = _path + "/patchs/" + filename;
 
     // 创建一个包含当前批次patch的数组
     json batch_json = json::array();
@@ -595,14 +600,78 @@ json VecLayoutFileIO::makeNodePair(VecNode* node1, VecNode* node2)
   json_node["c2"] = node2->get_col_id();                   /// col
   json_node["l2"] = node2->get_layer_id();                 /// layer order
   json_node["p2"] = node2->get_node_data()->get_pin_id();  /// pin
+
+  //   json_node["via"] = -1;  /// via id
+
+  if (node1->get_layer_id() != node2->get_layer_id()) {
+    /// save via id
+    auto top_layer_node = node1->get_layer_id() > node2->get_layer_id() ? node1 : node2;
+    json_node["via"] = top_layer_node->get_node_data()->get_via_id();
+  }
   return json_node;
+}
+
+bool VecLayoutFileIO::saveJsonTech()
+{
+  ieda::Stats stats;
+  LOG_INFO << "Vectorization save json tech start...";
+  makeDir(_path + "/tech/");
+
+  json json_tech;
+  {
+    /// layers
+    {
+      auto& layer_map = _layout->get_layout_layers().get_layout_layer_map();
+      json_tech["layer_num"] = layer_map.size();
+
+      auto json_layer_list = json::array();
+      for (auto& [id, vec_layer] : layer_map) {
+        json json_layer;
+        json_layer["id"] = vec_layer.get_layer_order();
+        json_layer["name"] = vec_layer.get_layer_name();
+
+        json_layer_list.push_back(json_layer);
+      }
+
+      json_tech["layers"] = json_layer_list;
+    }
+
+    /// vias
+    {
+      auto& via_map = _layout->get_via_name_map();
+      json_tech["via_num"] = via_map.size();
+
+      auto json_via_list = json::array();
+      for (auto& [via_name, id] : via_map) {
+        json json_via;
+        json_via["id"] = id;
+        json_via["name"] = via_name;
+
+        json_via_list.push_back(json_via);
+      }
+
+      json_tech["vias"] = json_via_list;
+    }
+  }
+
+  std::string filename = _path + "/tech/tech.json";
+  std::ofstream file_stream(filename);
+  file_stream << json_tech;
+  //   file_stream << std::setw(4) << json_tech;
+  file_stream.close();
+
+  LOG_INFO << "Vectorization memory usage " << stats.memoryDelta() << " MB";
+  LOG_INFO << "Vectorization elapsed time " << stats.elapsedRunTime() << " s";
+  LOG_INFO << "Vectorization save json tech end...";
+
+  return true;
 }
 
 bool VecLayoutFileIO::saveJsonCells()
 {
   ieda::Stats stats;
   LOG_INFO << "Vectorization save json cells start...";
-  makeDir(_dir + "/cells/");
+  makeDir(_path + "/tech/");
 
   json json_cells;
   {
@@ -623,7 +692,7 @@ bool VecLayoutFileIO::saveJsonCells()
     json_cells["cells"] = json_cell_list;
   }
 
-  std::string filename = _dir + "/cells/cells.json";
+  std::string filename = _path + "/tech/cells.json";
   std::ofstream file_stream(filename);
   file_stream << json_cells;
   file_stream.close();
@@ -639,7 +708,7 @@ bool VecLayoutFileIO::saveJsonInstances()
 {
   ieda::Stats stats;
   LOG_INFO << "Vectorization save json instances start...";
-  makeDir(_dir + "/instances/");
+  makeDir(_path + "/instances/");
 
   json json_insts;
   {
@@ -667,7 +736,7 @@ bool VecLayoutFileIO::saveJsonInstances()
     json_insts["instances"] = json_inst_list;
   }
 
-  std::string filename = _dir + "/instances/instances.json";
+  std::string filename = _path + "/instances/instances.json";
   std::ofstream file_stream(filename);
   file_stream << json_insts;
   file_stream.close();
@@ -675,6 +744,262 @@ bool VecLayoutFileIO::saveJsonInstances()
   LOG_INFO << "Vectorization memory usage " << stats.memoryDelta() << " MB";
   LOG_INFO << "Vectorization elapsed time " << stats.elapsedRunTime() << " s";
   LOG_INFO << "Vectorization save json instances end...";
+
+  return true;
+}
+
+bool VecLayoutFileIO::readJsonNets()
+{
+  namespace fs = std::filesystem;
+
+  auto find_json_files = [&](const fs::path& folder) -> std::vector<fs::path> {
+    std::vector<fs::path> result;
+    for (const auto& entry : fs::directory_iterator(folder)) {
+      if (entry.is_regular_file() && entry.path().extension() == ".json") {
+        result.emplace_back(entry.path());
+      }
+    }
+    return result;
+  };
+
+  auto* idb_nets = dmInst->get_idb_design()->get_net_list();
+  auto* idb_layers = dmInst->get_idb_layout()->get_layers();
+  auto* idb_vias = dmInst->get_idb_layout()->get_via_list();
+
+  idb_nets->clear_wire_list();
+
+  auto read_file = [&](std::string file) {
+    LOG_INFO << "read " << file;
+    nlohmann::json json;
+    std::ifstream file_stream(file);
+    file_stream >> json;
+
+    /// parse vector nets
+    for (auto& json_net : json.items()) {
+      std::string net_name = json_net.value()["name"];
+      auto* idb_net = idb_nets->find_net(net_name);
+      if (idb_net == nullptr) {
+        continue;
+      }
+
+      idb_net->clear_wire_list();
+      auto* idb_wire_list = idb_net->get_wire_list();
+
+      auto json_wires = json_net.value()["wires"];
+      auto* idb_wire = idb_wire_list->add_wire();
+      for (auto& json_wire : json_wires.items()) {
+        idb_wire->set_wire_state(idb::IdbWiringStatement::kRouted);
+
+        auto json_paths = json_wire.value()["paths"];
+        int32_t path_new = false;
+        for (auto& json_path : json_paths.items()) {
+          int p1 = json_path.value()["p1"];
+          int p2 = json_path.value()["p2"];
+          if (p1 != -1 && p2 != -1 && p1 == p2) {
+            /// ignore single pin shape
+            continue;
+          }
+
+          int x1 = json_path.value()["real_x1"];
+          int y1 = json_path.value()["real_y1"];
+          int l1 = json_path.value()["l1"];
+          std::string layer1 = _layout->findLayerName(l1);
+          auto* idb_layer1 = idb_layers->find_layer(layer1);
+          int x2 = json_path.value()["real_x2"];
+          int y2 = json_path.value()["real_y2"];
+          int l2 = json_path.value()["l2"];
+          std::string layer2 = _layout->findLayerName(l2);
+          auto* idb_layer2 = idb_layers->find_layer(layer2);
+
+          auto* idb_segment = new IdbRegularWireSegment();
+          if (l1 == l2) {
+            if (x1 == x2 && y1 == y2) {
+              delete idb_segment;
+              continue;
+            }
+
+            if (x1 == x2 || y1 == y2) {
+            } else {
+              /// use grid coordinate
+              x1 = json_path.value()["x1"];
+              y1 = json_path.value()["y1"];
+              x2 = json_path.value()["x2"];
+              y2 = json_path.value()["y2"];
+            }
+
+            idb_segment->set_layer(idb_layer1);
+            idb_segment->add_point(x1, y1);
+            idb_segment->add_point(x2, y2);
+
+          } else {
+            int via_id = json_path.value()["via"];
+            if (via_id == -1) {
+              LOG_WARNING << "via id error";
+              delete idb_segment;
+              continue;
+            }
+
+            auto* top_layer = l1 > l2 ? idb_layer1 : idb_layer2;
+            auto x = l1 > l2 ? x1 : x2;
+            auto y = l1 > l2 ? y1 : y2;
+            idb_segment->set_layer(top_layer);
+            idb_segment->set_is_via(true);
+            idb_segment->add_point(x, y);
+
+            auto via_name = _layout->findViaName(via_id);
+            if (via_name != "") {
+              auto* idb_via = idb_vias->find_via(via_name);
+              auto* idb_via_new = idb_segment->copy_via(idb_via);
+              idb_via_new->set_coordinate(x, y);
+            } else {
+              /// use default via, tbd
+              LOG_WARNING << "can not find via";
+              delete idb_segment;
+              continue;
+            }
+          }
+
+          if (path_new == false) {
+            idb_segment->set_layer_as_new();
+            path_new = true;
+          }
+
+          idb_wire->add_segment(idb_segment);
+        }
+      }
+    }
+
+    file_stream.close();
+  };
+
+  omp_lock_t lck;
+  omp_init_lock(&lck);
+
+  auto net_dir = _path + "/nets/";
+#pragma omp parallel for schedule(dynamic)
+  for (auto& file : find_json_files(net_dir)) {
+    // omp_set_lock(&lck);
+
+    read_file(file);
+
+    // omp_unset_lock(&lck);
+  }
+
+  omp_destroy_lock(&lck);
+
+  LOG_INFO << "read nets success.";
+
+  return true;
+}
+
+bool VecLayoutFileIO::readJsonNetsPattern()
+{
+  namespace fs = std::filesystem;
+
+  auto* idb_nets = dmInst->get_idb_design()->get_net_list();
+  auto* idb_layers = dmInst->get_idb_layout()->get_layers();
+  auto* idb_vias = dmInst->get_idb_design()->get_via_list();
+
+  idb_nets->clear_wire_list();
+
+  LOG_INFO << "read " << _path;
+  nlohmann::json json;
+  std::ifstream file_stream(_path);
+  file_stream >> json;
+
+  /// parse vector nets
+  auto json_nets = json["nets"];
+  for (auto& json_net : json_nets) {
+    std::string net_name = json_net["net_name"];
+    auto* idb_net = idb_nets->find_net(net_name);
+    if (idb_net == nullptr) {
+      std::cout << "can not find net " << net_name << std::endl;
+      continue;
+    }
+
+    idb_net->clear_wire_list();
+    auto* idb_wire_list = idb_net->get_wire_list();
+
+    auto json_edges = json_net["edges"];
+    auto* idb_wire = idb_wire_list->add_wire();
+
+    bool path_new = false;
+    for (auto& json_edge : json_edges.items()) {
+      idb_wire->set_wire_state(idb::IdbWiringStatement::kRouted);
+
+      auto json_start = json_edge.value()["start"];
+      int x_start = json_start["x"];
+      int y_start = json_start["y"];
+      int layer_index_start = json_start["layer"];
+
+      auto json_end = json_edge.value()["end"];
+      int x_end = json_end["x"];
+      int y_end = json_end["y"];
+      int layer_index_end = json_end["layer"];
+
+      if (layer_index_start == layer_index_end) {
+        if (x_start == x_end && y_start == y_end) {
+          std::cout << "same node  " << x_start << "  " << y_start << " , " << x_end << "  " << y_end << std::endl;
+          continue;
+        }
+
+        if (x_start == x_end || y_start == y_end) {
+        } else {
+          std::cout << "illegal node  " << x_start << "  " << y_start << " ,  " << x_end << "  " << y_end << std::endl;
+          continue;
+        }
+
+        std::string layer_metal = _layout->findLayerName(layer_index_start);
+        auto* idb_layer_metal = idb_layers->find_layer(layer_metal);
+
+        auto* idb_segment = idb_wire->add_segment();
+
+        idb_segment->set_layer(idb_layer_metal);
+        idb_segment->add_point(x_start, y_start);
+        idb_segment->add_point(x_end, y_end);
+
+        if (path_new == false) {
+          idb_segment->set_layer_as_new();
+          path_new = true;
+        }
+      } else {
+        auto top_order = std::max(layer_index_start, layer_index_end);
+        auto bottom_order = std::min(layer_index_start, layer_index_end);
+
+        for (auto layer_order = bottom_order; layer_order <= top_order; layer_order += 2) {
+          std::string bottom_layer_name = _layout->findLayerName(layer_order);
+          auto* bottom_layer = idb_layers->find_layer(bottom_layer_name);
+          std::string top_layer_name = _layout->findLayerName(layer_order + 2);
+          auto* top_layer = idb_layers->find_layer(top_layer_name);
+
+          auto* idb_segment = idb_wire->add_segment();
+          idb_segment->set_layer(top_layer);
+          idb_segment->set_is_via(true);
+          idb_segment->add_point(x_start, y_start);
+
+          /// create default via
+          auto cut_order = (bottom_layer->get_order() + top_layer->get_order()) / 2;
+          auto idb_cut_layer = (IdbLayerCut*) idb_layers->find_layer_by_order(cut_order);
+          auto via_name = idb_cut_layer->get_name() + "_vector_default";
+          auto* idb_via = idb_vias->find_via(via_name);
+          if (idb_via == nullptr) {
+            idb_via = idb_vias->createVia(via_name, idb_cut_layer);
+          }
+          auto* idb_via_new = idb_segment->copy_via(idb_via);
+          idb_via_new->set_coordinate(x_start, y_start);
+
+          if (path_new == false) {
+            idb_segment->set_layer_as_new();
+            path_new = true;
+          }
+        }
+      }
+    }
+  }
+
+  file_stream.close();
+
+  LOG_INFO << "read nets success.";
 
   return true;
 }

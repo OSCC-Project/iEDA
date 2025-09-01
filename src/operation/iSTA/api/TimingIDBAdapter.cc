@@ -126,9 +126,8 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
   int routing_layer_id = num_layer - 1 + routing_layer_1st;
   int routing_layer_size = routing_layers.size();
 
-  if (num_layer >= routing_layer_size ||
-      routing_layer_id >= routing_layer_size || num_layer < 0) {
-    LOG_FATAL << "Layer id error = " << num_layer;
+  if (routing_layer_id >= routing_layer_size || routing_layer_id < 0) {
+    LOG_FATAL << "Layer id error = " << routing_layer_id << " num layer = " << num_layer;
     return 0;
   }
 
@@ -166,19 +165,17 @@ double TimingIDBAdapter::getResistance(int num_layer, double segment_length,
  * @return double cap unit is pf
  */
 double TimingIDBAdapter::getCapacitance(int num_layer, double segment_length,
-                                        std::optional<double> segment_width) {
+                                        std::optional<double> segment_width, int routing_layer_1st) {
   double segment_capacitance = 0;
   IdbLayout* idb_layout = _idb_lef_service->get_layout();
   vector<IdbLayer*>& routing_layers =
       idb_layout->get_layers()->get_routing_layers();
 
-  int routing_layer_1st = 0;  // dmInst->get_routing_layer_1st();
   int routing_layer_id = num_layer - 1 + routing_layer_1st;
   int routing_layer_size = routing_layers.size();
 
-  if (num_layer >= routing_layer_size ||
-      routing_layer_id >= routing_layer_size || num_layer < 0) {
-    LOG_FATAL << "Layer id error = " << num_layer;
+  if (routing_layer_id >= routing_layer_size || routing_layer_id < 0) {
+    LOG_FATAL << "Layer id error = " << routing_layer_id << " num layer = " << num_layer;
     return 0;
   }
 
@@ -743,7 +740,7 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
                  static_cast<double>(dbu);
   double height = _idb_design->get_layout()->get_die()->get_height() /
                   static_cast<double>(dbu);
-  design_netlist.set_core_size(width, height);
+  design_netlist.set_die_size(width, height);
 
   LOG_INFO << "core area width " << width << "um"
            << " height " << height << "um";
@@ -819,6 +816,11 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
               sta_inst.addPin(cell_port_name.c_str(), library_port);
           crossRef(inst_pin, db_inst_pin);
 
+          double pin_x = db_inst_pin->get_average_coordinate()->get_x() / static_cast<double>(dbu);
+          double pin_y = db_inst_pin->get_average_coordinate()->get_y() / static_cast<double>(dbu);
+
+          inst_pin->set_coordinate(pin_x, pin_y);
+
           if (pin_bus) {
             pin_bus->addPin(index.value(), inst_pin);
             sta_inst.addPinBus(std::move(pin_bus));
@@ -835,7 +837,7 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
     }
   };
 
-  auto build_ports = [this, &design_netlist]() {
+  auto build_ports = [this, dbu, &design_netlist]() {
     //  build ports
     auto db_ports = _idb_design->get_io_pin_list()->get_pin_list();
     for (auto* db_port : db_ports) {
@@ -845,6 +847,11 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
       Port sta_port(port_name.c_str(), io_type);
       auto& created_port = design_netlist.addPort(std::move(sta_port));
       crossRef(&created_port, db_port);
+
+      double port_x = db_port->get_average_coordinate()->get_x() / static_cast<double>(dbu);
+      double port_y = db_port->get_average_coordinate()->get_y() / static_cast<double>(dbu);
+
+      sta_port.set_coordinate(port_x, port_y);
     }
   };
 

@@ -15,8 +15,9 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
-#include "init_sta.hh"
 #include "vec_api.h"
+
+#include "init_sta.hh"
 #include "vectorization.h"
 
 namespace ivec {
@@ -66,4 +67,19 @@ bool VectorizationApi::runVecSTA(const std::string dir)
 
   return true;
 }
+
+bool VectorizationApi::readVectorsNets(std::string nets_dir)
+{
+  Vectorization vectorization;
+  vectorization.buildLayoutData();
+  return vectorization.readNetsToIDB(nets_dir);
+}
+
+bool VectorizationApi::readVectorsNetsPatterns(std::string path)
+{
+  Vectorization vectorization;
+  vectorization.buildLayoutData();
+  return vectorization.readNetsPatternToIDB(path);
+}
+
 }  // namespace ivec

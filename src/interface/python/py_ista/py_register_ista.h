@@ -38,8 +38,8 @@ void register_ista(py::module& m)
   m.def("read_sdc", readSdc, py::arg("file_name"));
 
   m.def("get_net_name", getNetName, py::arg("pin_port_name"));
-  m.def("get_segment_capacitance", getSegmentCapacitance, py::arg("layer_id"), py::arg("segment_length"));
-  m.def("get_segment_resistance", getSegmentResistance, py::arg("layer_id"), py::arg("segment_length"));
+  m.def("get_segment_capacitance", getSegmentCapacitance, py::arg("layer_id"), py::arg("segment_length"), py::arg("route_layer_id"));
+  m.def("get_segment_resistance", getSegmentResistance, py::arg("layer_id"), py::arg("segment_length"), py::arg("route_layer_id"));
   
   m.def("make_rc_tree_inner_node", makeRCTreeInnerNode, py::arg("net_name"), py::arg("id"), py::arg("cap"));
   m.def("make_rc_tree_obj_node", makeRCTreeObjNode, py::arg("pin_port_name"), py::arg("cap"));

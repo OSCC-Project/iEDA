@@ -82,4 +82,22 @@ ieval::TimingInstanceGraph get_timing_instance_graph(std::string instance_graph_
   return timing_instance_graph;
 }
 
+bool read_vectors_nets(std::string dir)
+{
+  if (dir == "") {
+    return false;
+  }
+  ivec::VectorizationApi lm_api;
+  return lm_api.readVectorsNets(dir);
+}
+
+bool read_vectors_nets_patterns(std::string path)
+{
+  if (path == "") {
+    return false;
+  }
+  ivec::VectorizationApi lm_api;
+  return lm_api.readVectorsNetsPatterns(path);
+}
+
 }  // namespace python_interface

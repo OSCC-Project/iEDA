@@ -27,6 +27,8 @@ void register_vectorization(py::module& m)
   m.def("layout_patchs", layout_patchs, py::arg("path"));
   m.def("layout_graph", layout_graph, py::arg("path"));
   m.def("generate_vectors", generate_vectors, py::arg("dir"), py::arg("patch_row_step") = 9, py::arg("patch_col_step") = 9);
+  m.def("read_vectors_nets", read_vectors_nets, py::arg("dir"));
+  m.def("read_vectors_nets_patterns", read_vectors_nets_patterns, py::arg("path"));
 
   py::class_<ieval::TimingWireNode>(m, "TimingWireNode")
       .def_readwrite("name", &ieval::TimingWireNode::_name)
