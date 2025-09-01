@@ -18,7 +18,9 @@
 
 #include "module/evaluator/density/Density.hh"
 #include "module/evaluator/wirelength/HPWirelength.hh"
+#ifdef BUILD_AI_PREDICTOR
 #include "module/evaluator/wirelength/AIWirelength.hh"
+#endif
 #include "operation/BinOpt.hh"
 #include "operation/InstanceSwap.hh"
 #include "operation/LocalReorder.hh"
@@ -38,9 +40,11 @@ DetailPlacer::DetailPlacer(Config* pl_config, PlacerDB* placer_db)
   initDPDatabase(placer_db);
   _operator.initDPOperator(&_database, &_config);
 
+#ifdef BUILD_AI_PREDICTOR
   // Initialize AI wirelength evaluator
   _ai_wirelength_evaluator = std::make_unique<AIWirelength>(_operator.get_topo_manager());
   _use_ai_wirelength = false;
+#endif
 }
 
 DetailPlacer::~DetailPlacer()
@@ -598,15 +602,20 @@ void DetailPlacer::notifyPLPlaceDensity()
 
 int64_t DetailPlacer::calTotalHPWL()
 {
+#ifdef BUILD_AI_PREDICTOR
   if (_use_ai_wirelength && _ai_wirelength_evaluator && _ai_wirelength_evaluator->isModelLoaded()) {
     LOG_INFO << "Calculate Total Wirelength using AI model.";
     return calTotalAIWirelength() + _database._outside_wl;
   } else {
+#endif
     HPWirelength hpwl_eval(_operator.get_topo_manager());
     return hpwl_eval.obtainTotalWirelength() + _database._outside_wl;
+#ifdef BUILD_AI_PREDICTOR
   }
+#endif
 }
 
+#ifdef BUILD_AI_PREDICTOR
 bool DetailPlacer::loadAIWirelengthModel(const std::string& model_path)
 {
   if (_ai_wirelength_evaluator) {
@@ -654,6 +663,7 @@ int64_t DetailPlacer::calTotalAIWirelength()
   }
   return 0;
 }
+#endif
 
 float DetailPlacer::calPeakBinDensity()
 {
