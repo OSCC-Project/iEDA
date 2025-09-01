@@ -3084,6 +3084,26 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
   // for test dump json data.
   // reportWirePaths();
 
+  // for test dump graph json data.
+  if (0) {
+    json graph_json;
+    StaDumpGraphJson dump_graph_json(graph_json);
+    auto& the_graph = get_graph();
+    dump_graph_json(&the_graph);
+
+    std::string graph_json_file_name =
+      Str::printf("%s/%s_graph.json", design_work_space, get_design_name().c_str());
+
+    std::ofstream out_file(graph_json_file_name);
+    if (out_file.is_open()) {
+      out_file << graph_json.dump(4);  // 4 spaces indent
+      LOG_INFO << "JSON report written to: " << graph_json_file_name;
+      out_file.close();
+    } else {
+      LOG_ERROR << "Failed to open JSON report file: " << graph_json_file_name;
+    }
+  }
+
 #if CUDA_PROPAGATION
   // printFlattenData();
 #endif
