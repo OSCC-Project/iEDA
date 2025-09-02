@@ -481,7 +481,11 @@ void PLAPI::runAiFlow(const std::string& onnx_path, const std::string& normaliza
   if (isSTAStarted()) {
     runPostGP();
   } else {
+#ifdef BUILD_AI_PREDICTOR
     runAIDP(onnx_path, normalization_path);
+#else
+    runDP();
+#endif
   }
   notifyPLWLInfo(2);
 
@@ -580,6 +584,7 @@ void PLAPI::runDP()
   }
 }
 
+#ifdef BUILD_AI_PREDICTOR
 void PLAPI::runAIDP(const std::string& onnx_path, const std::string& normalization_path)
 {
   bool legal_flag = checkLegality();
@@ -607,6 +612,7 @@ void PLAPI::runAIDP(const std::string& onnx_path, const std::string& normalizati
     LOG_WARNING << "DP result is not legal";
   }  
 }
+#endif
 
 // run networkflow to spread cell
 // Input: after global placement. Output: low density distribution result with overlap.
