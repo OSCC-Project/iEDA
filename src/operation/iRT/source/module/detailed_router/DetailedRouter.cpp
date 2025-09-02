@@ -3043,6 +3043,7 @@ void DetailedRouter::outputNetCSV(DRModel& dr_model)
     }
     RTUTIL.closeFileStream(net_csv_file);
   }
+  RTLOG.info(Loc::current(), "The csv file has been saved");
 }
 
 void DetailedRouter::outputViolationCSV(DRModel& dr_model)
@@ -3078,6 +3079,7 @@ void DetailedRouter::outputViolationCSV(DRModel& dr_model)
     }
     RTUTIL.closeFileStream(violation_csv_file);
   }
+  RTLOG.info(Loc::current(), "The csv file has been saved");
 }
 
 void DetailedRouter::outputJson(DRModel& dr_model)
