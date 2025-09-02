@@ -599,7 +599,28 @@ std::vector<NetShape> DataManager::getNetDetailedShapeList(int32_t net_idx, Laye
 
 #endif
 
-#if 1  // 获得唯一的pitch
+#if 1  // 获得唯一的track
+
+int32_t DataManager::getOnlyStart()
+{
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+
+  std::vector<int32_t> start_list;
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    for (ScaleGrid& x_grid : routing_layer.get_track_axis().get_x_grid_list()) {
+      start_list.push_back(x_grid.get_start_line());
+    }
+    for (ScaleGrid& y_grid : routing_layer.get_track_axis().get_y_grid_list()) {
+      start_list.push_back(y_grid.get_start_line());
+    }
+  }
+  for (int32_t start : start_list) {
+    if (start_list.front() != start) {
+      RTLOG.error(Loc::current(), "The start is not equal!");
+    }
+  }
+  return start_list.front();
+}
 
 int32_t DataManager::getOnlyPitch()
 {
@@ -768,16 +789,27 @@ void DataManager::makeRoutingLayerList()
     }
     return frequent_num;
   };
+  int32_t start_line;
+  {
+    std::vector<int32_t> start_line_list;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      start_line_list.push_back(routing_layer.getPreferTrackGridList().front().get_start_line());
+    }
+    start_line = getFrequentNum(start_line_list);
+  }
   int32_t step_length;
   {
-    std::vector<int32_t> pitch_list;
+    std::vector<int32_t> step_length_list;
     for (RoutingLayer& routing_layer : routing_layer_list) {
-      pitch_list.push_back(routing_layer.getPreferTrackGridList().front().get_step_length());
+      step_length_list.push_back(routing_layer.getPreferTrackGridList().front().get_step_length());
     }
-    step_length = getFrequentNum(pitch_list);
+    step_length = getFrequentNum(step_length_list);
   }
-  auto getScaleGrid = [](int32_t real_ll_scale, int32_t real_ur_scale, int32_t step_length) {
-    int32_t start_line = real_ll_scale + step_length;
+  auto getScaleGrid = [](int32_t real_ll_scale, int32_t real_ur_scale, int32_t start_line, int32_t step_length) {
+    while (start_line < step_length) {
+      start_line += step_length;
+    }
+    start_line += real_ll_scale;
     int32_t step_num = (real_ur_scale - start_line) / step_length;
     int32_t end_line = start_line + step_num * step_length;
     if (end_line > real_ur_scale) {
@@ -797,8 +829,8 @@ void DataManager::makeRoutingLayerList()
   };
   ScaleAxis track_axis;
   {
-    track_axis.get_x_grid_list().push_back(getScaleGrid(die.get_real_ll_x(), die.get_real_ur_x(), step_length));
-    track_axis.get_y_grid_list().push_back(getScaleGrid(die.get_real_ll_y(), die.get_real_ur_y(), step_length));
+    track_axis.get_x_grid_list().push_back(getScaleGrid(die.get_real_ll_x(), die.get_real_ur_x(), start_line, step_length));
+    track_axis.get_y_grid_list().push_back(getScaleGrid(die.get_real_ll_y(), die.get_real_ur_y(), start_line, step_length));
   }
   for (RoutingLayer& routing_layer : routing_layer_list) {
     routing_layer.set_track_axis(track_axis);
@@ -951,6 +983,7 @@ std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction)
   Die& die = _database.get_die();
   Row& row = _database.get_row();
   int32_t row_height = row.get_height();
+  int32_t only_start = getOnlyStart();
   int32_t only_pitch = getOnlyPitch();
 
   int32_t die_start_scale = (direction == Direction::kVertical ? die.get_real_ll_x() : die.get_real_ll_y());
@@ -959,7 +992,7 @@ std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction)
 
   std::vector<int32_t> gcell_scale_list;
   gcell_scale_list.push_back(die_start_scale);
-  for (int32_t gcell_scale = die_start_scale + (only_pitch / 2); gcell_scale <= die_end_scale; gcell_scale += step_length) {
+  for (int32_t gcell_scale = only_start - (only_pitch / 2); gcell_scale <= die_end_scale; gcell_scale += step_length) {
     gcell_scale_list.push_back(gcell_scale);
   }
   gcell_scale_list.push_back(die_end_scale);

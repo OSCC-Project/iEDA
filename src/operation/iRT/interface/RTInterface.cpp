@@ -633,10 +633,12 @@ void RTInterface::wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRoutin
   ScaleAxis& track_axis = routing_layer.get_track_axis();
 
   ScaleGrid x_track_grid;
+  x_track_grid.set_start_line(idb_layer->get_offset_x());
   x_track_grid.set_step_length(idb_layer->get_pitch_x());
   track_axis.get_x_grid_list().push_back(x_track_grid);
 
   ScaleGrid y_track_grid;
+  y_track_grid.set_start_line(idb_layer->get_offset_y());
   y_track_grid.set_step_length(idb_layer->get_pitch_y());
   track_axis.get_y_grid_list().push_back(y_track_grid);
 }
