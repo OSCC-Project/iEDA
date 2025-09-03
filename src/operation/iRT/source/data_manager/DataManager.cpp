@@ -601,25 +601,25 @@ std::vector<NetShape> DataManager::getNetDetailedShapeList(int32_t net_idx, Laye
 
 #if 1  // 获得唯一的track
 
-int32_t DataManager::getOnlyStart()
+int32_t DataManager::getOnlyOffset()
 {
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
 
-  std::vector<int32_t> start_list;
+  std::vector<int32_t> offset_list;
   for (RoutingLayer& routing_layer : routing_layer_list) {
     for (ScaleGrid& x_grid : routing_layer.get_track_axis().get_x_grid_list()) {
-      start_list.push_back(x_grid.get_start_line());
+      offset_list.push_back(x_grid.get_start_line());
     }
     for (ScaleGrid& y_grid : routing_layer.get_track_axis().get_y_grid_list()) {
-      start_list.push_back(y_grid.get_start_line());
+      offset_list.push_back(y_grid.get_start_line());
     }
   }
-  for (int32_t start : start_list) {
-    if (start_list.front() != start) {
-      RTLOG.error(Loc::current(), "The start is not equal!");
+  for (int32_t offset : offset_list) {
+    if (offset_list.front() != offset) {
+      RTLOG.error(Loc::current(), "The offset is not equal!");
     }
   }
-  return start_list.front();
+  return offset_list.front();
 }
 
 int32_t DataManager::getOnlyPitch()
@@ -983,7 +983,7 @@ std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction)
   Die& die = _database.get_die();
   Row& row = _database.get_row();
   int32_t row_height = row.get_height();
-  int32_t only_start = getOnlyStart();
+  int32_t only_offset = getOnlyOffset();
   int32_t only_pitch = getOnlyPitch();
 
   int32_t die_start_scale = (direction == Direction::kVertical ? die.get_real_ll_x() : die.get_real_ll_y());
@@ -992,7 +992,7 @@ std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction)
 
   std::vector<int32_t> gcell_scale_list;
   gcell_scale_list.push_back(die_start_scale);
-  for (int32_t gcell_scale = only_start - (only_pitch / 2); gcell_scale <= die_end_scale; gcell_scale += step_length) {
+  for (int32_t gcell_scale = only_offset - (only_pitch / 2); gcell_scale <= die_end_scale; gcell_scale += step_length) {
     gcell_scale_list.push_back(gcell_scale);
   }
   gcell_scale_list.push_back(die_end_scale);

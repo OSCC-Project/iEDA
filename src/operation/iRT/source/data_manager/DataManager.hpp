@@ -69,7 +69,7 @@ class DataManager
 #endif
 
 #if 1  // 获得唯一的结果
-  int32_t getOnlyStart();
+  int32_t getOnlyOffset();
   int32_t getOnlyPitch();
 #endif
 
