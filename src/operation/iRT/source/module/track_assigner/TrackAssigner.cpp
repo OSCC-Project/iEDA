@@ -1483,6 +1483,7 @@ void TrackAssigner::outputNetCSV(TAModel& ta_model)
     }
     RTUTIL.closeFileStream(net_csv_file);
   }
+  RTLOG.info(Loc::current(), "The csv file has been saved");
 }
 
 void TrackAssigner::outputViolationCSV(TAModel& ta_model)
@@ -1518,6 +1519,7 @@ void TrackAssigner::outputViolationCSV(TAModel& ta_model)
     }
     RTUTIL.closeFileStream(violation_csv_file);
   }
+  RTLOG.info(Loc::current(), "The csv file has been saved");
 }
 
 void TrackAssigner::outputJson(TAModel& ta_model)

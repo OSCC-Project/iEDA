@@ -456,6 +456,7 @@ void SupplyAnalyzer::outputPlanarSupplyCSV(SAModel& sa_model)
     RTUTIL.pushStream(supply_csv_file, "\n");
   }
   RTUTIL.closeFileStream(supply_csv_file);
+  RTLOG.info(Loc::current(), "The csv file has been saved");
 }
 
 void SupplyAnalyzer::outputLayerSupplyCSV(SAModel& sa_model)
@@ -482,6 +483,7 @@ void SupplyAnalyzer::outputLayerSupplyCSV(SAModel& sa_model)
     }
     RTUTIL.closeFileStream(supply_csv_file);
   }
+  RTLOG.info(Loc::current(), "The csv file has been saved");
 }
 
 #endif
