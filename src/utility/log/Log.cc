@@ -33,7 +33,6 @@
 
 using std::string;
 
-
 namespace ieda {
 
 bool Log::_is_init = false;

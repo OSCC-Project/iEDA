@@ -1022,6 +1022,7 @@ void LayerAssigner::outputGuide(LAModel& la_model)
     }
   }
   RTUTIL.closeFileStream(guide_file_stream);
+  RTLOG.info(Loc::current(), "The csv file has been saved");
 }
 
 void LayerAssigner::outputNetCSV(LAModel& la_model)
@@ -1044,6 +1045,7 @@ void LayerAssigner::outputNetCSV(LAModel& la_model)
     }
     RTUTIL.closeFileStream(net_csv_file);
   }
+  RTLOG.info(Loc::current(), "The csv file has been saved");
 }
 
 void LayerAssigner::outputOverflowCSV(LAModel& la_model)
@@ -1068,6 +1070,7 @@ void LayerAssigner::outputOverflowCSV(LAModel& la_model)
     }
     RTUTIL.closeFileStream(overflow_csv_file);
   }
+  RTLOG.info(Loc::current(), "The csv file has been saved");
 }
 
 void LayerAssigner::outputJson(LAModel& la_model)

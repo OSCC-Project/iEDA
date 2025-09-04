@@ -1764,6 +1764,7 @@ void SpaceRouter::outputGuide(SRModel& sr_model)
     }
   }
   RTUTIL.closeFileStream(guide_file_stream);
+  RTLOG.info(Loc::current(), "The csv file has been saved");
 }
 
 void SpaceRouter::outputNetCSV(SRModel& sr_model)
@@ -1787,6 +1788,7 @@ void SpaceRouter::outputNetCSV(SRModel& sr_model)
     }
     RTUTIL.closeFileStream(net_csv_file);
   }
+  RTLOG.info(Loc::current(), "The csv file has been saved");
 }
 
 void SpaceRouter::outputOverflowCSV(SRModel& sr_model)
@@ -1811,6 +1813,7 @@ void SpaceRouter::outputOverflowCSV(SRModel& sr_model)
     }
     RTUTIL.closeFileStream(overflow_csv_file);
   }
+  RTLOG.info(Loc::current(), "The csv file has been saved");
 }
 
 void SpaceRouter::outputJson(SRModel& sr_model)
