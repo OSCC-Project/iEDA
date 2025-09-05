@@ -789,7 +789,9 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
     auto *the_left_port = design_netlist.findPort(left_net_name.c_str());
     auto *the_right_port = design_netlist.findPort(right_net_name.c_str());
 
-    if (the_left_net && the_right_net && !the_left_port && !the_right_port) {
+    if ((the_left_net && the_right_net && !the_left_port && !the_right_port) ||
+        (the_left_net && the_right_net && the_left_port && the_right_port)) {
+      // assign net = net; need merge two net.
       LOG_INFO << "merge " << left_net_name << " = " << right_net_name << "\n";
 
       auto left_pin_ports = the_left_net->get_pin_ports();
@@ -834,11 +836,6 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       LOG_FATAL_IF(!the_left_port) << "the left port is not exist.";
       created_net.addPinPort(the_left_port);
 
-    } else if (the_left_net && the_right_net && the_left_port &&
-               the_right_port) {
-      // assign output_port = output_port
-      LOG_FATAL_IF(!the_right_port) << "the right port is not exist.";
-      the_left_net->addPinPort(the_right_port);
     } else {
       LOG_FATAL << "assign " << left_net_name << " = " << right_net_name
                 << " is not processed.";
@@ -3085,14 +3082,14 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
   // reportWirePaths();
 
   // for test dump graph json data.
-  if (0) {
+  if (1) {
     json graph_json;
     StaDumpGraphJson dump_graph_json(graph_json);
-    auto& the_graph = get_graph();
+    auto &the_graph = get_graph();
     dump_graph_json(&the_graph);
 
-    std::string graph_json_file_name =
-      Str::printf("%s/%s_graph.json", design_work_space, get_design_name().c_str());
+    std::string graph_json_file_name = Str::printf(
+        "%s/%s_graph.json", design_work_space, get_design_name().c_str());
 
     std::ofstream out_file(graph_json_file_name);
     if (out_file.is_open()) {
