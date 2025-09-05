@@ -678,7 +678,7 @@ std::vector<ids::Shape> DRCInterface::buildEnvShapeList()
         }
       }
     }
-    // io pin
+    // io pin without net
     for (idb::IdbPin* idb_io_pin : idb_io_pin_list) {
       for (idb::IdbLayerShape* port_box : idb_io_pin->get_port_box_list()) {
         total_env_shape_num += port_box->get_rect_list().size();
@@ -811,7 +811,7 @@ std::vector<ids::Shape> DRCInterface::buildEnvShapeList()
         }
       }
     }
-    // io pin
+    // io pin without net
     for (idb::IdbPin* idb_io_pin : idb_io_pin_list) {
       int32_t net_idx = -1;
       if (!isSkipping(idb_io_pin->get_net())) {

@@ -68,7 +68,8 @@ class DataManager
   std::vector<NetShape> getNetDetailedShapeList(int32_t net_idx, LayerCoord& first_coord, LayerCoord& second_coord);
 #endif
 
-#if 1  // 获得唯一的pitch
+#if 1  // 获得唯一的结果
+  int32_t getOnlyOffset();
   int32_t getOnlyPitch();
 #endif
 

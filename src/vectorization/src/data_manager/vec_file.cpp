@@ -950,8 +950,11 @@ bool VecLayoutFileIO::readJsonNetsPattern()
         }
 
         std::string layer_metal = _layout->findLayerName(layer_index_start);
-        auto* idb_layer_metal = idb_layers->find_layer(layer_metal);
+        if (layer_metal == "") {
+          continue;
+        }
 
+        auto* idb_layer_metal = idb_layers->find_layer(layer_metal);
         auto* idb_segment = idb_wire->add_segment();
 
         idb_segment->set_layer(idb_layer_metal);
@@ -968,8 +971,12 @@ bool VecLayoutFileIO::readJsonNetsPattern()
 
         for (auto layer_order = bottom_order; layer_order <= top_order; layer_order += 2) {
           std::string bottom_layer_name = _layout->findLayerName(layer_order);
-          auto* bottom_layer = idb_layers->find_layer(bottom_layer_name);
           std::string top_layer_name = _layout->findLayerName(layer_order + 2);
+          if (bottom_layer_name == "" || top_layer_name == "") {
+            continue;
+          }
+
+          auto* bottom_layer = idb_layers->find_layer(bottom_layer_name);
           auto* top_layer = idb_layers->find_layer(top_layer_name);
 
           auto* idb_segment = idb_wire->add_segment();
