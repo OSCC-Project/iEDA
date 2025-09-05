@@ -18,14 +18,14 @@
 
 #include "module/evaluator/density/Density.hh"
 #include "module/evaluator/wirelength/HPWirelength.hh"
-#ifdef BUILD_AI_PREDICTOR
+#ifdef ENABLE_AI
 #include "module/evaluator/wirelength/AIWirelength.hh"
 #endif
 #include "operation/BinOpt.hh"
 #include "operation/InstanceSwap.hh"
 #include "operation/LocalReorder.hh"
-#include "operation/RowOpt.hh"
 #include "operation/NFSpread.hh"
+#include "operation/RowOpt.hh"
 #include "usage/usage.hh"
 #include "utility/Utility.hh"
 
@@ -40,7 +40,7 @@ DetailPlacer::DetailPlacer(Config* pl_config, PlacerDB* placer_db)
   initDPDatabase(placer_db);
   _operator.initDPOperator(&_database, &_config);
 
-#ifdef BUILD_AI_PREDICTOR
+#ifdef ENABLE_AI
   // Initialize AI wirelength evaluator
   _ai_wirelength_evaluator = std::make_unique<AIWirelength>(_operator.get_topo_manager());
   _use_ai_wirelength = false;
@@ -106,8 +106,9 @@ void DetailPlacer::wrapRowList()
     DPRow* row = new DPRow(pl_row->get_name(), row_site, pl_row->get_site_num());
     row->set_coordinate(row_shift_x, row_shift_y);
     row->set_orient(std::move(pl_site->get_orient()));
-    
-    Rectangle<int64_t> rect(row_shift_x, row_shift_y, row_shift_x + pl_row->get_site_num() * row_site->get_width(), row_shift_y + row_site->get_height());
+
+    Rectangle<int64_t> rect(row_shift_x, row_shift_y, row_shift_x + pl_row->get_site_num() * row_site->get_width(),
+                            row_shift_y + row_site->get_height());
     row->set_bound(rect);
 
     row_2d_list.at(row_index).push_back(row);
@@ -591,18 +592,17 @@ void DetailPlacer::runDetailPlaceNFS()
   double time_delta = dp_status.elapsedRunTime();
   LOG_INFO << "Detail Plaement Total Time Elapsed: " << time_delta << "s";
   LOG_INFO << "-----------------Finish Network Flow Cell Spreading-----------------";
-
 }
 
 void DetailPlacer::notifyPLPlaceDensity()
 {
- auto* grid_manager = _operator.get_grid_manager();
- PlacerDBInst.place_density[2] = grid_manager->obtainAvgGridDensity(); 
+  auto* grid_manager = _operator.get_grid_manager();
+  PlacerDBInst.place_density[2] = grid_manager->obtainAvgGridDensity();
 }
 
 int64_t DetailPlacer::calTotalHPWL()
 {
-#ifdef BUILD_AI_PREDICTOR
+#ifdef ENABLE_AI
   if (_use_ai_wirelength && _ai_wirelength_evaluator && _ai_wirelength_evaluator->isModelLoaded()) {
     LOG_INFO << "Calculate Total Wirelength using AI model.";
     return calTotalAIWirelength() + _database._outside_wl;
@@ -610,12 +610,12 @@ int64_t DetailPlacer::calTotalHPWL()
 #endif
     HPWirelength hpwl_eval(_operator.get_topo_manager());
     return hpwl_eval.obtainTotalWirelength() + _database._outside_wl;
-#ifdef BUILD_AI_PREDICTOR
+#ifdef ENABLE_AI
   }
 #endif
 }
 
-#ifdef BUILD_AI_PREDICTOR
+#ifdef ENABLE_AI
 bool DetailPlacer::loadAIWirelengthModel(const std::string& model_path)
 {
   if (_ai_wirelength_evaluator) {

@@ -39,7 +39,7 @@ option(USE_PROFILER "Enable performance profiling (default OFF)" OFF)
 option(SANITIZER "Enable address sanitizer (default OFF)" OFF)
 option(BUILD_GUI "Enable GUI components (default OFF)" OFF)
 option(USE_GPU "Enable GPU acceleration (default OFF)" OFF)
-option(BUILD_AI_PREDICTOR "Enable AI predictor modules (default OFF)" OFF)
+option(ENABLE_AI "Enable AI modules (default OFF)" ON)
 option(COMPATIBILITY_MODE "Enable compatibility mode (disable aggressive optimizations)" ON)
 
 # Define GLOG_USE_GLOG_EXPORT for glog 0.7.1+ compatibility

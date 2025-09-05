@@ -4,7 +4,7 @@ set(WIRELENGTH_SOURCES
     SteinerWirelength.cc
 )
 
-if(BUILD_AI_PREDICTOR)
+if(ENABLE_AI)
     list(APPEND WIRELENGTH_SOURCES AIWirelength.cc)
 endif()
 
@@ -21,7 +21,7 @@ target_link_libraries(ipl_module_evaluator_wirelength
         ipl-bridge
 )
 
-if(BUILD_AI_PREDICTOR)
+if(ENABLE_AI)
     target_link_libraries(ipl_module_evaluator_wirelength
         PUBLIC
             ipl-module-ai_predictor
@@ -33,7 +33,7 @@ target_include_directories(ipl_module_evaluator_wirelength
         ${iPL_WIRELENGTH_EVALUATOR}
 )
 
-if(BUILD_AI_PREDICTOR)
+if(ENABLE_AI)
     target_include_directories(ipl_module_evaluator_wirelength 
         PUBLIC 
             ${iPL_AI_PREDICTOR}/wirelength

@@ -92,7 +92,7 @@ void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
   createPLDirectory();
 
   char config[] = "info_ipl_glog";
-  char* argv[] = { config };
+  char* argv[] = {config};
 
   std::string log_home_path = this->obtainTargetDir() + "/pl/log/";
   // std::string design_name = idb_builder->get_def_service()->get_design()->get_design_name();
@@ -481,7 +481,7 @@ void PLAPI::runAiFlow(const std::string& onnx_path, const std::string& normaliza
   if (isSTAStarted()) {
     runPostGP();
   } else {
-#ifdef BUILD_AI_PREDICTOR
+#ifdef ENABLE_AI
     runAIDP(onnx_path, normalization_path);
 #else
     runDP();
@@ -494,7 +494,6 @@ void PLAPI::runAiFlow(const std::string& onnx_path, const std::string& normaliza
   reportPLInfo();
   std::cout << std::endl;
   LOG_INFO << "Log has been writed to dir: ./result/pl/log/";
-
 
   if (isSTAStarted()) {
     _external_api->destroyTimingEval();
@@ -584,7 +583,7 @@ void PLAPI::runDP()
   }
 }
 
-#ifdef BUILD_AI_PREDICTOR
+#ifdef ENABLE_AI
 void PLAPI::runAIDP(const std::string& onnx_path, const std::string& normalization_path)
 {
   bool legal_flag = checkLegality();
@@ -602,7 +601,7 @@ void PLAPI::runAIDP(const std::string& onnx_path, const std::string& normalizati
     detail_place.setUseAIWirelength(true);
   }
 
-  if(!detail_place.loadAIWirelengthNormalizationParams(normalization_path)){
+  if (!detail_place.loadAIWirelengthNormalizationParams(normalization_path)) {
     LOG_ERROR << "Failed to load AI wirelength normalization parameters: " << normalization_path;
   }
 
@@ -610,7 +609,7 @@ void PLAPI::runAIDP(const std::string& onnx_path, const std::string& normalizati
 
   if (!checkLegality()) {
     LOG_WARNING << "DP result is not legal";
-  }  
+  }
 }
 #endif
 

@@ -28,7 +28,7 @@ add_subdirectory(${iPL_GRID_MANAGER})
 add_subdirectory(${iPL_LOGGER})
 add_subdirectory(${iPL_TOPOLOGY_MANAGER})
 add_subdirectory(${iPL_WRAPPER})
-if(BUILD_AI_PREDICTOR)
+if(ENABLE_AI)
     add_subdirectory(${iPL_AI_PREDICTOR})
 endif()
 
@@ -50,7 +50,7 @@ set(IPL_MODULE_LIBS
     ipl-module-wrapper
 )
 
-if(BUILD_AI_PREDICTOR)
+if(ENABLE_AI)
     list(APPEND IPL_MODULE_LIBS ipl-module-ai_predictor)
 endif()
 

@@ -58,7 +58,7 @@ class PLAPI
   bool runIncrLG(std::vector<std::string> inst_name_list);
   void runPostGP();
   void runDP();
-#ifdef BUILD_AI_PREDICTOR
+#ifdef ENABLE_AI
   void runAIDP(const std::string& onnx_path, const std::string& normalization_path);
 #endif
   void runBufferInsertion();
