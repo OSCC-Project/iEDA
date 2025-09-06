@@ -19,7 +19,7 @@
 #include "module/evaluator/density/Density.hh"
 #include "module/evaluator/wirelength/HPWirelength.hh"
 #ifdef ENABLE_AI
-#include "module/evaluator/wirelength/AIWirelength.hh"
+#include "ai_wirelength.hh"
 #endif
 #include "operation/BinOpt.hh"
 #include "operation/InstanceSwap.hh"
@@ -39,12 +39,6 @@ DetailPlacer::DetailPlacer(Config* pl_config, PlacerDB* placer_db)
 
   initDPDatabase(placer_db);
   _operator.initDPOperator(&_database, &_config);
-
-#ifdef ENABLE_AI
-  // Initialize AI wirelength evaluator
-  _ai_wirelength_evaluator = std::make_unique<AIWirelength>(_operator.get_topo_manager());
-  _use_ai_wirelength = false;
-#endif
 }
 
 DetailPlacer::~DetailPlacer()
@@ -603,7 +597,7 @@ void DetailPlacer::notifyPLPlaceDensity()
 int64_t DetailPlacer::calTotalHPWL()
 {
 #ifdef ENABLE_AI
-  if (_use_ai_wirelength && _ai_wirelength_evaluator && _ai_wirelength_evaluator->isModelLoaded()) {
+  if (_use_ai_wirelength && aiPLWireLengthInst->isModelLoaded()) {
     LOG_INFO << "Calculate Total Wirelength using AI model.";
     return calTotalAIWirelength() + _database._outside_wl;
   } else {
@@ -616,50 +610,17 @@ int64_t DetailPlacer::calTotalHPWL()
 }
 
 #ifdef ENABLE_AI
-bool DetailPlacer::loadAIWirelengthModel(const std::string& model_path)
+bool DetailPlacer::init_ai_wirelength_model(const std::string& model_path, const std::string& params_path)
 {
-  if (_ai_wirelength_evaluator) {
-    bool success = _ai_wirelength_evaluator->loadModel(model_path);
-    if (success) {
-      LOG_INFO << "Successfully loaded AI wirelength model: " << model_path;
-    } else {
-      LOG_ERROR << "Failed to load AI wirelength model: " << model_path;
-    }
-    return success;
-  }
-  return false;
-}
+  _use_ai_wirelength = aiPLWireLengthInst->init(model_path, params_path, _operator.get_topo_manager());
 
-bool DetailPlacer::loadAIWirelengthNormalizationParams(const std::string& params_path)
-{
-  if (_ai_wirelength_evaluator) {
-    bool success = _ai_wirelength_evaluator->loadNormalizationParams(params_path);
-    if (success) {
-      LOG_INFO << "Successfully loaded AI wirelength normalization parameters: " << params_path;
-    } else {
-      LOG_ERROR << "Failed to load AI wirelength normalization parameters: " << params_path;
-    }
-    return success;
-  }
-  return false;
-}
-
-void DetailPlacer::setUseAIWirelength(bool use_ai)
-{
-  _use_ai_wirelength = use_ai;
-  if (_use_ai_wirelength) {
-    if (!_ai_wirelength_evaluator || !_ai_wirelength_evaluator->isModelLoaded()) {
-      LOG_WARNING << "AI wirelength model not loaded, falling back to HPWL";
-      _use_ai_wirelength = false;
-    }
-  }
-  LOG_INFO << "AI wirelength prediction " << (_use_ai_wirelength ? "enabled" : "disabled");
+  return _use_ai_wirelength;
 }
 
 int64_t DetailPlacer::calTotalAIWirelength()
 {
-  if (_ai_wirelength_evaluator && _ai_wirelength_evaluator->isModelLoaded()) {
-    return _ai_wirelength_evaluator->obtainTotalWirelength();
+  if (_use_ai_wirelength && aiPLWireLengthInst->isModelLoaded()) {
+    return aiPLWireLengthInst->obtainTotalWirelength();
   }
   return 0;
 }

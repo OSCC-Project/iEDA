@@ -35,6 +35,7 @@ target_link_libraries(ipl-module-detail_placer
             ipl-module-grid_manager
             ipl-module-topology_manager
             ipl_module_evaluator_wirelength
+            ipl_predictor_wirelen
             )
 
 target_include_directories(ipl-module-detail_placer PUBLIC ${iPL_DP})

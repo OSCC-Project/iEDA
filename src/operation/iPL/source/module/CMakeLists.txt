@@ -12,7 +12,6 @@ set(iPL_GRID_MANAGER ${iPL_MODULE}/grid_manager)
 set(iPL_LOGGER ${iPL_MODULE}/logger)
 set(iPL_TOPOLOGY_MANAGER ${iPL_MODULE}/topology_manager)
 set(iPL_WRAPPER ${iPL_MODULE}/wrapper)
-set(iPL_AI_PREDICTOR ${iPL_MODULE}/ai_predictor)
 
 # add_subdirectory(${iPL_MP})
 add_subdirectory(${iPL_IP})
@@ -28,9 +27,6 @@ add_subdirectory(${iPL_GRID_MANAGER})
 add_subdirectory(${iPL_LOGGER})
 add_subdirectory(${iPL_TOPOLOGY_MANAGER})
 add_subdirectory(${iPL_WRAPPER})
-if(ENABLE_AI)
-    add_subdirectory(${iPL_AI_PREDICTOR})
-endif()
 
 add_library(ipl-module INTERFACE)
 set(IPL_MODULE_LIBS
@@ -49,10 +45,6 @@ set(IPL_MODULE_LIBS
     ipl-module-topology_manager
     ipl-module-wrapper
 )
-
-if(ENABLE_AI)
-    list(APPEND IPL_MODULE_LIBS ipl-module-ai_predictor)
-endif()
 
 target_link_libraries(ipl-module
     INTERFACE

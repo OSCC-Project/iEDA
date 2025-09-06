@@ -39,7 +39,7 @@ option(USE_PROFILER "Enable performance profiling (default OFF)" OFF)
 option(SANITIZER "Enable address sanitizer (default OFF)" OFF)
 option(BUILD_GUI "Enable GUI components (default OFF)" OFF)
 option(USE_GPU "Enable GPU acceleration (default OFF)" OFF)
-option(ENABLE_AI "Enable AI modules (default OFF)" ON)
+option(ENABLE_AI "Enable AI modules (default OFF)" OFF)
 option(COMPATIBILITY_MODE "Enable compatibility mode (disable aggressive optimizations)" ON)
 
 # Define GLOG_USE_GLOG_EXPORT for glog 0.7.1+ compatibility
@@ -115,6 +115,11 @@ include(cmake/third_party.cmake)
 include(cmake/operation/ista.cmake)
 include(cmake/operation/ipa.cmake)
 include(cmake/rust.cmake)
+
+if(ENABLE_AI)
+add_definitions(-DENABLE_AI)
+add_subdirectory(src/ai)
+endif()
 
 add_subdirectory(src/third_party)
 add_subdirectory(src/utility)

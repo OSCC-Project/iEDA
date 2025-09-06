@@ -482,7 +482,7 @@ void PLAPI::runAiFlow(const std::string& onnx_path, const std::string& normaliza
     runPostGP();
   } else {
 #ifdef ENABLE_AI
-    runAIDP(onnx_path, normalization_path);
+    runDPwithAiWireLengthPredictor(onnx_path, normalization_path);
 #else
     runDP();
 #endif
@@ -584,7 +584,7 @@ void PLAPI::runDP()
 }
 
 #ifdef ENABLE_AI
-void PLAPI::runAIDP(const std::string& onnx_path, const std::string& normalization_path)
+void PLAPI::runDPwithAiWireLengthPredictor(const std::string& onnx_path, const std::string& normalization_path)
 {
   bool legal_flag = checkLegality();
   if (!legal_flag) {
@@ -594,15 +594,10 @@ void PLAPI::runAIDP(const std::string& onnx_path, const std::string& normalizati
 
   DetailPlacer detail_place(PlacerDBInst.get_placer_config(), &PlacerDBInst);
 
-  if (!detail_place.loadAIWirelengthModel(onnx_path)) {
+  if (!detail_place.init_ai_wirelength_model(onnx_path, normalization_path)) {
     LOG_ERROR << "Failed to load AI wirelength model: " << onnx_path;
-    LOG_INFO << "Falling back to traditional HPWL";
-  } else {
-    detail_place.setUseAIWirelength(true);
-  }
-
-  if (!detail_place.loadAIWirelengthNormalizationParams(normalization_path)) {
-    LOG_ERROR << "Failed to load AI wirelength normalization parameters: " << normalization_path;
+    LOG_ERROR << "Falling back to traditional HPWL";
+    return;
   }
 
   detail_place.runDetailPlace();

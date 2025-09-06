@@ -59,7 +59,7 @@ class PLAPI
   void runPostGP();
   void runDP();
 #ifdef ENABLE_AI
-  void runAIDP(const std::string& onnx_path, const std::string& normalization_path);
+  void runDPwithAiWireLengthPredictor(const std::string& onnx_path, const std::string& normalization_path);
 #endif
   void runBufferInsertion();
   void writeBackSourceDataBase();
