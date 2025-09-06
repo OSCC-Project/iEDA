@@ -43,7 +43,13 @@ bool Log::_is_init = false;
  * @param data
  * @param size
  */
+#if defined(GOOGLE_GLOG_VERSION) && GOOGLE_GLOG_VERSION < 60
+// For glog versions before 0.6.0
 void SignalHandle(const char* data, int size)
+#else
+// For glog 0.6.0 and later versions
+void SignalHandle(const char* data, std::size_t size)
+#endif
 {
   std::ofstream fs("glog_dump.log", std::ios::app);
   std::string str = std::string(data, size);
@@ -65,6 +71,14 @@ void Log::init(char* argv[], std::string log_dir)
     LOG_WARNING << "Google logging is already initialized, re-initialization to log dir: " << log_dir;
     end();
   }
+
+#if defined(GOOGLE_GLOG_VERSION) && GOOGLE_GLOG_VERSION < 60
+  // For glog versions before 0.5.0, do nothing
+#else
+  // For glog 0.5.0 and later versions, set log to stdout
+  FLAGS_logtostdout = true;
+  FLAGS_colorlogtostdout = true;
+#endif
 
   /*init google logging.*/
   google::InitGoogleLogging(argv[0]);
