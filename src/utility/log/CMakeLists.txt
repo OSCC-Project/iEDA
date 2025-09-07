@@ -6,6 +6,8 @@ AUX_SOURCE_DIRECTORY(./ SRC)
 SET(LINK_unwind "unwind")
 
 find_package(glog REQUIRED)
+message(STATUS "Detected glog version: ${glog_VERSION}")
+
 if(glog_VERSION VERSION_LESS_EQUAL "0.5.0")
     # For glog versions 0.5.0 and earlier, the signature of SignalHandle is (const char*, int)
     # We define GOOGLE_GLOG_VERSION to 50 to indicate a version like 0.5.0
