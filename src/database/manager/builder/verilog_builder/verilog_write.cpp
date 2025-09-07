@@ -122,21 +122,21 @@ void VerilogWriter::writePorts()
       continue;
     }
 
-    if (bus_processed.contains(pin_bus_name)) {
-      continue;
-    }
+    // if (bus_processed.contains(pin_bus_name)) {
+    //   continue;
+    // }
 
     if (!first) {
       fprintf(_stream, ",\n");
     }
 
-    bus_processed.insert(pin_bus_name);
+    // bus_processed.insert(pin_bus_name);
 
-    fprintf(_stream, "%s", pin_bus_name.c_str());
+    fprintf(_stream, "\\%s ", pin_name.c_str());
     first = false;
   }
 
-  fprintf(_stream, "\n);\n");
+  fprintf(_stream, ");\n");
 }
 
 /**
@@ -186,26 +186,26 @@ void VerilogWriter::writePortDcls()
       continue;
     }
 
-    if (bus_processed.contains(pin_bus_name)) {
-      continue;
-    }
+    // if (bus_processed.contains(pin_bus_name)) {
+    //   continue;
+    // }
 
-    bus_processed.insert(pin_bus_name);
+    // bus_processed.insert(pin_bus_name);
 
-    auto pin_bus = _idb_design.get_bus_list()->findBus(pin_bus_name);
-    unsigned int bus_left = pin_bus->get().get_left();
-    unsigned int bus_right = pin_bus->get().get_right();
+    // auto pin_bus = _idb_design.get_bus_list()->findBus(pin_bus_name);
+    // unsigned int bus_left = pin_bus->get().get_left();
+    // unsigned int bus_right = pin_bus->get().get_right();
 
     IdbConnectDirection port_dir = io_pin->get_term()->get_direction();
 
-    const char* bus_range = ieda::Str::printf("[%d:%d]", bus_left, bus_right);
+    // const char* bus_range = ieda::Str::printf("[%d:%d]", bus_left, bus_right);
 
     if (port_dir == IdbConnectDirection::kInput) {
-      fprintf(_stream, "input %s %s ;\n", bus_range, pin_bus_name.c_str());
+      fprintf(_stream, "input \\%s ;\n",  pin_name.c_str());
     } else if (port_dir == IdbConnectDirection::kOutput) {
-      fprintf(_stream, "output %s %s ;\n", bus_range, pin_bus_name.c_str());
+      fprintf(_stream, "output \\%s ;\n",  pin_name.c_str());
     } else if (port_dir == IdbConnectDirection::kInOut) {
-      fprintf(_stream, "inout %s %s ;\n", bus_range, pin_bus_name.c_str());
+      fprintf(_stream, "inout \\%s ;\n",  pin_name.c_str());
     } else {
       continue;
     }
@@ -248,41 +248,41 @@ void VerilogWriter::writeWire()
     fprintf(_stream, "wire %s ;\n", escape_net_name.c_str());
   }
 
-  std::set<std::string> bus_processed;
-  for (const auto& net : net_list) {
-    std::string net_name = net->get_net_name();
+  // std::set<std::string> bus_processed;
+  // for (const auto& net : net_list) {
+  //   std::string net_name = net->get_net_name();
 
-    auto [net_bus_name, is_bus] = ieda::Str::matchBusName(net_name.c_str());
+  //   auto [net_bus_name, is_bus] = ieda::Str::matchBusName(net_name.c_str());
 
-    if (net_bus_name.back() == '\\') {
-      is_bus = std::nullopt;
-    }
+  //   if (net_bus_name.back() == '\\') {
+  //     is_bus = std::nullopt;
+  //   }
 
-    // bus of bus is not printed as bus
-    if (std::ranges::count(net_name, '[') > 1) {
-      is_bus = std::nullopt;
-    }
+  //   // bus of bus is not printed as bus
+  //   if (std::ranges::count(net_name, '[') > 1) {
+  //     is_bus = std::nullopt;
+  //   }
 
-    if (!is_bus) {
-      continue;
-    }
+  //   if (!is_bus) {
+  //     continue;
+  //   }
 
-    if (bus_processed.contains(net_bus_name)) {
-      continue;
-    }
+  //   if (bus_processed.contains(net_bus_name)) {
+  //     continue;
+  //   }
 
-    bus_processed.insert(net_bus_name);
-    // remove all "\" in net_bus_name
-    net_bus_name.erase(std::remove(net_bus_name.begin(), net_bus_name.end(), '\\'), net_bus_name.end());
-    auto net_bus = _idb_design.get_bus_list()->findBus(net_bus_name);
-    assert(net_bus);
-    int bus_left = net_bus->get().get_left();
-    int bus_right = net_bus->get().get_right();
+  //   bus_processed.insert(net_bus_name);
+  //   // remove all "\" in net_bus_name
+  //   net_bus_name.erase(std::remove(net_bus_name.begin(), net_bus_name.end(), '\\'), net_bus_name.end());
+  //   auto net_bus = _idb_design.get_bus_list()->findBus(net_bus_name);
+  //   assert(net_bus);
+  //   int bus_left = net_bus->get().get_left();
+  //   int bus_right = net_bus->get().get_right();
 
-    std::string escape_bus_net_name = escapeName(net_bus_name);
+  //   std::string escape_bus_net_name = escapeName(net_bus_name);
 
-    fprintf(_stream, "wire [%d:%d] %s ;\n", bus_left, bus_right, escape_bus_net_name.c_str());
-  }
+  //   fprintf(_stream, "wire [%d:%d] %s ;\n", bus_left, bus_right, escape_bus_net_name.c_str());
+  // }
 }
 
 /**
