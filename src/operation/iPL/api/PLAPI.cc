@@ -92,7 +92,7 @@ void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
   createPLDirectory();
 
   char config[] = "info_ipl_glog";
-  char* argv[] = { config };
+  char* argv[] = {config};
 
   std::string log_home_path = this->obtainTargetDir() + "/pl/log/";
   // std::string design_name = idb_builder->get_def_service()->get_design()->get_design_name();
@@ -481,8 +481,8 @@ void PLAPI::runAiFlow(const std::string& onnx_path, const std::string& normaliza
   if (isSTAStarted()) {
     runPostGP();
   } else {
-#ifdef BUILD_AI_PREDICTOR
-    runAIDP(onnx_path, normalization_path);
+#ifdef ENABLE_AI
+    runDPwithAiWireLengthPredictor(onnx_path, normalization_path);
 #else
     runDP();
 #endif
@@ -494,7 +494,6 @@ void PLAPI::runAiFlow(const std::string& onnx_path, const std::string& normaliza
   reportPLInfo();
   std::cout << std::endl;
   LOG_INFO << "Log has been writed to dir: ./result/pl/log/";
-
 
   if (isSTAStarted()) {
     _external_api->destroyTimingEval();
@@ -584,8 +583,8 @@ void PLAPI::runDP()
   }
 }
 
-#ifdef BUILD_AI_PREDICTOR
-void PLAPI::runAIDP(const std::string& onnx_path, const std::string& normalization_path)
+#ifdef ENABLE_AI
+void PLAPI::runDPwithAiWireLengthPredictor(const std::string& onnx_path, const std::string& normalization_path)
 {
   bool legal_flag = checkLegality();
   if (!legal_flag) {
@@ -595,22 +594,17 @@ void PLAPI::runAIDP(const std::string& onnx_path, const std::string& normalizati
 
   DetailPlacer detail_place(PlacerDBInst.get_placer_config(), &PlacerDBInst);
 
-  if (!detail_place.loadAIWirelengthModel(onnx_path)) {
+  if (!detail_place.init_ai_wirelength_model(onnx_path, normalization_path)) {
     LOG_ERROR << "Failed to load AI wirelength model: " << onnx_path;
-    LOG_INFO << "Falling back to traditional HPWL";
-  } else {
-    detail_place.setUseAIWirelength(true);
-  }
-
-  if(!detail_place.loadAIWirelengthNormalizationParams(normalization_path)){
-    LOG_ERROR << "Failed to load AI wirelength normalization parameters: " << normalization_path;
+    LOG_ERROR << "Falling back to traditional HPWL";
+    return;
   }
 
   detail_place.runDetailPlace();
 
   if (!checkLegality()) {
     LOG_WARNING << "DP result is not legal";
-  }  
+  }
 }
 #endif
 
