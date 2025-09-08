@@ -958,7 +958,7 @@ pub fn flatten_module(verilog_file: &mut verilog_data::VerilogFile, top_module_n
     verilog_file.set_top_module_name(top_module_name);
     let module_map = verilog_file.get_module_map();
     if module_map.len() > 1 {
-        println!("flatten module {}  start", top_module_name);
+        println!("flatten module {} start", top_module_name);
         let the_module = module_map.get(top_module_name).unwrap();
         let mut have_sub_module;
         loop {
