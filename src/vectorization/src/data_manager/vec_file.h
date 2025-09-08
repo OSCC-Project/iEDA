@@ -38,7 +38,7 @@ class VecLayoutFileIO
   }
   ~VecLayoutFileIO() {}
 
-  bool saveJson();
+  bool saveJson(bool batch_mode = true);
   bool readJsonNets();
   bool readJsonNetsPattern();
 
@@ -47,8 +47,8 @@ class VecLayoutFileIO
   VecLayout* _layout = nullptr;
   VecPatchGrid* _patch_grid = nullptr;
 
-  bool saveJsonNets();
-  bool saveJsonPatchs();
+  bool saveJsonNets(bool batch_mode = true);
+  bool saveJsonPatchs(bool batch_mode = true);
   bool saveJsonTech();
   bool saveJsonCells();
   bool saveJsonInstances();
