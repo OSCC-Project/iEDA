@@ -5,8 +5,27 @@ AUX_SOURCE_DIRECTORY(./ SRC)
 
 SET(LINK_unwind "unwind")
 
-find_package(glog REQUIRED)
+find_package(glog QUIET)
 message(STATUS "Detected glog version: ${glog_VERSION}")
+
+if(NOT glog_FOUND)
+    # Fallback for glog 0.4.0 which doesn't provide CMake config files
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GLOG REQUIRED libglog)
+
+    # Create a target for glog if not found
+    if(NOT TARGET glog::glog)
+        add_library(glog::glog UNKNOWN IMPORTED)
+        set_target_properties(glog::glog PROPERTIES
+            IMPORTED_LOCATION "${GLOG_LIBRARIES}"
+            INTERFACE_INCLUDE_DIRECTORIES "${GLOG_INCLUDE_DIRS}"
+            INTERFACE_LINK_LIBRARIES "${GLOG_LIBRARIES}"
+        )
+    endif()
+
+    # Set version manually for glog 0.4.0
+    set(glog_VERSION "0.4.0" CACHE STRING "glog version" FORCE)
+endif()
 
 if(glog_VERSION VERSION_LESS_EQUAL "0.5.0")
     # For glog versions 0.5.0 and earlier, the signature of SignalHandle is (const char*, int)
