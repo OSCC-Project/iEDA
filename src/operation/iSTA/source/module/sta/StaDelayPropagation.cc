@@ -114,8 +114,13 @@ unsigned StaDelayPropagation::operator()(StaArc* the_arc) {
 
         } else if (the_arc->isDelayArc()) {
           auto* rc_net = getSta()->getRcNet(the_net);
-          auto load_pf = rc_net ? rc_net->load(analysis_mode, trans_type)
-                                : the_net->getLoad(analysis_mode, trans_type);
+
+          auto out_trans_type = lib_arc->isNegativeArc()
+                                    ? flip_trans_type(trans_type)
+                                    : trans_type;
+
+          auto load_pf = rc_net ? rc_net->load(analysis_mode, out_trans_type)
+                                : the_net->getLoad(analysis_mode, out_trans_type);
           auto* the_lib = lib_arc->get_owner_cell()->get_owner_lib();
 
           double load{0};
@@ -124,10 +129,6 @@ unsigned StaDelayPropagation::operator()(StaArc* the_arc) {
           } else if (the_lib->get_cap_unit() == CapacitiveUnit::kPF) {
             load = load_pf;
           }
-
-          auto out_trans_type = lib_arc->isNegativeArc()
-                                    ? flip_trans_type(trans_type)
-                                    : trans_type;
 
           // fix the timing type not match the trans type, which would lead to
           // crash.
