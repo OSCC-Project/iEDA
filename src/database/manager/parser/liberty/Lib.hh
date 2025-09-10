@@ -477,6 +477,7 @@ class LibPowerTableModel final : public LibTableModel
   LibTable* getTable(int index) override { return _tables[index].get(); }
 
   double gatePower(TransType trans_type, double slew, std::optional<double> load) override;
+  auto& get_tables() { return _tables; }
 
  private:
   std::array<std::unique_ptr<LibTable>, kTableNum> _tables;  // power table,include rise power/fall power.
