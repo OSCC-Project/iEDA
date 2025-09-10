@@ -840,7 +840,7 @@ StaDumpGraphJson::json StaDumpGraphJson::dumpNodeFeature(StaGraph* the_graph) {
       one_node_feature_array.push_back(die_height);
     }
 
-    // TODO(to taosimin), min or max first? assume max first
+    // TODO(to taosimin), min or max first? assume min first
     double max_rise_cap =
         the_vertex->getLoad(AnalysisMode::kMax, TransType::kRise);
     double max_fall_cap =

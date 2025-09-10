@@ -68,9 +68,17 @@ class PwrInstArc : public PwrArc {
   }
   auto* get_power_arc_set() { return _power_arc_set; }
 
+  void set_internal_power(double internal_power) {
+    _internal_power = internal_power;
+  }
+  [[nodiscard]] double getInternalPower() const { return _internal_power.value_or(0.0); }
+  [[nodiscard]] auto get_internal_power() const { return _internal_power; }
+
  private:
   LibPowerArcSet* _power_arc_set =
       nullptr;  //!< The cell internal power set of different when condition.
+
+  std::optional<double> _internal_power; //!< The arc internal power.
 };
 
 /**

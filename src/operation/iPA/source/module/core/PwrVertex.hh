@@ -121,6 +121,12 @@ class PwrVertex {
   [[nodiscard]] unsigned is_clock_network() const { return _is_clock_network; }
   void set_is_clock_network() { _is_clock_network = 1; }
 
+  void set_internal_power(double internal_power) {
+    _internal_power = internal_power;
+  }
+  [[nodiscard]] double getInternalPower() const { return _internal_power.value_or(0.0); }
+  [[nodiscard]] auto get_internal_power() const { return _internal_power; }
+
   void addSrcArc(PwrArc* src_arc) { _src_arcs.emplace_back(src_arc); }
   void addSnkArc(PwrArc* snk_arc) { _snk_arcs.emplace_back(snk_arc); }
   auto& get_src_arcs() { return _src_arcs; }
@@ -195,6 +201,8 @@ class PwrVertex {
   unsigned _is_output_port : 1 = 0;    //!< The vertex is output port.
   unsigned _is_clock_network : 1 = 0;  //!< The vertex is clock nerwork.
   unsigned _reserved : 23 = 0;         //!< reserved.
+
+  std::optional<double> _internal_power; //!< The pin internal power.
 
   StaVertex* _sta_vertex;          //!< The mapped sta vertex.
   std::vector<PwrArc*> _src_arcs;  //!< The power arc sourced from the vertex.

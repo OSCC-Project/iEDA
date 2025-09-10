@@ -16,16 +16,28 @@
 // ***************************************************************************************
 /*
  * @Description: AI-based wirelength evaluator implementation
- * @FilePath: /iEDA/src/iPL/src/evaluator/wirelength/AIWirelength.cc
+ * @FilePath: /iEDA/src//ai/predictor/ipl_wirelength/ai_wirelength.cc
  */
 
-#include "AIWirelength.hh"
-#include "Log.hh"
-#include "data/Point.hh"
-#include "data/Rectangle.hh"
+#include "ai_wirelength.hh"
+
 #include <vector>
 
+#include "Log.hh"
+#include "Point.hh"
+#include "Rectangle.hh"
+#include "TopologyManager.hh"
+
 namespace ipl {
+
+AIWirelength* AIWirelength::_instance = nullptr;
+
+bool AIWirelength::init(const std::string& model_path, const std::string& params_path, TopologyManager* topology_manager)
+{
+  _topology_manager = topology_manager;
+
+  return loadModel(model_path) && loadNormalizationParams(params_path);
+}
 
 bool AIWirelength::loadModel(const std::string& model_path)
 {

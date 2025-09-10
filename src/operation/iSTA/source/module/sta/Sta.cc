@@ -3082,7 +3082,7 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
   // reportWirePaths();
 
   // for test dump graph json data.
-  if (1) {
+  if (0) {
     json graph_json;
     StaDumpGraphJson dump_graph_json(graph_json);
     auto &the_graph = get_graph();

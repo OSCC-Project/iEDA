@@ -32,11 +32,10 @@
 #include "PlacerDB.hh"
 #include "TopologyManager.hh"
 #include "database/DPDatabase.hh"
-#ifdef BUILD_AI_PREDICTOR
-#include "AIWirelength.hh"
-#endif
 
 namespace ipl {
+
+class AIWirelength;
 
 class DetailPlacer
 {
@@ -57,11 +56,9 @@ class DetailPlacer
 
   void runDetailPlaceNFS();
 
-#ifdef BUILD_AI_PREDICTOR
+#ifdef ENABLE_AI
   // AI wirelength prediction methods
-  bool loadAIWirelengthModel(const std::string& model_path);
-  bool loadAIWirelengthNormalizationParams(const std::string& params_path);
-  void setUseAIWirelength(bool use_ai);
+  bool init_ai_wirelength_model(const std::string& model_path, const std::string& params_path);
   int64_t calTotalAIWirelength();
 #endif
 
@@ -69,8 +66,7 @@ class DetailPlacer
   DPConfig _config;
   DPDatabase _database;
   DPOperator _operator;
-#ifdef BUILD_AI_PREDICTOR
-  std::unique_ptr<AIWirelength> _ai_wirelength_evaluator;
+#ifdef ENABLE_AI
   bool _use_ai_wirelength = false;
 #endif
 

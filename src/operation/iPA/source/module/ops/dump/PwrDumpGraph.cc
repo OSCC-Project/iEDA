@@ -32,6 +32,9 @@
 
 #include "core/PwrSeqGraph.hh"
 #include "string/Str.hh"
+#include "sta/Sta.hh"
+#include "api/Power.hh"
+#include "sta/StaDump.hh"
 
 namespace ipower {
 
@@ -277,6 +280,186 @@ void PwrDumpGraphViz::printText(const char* file_name) {
   dot_file.close();
 
   LOG_INFO << "dump graph dotviz end";
+}
+
+/**
+ * @brief dump the power node feature.
+ * 
+ * @param the_graph 
+ * @return PwrDumpGraphJson::json 
+ */
+PwrDumpGraphJson::json PwrDumpGraphJson::dumpNodeFeature(PwrGraph* the_graph) {
+  json all_vertex_node_feature_array = json::array();
+
+  auto* the_sta_graph = the_graph->get_sta_graph();
+  auto* nl = the_sta_graph->get_nl();
+  auto [die_width, die_height] = nl->get_die_size().value();
+
+  auto& pwr_vertexes = the_graph->get_vertexes();
+  for (auto& pwr_vertex : pwr_vertexes) {
+    auto* the_sta_vertex = pwr_vertex->get_sta_vertex();
+    json one_node_feature_array = json::array();
+
+    auto* the_obj = the_sta_vertex->get_design_obj();
+    the_obj->isPort() ? one_node_feature_array.push_back(1.0)  // is_port
+                      : one_node_feature_array.push_back(0.0);
+    the_obj->isInput() ? one_node_feature_array.push_back(0.0)  // is_input
+                       : one_node_feature_array.push_back(1.0);
+    // the distance to 4 die boundary, left, right, top, bottom TBD.
+    if (the_obj->get_coordinate()) {
+      auto [pin_x, pin_y] = the_obj->get_coordinate().value();
+      double left_bottom_distance = pin_x + pin_y;
+      double right_bottom_distance = die_width - pin_x + pin_y;
+      double left_top_distance = pin_x + die_height - pin_y;
+      double right_top_distance = die_width - pin_x + die_height - pin_y;
+
+      // the order is lb(left bottom), rt, rb, lt
+      one_node_feature_array.push_back(left_bottom_distance);
+      one_node_feature_array.push_back(right_top_distance);
+      one_node_feature_array.push_back(right_bottom_distance);
+      one_node_feature_array.push_back(left_top_distance);
+
+    } else {
+      // assume the non-pin node is in the left bottom of the die.
+      one_node_feature_array.push_back(0.0);
+      one_node_feature_array.push_back(die_width + die_height);
+      one_node_feature_array.push_back(die_width);
+      one_node_feature_array.push_back(die_height);
+    }
+
+    // TODO(to taosimin), min or max first? assume min first
+    double max_rise_cap =
+        the_sta_vertex->getLoad(AnalysisMode::kMax, TransType::kRise);
+    double max_fall_cap =
+        the_sta_vertex->getLoad(AnalysisMode::kMax, TransType::kFall);
+    double min_rise_cap =
+        the_sta_vertex->getLoad(AnalysisMode::kMin, TransType::kRise);
+    double min_fall_cap =
+        the_sta_vertex->getLoad(AnalysisMode::kMin, TransType::kFall);
+
+    one_node_feature_array.push_back(min_rise_cap);
+    one_node_feature_array.push_back(min_fall_cap);
+
+    one_node_feature_array.push_back(max_rise_cap);
+    one_node_feature_array.push_back(max_fall_cap);
+
+    double toggle_data= pwr_vertex->getToggleData(std::nullopt);
+    double sp_data= pwr_vertex->getSPData(std::nullopt);
+
+    one_node_feature_array.push_back(toggle_data);
+    one_node_feature_array.push_back(sp_data);
+
+    all_vertex_node_feature_array.push_back(one_node_feature_array);
+
+  }
+
+  return all_vertex_node_feature_array;
+}
+
+/**
+ * @brief for net driver node, dump the net power.
+ * 
+ * @param the_graph 
+ * @return PwrDumpGraphJson::json 
+ */
+PwrDumpGraphJson::json PwrDumpGraphJson::dumpNodeNetPower(PwrGraph* the_graph) {
+  json all_vertex_node_net_power_array = json::array();
+
+  auto* ista = ista::Sta::getOrCreateSta();
+  Power* ipower = Power::getOrCreatePower(&(ista->get_graph()));
+
+  // build switch power map.
+  auto& switch_powers = ipower->get_switch_powers();
+  std::map<PwrVertex*, double> vertex_to_switch_power;
+  for (auto& switch_power : switch_powers) {
+    auto* the_net = switch_power->get_design_obj();
+    auto* the_driver = dynamic_cast<ista::Net*>(the_net)->getDriver();
+    auto* the_sta_vertex = ista->findVertex(the_driver);
+    auto* the_pwr_vertex = the_graph->staToPwrVertex(the_sta_vertex);
+    vertex_to_switch_power[the_pwr_vertex] = switch_power->get_switch_power();
+  }
+
+  // get switch power for the vertex.
+  auto& pwr_vertexes = the_graph->get_vertexes();
+  for (auto& pwr_vertex : pwr_vertexes) {
+    double switch_power = 0.0;
+    if (vertex_to_switch_power.contains(pwr_vertex.get())) {
+      switch_power = vertex_to_switch_power[pwr_vertex.get()];
+    }
+
+    all_vertex_node_net_power_array.push_back(switch_power);
+  }
+
+
+  return all_vertex_node_net_power_array;
+}
+
+/**
+ * @brief for input pin node, dump the pin internal power.
+ * 
+ * @param the_graph 
+ * @return PwrDumpGraphJson::json 
+ */
+PwrDumpGraphJson::json PwrDumpGraphJson::dumpNodeInternalPower(PwrGraph* the_graph) {
+  json all_vertex_node_internal_power_array = json::array();
+  auto& pwr_vertexes = the_graph->get_vertexes();
+  for (auto& pwr_vertex : pwr_vertexes) {
+    double internal_power = pwr_vertex->getInternalPower();
+    all_vertex_node_internal_power_array.push_back(internal_power);
+  }
+
+  return all_vertex_node_internal_power_array;
+}
+
+/**
+ * @brief for cell instance power arc, dump the arc power.
+ * 
+ * @param the_graph 
+ * @return PwrDumpGraphJson::json 
+ */
+PwrDumpGraphJson::json PwrDumpGraphJson::dumpInstInternalPower(PwrGraph* the_graph) {
+  json all_inst_arc_delay_array = json::array();
+  auto& pwr_arcs = the_graph->get_arcs();
+  for (auto& the_pwr_arc : pwr_arcs) {
+    if (the_pwr_arc->isInstArc()) {
+      double internal_power = dynamic_cast<PwrInstArc*>(the_pwr_arc.get())->getInternalPower();
+      all_inst_arc_delay_array.push_back(internal_power);
+    }
+  }
+
+  return all_inst_arc_delay_array;
+}
+
+/**
+ * @brief dump the power graph json for power predict.
+ * 
+ * @param the_graph 
+ * @return unsigned 
+ */
+unsigned PwrDumpGraphJson::operator()(PwrGraph* the_graph) {
+  LOG_INFO << "dump graph json start";
+  auto* the_sta_graph = the_graph->get_sta_graph();
+  ista::StaDumpGraphJson dump_graph_json(_json_file);
+
+  unsigned num_nodes = the_graph->numVertex();
+  _json_file["num_nodes"] = num_nodes;
+
+  _json_file["edges"] = dump_graph_json.dumpEdges(the_sta_graph);
+  
+  // dump node features
+  auto n_node_features = dumpNodeFeature(the_graph);
+  auto n_net_power = dumpNodeNetPower(the_graph);
+
+  _json_file["node_features"]["nf"] = n_node_features;
+  _json_file["node_features"]["n_net_powers"] = n_node_features;
+
+  // dump arc features
+  auto e_inst_arc_internal_power = dumpInstInternalPower(the_graph);
+  _json_file["edge_features"]["e_inst_arc_internal_power"] = e_inst_arc_internal_power;
+
+
+  LOG_INFO << "dump graph json end";
+  return 1;
 }
 
 }  // namespace ipower

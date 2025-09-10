@@ -23,6 +23,7 @@
  */
 
 #include "PwrCalcInternalPower.hh"
+
 #include "PwrCalcSPData.hh"
 namespace ipower {
 using ieda::Stats;
@@ -230,7 +231,7 @@ double PwrCalcInternalPower::calcOutputPinPower(Instance* inst,
     if (!power_arc_set) {
       continue;
     }
-    
+
     LibPowerArc* power_arc;
     FOREACH_POWER_LIB_ARC(power_arc_set, power_arc) {
       auto [rise_power_mw, rise_input_slew_ns, rise_output_load] =
@@ -255,10 +256,13 @@ double PwrCalcInternalPower::calcOutputPinPower(Instance* inst,
       if (!when.empty()) {
         // get the sp data of this condition.
         double sp_value = calcSPByWhen(when.c_str(), inst);
-        pin_internal_power += sp_value * the_arc_power;
+        the_arc_power = sp_value * the_arc_power;
+        pin_internal_power += the_arc_power;
       } else {
         pin_internal_power += the_arc_power;
       }
+
+      dynamic_cast<PwrInstArc*>(snk_arc)->set_internal_power(the_arc_power);
 
       // for debug
       if (0) {
@@ -461,11 +465,18 @@ double PwrCalcInternalPower::calcCombInternalPower(Instance* inst) {
   }
 
   FOREACH_INSTANCE_PIN(inst, pin) {
+    auto* the_pwr_graph = get_the_pwr_graph();
+    auto* the_sta_graph = the_pwr_graph->get_sta_graph();
+    auto the_sta_vertex = the_sta_graph->findVertex(pin);
+    auto* the_pwr_vertex = the_pwr_graph->staToPwrVertex(*the_sta_vertex);
+
     // for inout pin, we need calc input and output both.
     if (pin->isInput()) {
       /*calc input port power*/
       double pin_internal_power =
           calcCombInputPinPower(inst, pin, input_sum_toggle, output_pin_toggle);
+          
+      the_pwr_vertex->set_internal_power(pin_internal_power);
       inst_internal_power += pin_internal_power;
     }
 
@@ -511,22 +522,25 @@ double PwrCalcInternalPower::calcSeqInternalPower(Instance* inst) {
     }
 
     if (pin->isInput()) {
+      double pin_internal_power = 0.0;
       /*calc input port power*/
-      double pin_internal_power = calcSeqInputPinPower(inst, pin);
-      inst_internal_power += pin_internal_power;
+      if ((*the_sta_vertex)->is_clock()) {
+        /*calc clk power*/
+        pin_internal_power =
+            calcClockPinPower(inst, pin, output_pin_toggle);
+        inst_internal_power += pin_internal_power;
+      } else {
+        pin_internal_power = calcSeqInputPinPower(inst, pin);
+        inst_internal_power += pin_internal_power;
+      }
 
-    } else if (pin->isOutput()) {
+      the_pwr_vertex->set_internal_power(pin_internal_power);
+
+    } else {
       /*calc output port power*/
       double pin_internal_power = calcOutputPinPower(inst, pin);
       inst_internal_power += pin_internal_power;
-    } else if ((*the_sta_vertex)->is_clock()) {
-      /*calc clk power*/
-      double pin_internal_power =
-          calcClockPinPower(inst, pin, output_pin_toggle);
-      inst_internal_power += pin_internal_power;
-    } else {
-      /*calc cdn power*/
-    }
+    } 
   }
 
   return inst_internal_power;
