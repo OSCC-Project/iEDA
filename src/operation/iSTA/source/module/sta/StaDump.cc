@@ -816,8 +816,8 @@ StaDumpGraphJson::json StaDumpGraphJson::dumpNodeFeature(StaGraph* the_graph) {
     auto* the_obj = the_vertex->get_design_obj();
     the_obj->isPort() ? one_node_feature_array.push_back(1.0)  // is_port
                       : one_node_feature_array.push_back(0.0);
-    the_obj->isInput() ? one_node_feature_array.push_back(1.0)  // is_input
-                       : one_node_feature_array.push_back(0.0);
+    the_obj->isInput() ? one_node_feature_array.push_back(0.0)  // is_input
+                       : one_node_feature_array.push_back(1.0);
     // the distance to 4 die boundary, left, right, top, bottom TBD.
     if (the_obj->get_coordinate()) {
       auto [pin_x, pin_y] = the_obj->get_coordinate().value();
@@ -840,7 +840,7 @@ StaDumpGraphJson::json StaDumpGraphJson::dumpNodeFeature(StaGraph* the_graph) {
       one_node_feature_array.push_back(die_height);
     }
 
-    // TODO(to taosimin), min or max first? assume max first
+    // TODO(to taosimin), min or max first? assume min first
     double max_rise_cap =
         the_vertex->getLoad(AnalysisMode::kMax, TransType::kRise);
     double max_fall_cap =

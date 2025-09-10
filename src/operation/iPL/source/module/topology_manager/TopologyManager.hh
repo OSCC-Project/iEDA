@@ -104,7 +104,7 @@ class Node
   // setter.
   void set_node_id(int32_t id) { _node_id = id; }
   void set_node_type(NODE_TYPE node_type) { _node_type = node_type; }
-  void set_is_io() {_io_flag = true;}
+  void set_is_io() { _io_flag = true; }
   void set_location(Point<int32_t> location) { _location = std::move(location); }
 
   void set_network(NetWork* network) { _network = network; }

@@ -470,6 +470,7 @@ void ViolationReporter::outputNetCSV(VRModel& vr_model)
     }
     RTUTIL.closeFileStream(net_csv_file);
   }
+  RTLOG.info(Loc::current(), "The csv file has been saved");
 }
 
 void ViolationReporter::outputViolationCSV(VRModel& vr_model)
@@ -505,6 +506,7 @@ void ViolationReporter::outputViolationCSV(VRModel& vr_model)
     }
     RTUTIL.closeFileStream(violation_csv_file);
   }
+  RTLOG.info(Loc::current(), "The csv file has been saved");
 }
 
 void ViolationReporter::outputJson(VRModel& vr_model)

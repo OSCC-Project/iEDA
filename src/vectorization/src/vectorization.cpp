@@ -70,7 +70,7 @@ std::map<int, VecNet> Vectorization::getGraph(std::string path)
   return _data_manager.getGraph(path);
 }
 
-void Vectorization::buildFeature(const std::string dir, int patch_row_step, int patch_col_step)
+void Vectorization::buildFeature(const std::string dir, int patch_row_step, int patch_col_step, bool batch_mode)
 {
   {
     /// build layout data
@@ -100,7 +100,7 @@ void Vectorization::buildFeature(const std::string dir, int patch_row_step, int 
   generateFeature(dir);
 
   /// save
-  _data_manager.saveData(dir);
+  _data_manager.saveData(dir, batch_mode);
 }
 
 void Vectorization::generateFeature(const std::string dir)

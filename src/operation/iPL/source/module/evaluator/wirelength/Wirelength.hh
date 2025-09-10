@@ -27,9 +27,8 @@
 #ifndef IPL_EVALUATOR_WIRELENGTH_H
 #define IPL_EVALUATOR_WIRELENGTH_H
 
-#include "TopologyManager.hh"
-
 namespace ipl {
+class TopologyManager;
 
 class Wirelength
 {

@@ -6,7 +6,6 @@
 #include <unistd.h>
 #include <sstream>
 
-// 初始化静态成员
 std::mutex MemoryMonitor::file_mutex_;
 
 MemoryMonitor::MemoryMonitor(const std::string& label, const std::string& logFile) 
@@ -16,7 +15,6 @@ MemoryMonitor::MemoryMonitor(const std::string& label, const std::string& logFil
     start_vm_ = getCurrentVirtual();
     start_time_ = std::chrono::high_resolution_clock::now();
     
-    // 打开日志文件（追加模式）
     std::lock_guard<std::mutex> lock(file_mutex_);
     std::ofstream log(logFile_, std::ios::app);
     if (log.is_open()) {
@@ -88,7 +86,7 @@ size_t MemoryMonitor::getCurrentRSS() {
         statm >> vm >> rss;
         statm.close();
     }
-    return rss * sysconf(_SC_PAGESIZE); // 转换页数为字节数
+    return rss * sysconf(_SC_PAGESIZE); 
 }
 
 size_t MemoryMonitor::getCurrentVirtual() {
@@ -98,7 +96,7 @@ size_t MemoryMonitor::getCurrentVirtual() {
         statm >> vm;
         statm.close();
     }
-    return vm * sysconf(_SC_PAGESIZE); // 转换页数为字节数
+    return vm * sysconf(_SC_PAGESIZE); 
 }
 
 size_t MemoryMonitor::getPeakRSS() {
@@ -112,7 +110,7 @@ size_t MemoryMonitor::getPeakRSS() {
                 std::istringstream iss(line.substr(10));
                 size_t kb;
                 iss >> kb;
-                peak_rss = kb * 1024; // 转换KB为字节
+                peak_rss = kb * 1024;
                 break;
             }
         }

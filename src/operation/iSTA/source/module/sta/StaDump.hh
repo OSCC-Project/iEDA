@@ -24,9 +24,9 @@
 #pragma once
 
 #include <yaml-cpp/yaml.h>
-#include "json/json.hpp"
 
 #include "StaFunc.hh"
+#include "json/json.hpp"
 
 namespace ista {
 
@@ -85,7 +85,7 @@ class StaDumpWireYaml : public StaDumpDelayYaml {
  public:
   StaDumpWireYaml(std::ofstream& file) : _file(file) {}
   ~StaDumpWireYaml() override = default;
-  
+
   void set_analysis_mode(AnalysisMode analysis_mode) {
     _analysis_mode = analysis_mode;
   }
@@ -97,21 +97,20 @@ class StaDumpWireYaml : public StaDumpDelayYaml {
   unsigned operator()(StaVertex* the_vertex) override;
   unsigned operator()(StaArc* the_arc) override;
 
-  private:
+ private:
   std::ofstream& _file;
 };
 
 /**
  * @brief The class for dump wire data in json text file for training data.
- * 
+ *
  */
 class StaDumpWireJson : public StaDumpDelayYaml {
  public:
-
   using json = nlohmann::ordered_json;
   StaDumpWireJson(json& parent_json) : _parent_json(parent_json) {}
-  ~StaDumpWireJson() override = default;  
-  
+  ~StaDumpWireJson() override = default;
+
   void set_analysis_mode(AnalysisMode analysis_mode) {
     _analysis_mode = analysis_mode;
   }
@@ -119,11 +118,11 @@ class StaDumpWireJson : public StaDumpDelayYaml {
 
   void set_trans_type(TransType trans_type) { _trans_type = trans_type; }
   auto get_trans_type() { return _trans_type; }
-  
+
   unsigned operator()(StaVertex* the_vertex) override;
   unsigned operator()(StaArc* the_arc) override;
 
-  private:
+ private:
   json& _parent_json;
 };
 
@@ -138,7 +137,7 @@ class StaDumpGraphViz : public StaFunc {
 
 /**
  * @brief The class for dump timing data in memory for python call.
- * 
+ *
  */
 class StaDumpTimingData : public StaFunc {
  public:
@@ -151,7 +150,7 @@ class StaDumpTimingData : public StaFunc {
 
   auto get_wire_timing_datas() { return _wire_timing_datas; }
 
-  private:
+ private:
   std::vector<StaWireTimingData> _wire_timing_datas;
 
   AnalysisMode _analysis_mode;
@@ -160,17 +159,16 @@ class StaDumpTimingData : public StaFunc {
 
 /**
  * @brief dump the graph json for get graph timing data.
- * 
+ *
  */
 class StaDumpGraphJson : public StaFunc {
  public:
   using json = nlohmann::ordered_json;
   StaDumpGraphJson(json& json_file) : _json_file(json_file) {}
-  ~StaDumpGraphJson() override = default;  
+  ~StaDumpGraphJson() override = default;
 
   unsigned operator()(StaGraph* the_graph) override;
 
- private:
   json dumpEdges(StaGraph* the_graph);
 
   json dumpNodeRAT(StaGraph* the_graph);
@@ -186,6 +184,7 @@ class StaDumpGraphJson : public StaFunc {
   json dumpNetInArcFeature(StaGraph* the_graph);
   json dumpNetOutArcFeature(StaGraph* the_graph);
 
+ private:
   json& _json_file;
 };
 

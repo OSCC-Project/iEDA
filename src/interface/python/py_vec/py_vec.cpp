@@ -35,13 +35,13 @@ bool layout_graph(const std::string& path)
   return lm_api.buildVectorizationGraphData(path);
 }
 
-bool generate_vectors(std::string dir, int patch_row_step, int patch_col_step)
+bool generate_vectors(std::string dir, int patch_row_step, int patch_col_step, bool batch_mode)
 {
   if (dir == "") {
     dir = "./vectors";
   }
   ivec::VectorizationApi lm_api;
-  return lm_api.buildVectorizationFeature(dir, patch_row_step, patch_col_step);
+  return lm_api.buildVectorizationFeature(dir, patch_row_step, patch_col_step, batch_mode);
 }
 
 ieval::TimingWireGraph get_timing_wire_graph(std::string wire_graph_path)

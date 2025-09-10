@@ -3462,6 +3462,7 @@ void PinAccessor::outputNetCSV(PAModel& pa_model)
     }
     RTUTIL.closeFileStream(net_csv_file);
   }
+  RTLOG.info(Loc::current(), "The csv file has been saved");
 }
 
 void PinAccessor::outputViolationCSV(PAModel& pa_model)
@@ -3497,6 +3498,7 @@ void PinAccessor::outputViolationCSV(PAModel& pa_model)
     }
     RTUTIL.closeFileStream(violation_csv_file);
   }
+  RTLOG.info(Loc::current(), "The csv file has been saved");
 }
 
 void PinAccessor::outputJson(PAModel& pa_model)

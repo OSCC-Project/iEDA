@@ -984,6 +984,7 @@ void TopologyGenerator::outputGuide(TGModel& tg_model)
     }
   }
   RTUTIL.closeFileStream(guide_file_stream);
+  RTLOG.info(Loc::current(), "The csv file has been saved");
 }
 
 void TopologyGenerator::outputNetCSV(TGModel& tg_model)
@@ -1002,6 +1003,7 @@ void TopologyGenerator::outputNetCSV(TGModel& tg_model)
     RTUTIL.pushStream(net_csv_file, "\n");
   }
   RTUTIL.closeFileStream(net_csv_file);
+  RTLOG.info(Loc::current(), "The csv file has been saved");
 }
 
 void TopologyGenerator::outputOverflowCSV(TGModel& tg_model)
@@ -1020,6 +1022,7 @@ void TopologyGenerator::outputOverflowCSV(TGModel& tg_model)
     RTUTIL.pushStream(overflow_csv_file, "\n");
   }
   RTUTIL.closeFileStream(overflow_csv_file);
+  RTLOG.info(Loc::current(), "The csv file has been saved");
 }
 
 void TopologyGenerator::outputJson(TGModel& tg_model)

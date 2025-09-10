@@ -115,7 +115,7 @@ class PortBus : public DesignObject {
   auto& getPorts() { return _ports; }
 
   std::string getFullName() override { return get_name(); }
-
+  unsigned get_size() { return _size; }
  private:
   unsigned _left;     //!< The left range.
   unsigned _right;    //!< The right range.

@@ -37,4 +37,11 @@ target_link_libraries(ipl-module-detail_placer
             ipl_module_evaluator_wirelength
             )
 
+if(ENABLE_AI)
+    target_link_libraries(ipl-module-detail_placer
+        PUBLIC
+            ipl_predictor_wirelen
+            )
+endif()
+
 target_include_directories(ipl-module-detail_placer PUBLIC ${iPL_DP})
