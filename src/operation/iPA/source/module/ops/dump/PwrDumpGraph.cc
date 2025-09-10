@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -30,11 +30,11 @@
 #include <regex>
 #include <string>
 
-#include "core/PwrSeqGraph.hh"
-#include "string/Str.hh"
-#include "sta/Sta.hh"
 #include "api/Power.hh"
+#include "core/PwrSeqGraph.hh"
+#include "sta/Sta.hh"
 #include "sta/StaDump.hh"
+#include "string/Str.hh"
 
 namespace ipower {
 
@@ -284,9 +284,9 @@ void PwrDumpGraphViz::printText(const char* file_name) {
 
 /**
  * @brief dump the power node feature.
- * 
- * @param the_graph 
- * @return PwrDumpGraphJson::json 
+ *
+ * @param the_graph
+ * @return PwrDumpGraphJson::json
  */
 PwrDumpGraphJson::json PwrDumpGraphJson::dumpNodeFeature(PwrGraph* the_graph) {
   json all_vertex_node_feature_array = json::array();
@@ -343,14 +343,13 @@ PwrDumpGraphJson::json PwrDumpGraphJson::dumpNodeFeature(PwrGraph* the_graph) {
     one_node_feature_array.push_back(max_rise_cap);
     one_node_feature_array.push_back(max_fall_cap);
 
-    double toggle_data= pwr_vertex->getToggleData(std::nullopt);
-    double sp_data= pwr_vertex->getSPData(std::nullopt);
+    double toggle_data = pwr_vertex->getToggleData(std::nullopt);
+    double sp_data = pwr_vertex->getSPData(std::nullopt);
 
     one_node_feature_array.push_back(toggle_data);
     one_node_feature_array.push_back(sp_data);
 
     all_vertex_node_feature_array.push_back(one_node_feature_array);
-
   }
 
   return all_vertex_node_feature_array;
@@ -358,9 +357,9 @@ PwrDumpGraphJson::json PwrDumpGraphJson::dumpNodeFeature(PwrGraph* the_graph) {
 
 /**
  * @brief for net driver node, dump the net power.
- * 
- * @param the_graph 
- * @return PwrDumpGraphJson::json 
+ *
+ * @param the_graph
+ * @return PwrDumpGraphJson::json
  */
 PwrDumpGraphJson::json PwrDumpGraphJson::dumpNodeNetPower(PwrGraph* the_graph) {
   json all_vertex_node_net_power_array = json::array();
@@ -390,17 +389,17 @@ PwrDumpGraphJson::json PwrDumpGraphJson::dumpNodeNetPower(PwrGraph* the_graph) {
     all_vertex_node_net_power_array.push_back(switch_power);
   }
 
-
   return all_vertex_node_net_power_array;
 }
 
 /**
  * @brief for input pin node, dump the pin internal power.
- * 
- * @param the_graph 
- * @return PwrDumpGraphJson::json 
+ *
+ * @param the_graph
+ * @return PwrDumpGraphJson::json
  */
-PwrDumpGraphJson::json PwrDumpGraphJson::dumpNodeInternalPower(PwrGraph* the_graph) {
+PwrDumpGraphJson::json PwrDumpGraphJson::dumpNodeInternalPower(
+    PwrGraph* the_graph) {
   json all_vertex_node_internal_power_array = json::array();
   auto& pwr_vertexes = the_graph->get_vertexes();
   for (auto& pwr_vertex : pwr_vertexes) {
@@ -413,16 +412,18 @@ PwrDumpGraphJson::json PwrDumpGraphJson::dumpNodeInternalPower(PwrGraph* the_gra
 
 /**
  * @brief for cell instance power arc, dump the arc power.
- * 
- * @param the_graph 
- * @return PwrDumpGraphJson::json 
+ *
+ * @param the_graph
+ * @return PwrDumpGraphJson::json
  */
-PwrDumpGraphJson::json PwrDumpGraphJson::dumpInstInternalPower(PwrGraph* the_graph) {
+PwrDumpGraphJson::json PwrDumpGraphJson::dumpInstInternalPower(
+    PwrGraph* the_graph) {
   json all_inst_arc_delay_array = json::array();
   auto& pwr_arcs = the_graph->get_arcs();
   for (auto& the_pwr_arc : pwr_arcs) {
     if (the_pwr_arc->isInstArc()) {
-      double internal_power = dynamic_cast<PwrInstArc*>(the_pwr_arc.get())->getInternalPower();
+      double internal_power =
+          dynamic_cast<PwrInstArc*>(the_pwr_arc.get())->getInternalPower();
       all_inst_arc_delay_array.push_back(internal_power);
     }
   }
@@ -431,32 +432,111 @@ PwrDumpGraphJson::json PwrDumpGraphJson::dumpInstInternalPower(PwrGraph* the_gra
 }
 
 /**
+ * @brief dump inst power arc feature.
+ *
+ * @param the_graph
+ * @return PwrDumpGraphJson::json
+ */
+PwrDumpGraphJson::json PwrDumpGraphJson::dumpInstPowerArcFeature(
+    PwrGraph* the_graph) {
+  auto& the_arcs = the_graph->get_arcs();
+  json all_inst_arc_lib_data_array = json::array();
+
+  for (auto& the_arc : the_arcs) {
+    if (the_arc->isInstArc()) {
+      json one_inst_arc_table_array = json::array();
+      auto* the_pwr_arc_set =
+          dynamic_cast<PwrInstArc*>(the_arc.get())->get_power_arc_set();
+      // for skywater130, assume only one power arc.
+      auto* the_pwr_arc = the_pwr_arc_set->front();
+      auto* power_model = dynamic_cast<LibPowerTableModel*>(
+          the_pwr_arc->get_power_table_model());
+      auto& power_tables = power_model->get_tables();
+
+      for (auto& power_table : power_tables) {
+        // copy axies
+        if (power_table) {
+          double is_valid = 1.0;
+          one_inst_arc_table_array.push_back(is_valid);
+          auto& table_axes = power_table->get_axes();
+          for (auto& table_axis : table_axes) {
+            auto& axis_values = table_axis->get_axis_values();
+            for (auto& axis_value : axis_values) {
+              double data_value = axis_value->getFloatValue();
+              one_inst_arc_table_array.push_back(data_value);
+            }
+          }
+        } else {
+          double is_valid = 0.0;
+          one_inst_arc_table_array.push_back(is_valid);
+          // hard code 2 axis, 7*2 data
+          for (int i = 0; i < 7 * 2; i++) {
+            double data_value = 0.0;
+            one_inst_arc_table_array.push_back(data_value);
+          }
+        }
+      }
+
+      // copy table values
+      for (auto& power_table : power_tables) {
+        if (power_table) {
+          auto& table_values = power_table->get_table_values();
+          for (auto& table_value : table_values) {
+            one_inst_arc_table_array.push_back(table_value->getFloatValue());
+          }
+        } else {
+          for (int i = 0; i < 7; ++i) {
+            double data_value = 0.0;
+            one_inst_arc_table_array.push_back(data_value);
+          }
+        }
+      }
+
+      all_inst_arc_lib_data_array.push_back(one_inst_arc_table_array);
+    }
+  }
+
+  return all_inst_arc_lib_data_array;
+}
+
+/**
  * @brief dump the power graph json for power predict.
- * 
- * @param the_graph 
- * @return unsigned 
+ *
+ * @param the_graph
+ * @return unsigned
  */
 unsigned PwrDumpGraphJson::operator()(PwrGraph* the_graph) {
   LOG_INFO << "dump graph json start";
   auto* the_sta_graph = the_graph->get_sta_graph();
-  ista::StaDumpGraphJson dump_graph_json(_json_file);
+  ista::StaDumpGraphJson dump_sta_graph_json(_json_file);
 
   unsigned num_nodes = the_graph->numVertex();
   _json_file["num_nodes"] = num_nodes;
 
-  _json_file["edges"] = dump_graph_json.dumpEdges(the_sta_graph);
-  
+  _json_file["edges"] = dump_sta_graph_json.dumpEdges(the_sta_graph);
+
   // dump node features
   auto n_node_features = dumpNodeFeature(the_graph);
+  auto n_internal_power = dumpNodeInternalPower(the_graph);
   auto n_net_power = dumpNodeNetPower(the_graph);
 
   _json_file["node_features"]["nf"] = n_node_features;
-  _json_file["node_features"]["n_net_powers"] = n_node_features;
+  _json_file["node_features"]["n_internal_powers"] = n_internal_power;
+  _json_file["node_features"]["n_net_powers"] = n_net_power;
 
   // dump arc features
   auto e_inst_arc_internal_power = dumpInstInternalPower(the_graph);
-  _json_file["edge_features"]["e_inst_arc_internal_power"] = e_inst_arc_internal_power;
+  auto e_net_in_arc_features =
+      dump_sta_graph_json.dumpNetInArcFeature(the_sta_graph);
+  auto e_net_out_arc_features =
+      dump_sta_graph_json.dumpNetOutArcFeature(the_sta_graph);
+  auto e_inst_pwr_arc_features = dumpInstPowerArcFeature(the_graph);
 
+  _json_file["edge_features"]["cell_out"]["e_inst_arc_internal_power"] =
+      e_inst_arc_internal_power;
+  _json_file["edge_features"]["cell_out"]["ef"] = e_inst_pwr_arc_features;
+  _json_file["edge_features"]["net_in"]["ef"] = e_net_in_arc_features;
+  _json_file["edge_features"]["net_out"]["ef"] = e_net_out_arc_features;
 
   LOG_INFO << "dump graph json end";
   return 1;
