@@ -17,6 +17,7 @@
 
 #include "vec_feature_statis.h"
 
+#include <cmath>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -78,20 +79,26 @@ void VecFeatureStatis::feature_graph()
     auto* net_feature = vec_net.get_feature(true);
 
     std::string net_name = _layout->findNetName(it->first);
-    net_feature->aspect_ratio = CONGESTION_API_INST->findAspectRatio(net_name);
-    net_feature->width = CONGESTION_API_INST->findBBoxWidth(net_name);
-    net_feature->height = CONGESTION_API_INST->findBBoxHeight(net_name);
-    net_feature->area = CONGESTION_API_INST->findBBoxArea(net_name);
-    net_feature->l_ness = CONGESTION_API_INST->findLness(net_name);
-    net_feature->rsmt = WIRELENGTH_API_INST->findNetFLUTE(net_name);
+    
+    net_feature->place_feature.pin_num = CONGESTION_API_INST->findPinNumber(net_name);
+    net_feature->place_feature.aspect_ratio = CONGESTION_API_INST->findAspectRatio(net_name);
+    net_feature->place_feature.width = CONGESTION_API_INST->findBBoxWidth(net_name);
+    net_feature->place_feature.height = CONGESTION_API_INST->findBBoxHeight(net_name);
+    net_feature->place_feature.area = CONGESTION_API_INST->findBBoxArea(net_name);
+    net_feature->place_feature.l_ness = CONGESTION_API_INST->findLness(net_name);
+    net_feature->place_feature.rsmt = WIRELENGTH_API_INST->findNetFLUTE(net_name);
+    net_feature->place_feature.hpwl = net_feature->place_feature.width + net_feature->place_feature.height;
 
-    /// 初始化 layer_ratio
-    int16_t min_order = INT8_MAX;  // 记录最小层
-    int16_t max_order = INT8_MIN;  // 记录最大层
+    /// init layer_ratio
+    int16_t min_order = INT8_MAX;  // record  minimum layer
+    int16_t max_order = INT8_MIN;  // record  maximum layer
     int layer_order_top = layout_layers.get_layer_order_top();
     int layer_order_bottom = layout_layers.get_layer_order_bottom();
-    int num_layers = layer_order_top - layer_order_bottom + 1;  // 总布线层数
-    net_feature->layer_ratio = std::vector<int>(num_layers, 0);
+    int num_layers = layer_order_top - layer_order_bottom + 1;  // total number of layers
+    net_feature->layer_ratio = std::vector<float>(num_layers, 0.0f);
+    
+    std::vector<double> layer_wire_length(num_layers, 0.0);
+    double total_wire_length = 0.0;
 
     for (auto& wire : vec_net.get_wires()) {
       auto* wire_feature = wire.get_feature(true);
@@ -103,14 +110,8 @@ void VecFeatureStatis::feature_graph()
           auto& grid = layout_layer->get_grid();
           auto layer_name = layout_layer->get_layer_name();
 
-          /// 更新最小层和最大层
           min_order = std::min(min_order, order);
           max_order = std::max(max_order, order);
-          /// 更新 layer_ratio
-          if (order >= layer_order_bottom && order <= layer_order_top) {
-            int layer_index = order - layer_order_bottom;  // 计算层的索引
-            net_feature->layer_ratio[layer_index] = 1;     // 设置为 1，表示该层有线经过
-          }
 
           /// set feature
           wire_feature->wire_width = layout_layer->get_wire_width();
@@ -155,8 +156,15 @@ void VecFeatureStatis::feature_graph()
 
           int horizontal_len = (max_col - min_col) * gridInfoInst.x_step;
           int vertical_len = (max_row - min_row) * gridInfoInst.y_step;
+          double segment_length = horizontal_len + vertical_len;
+          
+          if (order >= layer_order_bottom && order <= layer_order_top) {
+            int layer_index = order - layer_order_bottom; 
+            layer_wire_length[layer_index] += segment_length;
+            total_wire_length += segment_length;
+          }
 
-          wire_feature->wire_len += (horizontal_len + vertical_len);
+          wire_feature->wire_len += segment_length;
           wire_feature->wire_density = wire_feature->wire_len * wire_feature->wire_width / static_cast<double>(net_feature->area);
 
           /// some feature label on node
@@ -179,18 +187,37 @@ void VecFeatureStatis::feature_graph()
       net_feature->urx = gridInfoInst.calculate_x(net_col_max);
       net_feature->lly = gridInfoInst.calculate_y(net_row_min);
       net_feature->ury = gridInfoInst.calculate_y(net_row_max);
-      net_feature->fanout = vec_net.get_pin_ids().size() - 1;
+      net_feature->width = net_feature->urx - net_feature->llx;
+      net_feature->height = net_feature->ury - net_feature->lly;
+      net_feature->area = net_feature->width * net_feature->height;
+
+      if (net_feature->width >= net_feature->height && net_feature->height != 0) {
+        net_feature->aspect_ratio = std::round(net_feature->width / static_cast<double>(net_feature->height));
+      } else if (net_feature->height > net_feature->width && net_feature->width != 0) {
+        net_feature->aspect_ratio = std::round(net_feature->height / static_cast<double>(net_feature->width));
+      } 
     }
 
-    /// 计算 BBox体积
+    if (total_wire_length > 0) {
+      for (int i = 0; i < num_layers; ++i) {
+        double ratio = layer_wire_length[i] / total_wire_length;
+        net_feature->layer_ratio[i] = static_cast<float>(std::round(ratio * 100.0) / 100.0);
+      }
+    } else {
+      for (int i = 0; i < num_layers; ++i) {
+        net_feature->layer_ratio[i] = 0.0f;
+      }
+    }
+    
+    /// calculate volume
     if (min_order != INT32_MAX && max_order != INT32_MIN) {
       int total_height = (max_order - min_order);
       if (total_height == 0) {
-        total_height = 1;  // 如果只在一层，层高为单层高度
+        total_height = 1;  // if only one layer, set height to 1
       }
       net_feature->volume = net_feature->area * total_height;
     } else {
-      net_feature->volume = 0;  // 如果没有有效的层，体积为 0
+      net_feature->volume = 0;
     }
 
     if (i % 1000 == 0) {
@@ -221,31 +248,17 @@ void VecFeatureStatis::feature_patch()
   omp_lock_t lck;
   omp_init_lock(&lck);
 
-  // 评估器特征计算，返回的是 patch_id 和 value 的 map
+  // key is patch_id, value is the corresponding map value.
   std::map<int, double> cell_power_map = TimingPower_API_INST->patchPowerMap(patch_xy_map);
   std::map<int, double> cell_timing_map = TimingPower_API_INST->patchTimingMap(patch_xy_map);
   std::map<int, double> cell_ir_map = TimingPower_API_INST->patchIRDropMap(patch_xy_map);
-
   std::map<int, int> pin_density_map = DENSITY_API_INST->patchPinDensity(patch_xy_map);
-  LOG_INFO << "finish pin_density_map, runtime: " << stats.elapsedRunTime();
-
   std::map<int, double> cell_density_map = DENSITY_API_INST->patchCellDensity(patch_xy_map);
-  LOG_INFO << "finish cell_density_map, runtime: " << stats.elapsedRunTime();
-
   std::map<int, double> net_density_map = DENSITY_API_INST->patchNetDensity(patch_xy_map);
-  LOG_INFO << "finish net_density_map, runtime: " << stats.elapsedRunTime();
-
   std::map<int, int> macro_margin_map = DENSITY_API_INST->patchMacroMargin(patch_xy_map);
-  LOG_INFO << "finish macro_margin_map, runtime: " << stats.elapsedRunTime();
-
   std::map<int, double> rudy_congestion_map = CONGESTION_API_INST->patchRUDYCongestion(patch_xy_map);
-  LOG_INFO << "finish rudy_congestion_map, runtime: " << stats.elapsedRunTime();
-
   std::map<int, double> egr_congestion_map = CONGESTION_API_INST->patchEGRCongestion(patch_xy_map);
-  LOG_INFO << "finish egr_congestion_map, runtime: " << stats.elapsedRunTime();
-
   std::map<int, std::map<std::string, double>> layer_congestion_map = CONGESTION_API_INST->patchLayerEGRCongestion(patch_xy_map);
-  LOG_INFO << "finish layer_egr_congestion_map, runtime: " << stats.elapsedRunTime();
 
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < (int) patchs.size(); ++i) {
@@ -254,7 +267,6 @@ void VecFeatureStatis::feature_patch()
     auto& patch_id = it->first;
     auto& patch = it->second;
 
-    // 根据 patch_id 获取 patch feature
     patch.pin_density = pin_density_map[patch_id];
     patch.cell_density = cell_density_map[patch_id];
     patch.net_density = net_density_map[patch_id];
@@ -262,7 +274,6 @@ void VecFeatureStatis::feature_patch()
     patch.RUDY_congestion = rudy_congestion_map[patch_id];
     patch.EGR_congestion = egr_congestion_map[patch_id];
 
-    // // timing, power, ir drop map
     auto cell_timing_map_find = cell_timing_map.find(patch_id);
     if (cell_timing_map_find != cell_timing_map.end()) {
       patch.timing_map = cell_timing_map_find->second;
@@ -270,17 +281,17 @@ void VecFeatureStatis::feature_patch()
 
     auto cell_power_map_find = cell_power_map.find(patch_id);
     if (cell_power_map_find != cell_power_map.end()) {
-      patch.power_map = cell_power_map[patch_id];
+      patch.power_map = cell_power_map_find->second;
     }
 
     auto cell_ir_map_find = cell_ir_map.find(patch_id);
     if (cell_ir_map_find != cell_ir_map.end()) {
-      patch.ir_drop_map = cell_ir_map[patch_id];
+      patch.ir_drop_map = cell_ir_map_find->second;
     }
 
     for (auto& [layer_id, patch_layer] : patch.get_layer_map()) {
       patch_layer.wire_width = layout_layers.findLayoutLayer(layer_id)->get_wire_width();
-      // 获取每一层对应patch的拥塞值
+      // obtain congestion value for each layer in the patch
       std::string layer_name = layout_layers.findLayoutLayer(layer_id)->get_layer_name();
       patch_layer.congestion = layer_congestion_map[patch_id][layer_name];
 

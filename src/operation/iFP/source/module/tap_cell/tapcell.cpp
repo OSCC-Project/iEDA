@@ -40,6 +40,10 @@ bool TapCellPlacer::tapCells(double distance, std::string tapcell_name, std::str
     auto idb_layout = dmInst->get_idb_layout();
     auto core_site = idb_layout->get_sites()->get_core_site();
 
+    if (core_site == nullptr) {
+      return false;
+    }
+
     if (inst_space % core_site->get_width() == 0) {
       return true;
     } else {

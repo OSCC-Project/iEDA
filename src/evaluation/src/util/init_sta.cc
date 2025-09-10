@@ -1148,7 +1148,8 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
   std::thread t1([&]() {
     json j = json::array();
     for (unsigned node_id = 0; auto& node : timing_wire_graph._nodes) {
-      j.push_back({{"id",  Str::printf("node_%d", node_id++)}, {"name", node._name}, {"is_pin", node._is_pin}, {"is_port", node._is_port}});
+      std::string node_id_str = "node_" + std::to_string(node_id++);
+      j.push_back({{"id",  node_id_str}, {"name", node._name}, {"is_pin", node._is_pin}, {"is_port", node._is_port}});
     }
     nodes_json = j;
   });
@@ -1157,7 +1158,8 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
   std::thread t2([&]() {
     json j = json::array();
     for (unsigned edge_id = 0; auto& edge : timing_wire_graph._edges) {
-      j.push_back({{"id",  Str::printf("edge_%d", edge_id++)}, {"from_node", edge._from_node}, {"to_node", edge._to_node}, {"is_net_edge", edge._is_net_edge}});
+      std::string edge_id_str = "edge_" + std::to_string(edge_id++);
+      j.push_back({{"id",  edge_id_str}, {"from_node", edge._from_node}, {"to_node", edge._to_node}, {"is_net_edge", edge._is_net_edge}});
     }
     edges_json = j;
   });
@@ -1191,7 +1193,8 @@ void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, c
   std::thread t1([&]() {
     json j = json::array();
     for (unsigned node_id = 0; auto& node : timing_instance_graph._nodes) {
-      j.push_back({{"id",  Str::printf("node_%d", node_id++)}, {"name", node._name}});
+      std::string id_str = "node_" + std::to_string(node_id++);
+      j.push_back({{"id", id_str}, {"name", node._name}});
     }
     nodes_json = j;
   });
@@ -1200,7 +1203,8 @@ void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, c
   std::thread t2([&]() {
     json j = json::array();
     for (unsigned edge_id = 0; auto& edge : timing_instance_graph._edges) {
-      j.push_back({{"id",  Str::printf("edge_%d", edge_id++)}, {"from_node", edge._from_node}, {"to_node", edge._to_node}});
+      std::string id_str = "edge_" + std::to_string(edge_id++);
+      j.push_back({{"id", id_str}, {"from_node", edge._from_node}, {"to_node", edge._to_node}});
     }
     edges_json = j;
   });

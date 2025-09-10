@@ -124,15 +124,23 @@ bool VecLayoutFileIO::saveJsonNets(bool batch_mode)
             json_feature["power"] = net_feature->power;
             json_feature["delay"] = net_feature->delay;
             json_feature["slew"] = net_feature->slew;
-            json_feature["fanout"] = net_feature->fanout;
             json_feature["aspect_ratio"] = net_feature->aspect_ratio;
             json_feature["width"] = net_feature->width;
             json_feature["height"] = net_feature->height;
             json_feature["area"] = net_feature->area;
             json_feature["volume"] = net_feature->volume;
-            json_feature["l_ness"] = net_feature->l_ness;
             json_feature["layer_ratio"] = net_feature->layer_ratio;
-            json_feature["rsmt"] = net_feature->rsmt;
+            // place_feature
+            json json_place_feature = {};
+            json_place_feature["pin_num"] = net_feature->place_feature.pin_num;
+            json_place_feature["aspect_ratio"] = net_feature->place_feature.aspect_ratio;
+            json_place_feature["width"] = net_feature->place_feature.width;
+            json_place_feature["height"] = net_feature->place_feature.height;
+            json_place_feature["area"] = net_feature->place_feature.area;
+            json_place_feature["l_ness"] = net_feature->place_feature.l_ness;
+            json_place_feature["hpwl"] = net_feature->place_feature.hpwl;
+            json_place_feature["rsmt"] = net_feature->place_feature.rsmt;
+            json_feature["place_feature"] = json_place_feature;
           }
           json_net["feature"] = json_feature;
         }
@@ -409,7 +417,6 @@ bool VecLayoutFileIO::saveJsonPatchs(bool batch_mode)
         json_patch["row_max"] = patch.rowIdMax;
         json_patch["col_min"] = patch.colIdMin;
         json_patch["col_max"] = patch.colIdMax;
-        json_patch["area"] = area;
         json_patch["cell_density"] = patch.cell_density;
         json_patch["pin_density"] = patch.pin_density;
         json_patch["net_density"] = patch.net_density;
@@ -494,7 +501,7 @@ bool VecLayoutFileIO::saveJsonPatchs(bool batch_mode)
                   json_wire["feature"] = json_feature;
                 }
 
-                /// paths
+                /// paths   
                 {
                   auto& paths = wire.get_paths();
                   json_wire["path_num"] = paths.size();
@@ -761,8 +768,8 @@ bool VecLayoutFileIO::saveJsonInstances()
       json_inst["id"] = vec_inst.id;
       json_inst["cell_id"] = vec_inst.cell_id;
       json_inst["name"] = vec_inst.name;
-      json_inst["x"] = vec_inst.x;
-      json_inst["y"] = vec_inst.y;
+      json_inst["cx"] = vec_inst.cx;
+      json_inst["cy"] = vec_inst.cy;
       json_inst["width"] = vec_inst.width;
       json_inst["height"] = vec_inst.height;
       json_inst["llx"] = vec_inst.llx;

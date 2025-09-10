@@ -406,8 +406,8 @@ void VecLayoutInit::initInstances()
     vec_inst.cell_id = cell_id;
     vec_inst.name = idb_inst->get_name();
 
-    vec_inst.x = idb_inst->get_coordinate()->get_x();
-    vec_inst.y = idb_inst->get_coordinate()->get_y();
+    vec_inst.cx = idb_inst->get_bounding_box()->get_middle_point_x();
+    vec_inst.cy = idb_inst->get_bounding_box()->get_middle_point_y();
 
     vec_inst.width = idb_inst->get_cell_master()->get_width();
     vec_inst.height = idb_inst->get_cell_master()->get_height();
