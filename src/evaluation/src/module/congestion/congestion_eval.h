@@ -23,7 +23,6 @@ struct NetMetadata
   double hor_rudy, ver_rudy;  // 预计算的RUDY因子
 };
 
-// 辅助哈希函数
 struct CongestionPairHash
 {
   template <typename T1, typename T2>
