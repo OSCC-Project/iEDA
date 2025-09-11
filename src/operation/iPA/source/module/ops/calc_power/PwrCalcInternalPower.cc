@@ -315,16 +315,24 @@ double PwrCalcInternalPower::calcClockPinPower(Instance* inst, Pin* clock_pin,
     // rise power
     auto rise_slew = (*the_clock_sta_vertex)
                          ->getSlewNs(AnalysisMode::kMax, TransType::kRise);
-    LOG_FATAL_IF(!rise_slew)
-        << (*the_clock_sta_vertex)->getName() << " rise slew is not exist.";
+    if (!rise_slew) {
+      LOG_ERROR_IF(!rise_slew)
+          << (*the_clock_sta_vertex)->getName() << " rise slew is not exist.";
+      rise_slew = 0.0;
+    }
+
     double rise_power =
         internal_power->gatePower(TransType::kRise, *rise_slew, std ::nullopt);
     double rise_power_mw = lib_cell->convertTablePowerToMw(rise_power);
     // fall power
     auto fall_slew = (*the_clock_sta_vertex)
                          ->getSlewNs(AnalysisMode::kMax, TransType::kFall);
-    LOG_FATAL_IF(!rise_slew)
-        << (*the_clock_sta_vertex)->getName() << " fall slew is not exist.";
+    if (!fall_slew) {
+      LOG_ERROR_IF(!fall_slew)
+          << (*the_clock_sta_vertex)->getName() << " fall slew is not exist.";
+      fall_slew = 0.0;
+    }
+
     double fall_power =
         internal_power->gatePower(TransType::kFall, *fall_slew, std ::nullopt);
     double fall_power_mw = lib_cell->convertTablePowerToMw(fall_power);
@@ -475,7 +483,7 @@ double PwrCalcInternalPower::calcCombInternalPower(Instance* inst) {
       /*calc input port power*/
       double pin_internal_power =
           calcCombInputPinPower(inst, pin, input_sum_toggle, output_pin_toggle);
-          
+
       the_pwr_vertex->set_internal_power(pin_internal_power);
       inst_internal_power += pin_internal_power;
     }
@@ -526,8 +534,7 @@ double PwrCalcInternalPower::calcSeqInternalPower(Instance* inst) {
       /*calc input port power*/
       if ((*the_sta_vertex)->is_clock()) {
         /*calc clk power*/
-        pin_internal_power =
-            calcClockPinPower(inst, pin, output_pin_toggle);
+        pin_internal_power = calcClockPinPower(inst, pin, output_pin_toggle);
         inst_internal_power += pin_internal_power;
       } else {
         pin_internal_power = calcSeqInputPinPower(inst, pin);
@@ -540,7 +547,7 @@ double PwrCalcInternalPower::calcSeqInternalPower(Instance* inst) {
       /*calc output port power*/
       double pin_internal_power = calcOutputPinPower(inst, pin);
       inst_internal_power += pin_internal_power;
-    } 
+    }
   }
 
   return inst_internal_power;

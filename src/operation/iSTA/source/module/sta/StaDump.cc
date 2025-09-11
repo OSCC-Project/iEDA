@@ -687,7 +687,10 @@ StaDumpGraphJson::json StaDumpGraphJson::dumpNodeNetDelay(StaGraph* the_graph) {
     std::string obj_name = the_obj->getFullName();
     auto* the_net = the_obj->get_net();
     auto* rc_net = getSta()->getRcNet(the_net);
-    auto* rc_tree = rc_net->rct();
+    RcTree* rc_tree = nullptr;
+    if (rc_net) {
+      rc_tree = rc_net->rct();
+    }
 
     double max_rise_delay = 0.0;
     double max_fall_delay = 0.0;
