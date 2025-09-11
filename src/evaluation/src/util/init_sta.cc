@@ -1430,65 +1430,48 @@ std::map<int, double> InitSTA::patchTimingMap(std::map<int, std::pair<std::pair<
   auto* idb_adapter = STA_INST->getIDBAdapter();
   auto dbu = idb_adapter->get_dbu();
 
-  // 网格索引，减小搜索空间
-  int64_t min_x = INT64_MAX;
-  int64_t max_x = INT64_MIN;
-  int64_t min_y = INT64_MAX;
-  int64_t max_y = INT64_MIN;
-  for (const auto& [coord, _] : inst_timing_map) {
-    int64_t x = static_cast<int64_t>(coord.first * dbu);
-    int64_t y = static_cast<int64_t>(coord.second * dbu);
-    min_x = std::min(min_x, x);
-    max_x = std::max(max_x, x);
-    min_y = std::min(min_y, y);
-    max_y = std::max(max_y, y);
-  }
-
-  // 启发式确定网格大小
-  int64_t grid_size_x = (max_x - min_x) / 100;
-  int64_t grid_size_y = (max_y - min_y) / 100;
-
-  // 创建网格: 二维网格，每个网格内存有对应的insts
-  std::vector<std::vector<std::vector<std::pair<std::pair<int64_t, int64_t>, double>>>> grid;
-  int64_t grid_width = (max_x - min_x) / grid_size_x + 1;
-  int64_t grid_height = (max_y - min_y) / grid_size_y + 1;
-  grid.resize(grid_width, std::vector<std::vector<std::pair<std::pair<int64_t, int64_t>, double>>>(grid_height));
-
-  // 填充网格
+  // 预处理：将实例坐标转换并按x坐标排序，提升查找性能
+  std::vector<std::tuple<int64_t, int64_t, double>> sorted_instances;
+  sorted_instances.reserve(inst_timing_map.size());
+  
   for (const auto& [coord, slack] : inst_timing_map) {
-    int64_t x = static_cast<int64_t>(coord.first * dbu);
-    int64_t y = static_cast<int64_t>(coord.second * dbu);
-    int64_t grid_x = (x - min_x) / grid_size_x;
-    int64_t grid_y = (y - min_y) / grid_size_y;
-    grid[grid_x][grid_y].push_back({{x, y}, slack});
+    int64_t inst_x = static_cast<int64_t>(coord.first * dbu);
+    int64_t inst_y = static_cast<int64_t>(coord.second * dbu);
+    sorted_instances.emplace_back(inst_x, inst_y, slack);
   }
+  
+  // 按x坐标排序，便于后续二分查找
+  std::sort(sorted_instances.begin(), sorted_instances.end());
 
   for (const auto& [patch_id, coord] : patch) {
     auto [l_range, u_range] = coord;
     const int64_t patch_lx = static_cast<int64_t>(l_range.first);
     const int64_t patch_ly = static_cast<int64_t>(l_range.second);
-    const int64_t patch_ux = static_cast<int64_t>(u_range.first);
-    const int64_t patch_uy = static_cast<int64_t>(u_range.second);
-
-    // 计算覆盖的网格范围
-    int64_t start_grid_x = std::max(static_cast<int64_t>(0), (patch_lx - min_x) / grid_size_x);
-    int64_t end_grid_x = std::min(grid_width - 1, (patch_ux - min_x) / grid_size_x);
-    int64_t start_grid_y = std::max(static_cast<int64_t>(0), (patch_ly - min_y) / grid_size_y);
-    int64_t end_grid_y = std::min(grid_height - 1, (patch_uy - min_y) / grid_size_y);
+     const int64_t patch_ux = static_cast<int64_t>(u_range.first);
+     const int64_t patch_uy = static_cast<int64_t>(u_range.second);
 
     double min_slack = std::numeric_limits<double>::max();
+    bool found_instance = false;
 
-    // 只检查覆盖的网格
-    for (int64_t gx = start_grid_x; gx <= end_grid_x; ++gx) {
-      for (int64_t gy = start_grid_y; gy <= end_grid_y; ++gy) {
-        for (const auto& [inst_coord, inst_slack] : grid[gx][gy]) {
-          int64_t inst_x = inst_coord.first;
-          int64_t inst_y = inst_coord.second;
-          if (patch_lx <= inst_x && inst_x <= patch_ux && patch_ly <= inst_y && inst_y <= patch_uy) {
-            min_slack = std::min(min_slack, inst_slack);
-          }
-        }
+    // 使用二分查找确定x坐标范围，减少需要检查的实例数量
+    auto lower_it = std::lower_bound(sorted_instances.begin(), sorted_instances.end(),
+                                     std::make_tuple(patch_lx, INT64_MIN, 0.0));
+    auto upper_it = std::upper_bound(sorted_instances.begin(), sorted_instances.end(),
+                                     std::make_tuple(patch_ux, INT64_MAX, 0.0));
+    
+    // 只检查x坐标在范围内的实例
+    for (auto it = lower_it; it != upper_it; ++it) {
+      int64_t inst_y = std::get<1>(*it);
+      double slack = std::get<2>(*it);
+      
+      if (patch_ly <= inst_y && inst_y <= patch_uy) {
+        min_slack = std::min(min_slack, slack);
+        found_instance = true;
       }
+    }
+
+    if (!found_instance) {
+      min_slack = 0.0;
     }
 
     patch_timing_map[patch_id] = min_slack;
@@ -1515,64 +1498,41 @@ std::map<int, double> InitSTA::patchPowerMap(std::map<int, std::pair<std::pair<i
   auto* idb_adapter = STA_INST->getIDBAdapter();
   auto dbu = idb_adapter->get_dbu();
 
-  // 网格索引，减小搜索空间
-  int64_t min_x = INT64_MAX;
-  int64_t max_x = INT64_MIN;
-  int64_t min_y = INT64_MAX;
-  int64_t max_y = INT64_MIN;
-  for (const auto& [coord, _] : inst_power_map) {
-    int64_t x = static_cast<int64_t>(coord.first * dbu);
-    int64_t y = static_cast<int64_t>(coord.second * dbu);
-    min_x = std::min(min_x, x);
-    max_x = std::max(max_x, x);
-    min_y = std::min(min_y, y);
-    max_y = std::max(max_y, y);
-  }
-
-  // 启发式确定网格大小
-  int64_t grid_size_x = (max_x - min_x) / 100;
-  int64_t grid_size_y = (max_y - min_y) / 100;
-
-  // 创建网格: 二维网格，每个网格内存有对应的insts
-  std::vector<std::vector<std::vector<std::pair<std::pair<int64_t, int64_t>, double>>>> grid;
-  int64_t grid_width = (max_x - min_x) / grid_size_x + 1;
-  int64_t grid_height = (max_y - min_y) / grid_size_y + 1;
-  grid.resize(grid_width, std::vector<std::vector<std::pair<std::pair<int64_t, int64_t>, double>>>(grid_height));
-
-  // 填充网格
+  // 预处理：将实例坐标转换并按x坐标排序，提升查找性能
+  std::vector<std::tuple<int64_t, int64_t, double>> sorted_instances;
+  sorted_instances.reserve(inst_power_map.size());
+  
   for (const auto& [coord, power] : inst_power_map) {
-    int64_t x = static_cast<int64_t>(coord.first * dbu);
-    int64_t y = static_cast<int64_t>(coord.second * dbu);
-    int64_t grid_x = (x - min_x) / grid_size_x;
-    int64_t grid_y = (y - min_y) / grid_size_y;
-    grid[grid_x][grid_y].push_back({{x, y}, power});
+    int64_t inst_x = static_cast<int64_t>(coord.first * dbu);
+    int64_t inst_y = static_cast<int64_t>(coord.second * dbu);
+    sorted_instances.emplace_back(inst_x, inst_y, power);
   }
+  
+  // 按x坐标排序，便于后续二分查找
+  std::sort(sorted_instances.begin(), sorted_instances.end());
 
   for (const auto& [patch_id, coord] : patch) {
     auto [l_range, u_range] = coord;
     const int64_t patch_lx = static_cast<int64_t>(l_range.first);
-    const int64_t patch_ly = static_cast<int64_t>(l_range.second);
-    const int64_t patch_ux = static_cast<int64_t>(u_range.first);
-    const int64_t patch_uy = static_cast<int64_t>(u_range.second);
-
-    // 计算覆盖的网格范围
-    int64_t start_grid_x = std::max(static_cast<int64_t>(0), (patch_lx - min_x) / grid_size_x);
-    int64_t end_grid_x = std::min(grid_width - 1, (patch_ux - min_x) / grid_size_x);
-    int64_t start_grid_y = std::max(static_cast<int64_t>(0), (patch_ly - min_y) / grid_size_y);
-    int64_t end_grid_y = std::min(grid_height - 1, (patch_uy - min_y) / grid_size_y);
+     const int64_t patch_ly = static_cast<int64_t>(l_range.second);
+     const int64_t patch_ux = static_cast<int64_t>(u_range.first);
+     const int64_t patch_uy = static_cast<int64_t>(u_range.second);
 
     double total_power = 0.0;
 
-    // 只检查覆盖的网格
-    for (int64_t gx = start_grid_x; gx <= end_grid_x; ++gx) {
-      for (int64_t gy = start_grid_y; gy <= end_grid_y; ++gy) {
-        for (const auto& [inst_coord, inst_power] : grid[gx][gy]) {
-          int64_t inst_x = inst_coord.first;
-          int64_t inst_y = inst_coord.second;
-          if (patch_lx <= inst_x && inst_x <= patch_ux && patch_ly <= inst_y && inst_y <= patch_uy) {
-            total_power += inst_power;
-          }
-        }
+    // 使用二分查找确定x坐标范围，减少需要检查的实例数量
+    auto lower_it = std::lower_bound(sorted_instances.begin(), sorted_instances.end(),
+                                     std::make_tuple(patch_lx, INT64_MIN, 0.0));
+    auto upper_it = std::upper_bound(sorted_instances.begin(), sorted_instances.end(),
+                                     std::make_tuple(patch_ux, INT64_MAX, 0.0));
+    
+    // 只检查x坐标在范围内的实例
+    for (auto it = lower_it; it != upper_it; ++it) {
+      int64_t inst_y = std::get<1>(*it);
+      double power = std::get<2>(*it);
+      
+      if (patch_ly <= inst_y && inst_y <= patch_uy) {
+        total_power += power;
       }
     }
 
@@ -1608,42 +1568,20 @@ std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<
   auto* idb_adapter = STA_INST->getIDBAdapter();
   auto dbu = idb_adapter->get_dbu();
 
-  // 网格索引，减小搜索空间
-  int64_t min_x = INT64_MAX;
-  int64_t max_x = INT64_MIN;
-  int64_t min_y = INT64_MAX;
-  int64_t max_y = INT64_MIN;
-  std::vector<std::tuple<int64_t, int64_t, double>> instances;
-  instances.reserve(instance_to_ir_drop.size());
-
+  // 预处理：将实例坐标转换并按x坐标排序，提升查找性能
+  std::vector<std::tuple<int64_t, int64_t, double>> sorted_instances;
+  sorted_instances.reserve(instance_to_ir_drop.size());
+  
   for (auto& [sta_inst, ir_drop] : instance_to_ir_drop) {
     auto coord = sta_inst->get_coordinate().value();
-    int64_t x = static_cast<int64_t>(coord.first * dbu);
-    int64_t y = static_cast<int64_t>(coord.second * dbu);
-    instances.emplace_back(x, y, ir_drop);
-    min_x = std::min(min_x, x);
-    max_x = std::max(max_x, x);
-    min_y = std::min(min_y, y);
-    max_y = std::max(max_y, y);
+    int64_t inst_x = static_cast<int64_t>(coord.first * dbu);
+    int64_t inst_y = static_cast<int64_t>(coord.second * dbu);
+    sorted_instances.emplace_back(inst_x, inst_y, ir_drop);
   }
-  // 启发式确定网格大小
-  int64_t grid_size_x = (max_x - min_x) / 100;
-  int64_t grid_size_y = (max_y - min_y) / 100;
+  
+  // 按x坐标排序，便于后续二分查找
+  std::sort(sorted_instances.begin(), sorted_instances.end());
 
-  // 创建网格
-  std::vector<std::vector<std::vector<std::pair<std::pair<int64_t, int64_t>, double>>>> grid;
-  int64_t grid_width = (max_x - min_x) / grid_size_x + 1;
-  int64_t grid_height = (max_y - min_y) / grid_size_y + 1;
-  grid.resize(grid_width, std::vector<std::vector<std::pair<std::pair<int64_t, int64_t>, double>>>(grid_height));
-
-  // 填充网格
-  for (const auto& [x, y, ir_drop] : instances) {
-    int64_t grid_x = (x - min_x) / grid_size_x;
-    int64_t grid_y = (y - min_y) / grid_size_y;
-    grid[grid_x][grid_y].push_back({{x, y}, ir_drop});
-  }
-
-  int processed_count = 0;
   for (const auto& [patch_id, coord] : patch) {
     auto [l_range, u_range] = coord;
     const int64_t patch_lx = static_cast<int64_t>(l_range.first);
@@ -1651,34 +1589,31 @@ std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<
     const int64_t patch_ux = static_cast<int64_t>(u_range.first);
     const int64_t patch_uy = static_cast<int64_t>(u_range.second);
 
-    // 计算覆盖的网格范围
-    int64_t start_grid_x = std::max(static_cast<int64_t>(0), (patch_lx - min_x) / grid_size_x);
-    int64_t end_grid_x = std::min(grid_width - 1, (patch_ux - min_x) / grid_size_x);
-    int64_t start_grid_y = std::max(static_cast<int64_t>(0), (patch_ly - min_y) / grid_size_y);
-    int64_t end_grid_y = std::min(grid_height - 1, (patch_uy - min_y) / grid_size_y);
-
     double max_ir_drop = 0.0;
+    bool found_instance = false;
 
-    // 只检查覆盖的网格
-    for (int64_t gx = start_grid_x; gx <= end_grid_x; ++gx) {
-      for (int64_t gy = start_grid_y; gy <= end_grid_y; ++gy) {
-        for (const auto& [inst_coord, inst_ir_drop] : grid[gx][gy]) {
-          int64_t inst_x = inst_coord.first;
-          int64_t inst_y = inst_coord.second;
-          if (patch_lx <= inst_x && inst_x <= patch_ux && patch_ly <= inst_y && inst_y <= patch_uy) {
-            max_ir_drop = std::max(max_ir_drop, inst_ir_drop);
-          }
-        }
+    // 使用二分查找确定x坐标范围，减少需要检查的实例数量
+    auto lower_it = std::lower_bound(sorted_instances.begin(), sorted_instances.end(),
+                                     std::make_tuple(patch_lx, INT64_MIN, 0.0));
+    auto upper_it = std::upper_bound(sorted_instances.begin(), sorted_instances.end(),
+                                     std::make_tuple(patch_ux, INT64_MAX, 0.0));
+    
+    // 只检查x坐标在范围内的实例
+    for (auto it = lower_it; it != upper_it; ++it) {
+      int64_t inst_y = std::get<1>(*it);
+      double ir_drop = std::get<2>(*it);
+      
+      if (patch_ly <= inst_y && inst_y <= patch_uy) {
+        max_ir_drop = std::max(max_ir_drop, ir_drop);
+        found_instance = true;
       }
     }
 
-    patch_ir_drop_map[patch_id] = max_ir_drop;
-
-    // 每处理5000个patch输出一次日志
-    processed_count++;
-    if (processed_count % 5000 == 0) {
-      LOG_INFO << "Processed " << processed_count << " patches out of " << patch.size();
+    if (!found_instance) {
+      max_ir_drop = 0.0;
     }
+
+    patch_ir_drop_map[patch_id] = max_ir_drop;
   }
 
   return patch_ir_drop_map;
