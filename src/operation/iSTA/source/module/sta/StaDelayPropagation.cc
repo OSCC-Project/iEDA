@@ -83,7 +83,8 @@ unsigned StaDelayPropagation::operator()(StaArc* the_arc) {
 
       if (the_arc->isInstArc()) {
         auto* lib_arc = dynamic_cast<StaInstArc*>(the_arc)->get_lib_arc();
-        auto* lib_arc_set = dynamic_cast<StaInstArc*>(the_arc)->get_lib_arc_set();
+        auto* lib_arc_set =
+            dynamic_cast<StaInstArc*>(the_arc)->get_lib_arc_set();
         /*The check arc is the end of the recursion .*/
         if (the_arc->isCheckArc()) {
           // Since slew is fitter accord trigger type, May be do not need below
@@ -103,7 +104,7 @@ unsigned StaDelayPropagation::operator()(StaArc* the_arc) {
             auto snk_slew_fs =
                 dynamic_cast<StaSlewData*>(snk_slew_data)->get_slew();
             auto snk_slew = FS_TO_NS(snk_slew_fs);
-            auto delay_values = lib_arc_set->getDelayOrConstrainCheckNs(
+            auto delay_values = lib_arc_set->getDelayOrConstrainCheckNs(trans_type,
                 snk_trans_type, in_slew, snk_slew);
             double delay_ns = analysis_mode == AnalysisMode::kMax
                                   ? delay_values.front()
@@ -115,30 +116,41 @@ unsigned StaDelayPropagation::operator()(StaArc* the_arc) {
         } else if (the_arc->isDelayArc()) {
           auto* rc_net = getSta()->getRcNet(the_net);
 
-          auto out_trans_type = lib_arc->isNegativeArc()
+          auto out_trans_type = the_arc->isNegativeArc()
                                     ? flip_trans_type(trans_type)
                                     : trans_type;
+          auto trans_to_index = [](TransType trans_type) -> int {
+            return static_cast<int>(trans_type) - 1;
+          };
 
-          auto load_pf = rc_net ? rc_net->load(analysis_mode, out_trans_type)
-                                : the_net->getLoad(analysis_mode, out_trans_type);
-          auto* the_lib = lib_arc->get_owner_cell()->get_owner_lib();
+          std::array<double, 2> load_array;  // rise, fall load.
 
-          double load{0};
-          if (the_lib->get_cap_unit() == CapacitiveUnit::kFF) {
-            load = PF_TO_FF(load_pf);
-          } else if (the_lib->get_cap_unit() == CapacitiveUnit::kPF) {
-            load = load_pf;
+          for (auto load_trans_type : {TransType::kRise, TransType::kFall}) {
+            auto load_pf =
+                rc_net ? rc_net->load(analysis_mode, out_trans_type)
+                       : the_net->getLoad(analysis_mode, out_trans_type);
+            auto* the_lib = lib_arc->get_owner_cell()->get_owner_lib();
+
+            double load{0};
+            if (the_lib->get_cap_unit() == CapacitiveUnit::kFF) {
+              load = PF_TO_FF(load_pf);
+            } else if (the_lib->get_cap_unit() == CapacitiveUnit::kPF) {
+              load = load_pf;
+            }
+
+            load_array[trans_to_index(load_trans_type)] = load;
           }
 
           // fix the timing type not match the trans type, which would lead to
           // crash.
-          if (!lib_arc->isMatchTimingType(out_trans_type)) {
+          if (!lib_arc_set->isMatchTimingType(out_trans_type)) {
             continue;
           }
-          
+
           // assure delay values sort by descending order.
-          auto delay_values = lib_arc_set->getDelayOrConstrainCheckNs(out_trans_type,
-                                                              in_slew, load);
+          auto delay_values = lib_arc_set->getDelayOrConstrainCheckNs(trans_type,
+              out_trans_type, in_slew,
+              load_array[trans_to_index(out_trans_type)]);
           double delay_ns = analysis_mode == AnalysisMode::kMax
                                 ? delay_values.front()
                                 : delay_values.back();
@@ -146,16 +158,20 @@ unsigned StaDelayPropagation::operator()(StaArc* the_arc) {
 
           construct_delay_data(analysis_mode, out_trans_type, the_arc, delay);
           /*The unate arc should split two.*/
-          if (!lib_arc->isUnateArc() || src_vertex->is_clock()) {
+          if (!the_arc->isUnateArc() || the_arc->isTwoTypeSenseArc() || src_vertex->is_clock()) {
             auto out_trans_type1 = flip_trans_type(trans_type);
 
             // fix the timing type not match the trans type, which would lead to
             // crash.
-            if (!lib_arc->isMatchTimingType(out_trans_type1)) {
+            if (!lib_arc_set->isMatchTimingType(out_trans_type1)) {
               continue;
             }
-            auto delay1_ns = lib_arc->getDelayOrConstrainCheckNs(
-                out_trans_type1, in_slew, load);
+            auto delay_values = lib_arc_set->getDelayOrConstrainCheckNs(trans_type,
+                out_trans_type1, in_slew,
+                load_array[trans_to_index(out_trans_type1)]);
+            double delay1_ns = analysis_mode == AnalysisMode::kMax
+                                  ? delay_values.front()
+                                  : delay_values.back();
             auto delay1 = NS_TO_FS(delay1_ns);
 
             construct_delay_data(analysis_mode, out_trans_type1, the_arc,

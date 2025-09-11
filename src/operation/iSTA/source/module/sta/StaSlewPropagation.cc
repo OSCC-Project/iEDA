@@ -69,7 +69,6 @@ unsigned StaSlewPropagation::operator()(StaArc* the_arc) {
       slew_data->set_slew(slew);
       slew_data->set_output_current_data(std::move(output_current_data));
     }
-
   };
 
   unsigned is_ok = 1;
@@ -85,11 +84,10 @@ unsigned StaSlewPropagation::operator()(StaArc* the_arc) {
   }
 
   auto* the_pin = dynamic_cast<Pin*>(obj);
-  LOG_FATAL_IF(!the_pin) << "obj " << obj->getFullName()
-                << " is not a pin";
+  LOG_FATAL_IF(!the_pin) << "obj " << obj->getFullName() << " is not a pin";
   auto* the_net = the_pin->get_net();
   LOG_FATAL_IF(!the_net) << "The pin " << the_pin->getFullName()
-                << " has not connect net.";
+                         << " has not connect net.";
 
   StaData* slew_data;
   FOREACH_SLEW_DATA(src_vertex, slew_data) {
@@ -112,19 +110,33 @@ unsigned StaSlewPropagation::operator()(StaArc* the_arc) {
       if (the_arc->isInstArc()) {
         auto* inst_arc = dynamic_cast<StaInstArc*>(the_arc);
         auto* lib_arc = inst_arc->get_lib_arc();
-        auto* the_lib = lib_arc->get_owner_cell()->get_owner_lib();
+        auto* lib_arc_set =
+            dynamic_cast<StaInstArc*>(the_arc)->get_lib_arc_set();
 
         auto out_trans_type =
-            lib_arc->isNegativeArc() ? flip_trans_type(trans_type) : trans_type;
+            the_arc->isNegativeArc() ? flip_trans_type(trans_type) : trans_type;
 
         auto* rc_net = getSta()->getRcNet(the_net);
-        auto load_pf = rc_net ? rc_net->load(analysis_mode, out_trans_type)
-                              : the_net->getLoad(analysis_mode, out_trans_type);
-        double load = load_pf;
-        if (the_lib->get_cap_unit() == CapacitiveUnit::kFF) {
-          load = PF_TO_FF(load_pf);
-        } else if (the_lib->get_cap_unit() == CapacitiveUnit::kPF) {
-          load = load_pf;
+        auto trans_to_index = [](TransType trans_type) -> int {
+          return static_cast<int>(trans_type) - 1;
+        };
+
+        std::array<double, 2> load_array;  // rise, fall load.
+
+        for (auto load_trans_type : {TransType::kRise, TransType::kFall}) {
+          auto load_pf = rc_net
+                             ? rc_net->load(analysis_mode, out_trans_type)
+                             : the_net->getLoad(analysis_mode, out_trans_type);
+          auto* the_lib = lib_arc->get_owner_cell()->get_owner_lib();
+
+          double load{0};
+          if (the_lib->get_cap_unit() == CapacitiveUnit::kFF) {
+            load = PF_TO_FF(load_pf);
+          } else if (the_lib->get_cap_unit() == CapacitiveUnit::kPF) {
+            load = load_pf;
+          }
+
+          load_array[trans_to_index(load_trans_type)] = load;
         }
 
         if (auto* arnoldi_net = dynamic_cast<ArnoldiNet*>(rc_net);
@@ -134,34 +146,45 @@ unsigned StaSlewPropagation::operator()(StaArc* the_arc) {
 
         // fix the timing type not match the trans type, which would lead to
         // crash.
-        if (!lib_arc->isMatchTimingType(out_trans_type)) {
+        if (!lib_arc_set->isMatchTimingType(out_trans_type)) {
           continue;
         }
 
-        auto out_slew_ns = lib_arc->getSlewNs(out_trans_type, in_slew, load);
+        auto slew_values =
+            lib_arc_set->getSlewNs(trans_type, out_trans_type, in_slew,
+                                   load_array[trans_to_index(out_trans_type)]);
+        double out_slew_ns = analysis_mode == AnalysisMode::kMax
+                                 ? slew_values.front()
+                                 : slew_values.back();
 
-        auto output_current =
-            lib_arc->getOutputCurrent(out_trans_type, in_slew, load);
+        auto output_current = lib_arc->getOutputCurrent(
+            out_trans_type, in_slew,
+            load_array[trans_to_index(out_trans_type)]);
 
         construct_slew_data(analysis_mode, out_trans_type, snk_vertex,
                             NS_TO_FS(out_slew_ns), std::move(output_current),
                             slew_data);
 
         /*The non-unate arc or tco should split two.*/
-        if (!lib_arc->isUnateArc() || src_vertex->is_clock()) {
+        if (!the_arc->isUnateArc() || the_arc->isTwoTypeSenseArc() || src_vertex->is_clock()) {
           auto out_trans_type1 = flip_trans_type(trans_type);
 
           // fix the timing type not match the trans type, which would lead to
           // crash.
-          if (!lib_arc->isMatchTimingType(out_trans_type1)) {
+          if (!lib_arc_set->isMatchTimingType(out_trans_type1)) {
             continue;
           }
 
-          auto out_slew1_ns =
-              lib_arc->getSlewNs(out_trans_type1, in_slew, load);
+          auto slew_values =
+              lib_arc_set->getSlewNs(trans_type, out_trans_type1, in_slew,
+                                 load_array[trans_to_index(out_trans_type1)]);
+          double out_slew1_ns = analysis_mode == AnalysisMode::kMax
+                                 ? slew_values.front()
+                                 : slew_values.back();
 
-          auto output_current1 =
-              lib_arc->getOutputCurrent(out_trans_type1, in_slew, load);
+          auto output_current1 = lib_arc->getOutputCurrent(
+              out_trans_type1, in_slew,
+              load_array[trans_to_index(out_trans_type1)]);
 
           construct_slew_data(analysis_mode, out_trans_type1, snk_vertex,
                               NS_TO_FS(out_slew1_ns),

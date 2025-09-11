@@ -59,6 +59,8 @@ class StaArc {
   virtual unsigned isPositiveArc() const { return 0; }
   virtual unsigned isNegativeArc() const { return 0; }
   virtual unsigned isUnateArc() const { return 0; }
+
+  virtual unsigned isTwoTypeSenseArc() const { return 0; }
   virtual unsigned isSetupArc() const { return 0; }
   virtual unsigned isHoldArc() const { return 0; }
   virtual unsigned isRecoveryArc() const { return 0; }
@@ -214,9 +216,19 @@ class StaInstArc : public StaArc {
   unsigned isRecoveryArc() const override { return _lib_arc->isRecoveryArc(); }
   unsigned isRemovalArc() const override { return _lib_arc->isRemovalArc(); }
 
-  unsigned isPositiveArc() const override { return _lib_arc->isPositiveArc(); }
-  unsigned isNegativeArc() const override { return _lib_arc->isNegativeArc(); }
-  unsigned isUnateArc() const override { return _lib_arc->isUnateArc(); }
+  unsigned isPositiveArc() const override {
+    return _lib_arc_set->isPositiveArc();
+  }
+  unsigned isNegativeArc() const override {
+    return _lib_arc_set->isNegativeArc();
+  }
+  unsigned isUnateArc() const override { 
+    return _lib_arc_set->isUnateArc();
+  }
+
+  unsigned isTwoTypeSenseArc() const override {
+    return _lib_arc_set->isTwoTypeSenseArcSet();
+  }
 
   unsigned isRisingEdgeCheck() const override {
     return _lib_arc->isRisingEdgeCheck();
@@ -245,9 +257,9 @@ class StaInstArc : public StaArc {
 #endif
 
  private:
-  LibArc* _lib_arc;  //!< The mapped to lib arc.
-  LibArcSet* _lib_arc_set;  //!< The mapped to lib arc set.
-  Instance* _inst;   //!< The owned inst.
+  LibArc* _lib_arc;         //!< The mapped to lib arc.
+  LibArcSet* _lib_arc_set = nullptr;  //!< The mapped to lib arc set.
+  Instance* _inst;          //!< The owned inst.
 
 #if CUDA_PROPAGATION
   Lib_Arc_GPU* _lib_gpu_arc = nullptr;  //!< The gpu lib arc.
