@@ -23,24 +23,6 @@ struct MarginGrid
   int32_t margin;
 };
 
-// 辅助哈希函数
-struct DensityPairHash {
-  template <class T1, class T2>
-  std::size_t operator () (const std::pair<T1,T2> &p) const {
-      auto h1 = std::hash<T1>{}(p.first);
-      auto h2 = std::hash<T2>{}(p.second);
-      return h1 ^ (h2 << 1);
-  }
-};
-
-// 网格索引结构体
-struct DensityGridIndex {
-  int grid_size_x = 2000; // 默认x方向网格大小
-  int grid_size_y = 2000; // 默认y方向网格大小
-  std::unordered_map<std::pair<int, int>, DensityCells, DensityPairHash> cell_grid;
-  std::unordered_map<std::pair<int, int>, DensityPins, DensityPairHash> pin_grid;
-  std::unordered_map<std::pair<int, int>, DensityNets, DensityPairHash> net_grid;
-};
 
 class DensityEval
 {
