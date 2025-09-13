@@ -10,5 +10,3 @@ target_include_directories(pnp-config
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
-
-set(CMAKE_BUILD_TYPE "debug")

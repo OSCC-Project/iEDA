@@ -43,7 +43,7 @@ class VecDataManager
   std::map<int, VecNet> getGraph(std::string path);
 
   bool checkData();
-  void saveData(const std::string dir);
+  void saveData(const std::string dir, bool batch_mode = true);
   bool readNetsToIDB(std::string dir);
   bool readNetsPatternToIDB(std::string path);
 

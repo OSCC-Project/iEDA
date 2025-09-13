@@ -5,4 +5,8 @@ target_link_libraries(ipl-module-topology_manager
         ipl-module-logger
 )
 
-target_include_directories(ipl-module-topology_manager PUBLIC ${iPL_TOPOLOGY_MANAGER})
+target_include_directories(ipl-module-topology_manager 
+PUBLIC 
+    ${iPL_TOPOLOGY_MANAGER}
+    ${iPL_SOURCE}
+)

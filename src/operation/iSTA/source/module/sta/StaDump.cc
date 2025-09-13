@@ -613,23 +613,21 @@ StaDumpGraphJson::json StaDumpGraphJson::dumpEdges(StaGraph* the_graph) {
   auto& the_arcs = the_graph->get_arcs();
   for (auto& the_arc : the_arcs) {
     if (the_arc->isDelayArc()) {
-    int src_id = vertex_id_map[the_arc->get_src()];
-    int snk_id = vertex_id_map[the_arc->get_snk()];
+      int src_id = vertex_id_map[the_arc->get_src()];
+      int snk_id = vertex_id_map[the_arc->get_snk()];
 
-    if (the_arc->isInstArc() && the_arc->isDelayArc()) {
-      edges["cell_out"]["src"].push_back(src_id);
-      edges["cell_out"]["dst"].push_back(snk_id);
-    } else if (the_arc->isNetArc()) {
-      edges["net_out"]["src"].push_back(src_id);
-      edges["net_out"]["dst"].push_back(snk_id);
+      if (the_arc->isInstArc() && the_arc->isDelayArc()) {
+        edges["cell_out"]["src"].push_back(src_id);
+        edges["cell_out"]["dst"].push_back(snk_id);
+      } else if (the_arc->isNetArc()) {
+        edges["net_out"]["src"].push_back(src_id);
+        edges["net_out"]["dst"].push_back(snk_id);
 
-      // reverse direction for net out
-      edges["net_in"]["src"].push_back(snk_id);
-      edges["net_in"]["dst"].push_back(src_id);
+        // reverse direction for net out
+        edges["net_in"]["src"].push_back(snk_id);
+        edges["net_in"]["dst"].push_back(src_id);
+      }
     }
-
-    }
-
   }
   return edges;
 }
@@ -689,7 +687,10 @@ StaDumpGraphJson::json StaDumpGraphJson::dumpNodeNetDelay(StaGraph* the_graph) {
     std::string obj_name = the_obj->getFullName();
     auto* the_net = the_obj->get_net();
     auto* rc_net = getSta()->getRcNet(the_net);
-    auto* rc_tree = rc_net->rct();
+    RcTree* rc_tree = nullptr;
+    if (rc_net) {
+      rc_tree = rc_net->rct();
+    }
 
     double max_rise_delay = 0.0;
     double max_fall_delay = 0.0;
@@ -840,7 +841,7 @@ StaDumpGraphJson::json StaDumpGraphJson::dumpNodeFeature(StaGraph* the_graph) {
       one_node_feature_array.push_back(die_height);
     }
 
-    // TODO(to taosimin), min or max first? assume max first
+    // TODO(to taosimin), min or max first? assume min first
     double max_rise_cap =
         the_vertex->getLoad(AnalysisMode::kMax, TransType::kRise);
     double max_fall_cap =
@@ -961,7 +962,7 @@ StaDumpGraphJson::json StaDumpGraphJson::dumpInstArcFeature(
           double is_valid = 0.0;
           one_inst_arc_table_array.push_back(is_valid);
           // hard code 2 axis, 7*2 data
-          for (int i = 0; i < 7 * 2; i++) {
+          for (int i = 0; i < 7 * 2; ++i) {
             double data_value = 0.0;
             one_inst_arc_table_array.push_back(data_value);
           }
@@ -970,9 +971,16 @@ StaDumpGraphJson::json StaDumpGraphJson::dumpInstArcFeature(
 
       // copy table values
       for (auto* delay_table : store_tables) {
-        auto& table_values = delay_table->get_table_values();
-        for (auto& table_value : table_values) {
-          one_inst_arc_table_array.push_back(table_value->getFloatValue());
+        if (delay_table) {
+          auto& table_values = delay_table->get_table_values();
+          for (auto& table_value : table_values) {
+            one_inst_arc_table_array.push_back(table_value->getFloatValue());
+          }
+        } else {
+          for (int i = 0; i < 7; ++i) {
+            double data_value = 0.0;
+            one_inst_arc_table_array.push_back(data_value);
+          }
         }
       }
 

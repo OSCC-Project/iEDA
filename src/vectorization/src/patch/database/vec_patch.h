@@ -90,7 +90,6 @@ class VecPatch
   int colIdMin = -1;
   int colIdMax = -1;
 
-  int area = 0;
   double cell_density = -1;
   int pin_density = -1;
   double net_density = -1;

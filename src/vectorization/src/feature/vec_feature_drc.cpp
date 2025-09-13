@@ -66,7 +66,7 @@ void VecFeatureDrc::markNodes()
   int drc_id = 0;
   int drc_without_net = 0;
 
-  // 新增：用于记录 drc_id 和 drc_type（rule）的映射
+  // used for recording the mapping between drc_id and drc_type (rule)
   std::map<int, std::string> drc_id_to_type;
 
   for (auto& [rule, drc_list_map] : detail_drc_map) {
@@ -93,7 +93,7 @@ void VecFeatureDrc::markNodes()
               auto& node_feature = node->get_node_data()->get_feature();
               omp_set_lock(&lck);
               node_feature.drc_ids.insert(drc_id + i);
-              drc_id_to_type[drc_id + i] = rule;  // 将 drc_id 和 rule 关联
+              drc_id_to_type[drc_id + i] = rule;  // record the mapping between drc_id and drc_type (rule) 
               omp_unset_lock(&lck);
 
               if (node->get_node_data()->get_net_id() >= 0) {
@@ -178,7 +178,7 @@ void VecFeatureDrc::markWires()
           mark_drc_num += drc_ids.size();
           omp_unset_lock(&lck);
         } else {
-          // 如果路径跨层，分别处理 node1 和 node2 的 drc_ids
+          // if path cross layer, handle drc_ids of node1 and node2 separately
           drc_ids.insert(node1->get_node_data()->get_feature().drc_ids.begin(), node1->get_node_data()->get_feature().drc_ids.end());
           drc_ids.insert(node2->get_node_data()->get_feature().drc_ids.begin(), node2->get_node_data()->get_feature().drc_ids.end());
 
@@ -194,9 +194,8 @@ void VecFeatureDrc::markWires()
           omp_unset_lock(&lck);
         }
       }
-      // 填充 wire_feature->drc_type
       for (auto drc_id : drc_ids) {
-        wire_feature->drc_type.push_back(_drc_id_to_type[drc_id]);  // 根据 drc_id 获取对应的 drc_type
+        wire_feature->drc_type.push_back(_drc_id_to_type[drc_id]);  // obtain drc_type according to drc_id
       }
     }
 
@@ -234,7 +233,6 @@ void VecFeatureDrc::markNets()
   auto& layer_map = layout_layers.get_layout_layer_map();
   for (int layer_id = 0; layer_id < (int) layer_map.size(); ++layer_id) {
     auto& grid = layout_layers.findLayoutLayer(layer_id)->get_grid();
-    // 这里改用get_all_nodes()替代原来的get_node_matrix()
     auto nodes = grid.get_all_nodes();
 
 #pragma omp parallel for schedule(dynamic)
@@ -266,10 +264,9 @@ void VecFeatureDrc::markNets()
     auto* net_feature = vec_net.get_feature(true);
     net_feature->drc_num += net_drc_map[i].size();
 
-    // 填充 drc_type
     for (auto drc_id : net_drc_map[i]) {
       omp_set_lock(&lck);
-      net_feature->drc_type.push_back(_drc_id_to_type[drc_id]);  // 根据 drc_id 获取对应的 drc_type
+      net_feature->drc_type.push_back(_drc_id_to_type[drc_id]);  // obtain drc_type according to drc_id
       omp_unset_lock(&lck);
     }
 

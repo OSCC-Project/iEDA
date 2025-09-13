@@ -100,7 +100,9 @@ void NetlistWriter::writePorts() {
     }
 
     const char *port_bus_name = port_bus->get_name();
-    fprintf(_stream, "%s", port_bus_name);
+    for (int i = 0; i < port_bus->get_size(); i++) {
+      fprintf(_stream, "%s[%d]\n", port_bus_name, i);
+    }
     first = false;
   }
 
