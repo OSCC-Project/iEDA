@@ -208,7 +208,7 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
     return std::make_tuple(x1, x2, val_index);
   };
 
-  auto get_table_value = [this](auto index) {
+  auto get_table_value = [this](auto index) -> double {
     auto& table_values = get_table_values();
     LOG_FATAL_IF(index >= table_values.size()) << "index " << index << " beyond table value size " << table_values.size();
     return table_values[index]->getFloatValue();
@@ -218,8 +218,8 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
     // Use linear interpolation (LinearInterpolate) in the case of a single variable
     auto num_val1 = check_val(0, val1);
     auto [x1, x2, val1_index] = get_axis_region(0, num_val1, val1);
-    unsigned int x1_table_val = get_table_value(val1_index);
-    unsigned int x2_table_val = get_table_value(val1_index + 1);
+    double x1_table_val = get_table_value(val1_index);
+    double x2_table_val = get_table_value(val1_index + 1);
 
     auto result = LinearInterpolate(x1, x2, x1_table_val, x2_table_val, val1);
     return result;
