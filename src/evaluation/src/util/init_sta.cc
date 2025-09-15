@@ -41,7 +41,7 @@
 namespace ieval {
 
 using json = nlohmann::ordered_json;
-  
+
 #define STA_INST (ista::TimingEngine::getOrCreateTimingEngine())
 #define RT_INST (irt::RTInterface::getInst())
 #define PW_INST (ipower::PowerEngine::getOrCreatePowerEngine())
@@ -951,37 +951,110 @@ TimingWireGraph InitSTA::getTimingWireGraph()
   LOG_INFO << "get wire timing graph start";
   ieda::Stats stats;
 
+  auto* ista = STA_INST->get_ista();
+  LOG_ERROR_IF(!ista->isBuildGraph()) << "timing graph is not build";
+
   TimingWireGraph timing_wire_graph;
 
   /// create node in wire graph
   auto create_node = [&timing_wire_graph](std::string& node_name, bool is_pin, bool is_port) -> unsigned {
-    auto index = timing_wire_graph.findNode(node_name);
-    if (!index) {
-      TimingWireNode the_node;
-      the_node._name = node_name;
-      the_node._is_pin = is_pin;
-      the_node._is_port = is_port;
+    TimingWireNode the_node;
+    the_node._name = node_name;
+    the_node._is_pin = is_pin;
+    the_node._is_port = is_port;
 
-      index = timing_wire_graph.addNode(the_node);
-    }
+    auto index = timing_wire_graph.addNode(the_node);
 
-    return index.value();
+    return index;
   };
 
   /// the node is StaNode
-  auto create_inst_node = [&create_node](auto* the_node) -> unsigned {
+  auto create_inst_node = [&timing_wire_graph, &create_node, ista](auto* the_node) -> unsigned {
     std::string node_name = the_node->getName();
+    auto index = timing_wire_graph.findNode(node_name);
+    if (index) {
+      return index.value();
+    }
+
     auto* design_obj = the_node->get_design_obj();
     bool is_pin = design_obj ? design_obj->isPin() : false;
     bool is_port = design_obj ? design_obj->isPort() : false;
 
+    /// dump node feature.
+    const double inf = 1.1e20;
+    TimingNodeFeature node_feature;
+    if (design_obj->get_coordinate()) {
+      node_feature._node_coord = design_obj->get_coordinate().value();
+    }
+
+    // dump node slews.
+    double max_rise_slew = the_node->getSlewNs(AnalysisMode::kMax, TransType::kRise).value_or(inf);
+    double max_fall_slew = the_node->getSlewNs(AnalysisMode::kMax, TransType::kFall).value_or(inf);
+    double min_rise_slew = the_node->getSlewNs(AnalysisMode::kMin, TransType::kRise).value_or(inf);
+    double min_fall_slew = the_node->getSlewNs(AnalysisMode::kMin, TransType::kFall).value_or(inf);
+
+    node_feature._node_slews = {max_rise_slew, max_fall_slew, min_rise_slew, min_fall_slew};
+
+    // dump node caps.
+    double max_rise_cap = the_node->getLoad(AnalysisMode::kMax, TransType::kRise);
+    double max_fall_cap = the_node->getLoad(AnalysisMode::kMax, TransType::kFall);
+
+    double min_rise_cap = the_node->getLoad(AnalysisMode::kMin, TransType::kRise);
+    double min_fall_cap = the_node->getLoad(AnalysisMode::kMin, TransType::kFall);
+    node_feature._node_caps = {max_rise_cap, max_fall_cap, min_rise_cap, min_fall_cap};
+
+    // dump node arrive times.
+    double max_rise_at = the_node->getArriveTimeNs(AnalysisMode::kMax, TransType::kRise).value_or(inf);
+    double max_fall_at = the_node->getArriveTimeNs(AnalysisMode::kMax, TransType::kFall).value_or(inf);
+    double min_rise_at = the_node->getArriveTimeNs(AnalysisMode::kMin, TransType::kRise).value_or(inf);
+    double min_fall_at = the_node->getArriveTimeNs(AnalysisMode::kMin, TransType::kFall).value_or(inf);
+    node_feature._node_ats = {max_rise_at, max_fall_at, min_rise_at, min_fall_at};
+
+    // dump node required times.
+    double max_rise_rat = the_node->getReqTimeNs(AnalysisMode::kMax, TransType::kRise).value_or(inf);
+    double max_fall_rat = the_node->getReqTimeNs(AnalysisMode::kMax, TransType::kFall).value_or(inf);
+    double min_rise_rat = the_node->getReqTimeNs(AnalysisMode::kMin, TransType::kRise).value_or(inf);
+    double min_fall_rat = the_node->getReqTimeNs(AnalysisMode::kMin, TransType::kFall).value_or(inf);
+    node_feature._node_rats = {max_rise_rat, max_fall_rat, min_rise_rat, min_fall_rat};
+
+    // dump node net load delays.
+    auto* the_net = design_obj->get_net();
+    auto* rc_net = ista->getRcNet(the_net);
+    RcTree* rc_tree = nullptr;
+    if (rc_net) {
+      rc_tree = rc_net->rct();
+      if (rc_tree) {
+        std::string obj_name = design_obj->getFullName();
+
+        double max_rise_delay = rc_tree->delay(obj_name.c_str(), AnalysisMode::kMax, TransType::kRise);
+        double max_fall_delay = rc_tree->delay(obj_name.c_str(), AnalysisMode::kMax, TransType::kFall);
+        double min_rise_delay = rc_tree->delay(obj_name.c_str(), AnalysisMode::kMin, TransType::kRise);
+        double min_fall_delay = rc_tree->delay(obj_name.c_str(), AnalysisMode::kMin, TransType::kFall);
+        node_feature._node_net_delays = {max_rise_delay, max_fall_delay, min_rise_delay, min_fall_delay};
+      }
+    }
+
+    node_feature._is_input = design_obj->isInput();
+    if (node_feature._is_input) {
+      node_feature._fanout_num = the_net->getFanouts();
+    }
+
+    node_feature._is_endpoint = the_node->is_end();
+
     auto wire_node_index = create_node(node_name, is_pin, is_port);
+    auto& wire_node = timing_wire_graph.getNode(wire_node_index);
+    wire_node._node_feature = node_feature;
     return wire_node_index;
   };
 
   /// the node is RC Node
-  auto create_net_node = [&create_node](auto& the_node) -> unsigned {
+  auto create_net_node = [&timing_wire_graph, &create_node](auto& the_node) -> unsigned {
     std::string node_name = the_node.get_name();
+    auto index = timing_wire_graph.findNode(node_name);
+    if (index) {
+      return index.value();
+    }
+
     bool is_pin = the_node.get_obj() ? the_node.get_obj()->isPin() : false;
     bool is_port = the_node.get_obj() ? the_node.get_obj()->isPort() : false;
 
@@ -989,14 +1062,18 @@ TimingWireGraph InitSTA::getTimingWireGraph()
     return wire_node_index;
   };
 
-  auto* ista = STA_INST->get_ista();
-  LOG_ERROR_IF(!ista->isBuildGraph()) << "timing graph is not build";
-
   auto* the_timing_graph = &(ista->get_graph());
   ista::StaArc* the_arc;
+  ista::StaVertex* the_vertex;
 
   timing_wire_graph._edges.reserve(the_timing_graph->get_arcs().size() * 100);
   timing_wire_graph._nodes.reserve(the_timing_graph->get_vertexes().size() * 10);
+
+  FOREACH_VERTEX(the_timing_graph, the_vertex)
+  {
+    create_inst_node(the_vertex);
+  }
+
   FOREACH_ARC(the_timing_graph, the_arc)
   {
     if (the_arc->isNetArc()) {
@@ -1026,20 +1103,7 @@ TimingWireGraph InitSTA::getTimingWireGraph()
 
           timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
         }
-      } else {
-        auto wire_from_node_index = create_inst_node(the_arc->get_src());
-        auto wire_to_node_index = create_inst_node(the_arc->get_snk());
-
-        auto& inst_wire_edge = timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
-        inst_wire_edge._is_net_edge = true;
       }
-
-    } else {
-      auto wire_from_node_index = create_inst_node(the_arc->get_src());
-      auto wire_to_node_index = create_inst_node(the_arc->get_snk());
-
-      auto& inst_wire_edge = timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
-      inst_wire_edge._is_net_edge = false;
     }
   }
 
@@ -1136,10 +1200,10 @@ bool InitSTA::getRcNet(const std::string& net_name)
   return rc_net ? true : false;
 }
 
-/// @brief Save wire timing graph to yaml file.
+/// @brief Save wire timing graph to json file.
 void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string& json_file_name)
 {
-  LOG_INFO << "save wire timing graph start";  
+  LOG_INFO << "save wire timing graph start";
 
   json nodes_json;
   json edges_json;
@@ -1149,7 +1213,7 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
     json j = json::array();
     for (unsigned node_id = 0; auto& node : timing_wire_graph._nodes) {
       std::string node_id_str = "node_" + std::to_string(node_id++);
-      j.push_back({{"id",  node_id_str}, {"name", node._name}, {"is_pin", node._is_pin}, {"is_port", node._is_port}});
+      j.push_back({{"id", node_id_str}, {"name", node._name}, {"is_pin", node._is_pin}, {"is_port", node._is_port}});
     }
     nodes_json = j;
   });
@@ -1159,7 +1223,7 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
     json j = json::array();
     for (unsigned edge_id = 0; auto& edge : timing_wire_graph._edges) {
       std::string edge_id_str = "edge_" + std::to_string(edge_id++);
-      j.push_back({{"id",  edge_id_str}, {"from_node", edge._from_node}, {"to_node", edge._to_node}, {"is_net_edge", edge._is_net_edge}});
+      j.push_back({{"id", edge_id_str}, {"from_node", edge._from_node}, {"to_node", edge._to_node}, {"is_net_edge", edge._is_net_edge}});
     }
     edges_json = j;
   });
@@ -1168,12 +1232,12 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
   t1.join();
   t2.join();
 
-  // merge 
+  // merge
   json graph_json;
   graph_json["nodes"] = nodes_json;
   graph_json["edges"] = edges_json;
 
-  std::ofstream file(json_file_name, std::ios::trunc);  
+  std::ofstream file(json_file_name, std::ios::trunc);
   file << graph_json.dump(4) << std::endl;
 
   file.close();
@@ -1182,9 +1246,10 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
   LOG_INFO << "save wire timing graph end";
 }
 
+/// @brief Save wire timing instance graph to json file.
 void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, const std::string& json_file_name)
 {
-  LOG_INFO << "save instance timing graph start";  
+  LOG_INFO << "save instance timing graph start";
 
   json nodes_json;
   json edges_json;
@@ -1213,11 +1278,11 @@ void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, c
   t1.join();
   t2.join();
 
-  // merge 
+  // merge
   json graph_json;
   graph_json["nodes"] = nodes_json;
   graph_json["edges"] = edges_json;
-  
+
   std::ofstream file(json_file_name, std::ios::trunc);
   file << graph_json.dump(4) << std::endl;
 
@@ -1447,8 +1512,8 @@ std::map<int, double> InitSTA::patchTimingMap(std::map<int, std::pair<std::pair<
     auto [l_range, u_range] = coord;
     const int64_t patch_lx = static_cast<int64_t>(l_range.first);
     const int64_t patch_ly = static_cast<int64_t>(l_range.second);
-     const int64_t patch_ux = static_cast<int64_t>(u_range.first);
-     const int64_t patch_uy = static_cast<int64_t>(u_range.second);
+    const int64_t patch_ux = static_cast<int64_t>(u_range.first);
+    const int64_t patch_uy = static_cast<int64_t>(u_range.second);
 
     double min_slack = std::numeric_limits<double>::max();
     bool found_instance = false;
@@ -1514,9 +1579,9 @@ std::map<int, double> InitSTA::patchPowerMap(std::map<int, std::pair<std::pair<i
   for (const auto& [patch_id, coord] : patch) {
     auto [l_range, u_range] = coord;
     const int64_t patch_lx = static_cast<int64_t>(l_range.first);
-     const int64_t patch_ly = static_cast<int64_t>(l_range.second);
-     const int64_t patch_ux = static_cast<int64_t>(u_range.first);
-     const int64_t patch_uy = static_cast<int64_t>(u_range.second);
+    const int64_t patch_ly = static_cast<int64_t>(l_range.second);
+    const int64_t patch_ux = static_cast<int64_t>(u_range.first);
+    const int64_t patch_uy = static_cast<int64_t>(u_range.second);
 
     double total_power = 0.0;
 
@@ -1561,7 +1626,7 @@ std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<
   auto instance_to_ir_drop = PW_INST->getInstanceIRDrop();
 
   if (instance_to_ir_drop.empty()) {
-    LOG_WARNING << "No IR drop data available, returning zero values for all patches";
+    LOG_ERROR << "No IR drop data available, returning zero values for all patches";
     return patch_ir_drop_map;
   }
 

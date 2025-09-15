@@ -45,12 +45,44 @@ namespace ieval {
 
 struct TimingNet;
 
+/// @brief The timing node features.
+struct TimingNodeFeature {
+  using Coord = std::pair<double, double>;
+  /// quad data, assume order is max rise, max fall, min rise, min fall.
+  using QuadData = std::tuple<double, double, double, double>;
+
+  Coord _node_coord = {0.0, 0.0};
+  QuadData _node_slews = {0.0, 0.0, 0.0, 0.0};
+  QuadData _node_caps = {0.0, 0.0, 0.0, 0.0};
+  /// node arrive time
+  QuadData _node_ats = {0.0, 0.0, 0.0, 0.0};  
+  /// node required time 
+  QuadData _node_rats = {0.0, 0.0, 0.0, 0.0};
+  /// node net load delays.
+  QuadData _node_net_delays = {0.0, 0.0, 0.0, 0.0};
+
+  unsigned _fanout_num = 1;
+
+  bool _is_input = false;
+  bool _is_endpoint = false;
+};
+
 /// @brief The timing wire graph for weiguo used.
 struct TimingWireNode
 {
   std::string _name;  //!< for pin/port name or node id.
   bool _is_pin = false;
   bool _is_port = false;
+
+  TimingNodeFeature _node_feature;
+};
+
+/// @brief The timing edge feature.
+struct TimingEdgeFeature {
+  using QuadData = std::tuple<double, double, double, double>;
+
+  QuadData _edge_delay = {0.0, 0.0, 0.0, 0.0};
+  double _edge_resistance = 0.0;
 };
 
 struct TimingWireEdge
@@ -58,6 +90,8 @@ struct TimingWireEdge
   int64_t _from_node = -1;
   int64_t _to_node = -1;
   bool _is_net_edge = true;
+
+  TimingEdgeFeature _edge_features;
 };
 
 
@@ -99,6 +133,7 @@ struct TimingGraph
 
     return index;
   }
+  auto& getNode(unsigned index) { return _nodes[index]; }
 
   U* findEdge(unsigned wire_from_node_index, unsigned wire_to_node_index)
   {
