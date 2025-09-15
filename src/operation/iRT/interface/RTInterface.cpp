@@ -280,7 +280,73 @@ void RTInterface::clearDef()
 
 void RTInterface::fixFanout()
 {
-  std::cout << "fix fanout" << std::endl;
+  idb::IdbNetList* idb_net_list = dmInst->get_idb_def_service()->get_design()->get_net_list();
+  idb::IdbInstanceList* idb_instance_list = dmInst->get_idb_def_service()->get_design()->get_instance_list();
+  idb::IdbCellMasterList* idb_cell_master_list = dmInst->get_idb_def_service()->get_layout()->get_cell_master_list();
+
+  size_t max_fanout = 16;
+  while (true) {
+    std::set<idb::IdbNet*> origin_net_set;
+    for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
+      if (idb_net->get_load_pins().size() > max_fanout) {
+        origin_net_set.insert(idb_net);
+      }
+    }
+    if (origin_net_set.empty()) {
+      break;
+    }
+    size_t begin_net_num = idb_net_list->get_num();
+    for (idb::IdbNet* origin_net : origin_net_set) {
+      // 解开所有的pin
+      std::vector<idb::IdbPin*> load_pin_list = origin_net->get_load_pins();
+      for (idb::IdbPin* load_pin : load_pin_list) {
+        origin_net->remove_pin(load_pin);
+      }
+      std::vector<std::vector<idb::IdbPin*>> load_pin_list_list;
+      for (size_t i = 0; i < load_pin_list.size(); i += max_fanout) {
+        size_t end = std::min(i + max_fanout, load_pin_list.size());
+        load_pin_list_list.emplace_back(load_pin_list.begin() + i, load_pin_list.begin() + end);
+      }
+      for (std::vector<idb::IdbPin*>& load_pin_list : load_pin_list_list) {
+        static size_t new_idx = 0;
+        // 生成net
+        idb::IdbNet* new_net = new IdbNet();
+        new_net->set_net_name(RTUTIL.getString("rt_fanout_net_", new_idx++));
+        idb_net_list->add_net(new_net);
+        // 生成buf
+        idb::IdbInstance* new_buf = new IdbInstance();
+        new_buf->set_name(RTUTIL.getString("rt_fanout_buf_", new_idx++));
+        new_buf->set_cell_master(idb_cell_master_list->find_cell_master(RTUTIL.getString("BUFFD8BWP30P140LVT")));
+        idb_instance_list->add_instance(new_buf);
+        // 连接buf
+        for (idb::IdbPin* buf_pin : new_buf->get_pin_list()->get_pin_list()) {
+          if (buf_pin->get_term()->get_type() == idb::IdbConnectType::kPower || buf_pin->get_term()->get_type() == idb::IdbConnectType::kGround) {
+            continue;
+          }
+          if (buf_pin->get_term()->get_direction() == idb::IdbConnectDirection::kInput) {
+            origin_net->add_instance_pin(buf_pin);
+            buf_pin->set_net(origin_net);
+            buf_pin->set_net_name(origin_net->get_net_name());
+          } else if (buf_pin->get_term()->get_direction() == idb::IdbConnectDirection::kOutput) {
+            new_net->add_instance_pin(buf_pin);
+            buf_pin->set_net(new_net);
+            buf_pin->set_net_name(new_net->get_net_name());
+          }
+        }
+        // 连接pin
+        for (idb::IdbPin* load_pin : load_pin_list) {
+          if (load_pin->is_io_pin()) {
+            new_net->add_io_pin(load_pin);
+          } else {
+            new_net->add_instance_pin(load_pin);
+          }
+          load_pin->set_net(new_net);
+          load_pin->set_net_name(new_net->get_net_name());
+        }
+      }
+    }
+    RTLOG.info(Loc::current(), "Fixed ", origin_net_set.size(), " nets!( +", idb_net_list->get_num() - begin_net_num, " nets )");
+  }
 }
 
 #endif

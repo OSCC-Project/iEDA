@@ -10,6 +10,7 @@
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <algorithm>
 #include <iomanip>
 #include <sstream>
 #include <unordered_set>
