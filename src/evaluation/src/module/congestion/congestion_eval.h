@@ -23,17 +23,6 @@ struct NetMetadata
   double hor_rudy, ver_rudy;  // 预计算的RUDY因子
 };
 
-// 辅助哈希函数
-struct CongestionPairHash
-{
-  template <typename T1, typename T2>
-  size_t operator()(const std::pair<T1, T2>& p) const
-  {
-    auto hash1 = std::hash<T1>{}(p.first);
-    auto hash2 = std::hash<T2>{}(p.second);
-    return hash1 ^ (hash2 << 1);
-  }
-};
 
 class CongestionEval
 {

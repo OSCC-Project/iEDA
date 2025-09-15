@@ -171,7 +171,7 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
   }
 
   // first check that slew and constrain_slew_or_load are within the table
-  // ranges 
+  // ranges
   auto check_val = [this](auto axis_index, auto val) {
     auto num_val = getAxis(axis_index).get_axis_size();
     auto min_val = getAxis(axis_index)[0];
@@ -184,7 +184,7 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
     return num_val;
   };
 
-  // Find the interpolation interval on the axis, 
+  // Find the interpolation interval on the axis,
   // and return the two endpoint values required for interpolation and the left index value.
   auto get_axis_region = [this](auto axis_index, auto num_val, auto val) {
     auto x2 = 0.0;
@@ -208,7 +208,7 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
     return std::make_tuple(x1, x2, val_index);
   };
 
-  auto get_table_value = [this](auto index) {
+  auto get_table_value = [this](auto index) -> double {
     auto& table_values = get_table_values();
     LOG_FATAL_IF(index >= table_values.size()) << "index " << index << " beyond table value size " << table_values.size();
     return table_values[index]->getFloatValue();
@@ -218,8 +218,8 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
     // Use linear interpolation (LinearInterpolate) in the case of a single variable
     auto num_val1 = check_val(0, val1);
     auto [x1, x2, val1_index] = get_axis_region(0, num_val1, val1);
-    unsigned int x1_table_val = get_table_value(val1_index);
-    unsigned int x2_table_val = get_table_value(val1_index + 1);
+    double x1_table_val = get_table_value(val1_index);
+    double x2_table_val = get_table_value(val1_index + 1);
 
     auto result = LinearInterpolate(x1, x2, x1_table_val, x2_table_val, val1);
     return result;
@@ -1318,26 +1318,159 @@ LibArcSet& LibArcSet::operator=(LibArcSet&& rhs) noexcept
 
 /**
  * @brief get delay or constrain arc set value, should contain value vec.
- * 
- * @param trans_type 
- * @param slew 
- * @param load_or_constrain_slew 
- * @return std::vector<double> 
+ *
+ * @param trans_type
+ * @param slew
+ * @param load_or_constrain_slew
+ * @return std::vector<double>
  */
-std::vector<double> LibArcSet::getDelayOrConstrainCheckNs(TransType trans_type, double slew, double load_or_constrain_slew) {
+std::vector<double> LibArcSet::getDelayOrConstrainCheckNs(TransType input_trans_type, TransType output_trans_type, double slew,
+                                                          double load_or_constrain_slew)
+{
   std::vector<double> values;
-  // LOG_INFO_IF_EVERY_N(_arcs.size() > 1, 100) << "arc set size is " << _arcs.size();
+  bool is_flip = (input_trans_type == output_trans_type) ? false : true;
 
   for (auto& lib_arc : _arcs) {
-    double find_value = lib_arc->getDelayOrConstrainCheckNs(trans_type, slew, load_or_constrain_slew);
+    if (!lib_arc->isCheckArc()) {
+      // skip timing sense not consistent
+      if (is_flip && lib_arc->isPositiveArc()) {
+        continue;
+      }
+
+      if (!is_flip && lib_arc->isNegativeArc()) {
+        continue;
+      }
+    }
+
+    double find_value = lib_arc->getDelayOrConstrainCheckNs(output_trans_type, slew, load_or_constrain_slew);
     values.push_back(find_value);
   }
 
   // sort by descending.
   std::ranges::sort(values, std::greater<double>());
 
-  return values;
+  LOG_FATAL_IF(values.empty()) << "No arc found for find table value.";
 
+  return values;
+}
+
+/**
+ * @brief get slew arc set value, should contain value vec.
+ *
+ * @param trans_type
+ * @param slew
+ * @param load
+ * @return std::vector<double>
+ */
+std::vector<double> LibArcSet::getSlewNs(TransType input_trans_type, TransType output_trans_type, double slew, double load)
+{
+  std::vector<double> values;
+  bool is_flip = (input_trans_type == output_trans_type) ? false : true;
+
+  for (auto& lib_arc : _arcs) {
+    if (is_flip && lib_arc->isPositiveArc()) {
+      continue;
+    }
+
+    if (!is_flip && lib_arc->isNegativeArc()) {
+      continue;
+    }
+
+    double find_value = lib_arc->getSlewNs(output_trans_type, slew, load);
+    values.push_back(find_value);
+  }
+
+  // sort by descending.
+  std::ranges::sort(values, std::greater<double>());
+
+  LOG_FATAL_IF(values.empty()) << "No arc found for find table value.";
+
+  return values;
+}
+
+/**
+ * @brief
+ *
+ * @param trans_type
+ * @return true
+ * @return false
+ */
+bool LibArcSet::isMatchTimingType(TransType trans_type)
+{
+  for (auto& lib_arc : _arcs) {
+    if (lib_arc->isMatchTimingType(trans_type)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * @brief judge arc set whether positive.
+ *
+ * @return unsigned
+ */
+unsigned LibArcSet::isPositiveArc()
+{
+  for (auto& lib_arc : _arcs) {
+    if (!lib_arc->isPositiveArc()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * @brief judge arc set whether negative.
+ *
+ * @return unsigned
+ */
+unsigned LibArcSet::isNegativeArc()
+{
+  for (auto& lib_arc : _arcs) {
+    if (!lib_arc->isNegativeArc()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * @brief judge arc set whether unate.
+ *
+ * @return unsigned
+ */
+unsigned LibArcSet::isUnateArc()
+{
+  for (auto& lib_arc : _arcs) {
+    if (!lib_arc->isUnateArc()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * @brief judge arc set whether two type sense arc set.
+ *
+ * @return unsigned
+ */
+unsigned LibArcSet::isTwoTypeSenseArcSet()
+{
+  bool is_has_positive = false;
+  bool is_has_negative = false;
+
+  for (auto& lib_arc : _arcs) {
+    if (lib_arc->isPositiveArc()) {
+      is_has_positive = true;
+    } else if (lib_arc->isNegativeArc()) {
+      is_has_negative = true;
+    }
+  }
+
+  return (is_has_positive && is_has_negative);
 }
 
 LibPowerArc::LibPowerArc() : _owner_cell(nullptr)

@@ -81,6 +81,7 @@ class PwrDumpGraphJson : public PwrFunc {
   json dumpNodeNetPower(PwrGraph* the_graph);
   json dumpNodeInternalPower(PwrGraph* the_graph);
   json dumpInstInternalPower(PwrGraph* the_graph);
+  json dumpInstPowerArcFeature(PwrGraph* the_graph);
 
  private:
   json& _json_file;

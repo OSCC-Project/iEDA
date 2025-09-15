@@ -1023,10 +1023,11 @@ unsigned Power::reportPower(bool is_copy) {
   auto backup_work_space = BackupPwrFiles(output_dir, is_copy);
   _backup_work_dir = backup_work_space;
   std::filesystem::create_directories(output_dir);
+  const char* design_name = ista->get_design_name().c_str();
 
   {
     std::string file_name =
-        Str::printf("%s.pwr", ista->get_design_name().c_str());
+        Str::printf("%s.pwr", design_name);
     if (is_copy) {
       CopyFile(backup_work_space, output_dir, file_name);
     }
@@ -1036,7 +1037,7 @@ unsigned Power::reportPower(bool is_copy) {
 
   {
     std::string file_name =
-        Str::printf("%s_%s.pwr", ista->get_design_name().c_str(), "instance");
+        Str::printf("%s_%s.pwr", design_name, "instance");
 
     if (is_copy) {
       CopyFile(backup_work_space, output_dir, file_name);
@@ -1048,7 +1049,7 @@ unsigned Power::reportPower(bool is_copy) {
 
   {
     std::string file_name =
-        Str::printf("%s_%s.csv", ista->get_design_name().c_str(), "instance");
+        Str::printf("%s_%s.csv", design_name, "instance");
 
     if (is_copy) {
       CopyFile(backup_work_space, output_dir, file_name);
@@ -1059,13 +1060,34 @@ unsigned Power::reportPower(bool is_copy) {
 
   if (isJsonReportEnabled()) {
     std::string file_name =
-        Str::printf("%s.pwr.json", ista->get_design_name().c_str());
+        Str::printf("%s.pwr.json", design_name);
     if (is_copy) {
       CopyFile(backup_work_space, output_dir, file_name);
     }
 
     std::string output_path = output_dir + "/" + file_name;
     reportSummaryPowerJSON(output_path.c_str(), PwrAnalysisMode::kAveraged);
+  }
+
+  if (0) {
+    using json = nlohmann::ordered_json;
+
+    json graph_json;
+    PwrDumpGraphJson dump_graph_json(graph_json);
+    auto &the_graph = get_power_graph();
+    dump_graph_json(&the_graph);
+
+    std::string graph_json_file_name = Str::printf(
+        "%s/%s_pwr_graph.json", output_dir.c_str(), design_name);
+
+    std::ofstream out_file(graph_json_file_name);
+    if (out_file.is_open()) {
+      out_file << graph_json.dump(4);  // 4 spaces indent
+      LOG_INFO << "JSON report written to: " << graph_json_file_name;
+      out_file.close();
+    } else {
+      LOG_ERROR << "Failed to open JSON report file: " << graph_json_file_name;
+    }
   }
 
   LOG_INFO << "power report end, output dir: " << output_dir;

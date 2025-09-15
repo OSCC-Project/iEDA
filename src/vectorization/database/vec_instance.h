@@ -38,8 +38,8 @@ struct VecInstance
   uint64_t id;
   int cell_id;
   std::string name;
-  int x;
-  int y;
+  int cx;
+  int cy;
   int width;
   int height;
   int llx;
