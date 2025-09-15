@@ -239,9 +239,9 @@ void VerilogWriter::writeWire()
       is_bus = std::nullopt;
     }
 
-    if (is_bus) {
-      continue;
-    }
+    // if (is_bus) {
+    //   continue;
+    // }
 
     std::string new_net_name = replace_str(net_name, R"(\\)", "");
     std::string escape_net_name = escapeName(new_net_name);
