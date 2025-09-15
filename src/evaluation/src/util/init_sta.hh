@@ -91,7 +91,7 @@ struct TimingWireEdge
   int64_t _to_node = -1;
   bool _is_net_edge = true;
 
-  TimingEdgeFeature _edge_features;
+  TimingEdgeFeature _edge_feature;
 };
 
 

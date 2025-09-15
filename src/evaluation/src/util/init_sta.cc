@@ -1087,23 +1087,70 @@ TimingWireGraph InitSTA::getTimingWireGraph()
         auto* snk_node = the_arc->get_snk();
         auto snk_node_name = snk_node->get_design_obj()->getFullName();
 
-        auto vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMax, TransType::kRise);
-        if (!vertex_slew) {
-          vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMax, TransType::kFall);
-        }
-
         auto wire_topo = rc_net->getWireTopo(snk_node_name.c_str());
+        auto* rc_tree = rc_net->rct();
+        LOG_FATAL_IF(!rc_tree) << "rc net has no rc tree.";
+
+        auto vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMax, TransType::kRise);
+        auto max_rise_all_nodes_slew = rc_tree->getAllNodeSlew(vertex_slew.value_or(0.0), AnalysisMode::kMax, TransType::kRise);
+        vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMax, TransType::kFall);
+        auto max_fall_all_nodes_slew = rc_tree->getAllNodeSlew(vertex_slew.value_or(0.0), AnalysisMode::kMax, TransType::kFall);
+        vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMin, TransType::kRise);
+        auto min_rise_all_nodes_slew = rc_tree->getAllNodeSlew(vertex_slew.value_or(0.0), AnalysisMode::kMin, TransType::kRise);
+        vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMin, TransType::kFall);
+        auto min_fall_all_nodes_slew = rc_tree->getAllNodeSlew(vertex_slew.value_or(0.0), AnalysisMode::kMin, TransType::kFall);
+
         for (auto* wire_edge : wire_topo | std::ranges::views::reverse) {
           ieda::Stats stats2;
           auto& from_node = wire_edge->get_from();
           auto& to_node = wire_edge->get_to();
 
           auto wire_from_node_index = create_net_node(from_node);
+          auto& wire_from_node = timing_wire_graph.getNode(wire_from_node_index);
+          wire_from_node._node_feature._node_slews = {max_rise_all_nodes_slew[from_node.get_name()],
+                                                     max_fall_all_nodes_slew[from_node.get_name()],
+                                                     min_rise_all_nodes_slew[from_node.get_name()],
+                                                     min_fall_all_nodes_slew[from_node.get_name()]};
           auto wire_to_node_index = create_net_node(to_node);
+          auto& wire_to_node = timing_wire_graph.getNode(wire_to_node_index);
+          wire_to_node._node_feature._node_slews = {max_rise_all_nodes_slew[to_node.get_name()],
+                                                   max_fall_all_nodes_slew[to_node.get_name()],
+                                                   min_rise_all_nodes_slew[to_node.get_name()],
+                                                   min_fall_all_nodes_slew[to_node.get_name()]};
 
-          timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
+          auto& net_wire_edge = timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
+          net_wire_edge._edge_feature._edge_resistance = wire_edge->get_res();
+
+          net_wire_edge._is_net_edge = true;
         }
+      } else {
+        auto wire_from_node_index = create_inst_node(the_arc->get_src());
+        auto wire_to_node_index = create_inst_node(the_arc->get_snk());
+
+        auto& net_edge = timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
+        net_edge._is_net_edge = true;
       }
+    } else if (the_arc->isInstArc() && the_arc->isDelayArc()) {
+      auto wire_from_node_index = create_inst_node(the_arc->get_src());
+      auto wire_to_node_index = create_inst_node(the_arc->get_snk());
+
+      auto& inst_arc_edge = timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
+      inst_arc_edge._is_net_edge = false;
+
+      TimingEdgeFeature edge_feature;
+
+      double max_rise_delay = FS_TO_NS(
+          the_arc->get_arc_delay(AnalysisMode::kMax, TransType::kRise));
+      double max_fall_delay = FS_TO_NS(
+          the_arc->get_arc_delay(AnalysisMode::kMax, TransType::kFall));
+      double min_rise_delay = FS_TO_NS(
+          the_arc->get_arc_delay(AnalysisMode::kMin, TransType::kRise));
+      double min_fall_delay = FS_TO_NS(
+          the_arc->get_arc_delay(AnalysisMode::kMin, TransType::kFall));
+
+      edge_feature._edge_delay = {max_rise_delay, max_fall_delay, min_rise_delay, min_fall_delay};
+
+      inst_arc_edge._edge_feature = edge_feature;
     }
   }
 
