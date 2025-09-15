@@ -1107,16 +1107,14 @@ TimingWireGraph InitSTA::getTimingWireGraph()
 
           auto wire_from_node_index = create_net_node(from_node);
           auto& wire_from_node = timing_wire_graph.getNode(wire_from_node_index);
-          wire_from_node._node_feature._node_slews = {max_rise_all_nodes_slew[from_node.get_name()],
-                                                     max_fall_all_nodes_slew[from_node.get_name()],
-                                                     min_rise_all_nodes_slew[from_node.get_name()],
-                                                     min_fall_all_nodes_slew[from_node.get_name()]};
+          wire_from_node._node_feature._node_slews
+              = {max_rise_all_nodes_slew[from_node.get_name()], max_fall_all_nodes_slew[from_node.get_name()],
+                 min_rise_all_nodes_slew[from_node.get_name()], min_fall_all_nodes_slew[from_node.get_name()]};
           auto wire_to_node_index = create_net_node(to_node);
           auto& wire_to_node = timing_wire_graph.getNode(wire_to_node_index);
-          wire_to_node._node_feature._node_slews = {max_rise_all_nodes_slew[to_node.get_name()],
-                                                   max_fall_all_nodes_slew[to_node.get_name()],
-                                                   min_rise_all_nodes_slew[to_node.get_name()],
-                                                   min_fall_all_nodes_slew[to_node.get_name()]};
+          wire_to_node._node_feature._node_slews
+              = {max_rise_all_nodes_slew[to_node.get_name()], max_fall_all_nodes_slew[to_node.get_name()],
+                 min_rise_all_nodes_slew[to_node.get_name()], min_fall_all_nodes_slew[to_node.get_name()]};
 
           auto& net_wire_edge = timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
           net_wire_edge._edge_feature._edge_resistance = wire_edge->get_res();
@@ -1139,14 +1137,10 @@ TimingWireGraph InitSTA::getTimingWireGraph()
 
       TimingEdgeFeature edge_feature;
 
-      double max_rise_delay = FS_TO_NS(
-          the_arc->get_arc_delay(AnalysisMode::kMax, TransType::kRise));
-      double max_fall_delay = FS_TO_NS(
-          the_arc->get_arc_delay(AnalysisMode::kMax, TransType::kFall));
-      double min_rise_delay = FS_TO_NS(
-          the_arc->get_arc_delay(AnalysisMode::kMin, TransType::kRise));
-      double min_fall_delay = FS_TO_NS(
-          the_arc->get_arc_delay(AnalysisMode::kMin, TransType::kFall));
+      double max_rise_delay = FS_TO_NS(the_arc->get_arc_delay(AnalysisMode::kMax, TransType::kRise));
+      double max_fall_delay = FS_TO_NS(the_arc->get_arc_delay(AnalysisMode::kMax, TransType::kFall));
+      double min_rise_delay = FS_TO_NS(the_arc->get_arc_delay(AnalysisMode::kMin, TransType::kRise));
+      double min_fall_delay = FS_TO_NS(the_arc->get_arc_delay(AnalysisMode::kMin, TransType::kFall));
 
       edge_feature._edge_delay = {max_rise_delay, max_fall_delay, min_rise_delay, min_fall_delay};
 
@@ -1260,7 +1254,29 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
     json j = json::array();
     for (unsigned node_id = 0; auto& node : timing_wire_graph._nodes) {
       std::string node_id_str = "node_" + std::to_string(node_id++);
-      j.push_back({{"id", node_id_str}, {"name", node._name}, {"is_pin", node._is_pin}, {"is_port", node._is_port}});
+      auto& node_feature = node._node_feature;
+      json node_feature_json;
+      node_feature_json["node_coord"].push_back({node_feature._node_coord.first, node_feature._node_coord.second});
+      node_feature_json["node_slews"].push_back({std::get<0>(node_feature._node_slews), std::get<1>(node_feature._node_slews),
+                                                 std::get<2>(node_feature._node_slews), std::get<3>(node_feature._node_slews)});
+      node_feature_json["node_capacitances"].push_back({std::get<0>(node_feature._node_caps), std::get<1>(node_feature._node_caps),
+                                                        std::get<2>(node_feature._node_caps), std::get<3>(node_feature._node_caps)});
+      node_feature_json["node_arrive_times"].push_back({std::get<0>(node_feature._node_ats), std::get<1>(node_feature._node_ats),
+                                                        std::get<2>(node_feature._node_ats), std::get<3>(node_feature._node_ats)});
+      node_feature_json["node_required_times"].push_back({std::get<0>(node_feature._node_rats), std::get<1>(node_feature._node_rats),
+                                                          std::get<2>(node_feature._node_rats), std::get<3>(node_feature._node_rats)});
+      node_feature_json["node_net_load_delays"].push_back(
+          {std::get<0>(node_feature._node_net_delays), std::get<1>(node_feature._node_net_delays),
+           std::get<2>(node_feature._node_net_delays), std::get<3>(node_feature._node_net_delays)});
+      node_feature_json["is_input"] = node_feature._is_input;
+      node_feature_json["fanout_num"] = node_feature._fanout_num;
+      node_feature_json["is_input"] = node_feature._is_input;
+      node_feature_json["is_endpoint"] = node_feature._is_endpoint;
+      j.push_back({{"id", node_id_str},
+                   {"name", node._name},
+                   {"is_pin", node._is_pin},
+                   {"is_port", node._is_port},
+                   {"node_feature", node_feature_json}});
     }
     nodes_json = j;
   });
@@ -1270,7 +1286,17 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
     json j = json::array();
     for (unsigned edge_id = 0; auto& edge : timing_wire_graph._edges) {
       std::string edge_id_str = "edge_" + std::to_string(edge_id++);
-      j.push_back({{"id", edge_id_str}, {"from_node", edge._from_node}, {"to_node", edge._to_node}, {"is_net_edge", edge._is_net_edge}});
+      auto& edge_feature = edge._edge_feature;
+      json edge_feature_json;
+      edge_feature_json["edge_delay"].push_back({std::get<0>(edge_feature._edge_delay), std::get<1>(edge_feature._edge_delay),
+                                                 std::get<2>(edge_feature._edge_delay), std::get<3>(edge_feature._edge_delay)});
+      edge_feature_json["edge_resistance"] = edge_feature._edge_resistance;
+
+      j.push_back({{"id", edge_id_str},
+                   {"from_node", edge._from_node},
+                   {"to_node", edge._to_node},
+                   {"is_net_edge", edge._is_net_edge},
+                   {"edge_feature", edge_feature_json}});
     }
     edges_json = j;
   });
@@ -1545,13 +1571,13 @@ std::map<int, double> InitSTA::patchTimingMap(std::map<int, std::pair<std::pair<
   // 预处理：将实例坐标转换并按x坐标排序，提升查找性能
   std::vector<std::tuple<int64_t, int64_t, double>> sorted_instances;
   sorted_instances.reserve(inst_timing_map.size());
-  
+
   for (const auto& [coord, slack] : inst_timing_map) {
     int64_t inst_x = static_cast<int64_t>(coord.first * dbu);
     int64_t inst_y = static_cast<int64_t>(coord.second * dbu);
     sorted_instances.emplace_back(inst_x, inst_y, slack);
   }
-  
+
   // 按x坐标排序，便于后续二分查找
   std::sort(sorted_instances.begin(), sorted_instances.end());
 
@@ -1566,16 +1592,14 @@ std::map<int, double> InitSTA::patchTimingMap(std::map<int, std::pair<std::pair<
     bool found_instance = false;
 
     // 使用二分查找确定x坐标范围，减少需要检查的实例数量
-    auto lower_it = std::lower_bound(sorted_instances.begin(), sorted_instances.end(),
-                                     std::make_tuple(patch_lx, INT64_MIN, 0.0));
-    auto upper_it = std::upper_bound(sorted_instances.begin(), sorted_instances.end(),
-                                     std::make_tuple(patch_ux, INT64_MAX, 0.0));
-    
+    auto lower_it = std::lower_bound(sorted_instances.begin(), sorted_instances.end(), std::make_tuple(patch_lx, INT64_MIN, 0.0));
+    auto upper_it = std::upper_bound(sorted_instances.begin(), sorted_instances.end(), std::make_tuple(patch_ux, INT64_MAX, 0.0));
+
     // 只检查x坐标在范围内的实例
     for (auto it = lower_it; it != upper_it; ++it) {
       int64_t inst_y = std::get<1>(*it);
       double slack = std::get<2>(*it);
-      
+
       if (patch_ly <= inst_y && inst_y <= patch_uy) {
         min_slack = std::min(min_slack, slack);
         found_instance = true;
@@ -1613,13 +1637,13 @@ std::map<int, double> InitSTA::patchPowerMap(std::map<int, std::pair<std::pair<i
   // 预处理：将实例坐标转换并按x坐标排序，提升查找性能
   std::vector<std::tuple<int64_t, int64_t, double>> sorted_instances;
   sorted_instances.reserve(inst_power_map.size());
-  
+
   for (const auto& [coord, power] : inst_power_map) {
     int64_t inst_x = static_cast<int64_t>(coord.first * dbu);
     int64_t inst_y = static_cast<int64_t>(coord.second * dbu);
     sorted_instances.emplace_back(inst_x, inst_y, power);
   }
-  
+
   // 按x坐标排序，便于后续二分查找
   std::sort(sorted_instances.begin(), sorted_instances.end());
 
@@ -1633,16 +1657,14 @@ std::map<int, double> InitSTA::patchPowerMap(std::map<int, std::pair<std::pair<i
     double total_power = 0.0;
 
     // 使用二分查找确定x坐标范围，减少需要检查的实例数量
-    auto lower_it = std::lower_bound(sorted_instances.begin(), sorted_instances.end(),
-                                     std::make_tuple(patch_lx, INT64_MIN, 0.0));
-    auto upper_it = std::upper_bound(sorted_instances.begin(), sorted_instances.end(),
-                                     std::make_tuple(patch_ux, INT64_MAX, 0.0));
-    
+    auto lower_it = std::lower_bound(sorted_instances.begin(), sorted_instances.end(), std::make_tuple(patch_lx, INT64_MIN, 0.0));
+    auto upper_it = std::upper_bound(sorted_instances.begin(), sorted_instances.end(), std::make_tuple(patch_ux, INT64_MAX, 0.0));
+
     // 只检查x坐标在范围内的实例
     for (auto it = lower_it; it != upper_it; ++it) {
       int64_t inst_y = std::get<1>(*it);
       double power = std::get<2>(*it);
-      
+
       if (patch_ly <= inst_y && inst_y <= patch_uy) {
         total_power += power;
       }
@@ -1683,14 +1705,14 @@ std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<
   // 预处理：将实例坐标转换并按x坐标排序，提升查找性能
   std::vector<std::tuple<int64_t, int64_t, double>> sorted_instances;
   sorted_instances.reserve(instance_to_ir_drop.size());
-  
+
   for (auto& [sta_inst, ir_drop] : instance_to_ir_drop) {
     auto coord = sta_inst->get_coordinate().value();
     int64_t inst_x = static_cast<int64_t>(coord.first * dbu);
     int64_t inst_y = static_cast<int64_t>(coord.second * dbu);
     sorted_instances.emplace_back(inst_x, inst_y, ir_drop);
   }
-  
+
   // 按x坐标排序，便于后续二分查找
   std::sort(sorted_instances.begin(), sorted_instances.end());
 
@@ -1705,16 +1727,14 @@ std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<
     bool found_instance = false;
 
     // 使用二分查找确定x坐标范围，减少需要检查的实例数量
-    auto lower_it = std::lower_bound(sorted_instances.begin(), sorted_instances.end(),
-                                     std::make_tuple(patch_lx, INT64_MIN, 0.0));
-    auto upper_it = std::upper_bound(sorted_instances.begin(), sorted_instances.end(),
-                                     std::make_tuple(patch_ux, INT64_MAX, 0.0));
-    
+    auto lower_it = std::lower_bound(sorted_instances.begin(), sorted_instances.end(), std::make_tuple(patch_lx, INT64_MIN, 0.0));
+    auto upper_it = std::upper_bound(sorted_instances.begin(), sorted_instances.end(), std::make_tuple(patch_ux, INT64_MAX, 0.0));
+
     // 只检查x坐标在范围内的实例
     for (auto it = lower_it; it != upper_it; ++it) {
       int64_t inst_y = std::get<1>(*it);
       double ir_drop = std::get<2>(*it);
-      
+
       if (patch_ly <= inst_y && inst_y <= patch_uy) {
         max_ir_drop = std::max(max_ir_drop, ir_drop);
         found_instance = true;
