@@ -7,6 +7,7 @@
 
 #include "density_eval.h"
 
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <fstream>

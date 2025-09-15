@@ -812,7 +812,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         LOG_ERROR << "the right port is not exist.";
       }
 
-    } else if (the_right_net && !the_right_port) {
+    } else if (the_right_net) {
       // assign output_port = net;
       if (the_left_port) {
         the_right_net->addPinPort(the_left_port);
