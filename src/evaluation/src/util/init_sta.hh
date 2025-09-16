@@ -68,18 +68,29 @@ struct TimingNodeFeature {
   QuadData _node_rats = {0.0, 0.0, 0.0, 0.0};
   /// node net load delays.
   QuadData _node_net_delays = {0.0, 0.0, 0.0, 0.0};
+};
 
+/// @brief The power node features.
+struct PowerNodeFeature {
+  using QuadData = std::tuple<double, double, double, double>;
 
+  double _toggle = 0.125;
+  double _sp = 0.5;
+  
+  // input pin internal power.
+  double _node_internal_power = 0.0;
+  // net power annotated to the driver node.
+  double _node_net_power = 0.0;
 };
 
 /// @brief The timing wire graph for weiguo used.
-struct TimingWireNode
-{
+struct TimingWireNode {
   std::string _name;  //!< for pin/port name or node id.
   bool _is_pin = false;
   bool _is_port = false;
 
   TimingNodeFeature _node_feature;
+  PowerNodeFeature _power_feature;
 };
 
 /// @brief The timing edge feature.
@@ -90,6 +101,11 @@ struct TimingEdgeFeature {
   double _edge_resistance = 0.0;
 };
 
+/// @brief The power edge feature.
+struct PowerEdgeFeature {
+  double _inst_arc_internal_power = 0.0;
+};
+
 struct TimingWireEdge
 {
   int64_t _from_node = -1;
@@ -97,6 +113,7 @@ struct TimingWireEdge
   bool _is_net_edge = true;
 
   TimingEdgeFeature _edge_feature;
+  PowerEdgeFeature _power_feature;
 };
 
 

@@ -953,7 +953,8 @@ TimingWireGraph InitSTA::getTimingWireGraph()
 
   auto* ista = STA_INST->get_ista();
   LOG_ERROR_IF(!ista->isBuildGraph()) << "timing graph is not build";
-
+  
+  // build equivalent library cells map
   auto& all_libs = ista->getAllLib();
   std::vector<LibLibrary*> equiv_libs;
   for (auto& lib : all_libs) {
@@ -961,6 +962,19 @@ TimingWireGraph InitSTA::getTimingWireGraph()
   }
 
   ista->makeClassifiedCells(equiv_libs);
+
+  auto* ipower = PW_INST->get_power();
+
+  // build switch power map.
+  auto& switch_powers = ipower->get_switch_powers();
+  std::map<ipower::PwrVertex*, double> vertex_to_switch_power;
+  for (auto& switch_power : switch_powers) {
+    auto* the_net = switch_power->get_design_obj();
+    auto* the_driver = dynamic_cast<ista::Net*>(the_net)->getDriver();
+    auto* the_sta_vertex = ista->findVertex(the_driver);
+    auto* the_pwr_vertex = ipower->get_power_graph().staToPwrVertex(the_sta_vertex);
+    vertex_to_switch_power[the_pwr_vertex] = switch_power->get_switch_power();
+  }
 
   TimingWireGraph timing_wire_graph;
 
@@ -977,7 +991,7 @@ TimingWireGraph InitSTA::getTimingWireGraph()
   };
 
   /// the node is StaNode
-  auto create_inst_node = [&timing_wire_graph, &create_node, ista](auto* the_node) -> unsigned {
+  auto create_inst_node = [&timing_wire_graph, &create_node, &vertex_to_switch_power, ista, ipower](auto* the_node) -> unsigned {
     std::string node_name = the_node->getName();
     auto index = timing_wire_graph.findNode(node_name);
     if (index) {
@@ -1060,9 +1074,26 @@ TimingWireGraph InitSTA::getTimingWireGraph()
       }
     }
 
+    // dump power feature.
+    PowerNodeFeature power_feature;
+    auto* pwr_vertex = ipower->get_power_graph().staToPwrVertex(the_node);
+    power_feature._toggle = pwr_vertex->getToggleData(std::nullopt);
+    power_feature._sp = pwr_vertex->getSPData(std::nullopt);
+
+    power_feature._node_internal_power = pwr_vertex->getInternalPower();
+    
+    double switch_power = 0.0;
+    if (vertex_to_switch_power.contains(pwr_vertex)) {
+      switch_power = vertex_to_switch_power[pwr_vertex];
+    }
+    power_feature._node_net_power = switch_power;
+
     auto wire_node_index = create_node(node_name, is_pin, is_port);
     auto& wire_node = timing_wire_graph.getNode(wire_node_index);
+
     wire_node._node_feature = node_feature;
+    wire_node._power_feature = power_feature;
+
     return wire_node_index;
   };
 
@@ -1174,7 +1205,16 @@ TimingWireGraph InitSTA::getTimingWireGraph()
 
       edge_feature._edge_delay = {max_rise_delay, max_fall_delay, min_rise_delay, min_fall_delay};
 
+      // dump power feature
+      PowerEdgeFeature edge_power_feature;
+
+      auto* the_pwr_arc = ipower->get_power_graph().staToPwrArc(the_arc);
+      if (the_pwr_arc) {
+        edge_power_feature._inst_arc_internal_power = dynamic_cast<ipower::PwrInstArc*>(the_pwr_arc)->getInternalPower();
+      } 
+
       inst_arc_edge._edge_feature = edge_feature;
+      inst_arc_edge._power_feature = edge_power_feature;
     }
   }
 
@@ -1306,6 +1346,11 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
           {std::get<0>(node_feature._node_net_delays), std::get<1>(node_feature._node_net_delays),
            std::get<2>(node_feature._node_net_delays), std::get<3>(node_feature._node_net_delays)});
 
+      node_feature_json["node_toggle"] = node._power_feature._toggle;
+      node_feature_json["node_sp"] = node._power_feature._sp;
+      node_feature_json["node_internal_power"] = node._power_feature._node_internal_power;
+      node_feature_json["node_net_power"] = node._power_feature._node_net_power;
+
       j.push_back({{"id", node_id_str},
                    {"name", node._name},
                    {"is_pin", node._is_pin},
@@ -1325,6 +1370,10 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
       edge_feature_json["edge_delay"] = json::array({std::get<0>(edge_feature._edge_delay), std::get<1>(edge_feature._edge_delay),
                                                  std::get<2>(edge_feature._edge_delay), std::get<3>(edge_feature._edge_delay)});
       edge_feature_json["edge_resistance"] = edge_feature._edge_resistance;
+
+      auto& edge_power_feature = edge._power_feature;
+      edge_feature_json["inst_arc_internal_power"] = edge_power_feature._inst_arc_internal_power;
+
 
       j.push_back({{"id", edge_id_str},
                    {"from_node", edge._from_node},

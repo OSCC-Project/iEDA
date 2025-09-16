@@ -131,6 +131,9 @@ unsigned PwrBuildGraph::operator()(StaGraph* sta_graph) {
     if (power_arc) {
       pwr_src_vertex->addSrcArc(power_arc.get());
       pwr_snk_vertex->addSnkArc(power_arc.get());
+
+      _power_graph.addStaAndPwrArc(sta_arc, power_arc.get());
+
       _power_graph.addPowerArc(std::move(power_arc));
     }
   }
