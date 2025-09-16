@@ -994,7 +994,7 @@ TimingWireGraph InitSTA::getTimingWireGraph()
     const double inf = 1.1e20;
 
     node_feature._is_input = design_obj->isInput();
-    if (node_feature._is_input) {
+    if (!node_feature._is_input && the_net) {
       node_feature._fanout_num = the_net->getFanouts();
     }
 
@@ -1130,10 +1130,10 @@ TimingWireGraph InitSTA::getTimingWireGraph()
           wire_from_node._node_feature._node_slews
               = {max_rise_all_nodes_slew[from_node.get_name()], max_fall_all_nodes_slew[from_node.get_name()],
                  min_rise_all_nodes_slew[from_node.get_name()], min_fall_all_nodes_slew[from_node.get_name()]};
-          wire_from_node._node_feature._node_caps = {from_node.get_cap(AnalysisMode::kMax, TransType::kRise),
-                                                     from_node.get_cap(AnalysisMode::kMax, TransType::kFall),
-                                                     from_node.get_cap(AnalysisMode::kMin, TransType::kRise),
-                                                     from_node.get_cap(AnalysisMode::kMin, TransType::kFall)};
+          wire_from_node._node_feature._node_caps = {from_node.cap(AnalysisMode::kMax, TransType::kRise),
+                                                     from_node.cap(AnalysisMode::kMax, TransType::kFall),
+                                                     from_node.cap(AnalysisMode::kMin, TransType::kRise),
+                                                     from_node.cap(AnalysisMode::kMin, TransType::kFall)};
           
           // to node
           auto wire_to_node_index = create_net_node(to_node);
@@ -1141,10 +1141,10 @@ TimingWireGraph InitSTA::getTimingWireGraph()
           wire_to_node._node_feature._node_slews
               = {max_rise_all_nodes_slew[to_node.get_name()], max_fall_all_nodes_slew[to_node.get_name()],
                  min_rise_all_nodes_slew[to_node.get_name()], min_fall_all_nodes_slew[to_node.get_name()]};
-          wire_to_node._node_feature._node_caps = {to_node.get_cap(AnalysisMode::kMax, TransType::kRise),
-                                                   to_node.get_cap(AnalysisMode::kMax, TransType::kFall),
-                                                   to_node.get_cap(AnalysisMode::kMin, TransType::kRise),
-                                                   to_node.get_cap(AnalysisMode::kMin, TransType::kFall)};
+          wire_to_node._node_feature._node_caps = {to_node.cap(AnalysisMode::kMax, TransType::kRise),
+                                                   to_node.cap(AnalysisMode::kMax, TransType::kFall),
+                                                   to_node.cap(AnalysisMode::kMin, TransType::kRise),
+                                                   to_node.cap(AnalysisMode::kMin, TransType::kFall)};
 
           auto& net_wire_edge = timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
           net_wire_edge._edge_feature._edge_resistance = wire_edge->get_res();
