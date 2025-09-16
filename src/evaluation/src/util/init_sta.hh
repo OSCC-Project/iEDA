@@ -26,6 +26,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <string>
 #include <unordered_map>
 #include <vector>
 #include <optional>
@@ -51,6 +52,13 @@ struct TimingNodeFeature {
   /// quad data, assume order is max rise, max fall, min rise, min fall.
   using QuadData = std::tuple<double, double, double, double>;
 
+  unsigned _fanout_num = 1;
+
+  bool _is_input = false;
+  bool _is_endpoint = false;
+  std::string _cell_name;
+  std::vector<std::string> _sizer_cells;
+
   Coord _node_coord = {0.0, 0.0};
   QuadData _node_slews = {0.0, 0.0, 0.0, 0.0};
   QuadData _node_caps = {0.0, 0.0, 0.0, 0.0};
@@ -61,10 +69,7 @@ struct TimingNodeFeature {
   /// node net load delays.
   QuadData _node_net_delays = {0.0, 0.0, 0.0, 0.0};
 
-  unsigned _fanout_num = 1;
 
-  bool _is_input = false;
-  bool _is_endpoint = false;
 };
 
 /// @brief The timing wire graph for weiguo used.

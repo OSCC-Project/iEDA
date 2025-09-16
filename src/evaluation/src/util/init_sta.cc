@@ -954,6 +954,14 @@ TimingWireGraph InitSTA::getTimingWireGraph()
   auto* ista = STA_INST->get_ista();
   LOG_ERROR_IF(!ista->isBuildGraph()) << "timing graph is not build";
 
+  auto& all_libs = ista->getAllLib();
+  std::vector<LibLibrary*> equiv_libs;
+  for (auto& lib : all_libs) {
+    equiv_libs.push_back(lib.get());
+  }
+
+  ista->makeClassifiedCells(equiv_libs);
+
   TimingWireGraph timing_wire_graph;
 
   /// create node in wire graph
@@ -979,10 +987,29 @@ TimingWireGraph InitSTA::getTimingWireGraph()
     auto* design_obj = the_node->get_design_obj();
     bool is_pin = design_obj ? design_obj->isPin() : false;
     bool is_port = design_obj ? design_obj->isPort() : false;
+    auto* the_net = design_obj->get_net();
 
     /// dump node feature.
-    const double inf = 1.1e20;
     TimingNodeFeature node_feature;
+    const double inf = 1.1e20;
+
+    node_feature._is_input = design_obj->isInput();
+    if (node_feature._is_input) {
+      node_feature._fanout_num = the_net->getFanouts();
+    }
+
+    node_feature._is_endpoint = the_node->is_end();
+
+    auto* own_cell = the_node->getOwnCell();
+    node_feature._cell_name = own_cell ? own_cell->get_cell_name() : "NA";
+
+    auto* equiv_cells = ista->classifyCells(own_cell);
+    if (equiv_cells) {
+      for (auto* equiv_cell : *equiv_cells) {
+        node_feature._sizer_cells.push_back(equiv_cell->get_cell_name());
+      }
+    }
+
     if (design_obj->get_coordinate()) {
       node_feature._node_coord = design_obj->get_coordinate().value();
     }
@@ -1018,7 +1045,6 @@ TimingWireGraph InitSTA::getTimingWireGraph()
     node_feature._node_rats = {max_rise_rat, max_fall_rat, min_rise_rat, min_fall_rat};
 
     // dump node net load delays.
-    auto* the_net = design_obj->get_net();
     auto* rc_net = ista->getRcNet(the_net);
     RcTree* rc_tree = nullptr;
     if (rc_net) {
@@ -1033,13 +1059,6 @@ TimingWireGraph InitSTA::getTimingWireGraph()
         node_feature._node_net_delays = {max_rise_delay, max_fall_delay, min_rise_delay, min_fall_delay};
       }
     }
-
-    node_feature._is_input = design_obj->isInput();
-    if (node_feature._is_input) {
-      node_feature._fanout_num = the_net->getFanouts();
-    }
-
-    node_feature._is_endpoint = the_node->is_end();
 
     auto wire_node_index = create_node(node_name, is_pin, is_port);
     auto& wire_node = timing_wire_graph.getNode(wire_node_index);
@@ -1104,17 +1123,28 @@ TimingWireGraph InitSTA::getTimingWireGraph()
           ieda::Stats stats2;
           auto& from_node = wire_edge->get_from();
           auto& to_node = wire_edge->get_to();
-
+          
+          // from node
           auto wire_from_node_index = create_net_node(from_node);
           auto& wire_from_node = timing_wire_graph.getNode(wire_from_node_index);
           wire_from_node._node_feature._node_slews
               = {max_rise_all_nodes_slew[from_node.get_name()], max_fall_all_nodes_slew[from_node.get_name()],
                  min_rise_all_nodes_slew[from_node.get_name()], min_fall_all_nodes_slew[from_node.get_name()]};
+          wire_from_node._node_feature._node_caps = {from_node.get_cap(AnalysisMode::kMax, TransType::kRise),
+                                                     from_node.get_cap(AnalysisMode::kMax, TransType::kFall),
+                                                     from_node.get_cap(AnalysisMode::kMin, TransType::kRise),
+                                                     from_node.get_cap(AnalysisMode::kMin, TransType::kFall)};
+          
+          // to node
           auto wire_to_node_index = create_net_node(to_node);
           auto& wire_to_node = timing_wire_graph.getNode(wire_to_node_index);
           wire_to_node._node_feature._node_slews
               = {max_rise_all_nodes_slew[to_node.get_name()], max_fall_all_nodes_slew[to_node.get_name()],
                  min_rise_all_nodes_slew[to_node.get_name()], min_fall_all_nodes_slew[to_node.get_name()]};
+          wire_to_node._node_feature._node_caps = {to_node.get_cap(AnalysisMode::kMax, TransType::kRise),
+                                                   to_node.get_cap(AnalysisMode::kMax, TransType::kFall),
+                                                   to_node.get_cap(AnalysisMode::kMin, TransType::kRise),
+                                                   to_node.get_cap(AnalysisMode::kMin, TransType::kFall)};
 
           auto& net_wire_edge = timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
           net_wire_edge._edge_feature._edge_resistance = wire_edge->get_res();
@@ -1256,22 +1286,26 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
       std::string node_id_str = "node_" + std::to_string(node_id++);
       auto& node_feature = node._node_feature;
       json node_feature_json;
-      node_feature_json["node_coord"].push_back({node_feature._node_coord.first, node_feature._node_coord.second});
-      node_feature_json["node_slews"].push_back({std::get<0>(node_feature._node_slews), std::get<1>(node_feature._node_slews),
-                                                 std::get<2>(node_feature._node_slews), std::get<3>(node_feature._node_slews)});
-      node_feature_json["node_capacitances"].push_back({std::get<0>(node_feature._node_caps), std::get<1>(node_feature._node_caps),
-                                                        std::get<2>(node_feature._node_caps), std::get<3>(node_feature._node_caps)});
-      node_feature_json["node_arrive_times"].push_back({std::get<0>(node_feature._node_ats), std::get<1>(node_feature._node_ats),
-                                                        std::get<2>(node_feature._node_ats), std::get<3>(node_feature._node_ats)});
-      node_feature_json["node_required_times"].push_back({std::get<0>(node_feature._node_rats), std::get<1>(node_feature._node_rats),
-                                                          std::get<2>(node_feature._node_rats), std::get<3>(node_feature._node_rats)});
-      node_feature_json["node_net_load_delays"].push_back(
-          {std::get<0>(node_feature._node_net_delays), std::get<1>(node_feature._node_net_delays),
-           std::get<2>(node_feature._node_net_delays), std::get<3>(node_feature._node_net_delays)});
       node_feature_json["is_input"] = node_feature._is_input;
       node_feature_json["fanout_num"] = node_feature._fanout_num;
       node_feature_json["is_input"] = node_feature._is_input;
       node_feature_json["is_endpoint"] = node_feature._is_endpoint;
+      node_feature_json["cell_name"] = node_feature._cell_name;
+      node_feature_json["sizer_cells"] = node_feature._sizer_cells;
+
+      node_feature_json["node_coord"] = json::array({node_feature._node_coord.first, node_feature._node_coord.second});
+      node_feature_json["node_slews"] = json::array({std::get<0>(node_feature._node_slews), std::get<1>(node_feature._node_slews),
+                                                 std::get<2>(node_feature._node_slews), std::get<3>(node_feature._node_slews)});
+      node_feature_json["node_capacitances"] = json::array({std::get<0>(node_feature._node_caps), std::get<1>(node_feature._node_caps),
+                                                        std::get<2>(node_feature._node_caps), std::get<3>(node_feature._node_caps)});
+      node_feature_json["node_arrive_times"] = json::array({std::get<0>(node_feature._node_ats), std::get<1>(node_feature._node_ats),
+                                                        std::get<2>(node_feature._node_ats), std::get<3>(node_feature._node_ats)});
+      node_feature_json["node_required_times"] = json::array({std::get<0>(node_feature._node_rats), std::get<1>(node_feature._node_rats),
+                                                          std::get<2>(node_feature._node_rats), std::get<3>(node_feature._node_rats)});
+      node_feature_json["node_net_load_delays"] = json::array(
+          {std::get<0>(node_feature._node_net_delays), std::get<1>(node_feature._node_net_delays),
+           std::get<2>(node_feature._node_net_delays), std::get<3>(node_feature._node_net_delays)});
+
       j.push_back({{"id", node_id_str},
                    {"name", node._name},
                    {"is_pin", node._is_pin},
@@ -1288,7 +1322,7 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
       std::string edge_id_str = "edge_" + std::to_string(edge_id++);
       auto& edge_feature = edge._edge_feature;
       json edge_feature_json;
-      edge_feature_json["edge_delay"].push_back({std::get<0>(edge_feature._edge_delay), std::get<1>(edge_feature._edge_delay),
+      edge_feature_json["edge_delay"] = json::array({std::get<0>(edge_feature._edge_delay), std::get<1>(edge_feature._edge_delay),
                                                  std::get<2>(edge_feature._edge_delay), std::get<3>(edge_feature._edge_delay)});
       edge_feature_json["edge_resistance"] = edge_feature._edge_resistance;
 
