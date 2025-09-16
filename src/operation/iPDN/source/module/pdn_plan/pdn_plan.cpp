@@ -35,10 +35,10 @@ PdnPlan::~PdnPlan()
 
 int32_t PdnPlan::transUnitDB(double value)
 {
-  auto idb_design = dmInst->get_idb_design(); //return IdbDesign* _idb_def_service->get_design()
-  auto idb_layout = idb_design->get_layout(); //class IdbDefService -> get_layout(), return IdbLayout* _layout
+  auto idb_design = dmInst->get_idb_design();  // return IdbDesign* _idb_def_service->get_design()
+  auto idb_layout = idb_design->get_layout();  // class IdbDefService -> get_layout(), return IdbLayout* _layout
 
-  return idb_layout != nullptr ? idb_layout->transUnitDB(value) : -1; //IdbLayout -> transUnitDB(double value), 即_micron_dbu微米数*value
+  return idb_layout != nullptr ? idb_layout->transUnitDB(value) : -1;  // IdbLayout -> transUnitDB(double value), 即_micron_dbu微米数*value
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -639,27 +639,25 @@ void PdnPlan::connectTwoLayerForWire(idb::IdbSpecialWire* wire, std::vector<idb:
       = dynamic_cast<idb::IdbLayerRouting*>(idb_layer_list->find_layer(segment_list_bottom[0]->get_layer()->get_name()));
   idb::IdbLayerRouting* layer_top_routing
       = dynamic_cast<idb::IdbLayerRouting*>(idb_layer_list->find_layer(segment_list_top[0]->get_layer()->get_name()));
+
   for (idb::IdbSpecialWireSegment* segment_top : segment_list_top) {
     for (idb::IdbSpecialWireSegment* segment_bottom : segment_list_bottom) {
       /// calculate intersection between layer stripe
       idb::IdbRect coordinate;
-      // if (segment_top->get_intersect_coordinate(segment_bottom, coordinate))
-      // {
       if (_cut_stripe->get_intersect_coordinate(segment_top, segment_bottom, coordinate)) {
-        // for (IdbVia *via : via_list) {
-        // IdbLayer *             layer_top =
-        // via->get_top_layer_shape().get_layer();
+        /// if the connecting 2 layers not neighbour layer, use bottom direction as enclosure direction
+        auto align_direciton = (layer_top_routing->get_order() - layer_bottom_routing->get_order()) > 2
+                                   ? layer_bottom_routing->get_direction()
+                                   : idb::IdbLayerDirection::kNone;
+
         for (int32_t layer_order = layer_bottom_routing->get_order(); layer_order <= (layer_top_routing->get_order() - 2);) {
-          // int32_t layer_order_bottom = layer_bottom_routing->get_order();
           idb::IdbLayerCut* layer_cut_find = dynamic_cast<idb::IdbLayerCut*>(idb_layer_list->find_layer_by_order(layer_order + 1));
           if (layer_cut_find == nullptr) {
             std::cout << "Error : layer input illegal." << std::endl;
             return;
           }
-          //   IdbVia *via_find = via_listt->find_via_generate(
-          //       layer_cut_find, coordinate.get_width(),
-          //       coordinate.get_height());
-          idb::IdbVia* via_find = pdn_via.findVia(layer_cut_find, coordinate.get_width(), coordinate.get_height());
+
+          idb::IdbVia* via_find = pdn_via.findVia(layer_cut_find, coordinate.get_width(), coordinate.get_height(), align_direciton);
           if (via_find == nullptr) {
             std::cout << "Error : can not find VIA matchs." << std::endl;
             continue;
@@ -675,7 +673,6 @@ void PdnPlan::connectTwoLayerForWire(idb::IdbSpecialWire* wire, std::vector<idb:
             std::cout << "-";
           }
           layer_order += 2;
-          // }
         }
       }
     }
