@@ -6,6 +6,7 @@ add_library(ipdn_via
 target_link_libraries(ipdn_via 
     PUBLIC
     idm
+    idb
 )
 
 target_include_directories(ipdn_via 
