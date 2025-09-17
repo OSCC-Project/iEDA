@@ -1769,15 +1769,23 @@ unsigned TimingEngine::isSequentialCell(const char* instance_name) {
   auto* design_netlist = _ista->get_netlist();
   auto* design_instance = design_netlist->findInstance(instance_name);
 
-  Pin* design_pin;
-  FOREACH_INSTANCE_PIN(design_instance, design_pin) {
-    auto* the_vertex = _ista->findVertex(design_pin);
-    if (the_vertex->is_clock()) {
-      return 1;
-    }
-  }
+  auto* lib_cell = design_instance->get_inst_cell();
+  bool is_sequential = lib_cell->isSequentialCell();
 
-  return 0;
+  return is_sequential;
+}
+
+/**
+ * @brief judge cell whether sequential. 
+ * 
+ * @param cell_name lib cell name.
+ * @return unsigned 
+ */
+unsigned TimingEngine::isSeqCell(const char* cell_name) {
+  auto* lib_cell = _ista->findLibertyCell(cell_name);
+  bool is_sequential = lib_cell->isSequentialCell();
+
+  return is_sequential;
 }
 
 /**
