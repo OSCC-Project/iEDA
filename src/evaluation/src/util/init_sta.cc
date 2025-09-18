@@ -119,6 +119,63 @@ void InitSTA::runSpefVecSTA(std::string work_dir) {
   updateResult("Vectorization");
 }
 
+///@brief save ppa index into csv.
+void InitSTA::saveTimingPowerBenchmark() {
+  // get freq、TNS、Top100 path delay
+  std::map<std::string, std::pair<double, double>> clock_freq_map; // clock_name, <freq, TNS>
+  auto all_clocks = STA_INST->getClockList();
+  for (auto* clock : all_clocks) {
+      double clock_period = clock->getPeriodNs();
+      double slack = STA_INST->getWNS(clock->get_clock_name(), ista::AnalysisMode::kMax);
+
+      // freq is period inverse.
+      double freq_MHz = 1000 / (clock_period - slack);
+
+      double TNS = STA_INST->getTNS(clock->get_clock_name(), ista::AnalysisMode::kMax);
+      clock_freq_map[clock->get_clock_name()] = std::make_pair(freq_MHz, TNS);
+  }
+
+  std::map<std::string, double> end_vertex_to_path_delay;
+  unsigned top_n_path = 100;
+  // get top100 path delay
+  auto top_n_seq_path_vec = STA_INST->getTopNWorstSeqPaths(ista::AnalysisMode::kMax, top_n_path);
+  for (auto* seq_path : top_n_seq_path_vec) {
+    double path_delay = seq_path->getArriveTimeNs();
+    auto* end_vertex = seq_path->getEndVertex();
+
+    end_vertex_to_path_delay[end_vertex->getName()] = path_delay;
+  }
+
+  // leakage power、internal power、switch power
+  double leakage_power = PW_INST->get_power()->getSumLeakagePower();
+  double internal_power = PW_INST->get_power()->getSumInternalPower();
+  double switch_power = PW_INST->get_power()->getSumSwitchPower();
+  
+  // net density need in single file.
+  // save to json.
+
+  std::string benchmark_file_path = STA_INST->get_design_work_space();
+  benchmark_file_path += "/timing_power_benchmark.json";
+
+  std::ofstream json_file(benchmark_file_path, std::ios::out | std::ios::trunc);
+  if (!json_file.is_open()) {
+    LOG_ERROR << "Fail to open timing_power_benchmark.json";
+    return; 
+  }
+
+  json json_data;
+  json_data["clock_freq_map"] = clock_freq_map;
+  json_data["end_vertex_to_path_delay"] = end_vertex_to_path_delay;
+  json_data["leakage_power"] = leakage_power;
+  json_data["internal_power"] = internal_power;
+  json_data["switch_power"] = switch_power;
+
+  json_file << json_data.dump(4) << std::endl;
+
+  json_file.close();
+  LOG_INFO << "save benchmark json path: " << benchmark_file_path;
+}
+
 void InitSTA::evalTiming(const std::string& routing_type, const bool& rt_done)
 {
   initStaEngine();
@@ -650,6 +707,9 @@ void InitSTA::updateResult(const std::string& routing_type)
   }
   _power[routing_type]["static_power"] = static_power;
   _power[routing_type]["dynamic_power"] = dynamic_power;
+  
+  // save benchmark file for test.
+  saveTimingPowerBenchmark();
 }
 
 double InitSTA::getEarlySlack(const std::string& pin_name) const
