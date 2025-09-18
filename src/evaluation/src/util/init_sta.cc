@@ -111,6 +111,14 @@ void InitSTA::runPlaceVecSTA(const std::string& routing_type, const bool& rt_don
   updateResult(routing_type);
 }
 
+void InitSTA::runSpefVecSTA(std::string work_dir) {
+  initStaEngine();
+
+  buildSpefRCTree(work_dir);
+
+  updateResult("Vectorization");
+}
+
 void InitSTA::evalTiming(const std::string& routing_type, const bool& rt_done)
 {
   initStaEngine();
@@ -583,6 +591,17 @@ void InitSTA::buildVecRCTree(ivec::VecLayout* vec_layout, std::string work_dir)
   STA_INST->set_design_work_space(path_dir.c_str());
   STA_INST->reportWirePaths(10000);
 }
+
+void InitSTA::buildSpefRCTree(std::string work_dir) {
+  STA_INST->readSpef(dmInst->get_config().get_spef_path().c_str());
+  STA_INST->updateTiming();
+  STA_INST->get_ista()->reportUsedLibs();
+
+  std::string path_dir = work_dir;
+  STA_INST->set_design_work_space(path_dir.c_str());
+  STA_INST->reportWirePaths(10000);
+}
+
 
 void InitSTA::initPowerEngine()
 {

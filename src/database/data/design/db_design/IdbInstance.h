@@ -128,6 +128,7 @@ class IdbInstance : public IdbObject
 
   void set_orient(IdbOrient orient, bool b_update = true);
   void set_orient_by_enum(int32_t lef_orient);
+  void set_as_flip_flop_flag() { _flip_flop_flag = 1; }
 
   IdbHalo* set_halo(IdbHalo* halo = nullptr);
   IdbRouteHalo* set_route_halo(IdbRouteHalo* route_halo = nullptr);
@@ -167,6 +168,7 @@ class IdbInstance : public IdbObject
   // region
   // Group
   IdbRegion* _region;
+  int _flip_flop_flag = -1;  /// -1:not set, 0:not flip flop, 1:flip flop
 };
 
 class IdbInstanceList

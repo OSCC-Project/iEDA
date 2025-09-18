@@ -225,6 +225,7 @@ class InitSTA
   void runSTA();
   void runVecSTA(ivec::VecLayout* vec_layout, std::string work_dir);
   void runPlaceVecSTA(const std::string& routing_type, const bool& rt_done, std::string work_dir);
+  void runSpefVecSTA(std::string work_dir);
   void evalTiming(const std::string& routing_type, const bool& rt_done = false);
 
   std::map<std::string, std::map<std::string, std::map<std::string, double>>> getTiming() const { return _timing; }
@@ -262,6 +263,7 @@ class InitSTA
 
   void buildRCTree(const std::string& routing_type);
   void buildVecRCTree(ivec::VecLayout* vec_layout, std::string work_dir);
+  void buildSpefRCTree(std::string work_dir);
   void updateTiming(const std::vector<TimingNet*>& timing_net_list, int32_t dbu_unit);
   void updateTiming(const std::vector<TimingNet*>& timing_net_list, const std::vector<std::string>& name_list, const int& propagation_level,
                     int32_t dbu_unit);

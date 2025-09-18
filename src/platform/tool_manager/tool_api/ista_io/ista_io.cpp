@@ -114,7 +114,19 @@ bool StaIO::initSTA(std::string path, bool init_log)
   readIdb();
   runSDC();
 
+  set_instance_flip_flop();
+
   return true;
+}
+
+void StaIO::set_instance_flip_flop()
+{
+  auto* idb_instances = dmInst->get_idb_design()->get_instance_list();
+  for (auto* idb_inst : idb_instances->get_instance_list()) {
+    if (isSequentialCell(idb_inst->get_name())) {
+      idb_inst->set_as_flip_flop_flag();
+    }
+  }
 }
 
 /**

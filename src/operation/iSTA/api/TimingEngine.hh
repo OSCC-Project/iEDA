@@ -397,6 +397,7 @@ class TimingEngine {
   std::vector<StaVertex *> getFanoutVertexs(StaVertex *driver_vertex);
 
   unsigned isSequentialCell(const char *instance_name);
+  unsigned isSeqCell(const char* cell_name);
   std::string getCellType(const char *cell_name);
   double getCellArea(const char *cell_name);
   unsigned isClock(const char *pin_name) const;
