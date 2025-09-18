@@ -994,10 +994,10 @@ void StaVertex::getPathDepth(
 unsigned StaVertex::GetWorstPathDepth(AnalysisMode analysis_mode) {
   auto* ista = Sta::getOrCreateSta();
 
-  auto rise_worst_seq_data =
-      ista->getWorstSeqData(this, analysis_mode, TransType::kRise);
-  auto fall_worst_seq_data =
-      ista->getWorstSeqData(this, analysis_mode, TransType::kFall);
+  auto* rise_worst_seq_data =
+      ista->getWorstSeqData(this, analysis_mode, TransType::kRise).front();
+  auto* fall_worst_seq_data =
+      ista->getWorstSeqData(this, analysis_mode, TransType::kFall).front();
 
   auto rise_depth = rise_worst_seq_data->getPathDelayData().size();
   auto fall_depth = fall_worst_seq_data->getPathDelayData().size();
