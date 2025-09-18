@@ -29,7 +29,7 @@ class VectorizationApi
 
   bool buildVectorizationLayoutData(const std::string path);
   bool buildVectorizationGraphData(const std::string path);
-  bool buildVectorizationFeature(const std::string dir, int patch_row_step, int patch_col_step, bool batch_mode = true);
+  bool buildVectorizationFeature(const std::string dir, int patch_row_step, int patch_col_step, bool batch_mode = true, bool is_placement_mode = false, int sta_mode = 0);
 
   // run the vectorization sta for get timing data.
   bool runVecSTA(const std::string dir = "VEC_STA");

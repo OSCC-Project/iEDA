@@ -26,10 +26,11 @@ namespace ivec {
 class VecFeatureStatis
 {
  public:
-  VecFeatureStatis(VecLayout* layout, VecPatchGrid* patch_grid)
+  VecFeatureStatis(VecLayout* layout, VecPatchGrid* patch_grid, bool is_placement_mode = false)
   {
     _layout = layout;
     _patch_grid = patch_grid;
+    _is_placement_mode = is_placement_mode;
   }
   ~VecFeatureStatis() {}
 
@@ -38,6 +39,7 @@ class VecFeatureStatis
  private:
   VecLayout* _layout;
   VecPatchGrid* _patch_grid;
+  bool _is_placement_mode;
 
   void feature_graph();
   void feature_patch();

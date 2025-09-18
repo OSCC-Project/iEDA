@@ -34,9 +34,11 @@
 
 namespace ivec {
 
-void VecLayoutInit::init()
+void VecLayoutInit::init(bool is_placement_mode)
 {
-  initViaIds();
+  if (!is_placement_mode){
+    initViaIds();
+  }
 
   initCells();
   initLayers();
@@ -46,7 +48,8 @@ void VecLayoutInit::init()
   initInstances();
   //   initIOPins();
 
-  initNets();
+  // Initialize nets, but skip wire processing in placement mode
+  initNets(is_placement_mode);
 }
 
 void VecLayoutInit::initViaIds()
@@ -68,7 +71,7 @@ void VecLayoutInit::initViaIds()
   LOG_INFO << "Via number : " << index;
 }
 
-void VecLayoutInit::initDie()
+void VecLayoutInit:: initDie()
 {
   auto* idb_layout = dmInst->get_idb_layout();
   auto* idb_die = idb_layout->get_die();
@@ -706,7 +709,7 @@ void VecLayoutInit::transNetDelta(int32_t ll_x, int32_t ll_y, int32_t ur_x, int3
   }
 }
 
-void VecLayoutInit::initNets()
+void VecLayoutInit::initNets(bool is_placement_mode)
 {
   ieda::Stats stats;
 
@@ -796,50 +799,52 @@ void VecLayoutInit::initNets()
       transPin(io_pin, net_id, VecNodeTYpe::vec_net, -1, pin_id, true);
     }
 
-    /// init wires
-    auto* idb_wires = idb_net->get_wire_list();
-    for (auto* idb_wire : idb_wires->get_wire_list()) {
-      for (auto* idb_segment : idb_wire->get_segment_list()) {
-        /// wire
-        if (idb_segment->is_via()) {
-          for (auto* idb_via : idb_segment->get_via_list()) {
-            transVia(idb_via, net_id, VecNodeTYpe::vec_net);
+    /// init wires - skip in placement mode as there are no wire information
+    if (!is_placement_mode) {
+      auto* idb_wires = idb_net->get_wire_list();
+      for (auto* idb_wire : idb_wires->get_wire_list()) {
+        for (auto* idb_segment : idb_wire->get_segment_list()) {
+          /// wire
+          if (idb_segment->is_via()) {
+            for (auto* idb_via : idb_segment->get_via_list()) {
+              transVia(idb_via, net_id, VecNodeTYpe::vec_net);
+            }
+          } else if (idb_segment->is_rect()) {
+            /// wire patch
+            auto* coordinate = idb_segment->get_point_start();
+            auto* rect_delta = idb_segment->get_delta_rect();
+            IdbRect* rect = new IdbRect(rect_delta);
+            rect->moveByStep(coordinate->get_x(), coordinate->get_y());
+
+            /// build grid
+            transNetDelta(rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), idb_segment->get_layer()->get_name(),
+                          net_id, VecNodeTYpe::vec_net);
+
+            delete rect;
+          } else {
+            /// nothing to do
           }
-        } else if (idb_segment->is_rect()) {
-          /// wire patch
-          auto* coordinate = idb_segment->get_point_start();
-          auto* rect_delta = idb_segment->get_delta_rect();
-          IdbRect* rect = new IdbRect(rect_delta);
-          rect->moveByStep(coordinate->get_x(), coordinate->get_y());
 
-          /// build grid
-          transNetDelta(rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), idb_segment->get_layer()->get_name(),
-                        net_id, VecNodeTYpe::vec_net);
+          /// build wire
+          if (idb_segment->get_point_number() >= 2) {
+            auto* routing_layer = dynamic_cast<IdbLayerRouting*>(idb_segment->get_layer());
 
-          delete rect;
-        } else {
-          /// nothing to do
+            /// get bounding box
+            auto* point_1 = idb_segment->get_point_start();
+            auto* point_2 = idb_segment->get_point_second();
+
+            int32_t ll_x = std::min(point_1->get_x(), point_2->get_x());
+            int32_t ll_y = std::min(point_1->get_y(), point_2->get_y());
+            int32_t ur_x = std::max(point_1->get_x(), point_2->get_x());
+            int32_t ur_y = std::max(point_1->get_y(), point_2->get_y());
+
+            /// build grid
+            transNetRect(ll_x, ll_y, ur_x, ur_y, routing_layer->get_name(), net_id, VecNodeTYpe::vec_net);
+          }
         }
-
-        /// build wire
-        if (idb_segment->get_point_number() >= 2) {
-          auto* routing_layer = dynamic_cast<IdbLayerRouting*>(idb_segment->get_layer());
-
-          /// get bounding box
-          auto* point_1 = idb_segment->get_point_start();
-          auto* point_2 = idb_segment->get_point_second();
-
-          int32_t ll_x = std::min(point_1->get_x(), point_2->get_x());
-          int32_t ll_y = std::min(point_1->get_y(), point_2->get_y());
-          int32_t ur_x = std::max(point_1->get_x(), point_2->get_x());
-          int32_t ur_y = std::max(point_1->get_y(), point_2->get_y());
-
-          /// build grid
-          transNetRect(ll_x, ll_y, ur_x, ur_y, routing_layer->get_name(), net_id, VecNodeTYpe::vec_net);
+        if (net_id % 1000 == 0) {
+          LOG_INFO << "Read nets : " << net_id << " / " << (int) idb_nets->get_net_list().size();
         }
-      }
-      if (net_id % 1000 == 0) {
-        LOG_INFO << "Read nets : " << net_id << " / " << (int) idb_nets->get_net_list().size();
       }
     }
   }

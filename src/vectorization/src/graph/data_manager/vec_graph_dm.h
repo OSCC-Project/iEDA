@@ -30,7 +30,7 @@ class VecGraphDataManager
 
   std::map<int, VecNet>& get_graph() { return _layout->get_graph().get_net_map(); }
 
-  bool buildGraphData();
+  bool buildGraphData(bool is_placement_mode = false);
 
  private:
   VecLayout* _layout;
