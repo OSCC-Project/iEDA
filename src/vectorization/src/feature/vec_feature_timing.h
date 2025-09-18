@@ -24,7 +24,8 @@ namespace ivec {
 class VecFeatureTiming
 {
  public:
-  VecFeatureTiming(VecLayout* layout, std::string dir) : _layout(layout), _dir(dir) {}
+  VecFeatureTiming(VecLayout* layout, std::string dir, bool is_placement_mode = false) 
+    : _layout(layout), _dir(dir), _is_placement_mode(is_placement_mode) {}
   ~VecFeatureTiming() {}
 
   void build();
@@ -32,6 +33,7 @@ class VecFeatureTiming
  private:
   VecLayout* _layout;
   std::string _dir;  //!< The directory for the path.
+  bool _is_placement_mode;
 
   void buildWireTimingPowerFeature(VecNet* vec_net, const std::string& net_name);
   void buildNetTimingPowerFeature();

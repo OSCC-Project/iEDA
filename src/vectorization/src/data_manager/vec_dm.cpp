@@ -26,15 +26,15 @@
 
 namespace ivec {
 
-bool VecDataManager::buildLayoutData()
+bool VecDataManager::buildLayoutData(bool is_placement_mode)
 {
-  return layout_dm.buildLayoutData();
+  return layout_dm.buildLayoutData(is_placement_mode);
 }
 
-bool VecDataManager::buildGraphData()
+bool VecDataManager::buildGraphData(bool is_placement_mode)
 {
   VecGraphDataManager graph_dm(&layout_dm.get_layout());
-  bool b_success = graph_dm.buildGraphData();
+  bool b_success = graph_dm.buildGraphData(is_placement_mode);
 
   return b_success;
 }
@@ -47,16 +47,16 @@ bool VecDataManager::buildPatternData()
   return true;
 }
 
-bool VecDataManager::buildPatchData(const std::string dir)
+bool VecDataManager::buildPatchData(const std::string dir, bool is_placement_mode)
 {
   patch_dm = new VecPatchDataManager(&layout_dm.get_layout());
-  return patch_dm->buildPatchData();
+  return patch_dm->buildPatchData(is_placement_mode);
 }
 
-bool VecDataManager::buildPatchData(const std::string dir, int patch_row_step, int patch_col_step)
+bool VecDataManager::buildPatchData(const std::string dir, int patch_row_step, int patch_col_step, bool is_placement_mode)
 {
   patch_dm = new VecPatchDataManager(&layout_dm.get_layout());
-  return patch_dm->buildPatchData(patch_row_step, patch_col_step);
+  return patch_dm->buildPatchData(patch_row_step, patch_col_step, is_placement_mode);
 }
 
 bool VecDataManager::checkData()
@@ -78,8 +78,10 @@ std::map<int, VecNet> VecDataManager::getGraph(std::string path)
   return layout_dm.get_graph();
 }
 
-void VecDataManager::saveData(const std::string dir, bool batch_mode)
+void VecDataManager::saveData(const std::string dir, bool batch_mode, bool is_placement_mode)
 {
+  // Always pass patch_grid if it exists, regardless of placement mode
+  // This ensures patch data is saved in both placement and routing modes
   VecLayoutFileIO file_io(dir, &layout_dm.get_layout(), &patch_dm->get_patch_grid());
   file_io.saveJson(batch_mode);
 }

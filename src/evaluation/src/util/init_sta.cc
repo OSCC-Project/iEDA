@@ -92,6 +92,25 @@ void InitSTA::runVecSTA(ivec::VecLayout* vec_layout, std::string work_dir)
   updateResult("Vectorization");
 }
 
+void InitSTA::runPlaceVecSTA(const std::string& routing_type, const bool& rt_done, std::string work_dir)
+{
+  initStaEngine();
+
+  if (routing_type == "EGR" || routing_type == "DR") {
+    if (!rt_done) {
+      callRT(routing_type);
+    }
+  } else {
+    buildRCTree(routing_type);
+  }
+
+  std::string path_dir = work_dir;
+  STA_INST->set_design_work_space(path_dir.c_str());
+  STA_INST->reportWirePaths(10000);
+
+  updateResult(routing_type);
+}
+
 void InitSTA::evalTiming(const std::string& routing_type, const bool& rt_done)
 {
   initStaEngine();

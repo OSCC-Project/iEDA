@@ -224,6 +224,7 @@ class InitSTA
 
   void runSTA();
   void runVecSTA(ivec::VecLayout* vec_layout, std::string work_dir);
+  void runPlaceVecSTA(const std::string& routing_type, const bool& rt_done, std::string work_dir);
   void evalTiming(const std::string& routing_type, const bool& rt_done = false);
 
   std::map<std::string, std::map<std::string, std::map<std::string, double>>> getTiming() const { return _timing; }

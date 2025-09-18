@@ -34,7 +34,13 @@ void VecFeatureTiming::build()
 {
   auto* eval_tp = ieval::InitSTA::getInst();  // evaluate timing and power.
 
-  eval_tp->runVecSTA(_layout, _dir);
+  if (_is_placement_mode) {
+    // In placement mode, use EGR estimation for timing calculation
+    eval_tp->runPlaceVecSTA("EGR", false, _dir);
+  } else {
+    // In routing mode, use actual wire information
+    eval_tp->runVecSTA(_layout, _dir);
+  }
 
   buildNetTimingPowerFeature();
 
