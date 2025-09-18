@@ -70,7 +70,7 @@ std::map<int, VecNet> Vectorization::getGraph(std::string path)
   return _data_manager.getGraph(path);
 }
 
-void Vectorization::buildFeature(const std::string dir, int patch_row_step, int patch_col_step, bool batch_mode, bool is_placement_mode)
+void Vectorization::buildFeature(const std::string dir, int patch_row_step, int patch_col_step, bool batch_mode, bool is_placement_mode, int sta_mode)
 {
   {
     /// build layout data
@@ -97,16 +97,16 @@ void Vectorization::buildFeature(const std::string dir, int patch_row_step, int 
   bool check_ok = _data_manager.checkData();
 
   /// build feature
-  generateFeature(dir, is_placement_mode);
+  generateFeature(dir, is_placement_mode, sta_mode);
 
   /// save
   _data_manager.saveData(dir, batch_mode, is_placement_mode);
 }
 
-void Vectorization::generateFeature(const std::string dir, bool is_placement_mode)
+void Vectorization::generateFeature(const std::string dir, bool is_placement_mode, int sta_mode)
 {
   auto* patch_grid =  _data_manager.patch_dm == nullptr ? nullptr : &_data_manager.patch_dm->get_patch_grid();
-  VecFeature feature(&_data_manager.layout_dm.get_layout(), patch_grid, dir, is_placement_mode);
+  VecFeature feature(&_data_manager.layout_dm.get_layout(), patch_grid, dir, is_placement_mode, sta_mode);
   
   {
     MemoryMonitor monitor("buildFeatureTiming", "./memory_usage.log");

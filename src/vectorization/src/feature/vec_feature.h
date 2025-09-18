@@ -27,12 +27,13 @@ namespace ivec {
 class VecFeature
 {
  public:
-  VecFeature(VecLayout* layout, VecPatchGrid* patch_grid, std::string dir, bool is_placement_mode = false)
+  VecFeature(VecLayout* layout, VecPatchGrid* patch_grid, std::string dir, bool is_placement_mode = false, int sta_mode = 0)
   {
     _layout = layout;
     _patch_grid = patch_grid;
     _dir = dir;  /// feature directory
     _is_placement_mode = is_placement_mode;
+    _sta_mode = sta_mode;
   }
   ~VecFeature() {}
 
@@ -45,6 +46,7 @@ class VecFeature
   VecPatchGrid* _patch_grid;
   std::string _dir;
   bool _is_placement_mode;
+  int _sta_mode;
 };
 
 }  // namespace ivec

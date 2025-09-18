@@ -42,7 +42,7 @@ void VecFeature::buildFeatureDrc(std::string drc_path)
 
 void VecFeature::buildFeatureTiming()
 {
-  VecFeatureTiming feature_timing(_layout, _dir, _is_placement_mode);
+  VecFeatureTiming feature_timing(_layout, _dir, _is_placement_mode, _sta_mode);
 
   feature_timing.build();
 }
