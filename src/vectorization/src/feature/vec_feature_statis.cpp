@@ -272,7 +272,16 @@ void VecFeatureStatis::feature_patch()
 
     patch.pin_density = pin_density_map[patch_id];
     patch.cell_density = cell_density_map[patch_id];
-    patch.net_density = net_density_map[patch_id];
+    
+    // In placement mode, use original net_density calculation
+    // In routing mode, calculate net_density using real wire density (max across all layers)
+    if (_is_placement_mode) {
+      patch.net_density = net_density_map[patch_id];
+    } else {
+      // Will be calculated later using real wire data
+      patch.net_density = 0.0;
+    }
+    
     patch.macro_margin = macro_margin_map[patch_id];
     patch.RUDY_congestion = rudy_congestion_map[patch_id];
     patch.EGR_congestion = egr_congestion_map[patch_id];
@@ -320,6 +329,26 @@ void VecFeatureStatis::feature_patch()
           }
         }
       }
+    }
+
+    // Calculate net_density for routing mode using real wire data
+    if (!_is_placement_mode) {
+      double max_wire_density = 0.0;
+      
+      // Calculate patch area
+      int patch_width = (patch.colIdMax - patch.colIdMin) * gridInfoInst.x_step;
+      int patch_height = (patch.rowIdMax - patch.rowIdMin) * gridInfoInst.y_step;
+      double patch_area = static_cast<double>(patch_width) * patch_height;
+      
+      // Calculate wire density for each layer and find maximum
+      for (auto& [layer_id, patch_layer] : patch.get_layer_map()) {
+        double wire_density = 0.0;
+        // Wire density = (wire_length * wire_width) / patch_area
+        wire_density = (static_cast<double>(patch_layer.wire_len) * patch_layer.wire_width) / patch_area;
+        max_wire_density = std::max(max_wire_density, wire_density);
+      }
+      
+      patch.net_density = max_wire_density;
     }
 
     if (i % 1000 == 0) {
