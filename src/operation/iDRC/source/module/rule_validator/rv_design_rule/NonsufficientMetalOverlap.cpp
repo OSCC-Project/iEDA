@@ -94,7 +94,8 @@ void RuleValidator::verifyNonsufficientMetalOverlap(RVBox& rv_box)
           for (auto& overlap_rect_env : overlap_rect_env_list) {
             PlanarRect thirdrect = DRCUTIL.convertToPlanarRect(overlap_rect_env);
             if ((DRCUTIL.isInside(thirdrect, overlap_rect) && DRCUTIL.isOpenOverlap(thirdrect, overlap_rect)) && thirdrect != rect && thirdrect != env_rect
-                && thirdrect.getWidth() >= min_width && DRCUTIL.getOverlap(thirdrect, rect) != overlap_rect && DRCUTIL.getOverlap(thirdrect, env_rect) != overlap_rect) {
+                && thirdrect.getWidth() >= min_width && DRCUTIL.getOverlap(thirdrect, rect) != overlap_rect
+                && DRCUTIL.getOverlap(thirdrect, env_rect) != overlap_rect) {
               is_inside = true;
               break;
             }

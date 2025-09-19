@@ -1257,7 +1257,6 @@ void PinAccessor::exemptPinShape(PAModel& pa_model, PABox& pa_box)
   for (auto& [pa_net_idx, access_point_set] : pa_box.get_net_access_point_map()) {
     std::map<int32_t, std::vector<EXTLayerRect*>> routing_obs_rect_map;
     for (auto& [routing_layer_idx, net_fixed_rect_map] : pa_box.get_type_layer_net_fixed_rect_map()[true]) {
-
       for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
         if (pa_net_idx == net_idx) {
           continue;

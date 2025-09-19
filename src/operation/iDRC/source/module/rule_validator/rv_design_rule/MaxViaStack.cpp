@@ -65,7 +65,7 @@ void RuleValidator::verifyMaxViaStack(RVBox& rv_box)
       std::map<int32_t, std::vector<std::pair<int32_t, PlanarRect>>> layer_net_stack_rect_map;
       layer_net_stack_rect_map[cut_layer_idx].push_back(net_stack_rect_pair);
       for (int32_t curr_cut_layer_idx = cut_layer_idx; curr_cut_layer_idx < top_cut_layer_idx; curr_cut_layer_idx++) {
-        std::map<int32_t,std::set<PlanarRect,CmpPlanarRectByXASC>> net_used_rect_set;
+        std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>> net_used_rect_set;
         for (auto& [net_idx, stack_rect] : layer_net_stack_rect_map[curr_cut_layer_idx]) {
           std::vector<std::pair<BGRectInt, int32_t>> bg_rect_net_pair_list;
           PlanarRect check_rect = stack_rect;
@@ -75,7 +75,7 @@ void RuleValidator::verifyMaxViaStack(RVBox& rv_box)
             if (!DRCUTIL.isOpenOverlap(stack_rect, env_rect)) {
               continue;
             }
-            if(DRCUTIL.exist(net_used_rect_set[env_net_idx], env_rect)) {
+            if (DRCUTIL.exist(net_used_rect_set[env_net_idx], env_rect)) {
               continue;
             }
             layer_net_stack_rect_map[curr_cut_layer_idx + 1].push_back({env_net_idx, env_rect});
