@@ -1077,7 +1077,18 @@ void TrackAssigner::updateTaskSchedule(TAPanel& ta_panel, std::vector<TATask*>& 
       if (!RTUTIL.exist(violation.get_violation_net_set(), ta_task->get_net_idx())) {
         continue;
       }
-      bool result_overlap = RTUTIL.isClosedOverlap(violation_shape.get_real_rect(), ta_task->get_bounding_box());
+      bool result_overlap = false;
+      for (Segment<LayerCoord>& segment : ta_panel.get_net_task_detailed_result_map()[ta_task->get_net_idx()][ta_task->get_task_idx()]) {
+        for (NetShape& net_shape : RTDM.getNetDetailedShapeList(ta_task->get_net_idx(), segment)) {
+          if (violation_shape.get_layer_idx() == net_shape.get_layer_idx() && RTUTIL.isClosedOverlap(violation_shape.get_real_rect(), net_shape.get_rect())) {
+            result_overlap = true;
+            break;
+          }
+        }
+        if (result_overlap) {
+          break;
+        }
+      }
       if (!result_overlap) {
         continue;
       }

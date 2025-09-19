@@ -990,6 +990,7 @@ void RTInterface::wrapPinList(Net& net, idb::IdbNet* idb_net)
     }
     Pin pin;
     pin.set_pin_name(RTUTIL.getString(idb_pin->get_instance()->get_name(), ":", idb_pin->get_pin_name()));
+    pin.set_is_core(idb_pin->get_instance()->get_cell_master()->is_core());
     wrapPinShapeList(pin, idb_pin);
     pin_list.push_back(std::move(pin));
   }
@@ -999,6 +1000,7 @@ void RTInterface::wrapPinList(Net& net, idb::IdbNet* idb_net)
     }
     Pin pin;
     pin.set_pin_name(idb_pin->get_pin_name());
+    pin.set_is_core(false);
     wrapPinShapeList(pin, idb_pin);
     pin_list.push_back(std::move(pin));
   }

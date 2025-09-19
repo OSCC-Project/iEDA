@@ -77,7 +77,7 @@ class DetailedRouter
   void buildDRNodeNeighbor(DRBox& dr_box);
   void buildOrientNetMap(DRBox& dr_box);
   void buildNetShadowMap(DRBox& dr_box);
-  void exemptPinShape(DRBox& dr_box);
+  void exemptPinShape(DRModel& dr_model, DRBox& dr_box);
   void routeDRBox(DRBox& dr_box);
   std::vector<DRTask*> initTaskSchedule(DRBox& dr_box);
   void updateGraph(DRBox& dr_box, DRTask* dr_task);
