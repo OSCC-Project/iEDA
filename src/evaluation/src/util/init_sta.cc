@@ -1345,6 +1345,7 @@ TimingInstanceGraph InitSTA::getTimingInstanceGraph()
 
   auto* ista = STA_INST->get_ista();
   LOG_ERROR_IF(!ista->isBuildGraph()) << "timing graph is not build";
+  auto* ipower = PW_INST->get_power();
 
   auto* the_timing_graph = &(ista->get_graph());
 
@@ -1352,11 +1353,18 @@ TimingInstanceGraph InitSTA::getTimingInstanceGraph()
   timing_instance_graph._nodes.reserve(the_timing_graph->get_vertexes().size() * 10);
 
   /// create node in instance graph
-  auto create_node = [&timing_instance_graph](std::string& node_name) -> unsigned {
+  auto create_node = [&timing_instance_graph, ipower](
+                         std::string& node_name,
+                         ista::DesignObject* obj) -> unsigned {
     auto index = timing_instance_graph.findNode(node_name);
     if (!index) {
       TimingInstanceNode the_node;
       the_node._name = node_name;
+
+      auto* power_data = ipower->getObjData(obj);
+      double leakage_power = power_data->get_leakage_power();
+
+      the_node._node_feature._leakage_power = leakage_power;
 
       index = timing_instance_graph.addNode(the_node);
     }
@@ -1380,8 +1388,8 @@ TimingInstanceGraph InitSTA::getTimingInstanceGraph()
       auto src_instance_name = src_instance->getFullName();
       auto snk_instance_name = snk_instance->getFullName();
 
-      unsigned src_node_index = create_node(src_instance_name);
-      unsigned snk_node_index = create_node(snk_instance_name);
+      unsigned src_node_index = create_node(src_instance_name, src_instance);
+      unsigned snk_node_index = create_node(snk_instance_name, snk_instance);
 
       timing_instance_graph.addEdge(src_node_index, snk_node_index);
     }
@@ -1515,7 +1523,10 @@ void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, c
     json j = json::array();
     for (unsigned node_id = 0; auto& node : timing_instance_graph._nodes) {
       std::string id_str = "node_" + std::to_string(node_id++);
-      j.push_back({{"id", id_str}, {"name", node._name}});
+      j.push_back({{"id", id_str},
+                   {"name", node._name},
+                   {"leakage_power",
+                   node._node_feature._leakage_power}});
     }
     nodes_json = j;
   });

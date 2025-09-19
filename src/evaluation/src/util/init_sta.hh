@@ -116,10 +116,17 @@ struct TimingWireEdge
   PowerEdgeFeature _power_feature;
 };
 
+///@brief The timing instance node feature.
+struct TimingInstanceNodeFeature {
+  double _leakage_power = 0.0;
+};
+
 
 /// @brief The timing instance node for wangrui used.
 struct TimingInstanceNode {
   std::string _name; //!< instance name
+
+  TimingInstanceNodeFeature _node_feature;
 };
 
 struct TimingNetEdge {
