@@ -43,6 +43,7 @@ void VecFeatureTiming::build()
       case 0:
         // Use actual wire information from layout (VEC_STA mode)
         eval_tp->runVecSTA(_layout, _dir);
+        buildNetTimingPowerFeature();
         break;
       case 1:
         // Use SPEF file for timing analysis (SPEF_STA mode)
@@ -54,8 +55,6 @@ void VecFeatureTiming::build()
         break;
     }
   }
-
-  buildNetTimingPowerFeature();
 
   auto timing_wire_graph = eval_tp->getTimingWireGraph();
 

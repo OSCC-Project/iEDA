@@ -135,15 +135,16 @@ void InitSTA::saveTimingPowerBenchmark() {
       clock_freq_map[clock->get_clock_name()] = std::make_pair(freq_MHz, TNS);
   }
 
-  std::map<std::string, double> end_vertex_to_path_delay;
+  std::vector<std::pair<std::string, double>> end_vertex_to_path_delay;
   unsigned top_n_path = 100;
   // get top100 path delay
   auto top_n_seq_path_vec = STA_INST->getTopNWorstSeqPaths(ista::AnalysisMode::kMax, top_n_path);
+  LOG_INFO << "seq path num: " << top_n_seq_path_vec.size();
   for (auto* seq_path : top_n_seq_path_vec) {
     double path_delay = seq_path->getArriveTimeNs();
     auto* end_vertex = seq_path->getEndVertex();
 
-    end_vertex_to_path_delay[end_vertex->getName()] = path_delay;
+    end_vertex_to_path_delay.emplace_back(end_vertex->getName(), path_delay);
   }
 
   // leakage power、internal power、switch power
@@ -650,7 +651,9 @@ void InitSTA::buildVecRCTree(ivec::VecLayout* vec_layout, std::string work_dir)
 }
 
 void InitSTA::buildSpefRCTree(std::string work_dir) {
-  STA_INST->readSpef(dmInst->get_config().get_spef_path().c_str());
+  std::string spef_path = dmInst->get_config().get_spef_path();
+  LOG_INFO << "spef path: " << spef_path;
+  STA_INST->readSpef(spef_path.c_str());
   STA_INST->updateTiming();
   STA_INST->get_ista()->reportUsedLibs();
 
@@ -1230,14 +1233,13 @@ TimingWireGraph InitSTA::getTimingWireGraph()
       auto* the_net = the_net_arc->get_net();
 
       auto* rc_net = ista->getRcNet(the_net);
+      auto* rc_tree = rc_net->rct();
 
-      if (rc_net) {
+      if (rc_net && rc_tree) {
         auto* snk_node = the_arc->get_snk();
         auto snk_node_name = snk_node->get_design_obj()->getFullName();
 
         auto wire_topo = rc_net->getWireTopo(snk_node_name.c_str());
-        auto* rc_tree = rc_net->rct();
-        LOG_FATAL_IF(!rc_tree) << "rc net has no rc tree.";
 
         auto vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMax, TransType::kRise);
         auto max_rise_all_nodes_slew = rc_tree->getAllNodeSlew(vertex_slew.value_or(0.0), AnalysisMode::kMax, TransType::kRise);
