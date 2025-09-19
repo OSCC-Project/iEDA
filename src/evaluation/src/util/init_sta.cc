@@ -41,7 +41,7 @@
 namespace ieval {
 
 using json = nlohmann::ordered_json;
-  
+
 #define STA_INST (ista::TimingEngine::getOrCreateTimingEngine())
 #define RT_INST (irt::RTInterface::getInst())
 #define PW_INST (ipower::PowerEngine::getOrCreatePowerEngine())
@@ -90,6 +90,91 @@ void InitSTA::runVecSTA(ivec::VecLayout* vec_layout, std::string work_dir)
   buildVecRCTree(vec_layout, work_dir);
 
   updateResult("Vectorization");
+}
+
+void InitSTA::runPlaceVecSTA(const std::string& routing_type, const bool& rt_done, std::string work_dir)
+{
+  initStaEngine();
+
+  if (routing_type == "EGR" || routing_type == "DR") {
+    if (!rt_done) {
+      callRT(routing_type);
+    }
+  } else {
+    buildRCTree(routing_type);
+  }
+
+  std::string path_dir = work_dir;
+  STA_INST->set_design_work_space(path_dir.c_str());
+  STA_INST->reportWirePaths(10000);
+
+  updateResult(routing_type);
+}
+
+void InitSTA::runSpefVecSTA(std::string work_dir) {
+  initStaEngine();
+
+  buildSpefRCTree(work_dir);
+
+  updateResult("Vectorization");
+}
+
+///@brief save ppa index into csv.
+void InitSTA::saveTimingPowerBenchmark() {
+  // get freq、TNS、Top100 path delay
+  std::map<std::string, std::pair<double, double>> clock_freq_map; // clock_name, <freq, TNS>
+  auto all_clocks = STA_INST->getClockList();
+  for (auto* clock : all_clocks) {
+      double clock_period = clock->getPeriodNs();
+      double slack = STA_INST->getWNS(clock->get_clock_name(), ista::AnalysisMode::kMax);
+
+      // freq is period inverse.
+      double freq_MHz = 1000 / (clock_period - slack);
+
+      double TNS = STA_INST->getTNS(clock->get_clock_name(), ista::AnalysisMode::kMax);
+      clock_freq_map[clock->get_clock_name()] = std::make_pair(freq_MHz, TNS);
+  }
+
+  std::vector<std::pair<std::string, double>> end_vertex_to_path_delay;
+  unsigned top_n_path = 100;
+  // get top100 path delay
+  auto top_n_seq_path_vec = STA_INST->getTopNWorstSeqPaths(ista::AnalysisMode::kMax, top_n_path);
+  LOG_INFO << "seq path num: " << top_n_seq_path_vec.size();
+  for (auto* seq_path : top_n_seq_path_vec) {
+    double path_delay = seq_path->getArriveTimeNs();
+    auto* end_vertex = seq_path->getEndVertex();
+
+    end_vertex_to_path_delay.emplace_back(end_vertex->getName(), path_delay);
+  }
+
+  // leakage power、internal power、switch power
+  double leakage_power = PW_INST->get_power()->getSumLeakagePower();
+  double internal_power = PW_INST->get_power()->getSumInternalPower();
+  double switch_power = PW_INST->get_power()->getSumSwitchPower();
+  
+  // net density need in single file.
+  // save to json.
+
+  std::string benchmark_file_path = STA_INST->get_design_work_space();
+  benchmark_file_path += "/timing_power_benchmark.json";
+
+  std::ofstream json_file(benchmark_file_path, std::ios::out | std::ios::trunc);
+  if (!json_file.is_open()) {
+    LOG_ERROR << "Fail to open timing_power_benchmark.json";
+    return; 
+  }
+
+  json json_data;
+  json_data["clock_freq_map"] = clock_freq_map;
+  json_data["end_vertex_to_path_delay"] = end_vertex_to_path_delay;
+  json_data["leakage_power"] = leakage_power;
+  json_data["internal_power"] = internal_power;
+  json_data["switch_power"] = switch_power;
+
+  json_file << json_data.dump(4) << std::endl;
+
+  json_file.close();
+  LOG_INFO << "save benchmark json path: " << benchmark_file_path;
 }
 
 void InitSTA::evalTiming(const std::string& routing_type, const bool& rt_done)
@@ -565,6 +650,19 @@ void InitSTA::buildVecRCTree(ivec::VecLayout* vec_layout, std::string work_dir)
   STA_INST->reportWirePaths(10000);
 }
 
+void InitSTA::buildSpefRCTree(std::string work_dir) {
+  std::string spef_path = dmInst->get_config().get_spef_path();
+  LOG_INFO << "spef path: " << spef_path;
+  STA_INST->readSpef(spef_path.c_str());
+  STA_INST->updateTiming();
+  STA_INST->get_ista()->reportUsedLibs();
+
+  std::string path_dir = work_dir;
+  STA_INST->set_design_work_space(path_dir.c_str());
+  STA_INST->reportWirePaths(10000);
+}
+
+
 void InitSTA::initPowerEngine()
 {
   if (!PW_INST->isBuildGraph()) {
@@ -612,6 +710,9 @@ void InitSTA::updateResult(const std::string& routing_type)
   }
   _power[routing_type]["static_power"] = static_power;
   _power[routing_type]["dynamic_power"] = dynamic_power;
+  
+  // save benchmark file for test.
+  saveTimingPowerBenchmark();
 }
 
 double InitSTA::getEarlySlack(const std::string& pin_name) const
@@ -951,37 +1052,160 @@ TimingWireGraph InitSTA::getTimingWireGraph()
   LOG_INFO << "get wire timing graph start";
   ieda::Stats stats;
 
+  auto* ista = STA_INST->get_ista();
+  LOG_ERROR_IF(!ista->isBuildGraph()) << "timing graph is not build";
+  
+  // build equivalent library cells map
+  auto& all_libs = ista->getAllLib();
+  std::vector<LibLibrary*> equiv_libs;
+  for (auto& lib : all_libs) {
+    equiv_libs.push_back(lib.get());
+  }
+
+  ista->makeClassifiedCells(equiv_libs);
+
+  auto* ipower = PW_INST->get_power();
+
+  // build switch power map.
+  auto& switch_powers = ipower->get_switch_powers();
+  std::map<ipower::PwrVertex*, double> vertex_to_switch_power;
+  for (auto& switch_power : switch_powers) {
+    auto* the_net = switch_power->get_design_obj();
+    auto* the_driver = dynamic_cast<ista::Net*>(the_net)->getDriver();
+    auto* the_sta_vertex = ista->findVertex(the_driver);
+    auto* the_pwr_vertex = ipower->get_power_graph().staToPwrVertex(the_sta_vertex);
+    vertex_to_switch_power[the_pwr_vertex] = switch_power->get_switch_power();
+  }
+
   TimingWireGraph timing_wire_graph;
 
   /// create node in wire graph
   auto create_node = [&timing_wire_graph](std::string& node_name, bool is_pin, bool is_port) -> unsigned {
-    auto index = timing_wire_graph.findNode(node_name);
-    if (!index) {
-      TimingWireNode the_node;
-      the_node._name = node_name;
-      the_node._is_pin = is_pin;
-      the_node._is_port = is_port;
+    TimingWireNode the_node;
+    the_node._name = node_name;
+    the_node._is_pin = is_pin;
+    the_node._is_port = is_port;
 
-      index = timing_wire_graph.addNode(the_node);
-    }
+    auto index = timing_wire_graph.addNode(the_node);
 
-    return index.value();
+    return index;
   };
 
   /// the node is StaNode
-  auto create_inst_node = [&create_node](auto* the_node) -> unsigned {
+  auto create_inst_node = [&timing_wire_graph, &create_node, &vertex_to_switch_power, ista, ipower](auto* the_node) -> unsigned {
     std::string node_name = the_node->getName();
+    auto index = timing_wire_graph.findNode(node_name);
+    if (index) {
+      return index.value();
+    }
+
     auto* design_obj = the_node->get_design_obj();
     bool is_pin = design_obj ? design_obj->isPin() : false;
     bool is_port = design_obj ? design_obj->isPort() : false;
+    auto* the_net = design_obj->get_net();
+
+    /// dump node feature.
+    TimingNodeFeature node_feature;
+    const double inf = 1.1e20;
+
+    node_feature._is_input = design_obj->isInput();
+    if (!node_feature._is_input && the_net) {
+      node_feature._fanout_num = the_net->getFanouts();
+    }
+
+    node_feature._is_endpoint = the_node->is_end();
+
+    auto* own_cell = the_node->getOwnCell();
+    node_feature._cell_name = own_cell ? own_cell->get_cell_name() : "NA";
+
+    auto* equiv_cells = ista->classifyCells(own_cell);
+    if (equiv_cells) {
+      for (auto* equiv_cell : *equiv_cells) {
+        node_feature._sizer_cells.push_back(equiv_cell->get_cell_name());
+      }
+    }
+
+    if (design_obj->get_coordinate()) {
+      node_feature._node_coord = design_obj->get_coordinate().value();
+    }
+
+    // dump node slews.
+    double max_rise_slew = the_node->getSlewNs(AnalysisMode::kMax, TransType::kRise).value_or(inf);
+    double max_fall_slew = the_node->getSlewNs(AnalysisMode::kMax, TransType::kFall).value_or(inf);
+    double min_rise_slew = the_node->getSlewNs(AnalysisMode::kMin, TransType::kRise).value_or(inf);
+    double min_fall_slew = the_node->getSlewNs(AnalysisMode::kMin, TransType::kFall).value_or(inf);
+
+    node_feature._node_slews = {max_rise_slew, max_fall_slew, min_rise_slew, min_fall_slew};
+
+    // dump node caps.
+    double max_rise_cap = the_node->getLoad(AnalysisMode::kMax, TransType::kRise);
+    double max_fall_cap = the_node->getLoad(AnalysisMode::kMax, TransType::kFall);
+
+    double min_rise_cap = the_node->getLoad(AnalysisMode::kMin, TransType::kRise);
+    double min_fall_cap = the_node->getLoad(AnalysisMode::kMin, TransType::kFall);
+    node_feature._node_caps = {max_rise_cap, max_fall_cap, min_rise_cap, min_fall_cap};
+
+    // dump node arrive times.
+    double max_rise_at = the_node->getArriveTimeNs(AnalysisMode::kMax, TransType::kRise).value_or(inf);
+    double max_fall_at = the_node->getArriveTimeNs(AnalysisMode::kMax, TransType::kFall).value_or(inf);
+    double min_rise_at = the_node->getArriveTimeNs(AnalysisMode::kMin, TransType::kRise).value_or(inf);
+    double min_fall_at = the_node->getArriveTimeNs(AnalysisMode::kMin, TransType::kFall).value_or(inf);
+    node_feature._node_ats = {max_rise_at, max_fall_at, min_rise_at, min_fall_at};
+
+    // dump node required times.
+    double max_rise_rat = the_node->getReqTimeNs(AnalysisMode::kMax, TransType::kRise).value_or(inf);
+    double max_fall_rat = the_node->getReqTimeNs(AnalysisMode::kMax, TransType::kFall).value_or(inf);
+    double min_rise_rat = the_node->getReqTimeNs(AnalysisMode::kMin, TransType::kRise).value_or(inf);
+    double min_fall_rat = the_node->getReqTimeNs(AnalysisMode::kMin, TransType::kFall).value_or(inf);
+    node_feature._node_rats = {max_rise_rat, max_fall_rat, min_rise_rat, min_fall_rat};
+
+    // dump node net load delays.
+    auto* rc_net = ista->getRcNet(the_net);
+    RcTree* rc_tree = nullptr;
+    if (rc_net) {
+      rc_tree = rc_net->rct();
+      if (rc_tree) {
+        std::string obj_name = design_obj->getFullName();
+
+        double max_rise_delay = rc_tree->delay(obj_name.c_str(), AnalysisMode::kMax, TransType::kRise);
+        double max_fall_delay = rc_tree->delay(obj_name.c_str(), AnalysisMode::kMax, TransType::kFall);
+        double min_rise_delay = rc_tree->delay(obj_name.c_str(), AnalysisMode::kMin, TransType::kRise);
+        double min_fall_delay = rc_tree->delay(obj_name.c_str(), AnalysisMode::kMin, TransType::kFall);
+        node_feature._node_net_delays = {max_rise_delay, max_fall_delay, min_rise_delay, min_fall_delay};
+      }
+    }
+
+    // dump power feature.
+    PowerNodeFeature power_feature;
+    auto* pwr_vertex = ipower->get_power_graph().staToPwrVertex(the_node);
+    power_feature._toggle = pwr_vertex->getToggleData(std::nullopt);
+    power_feature._sp = pwr_vertex->getSPData(std::nullopt);
+
+    power_feature._node_internal_power = pwr_vertex->getInternalPower();
+    
+    double switch_power = 0.0;
+    if (vertex_to_switch_power.contains(pwr_vertex)) {
+      switch_power = vertex_to_switch_power[pwr_vertex];
+    }
+    power_feature._node_net_power = switch_power;
 
     auto wire_node_index = create_node(node_name, is_pin, is_port);
+    auto& wire_node = timing_wire_graph.getNode(wire_node_index);
+
+    wire_node._node_feature = node_feature;
+    wire_node._power_feature = power_feature;
+
     return wire_node_index;
   };
 
   /// the node is RC Node
-  auto create_net_node = [&create_node](auto& the_node) -> unsigned {
+  auto create_net_node = [&timing_wire_graph, &create_node](auto& the_node) -> unsigned {
     std::string node_name = the_node.get_name();
+    auto index = timing_wire_graph.findNode(node_name);
+    if (index) {
+      return index.value();
+    }
+
     bool is_pin = the_node.get_obj() ? the_node.get_obj()->isPin() : false;
     bool is_port = the_node.get_obj() ? the_node.get_obj()->isPort() : false;
 
@@ -989,14 +1213,18 @@ TimingWireGraph InitSTA::getTimingWireGraph()
     return wire_node_index;
   };
 
-  auto* ista = STA_INST->get_ista();
-  LOG_ERROR_IF(!ista->isBuildGraph()) << "timing graph is not build";
-
   auto* the_timing_graph = &(ista->get_graph());
   ista::StaArc* the_arc;
+  ista::StaVertex* the_vertex;
 
   timing_wire_graph._edges.reserve(the_timing_graph->get_arcs().size() * 100);
   timing_wire_graph._nodes.reserve(the_timing_graph->get_vertexes().size() * 10);
+
+  FOREACH_VERTEX(the_timing_graph, the_vertex)
+  {
+    create_inst_node(the_vertex);
+  }
+
   FOREACH_ARC(the_timing_graph, the_arc)
   {
     if (the_arc->isNetArc()) {
@@ -1005,41 +1233,88 @@ TimingWireGraph InitSTA::getTimingWireGraph()
       auto* the_net = the_net_arc->get_net();
 
       auto* rc_net = ista->getRcNet(the_net);
+      auto* rc_tree = rc_net->rct();
 
-      if (rc_net) {
+      if (rc_net && rc_tree) {
         auto* snk_node = the_arc->get_snk();
         auto snk_node_name = snk_node->get_design_obj()->getFullName();
 
-        auto vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMax, TransType::kRise);
-        if (!vertex_slew) {
-          vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMax, TransType::kFall);
-        }
-
         auto wire_topo = rc_net->getWireTopo(snk_node_name.c_str());
+
+        auto vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMax, TransType::kRise);
+        auto max_rise_all_nodes_slew = rc_tree->getAllNodeSlew(vertex_slew.value_or(0.0), AnalysisMode::kMax, TransType::kRise);
+        vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMax, TransType::kFall);
+        auto max_fall_all_nodes_slew = rc_tree->getAllNodeSlew(vertex_slew.value_or(0.0), AnalysisMode::kMax, TransType::kFall);
+        vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMin, TransType::kRise);
+        auto min_rise_all_nodes_slew = rc_tree->getAllNodeSlew(vertex_slew.value_or(0.0), AnalysisMode::kMin, TransType::kRise);
+        vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMin, TransType::kFall);
+        auto min_fall_all_nodes_slew = rc_tree->getAllNodeSlew(vertex_slew.value_or(0.0), AnalysisMode::kMin, TransType::kFall);
+
         for (auto* wire_edge : wire_topo | std::ranges::views::reverse) {
           ieda::Stats stats2;
           auto& from_node = wire_edge->get_from();
           auto& to_node = wire_edge->get_to();
-
+          
+          // from node
           auto wire_from_node_index = create_net_node(from_node);
+          auto& wire_from_node = timing_wire_graph.getNode(wire_from_node_index);
+          wire_from_node._node_feature._node_slews
+              = {max_rise_all_nodes_slew[from_node.get_name()], max_fall_all_nodes_slew[from_node.get_name()],
+                 min_rise_all_nodes_slew[from_node.get_name()], min_fall_all_nodes_slew[from_node.get_name()]};
+          wire_from_node._node_feature._node_caps = {from_node.cap(AnalysisMode::kMax, TransType::kRise),
+                                                     from_node.cap(AnalysisMode::kMax, TransType::kFall),
+                                                     from_node.cap(AnalysisMode::kMin, TransType::kRise),
+                                                     from_node.cap(AnalysisMode::kMin, TransType::kFall)};
+          
+          // to node
           auto wire_to_node_index = create_net_node(to_node);
+          auto& wire_to_node = timing_wire_graph.getNode(wire_to_node_index);
+          wire_to_node._node_feature._node_slews
+              = {max_rise_all_nodes_slew[to_node.get_name()], max_fall_all_nodes_slew[to_node.get_name()],
+                 min_rise_all_nodes_slew[to_node.get_name()], min_fall_all_nodes_slew[to_node.get_name()]};
+          wire_to_node._node_feature._node_caps = {to_node.cap(AnalysisMode::kMax, TransType::kRise),
+                                                   to_node.cap(AnalysisMode::kMax, TransType::kFall),
+                                                   to_node.cap(AnalysisMode::kMin, TransType::kRise),
+                                                   to_node.cap(AnalysisMode::kMin, TransType::kFall)};
 
-          timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
+          auto& net_wire_edge = timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
+          net_wire_edge._edge_feature._edge_resistance = wire_edge->get_res();
+
+          net_wire_edge._is_net_edge = true;
         }
       } else {
         auto wire_from_node_index = create_inst_node(the_arc->get_src());
         auto wire_to_node_index = create_inst_node(the_arc->get_snk());
 
-        auto& inst_wire_edge = timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
-        inst_wire_edge._is_net_edge = true;
+        auto& net_edge = timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
+        net_edge._is_net_edge = true;
       }
-
-    } else {
+    } else if (the_arc->isInstArc() && the_arc->isDelayArc()) {
       auto wire_from_node_index = create_inst_node(the_arc->get_src());
       auto wire_to_node_index = create_inst_node(the_arc->get_snk());
 
-      auto& inst_wire_edge = timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
-      inst_wire_edge._is_net_edge = false;
+      auto& inst_arc_edge = timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
+      inst_arc_edge._is_net_edge = false;
+
+      TimingEdgeFeature edge_feature;
+
+      double max_rise_delay = FS_TO_NS(the_arc->get_arc_delay(AnalysisMode::kMax, TransType::kRise));
+      double max_fall_delay = FS_TO_NS(the_arc->get_arc_delay(AnalysisMode::kMax, TransType::kFall));
+      double min_rise_delay = FS_TO_NS(the_arc->get_arc_delay(AnalysisMode::kMin, TransType::kRise));
+      double min_fall_delay = FS_TO_NS(the_arc->get_arc_delay(AnalysisMode::kMin, TransType::kFall));
+
+      edge_feature._edge_delay = {max_rise_delay, max_fall_delay, min_rise_delay, min_fall_delay};
+
+      // dump power feature
+      PowerEdgeFeature edge_power_feature;
+
+      auto* the_pwr_arc = ipower->get_power_graph().staToPwrArc(the_arc);
+      if (the_pwr_arc) {
+        edge_power_feature._inst_arc_internal_power = dynamic_cast<ipower::PwrInstArc*>(the_pwr_arc)->getInternalPower();
+      } 
+
+      inst_arc_edge._edge_feature = edge_feature;
+      inst_arc_edge._power_feature = edge_power_feature;
     }
   }
 
@@ -1070,6 +1345,7 @@ TimingInstanceGraph InitSTA::getTimingInstanceGraph()
 
   auto* ista = STA_INST->get_ista();
   LOG_ERROR_IF(!ista->isBuildGraph()) << "timing graph is not build";
+  auto* ipower = PW_INST->get_power();
 
   auto* the_timing_graph = &(ista->get_graph());
 
@@ -1077,11 +1353,18 @@ TimingInstanceGraph InitSTA::getTimingInstanceGraph()
   timing_instance_graph._nodes.reserve(the_timing_graph->get_vertexes().size() * 10);
 
   /// create node in instance graph
-  auto create_node = [&timing_instance_graph](std::string& node_name) -> unsigned {
+  auto create_node = [&timing_instance_graph, ipower](
+                         std::string& node_name,
+                         ista::DesignObject* obj) -> unsigned {
     auto index = timing_instance_graph.findNode(node_name);
     if (!index) {
       TimingInstanceNode the_node;
       the_node._name = node_name;
+
+      auto* power_data = ipower->getObjData(obj);
+      double leakage_power = power_data->get_leakage_power();
+
+      the_node._node_feature._leakage_power = leakage_power;
 
       index = timing_instance_graph.addNode(the_node);
     }
@@ -1105,8 +1388,8 @@ TimingInstanceGraph InitSTA::getTimingInstanceGraph()
       auto src_instance_name = src_instance->getFullName();
       auto snk_instance_name = snk_instance->getFullName();
 
-      unsigned src_node_index = create_node(src_instance_name);
-      unsigned snk_node_index = create_node(snk_instance_name);
+      unsigned src_node_index = create_node(src_instance_name, src_instance);
+      unsigned snk_node_index = create_node(snk_instance_name, snk_instance);
 
       timing_instance_graph.addEdge(src_node_index, snk_node_index);
     }
@@ -1136,10 +1419,10 @@ bool InitSTA::getRcNet(const std::string& net_name)
   return rc_net ? true : false;
 }
 
-/// @brief Save wire timing graph to yaml file.
+/// @brief Save wire timing graph to json file.
 void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string& json_file_name)
 {
-  LOG_INFO << "save wire timing graph start";  
+  LOG_INFO << "save wire timing graph start";
 
   json nodes_json;
   json edges_json;
@@ -1149,7 +1432,38 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
     json j = json::array();
     for (unsigned node_id = 0; auto& node : timing_wire_graph._nodes) {
       std::string node_id_str = "node_" + std::to_string(node_id++);
-      j.push_back({{"id",  node_id_str}, {"name", node._name}, {"is_pin", node._is_pin}, {"is_port", node._is_port}});
+      auto& node_feature = node._node_feature;
+      json node_feature_json;
+      node_feature_json["is_input"] = node_feature._is_input;
+      node_feature_json["fanout_num"] = node_feature._fanout_num;
+      node_feature_json["is_input"] = node_feature._is_input;
+      node_feature_json["is_endpoint"] = node_feature._is_endpoint;
+      node_feature_json["cell_name"] = node_feature._cell_name;
+      node_feature_json["sizer_cells"] = node_feature._sizer_cells;
+
+      node_feature_json["node_coord"] = json::array({node_feature._node_coord.first, node_feature._node_coord.second});
+      node_feature_json["node_slews"] = json::array({std::get<0>(node_feature._node_slews), std::get<1>(node_feature._node_slews),
+                                                 std::get<2>(node_feature._node_slews), std::get<3>(node_feature._node_slews)});
+      node_feature_json["node_capacitances"] = json::array({std::get<0>(node_feature._node_caps), std::get<1>(node_feature._node_caps),
+                                                        std::get<2>(node_feature._node_caps), std::get<3>(node_feature._node_caps)});
+      node_feature_json["node_arrive_times"] = json::array({std::get<0>(node_feature._node_ats), std::get<1>(node_feature._node_ats),
+                                                        std::get<2>(node_feature._node_ats), std::get<3>(node_feature._node_ats)});
+      node_feature_json["node_required_times"] = json::array({std::get<0>(node_feature._node_rats), std::get<1>(node_feature._node_rats),
+                                                          std::get<2>(node_feature._node_rats), std::get<3>(node_feature._node_rats)});
+      node_feature_json["node_net_load_delays"] = json::array(
+          {std::get<0>(node_feature._node_net_delays), std::get<1>(node_feature._node_net_delays),
+           std::get<2>(node_feature._node_net_delays), std::get<3>(node_feature._node_net_delays)});
+
+      node_feature_json["node_toggle"] = node._power_feature._toggle;
+      node_feature_json["node_sp"] = node._power_feature._sp;
+      node_feature_json["node_internal_power"] = node._power_feature._node_internal_power;
+      node_feature_json["node_net_power"] = node._power_feature._node_net_power;
+
+      j.push_back({{"id", node_id_str},
+                   {"name", node._name},
+                   {"is_pin", node._is_pin},
+                   {"is_port", node._is_port},
+                   {"node_feature", node_feature_json}});
     }
     nodes_json = j;
   });
@@ -1159,7 +1473,21 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
     json j = json::array();
     for (unsigned edge_id = 0; auto& edge : timing_wire_graph._edges) {
       std::string edge_id_str = "edge_" + std::to_string(edge_id++);
-      j.push_back({{"id",  edge_id_str}, {"from_node", edge._from_node}, {"to_node", edge._to_node}, {"is_net_edge", edge._is_net_edge}});
+      auto& edge_feature = edge._edge_feature;
+      json edge_feature_json;
+      edge_feature_json["edge_delay"] = json::array({std::get<0>(edge_feature._edge_delay), std::get<1>(edge_feature._edge_delay),
+                                                 std::get<2>(edge_feature._edge_delay), std::get<3>(edge_feature._edge_delay)});
+      edge_feature_json["edge_resistance"] = edge_feature._edge_resistance;
+
+      auto& edge_power_feature = edge._power_feature;
+      edge_feature_json["inst_arc_internal_power"] = edge_power_feature._inst_arc_internal_power;
+
+
+      j.push_back({{"id", edge_id_str},
+                   {"from_node", edge._from_node},
+                   {"to_node", edge._to_node},
+                   {"is_net_edge", edge._is_net_edge},
+                   {"edge_feature", edge_feature_json}});
     }
     edges_json = j;
   });
@@ -1168,12 +1496,12 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
   t1.join();
   t2.join();
 
-  // merge 
+  // merge
   json graph_json;
   graph_json["nodes"] = nodes_json;
   graph_json["edges"] = edges_json;
 
-  std::ofstream file(json_file_name, std::ios::trunc);  
+  std::ofstream file(json_file_name, std::ios::trunc);
   file << graph_json.dump(4) << std::endl;
 
   file.close();
@@ -1182,9 +1510,10 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
   LOG_INFO << "save wire timing graph end";
 }
 
+/// @brief Save wire timing instance graph to json file.
 void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, const std::string& json_file_name)
 {
-  LOG_INFO << "save instance timing graph start";  
+  LOG_INFO << "save instance timing graph start";
 
   json nodes_json;
   json edges_json;
@@ -1194,7 +1523,10 @@ void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, c
     json j = json::array();
     for (unsigned node_id = 0; auto& node : timing_instance_graph._nodes) {
       std::string id_str = "node_" + std::to_string(node_id++);
-      j.push_back({{"id", id_str}, {"name", node._name}});
+      j.push_back({{"id", id_str},
+                   {"name", node._name},
+                   {"leakage_power",
+                   node._node_feature._leakage_power}});
     }
     nodes_json = j;
   });
@@ -1213,11 +1545,11 @@ void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, c
   t1.join();
   t2.join();
 
-  // merge 
+  // merge
   json graph_json;
   graph_json["nodes"] = nodes_json;
   graph_json["edges"] = edges_json;
-  
+
   std::ofstream file(json_file_name, std::ios::trunc);
   file << graph_json.dump(4) << std::endl;
 
@@ -1433,13 +1765,13 @@ std::map<int, double> InitSTA::patchTimingMap(std::map<int, std::pair<std::pair<
   // 预处理：将实例坐标转换并按x坐标排序，提升查找性能
   std::vector<std::tuple<int64_t, int64_t, double>> sorted_instances;
   sorted_instances.reserve(inst_timing_map.size());
-  
+
   for (const auto& [coord, slack] : inst_timing_map) {
     int64_t inst_x = static_cast<int64_t>(coord.first * dbu);
     int64_t inst_y = static_cast<int64_t>(coord.second * dbu);
     sorted_instances.emplace_back(inst_x, inst_y, slack);
   }
-  
+
   // 按x坐标排序，便于后续二分查找
   std::sort(sorted_instances.begin(), sorted_instances.end());
 
@@ -1447,23 +1779,21 @@ std::map<int, double> InitSTA::patchTimingMap(std::map<int, std::pair<std::pair<
     auto [l_range, u_range] = coord;
     const int64_t patch_lx = static_cast<int64_t>(l_range.first);
     const int64_t patch_ly = static_cast<int64_t>(l_range.second);
-     const int64_t patch_ux = static_cast<int64_t>(u_range.first);
-     const int64_t patch_uy = static_cast<int64_t>(u_range.second);
+    const int64_t patch_ux = static_cast<int64_t>(u_range.first);
+    const int64_t patch_uy = static_cast<int64_t>(u_range.second);
 
     double min_slack = std::numeric_limits<double>::max();
     bool found_instance = false;
 
     // 使用二分查找确定x坐标范围，减少需要检查的实例数量
-    auto lower_it = std::lower_bound(sorted_instances.begin(), sorted_instances.end(),
-                                     std::make_tuple(patch_lx, INT64_MIN, 0.0));
-    auto upper_it = std::upper_bound(sorted_instances.begin(), sorted_instances.end(),
-                                     std::make_tuple(patch_ux, INT64_MAX, 0.0));
-    
+    auto lower_it = std::lower_bound(sorted_instances.begin(), sorted_instances.end(), std::make_tuple(patch_lx, INT64_MIN, 0.0));
+    auto upper_it = std::upper_bound(sorted_instances.begin(), sorted_instances.end(), std::make_tuple(patch_ux, INT64_MAX, 0.0));
+
     // 只检查x坐标在范围内的实例
     for (auto it = lower_it; it != upper_it; ++it) {
       int64_t inst_y = std::get<1>(*it);
       double slack = std::get<2>(*it);
-      
+
       if (patch_ly <= inst_y && inst_y <= patch_uy) {
         min_slack = std::min(min_slack, slack);
         found_instance = true;
@@ -1501,36 +1831,34 @@ std::map<int, double> InitSTA::patchPowerMap(std::map<int, std::pair<std::pair<i
   // 预处理：将实例坐标转换并按x坐标排序，提升查找性能
   std::vector<std::tuple<int64_t, int64_t, double>> sorted_instances;
   sorted_instances.reserve(inst_power_map.size());
-  
+
   for (const auto& [coord, power] : inst_power_map) {
     int64_t inst_x = static_cast<int64_t>(coord.first * dbu);
     int64_t inst_y = static_cast<int64_t>(coord.second * dbu);
     sorted_instances.emplace_back(inst_x, inst_y, power);
   }
-  
+
   // 按x坐标排序，便于后续二分查找
   std::sort(sorted_instances.begin(), sorted_instances.end());
 
   for (const auto& [patch_id, coord] : patch) {
     auto [l_range, u_range] = coord;
     const int64_t patch_lx = static_cast<int64_t>(l_range.first);
-     const int64_t patch_ly = static_cast<int64_t>(l_range.second);
-     const int64_t patch_ux = static_cast<int64_t>(u_range.first);
-     const int64_t patch_uy = static_cast<int64_t>(u_range.second);
+    const int64_t patch_ly = static_cast<int64_t>(l_range.second);
+    const int64_t patch_ux = static_cast<int64_t>(u_range.first);
+    const int64_t patch_uy = static_cast<int64_t>(u_range.second);
 
     double total_power = 0.0;
 
     // 使用二分查找确定x坐标范围，减少需要检查的实例数量
-    auto lower_it = std::lower_bound(sorted_instances.begin(), sorted_instances.end(),
-                                     std::make_tuple(patch_lx, INT64_MIN, 0.0));
-    auto upper_it = std::upper_bound(sorted_instances.begin(), sorted_instances.end(),
-                                     std::make_tuple(patch_ux, INT64_MAX, 0.0));
-    
+    auto lower_it = std::lower_bound(sorted_instances.begin(), sorted_instances.end(), std::make_tuple(patch_lx, INT64_MIN, 0.0));
+    auto upper_it = std::upper_bound(sorted_instances.begin(), sorted_instances.end(), std::make_tuple(patch_ux, INT64_MAX, 0.0));
+
     // 只检查x坐标在范围内的实例
     for (auto it = lower_it; it != upper_it; ++it) {
       int64_t inst_y = std::get<1>(*it);
       double power = std::get<2>(*it);
-      
+
       if (patch_ly <= inst_y && inst_y <= patch_uy) {
         total_power += power;
       }
@@ -1561,7 +1889,7 @@ std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<
   auto instance_to_ir_drop = PW_INST->getInstanceIRDrop();
 
   if (instance_to_ir_drop.empty()) {
-    LOG_WARNING << "No IR drop data available, returning zero values for all patches";
+    LOG_ERROR << "No IR drop data available, returning zero values for all patches";
     return patch_ir_drop_map;
   }
 
@@ -1571,14 +1899,14 @@ std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<
   // 预处理：将实例坐标转换并按x坐标排序，提升查找性能
   std::vector<std::tuple<int64_t, int64_t, double>> sorted_instances;
   sorted_instances.reserve(instance_to_ir_drop.size());
-  
+
   for (auto& [sta_inst, ir_drop] : instance_to_ir_drop) {
     auto coord = sta_inst->get_coordinate().value();
     int64_t inst_x = static_cast<int64_t>(coord.first * dbu);
     int64_t inst_y = static_cast<int64_t>(coord.second * dbu);
     sorted_instances.emplace_back(inst_x, inst_y, ir_drop);
   }
-  
+
   // 按x坐标排序，便于后续二分查找
   std::sort(sorted_instances.begin(), sorted_instances.end());
 
@@ -1593,16 +1921,14 @@ std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<
     bool found_instance = false;
 
     // 使用二分查找确定x坐标范围，减少需要检查的实例数量
-    auto lower_it = std::lower_bound(sorted_instances.begin(), sorted_instances.end(),
-                                     std::make_tuple(patch_lx, INT64_MIN, 0.0));
-    auto upper_it = std::upper_bound(sorted_instances.begin(), sorted_instances.end(),
-                                     std::make_tuple(patch_ux, INT64_MAX, 0.0));
-    
+    auto lower_it = std::lower_bound(sorted_instances.begin(), sorted_instances.end(), std::make_tuple(patch_lx, INT64_MIN, 0.0));
+    auto upper_it = std::upper_bound(sorted_instances.begin(), sorted_instances.end(), std::make_tuple(patch_ux, INT64_MAX, 0.0));
+
     // 只检查x坐标在范围内的实例
     for (auto it = lower_it; it != upper_it; ++it) {
       int64_t inst_y = std::get<1>(*it);
       double ir_drop = std::get<2>(*it);
-      
+
       if (patch_ly <= inst_y && inst_y <= patch_uy) {
         max_ir_drop = std::max(max_ir_drop, ir_drop);
         found_instance = true;

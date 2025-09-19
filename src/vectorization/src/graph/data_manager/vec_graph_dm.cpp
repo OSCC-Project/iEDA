@@ -29,8 +29,14 @@ namespace ivec {
 
 #define debug_error 0
 
-bool VecGraphDataManager::buildGraphData()
+bool VecGraphDataManager::buildGraphData(bool is_placement_mode)
 {
+  // In placement mode, skip wire processing since place.def doesn't contain routing information
+  if (is_placement_mode) {
+    LOG_INFO << "Placement mode: skipping wire graph construction";
+    return true;
+  }
+
   auto get_nodes
       = [&](int x1, int y1, int layer1, int x2, int y2, int layer2, VecLayoutLayers& layout_layers) -> std::pair<VecNode*, VecNode*> {
     if (layer1 == layer2) {

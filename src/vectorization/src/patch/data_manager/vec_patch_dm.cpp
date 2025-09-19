@@ -24,33 +24,33 @@
 
 namespace ivec {
 
-bool VecPatchDataManager::buildPatchData()
+bool VecPatchDataManager::buildPatchData(bool is_placement_mode)
 {
-  init();
+  init(is_placement_mode);
 
   return true;
 }
 
-bool VecPatchDataManager::buildPatchData(int patch_row_step, int patch_col_step)
+bool VecPatchDataManager::buildPatchData(int patch_row_step, int patch_col_step, bool is_placement_mode)
 {
-  init(patch_row_step, patch_col_step);
+  init(patch_row_step, patch_col_step, is_placement_mode);
 
   return true;
 }
 
 
-void VecPatchDataManager::init()
+void VecPatchDataManager::init(bool is_placement_mode)
 {
   VecPatchInit patch_init(_layout, &_patch_grid);
-  patch_init.init();
+  patch_init.init(is_placement_mode);
 }
 
-void VecPatchDataManager::init(int patch_row_step, int patch_col_step)
+void VecPatchDataManager::init(int patch_row_step, int patch_col_step, bool is_placement_mode)
 {
   VecPatchInfo::getInst(patch_row_step, patch_col_step);
 
   VecPatchInit patch_init(_layout, &_patch_grid);
-  patch_init.init();
+  patch_init.init(is_placement_mode);
 }
 
 

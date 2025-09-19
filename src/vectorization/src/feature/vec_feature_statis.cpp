@@ -100,102 +100,105 @@ void VecFeatureStatis::feature_graph()
     std::vector<double> layer_wire_length(num_layers, 0.0);
     double total_wire_length = 0.0;
 
-    for (auto& wire : vec_net.get_wires()) {
-      auto* wire_feature = wire.get_feature(true);
+    // Process wire information only in non-placement mode
+    if (!_is_placement_mode) {
+      for (auto& wire : vec_net.get_wires()) {
+        auto* wire_feature = wire.get_feature(true);
 
-      for (auto& [node1, node2] : wire.get_paths()) {
-        if (node1->get_layer_id() == node2->get_layer_id()) {
-          auto order = node1->get_layer_id();
-          auto* layout_layer = layout_layers.findLayoutLayer(order);
-          auto& grid = layout_layer->get_grid();
-          auto layer_name = layout_layer->get_layer_name();
+        for (auto& [node1, node2] : wire.get_paths()) {
+          if (node1->get_layer_id() == node2->get_layer_id()) {
+            auto order = node1->get_layer_id();
+            auto* layout_layer = layout_layers.findLayoutLayer(order);
+            auto& grid = layout_layer->get_grid();
+            auto layer_name = layout_layer->get_layer_name();
 
-          min_order = std::min(min_order, order);
-          max_order = std::max(max_order, order);
+            min_order = std::min(min_order, order);
+            max_order = std::max(max_order, order);
 
-          /// set feature
-          wire_feature->wire_width = layout_layer->get_wire_width();
+            /// set feature
+            wire_feature->wire_width = layout_layer->get_wire_width();
 
-          int min_row = std::min(node1->get_row_id(), node2->get_row_id());
-          int max_row = std::max(node1->get_row_id(), node2->get_row_id());
-          int min_col = std::min(node1->get_col_id(), node2->get_col_id());
-          int max_col = std::max(node1->get_col_id(), node2->get_col_id());
+            int min_row = std::min(node1->get_row_id(), node2->get_row_id());
+            int max_row = std::max(node1->get_row_id(), node2->get_row_id());
+            int min_col = std::min(node1->get_col_id(), node2->get_col_id());
+            int max_col = std::max(node1->get_col_id(), node2->get_col_id());
 
-          net_row_min = std::min(net_row_min, min_row);
-          net_row_max = std::max(net_row_max, max_row);
-          net_col_min = std::min(net_col_min, min_col);
-          net_col_max = std::max(net_col_max, max_col);
+            net_row_min = std::min(net_row_min, min_row);
+            net_row_max = std::max(net_row_max, max_row);
+            net_col_min = std::min(net_col_min, min_col);
+            net_col_max = std::max(net_col_max, max_col);
 
-          // transform the row and col index of node to the row and col index of egr_layer_map
-          int min_node_x = std::min(node1->get_x(), node2->get_x());
-          int max_node_x = std::max(node1->get_x(), node2->get_x());
-          int min_node_y = std::min(node1->get_y(), node2->get_y());
-          int max_node_y = std::max(node1->get_y(), node2->get_y());
+            // transform the row and col index of node to the row and col index of egr_layer_map
+            int min_node_x = std::min(node1->get_x(), node2->get_x());
+            int max_node_x = std::max(node1->get_x(), node2->get_x());
+            int min_node_y = std::min(node1->get_y(), node2->get_y());
+            int max_node_y = std::max(node1->get_y(), node2->get_y());
 
-          int trans_min_row = static_cast<int>(min_node_y / row_factor);
-          int trans_max_row = static_cast<int>(max_node_y / row_factor);
-          int trans_min_col = static_cast<int>(min_node_x / col_factor);
-          int trans_max_col = static_cast<int>(max_node_x / col_factor);
+            int trans_min_row = static_cast<int>(min_node_y / row_factor);
+            int trans_max_row = static_cast<int>(max_node_y / row_factor);
+            int trans_min_col = static_cast<int>(min_node_x / col_factor);
+            int trans_max_col = static_cast<int>(max_node_x / col_factor);
 
-          /// congestion
-          int sum_congestion = 0;
-          int trans_grid_count = 0;
+            /// congestion
+            int sum_congestion = 0;
+            int trans_grid_count = 0;
 
-          for (int r = trans_min_row; r <= trans_max_row; ++r) {
-            for (int c = trans_min_col; c <= trans_max_col; ++c) {
-              sum_congestion += egr_layer_map[layer_name][r][c];
-              trans_grid_count++;
-            }
-          }
-
-          if (trans_grid_count > 0) {
-            wire_feature->congestion += ((double) sum_congestion / trans_grid_count);
-          } else {
-            wire_feature->congestion = 0;
-          }
-
-          int horizontal_len = (max_col - min_col) * gridInfoInst.x_step;
-          int vertical_len = (max_row - min_row) * gridInfoInst.y_step;
-          double segment_length = horizontal_len + vertical_len;
-          
-          if (order >= layer_order_bottom && order <= layer_order_top) {
-            int layer_index = order - layer_order_bottom; 
-            layer_wire_length[layer_index] += segment_length;
-            total_wire_length += segment_length;
-          }
-
-          wire_feature->wire_len += segment_length;
-          wire_feature->wire_density = wire_feature->wire_len * wire_feature->wire_width / static_cast<double>(net_feature->area);
-
-          /// some feature label on node
-          for (int row = min_row; row <= max_row; ++row) {
-            for (int col = min_col; col <= max_col; ++col) {
-              auto* node = grid.get_node(row, col);
-              if (node == nullptr || node->get_node_data() == nullptr) {
-                continue;
+            for (int r = trans_min_row; r <= trans_max_row; ++r) {
+              for (int c = trans_min_col; c <= trans_max_col; ++c) {
+                sum_congestion += egr_layer_map[layer_name][r][c];
+                trans_grid_count++;
               }
             }
+
+            if (trans_grid_count > 0) {
+              wire_feature->congestion += ((double) sum_congestion / trans_grid_count);
+            } else {
+              wire_feature->congestion = 0;
+            }
+
+            int horizontal_len = (max_col - min_col) * gridInfoInst.x_step;
+            int vertical_len = (max_row - min_row) * gridInfoInst.y_step;
+            double segment_length = horizontal_len + vertical_len;
+            
+            if (order >= layer_order_bottom && order <= layer_order_top) {
+              int layer_index = order - layer_order_bottom; 
+              layer_wire_length[layer_index] += segment_length;
+              total_wire_length += segment_length;
+            }
+
+            wire_feature->wire_len += segment_length;
+            wire_feature->wire_density = wire_feature->wire_len * wire_feature->wire_width / static_cast<double>(net_feature->area);
+
+            /// some feature label on node
+            for (int row = min_row; row <= max_row; ++row) {
+              for (int col = min_col; col <= max_col; ++col) {
+                auto* node = grid.get_node(row, col);
+                if (node == nullptr || node->get_node_data() == nullptr) {
+                  continue;
+                }
+              }
+            }
+          } else {
+            /// via feature
+            net_feature->via_num += 1;
           }
-        } else {
-          /// via feature
-          net_feature->via_num += 1;
         }
+
+        net_feature->wire_len += wire_feature->wire_len;
+        net_feature->llx = gridInfoInst.calculate_x(net_col_min);
+        net_feature->urx = gridInfoInst.calculate_x(net_col_max);
+        net_feature->lly = gridInfoInst.calculate_y(net_row_min);
+        net_feature->ury = gridInfoInst.calculate_y(net_row_max);
+        net_feature->width = net_feature->urx - net_feature->llx;
+        net_feature->height = net_feature->ury - net_feature->lly;
+        net_feature->area = net_feature->width * net_feature->height;
+
+        if (net_feature->width >= net_feature->height && net_feature->height != 0) {
+          net_feature->aspect_ratio = std::round(net_feature->width / static_cast<double>(net_feature->height));
+        } else if (net_feature->height > net_feature->width && net_feature->width != 0) {
+          net_feature->aspect_ratio = std::round(net_feature->height / static_cast<double>(net_feature->width));
+        } 
       }
-
-      net_feature->wire_len += wire_feature->wire_len;
-      net_feature->llx = gridInfoInst.calculate_x(net_col_min);
-      net_feature->urx = gridInfoInst.calculate_x(net_col_max);
-      net_feature->lly = gridInfoInst.calculate_y(net_row_min);
-      net_feature->ury = gridInfoInst.calculate_y(net_row_max);
-      net_feature->width = net_feature->urx - net_feature->llx;
-      net_feature->height = net_feature->ury - net_feature->lly;
-      net_feature->area = net_feature->width * net_feature->height;
-
-      if (net_feature->width >= net_feature->height && net_feature->height != 0) {
-        net_feature->aspect_ratio = std::round(net_feature->width / static_cast<double>(net_feature->height));
-      } else if (net_feature->height > net_feature->width && net_feature->width != 0) {
-        net_feature->aspect_ratio = std::round(net_feature->height / static_cast<double>(net_feature->width));
-      } 
     }
 
     if (total_wire_length > 0) {
@@ -269,7 +272,16 @@ void VecFeatureStatis::feature_patch()
 
     patch.pin_density = pin_density_map[patch_id];
     patch.cell_density = cell_density_map[patch_id];
-    patch.net_density = net_density_map[patch_id];
+    
+    // In placement mode, use original net_density calculation
+    // In routing mode, calculate net_density using real wire density (max across all layers)
+    if (_is_placement_mode) {
+      patch.net_density = net_density_map[patch_id];
+    } else {
+      // Will be calculated later using real wire data
+      patch.net_density = 0.0;
+    }
+    
     patch.macro_margin = macro_margin_map[patch_id];
     patch.RUDY_congestion = rudy_congestion_map[patch_id];
     patch.EGR_congestion = egr_congestion_map[patch_id];
@@ -317,6 +329,26 @@ void VecFeatureStatis::feature_patch()
           }
         }
       }
+    }
+
+    // Calculate net_density for routing mode using real wire data
+    if (!_is_placement_mode) {
+      double max_wire_density = 0.0;
+      
+      // Calculate patch area
+      int patch_width = (patch.colIdMax - patch.colIdMin) * gridInfoInst.x_step;
+      int patch_height = (patch.rowIdMax - patch.rowIdMin) * gridInfoInst.y_step;
+      double patch_area = static_cast<double>(patch_width) * patch_height;
+      
+      // Calculate wire density for each layer and find maximum
+      for (auto& [layer_id, patch_layer] : patch.get_layer_map()) {
+        double wire_density = 0.0;
+        // Wire density = (wire_length * wire_width) / patch_area
+        wire_density = (static_cast<double>(patch_layer.wire_len) * patch_layer.wire_width) / patch_area;
+        max_wire_density = std::max(max_wire_density, wire_density);
+      }
+      
+      patch.net_density = max_wire_density;
     }
 
     if (i % 1000 == 0) {

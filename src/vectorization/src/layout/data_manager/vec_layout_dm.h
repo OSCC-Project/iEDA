@@ -31,12 +31,12 @@ class VecLayoutDataManager
   VecLayout& get_layout() { return _layout; }
   std::map<int, VecNet>& get_graph() { return _layout.get_graph().get_net_map(); }
 
-  bool buildLayoutData();
+  bool buildLayoutData(bool is_placement_mode = false);
 
  private:
   VecLayout _layout;
 
-  void init();
+  void init(bool is_placement_mode = false);
 };
 
 }  // namespace ivec

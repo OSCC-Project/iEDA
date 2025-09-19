@@ -25,10 +25,14 @@
 
 namespace ivec {
 
-void VecPatchInit::init()
+void VecPatchInit::init(bool is_placement_mode)
 {
   init_patch_grid();
-  initSubNet();
+  
+  // In placement mode, skip subnet initialization as there are no wire information
+  if (!is_placement_mode) {
+    initSubNet();
+  }
 }
 
 void VecPatchInit::init_patch_grid()

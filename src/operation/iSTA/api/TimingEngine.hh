@@ -367,13 +367,18 @@ class TimingEngine {
   StaClock *getPropClock(const char *clock_pin_name);
   StaSeqPathData *getWorstSeqData(StaVertex *vertex, AnalysisMode mode,
                                   TransType trans_type) {
-    return _ista->getWorstSeqData(vertex, mode, trans_type);
+    return _ista->getWorstSeqData(vertex, mode, trans_type).front();
   }
 
   StaSeqPathData *getWorstSeqData(AnalysisMode mode, TransType trans_type) {
-    return _ista->getWorstSeqData(std::nullopt, mode, trans_type);
+    return _ista->getWorstSeqData(mode, trans_type);
   }
 
+  std::vector<StaSeqPathData *> getTopNWorstSeqPaths(AnalysisMode mode,
+                                                     unsigned top_n_path) {
+    return _ista->getTopNWorstSeqPaths(mode, top_n_path);
+
+  }
   double getWorstArriveTime(AnalysisMode mode = AnalysisMode::kMax) {
     double rise_AT = getWorstSeqData(mode, TransType::kRise)->getArriveTimeNs();
     double fall_AT = getWorstSeqData(mode, TransType::kFall)->getArriveTimeNs();
@@ -397,6 +402,7 @@ class TimingEngine {
   std::vector<StaVertex *> getFanoutVertexs(StaVertex *driver_vertex);
 
   unsigned isSequentialCell(const char *instance_name);
+  unsigned isSeqCell(const char* cell_name);
   std::string getCellType(const char *cell_name);
   double getCellArea(const char *cell_name);
   unsigned isClock(const char *pin_name) const;

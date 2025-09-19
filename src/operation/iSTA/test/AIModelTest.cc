@@ -64,7 +64,7 @@ TEST_F(AIModelTest, calibration) {
   timing_engine->reportTiming();
 
   auto* worst_path = timing_engine->get_ista()->getWorstSeqData(
-      std::nullopt, AnalysisMode::kMax, TransType::kRiseFall);
+     AnalysisMode::kMax, TransType::kRiseFall);
 
   std::map<AICalibratePathDelay::AIModeType, std::string> model_to_path{
       {AICalibratePathDelay::AIModeType::kSky130CalibratePathDelay,

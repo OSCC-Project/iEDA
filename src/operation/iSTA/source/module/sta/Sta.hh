@@ -545,10 +545,12 @@ class Sta {
                                            TransType trans_type);
   std::multimap<std::string, std::string> getSkewRelatedSink(
       AnalysisMode mode, TransType trans_type);
-  StaSeqPathData* getWorstSeqData(std::optional<StaVertex*> vertex,
-                                  AnalysisMode mode, TransType trans_type);
-
+  std::vector<StaSeqPathData*> getWorstSeqData(std::optional<StaVertex*> vertex,
+                                  AnalysisMode mode, TransType trans_type,
+                                  unsigned top_n_path = 1);
   StaSeqPathData* getWorstSeqData(AnalysisMode mode, TransType trans_type);
+  std::vector<StaSeqPathData*> getTopNWorstSeqPaths(AnalysisMode mode,
+                                                    unsigned top_n_path);
 
   std::vector<std::tuple<std::string, std::string, double>>
   getStartEndSlackPairsOfTopNPaths(int top_n, AnalysisMode mode,

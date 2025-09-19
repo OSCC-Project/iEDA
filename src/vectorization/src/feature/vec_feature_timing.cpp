@@ -34,9 +34,27 @@ void VecFeatureTiming::build()
 {
   auto* eval_tp = ieval::InitSTA::getInst();  // evaluate timing and power.
 
-  eval_tp->runVecSTA(_layout, _dir);
-
-  buildNetTimingPowerFeature();
+  if (_is_placement_mode) {
+    // In placement mode, use EGR estimation for timing calculation
+    eval_tp->runPlaceVecSTA("EGR", false, _dir);
+  } else {
+    // In routing mode, user can choose between VEC_STA and SPEF_STA
+    switch (_sta_mode) {
+      case 0:
+        // Use actual wire information from layout (VEC_STA mode)
+        eval_tp->runVecSTA(_layout, _dir);
+        buildNetTimingPowerFeature();
+        break;
+      case 1:
+        // Use SPEF file for timing analysis (SPEF_STA mode)
+        eval_tp->runSpefVecSTA(_dir);
+        break;
+      default:
+        // Default to VEC_STA mode
+        eval_tp->runVecSTA(_layout, _dir);
+        break;
+    }
+  }
 
   auto timing_wire_graph = eval_tp->getTimingWireGraph();
 

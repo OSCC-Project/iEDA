@@ -304,7 +304,8 @@ IdbVia* IdbVias::add_via(string name)
 /// width_design : width that set by the designer
 /// height_design : height that set by the designer
 
-IdbVia* IdbVias::createVia(string via_name, IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design)
+IdbVia* IdbVias::createVia(string via_name, IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design,
+                           IdbLayerDirection direction)
 {
   IdbViaRuleGenerate* via_rule = layer_cut->get_via_rule();
   if (via_rule == nullptr)
@@ -363,7 +364,7 @@ IdbVia* IdbVias::createVia(string via_name, IdbLayerCut* layer_cut, int32_t widt
   int32_t top_enclosure_x = 0;
   int32_t top_enclosure_y = 0;
 
-  if (layer_bottom->is_horizontal()) {
+  auto process_bottom_horizontal = [&]() {
     int32_t rule_bottom_enclosure_x = via_rule->get_enclosure_bottom()->get_overhang_1();
     int32_t rule_bottom_enclosure_y = via_rule->get_enclosure_bottom()->get_overhang_2();
 
@@ -385,8 +386,8 @@ IdbVia* IdbVias::createVia(string via_name, IdbLayerCut* layer_cut, int32_t widt
     /// calculate enclosure x
     bottom_enclosure_x = (bottom_width - (cols * cutsize_x + (cols - kMinRowColNum) * cut_spacing_x)) / 2;
     bottom_enclosure_x = std::max(bottom_enclosure_x, rule_bottom_enclosure_x);
-
-  } else {
+  };
+  auto process_bottom_vertical = [&]() {
     int32_t rule_bottom_enclosure_x = via_rule->get_enclosure_bottom()->get_overhang_2();
     int32_t rule_bottom_enclosure_y = via_rule->get_enclosure_bottom()->get_overhang_1();
 
@@ -407,9 +408,23 @@ IdbVia* IdbVias::createVia(string via_name, IdbLayerCut* layer_cut, int32_t widt
     /// calculate enclosure y
     bottom_enclosure_y = (bottom_height - (rows * cutsize_y + (rows - kMinRowColNum) * cut_spacing_y)) / 2;
     bottom_enclosure_y = std::max(bottom_enclosure_y, rule_bottom_enclosure_y);
+  };
+
+  if (direction == IdbLayerDirection::kNone) {
+    if (layer_bottom->is_horizontal()) {
+      process_bottom_horizontal();
+    } else {
+      process_bottom_vertical();
+    }
+  } else {
+    if (direction == IdbLayerDirection::kHorizontal) {
+      process_bottom_horizontal();
+    } else {
+      process_bottom_vertical();
+    }
   }
 
-  if (layer_top->is_horizontal()) {
+  auto process_top_horizontal = [&]() {
     int32_t rule_top_enclosure_x = via_rule->get_enclosure_top()->get_overhang_1();
     int32_t rule_top_enclosure_y = via_rule->get_enclosure_top()->get_overhang_2();
 
@@ -430,7 +445,8 @@ IdbVia* IdbVias::createVia(string via_name, IdbLayerCut* layer_cut, int32_t widt
     /// calculate enclosure x
     top_enclosure_x = (top_width - (cols * cutsize_x + (cols - kMinRowColNum) * cut_spacing_x)) / 2;
     top_enclosure_x = std::max(top_enclosure_x, rule_top_enclosure_x);
-  } else {
+  };
+  auto process_top_vertical = [&]() {
     int32_t rule_top_enclosure_x = via_rule->get_enclosure_top()->get_overhang_2();
     int32_t rule_top_enclosure_y = via_rule->get_enclosure_top()->get_overhang_1();
 
@@ -451,6 +467,20 @@ IdbVia* IdbVias::createVia(string via_name, IdbLayerCut* layer_cut, int32_t widt
     /// calculate enclosure y
     top_enclosure_y = (top_height - (rows * cutsize_y + (rows - kMinRowColNum) * cut_spacing_y)) / 2;
     top_enclosure_y = std::max(top_enclosure_y, rule_top_enclosure_y);
+  };
+
+  if (direction == IdbLayerDirection::kNone) {
+    if (layer_bottom->is_horizontal()) {
+      process_top_horizontal();
+    } else {
+      process_top_vertical();
+    }
+  } else {
+    if (direction == IdbLayerDirection::kHorizontal) {
+      process_top_horizontal();
+    } else {
+      process_top_vertical();
+    }
   }
 
   master_generate->set_enclosure_bottom(bottom_enclosure_x, bottom_enclosure_y);

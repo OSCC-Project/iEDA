@@ -29,7 +29,7 @@ class VecPatchInit
  public:
   VecPatchInit(VecLayout* layout, VecPatchGrid* patch_grid) : _layout(layout), _patch_grid(patch_grid) {}
   ~VecPatchInit() {}
-  void init();
+  void init(bool is_placement_mode = false);
 
  private:
   VecLayout* _layout;

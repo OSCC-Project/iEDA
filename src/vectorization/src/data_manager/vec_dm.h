@@ -35,15 +35,15 @@ class VecDataManager
     }
   }
 
-  bool buildLayoutData();
-  bool buildGraphData();
+  bool buildLayoutData(bool is_placement_mode = false);
+  bool buildGraphData(bool is_placement_mode = false);
   bool buildPatternData();
-  bool buildPatchData(const std::string dir);
-  bool buildPatchData(const std::string dir, int patch_row_step, int patch_col_step);
+  bool buildPatchData(const std::string dir, bool is_placement_mode = false);
+  bool buildPatchData(const std::string dir, int patch_row_step, int patch_col_step, bool is_placement_mode = false);
   std::map<int, VecNet> getGraph(std::string path);
 
   bool checkData();
-  void saveData(const std::string dir, bool batch_mode = true);
+  void saveData(const std::string dir, bool batch_mode = true, bool is_placement_mode = false);
   bool readNetsToIDB(std::string dir);
   bool readNetsPatternToIDB(std::string path);
 

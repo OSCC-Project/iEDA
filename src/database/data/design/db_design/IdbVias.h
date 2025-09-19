@@ -38,8 +38,8 @@
 // #include "IdbViaMaster.h"
 #include "../../../basic/geometry/IdbGeometry.h"
 #include "../../../basic/geometry/IdbLayerShape.h"
+#include "../IdbEnum.h"
 #include "../IdbObject.h"
-// #include "../db_layout/IdbLayer.h"
 
 namespace idb {
 
@@ -74,7 +74,7 @@ class IdbVia : public IdbObject
   void reset_instance(IdbViaMaster* instance);
   void set_coordinate(IdbCoordinate<int32_t>* point);
   void set_coordinate(int32_t x, int32_t y) { _coordinate->set_xy(x, y); }
-  
+
   // operator
   IdbVia* clone();
   void clear();
@@ -111,7 +111,8 @@ class IdbVias
   void init_via_list(int32_t size) { _via_list.reserve(size); }
 
   // operator
-  IdbVia* createVia(string via_name, IdbLayerCut* layer_cut, int32_t width_design = 0, int32_t height_design = 0);
+  IdbVia* createVia(string via_name, IdbLayerCut* layer_cut, int32_t width_design = 0, int32_t height_design = 0,
+                    IdbLayerDirection direction = IdbLayerDirection::kNone);
   //   IdbVia* createViaDefault(string via_name, IdbLayerCut* layer_cut);
   std::pair<int32_t, int32_t> calculateRowsCols(IdbLayerCut* layer_cut, int32_t width = 0, int32_t height = 0);
   string createViaPatternString(int row_num, int col_num, IdbLayerCutArraySpacing* _array_spacing);

@@ -91,6 +91,8 @@ class StaIO
 
   StaIO() {}
   ~StaIO() = default;
+
+  void set_instance_flip_flop();
 };
 
 }  // namespace iplf

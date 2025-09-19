@@ -20,6 +20,8 @@
 #include <string>
 #include <vector>
 
+#include "IdbEnum.h"
+
 namespace idb {
 class IdbLayer;
 class IdbSpecialWireSegment;
@@ -49,8 +51,10 @@ class PdnVia
 
   /// operator
 
-  idb::IdbVia* findVia(idb::IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design);
-  idb::IdbVia* createVia(idb::IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design, std::string via_name);
+  idb::IdbVia* findVia(idb::IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design,
+                       idb::IdbLayerDirection direction = idb::IdbLayerDirection::kNone);
+  idb::IdbVia* createVia(idb::IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design, std::string via_name,
+                         idb::IdbLayerDirection direction = idb::IdbLayerDirection::kNone);
   idb::IdbSpecialWireSegment* createSpecialWireVia(idb::IdbLayer* layer, int32_t route_width, idb::IdbWireShapeType wire_shape_type,
                                                    idb::IdbCoordinate<int32_t>* coord, idb::IdbVia* via);
 

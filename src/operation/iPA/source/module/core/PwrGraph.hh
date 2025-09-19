@@ -90,6 +90,15 @@ class PwrGraph {
     return _vertex_pwr_to_sta[pwr_vertex];
   }
 
+  void addStaAndPwrArc(StaArc* sta_arc, PwrArc* pwr_arc) {
+    _arc_sta_to_pwr[sta_arc] = pwr_arc;
+    _arc_pwr_to_sta[pwr_arc] = sta_arc;
+  }
+
+  PwrArc* staToPwrArc(StaArc* sta_arc) { return _arc_sta_to_pwr.contains(sta_arc) ? _arc_sta_to_pwr[sta_arc] : nullptr; }
+  StaArc* pwrToStaArc(PwrArc* pwr_arc) { return _arc_pwr_to_sta.contains(pwr_arc) ? _arc_pwr_to_sta[pwr_arc] : nullptr; }
+  
+
   void addPowerArc(std::unique_ptr<PwrArc> arc) {
     _arcs.emplace_back(std::move(arc));
   }
@@ -161,6 +170,10 @@ class PwrGraph {
   std::unordered_map<StaVertex*, PwrVertex*>
       _vertex_sta_to_pwr;  //!< The sta and pwr vertex crossref.
   std::unordered_map<PwrVertex*, StaVertex*> _vertex_pwr_to_sta;
+
+  std::unordered_map<PwrArc*, StaArc*> _arc_pwr_to_sta; //!< The pwr and sta arc crossref.
+  std::unordered_map<StaArc*, PwrArc*> _arc_sta_to_pwr;
+
   PwrVertexSet _input_port_vertexes;   //<! The input port vertexes of the
                                        // propagation path.
   PwrVertexSet _output_port_vertexes;  //<! The output port vertexes of the

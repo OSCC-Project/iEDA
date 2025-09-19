@@ -35,6 +35,7 @@ class AISta {
   virtual std::vector<float> getOutputResult(
       std::vector<Ort::Value>& output_tensor) {
     LOG_FATAL << "The func is not implemented";
+    return {};
   }
 };
 
