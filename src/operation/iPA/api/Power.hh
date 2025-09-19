@@ -183,7 +183,10 @@ class Power {
   }
   auto getInstanceIRDrop(std::string power_net_name) {
     auto& net_to_instance_ir_drop = _ir_analysis.get_net_to_instance_ir_drop();
-    return net_to_instance_ir_drop.at(power_net_name);
+    if (!net_to_instance_ir_drop.contains(power_net_name)) {
+      return std::map<std::string, double>();
+    }
+    return net_to_instance_ir_drop[power_net_name];
   }
 
   void setBumpNodeLocs(
