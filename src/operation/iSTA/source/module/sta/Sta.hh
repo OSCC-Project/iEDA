@@ -716,7 +716,7 @@ class Sta {
 
   using json = nlohmann::ordered_json;
 
-  bool _is_json_report_enabled = true;        //!< The json report enable flag.
+  bool _is_json_report_enabled = false;        //!< The json report enable flag.
   json _summary_json_report = json::array();  //!< The json data
   json _slack_json_report = json::array();    //!< The json data
   json _detail_json_report =
