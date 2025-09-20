@@ -87,6 +87,8 @@ class RustVerilogRead
   int32_t build_nets();
   int32_t build_pins();
 
+  int32_t post_process_float_io_pins();
+
  private:
   IdbDesign* _idb_design = nullptr;
   IdbDefService* _def_service = nullptr;

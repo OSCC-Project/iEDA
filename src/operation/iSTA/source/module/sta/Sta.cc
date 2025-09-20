@@ -22,6 +22,8 @@
  * @date 2020-11-27
  */
 
+#include "Sta.hh"
+
 #include <algorithm>
 #include <filesystem>
 #include <map>
@@ -32,7 +34,6 @@
 #include <utility>
 
 #include "Config.hh"
-#include "Sta.hh"
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
 #include "StaBuildClockTree.hh"
@@ -1876,7 +1877,9 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate,
 
       for (auto *report_fun : report_funcs) {
         if (only_wire_path) {
-          if (dynamic_cast<StaReportWirePathJson *>(report_fun)) {
+          if (dynamic_cast<StaReportWirePathJson *>(report_fun) ||
+              dynamic_cast<StaReportPathSummary *>(report_fun) ||
+              dynamic_cast<StaReportClockTNS *>(report_fun)) {
             is_ok = report_path(*report_fun);
           }
 
@@ -2514,7 +2517,7 @@ StaSeqPathData *Sta::getWorstSeqData(AnalysisMode mode, TransType trans_type) {
  * @return StaSeqPathData*
  */
 std::vector<StaSeqPathData *> Sta::getTopNWorstSeqPaths(AnalysisMode mode,
-                                                   unsigned top_n_path) {
+                                                        unsigned top_n_path) {
   auto worst_seq_datas =
       getWorstSeqData(std::nullopt, mode, TransType::kRiseFall, top_n_path);
   return worst_seq_datas;
@@ -2876,29 +2879,25 @@ unsigned Sta::updateTiming() {
   } else {
     // BFS flow
     Vector<std::function<unsigned(StaGraph *)>> funcs = {
-      StaApplySdc(StaApplySdc::PropType::kApplySdcPreProp),
-      StaConstPropagation(),
-      StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
-      StaCombLoopCheck(),
-      StaClockSlewDelayPropagation(),
-      StaLevelization(),
-      StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
-      StaApplySdc(StaApplySdc::PropType::kApplySdcPostNormalClockProp),
-      StaClockPropagation(
-          StaClockPropagation::PropType::kUpdateGeneratedClockProp),
-      StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp),
-      StaBuildPropTag(StaPropagationTag::TagType::kProp),
+        StaApplySdc(StaApplySdc::PropType::kApplySdcPreProp),
+        StaConstPropagation(),
+        StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
+        StaCombLoopCheck(), StaClockSlewDelayPropagation(), StaLevelization(),
+        StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
+        StaApplySdc(StaApplySdc::PropType::kApplySdcPostNormalClockProp),
+        StaClockPropagation(
+            StaClockPropagation::PropType::kUpdateGeneratedClockProp),
+        StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp),
+        StaBuildPropTag(StaPropagationTag::TagType::kProp),
 #if !INTEGRATION_FWD
-      StaDataSlewDelayPropagation(),
+        StaDataSlewDelayPropagation(),
 #endif
-      StaDataPropagation(StaDataPropagation::PropType::kFwdProp),
-      // StaCrossTalkPropagation(),
+        StaDataPropagation(StaDataPropagation::PropType::kFwdProp),
+        // StaCrossTalkPropagation(),
 
-      StaDataPropagation(StaDataPropagation::PropType::kIncrFwdProp),
-      StaAnalyze(),
-      StaApplySdc(StaApplySdc::PropType::kApplySdcPostProp),
-      StaDataPropagation(StaDataPropagation::PropType::kBwdProp)
-    };
+        StaDataPropagation(StaDataPropagation::PropType::kIncrFwdProp),
+        StaAnalyze(), StaApplySdc(StaApplySdc::PropType::kApplySdcPostProp),
+        StaDataPropagation(StaDataPropagation::PropType::kBwdProp)};
 
     for (auto &func : funcs) {
       the_graph.exec(func);

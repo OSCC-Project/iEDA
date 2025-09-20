@@ -119,6 +119,8 @@ bool RustVerilogRead::createDb(std::string file, std::string top_module_name)
   build_components();
   build_assign();
 
+  post_process_float_io_pins();
+
   return true;
 }
 
@@ -1075,6 +1077,28 @@ int32_t RustVerilogRead::build_components()
   }
 
   return kVerilogSuccess;
+}
+
+int32_t RustVerilogRead::post_process_float_io_pins() {
+  IdbDesign* idb_design = _def_service->get_design();
+  IdbPins* idb_io_pin_list = idb_design->get_io_pin_list();
+
+  for (auto* io_pin : idb_io_pin_list->get_pin_list()) {
+    if (io_pin->is_io_pin() && (io_pin->get_net() == nullptr)) {
+      // create a net for float io pin.
+      IdbNet* idb_net = new IdbNet();
+      idb_net->set_net_name(io_pin->get_pin_name());
+      idb_net->set_connect_type(IdbConnectType::kSignal);
+      idb_design->get_net_list()->add_net(idb_net);
+
+      idb_net->add_io_pin(io_pin);
+      io_pin->set_net(idb_net);
+      io_pin->set_net_name(idb_net->get_net_name());
+    }
+  }
+
+  return kVerilogSuccess;
+
 }
 
 }  // namespace idb

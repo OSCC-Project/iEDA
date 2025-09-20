@@ -1276,6 +1276,7 @@ double RcNet::getNodeResistance(const char* node_name) {
 
   if (auto* rc_tree = rct(); rc_tree) {
     auto* node = rc_tree->node(node_name);
+    LOG_FATAL_IF(!node) << "node " << node_name << " not found in the RC Tree.";
     res = node->_res;
   }
 

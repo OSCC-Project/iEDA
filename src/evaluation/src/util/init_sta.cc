@@ -119,6 +119,64 @@ void InitSTA::runSpefVecSTA(std::string work_dir) {
   updateResult("Vectorization");
 }
 
+///@brief save ppa index into csv.
+void InitSTA::saveTimingPowerBenchmark() {
+  // get freq、TNS、Top100 path delay
+  std::map<std::string, std::pair<double, double>> clock_freq_map; // clock_name, <freq, TNS>
+  auto all_clocks = STA_INST->getClockList();
+  for (auto* clock : all_clocks) {
+      double clock_period = clock->getPeriodNs();
+      double slack = STA_INST->getWNS(clock->get_clock_name(), ista::AnalysisMode::kMax);
+
+      // freq is period inverse.
+      double freq_MHz = 1000 / (clock_period - slack);
+
+      double TNS = STA_INST->getTNS(clock->get_clock_name(), ista::AnalysisMode::kMax);
+      clock_freq_map[clock->get_clock_name()] = std::make_pair(freq_MHz, TNS);
+  }
+
+  std::vector<std::pair<std::string, double>> end_vertex_to_path_delay;
+  unsigned top_n_path = 100;
+  // get top100 path delay
+  auto top_n_seq_path_vec = STA_INST->getTopNWorstSeqPaths(ista::AnalysisMode::kMax, top_n_path);
+  LOG_INFO << "seq path num: " << top_n_seq_path_vec.size();
+  for (auto* seq_path : top_n_seq_path_vec) {
+    double path_delay = seq_path->getArriveTimeNs();
+    auto* end_vertex = seq_path->getEndVertex();
+
+    end_vertex_to_path_delay.emplace_back(end_vertex->getName(), path_delay);
+  }
+
+  // leakage power、internal power、switch power
+  double leakage_power = PW_INST->get_power()->getSumLeakagePower();
+  double internal_power = PW_INST->get_power()->getSumInternalPower();
+  double switch_power = PW_INST->get_power()->getSumSwitchPower();
+  
+  // net density need in single file.
+  // save to json.
+
+  std::string benchmark_file_path = STA_INST->get_design_work_space();
+  benchmark_file_path += "/timing_power_benchmark.json";
+
+  std::ofstream json_file(benchmark_file_path, std::ios::out | std::ios::trunc);
+  if (!json_file.is_open()) {
+    LOG_ERROR << "Fail to open timing_power_benchmark.json";
+    return; 
+  }
+
+  json json_data;
+  json_data["clock_freq_map"] = clock_freq_map;
+  json_data["end_vertex_to_path_delay"] = end_vertex_to_path_delay;
+  json_data["leakage_power"] = leakage_power;
+  json_data["internal_power"] = internal_power;
+  json_data["switch_power"] = switch_power;
+
+  json_file << json_data.dump(4) << std::endl;
+
+  json_file.close();
+  LOG_INFO << "save benchmark json path: " << benchmark_file_path;
+}
+
 void InitSTA::evalTiming(const std::string& routing_type, const bool& rt_done)
 {
   initStaEngine();
@@ -593,7 +651,9 @@ void InitSTA::buildVecRCTree(ivec::VecLayout* vec_layout, std::string work_dir)
 }
 
 void InitSTA::buildSpefRCTree(std::string work_dir) {
-  STA_INST->readSpef(dmInst->get_config().get_spef_path().c_str());
+  std::string spef_path = dmInst->get_config().get_spef_path();
+  LOG_INFO << "spef path: " << spef_path;
+  STA_INST->readSpef(spef_path.c_str());
   STA_INST->updateTiming();
   STA_INST->get_ista()->reportUsedLibs();
 
@@ -650,6 +710,9 @@ void InitSTA::updateResult(const std::string& routing_type)
   }
   _power[routing_type]["static_power"] = static_power;
   _power[routing_type]["dynamic_power"] = dynamic_power;
+  
+  // save benchmark file for test.
+  saveTimingPowerBenchmark();
 }
 
 double InitSTA::getEarlySlack(const std::string& pin_name) const
@@ -1170,14 +1233,13 @@ TimingWireGraph InitSTA::getTimingWireGraph()
       auto* the_net = the_net_arc->get_net();
 
       auto* rc_net = ista->getRcNet(the_net);
+      auto* rc_tree = rc_net->rct();
 
-      if (rc_net) {
+      if (rc_net && rc_tree) {
         auto* snk_node = the_arc->get_snk();
         auto snk_node_name = snk_node->get_design_obj()->getFullName();
 
         auto wire_topo = rc_net->getWireTopo(snk_node_name.c_str());
-        auto* rc_tree = rc_net->rct();
-        LOG_FATAL_IF(!rc_tree) << "rc net has no rc tree.";
 
         auto vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMax, TransType::kRise);
         auto max_rise_all_nodes_slew = rc_tree->getAllNodeSlew(vertex_slew.value_or(0.0), AnalysisMode::kMax, TransType::kRise);
@@ -1283,6 +1345,7 @@ TimingInstanceGraph InitSTA::getTimingInstanceGraph()
 
   auto* ista = STA_INST->get_ista();
   LOG_ERROR_IF(!ista->isBuildGraph()) << "timing graph is not build";
+  auto* ipower = PW_INST->get_power();
 
   auto* the_timing_graph = &(ista->get_graph());
 
@@ -1290,11 +1353,18 @@ TimingInstanceGraph InitSTA::getTimingInstanceGraph()
   timing_instance_graph._nodes.reserve(the_timing_graph->get_vertexes().size() * 10);
 
   /// create node in instance graph
-  auto create_node = [&timing_instance_graph](std::string& node_name) -> unsigned {
+  auto create_node = [&timing_instance_graph, ipower](
+                         std::string& node_name,
+                         ista::DesignObject* obj) -> unsigned {
     auto index = timing_instance_graph.findNode(node_name);
     if (!index) {
       TimingInstanceNode the_node;
       the_node._name = node_name;
+
+      auto* power_data = ipower->getObjData(obj);
+      double leakage_power = power_data->get_leakage_power();
+
+      the_node._node_feature._leakage_power = leakage_power;
 
       index = timing_instance_graph.addNode(the_node);
     }
@@ -1318,8 +1388,8 @@ TimingInstanceGraph InitSTA::getTimingInstanceGraph()
       auto src_instance_name = src_instance->getFullName();
       auto snk_instance_name = snk_instance->getFullName();
 
-      unsigned src_node_index = create_node(src_instance_name);
-      unsigned snk_node_index = create_node(snk_instance_name);
+      unsigned src_node_index = create_node(src_instance_name, src_instance);
+      unsigned snk_node_index = create_node(snk_instance_name, snk_instance);
 
       timing_instance_graph.addEdge(src_node_index, snk_node_index);
     }
@@ -1453,7 +1523,10 @@ void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, c
     json j = json::array();
     for (unsigned node_id = 0; auto& node : timing_instance_graph._nodes) {
       std::string id_str = "node_" + std::to_string(node_id++);
-      j.push_back({{"id", id_str}, {"name", node._name}});
+      j.push_back({{"id", id_str},
+                   {"name", node._name},
+                   {"leakage_power",
+                   node._node_feature._leakage_power}});
     }
     nodes_json = j;
   });

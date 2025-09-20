@@ -116,10 +116,17 @@ struct TimingWireEdge
   PowerEdgeFeature _power_feature;
 };
 
+///@brief The timing instance node feature.
+struct TimingInstanceNodeFeature {
+  double _leakage_power = 0.0;
+};
+
 
 /// @brief The timing instance node for wangrui used.
 struct TimingInstanceNode {
   std::string _name; //!< instance name
+
+  TimingInstanceNodeFeature _node_feature;
 };
 
 struct TimingNetEdge {
@@ -226,6 +233,7 @@ class InitSTA
   void runVecSTA(ivec::VecLayout* vec_layout, std::string work_dir);
   void runPlaceVecSTA(const std::string& routing_type, const bool& rt_done, std::string work_dir);
   void runSpefVecSTA(std::string work_dir);
+  void saveTimingPowerBenchmark();
   void evalTiming(const std::string& routing_type, const bool& rt_done = false);
 
   std::map<std::string, std::map<std::string, std::map<std::string, double>>> getTiming() const { return _timing; }
