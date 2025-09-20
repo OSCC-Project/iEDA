@@ -225,7 +225,7 @@ class Sta {
   void set_design_name(const char* design_name) {
     _netlist.set_name(design_name);
   }
-  std::string get_design_name() { return _netlist.get_name(); }
+  std::string& get_design_name() { return _netlist.getObjName(); }
 
   auto& get_constrains() { return _constrains; }
   void resetConstraint();
