@@ -333,7 +333,7 @@ void VecFeatureStatis::feature_patch()
 
     // Calculate net_density for routing mode using real wire data
     if (!_is_placement_mode) {
-      double max_wire_density = 0.0;
+      double sum_wire_density = 0.0;
       
       // Calculate patch area
       int patch_width = (patch.colIdMax - patch.colIdMin) * gridInfoInst.x_step;
@@ -345,10 +345,10 @@ void VecFeatureStatis::feature_patch()
         double wire_density = 0.0;
         // Wire density = (wire_length * wire_width) / patch_area
         wire_density = (static_cast<double>(patch_layer.wire_len) * patch_layer.wire_width) / patch_area;
-        max_wire_density = std::max(max_wire_density, wire_density);
+        sum_wire_density += wire_density;
       }
       
-      patch.net_density = max_wire_density;
+      patch.net_density = sum_wire_density;
     }
 
     if (i % 1000 == 0) {
