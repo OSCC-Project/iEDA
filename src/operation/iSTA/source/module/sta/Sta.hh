@@ -225,7 +225,7 @@ class Sta {
   void set_design_name(const char* design_name) {
     _netlist.set_name(design_name);
   }
-  std::string get_design_name() { return _netlist.get_name(); }
+  std::string& get_design_name() { return _netlist.getObjName(); }
 
   auto& get_constrains() { return _constrains; }
   void resetConstraint();
@@ -716,7 +716,7 @@ class Sta {
 
   using json = nlohmann::ordered_json;
 
-  bool _is_json_report_enabled = true;        //!< The json report enable flag.
+  bool _is_json_report_enabled = false;        //!< The json report enable flag.
   json _summary_json_report = json::array();  //!< The json data
   json _slack_json_report = json::array();    //!< The json data
   json _detail_json_report =

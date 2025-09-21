@@ -36,7 +36,7 @@ void VecFeatureTiming::build()
 
   if (_is_placement_mode) {
     // In placement mode, use EGR estimation for timing calculation
-    eval_tp->runPlaceVecSTA("EGR", false, _dir);
+    eval_tp->runPlaceVecSTA("HPWL", false, _dir);
   } else {
     // In routing mode, user can choose between VEC_STA and SPEF_STA
     switch (_sta_mode) {
