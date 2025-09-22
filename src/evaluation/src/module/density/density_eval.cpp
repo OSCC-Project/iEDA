@@ -659,6 +659,13 @@ std::map<int, double> DensityEval::patchNetDensity(DensityNets nets, std::map<in
 {
   std::map<int, double> patch_net_density;
   
+  if (nets.empty()) {
+    for (const auto& [patch_id, coord] : patch_coords) {
+      patch_net_density[patch_id] = 0.0;
+    }
+    return patch_net_density;
+  }
+  
   // 预处理：将线网按x坐标排序，提升查找性能
   std::vector<DensityNet> sorted_nets = nets;
   std::sort(sorted_nets.begin(), sorted_nets.end(), [](const DensityNet& a, const DensityNet& b) {
@@ -679,6 +686,11 @@ std::map<int, double> DensityEval::patchNetDensity(DensityNets nets, std::map<in
       const int patch_width = patch_ux - patch_lx;
       const int patch_height = patch_uy - patch_ly;
       const int patch_area = patch_width * patch_height;
+      
+      if (patch_area <= 0) {
+        patch_net_density[patch_id] = 0.0;
+        continue;
+      }
 
       // 使用二分查找确定x坐标范围，减少需要检查的线网数量
       auto lower_it = std::lower_bound(sorted_nets.begin(), sorted_nets.end(), patch_lx,
@@ -693,6 +705,10 @@ std::map<int, double> DensityEval::patchNetDensity(DensityNets nets, std::map<in
       // 只检查x坐标范围内可能重叠的线网
       for (auto it = lower_it; it != upper_it; ++it) {
         const auto& net = *it;
+        
+        if (net.lx > net.ux || net.ly > net.uy) {
+          continue; 
+        }
         
         // 检查y坐标是否重叠
         if (net.uy > patch_ly && net.ly < patch_uy) {
@@ -716,8 +732,8 @@ std::map<int, double> DensityEval::patchNetDensity(DensityNets nets, std::map<in
       
       patch_net_density[patch_id] = density;
   }
-
-  return patch_net_density;
+  
+    return patch_net_density;
 }
 
 std::map<int, int> DensityEval::patchMacroMargin(DensityCells cells, DensityRegion core, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
