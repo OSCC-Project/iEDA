@@ -673,6 +673,7 @@ void InitSTA::initPowerEngine()
     PW_INST->get_power()->initToggleSPData();
   }
   PW_INST->get_power()->updatePower();
+  PW_INST->get_power()->reportPower();
 }
 
 void InitSTA::updateResult(const std::string& routing_type)
