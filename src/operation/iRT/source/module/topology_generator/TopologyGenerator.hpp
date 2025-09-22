@@ -82,6 +82,8 @@ class TopologyGenerator
   void outputGuide(TGModel& tg_model);
   void outputNetCSV(TGModel& tg_model);
   void outputOverflowCSV(TGModel& tg_model);
+  void outputDemandCSV(TGModel& tg_model);
+  void outputDemandCSV(TGModel& tg_model, int32_t net_index);
   void outputJson(TGModel& tg_model);
   std::string outputNetJson(TGModel& tg_model);
   std::string outputOverflowJson(TGModel& tg_model);
