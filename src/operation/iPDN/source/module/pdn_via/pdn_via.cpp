@@ -70,8 +70,6 @@ idb::IdbVia* PdnVia::createVia(idb::IdbLayerCut* layer_cut, int32_t width_design
   auto idb_design = dmInst->get_idb_design();
   auto via_list = idb_design->get_via_list();
 
-  via_name = layer_cut->get_name() + "_" + std::to_string(width_design) + "x" + std::to_string(height_design);
-
   return via_list->createVia(via_name, layer_cut, width_design, height_design, direction);
 }
 
