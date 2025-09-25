@@ -254,7 +254,9 @@ void VecFeatureStatis::feature_patch()
   // key is patch_id, value is the corresponding map value.
   std::map<int, double> cell_power_map = TimingPower_API_INST->patchPowerMap(patch_xy_map);
   std::map<int, double> cell_timing_map = TimingPower_API_INST->patchTimingMap(patch_xy_map);
-  std::map<int, double> cell_ir_map = TimingPower_API_INST->patchIRDropMap(patch_xy_map);
+  std::map<int, double> cell_ir_map; // mask for contest.
+  // std::map<int, double> cell_ir_map = TimingPower_API_INST->patchIRDropMap(patch_xy_map);
+
   std::map<int, int> pin_density_map = DENSITY_API_INST->patchPinDensity(patch_xy_map);
   std::map<int, double> cell_density_map = DENSITY_API_INST->patchCellDensity(patch_xy_map);
   std::map<int, double> net_density_map = DENSITY_API_INST->patchNetDensity(patch_xy_map);

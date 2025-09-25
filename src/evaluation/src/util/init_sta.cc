@@ -393,7 +393,7 @@ void InitSTA::buildRCTree(const std::string& routing_type)
   for (size_t net_id = 0; net_id < idb_nets.size(); ++net_id) {
     auto* idb_net = idb_nets[net_id];
     sta_net = sta_netlist->findNet(idb_net->get_net_name().c_str());
-    if (sta_net == nullptr) {
+    if (sta_net == nullptr || sta_net->getDriver() == nullptr) {
       continue;
     }
     STA_INST->resetRcTree(sta_net);
@@ -673,6 +673,7 @@ void InitSTA::initPowerEngine()
     PW_INST->get_power()->initToggleSPData();
   }
   PW_INST->get_power()->updatePower();
+  PW_INST->get_power()->reportPower(false);
 }
 
 void InitSTA::updateResult(const std::string& routing_type)
