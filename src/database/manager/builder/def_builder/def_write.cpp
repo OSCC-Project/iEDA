@@ -35,7 +35,8 @@
 
 #include <algorithm>
 #include <cstdint>
-
+#include <stdarg.h>
+#include <zlib.h>
 #include "../../../data/design/IdbDesign.h"
 #include "Str.hh"
 #include "boost_definition.h"
