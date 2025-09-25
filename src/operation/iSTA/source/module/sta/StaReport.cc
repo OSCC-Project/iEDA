@@ -873,9 +873,8 @@ unsigned StaReportPathDetailJson::operator()(StaSeqPathData* seq_path_data) {
   path_json["clock_field"] = capture_clock->get_clock_name();
 
   // Determain the delay type
-  auto* check_arc = seq_path_data->get_check_arc();
-  path_json["type"] = check_arc->isSetupArc() ? "setup" : "hold";
-
+  auto check_arc = seq_path_data->getDelayType();
+  path_json["type"] = (check_arc == AnalysisMode::kMax) ? "max" : "min";
   // Set the path delay
   auto slack = seq_path_data->getSlack();
   path_json["slack"] = fix_point_str(FS_TO_NS(slack));
