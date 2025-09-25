@@ -316,7 +316,7 @@ void RTInterface::fixFanout()
         // 生成buf
         idb::IdbInstance* new_buf = new IdbInstance();
         new_buf->set_name(RTUTIL.getString("rt_fanout_buf_", new_idx++));
-        new_buf->set_cell_master(idb_cell_master_list->find_cell_master(RTUTIL.getString("BUFFD8BWP30P140LVT")));
+        new_buf->set_cell_master(idb_cell_master_list->find_cell_master(RTUTIL.getString("BUFFD3BWP35P140LVT")));
         idb_instance_list->add_instance(new_buf);
         // 连接buf
         for (idb::IdbPin* buf_pin : new_buf->get_pin_list()->get_pin_list()) {

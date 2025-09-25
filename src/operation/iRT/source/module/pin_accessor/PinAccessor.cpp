@@ -202,12 +202,27 @@ void PinAccessor::initAccessPointList(PAModel& pa_model)
 
 std::vector<LayerRect> PinAccessor::getLegalShapeList(PAModel& pa_model, int32_t net_idx, PAPin* pa_pin)
 {
-  std::map<int32_t, std::vector<EXTLayerRect>, std::greater<int32_t>> routing_pin_shape_map;
-  for (EXTLayerRect& routing_shape : pa_pin->get_routing_shape_list()) {
-    routing_pin_shape_map[routing_shape.get_layer_idx()].emplace_back(routing_shape);
+  std::vector<std::pair<int32_t, std::vector<EXTLayerRect>>> routing_pin_shape_list;
+  {
+    std::map<int32_t, std::vector<EXTLayerRect>> routing_pin_shape_map;
+    for (EXTLayerRect& routing_shape : pa_pin->get_routing_shape_list()) {
+      routing_pin_shape_map[routing_shape.get_layer_idx()].emplace_back(routing_shape);
+    }
+    for (auto& [routing_layer_idx, pin_shape_list] : routing_pin_shape_map) {
+      routing_pin_shape_list.emplace_back(routing_layer_idx, pin_shape_list);
+    }
+  }
+  if (pa_pin->get_is_core()) {
+    std::sort(routing_pin_shape_list.begin(), routing_pin_shape_list.end(),
+              [](const std::pair<int32_t, std::vector<EXTLayerRect>>& a, const std::pair<int32_t, std::vector<EXTLayerRect>>& b) { return a.first > b.first; });
+  } else {
+    std::sort(routing_pin_shape_list.begin(), routing_pin_shape_list.end(),
+              [](const std::pair<int32_t, std::vector<EXTLayerRect>>& a, const std::pair<int32_t, std::vector<EXTLayerRect>>& b) {
+                return (a.first % 2 != 0 && b.first % 2 == 0) || (a.first % 2 == b.first % 2 && a.first > b.first);
+              });
   }
   std::vector<LayerRect> legal_rect_list;
-  for (auto& [routing_layer_idx, pin_shape_list] : routing_pin_shape_map) {
+  for (auto& [routing_layer_idx, pin_shape_list] : routing_pin_shape_list) {
     std::vector<PlanarRect> planar_legal_rect_list = getPlanarLegalRectList(pa_model, net_idx, pa_pin, pin_shape_list);
     for (PlanarRect planar_legal_rect : RTUTIL.mergeRectListByBoost(planar_legal_rect_list, Direction::kVertical)) {
       legal_rect_list.emplace_back(planar_legal_rect, routing_layer_idx);
@@ -785,14 +800,14 @@ void PinAccessor::initPATaskList(PAModel& pa_model, PABox& pa_box)
     }
   }
   for (auto& [pa_net, pin_access_point_map] : net_pin_access_point_map) {
-    std::map<int32_t, std::vector<EXTLayerRect*>> routing_obs_rect_map;
+    std::map<int32_t, std::vector<PlanarRect>> routing_obs_rect_map;
     for (auto& [routing_layer_idx, net_fixed_rect_map] : pa_box.get_type_layer_net_fixed_rect_map()[true]) {
       for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
         if (pa_net->get_net_idx() == net_idx) {
           continue;
         }
-        for (auto& fixed_rect : fixed_rect_set) {
-          routing_obs_rect_map[routing_layer_idx].push_back(fixed_rect);
+        for (EXTLayerRect* fixed_rect : fixed_rect_set) {
+          routing_obs_rect_map[routing_layer_idx].push_back(RTUTIL.getEnlargedRect(fixed_rect->get_real_rect(), RTDM.getOnlyPitch()));
         }
       }
     }
@@ -812,6 +827,10 @@ void PinAccessor::initPATaskList(PAModel& pa_model, PABox& pa_box)
           continue;
         }
       }
+      std::map<int32_t, std::vector<PlanarRect>> routing_pin_rect_map;
+      for (EXTLayerRect& routing_shape : pa_pin->get_routing_shape_list()) {
+        routing_pin_rect_map[routing_shape.get_layer_idx()].push_back(RTUTIL.getEnlargedRect(routing_shape.get_real_rect(), RTDM.getOnlyPitch()));
+      }
       std::vector<PAGroup> pa_group_list(2);
       {
         pa_group_list.front().set_is_target(false);
@@ -825,16 +844,16 @@ void PinAccessor::initPATaskList(PAModel& pa_model, PABox& pa_box)
           }
           bool within_shape = false;
           if (!within_shape) {
-            for (EXTLayerRect* obs_rect : routing_obs_rect_map[coord.get_layer_idx()]) {
-              if (RTUTIL.isInside(obs_rect->get_real_rect(), coord)) {
+            for (PlanarRect& obs_rect : routing_obs_rect_map[coord.get_layer_idx()]) {
+              if (RTUTIL.isInside(obs_rect, coord)) {
                 within_shape = true;
                 break;
               }
             }
           }
           if (!within_shape) {
-            for (EXTLayerRect& routing_shape : pa_pin->get_routing_shape_list()) {
-              if (routing_shape.get_layer_idx() == coord.get_layer_idx() && RTUTIL.isInside(routing_shape.get_real_rect(), coord)) {
+            for (PlanarRect& pin_rect : routing_pin_rect_map[coord.get_layer_idx()]) {
+              if (RTUTIL.isInside(pin_rect, coord)) {
                 within_shape = true;
                 break;
               }
