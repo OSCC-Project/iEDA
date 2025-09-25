@@ -89,6 +89,7 @@ class StaPathData {
   AnalysisMode getDelayType() { return _delay_data->get_delay_type(); }
 
   StaPathDelayData* get_delay_data() { return _delay_data; }
+  StaVertex* getEndVertex() { return _delay_data->get_own_vertex(); }
   StaClockData* get_launch_clock_data() { return _launch_clock_data; }
   StaClockData* get_capture_clock_data() { return _capture_clock_data; }
 

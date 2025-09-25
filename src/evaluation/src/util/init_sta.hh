@@ -26,6 +26,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <string>
 #include <unordered_map>
 #include <vector>
 #include <optional>
@@ -45,12 +46,64 @@ namespace ieval {
 
 struct TimingNet;
 
+/// @brief The timing node features.
+struct TimingNodeFeature {
+  using Coord = std::pair<double, double>;
+  /// quad data, assume order is max rise, max fall, min rise, min fall.
+  using QuadData = std::tuple<double, double, double, double>;
+
+  unsigned _fanout_num = 1;
+
+  bool _is_input = false;
+  bool _is_endpoint = false;
+  std::string _cell_name;
+  std::vector<std::string> _sizer_cells;
+
+  Coord _node_coord = {0.0, 0.0};
+  QuadData _node_slews = {0.0, 0.0, 0.0, 0.0};
+  QuadData _node_caps = {0.0, 0.0, 0.0, 0.0};
+  /// node arrive time
+  QuadData _node_ats = {0.0, 0.0, 0.0, 0.0};  
+  /// node required time 
+  QuadData _node_rats = {0.0, 0.0, 0.0, 0.0};
+  /// node net load delays.
+  QuadData _node_net_delays = {0.0, 0.0, 0.0, 0.0};
+};
+
+/// @brief The power node features.
+struct PowerNodeFeature {
+  using QuadData = std::tuple<double, double, double, double>;
+
+  double _toggle = 0.125;
+  double _sp = 0.5;
+  
+  // input pin internal power.
+  double _node_internal_power = 0.0;
+  // net power annotated to the driver node.
+  double _node_net_power = 0.0;
+};
+
 /// @brief The timing wire graph for weiguo used.
-struct TimingWireNode
-{
+struct TimingWireNode {
   std::string _name;  //!< for pin/port name or node id.
   bool _is_pin = false;
   bool _is_port = false;
+
+  TimingNodeFeature _node_feature;
+  PowerNodeFeature _power_feature;
+};
+
+/// @brief The timing edge feature.
+struct TimingEdgeFeature {
+  using QuadData = std::tuple<double, double, double, double>;
+
+  QuadData _edge_delay = {0.0, 0.0, 0.0, 0.0};
+  double _edge_resistance = 0.0;
+};
+
+/// @brief The power edge feature.
+struct PowerEdgeFeature {
+  double _inst_arc_internal_power = 0.0;
 };
 
 struct TimingWireEdge
@@ -58,12 +111,22 @@ struct TimingWireEdge
   int64_t _from_node = -1;
   int64_t _to_node = -1;
   bool _is_net_edge = true;
+
+  TimingEdgeFeature _edge_feature;
+  PowerEdgeFeature _power_feature;
+};
+
+///@brief The timing instance node feature.
+struct TimingInstanceNodeFeature {
+  double _leakage_power = 0.0;
 };
 
 
 /// @brief The timing instance node for wangrui used.
 struct TimingInstanceNode {
   std::string _name; //!< instance name
+
+  TimingInstanceNodeFeature _node_feature;
 };
 
 struct TimingNetEdge {
@@ -99,6 +162,7 @@ struct TimingGraph
 
     return index;
   }
+  auto& getNode(unsigned index) { return _nodes[index]; }
 
   U* findEdge(unsigned wire_from_node_index, unsigned wire_to_node_index)
   {
@@ -167,6 +231,9 @@ class InitSTA
 
   void runSTA();
   void runVecSTA(ivec::VecLayout* vec_layout, std::string work_dir);
+  void runPlaceVecSTA(const std::string& routing_type, const bool& rt_done, std::string work_dir);
+  void runSpefVecSTA(std::string work_dir);
+  void saveTimingPowerBenchmark();
   void evalTiming(const std::string& routing_type, const bool& rt_done = false);
 
   std::map<std::string, std::map<std::string, std::map<std::string, double>>> getTiming() const { return _timing; }
@@ -204,6 +271,7 @@ class InitSTA
 
   void buildRCTree(const std::string& routing_type);
   void buildVecRCTree(ivec::VecLayout* vec_layout, std::string work_dir);
+  void buildSpefRCTree(std::string work_dir);
   void updateTiming(const std::vector<TimingNet*>& timing_net_list, int32_t dbu_unit);
   void updateTiming(const std::vector<TimingNet*>& timing_net_list, const std::vector<std::string>& name_list, const int& propagation_level,
                     int32_t dbu_unit);

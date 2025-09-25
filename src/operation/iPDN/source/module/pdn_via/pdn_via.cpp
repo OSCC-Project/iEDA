@@ -35,17 +35,21 @@ int32_t PdnVia::transUnitDB(double value)
  * @param layer_cut
  * @param width_design
  * @param height_design
+ * @param direction
  * @return IdbVia*
  */
-idb::IdbVia* PdnVia::findVia(idb::IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design)
+idb::IdbVia* PdnVia::findVia(idb::IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design, idb::IdbLayerDirection direction)
 {
   auto idb_design = dmInst->get_idb_design();
   auto via_list = idb_design->get_via_list();
 
-  std::string via_name = layer_cut->get_name() + "_" + std::to_string(width_design) + "x" + std::to_string(height_design);
+  auto direction_str = direction == IdbLayerDirection::kNone ? "" : (direction == IdbLayerDirection::kHorizontal ? "_h" : "_v");
+
+  std::string via_name = layer_cut->get_name() + "_" + std::to_string(width_design) + "x" + std::to_string(height_design) + direction_str;
+
   idb::IdbVia* via_find = via_list->find_via(via_name);
   if (via_find == nullptr) {
-    via_find = createVia(layer_cut, width_design, height_design, via_name);
+    via_find = createVia(layer_cut, width_design, height_design, via_name, direction);
   }
   return via_find;
 }
@@ -56,17 +60,17 @@ idb::IdbVia* PdnVia::findVia(idb::IdbLayerCut* layer_cut, int32_t width_design, 
  * @param layer_cut
  * @param width_design
  * @param height_design
+ * @param direction
  * @param via_name
  * @return IdbVia*
  */
-idb::IdbVia* PdnVia::createVia(idb::IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design, std::string via_name)
+idb::IdbVia* PdnVia::createVia(idb::IdbLayerCut* layer_cut, int32_t width_design, int32_t height_design, std::string via_name,
+                               idb::IdbLayerDirection direction)
 {
   auto idb_design = dmInst->get_idb_design();
   auto via_list = idb_design->get_via_list();
 
-  via_name = layer_cut->get_name() + "_" + std::to_string(width_design) + "x" + std::to_string(height_design);
-
-  return via_list->createVia(via_name, layer_cut, width_design, height_design);
+  return via_list->createVia(via_name, layer_cut, width_design, height_design, direction);
 }
 
 /**

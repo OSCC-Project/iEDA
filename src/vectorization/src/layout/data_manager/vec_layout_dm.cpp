@@ -22,17 +22,17 @@
 #include "vec_layout_init.h"
 
 namespace ivec {
-bool VecLayoutDataManager::buildLayoutData()
+bool VecLayoutDataManager::buildLayoutData(bool is_placement_mode)
 {
-  init();
+  init(is_placement_mode);
 
   return true;
 }
 
-void VecLayoutDataManager::init()
+void VecLayoutDataManager::init(bool is_placement_mode)
 {
   VecLayoutInit layout_init(&_layout);
-  layout_init.init();
+  layout_init.init(is_placement_mode);
 }
 
 }  // namespace ivec

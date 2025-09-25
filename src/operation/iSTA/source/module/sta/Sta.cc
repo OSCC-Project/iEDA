@@ -1877,7 +1877,9 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate,
 
       for (auto *report_fun : report_funcs) {
         if (only_wire_path) {
-          if (dynamic_cast<StaReportWirePathJson *>(report_fun)) {
+          if (dynamic_cast<StaReportWirePathJson *>(report_fun) ||
+              dynamic_cast<StaReportPathSummary *>(report_fun) ||
+              dynamic_cast<StaReportClockTNS *>(report_fun)) {
             is_ok = report_path(*report_fun);
           }
 
@@ -2452,8 +2454,9 @@ std::multimap<std::string, std::string> Sta::getSkewRelatedSink(
  * @param trans_type
  * @return StaSeqPathData*
  */
-StaSeqPathData *Sta::getWorstSeqData(std::optional<StaVertex *> vertex,
-                                     AnalysisMode mode, TransType trans_type) {
+std::vector<StaSeqPathData *> Sta::getWorstSeqData(
+    std::optional<StaVertex *> vertex, AnalysisMode mode, TransType trans_type,
+    unsigned top_n_path) {
   auto cmp = [](StaPathData *left, StaPathData *right) -> bool {
     int left_slack = left->getSlack();
     int right_slack = right->getSlack();
@@ -2475,18 +2478,24 @@ StaSeqPathData *Sta::getWorstSeqData(std::optional<StaVertex *> vertex,
     }
   }
 
-  StaSeqPathData *seq_path_data = nullptr;
+  std::vector<StaSeqPathData *> seq_path_datas;
+  unsigned i = 0;
   while (!seq_data_queue.empty()) {
-    seq_path_data = dynamic_cast<StaSeqPathData *>(seq_data_queue.top());
+    auto *seq_path_data = dynamic_cast<StaSeqPathData *>(seq_data_queue.top());
 
     if ((seq_path_data->get_delay_data()->get_trans_type() == trans_type) ||
         (trans_type == TransType::kRiseFall)) {
-      break;
+      seq_path_datas.push_back(seq_path_data);
+      ++i;
+
+      if (i >= top_n_path) {
+        break;
+      }
     }
     seq_data_queue.pop();
   }
 
-  return seq_path_data;
+  return seq_path_datas;
 }
 
 /**
@@ -2497,7 +2506,21 @@ StaSeqPathData *Sta::getWorstSeqData(std::optional<StaVertex *> vertex,
  * @return StaSeqPathData*
  */
 StaSeqPathData *Sta::getWorstSeqData(AnalysisMode mode, TransType trans_type) {
-  return getWorstSeqData(std::nullopt, mode, trans_type);
+  auto worst_seq_datas = getWorstSeqData(std::nullopt, mode, trans_type);
+  return worst_seq_datas.empty() ? nullptr : worst_seq_datas[0];
+}
+
+/**
+ * @brief Get the top n worst slack path.
+ *
+ * @param mode
+ * @return StaSeqPathData*
+ */
+std::vector<StaSeqPathData *> Sta::getTopNWorstSeqPaths(AnalysisMode mode,
+                                                        unsigned top_n_path) {
+  auto worst_seq_datas =
+      getWorstSeqData(std::nullopt, mode, TransType::kRiseFall, top_n_path);
+  return worst_seq_datas;
 }
 
 /**
@@ -2768,8 +2791,9 @@ Sta::getWorstSlackBetweenTwoSinks(AnalysisMode mode) {
  */
 int Sta::getWorstSlack(StaVertex *end_vertex, AnalysisMode mode,
                        TransType trans_type) {
-  auto *the_worst_seq_path_data = getWorstSeqData(end_vertex, mode, trans_type);
-  return the_worst_seq_path_data->getSlack();
+  auto the_worst_seq_path_data = getWorstSeqData(end_vertex, mode, trans_type);
+  LOG_FATAL_IF(the_worst_seq_path_data.empty()) << "no seq data found.";
+  return the_worst_seq_path_data.front()->getSlack();
 }
 
 /**
@@ -3587,7 +3611,8 @@ void Sta::printFlattenData() {
       auto *src_vertex = getVertex(at_data._src_vertex_id);
       output_file << "  src_vertex: " << src_vertex->getName() << std::endl;
     } else {
-      output_file << "  src_vertex: " << "NA" << std::endl;
+      output_file << "  src_vertex: "
+                  << "NA" << std::endl;
     }
 
     output_file << "  src_data_index: " << at_data._src_data_index << std::endl;

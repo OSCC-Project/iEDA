@@ -87,6 +87,30 @@ class Power {
   auto& get_leakage_powers() { return _leakage_powers; }
   auto& get_internal_powers() { return _internal_powers; }
   auto& get_switch_powers() { return _switch_powers; }
+
+  double getSumLeakagePower() {
+    return std::accumulate(
+        _leakage_powers.begin(), _leakage_powers.end(), 0.0,
+        [](double sum, auto& power_data) {
+          return sum + power_data->getPowerDataValue();
+        });
+  }
+
+  double getSumInternalPower() {
+    return std::accumulate(
+        _internal_powers.begin(), _internal_powers.end(), 0.0,
+        [](double sum, auto& power_data) {
+          return sum + power_data->getPowerDataValue();
+        });
+  }
+
+  double getSumSwitchPower() {
+    return std::accumulate(
+        _switch_powers.begin(), _switch_powers.end(), 0.0,
+        [](double sum, auto& power_data) {
+          return sum + power_data->getPowerDataValue();
+        });
+  }
   auto& get_obj_to_datas() { return _obj_to_datas; }
   auto* getObjData(DesignObject* design_obj) {
     return _obj_to_datas.contains(design_obj) ? _obj_to_datas[design_obj].get()
@@ -159,7 +183,10 @@ class Power {
   }
   auto getInstanceIRDrop(std::string power_net_name) {
     auto& net_to_instance_ir_drop = _ir_analysis.get_net_to_instance_ir_drop();
-    return net_to_instance_ir_drop.at(power_net_name);
+    if (!net_to_instance_ir_drop.contains(power_net_name)) {
+      return std::map<std::string, double>();
+    }
+    return net_to_instance_ir_drop[power_net_name];
   }
 
   void setBumpNodeLocs(

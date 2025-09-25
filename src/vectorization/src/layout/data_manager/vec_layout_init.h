@@ -32,7 +32,7 @@ class VecLayoutInit
  public:
   VecLayoutInit(VecLayout* layout) : _layout(layout) {}
   ~VecLayoutInit() {}
-  void init();
+  void init(bool is_placement_mode = false);
 
  private:
   VecLayout* _layout;
@@ -49,7 +49,7 @@ class VecLayoutInit
   void initPDN();
   void initInstances();
   void initIOPins();
-  void initNets();
+  void initNets(bool is_placement_mode = false);
 
   void transPin(idb::IdbPin* idb_pin, int net_id, VecNodeTYpe type, int instance_id = -1, int pin_id = -1, bool b_io = false);
   void transVia(idb::IdbVia* idb_via, int net_id, VecNodeTYpe type);

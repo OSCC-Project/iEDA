@@ -26,7 +26,7 @@ void register_vectorization(py::module& m)
 {
   m.def("layout_patchs", layout_patchs, py::arg("path"));
   m.def("layout_graph", layout_graph, py::arg("path"));
-  m.def("generate_vectors", generate_vectors, py::arg("dir"), py::arg("patch_row_step") = 9, py::arg("patch_col_step") = 9, py::arg("batch_mode") = true);
+  m.def("generate_vectors", generate_vectors, py::arg("dir"), py::arg("patch_row_step") = 9, py::arg("patch_col_step") = 9, py::arg("batch_mode") = true, py::arg("is_placement_mode") = false, py::arg("sta_mode") = 0);
   m.def("read_vectors_nets", read_vectors_nets, py::arg("dir"));
   m.def("read_vectors_nets_patterns", read_vectors_nets_patterns, py::arg("path"));
 

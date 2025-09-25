@@ -97,10 +97,14 @@ void IdbInstance::set_type(string type)
 
 bool IdbInstance::is_flip_flop()
 {
-  for (IdbPin* pin : _pin_list->get_pin_list()) {
-    IdbTerm* term = pin->get_term();
-    if (term->get_type() == IdbConnectType::kClock) {
-      return true;
+  if (_flip_flop_flag != -1) {
+    return _flip_flop_flag == 1 ? true : false;
+  } else {
+    for (IdbPin* pin : _pin_list->get_pin_list()) {
+      IdbTerm* term = pin->get_term();
+      if (term->get_type() == IdbConnectType::kClock) {
+        return true;
+      }
     }
   }
 

@@ -48,20 +48,20 @@ bool Vectorization::buildLayoutData(const std::string path)
   return b_success;
 }
 
-bool Vectorization::buildGraphData(const std::string path)
+bool Vectorization::buildGraphData(const std::string path, bool is_placement_mode)
 {
-  bool b_success = _data_manager.buildGraphData();
+  bool b_success = _data_manager.buildGraphData(is_placement_mode);
 
   _data_manager.checkData();
 
-  _data_manager.saveData(path);
+  _data_manager.saveData(path, true, is_placement_mode);
 
   return b_success;
 }
 
-bool Vectorization::buildGraphDataWithoutSave(const std::string path)
+bool Vectorization::buildGraphDataWithoutSave(const std::string path, bool is_placement_mode)
 {
-  bool b_success = _data_manager.buildGraphData();
+  bool b_success = _data_manager.buildGraphData(is_placement_mode);
   return b_success;
 }
 
@@ -70,25 +70,25 @@ std::map<int, VecNet> Vectorization::getGraph(std::string path)
   return _data_manager.getGraph(path);
 }
 
-void Vectorization::buildFeature(const std::string dir, int patch_row_step, int patch_col_step, bool batch_mode)
+void Vectorization::buildFeature(const std::string dir, int patch_row_step, int patch_col_step, bool batch_mode, bool is_placement_mode, int sta_mode)
 {
   {
     /// build layout data
     MemoryMonitor monitor("buildLayoutData", "./memory_usage.log");
-    _data_manager.buildLayoutData();
+    _data_manager.buildLayoutData(is_placement_mode);
   }
 
   {
     /// build graph
     MemoryMonitor monitor("buildGraphData", "./memory_usage.log");
-    _data_manager.buildGraphData();
+    _data_manager.buildGraphData(is_placement_mode);
   }
 
   {
     /// build patch data
     MemoryMonitor monitor("buildPatchData", "./memory_usage.log");
     // buildPatchData(dir);
-    buildPatchData(dir, patch_row_step, patch_col_step);  // default patch size
+    buildPatchData(dir, patch_row_step, patch_col_step, is_placement_mode);  // default patch size
   }
   // build pattern
   // _data_manager.buildPatternData();
@@ -97,21 +97,24 @@ void Vectorization::buildFeature(const std::string dir, int patch_row_step, int 
   bool check_ok = _data_manager.checkData();
 
   /// build feature
-  generateFeature(dir);
+  generateFeature(dir, is_placement_mode, sta_mode);
 
   /// save
-  _data_manager.saveData(dir, batch_mode);
+  _data_manager.saveData(dir, batch_mode, is_placement_mode);
 }
 
-void Vectorization::generateFeature(const std::string dir)
+void Vectorization::generateFeature(const std::string dir, bool is_placement_mode, int sta_mode)
 {
-  auto* patch_grid = _data_manager.patch_dm == nullptr ? nullptr : &_data_manager.patch_dm->get_patch_grid();
-  VecFeature feature(&_data_manager.layout_dm.get_layout(), patch_grid, dir);
+  auto* patch_grid =  _data_manager.patch_dm == nullptr ? nullptr : &_data_manager.patch_dm->get_patch_grid();
+  VecFeature feature(&_data_manager.layout_dm.get_layout(), patch_grid, dir, is_placement_mode, sta_mode);
+  
   {
     MemoryMonitor monitor("buildFeatureTiming", "./memory_usage.log");
     feature.buildFeatureTiming();
   }
-  {
+  
+  // Skip DRC feature in placement mode as it requires wire information
+  if (!is_placement_mode) {
     MemoryMonitor monitor("buildFeatureDrc", "./memory_usage.log");
     feature.buildFeatureDrc();
   }
@@ -131,14 +134,14 @@ bool Vectorization::runVecSTA(const std::string dir)
   return true;
 }
 
-bool Vectorization::buildPatchData(const std::string dir)
+bool Vectorization::buildPatchData(const std::string dir, bool is_placement_mode)
 {
-  return _data_manager.buildPatchData(dir);
+  return _data_manager.buildPatchData(dir, is_placement_mode);
 }
 
-bool Vectorization::buildPatchData(const std::string dir, int patch_row_step, int patch_col_step)
+bool Vectorization::buildPatchData(const std::string dir, int patch_row_step, int patch_col_step, bool is_placement_mode)
 {
-  return _data_manager.buildPatchData(dir, patch_row_step, patch_col_step);
+  return _data_manager.buildPatchData(dir, patch_row_step, patch_col_step, is_placement_mode);
 }
 
 bool Vectorization::readNetsToIDB(const std::string dir)

@@ -30,6 +30,7 @@
 #include <queue>
 #include <tuple>
 #include <set>
+#include <algorithm>
 
 #include "Log.hh"
 

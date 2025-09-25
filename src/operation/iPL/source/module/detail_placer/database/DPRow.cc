@@ -15,7 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #include <cmath>
-
+#include <algorithm>
 #include "DPRow.hh"
 #include "DPSegment.hh"
 #include "DPBin.hh"

@@ -373,6 +373,7 @@ bool VecLayoutFileIO::saveJsonPatchs(bool batch_mode)
   makeDir(_path + "/patchs/");
 
   if (!_patch_grid) {
+    LOG_INFO << "There is no patch grid, exit...";
     return false;
   }
 

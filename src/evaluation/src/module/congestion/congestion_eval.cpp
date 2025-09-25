@@ -1888,6 +1888,12 @@ std::vector<NetMetadata> CongestionEval::precomputeNetData(const CongestionNets&
       md.ux = std::max(md.ux, pin.lx);
       md.uy = std::max(md.uy, pin.ly);
     }
+    
+    // 安全检查：跳过无效的net坐标
+    if (md.lx == INT32_MAX || md.ly == INT32_MAX || md.ux == INT32_MIN || md.uy == INT32_MIN) {
+      continue; // 跳过没有有效pin的net
+    }
+    
     // 预计算RUDY因子
     md.hor_rudy = (md.uy == md.ly) ? 1.0 : 1.0 / (md.uy - md.ly);
     md.ver_rudy = (md.ux == md.lx) ? 1.0 : 1.0 / (md.ux - md.lx);
