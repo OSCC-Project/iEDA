@@ -114,9 +114,7 @@ void PinAccessor::setPAComParam(PAModel& pa_model)
   /**
    * max_candidate_point_num
    */
-  // clang-format off
   PAComParam pa_com_param(10);
-  // clang-format on
   RTLOG.info(Loc::current(), "max_candidate_point_num: ", pa_com_param.get_max_candidate_point_num());
   pa_model.set_pa_com_param(pa_com_param);
 }

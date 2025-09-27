@@ -87,9 +87,7 @@ void SupplyAnalyzer::setSAComParam(SAModel& sa_model)
   /**
    * supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit
    */
-  // clang-format off
   SAComParam sa_com_param(supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit);
-  // clang-format on
   RTLOG.info(Loc::current(), "supply_reduction: ", sa_com_param.get_supply_reduction());
   RTLOG.info(Loc::current(), "boundary_wire_unit: ", sa_com_param.get_boundary_wire_unit());
   RTLOG.info(Loc::current(), "internal_wire_unit: ", sa_com_param.get_internal_wire_unit());

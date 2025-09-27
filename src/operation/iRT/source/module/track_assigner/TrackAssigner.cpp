@@ -118,9 +118,7 @@ void TrackAssigner::setTAComParam(TAModel& ta_model)
   /**
    * prefer_wire_unit, schedule_interval, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times
    */
-  // clang-format off
   TAComParam ta_com_param(prefer_wire_unit, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
-  // clang-format on
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", ta_com_param.get_prefer_wire_unit());
   RTLOG.info(Loc::current(), "schedule_interval: ", ta_com_param.get_schedule_interval());
   RTLOG.info(Loc::current(), "fixed_rect_unit: ", ta_com_param.get_fixed_rect_unit());
