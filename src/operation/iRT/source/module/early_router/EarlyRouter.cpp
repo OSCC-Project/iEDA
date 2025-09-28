@@ -70,6 +70,7 @@ void EarlyRouter::route()
   generateGlobalTree(er_model);
   updateSummary(er_model);
   printSummary(er_model);
+  outputGCellCSV(er_model);
   outputGuide(er_model);
   outputDemandCSV(er_model);
   outputOverflowCSV(er_model);
@@ -1438,6 +1439,24 @@ void EarlyRouter::printSummary(ERModel& er_model)
   RTUTIL.printTableList({timing_table, power_table});
 }
 
+void EarlyRouter::outputGCellCSV(ERModel& er_model)
+{
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+  std::string& er_temp_directory_path = RTDM.getConfig().er_temp_directory_path;
+
+  std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(RTUTIL.getString(er_temp_directory_path, "gcell.csv"));
+  if (guide_file_stream == nullptr) {
+    return;
+  }
+  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+      GCell& gcell = gcell_map[x][y];
+      RTUTIL.pushStream(guide_file_stream, x, ",", y, ",", gcell.get_ll_x(), ",", gcell.get_ll_y(), ",", gcell.get_ur_x(), ",", gcell.get_ur_y(), "\n");
+    }
+  }
+  RTUTIL.closeFileStream(guide_file_stream);
+}
+
 void EarlyRouter::outputGuide(ERModel& er_model)
 {
   int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
@@ -1445,10 +1464,7 @@ void EarlyRouter::outputGuide(ERModel& er_model)
   Die& die = RTDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& er_temp_directory_path = RTDM.getConfig().er_temp_directory_path;
-  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
-  if (!output_inter_result) {
-    return;
-  }
+
   std::vector<ERNet>& er_net_list = er_model.get_er_net_list();
 
   std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(RTUTIL.getString(er_temp_directory_path, "route.guide"));
@@ -1517,10 +1533,7 @@ void EarlyRouter::outputDemandCSV(ERModel& er_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& er_temp_directory_path = RTDM.getConfig().er_temp_directory_path;
-  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
-  if (!output_inter_result) {
-    return;
-  }
+
   std::vector<GridMap<ERNode>>& layer_node_map = er_model.get_layer_node_map();
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::ofstream* demand_csv_file
@@ -1548,10 +1561,7 @@ void EarlyRouter::outputOverflowCSV(ERModel& er_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& er_temp_directory_path = RTDM.getConfig().er_temp_directory_path;
-  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
-  if (!output_inter_result) {
-    return;
-  }
+
   std::vector<GridMap<ERNode>>& layer_node_map = er_model.get_layer_node_map();
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::ofstream* overflow_csv_file

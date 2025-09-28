@@ -106,6 +106,7 @@ class EarlyRouter
 #if 1  // exhibit
   void updateSummary(ERModel& er_model);
   void printSummary(ERModel& er_model);
+  void outputGCellCSV(ERModel& er_model);
   void outputGuide(ERModel& er_model);
   void outputDemandCSV(ERModel& er_model);
   void outputOverflowCSV(ERModel& er_model);
