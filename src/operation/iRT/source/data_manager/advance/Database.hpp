@@ -59,8 +59,9 @@ class Database
   std::vector<Obstacle>& get_routing_obstacle_list() { return _routing_obstacle_list; }
   std::vector<Obstacle>& get_cut_obstacle_list() { return _cut_obstacle_list; }
   std::vector<Net>& get_net_list() { return _net_list; }
-  GridMap<GCell>& get_gcell_map() { return _gcell_map; }
   int32_t get_detection_distance() const { return _detection_distance; }
+  GridMap<GCell>& get_gcell_map() { return _gcell_map; }
+  std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map() { return _type_layer_net_fixed_rect_map; }
   Summary& get_summary() { return _summary; }
   // setter
   void set_design_name(const std::string& design_name) { _design_name = design_name; }
@@ -94,8 +95,9 @@ class Database
   std::vector<Obstacle> _routing_obstacle_list;
   std::vector<Obstacle> _cut_obstacle_list;
   std::vector<Net> _net_list;
-  GridMap<GCell> _gcell_map;
   int32_t _detection_distance = -1;
+  GridMap<GCell> _gcell_map;
+  std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
   Summary _summary;
 };
 

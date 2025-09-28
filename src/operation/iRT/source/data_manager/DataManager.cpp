@@ -344,21 +344,26 @@ void DataManager::updateViolationToGCellMap(ChangeType change_type, Violation* v
 
 std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> DataManager::getTypeLayerNetFixedRectMap(EXTPlanarRect& region)
 {
+  Die& die = _database.get_die();
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
 
-  std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> type_layer_net_fixed_rect_map;
-  for (int32_t x = region.get_grid_ll_x(); x <= region.get_grid_ur_x(); x++) {
-    for (int32_t y = region.get_grid_ll_y(); y <= region.get_grid_ur_y(); y++) {
-      for (auto& [is_routing, layer_net_fixed_rect_map] : gcell_map[x][y].get_type_layer_net_fixed_rect_map()) {
-        for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
-          for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-            type_layer_net_fixed_rect_map[is_routing][layer_idx][net_idx].insert(fixed_rect_set.begin(), fixed_rect_set.end());
+  if (region == die) {
+    return _database.get_type_layer_net_fixed_rect_map();
+  } else {
+    std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> type_layer_net_fixed_rect_map;
+    for (int32_t x = region.get_grid_ll_x(); x <= region.get_grid_ur_x(); x++) {
+      for (int32_t y = region.get_grid_ll_y(); y <= region.get_grid_ur_y(); y++) {
+        for (auto& [is_routing, layer_net_fixed_rect_map] : gcell_map[x][y].get_type_layer_net_fixed_rect_map()) {
+          for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+            for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+              type_layer_net_fixed_rect_map[is_routing][layer_idx][net_idx].insert(fixed_rect_set.begin(), fixed_rect_set.end());
+            }
           }
         }
       }
     }
+    return type_layer_net_fixed_rect_map;
   }
-  return type_layer_net_fixed_rect_map;
 }
 
 std::map<int32_t, std::set<AccessPoint*>> DataManager::getNetAccessPointMap(EXTPlanarRect& region)
@@ -738,6 +743,7 @@ void DataManager::buildDatabase()
   buildNetList();
   buildDetectionDistance();
   buildGCellMap();
+  buildFixRectMap();
 }
 
 void DataManager::buildLayerList()
@@ -1520,6 +1526,25 @@ int32_t DataManager::getBucketIdx(int32_t scale_start, int32_t scale_end, int32_
     return -1;
   }
   return start_idx;
+}
+
+void DataManager::buildFixRectMap()
+{
+  Die& die = _database.get_die();
+  GridMap<GCell>& gcell_map = _database.get_gcell_map();
+  std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& type_layer_net_fixed_rect_map = _database.get_type_layer_net_fixed_rect_map();
+
+  for (int32_t x = die.get_grid_ll_x(); x <= die.get_grid_ur_x(); x++) {
+    for (int32_t y = die.get_grid_ll_y(); y <= die.get_grid_ur_y(); y++) {
+      for (auto& [is_routing, layer_net_fixed_rect_map] : gcell_map[x][y].get_type_layer_net_fixed_rect_map()) {
+        for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+          for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+            type_layer_net_fixed_rect_map[is_routing][layer_idx][net_idx].insert(fixed_rect_set.begin(), fixed_rect_set.end());
+          }
+        }
+      }
+    }
+  }
 }
 
 void DataManager::printConfig()

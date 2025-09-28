@@ -382,7 +382,7 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
         buildDRNodeNeighbor(dr_box);
         buildOrientNetMap(dr_box);
         buildNetShadowMap(dr_box);
-        exemptPinShape(dr_box);
+        exemptPinShape(dr_model, dr_box);
         // debugCheckDRBox(dr_box);
         // debugPlotDRBox(dr_box, "before");
         routeDRBox(dr_box);
@@ -837,28 +837,71 @@ void DetailedRouter::buildNetShadowMap(DRBox& dr_box)
   }
 }
 
-void DetailedRouter::exemptPinShape(DRBox& dr_box)
+void DetailedRouter::exemptPinShape(DRModel& dr_model, DRBox& dr_box)
 {
+  int32_t detection_distance = RTDM.getDatabase().get_detection_distance();
+  std::vector<DRNet>& dr_net_list = dr_model.get_dr_net_list();
   ScaleAxis& box_track_axis = dr_box.get_box_track_axis();
   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
 
-  for (auto& [net_idx, access_point_set] : dr_box.get_net_access_point_map()) {
-    for (AccessPoint* access_point : access_point_set) {
-      if (!RTUTIL.existTrackGrid(access_point->get_real_coord(), box_track_axis)) {
-        continue;
+  for (auto& [dr_net_idx, access_point_set] : dr_box.get_net_access_point_map()) {
+    std::map<int32_t, std::vector<EXTLayerRect*>> routing_obs_rect_map;
+    for (auto& [routing_layer_idx, net_fixed_rect_map] : dr_box.get_type_layer_net_fixed_rect_map()[true]) {
+      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+        if (dr_net_idx == net_idx) {
+          continue;
+        }
+        for (auto& fixed_rect : fixed_rect_set) {
+          routing_obs_rect_map[routing_layer_idx].push_back(fixed_rect);
+        }
       }
-      PlanarCoord grid_coord = RTUTIL.getTrackGrid(access_point->get_real_coord(), box_track_axis);
-      DRNode& dr_node = layer_node_map[access_point->get_layer_idx()][grid_coord.get_x()][grid_coord.get_y()];
-      for (auto& [orient, net_set] : dr_node.get_orient_fixed_rect_map()) {
-        if (orient == Orientation::kAbove || orient == Orientation::kBelow) {
-          net_set.erase(-1);
-          DRNode* neighbor_node = dr_node.getNeighborNode(orient);
-          if (neighbor_node == nullptr) {
-            continue;
+    }
+    std::vector<DRPin>& dr_pin_list = dr_net_list[dr_net_idx].get_dr_pin_list();
+    for (AccessPoint* access_point : access_point_set) {
+      if (dr_pin_list[access_point->get_pin_idx()].get_is_core()) {
+        if (!RTUTIL.existTrackGrid(access_point->get_real_coord(), box_track_axis)) {
+          continue;
+        }
+        PlanarCoord grid_coord = RTUTIL.getTrackGrid(access_point->get_real_coord(), box_track_axis);
+        DRNode& dr_node = layer_node_map[access_point->get_layer_idx()][grid_coord.get_x()][grid_coord.get_y()];
+        for (auto& [orient, net_set] : dr_node.get_orient_fixed_rect_map()) {
+          if (orient == Orientation::kAbove || orient == Orientation::kBelow) {
+            net_set.erase(-1);
+            DRNode* neighbor_node = dr_node.getNeighborNode(orient);
+            if (neighbor_node == nullptr) {
+              continue;
+            }
+            Orientation oppo_orientation = RTUTIL.getOppositeOrientation(orient);
+            if (RTUTIL.exist(neighbor_node->get_orient_fixed_rect_map(), oppo_orientation)) {
+              neighbor_node->get_orient_fixed_rect_map()[oppo_orientation].erase(-1);
+            }
           }
-          Orientation oppo_orientation = RTUTIL.getOppositeOrientation(orient);
-          if (RTUTIL.exist(neighbor_node->get_orient_fixed_rect_map(), oppo_orientation)) {
-            neighbor_node->get_orient_fixed_rect_map()[oppo_orientation].erase(-1);
+        }
+      } else {
+        PlanarRect real_rect = RTUTIL.getEnlargedRect(access_point->get_real_coord(), detection_distance);
+        if (!RTUTIL.existTrackGrid(real_rect, box_track_axis)) {
+          continue;
+        }
+        PlanarRect grid_rect = RTUTIL.getTrackGrid(real_rect, box_track_axis);
+        for (int32_t x = grid_rect.get_ll_x(); x <= grid_rect.get_ur_x(); x++) {
+          for (int32_t y = grid_rect.get_ll_y(); y <= grid_rect.get_ur_y(); y++) {
+            DRNode& dr_node = layer_node_map[access_point->get_layer_idx()][x][y];
+
+            bool within_shape = false;
+            for (EXTLayerRect* obs_rect : routing_obs_rect_map[dr_node.get_layer_idx()]) {
+              if (RTUTIL.isInside(obs_rect->get_real_rect(), dr_node.get_planar_coord())) {
+                within_shape = true;
+                break;
+              }
+            }
+            if (within_shape) {
+              continue;
+            }
+            for (auto& [orient, net_set] : dr_node.get_orient_fixed_rect_map()) {
+              if (orient == Orientation::kEast || orient == Orientation::kWest || orient == Orientation::kSouth || orient == Orientation::kNorth) {
+                net_set.erase(-1);
+              }
+            }
           }
         }
       }

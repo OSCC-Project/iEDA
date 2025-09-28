@@ -25,6 +25,8 @@ class EXTPlanarRect
  public:
   EXTPlanarRect() = default;
   ~EXTPlanarRect() = default;
+  bool operator==(const EXTPlanarRect& other) const { return (_grid_rect == other._grid_rect && _real_rect == other._real_rect); }
+  bool operator!=(const EXTPlanarRect& other) const { return !((*this) == other); }
   // getter
   PlanarRect& get_grid_rect() { return _grid_rect; }
   PlanarCoord& get_grid_ll() { return _grid_rect.get_ll(); }

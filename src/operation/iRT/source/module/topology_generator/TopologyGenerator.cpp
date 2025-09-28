@@ -119,9 +119,7 @@ void TopologyGenerator::setTGComParam(TGModel& tg_model)
   /**
    * topo_spilt_length, expand_step_num, expand_step_length, overflow_unit
    */
-  // clang-format off
   TGComParam tg_com_param(topo_spilt_length, expand_step_num, expand_step_length, overflow_unit);
-  // clang-format on
   RTLOG.info(Loc::current(), "topo_spilt_length: ", tg_com_param.get_topo_spilt_length());
   RTLOG.info(Loc::current(), "expand_step_num: ", tg_com_param.get_expand_step_num());
   RTLOG.info(Loc::current(), "expand_step_length: ", tg_com_param.get_expand_step_length());
