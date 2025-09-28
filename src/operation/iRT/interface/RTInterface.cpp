@@ -278,238 +278,74 @@ void RTInterface::clearDef()
   //////////////////////////////////////////
 }
 
-void RTInterface::outputDBJson(std::map<std::string, std::any> config_map)
+void RTInterface::fixFanout()
 {
-  std::string stage = RTUTIL.getConfigValue<std::string>(config_map, "-stage", "null");
-  if (stage == "null") {
-    std::cout << "The stage is null!" << std::endl;
-    return;
-  }
-  if (stage == "fp") {
-    idb::IdbDie* idb_die = dmInst->get_idb_lef_service()->get_layout()->get_die();
-    std::vector<idb::IdbInstance*>& idb_instance_list = dmInst->get_idb_def_service()->get_design()->get_instance_list()->get_instance_list();
-    idb::IdbRows* idb_rows = dmInst->get_idb_def_service()->get_layout()->get_rows();
-    std::vector<idb::IdbLayer*>& idb_layers = dmInst->get_idb_lef_service()->get_layout()->get_layers()->get_layers();
+  idb::IdbNetList* idb_net_list = dmInst->get_idb_def_service()->get_design()->get_net_list();
+  idb::IdbInstanceList* idb_instance_list = dmInst->get_idb_def_service()->get_design()->get_instance_list();
+  idb::IdbCellMasterList* idb_cell_master_list = dmInst->get_idb_def_service()->get_layout()->get_cell_master_list();
 
-    std::vector<nlohmann::json> db_json_list;
-    {
-      nlohmann::json die_json;
-      die_json["die"] = {idb_die->get_llx(), idb_die->get_lly(), idb_die->get_urx(), idb_die->get_ury()};
-      db_json_list.push_back(die_json);
-    }
-    {
-      for (idb::IdbInstance* idb_instance : idb_instance_list) {
-        if (!idb_instance->is_fixed()) {
-          continue;
-        }
-        nlohmann::json instance_json;
-        instance_json["name"] = idb_instance->get_name();
-        instance_json["bbox"] = {idb_instance->get_bounding_box()->get_low_x(), idb_instance->get_bounding_box()->get_low_y(),
-                                 idb_instance->get_bounding_box()->get_high_x(), idb_instance->get_bounding_box()->get_high_y()};
-        std::set<std::string> layer_name_set;
-        for (idb::IdbObs* idb_obs : idb_instance->get_cell_master()->get_obs_list()) {
-          for (idb::IdbObsLayer* idb_layer : idb_obs->get_obs_layer_list()) {
-            layer_name_set.insert(idb_layer->get_shape()->get_layer()->get_name());
-          }
-        }
-        for (idb::IdbLayerShape* obs_box : idb_instance->get_obs_box_list()) {
-          layer_name_set.insert(obs_box->get_layer()->get_name());
-        }
-        for (idb::IdbPin* idb_pin : idb_instance->get_pin_list()->get_pin_list()) {
-          for (idb::IdbLayerShape* port_box : idb_pin->get_port_box_list()) {
-            layer_name_set.insert(port_box->get_layer()->get_name());
-          }
-          for (idb::IdbVia* idb_via : idb_pin->get_via_list()) {
-            idb::IdbLayerShape idb_shape_top = idb_via->get_top_layer_shape();
-            layer_name_set.insert(idb_shape_top.get_layer()->get_name());
-            idb::IdbLayerShape idb_shape_bottom = idb_via->get_bottom_layer_shape();
-            layer_name_set.insert(idb_shape_bottom.get_layer()->get_name());
-            idb::IdbLayerShape idb_shape_cut = idb_via->get_cut_layer_shape();
-            layer_name_set.insert(idb_shape_cut.get_layer()->get_name());
-          }
-        }
-        instance_json["layer"] = layer_name_set;
-        instance_json["type"] = ((idb_instance->get_cell_master()->get_type() == idb::CellMasterType::kPad) ? "io_cell" : "core");
-        db_json_list.push_back(instance_json);
+  size_t max_fanout = 16;
+  while (true) {
+    std::set<idb::IdbNet*> origin_net_set;
+    for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
+      if (idb_net->get_load_pins().size() > max_fanout) {
+        origin_net_set.insert(idb_net);
       }
     }
-    {
-      std::string layer_name = "null";
-      for (idb::IdbLayer* idb_layer : idb_layers) {
-        if (idb_layer->is_routing()) {
-          idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(idb_layer);
-          layer_name = idb_routing_layer->get_name();
-          break;
+    if (origin_net_set.empty()) {
+      break;
+    }
+    size_t begin_net_num = idb_net_list->get_num();
+    for (idb::IdbNet* origin_net : origin_net_set) {
+      // 解开所有的pin
+      std::vector<idb::IdbPin*> load_pin_list = origin_net->get_load_pins();
+      for (idb::IdbPin* load_pin : load_pin_list) {
+        origin_net->remove_pin(load_pin);
+      }
+      std::vector<std::vector<idb::IdbPin*>> load_pin_list_list;
+      for (size_t i = 0; i < load_pin_list.size(); i += max_fanout) {
+        size_t end = std::min(i + max_fanout, load_pin_list.size());
+        load_pin_list_list.emplace_back(load_pin_list.begin() + i, load_pin_list.begin() + end);
+      }
+      for (std::vector<idb::IdbPin*>& load_pin_list : load_pin_list_list) {
+        static size_t new_idx = 0;
+        // 生成net
+        idb::IdbNet* new_net = new IdbNet();
+        new_net->set_net_name(RTUTIL.getString("rt_fanout_net_", new_idx++));
+        idb_net_list->add_net(new_net);
+        // 生成buf
+        idb::IdbInstance* new_buf = new IdbInstance();
+        new_buf->set_name(RTUTIL.getString("rt_fanout_buf_", new_idx++));
+        new_buf->set_cell_master(idb_cell_master_list->find_cell_master(RTUTIL.getString("BUFFD3BWP35P140LVT")));
+        idb_instance_list->add_instance(new_buf);
+        // 连接buf
+        for (idb::IdbPin* buf_pin : new_buf->get_pin_list()->get_pin_list()) {
+          if (buf_pin->get_term()->get_type() == idb::IdbConnectType::kPower || buf_pin->get_term()->get_type() == idb::IdbConnectType::kGround) {
+            continue;
+          }
+          if (buf_pin->get_term()->get_direction() == idb::IdbConnectDirection::kInput) {
+            origin_net->add_instance_pin(buf_pin);
+            buf_pin->set_net(origin_net);
+            buf_pin->set_net_name(origin_net->get_net_name());
+          } else if (buf_pin->get_term()->get_direction() == idb::IdbConnectDirection::kOutput) {
+            new_net->add_instance_pin(buf_pin);
+            buf_pin->set_net(new_net);
+            buf_pin->set_net_name(new_net->get_net_name());
+          }
+        }
+        // 连接pin
+        for (idb::IdbPin* load_pin : load_pin_list) {
+          if (load_pin->is_io_pin()) {
+            new_net->add_io_pin(load_pin);
+          } else {
+            new_net->add_instance_pin(load_pin);
+          }
+          load_pin->set_net(new_net);
+          load_pin->set_net_name(new_net->get_net_name());
         }
       }
-      for (idb::IdbRow* idb_row : idb_rows->get_row_list()) {
-        idb::IdbCoordinate<int32_t>* idb_coord = idb_row->get_original_coordinate();
-        nlohmann::json row_json;
-        row_json["name"] = idb_row->get_name();
-        row_json["bbox"]
-            = {idb_coord->get_x(), idb_coord->get_y(), idb_coord->get_x() + (idb_row->get_row_num_x() * idb_row->get_step_x()), idb_coord->get_y()};
-        row_json["layer"] = layer_name;
-        row_json["type"] = "row";
-        db_json_list.push_back(row_json);
-      }
     }
-    std::string db_json_file_path = RTUTIL.getString(RTUTIL.getConfigValue<std::string>(config_map, "-json_file_path", "null"));
-    std::ofstream* db_json_file = RTUTIL.getOutputFileStream(db_json_file_path);
-    (*db_json_file) << db_json_list;
-    RTUTIL.closeFileStream(db_json_file);
-  }
-
-  {
-    // std::vector<nlohmann::json> db_json_list;
-    // {
-    //   nlohmann::json die_json;
-    //   die_json["die"] = {idb_die->get_llx(), idb_die->get_lly(), idb_die->get_urx(), idb_die->get_ury()};
-    //   db_json_list.push_back(die_json);
-    // }
-    // {
-    //   nlohmann::json env_shape_json;
-    //   // instance
-    //   for (idb::IdbInstance* idb_instance : idb_instance_list) {
-    //     if (idb_instance->is_unplaced()) {
-    //       continue;
-    //     }
-    //     if (idb_instance->get_cell_master()->is_pad() || idb_instance->get_cell_master()->is_pad_filler()) {
-    //       idb_instance->get_name();
-    //       idb_instance->get_bounding_box();
-
-    //     } else {
-    //       // instance obs
-    //       for (idb::IdbLayerShape* obs_box : idb_instance->get_obs_box_list()) {
-    //         for (idb::IdbRect* rect : obs_box->get_rect_list()) {
-    //           env_shape_json["env_shape"]["obs"]["shape"].push_back(
-    //               {rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), obs_box->get_layer()->get_name()});
-    //         }
-    //       }
-    //       // instance pin without net
-    //       for (idb::IdbPin* idb_pin : idb_instance->get_pin_list()->get_pin_list()) {
-    //         std::string net_name;
-    //         if (!isSkipping(idb_pin->get_net(), false)) {
-    //           net_name = idb_pin->get_net()->get_net_name();
-    //         } else {
-    //           net_name = "obs";
-    //         }
-    //         for (idb::IdbLayerShape* port_box : idb_pin->get_port_box_list()) {
-    //           for (idb::IdbRect* rect : port_box->get_rect_list()) {
-    //             env_shape_json["env_shape"][net_name]["shape"].push_back(
-    //                 {rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), port_box->get_layer()->get_name()});
-    //           }
-    //         }
-    //         for (idb::IdbVia* idb_via : idb_pin->get_via_list()) {
-    //           {
-    //             idb::IdbLayerShape idb_shape_top = idb_via->get_top_layer_shape();
-    //             idb::IdbRect idb_box_top = idb_shape_top.get_bounding_box();
-    //             env_shape_json["env_shape"][net_name]["shape"].push_back({idb_box_top.get_low_x(), idb_box_top.get_low_y(), idb_box_top.get_high_x(),
-    //                                                                       idb_box_top.get_high_y(), idb_shape_top.get_layer()->get_name()});
-    //           }
-    //           {
-    //             idb::IdbLayerShape idb_shape_bottom = idb_via->get_bottom_layer_shape();
-    //             idb::IdbRect idb_box_bottom = idb_shape_bottom.get_bounding_box();
-    //             env_shape_json["env_shape"][net_name]["shape"].push_back({idb_box_bottom.get_low_x(), idb_box_bottom.get_low_y(),
-    //             idb_box_bottom.get_high_x(),
-    //                                                                       idb_box_bottom.get_high_y(), idb_shape_bottom.get_layer()->get_name()});
-    //           }
-    //           idb::IdbLayerShape idb_shape_cut = idb_via->get_cut_layer_shape();
-    //           for (idb::IdbRect* idb_rect : idb_shape_cut.get_rect_list()) {
-    //             env_shape_json["env_shape"][net_name]["shape"].push_back(
-    //                 {idb_rect->get_low_x(), idb_rect->get_low_y(), idb_rect->get_high_x(), idb_rect->get_high_y(), idb_shape_cut.get_layer()->get_name()});
-    //           }
-    //         }
-    //       }
-    //     }
-    //   }
-    //   // special net
-    //   for (idb::IdbSpecialNet* idb_net : idb_special_net_list) {
-    //     for (idb::IdbSpecialWire* idb_wire : idb_net->get_wire_list()->get_wire_list()) {
-    //       for (idb::IdbSpecialWireSegment* idb_segment : idb_wire->get_segment_list()) {
-    //         if (idb_segment->is_via()) {
-    //           for (idb::IdbLayerShape layer_shape : {idb_segment->get_via()->get_top_layer_shape(), idb_segment->get_via()->get_bottom_layer_shape()}) {
-    //             for (idb::IdbRect* rect : layer_shape.get_rect_list()) {
-    //               env_shape_json["env_shape"]["obs"]["shape"].push_back(
-    //                   {rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), layer_shape.get_layer()->get_name()});
-    //             }
-    //           }
-    //           idb::IdbLayerShape cut_layer_shape = idb_segment->get_via()->get_cut_layer_shape();
-    //           for (idb::IdbRect* rect : cut_layer_shape.get_rect_list()) {
-    //             env_shape_json["env_shape"]["obs"]["shape"].push_back(
-    //                 {rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), cut_layer_shape.get_layer()->get_name()});
-    //           }
-    //         } else {
-    //           idb::IdbRect* idb_rect = idb_segment->get_bounding_box();
-    //           // wire
-    //           env_shape_json["env_shape"]["obs"]["shape"].push_back(
-    //               {idb_rect->get_low_x(), idb_rect->get_low_y(), idb_rect->get_high_x(), idb_rect->get_high_y(), idb_segment->get_layer()->get_name()});
-    //         }
-    //       }
-    //     }
-    //   }
-    //   // io pin
-    //   for (idb::IdbPin* idb_io_pin : idb_io_pin_list) {
-    //     std::string net_name;
-    //     if (!isSkipping(idb_io_pin->get_net(), false)) {
-    //       net_name = idb_io_pin->get_net()->get_net_name();
-    //     } else {
-    //       net_name = "obs";
-    //     }
-    //     for (idb::IdbLayerShape* port_box : idb_io_pin->get_port_box_list()) {
-    //       for (idb::IdbRect* rect : port_box->get_rect_list()) {
-    //         env_shape_json["env_shape"][net_name]["shape"].push_back(
-    //             {rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), port_box->get_layer()->get_name()});
-    //       }
-    //     }
-    //   }
-    //   db_json_list.push_back(env_shape_json);
-    // }
-    // {
-    //   nlohmann::json result_shape_json;
-    //   // net
-    //   for (idb::IdbNet* idb_net : idb_net_list) {
-    //     for (idb::IdbRegularWire* idb_wire : idb_net->get_wire_list()->get_wire_list()) {
-    //       for (idb::IdbRegularWireSegment* idb_segment : idb_wire->get_segment_list()) {
-    //         if (idb_segment->get_point_number() >= 2) {
-    //           PlanarCoord first_coord(idb_segment->get_point_start()->get_x(), idb_segment->get_point_start()->get_y());
-    //           PlanarCoord second_coord(idb_segment->get_point_second()->get_x(), idb_segment->get_point_second()->get_y());
-    //           int32_t half_width = dynamic_cast<IdbLayerRouting*>(idb_segment->get_layer())->get_width() / 2;
-    //           PlanarRect rect = RTUTIL.getEnlargedRect(first_coord, second_coord, half_width);
-    //           result_shape_json["result_shape"][idb_net->get_net_name()]["path"].push_back(
-    //               {rect.get_ll_x(), rect.get_ll_y(), rect.get_ur_x(), rect.get_ur_y(), idb_segment->get_layer()->get_name()});
-    //         }
-    //         if (idb_segment->is_via()) {
-    //           for (idb::IdbVia* idb_via : idb_segment->get_via_list()) {
-    //             for (idb::IdbLayerShape layer_shape : {idb_via->get_top_layer_shape(), idb_via->get_bottom_layer_shape()}) {
-    //               for (idb::IdbRect* rect : layer_shape.get_rect_list()) {
-    //                 result_shape_json["result_shape"][idb_net->get_net_name()]["path"].push_back(
-    //                     {rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), layer_shape.get_layer()->get_name()});
-    //               }
-    //             }
-    //             idb::IdbLayerShape cut_layer_shape = idb_via->get_cut_layer_shape();
-    //             for (idb::IdbRect* rect : cut_layer_shape.get_rect_list()) {
-    //               result_shape_json["result_shape"][idb_net->get_net_name()]["path"].push_back(
-    //                   {rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), cut_layer_shape.get_layer()->get_name()});
-    //             }
-    //           }
-    //         }
-    //         if (idb_segment->is_rect()) {
-    //           PlanarCoord offset_coord(idb_segment->get_point_start()->get_x(), idb_segment->get_point_start()->get_y());
-    //           PlanarRect delta_rect(idb_segment->get_delta_rect()->get_low_x(), idb_segment->get_delta_rect()->get_low_y(),
-    //                                 idb_segment->get_delta_rect()->get_high_x(), idb_segment->get_delta_rect()->get_high_y());
-    //           PlanarRect rect = RTUTIL.getOffsetRect(delta_rect, offset_coord);
-    //           result_shape_json["result_shape"][idb_net->get_net_name()]["patch"].push_back(
-    //               {rect.get_ll_x(), rect.get_ll_y(), rect.get_ur_x(), rect.get_ur_y(), idb_segment->get_layer()->get_name()});
-    //         }
-    //       }
-    //     }
-    //   }
-    //   db_json_list.push_back(result_shape_json);
-    // }
-    // std::string db_json_file_path = RTUTIL.getString(RTUTIL.getConfigValue<std::string>(config_map, "-json_file_path", "null"));
-    // std::ofstream* db_json_file = RTUTIL.getOutputFileStream(db_json_file_path);
-    // (*db_json_file) << db_json_list;
-    // RTUTIL.closeFileStream(db_json_file);
+    RTLOG.info(Loc::current(), "Fixed ", origin_net_set.size(), " nets!( +", idb_net_list->get_num() - begin_net_num, " nets )");
   }
 }
 
@@ -1154,6 +990,7 @@ void RTInterface::wrapPinList(Net& net, idb::IdbNet* idb_net)
     }
     Pin pin;
     pin.set_pin_name(RTUTIL.getString(idb_pin->get_instance()->get_name(), ":", idb_pin->get_pin_name()));
+    pin.set_is_core(idb_pin->get_instance()->get_cell_master()->is_core());
     wrapPinShapeList(pin, idb_pin);
     pin_list.push_back(std::move(pin));
   }
@@ -1163,6 +1000,7 @@ void RTInterface::wrapPinList(Net& net, idb::IdbNet* idb_net)
     }
     Pin pin;
     pin.set_pin_name(idb_pin->get_pin_name());
+    pin.set_is_core(false);
     wrapPinShapeList(pin, idb_pin);
     pin_list.push_back(std::move(pin));
   }

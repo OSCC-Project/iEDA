@@ -20,17 +20,17 @@
 
 namespace tcl {
 
-TclClearDef::TclClearDef(const char* cmd_name) : TclCmd(cmd_name)
+TclRTFixFanout::TclRTFixFanout(const char* cmd_name) : TclCmd(cmd_name)
 {
 }
 
-unsigned TclClearDef::exec()
+unsigned TclRTFixFanout::exec()
 {
   if (!check()) {
     return 0;
   }
 
-  RTI.clearDef();
+  RTI.fixFanout();
 
   return 1;
 }

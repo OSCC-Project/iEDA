@@ -119,9 +119,7 @@ void LayerAssigner::setLAComParam(LAModel& la_model)
   /**
    * topo_spilt_length, via_unit, overflow_unit
    */
-  // clang-format off
   LAComParam la_com_param(topo_spilt_length, via_unit, overflow_unit);
-  // clang-format on
   RTLOG.info(Loc::current(), "topo_spilt_length: ", la_com_param.get_topo_spilt_length());
   RTLOG.info(Loc::current(), "via_unit: ", la_com_param.get_via_unit());
   RTLOG.info(Loc::current(), "overflow_unit: ", la_com_param.get_overflow_unit());
