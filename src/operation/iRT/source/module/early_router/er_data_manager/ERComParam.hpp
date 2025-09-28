@@ -16,34 +16,57 @@
 // ***************************************************************************************
 #pragma once
 
+#include "RTHeader.hpp"
+
 namespace irt {
 
 class ERComParam
 {
  public:
   ERComParam() = default;
-  ERComParam(int32_t topo_spilt_length, double prefer_wire_unit, double via_unit, double overflow_unit)
+  ERComParam(int32_t supply_reduction, double boundary_wire_unit, double internal_wire_unit, double internal_via_unit, int32_t topo_spilt_length,
+             int32_t expand_step_num, int32_t expand_step_length, double via_unit, double overflow_unit)
   {
+    _supply_reduction = supply_reduction;
+    _boundary_wire_unit = boundary_wire_unit;
+    _internal_wire_unit = internal_wire_unit;
+    _internal_via_unit = internal_via_unit;
     _topo_spilt_length = topo_spilt_length;
-    _prefer_wire_unit = prefer_wire_unit;
+    _expand_step_num = expand_step_num;
+    _expand_step_length = expand_step_length;
     _via_unit = via_unit;
     _overflow_unit = overflow_unit;
   }
   ~ERComParam() = default;
   // getter
+  int32_t get_supply_reduction() const { return _supply_reduction; }
+  double get_boundary_wire_unit() const { return _boundary_wire_unit; }
+  double get_internal_wire_unit() const { return _internal_wire_unit; }
+  double get_internal_via_unit() const { return _internal_via_unit; }
   int32_t get_topo_spilt_length() const { return _topo_spilt_length; }
-  double get_prefer_wire_unit() const { return _prefer_wire_unit; }
+  int32_t get_expand_step_num() const { return _expand_step_num; }
+  int32_t get_expand_step_length() const { return _expand_step_length; }
   double get_via_unit() const { return _via_unit; }
   double get_overflow_unit() const { return _overflow_unit; }
   // setter
+  void set_supply_reduction(const int32_t supply_reduction) { _supply_reduction = supply_reduction; }
+  void set_boundary_wire_unit(const double boundary_wire_unit) { _boundary_wire_unit = boundary_wire_unit; }
+  void set_internal_wire_unit(const double internal_wire_unit) { _internal_wire_unit = internal_wire_unit; }
+  void set_internal_via_unit(const double internal_via_unit) { _internal_via_unit = internal_via_unit; }
   void set_topo_spilt_length(const int32_t topo_spilt_length) { _topo_spilt_length = topo_spilt_length; }
-  void set_prefer_wire_unit(const double prefer_wire_unit) { _prefer_wire_unit = prefer_wire_unit; }
+  void set_expand_step_num(const int32_t expand_step_num) { _expand_step_num = expand_step_num; }
+  void set_expand_step_length(const int32_t expand_step_length) { _expand_step_length = expand_step_length; }
   void set_via_unit(const double via_unit) { _via_unit = via_unit; }
   void set_overflow_unit(const double overflow_unit) { _overflow_unit = overflow_unit; }
 
  private:
+  int32_t _supply_reduction = -1;
+  double _boundary_wire_unit = -1;
+  double _internal_wire_unit = -1;
+  double _internal_via_unit = -1;
   int32_t _topo_spilt_length = 0;
-  double _prefer_wire_unit = 0;
+  int32_t _expand_step_num = 0;
+  int32_t _expand_step_length = 0;
   double _via_unit = 0;
   double _overflow_unit = 0;
 };

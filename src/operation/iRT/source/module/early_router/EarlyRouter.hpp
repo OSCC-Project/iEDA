@@ -20,7 +20,9 @@
 #include "Config.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
+#include "ERCandidate.hpp"
 #include "ERModel.hpp"
+#include "ERPackage.hpp"
 #include "RTHeader.hpp"
 
 namespace irt {
@@ -52,69 +54,75 @@ class EarlyRouter
   ERNet convertToERNet(Net& net);
   void setERComParam(ERModel& er_model);
   void generateAccessPoint(ERModel& er_model);
+  void buildSupplySchedule(ERModel& er_model);
+  void analyzeSupply(ERModel& er_model);
+  EXTLayerRect getSearchRect(LayerCoord& first_coord, LayerCoord& second_coord);
+  std::vector<LayerRect> getCrossingWireList(EXTLayerRect& search_rect);
+  bool isAccess(LayerRect& wire, std::vector<PlanarRect>& obs_rect_list);
+  void buildIgnoreNet(ERModel& er_model);
+  void analyzeDemandUnit(ERModel& er_model);
   void initERTaskList(ERModel& er_model);
   void buildPlanarNodeMap(ERModel& er_model);
   void buildPlanarNodeNeighbor(ERModel& er_model);
   void buildPlanarOrientSupply(ERModel& er_model);
-  void generateTopoTree(ERModel& er_model);
-  void routePlanarNet(ERModel& er_model, ERNet* er_net);
-  std::vector<Segment<PlanarCoord>> getPlanarTopoList(ERModel& er_model, ERNet* er_net);
-  std::vector<Segment<PlanarCoord>> getRoutingSegmentList(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
-  std::vector<Segment<PlanarCoord>> getRoutingSegmentListByStraight(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
-  std::vector<Segment<PlanarCoord>> getRoutingSegmentListByLPattern(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
-  double getPlanarNodeCost(ERModel& er_model, std::vector<Segment<PlanarCoord>>& routing_segment_list);
-  MTree<LayerCoord> getPlanarCoordTree(ERNet* er_net, std::vector<Segment<PlanarCoord>>& planar_routing_segment_list);
+  void generateTopology(ERModel& er_model);
+  void generateERTask(ERModel& er_model, ERNet* er_task);
+  void initSinglePlanarTask(ERModel& er_model, ERNet* er_task);
+  std::vector<Segment<PlanarCoord>> getPlanarRoutingSegmentList(ERModel& er_model);
+  std::vector<Segment<PlanarCoord>> getPlanarTopoList(ERModel& er_model);
+  std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListList(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
+  std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByStraight(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
+  std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByLPattern(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
+  std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByZPattern(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
+  std::vector<int32_t> getMidIndexList(int32_t first_idx, int32_t second_idx);
+  std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByUPattern(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
+  std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByInner3Bends(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
+  std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByOuter3Bends(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
+  double getNodeCost(ERModel& er_model, std::vector<Segment<PlanarCoord>>& routing_segment_list);
+  MTree<PlanarCoord> getCoordTree(ERModel& er_model, std::vector<Segment<PlanarCoord>>& routing_segment_list);
+  void resetSinglePlanarTask(ERModel& er_model);
   void buildLayerNodeMap(ERModel& er_model);
   void buildLayerNodeNeighbor(ERModel& er_model);
   void buildLayerOrientSupply(ERModel& er_model);
-  void generateGlobalTree(ERModel& er_model);
-  void routeLayerNet(ERModel& er_model, ERNet* er_net);
-  void makeERTopoList(ERModel& er_model, ERNet* er_net, std::vector<ERTopo>& er_topo_list, std::vector<Segment<LayerCoord>>& routing_segment_list);
-  void routeERTopo(ERModel& er_model, ERTopo* er_topo);
-  void initSingleTask(ERModel& er_model, ERTopo* er_topo);
-  bool isConnectedAllEnd(ERModel& er_model);
-  void routeSinglePath(ERModel& er_model);
-  void initPathHead(ERModel& er_model);
-  bool searchEnded(ERModel& er_model);
-  void expandSearching(ERModel& er_model);
-  void resetPathHead(ERModel& er_model);
-  void updatePathResult(ERModel& er_model);
-  std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(ERNode* node);
-  void resetStartAndEnd(ERModel& er_model);
-  void resetSinglePath(ERModel& er_model);
-  void updateTaskResult(ERModel& er_model);
-  std::vector<Segment<LayerCoord>> getRoutingSegmentList(ERModel& er_model);
-  void resetSingleTask(ERModel& er_model);
-  void pushToOpenList(ERModel& er_model, ERNode* curr_node);
-  ERNode* popFromOpenList(ERModel& er_model);
-  double getKnownCost(ERModel& er_model, ERNode* start_node, ERNode* end_node);
-  double getNodeCost(ERModel& er_model, ERNode* curr_node, Orientation orientation);
-  double getKnownWireCost(ERModel& er_model, ERNode* start_node, ERNode* end_node);
-  double getKnownViaCost(ERModel& er_model, ERNode* start_node, ERNode* end_node);
-  double getEstimateCostToEnd(ERModel& er_model, ERNode* curr_node);
-  double getEstimateCost(ERModel& er_model, ERNode* start_node, ERNode* end_node);
-  double getEstimateWireCost(ERModel& er_model, ERNode* start_node, ERNode* end_node);
-  double getEstimateViaCost(ERModel& er_model, ERNode* start_node, ERNode* end_node);
-  MTree<LayerCoord> getLayerCoordTree(ERNet* er_net, std::vector<Segment<LayerCoord>>& routing_segment_list);
-  void uploadNetResult(ERNet* er_net, MTree<LayerCoord>& coord_tree);
+  void assignLayer(ERModel& er_model);
+  void assignERTask(ERModel& er_model, ERNet* er_task);
+  void initSingleTask(ERModel& er_model, ERNet* er_task);
+  bool needRouting(ERModel& er_model);
+  void spiltPlaneTree(ERModel& er_model);
+  void insertMidPoint(ERModel& er_model, TNode<PlanarCoord>* planar_node, TNode<PlanarCoord>* child_node);
+  void buildPillarTree(ERModel& er_model);
+  ERPillar convertERPillar(PlanarCoord& planar_coord, std::map<PlanarCoord, std::set<int32_t>, CmpPlanarCoordByXASC>& coord_pin_layer_map);
+  void assignPillarTree(ERModel& er_model);
+  void assignForward(ERModel& er_model);
+  std::vector<int32_t> getCandidateLayerList(ERModel& er_model, ERPackage& er_package);
+  double getFullViaCost(ERModel& er_model, std::set<int32_t>& layer_idx_set, int32_t candidate_layer_idx);
+  void buildLayerCost(ERModel& er_model, ERPackage& er_package);
+  std::pair<int32_t, double> getParentPillarCost(ERModel& er_model, ERPackage& er_package, int32_t candidate_layer_idx);
+  double getExtraViaCost(ERModel& er_model, std::set<int32_t>& layer_idx_set, int32_t candidate_layer_idx);
+  double getSegmentCost(ERModel& er_model, ERPackage& er_package, int32_t candidate_layer_idx);
+  double getChildPillarCost(ERModel& er_model, ERPackage& er_package, int32_t candidate_layer_idx);
+  void assignBackward(ERModel& er_model);
+  int32_t getBestLayerBySelf(TNode<ERPillar>* pillar_node);
+  int32_t getBestLayerByChild(TNode<ERPillar>* parent_pillar_node);
+  void buildLayerTree(ERModel& er_model, ERNet* er_task);
+  std::vector<Segment<LayerCoord>> getLayerRoutingSegmentList(ERModel& er_model);
+  MTree<LayerCoord> getCoordTree(ERModel& er_model, std::vector<Segment<LayerCoord>>& routing_segment_list);
+  void resetSingleLayerTask(ERModel& er_model);
+  void outputResult(ERModel& er_model);
+  void outputGCellCSV(ERModel& er_model);
+  void outputLayerSupplyCSV(ERModel& er_model);
+  void outputLayerGuide(ERModel& er_model);
+  void outputLayerNetCSV(ERModel& er_model);
+  void outputLayerOverflowCSV(ERModel& er_model);
 
 #if 1  // update env
-  void updatePlanarDemandToGraph(ERModel& er_model, ChangeType change_type, MTree<LayerCoord>& coord_tree);
-  void updateLayerDemandToGraph(ERModel& er_model, ChangeType change_type, MTree<LayerCoord>& coord_tree);
+  void updateDemandToGraph(ERModel& er_model, ChangeType change_type, MTree<PlanarCoord>& coord_tree);
+  void updateDemandToGraph(ERModel& er_model, ChangeType change_type, MTree<LayerCoord>& coord_tree);
 #endif
 
 #if 1  // exhibit
   void updateSummary(ERModel& er_model);
   void printSummary(ERModel& er_model);
-  void outputGCellCSV(ERModel& er_model);
-  void outputGuide(ERModel& er_model);
-  void outputDemandCSV(ERModel& er_model);
-  void outputOverflowCSV(ERModel& er_model);
-#endif
-
-#if 1  // debug
-  void debugCheckPlanarNodeMap(ERModel& er_model);
-  void debugCheckLayerNodeMap(ERModel& er_model);
 #endif
 };
 

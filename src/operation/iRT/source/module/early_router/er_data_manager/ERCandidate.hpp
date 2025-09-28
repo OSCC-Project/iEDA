@@ -16,23 +16,37 @@
 // ***************************************************************************************
 #pragma once
 
-#include "LayerCoord.hpp"
+#include "PlanarCoord.hpp"
+#include "RTHeader.hpp"
+#include "Segment.hpp"
 
 namespace irt {
 
-class ERGroup
+class ERCandidate
 {
  public:
-  ERGroup() = default;
-  ~ERGroup() = default;
+  ERCandidate() = default;
+  ERCandidate(int32_t topo_idx, const std::vector<Segment<PlanarCoord>>& routing_segment_list, double cost)
+  {
+    _topo_idx = topo_idx;
+    _routing_segment_list = routing_segment_list;
+    _cost = cost;
+  }
+  ~ERCandidate() = default;
   // getter
-  std::vector<LayerCoord>& get_coord_list() { return _coord_list; }
+  int32_t get_topo_idx() const { return _topo_idx; }
+  std::vector<Segment<PlanarCoord>>& get_routing_segment_list() { return _routing_segment_list; }
+  double get_cost() const { return _cost; }
   // setter
-  void set_coord_list(const std::vector<LayerCoord>& coord_list) { _coord_list = coord_list; }
+  void set_topo_idx(const int32_t topo_idx) { _topo_idx = topo_idx; }
+  void set_routing_segment_list(const std::vector<Segment<PlanarCoord>>& routing_segment_list) { _routing_segment_list = routing_segment_list; }
+  void set_cost(const double cost) { _cost = cost; }
   // function
 
  private:
-  std::vector<LayerCoord> _coord_list;
+  int32_t _topo_idx = -1;
+  std::vector<Segment<PlanarCoord>> _routing_segment_list;
+  double _cost = 0.0;
 };
 
 }  // namespace irt

@@ -435,9 +435,12 @@ void SupplyAnalyzer::outputPlanarSupplyCSV(SAModel& sa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
-  std::string& er_temp_directory_path = RTDM.getConfig().er_temp_directory_path;
-
-  std::ofstream* supply_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(er_temp_directory_path, "supply_map_planar.csv"));
+  std::string& sa_temp_directory_path = RTDM.getConfig().sa_temp_directory_path;
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
+    return;
+  }
+  std::ofstream* supply_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(sa_temp_directory_path, "supply_map_planar.csv"));
   for (int32_t y = gcell_map.get_y_size() - 1; y >= 0; y--) {
     for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
       int32_t total_supply = 0;
@@ -458,11 +461,14 @@ void SupplyAnalyzer::outputLayerSupplyCSV(SAModel& sa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
-  std::string& er_temp_directory_path = RTDM.getConfig().er_temp_directory_path;
-
+  std::string& sa_temp_directory_path = RTDM.getConfig().sa_temp_directory_path;
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
+    return;
+  }
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::ofstream* supply_csv_file
-        = RTUTIL.getOutputFileStream(RTUTIL.getString(er_temp_directory_path, "supply_map_", routing_layer.get_layer_name(), ".csv"));
+        = RTUTIL.getOutputFileStream(RTUTIL.getString(sa_temp_directory_path, "supply_map_", routing_layer.get_layer_name(), ".csv"));
     for (int32_t y = gcell_map.get_y_size() - 1; y >= 0; y--) {
       for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
         int32_t total_supply = 0;

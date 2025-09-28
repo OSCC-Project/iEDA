@@ -100,10 +100,6 @@ void RTInterface::runEGR()
   initFlute();
   RTGP.init();
 
-  SupplyAnalyzer::initInst();
-  RTSA.analyze();
-  SupplyAnalyzer::destroyInst();
-
   EarlyRouter::initInst();
   RTER.route();
   EarlyRouter::destroyInst();
