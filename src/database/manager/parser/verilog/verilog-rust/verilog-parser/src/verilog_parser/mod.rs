@@ -781,8 +781,8 @@ fn flatten_the_module(
                         port_connect_net_opt.unwrap()
                     }
                 };
-            
-            // get assign left parent connect net. 
+
+            // get assign left parent connect net.
             let left_net_expr_id = left_net_expr.get_verilog_id();
             let left_port_name = left_net_expr_id.get_name();
             let left_net_base_name = left_net_expr_id.get_base_name();
@@ -796,7 +796,6 @@ fn flatten_the_module(
             );
 
             let left_port_connect_net = get_or_create_port_connect_net(left_port_connect_net_opt, left_net_expr);
-
 
             // get assign right parent connect net.
 
@@ -812,7 +811,7 @@ fn flatten_the_module(
                     right_net_base_name,
                     right_port_name,
                 );
-                
+
                 let right_port_connect_net = get_or_create_port_connect_net(right_port_connect_net_opt, right_net_expr);
 
                 // for debug
@@ -837,9 +836,9 @@ fn flatten_the_module(
                 // should be concat expr, so we need to process each net expr in the concat expr.
                 let right_net_expr_concat =
                     right_net_expr.as_any().downcast_ref::<verilog_data::VerilogNetConcatExpr>().unwrap();
-                
+
                 let mut new_right_net_expr_concat: Vec<Box<dyn verilog_data::VerilogVirtualBaseNetExpr>> = Vec::new();
-                right_net_expr_concat.get_verilog_id_concat().iter().for_each(|net_expr| { 
+                right_net_expr_concat.get_verilog_id_concat().iter().for_each(|net_expr| {
                     let right_net_expr_id = net_expr.get_verilog_id();
                     let right_port_name = right_net_expr_id.get_name();
                     let right_net_base_name = right_net_expr_id.get_base_name();
@@ -862,12 +861,12 @@ fn flatten_the_module(
                     Box::new(new_right_net_expr);
 
                 let new_assignment_stmt: verilog_data::VerilogAssign = verilog_data::VerilogAssign::new(
-                        module_assign_stmt.get_line_no(),
-                        left_port_connect_net,
-                        new_dyn_right_net_expr,
-                    );
+                    module_assign_stmt.get_line_no(),
+                    left_port_connect_net,
+                    new_dyn_right_net_expr,
+                );
                 let new_dyn_assign_stmt: Box<dyn verilog_data::VerilogVirtualBaseStmt> = Box::new(new_assignment_stmt);
-                verilog_data::VerilogModule::add_stmt(&mut parent_module.borrow_mut(), new_dyn_assign_stmt);                
+                verilog_data::VerilogModule::add_stmt(&mut parent_module.borrow_mut(), new_dyn_assign_stmt);
             }
         }
     }
@@ -959,7 +958,8 @@ pub fn flatten_module(verilog_file: &mut verilog_data::VerilogFile, top_module_n
     let module_map = verilog_file.get_module_map();
     if module_map.len() > 1 {
         println!("flatten module {} start", top_module_name);
-        let the_module = module_map.get(top_module_name).unwrap();
+        let the_module =
+            module_map.get(top_module_name).unwrap_or_else(|| panic!("can't find top module {}", top_module_name));
         let mut have_sub_module;
         loop {
             have_sub_module = false;
