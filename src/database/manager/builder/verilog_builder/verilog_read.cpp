@@ -487,7 +487,7 @@ int32_t RustVerilogRead::build_assign()
               bool has_b0 = (right_net_name.find("1'b0") != std::string::npos);
               bool has_b1 = (right_net_name.find("1'b1") != std::string::npos);
               if (has_b0 || has_b1) {
-                LOG_ERROR << "constant net should connect to tie logic cell.";
+                LOG_ERROR << "constant net should connect to tie cell.";
               }
             }
           } else if (the_right_idb_net && !the_right_io_pin) {           
