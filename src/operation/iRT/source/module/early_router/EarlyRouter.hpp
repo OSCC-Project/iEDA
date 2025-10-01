@@ -54,6 +54,8 @@ class EarlyRouter
   ERNet convertToERNet(Net& net);
   void setERComParam(ERModel& er_model);
   void generateAccessPoint(ERModel& er_model);
+  LayerCoord getAccessCoord(std::vector<EXTLayerRect>& shape_list);
+  void generateAccessPatch(ERModel& er_model);
   void buildSupplySchedule(ERModel& er_model);
   void analyzeSupply(ERModel& er_model);
   EXTLayerRect getSearchRect(LayerCoord& first_coord, LayerCoord& second_coord);
@@ -123,6 +125,10 @@ class EarlyRouter
 #if 1  // exhibit
   void updateSummary(ERModel& er_model);
   void printSummary(ERModel& er_model);
+#endif
+
+#if 1  // debug
+  void debugPlotERModel(ERModel& er_model, std::string flag);
 #endif
 };
 
