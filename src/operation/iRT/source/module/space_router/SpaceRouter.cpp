@@ -1702,6 +1702,9 @@ void SpaceRouter::outputGuide(SRModel& sr_model)
   if (!output_inter_result) {
     return;
   }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::vector<SRNet>& sr_net_list = sr_model.get_sr_net_list();
 
   std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(RTUTIL.getString(sr_temp_directory_path, "route_", sr_model.get_iter(), ".guide"));
@@ -1764,7 +1767,7 @@ void SpaceRouter::outputGuide(SRModel& sr_model)
     }
   }
   RTUTIL.closeFileStream(guide_file_stream);
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void SpaceRouter::outputNetCSV(SRModel& sr_model)
@@ -1775,6 +1778,9 @@ void SpaceRouter::outputNetCSV(SRModel& sr_model)
   if (!output_inter_result) {
     return;
   }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::vector<GridMap<SRNode>>& layer_node_map = sr_model.get_layer_node_map();
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::ofstream* net_csv_file
@@ -1788,7 +1794,7 @@ void SpaceRouter::outputNetCSV(SRModel& sr_model)
     }
     RTUTIL.closeFileStream(net_csv_file);
   }
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void SpaceRouter::outputOverflowCSV(SRModel& sr_model)
@@ -1799,6 +1805,9 @@ void SpaceRouter::outputOverflowCSV(SRModel& sr_model)
   if (!output_inter_result) {
     return;
   }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::vector<GridMap<SRNode>>& layer_node_map = sr_model.get_layer_node_map();
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::ofstream* overflow_csv_file = RTUTIL.getOutputFileStream(
@@ -1813,7 +1822,7 @@ void SpaceRouter::outputOverflowCSV(SRModel& sr_model)
     }
     RTUTIL.closeFileStream(overflow_csv_file);
   }
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void SpaceRouter::outputJson(SRModel& sr_model)
