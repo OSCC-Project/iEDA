@@ -35,6 +35,7 @@ class FixFanout {
   FixFanout(ino::DbInterface *db_interface);
   ~FixFanout() = default;
 
+  void fixIO();
   void fixFanout();
 
  private:
