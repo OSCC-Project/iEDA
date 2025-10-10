@@ -79,7 +79,7 @@ class RTInterface
   void runEGR();
   void runRT();
   void destroyRT();
-  void clearDef();
+  void cleanDef();
   void fixFanout();
 #endif
 

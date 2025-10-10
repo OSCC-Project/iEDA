@@ -183,18 +183,34 @@ void RTInterface::destroyRT()
   Logger::destroyInst();
 }
 
-void RTInterface::clearDef()
+void RTInterface::cleanDef()
 {
-  idb::IdbPins* idb_pin_list = dmInst->get_idb_def_service()->get_design()->get_io_pin_list();
-  IdbNetList* idb_net_list = dmInst->get_idb_def_service()->get_design()->get_net_list();
-
   //////////////////////////////////////////
   // 删除net内所有的wire
+  IdbNetList* idb_net_list = dmInst->get_idb_def_service()->get_design()->get_net_list();
   for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
     idb_net->clear_wire_list();
   }
   // 删除net内所有的wire
   //////////////////////////////////////////
+
+  //////////////////////////////////////////
+  // 删除虚空的io_pin
+  idb::IdbPins* idb_pin_list = dmInst->get_idb_def_service()->get_design()->get_io_pin_list();
+  std::vector<idb::IdbPin*> remove_pin_list;
+  for (idb::IdbPin* io_pin : idb_pin_list->get_pin_list()) {
+    if (io_pin->get_port_box_list().empty()) {
+      RTLOG.info(Loc::current(), "del io_pin: ", io_pin->get_pin_name());
+      remove_pin_list.push_back(io_pin);
+    }
+  }
+  for (idb::IdbPin* io_pin : remove_pin_list) {
+    idb_pin_list->remove_pin(io_pin);
+  }
+  // 删除虚空的io_pin
+  //////////////////////////////////////////
+
+#if 0
 
   //////////////////////////////////////////
   // 删除net内所有的virtual
@@ -258,20 +274,7 @@ void RTInterface::clearDef()
   // 删除net: 虚拟的io_pin与io_cell连接的PAD
   //////////////////////////////////////////
 
-  //////////////////////////////////////////
-  // 删除虚空的io_pin
-  std::vector<idb::IdbPin*> remove_pin_list;
-  for (idb::IdbPin* io_pin : idb_pin_list->get_pin_list()) {
-    if (io_pin->get_port_box_list().empty()) {
-      RTLOG.info(Loc::current(), "del io_pin: ", io_pin->get_pin_name());
-      remove_pin_list.push_back(io_pin);
-    }
-  }
-  for (idb::IdbPin* io_pin : remove_pin_list) {
-    idb_pin_list->remove_pin(io_pin);
-  }
-  // 删除虚空的io_pin
-  //////////////////////////////////////////
+#endif
 }
 
 void RTInterface::fixFanout()
