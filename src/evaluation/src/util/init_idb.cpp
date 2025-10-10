@@ -231,7 +231,7 @@ void InitIDB::initDensityDBNets()
       max_uy = std::max(max_uy, idb_load_pin->get_average_coordinate()->get_y());
     }
     
-    // 安全检查：如果net没有任何pin或坐标无效，跳过此net
+    // if net has no pins or invalid coordinates, skip this net
     if (min_lx == INT32_MAX || min_ly == INT32_MAX || 
         max_ux == INT32_MIN || max_uy == INT32_MIN ||
         min_lx > max_ux || min_ly > max_uy) {
