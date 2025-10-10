@@ -82,11 +82,11 @@ class TclDestroyRT : public TclCmd
 
 #if 1  // aux
 
-class TclRTClearDef : public TclCmd
+class TclRTCleanDef : public TclCmd
 {
  public:
-  explicit TclRTClearDef(const char* cmd_name);
-  ~TclRTClearDef() override = default;
+  explicit TclRTCleanDef(const char* cmd_name);
+  ~TclRTCleanDef() override = default;
 
   unsigned check() override { return 1; };
 

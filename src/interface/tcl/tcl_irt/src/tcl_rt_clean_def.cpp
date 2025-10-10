@@ -14,19 +14,25 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
+#include "RTInterface.hpp"
+#include "tcl_rt.h"
+#include "tcl_util.h"
 
-namespace irt {
+namespace tcl {
 
-class ERIterParam
+TclRTCleanDef::TclRTCleanDef(const char* cmd_name) : TclCmd(cmd_name)
 {
- public:
-  ERIterParam() = default;
-  ~ERIterParam() = default;
-  // getter
-  // setter
+}
 
- private:
-};
+unsigned TclRTCleanDef::exec()
+{
+  if (!check()) {
+    return 0;
+  }
 
-}  // namespace irt
+  RTI.cleanDef();
+
+  return 1;
+}
+
+}  // namespace tcl
