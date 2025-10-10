@@ -1802,6 +1802,9 @@ void EarlyRouter::outputResult(ERModel& er_model)
 
 void EarlyRouter::outputGCellCSV(ERModel& er_model)
 {
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
   std::string& er_temp_directory_path = RTDM.getConfig().er_temp_directory_path;
 
@@ -1816,10 +1819,15 @@ void EarlyRouter::outputGCellCSV(ERModel& er_model)
     }
   }
   RTUTIL.closeFileStream(guide_file_stream);
+
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void EarlyRouter::outputLayerSupplyCSV(ERModel& er_model)
 {
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
   std::string& er_temp_directory_path = RTDM.getConfig().er_temp_directory_path;
@@ -1839,11 +1847,14 @@ void EarlyRouter::outputLayerSupplyCSV(ERModel& er_model)
     }
     RTUTIL.closeFileStream(supply_csv_file);
   }
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void EarlyRouter::outputLayerGuide(ERModel& er_model)
 {
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
@@ -1909,11 +1920,14 @@ void EarlyRouter::outputLayerGuide(ERModel& er_model)
     }
   }
   RTUTIL.closeFileStream(guide_file_stream);
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void EarlyRouter::outputLayerNetCSV(ERModel& er_model)
 {
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& er_temp_directory_path = RTDM.getConfig().er_temp_directory_path;
 
@@ -1929,11 +1943,14 @@ void EarlyRouter::outputLayerNetCSV(ERModel& er_model)
     }
     RTUTIL.closeFileStream(net_csv_file);
   }
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void EarlyRouter::outputLayerOverflowCSV(ERModel& er_model)
 {
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& er_temp_directory_path = RTDM.getConfig().er_temp_directory_path;
 
@@ -1951,7 +1968,7 @@ void EarlyRouter::outputLayerOverflowCSV(ERModel& er_model)
     }
     RTUTIL.closeFileStream(overflow_csv_file);
   }
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 #if 1  // update env

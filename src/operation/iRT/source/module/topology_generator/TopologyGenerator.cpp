@@ -920,6 +920,9 @@ void TopologyGenerator::outputGuide(TGModel& tg_model)
   if (!output_inter_result) {
     return;
   }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::vector<TGNet>& tg_net_list = tg_model.get_tg_net_list();
 
   std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(RTUTIL.getString(tg_temp_directory_path, "route.guide"));
@@ -982,7 +985,7 @@ void TopologyGenerator::outputGuide(TGModel& tg_model)
     }
   }
   RTUTIL.closeFileStream(guide_file_stream);
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void TopologyGenerator::outputNetCSV(TGModel& tg_model)
@@ -992,6 +995,9 @@ void TopologyGenerator::outputNetCSV(TGModel& tg_model)
   if (!output_inter_result) {
     return;
   }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::ofstream* net_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(tg_temp_directory_path, "net_map.csv"));
   GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
   for (int32_t y = tg_node_map.get_y_size() - 1; y >= 0; y--) {
@@ -1001,7 +1007,7 @@ void TopologyGenerator::outputNetCSV(TGModel& tg_model)
     RTUTIL.pushStream(net_csv_file, "\n");
   }
   RTUTIL.closeFileStream(net_csv_file);
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void TopologyGenerator::outputOverflowCSV(TGModel& tg_model)
@@ -1011,6 +1017,9 @@ void TopologyGenerator::outputOverflowCSV(TGModel& tg_model)
   if (!output_inter_result) {
     return;
   }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::ofstream* overflow_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(tg_temp_directory_path, "overflow_map.csv"));
   GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
   for (int32_t y = tg_node_map.get_y_size() - 1; y >= 0; y--) {
@@ -1020,7 +1029,7 @@ void TopologyGenerator::outputOverflowCSV(TGModel& tg_model)
     RTUTIL.pushStream(overflow_csv_file, "\n");
   }
   RTUTIL.closeFileStream(overflow_csv_file);
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void TopologyGenerator::outputJson(TGModel& tg_model)

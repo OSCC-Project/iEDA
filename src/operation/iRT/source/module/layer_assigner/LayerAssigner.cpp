@@ -958,6 +958,9 @@ void LayerAssigner::outputGuide(LAModel& la_model)
   if (!output_inter_result) {
     return;
   }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::vector<LANet>& la_net_list = la_model.get_la_net_list();
 
   std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(RTUTIL.getString(la_temp_directory_path, "route.guide"));
@@ -1020,7 +1023,7 @@ void LayerAssigner::outputGuide(LAModel& la_model)
     }
   }
   RTUTIL.closeFileStream(guide_file_stream);
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void LayerAssigner::outputNetCSV(LAModel& la_model)
@@ -1031,6 +1034,9 @@ void LayerAssigner::outputNetCSV(LAModel& la_model)
   if (!output_inter_result) {
     return;
   }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::vector<GridMap<LANode>>& layer_node_map = la_model.get_layer_node_map();
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::ofstream* net_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(la_temp_directory_path, "net_map_", routing_layer.get_layer_name(), ".csv"));
@@ -1043,7 +1049,7 @@ void LayerAssigner::outputNetCSV(LAModel& la_model)
     }
     RTUTIL.closeFileStream(net_csv_file);
   }
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void LayerAssigner::outputOverflowCSV(LAModel& la_model)
@@ -1054,6 +1060,9 @@ void LayerAssigner::outputOverflowCSV(LAModel& la_model)
   if (!output_inter_result) {
     return;
   }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::vector<GridMap<LANode>>& layer_node_map = la_model.get_layer_node_map();
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::ofstream* overflow_csv_file
@@ -1068,7 +1077,7 @@ void LayerAssigner::outputOverflowCSV(LAModel& la_model)
     }
     RTUTIL.closeFileStream(overflow_csv_file);
   }
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void LayerAssigner::outputJson(LAModel& la_model)
