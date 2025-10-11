@@ -59,7 +59,9 @@ void FixFanout::fixIO() {
     // 加入原来的io net
     idb::IdbNet *io_net = idb_net_list->find_net(idb_io_pin->get_pin_name());
     if (io_net == nullptr) {
-      std::cout << "io_net is empty !!!" << std::endl;
+      io_net = new IdbNet();
+      io_net->set_net_name(idb_io_pin->get_pin_name());
+      idb_net_list->add_net(io_net);
     }
     idb_io_pin->set_net(io_net);
     idb_io_pin->set_net_name(io_net->get_net_name());
