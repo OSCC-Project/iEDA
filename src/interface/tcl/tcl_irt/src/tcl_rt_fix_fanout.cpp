@@ -20,26 +20,19 @@
 
 namespace tcl {
 
-// public
-
-TclOutputDBJson::TclOutputDBJson(const char* cmd_name) : TclCmd(cmd_name)
+TclRTFixFanout::TclRTFixFanout(const char* cmd_name) : TclCmd(cmd_name)
 {
-  _config_list.push_back(std::make_pair("-stage", ValueType::kString));
-  _config_list.push_back(std::make_pair("-json_file_path", ValueType::kString));
-
-  TclUtil::addOption(this, _config_list);
 }
 
-unsigned TclOutputDBJson::exec()
+unsigned TclRTFixFanout::exec()
 {
   if (!check()) {
     return 0;
   }
-  std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
-  RTI.outputDBJson(config_map);
+
+  RTI.fixFanout();
+
   return 1;
 }
-
-// private
 
 }  // namespace tcl

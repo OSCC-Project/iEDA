@@ -16,23 +16,32 @@
 // ***************************************************************************************
 #pragma once
 
-#include "LayerCoord.hpp"
+#include "LALayerCost.hpp"
+#include "PlanarCoord.hpp"
 
 namespace irt {
 
-class ERGroup
+class ERPillar
 {
  public:
-  ERGroup() = default;
-  ~ERGroup() = default;
+  ERPillar() = default;
+  ~ERPillar() = default;
   // getter
-  std::vector<LayerCoord>& get_coord_list() { return _coord_list; }
+  PlanarCoord& get_planar_coord() { return _planar_coord; }
+  std::set<int32_t>& get_pin_layer_idx_set() { return _pin_layer_idx_set; }
+  std::vector<LALayerCost>& get_layer_cost_list() { return _layer_cost_list; }
+  int32_t get_layer_idx() const { return _layer_idx; }
   // setter
-  void set_coord_list(const std::vector<LayerCoord>& coord_list) { _coord_list = coord_list; }
+  void set_planar_coord(const PlanarCoord& planar_coord) { _planar_coord = planar_coord; }
+  void set_pin_layer_idx_set(const std::set<int32_t>& pin_layer_idx_set) { _pin_layer_idx_set = pin_layer_idx_set; }
+  void set_layer_cost_list(const std::vector<LALayerCost>& layer_cost_list) { _layer_cost_list = layer_cost_list; }
+  void set_layer_idx(const int32_t layer_idx) { _layer_idx = layer_idx; }
   // function
 
  private:
-  std::vector<LayerCoord> _coord_list;
+  PlanarCoord _planar_coord;
+  std::set<int32_t> _pin_layer_idx_set;
+  std::vector<LALayerCost> _layer_cost_list;
+  int32_t _layer_idx = -1;
 };
-
 }  // namespace irt

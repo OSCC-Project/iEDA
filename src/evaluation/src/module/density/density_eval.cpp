@@ -11,6 +11,7 @@
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <algorithm>
 #include <iomanip>
 #include <sstream>
 #include <unordered_set>
@@ -550,7 +551,7 @@ std::map<int, double> DensityEval::patchCellDensity(DensityCells cells, std::map
 {
   std::map<int, double> patch_cell_density;
   
-  // 预处理：将单元格按x坐标排序，提升查找性能
+  // preprocess: sort cells by x coordinate to improve search efficiency
   std::vector<DensityCell> sorted_cells = cells;
   std::sort(sorted_cells.begin(), sorted_cells.end(), [](const DensityCell& a, const DensityCell& b) {
     return a.lx < b.lx;
@@ -560,18 +561,18 @@ std::map<int, double> DensityEval::patchCellDensity(DensityCells cells, std::map
       double density = 0.0;
       auto [l_range, u_range] = coord;
       
-      // 提取当前 patch 的物理边界
+      // extract physical boundaries of the current patch
       const int patch_lx = l_range.first;
       const int patch_ly = l_range.second;
       const int patch_ux = u_range.first;
       const int patch_uy = u_range.second;
 
-      // 计算 patch 面积
+      // compute patch area
       const int patch_width = patch_ux - patch_lx;
       const int patch_height = patch_uy - patch_ly;
       const int patch_area = patch_width * patch_height;
 
-      // 使用二分查找确定x坐标范围，减少需要检查的单元格数量
+      // use binary search to find candidate cells that may overlap with the patch
       auto lower_it = std::lower_bound(sorted_cells.begin(), sorted_cells.end(), patch_lx,
                                        [](const DensityCell& cell, int x) {
                                          return cell.lx + cell.width <= x;
@@ -581,24 +582,22 @@ std::map<int, double> DensityEval::patchCellDensity(DensityCells cells, std::map
                                          return x < cell.lx;
                                        });
       
-      // 只检查x坐标范围内可能重叠的单元格
+      // only check cells that may overlap in the x-coordinate range
       for (auto it = lower_it; it != upper_it; ++it) {
         const auto& cell = *it;
         
-        // 检查y坐标是否重叠
+        // check if y-coordinates overlap
         if (cell.ly + cell.height > patch_ly && cell.ly < patch_uy) {
-          // 计算重叠面积
+          // compute overlap area
           const int overlap_lx = std::max(cell.lx, patch_lx);
           const int overlap_ly = std::max(cell.ly, patch_ly);
           const int overlap_ux = std::min(cell.lx + cell.width, patch_ux);
           const int overlap_uy = std::min(cell.ly + cell.height, patch_uy);
 
-          // 有效重叠面积计算
           const int overlap_width = std::max(0, overlap_ux - overlap_lx);
           const int overlap_height = std::max(0, overlap_uy - overlap_ly);
           const int overlap_area = overlap_width * overlap_height;
 
-          // 累加密度贡献（当且仅当有重叠时）
           if (overlap_area > 0) {
               density += static_cast<double>(overlap_area) / patch_area;
           }
@@ -616,7 +615,7 @@ std::map<int, int> DensityEval::patchPinDensity(DensityPins pins, std::map<int, 
 {
   std::map<int, int> patch_pin_density;
 
-  // 预处理：将引脚按x坐标排序，提升查找性能
+  // preprocess: sort pins by x coordinate to improve search efficiency
   std::vector<DensityPin> sorted_pins = pins;
   std::sort(sorted_pins.begin(), sorted_pins.end(), [](const DensityPin& a, const DensityPin& b) {
     return a.lx < b.lx;
@@ -631,7 +630,7 @@ std::map<int, int> DensityEval::patchPinDensity(DensityPins pins, std::map<int, 
 
       int pin_count = 0;
 
-      // 使用二分查找确定x坐标范围，减少需要检查的引脚数量
+      // use binary search to find candidate pins within the x-coordinate range
       auto lower_it = std::lower_bound(sorted_pins.begin(), sorted_pins.end(), patch_lx,
                                        [](const DensityPin& pin, int x) {
                                          return pin.lx < x;
@@ -641,11 +640,11 @@ std::map<int, int> DensityEval::patchPinDensity(DensityPins pins, std::map<int, 
                                          return pin.lx <= x;
                                        });
       
-      // 只检查x坐标范围内的引脚
+      // only check pins within the x-coordinate range
       for (auto it = lower_it; it != upper_it; ++it) {
         const auto& pin = *it;
         
-        // 检查y坐标是否在patch范围内
+        // check if y-coordinate is within patch range
         if (pin.ly >= patch_ly && pin.ly <= patch_uy) {
           ++pin_count;
         }
@@ -666,7 +665,7 @@ std::map<int, double> DensityEval::patchNetDensity(DensityNets nets, std::map<in
     return patch_net_density;
   }
   
-  // 预处理：将线网按x坐标排序，提升查找性能
+  // preprocess: sort nets by x coordinate to improve search efficiency
   std::vector<DensityNet> sorted_nets = nets;
   std::sort(sorted_nets.begin(), sorted_nets.end(), [](const DensityNet& a, const DensityNet& b) {
     return a.lx < b.lx;
@@ -676,13 +675,13 @@ std::map<int, double> DensityEval::patchNetDensity(DensityNets nets, std::map<in
       double density = 0.0;
       auto [l_range, u_range] = coord;
       
-      // 提取当前 patch 的物理边界
+      // extract physical boundaries of the current patch
       const int patch_lx = l_range.first;
       const int patch_ly = l_range.second;
       const int patch_ux = u_range.first;
       const int patch_uy = u_range.second;
 
-      // 计算 patch 面积
+      // compute patch area
       const int patch_width = patch_ux - patch_lx;
       const int patch_height = patch_uy - patch_ly;
       const int patch_area = patch_width * patch_height;
@@ -692,7 +691,7 @@ std::map<int, double> DensityEval::patchNetDensity(DensityNets nets, std::map<in
         continue;
       }
 
-      // 使用二分查找确定x坐标范围，减少需要检查的线网数量
+      // use binary search to find candidate nets that may overlap with the patch
       auto lower_it = std::lower_bound(sorted_nets.begin(), sorted_nets.end(), patch_lx,
                                        [](const DensityNet& net, int x) {
                                          return net.ux <= x;
@@ -702,7 +701,7 @@ std::map<int, double> DensityEval::patchNetDensity(DensityNets nets, std::map<in
                                          return x < net.lx;
                                        });
       
-      // 只检查x坐标范围内可能重叠的线网
+      // only check nets that may overlap in the x-coordinate range
       for (auto it = lower_it; it != upper_it; ++it) {
         const auto& net = *it;
         
@@ -710,20 +709,18 @@ std::map<int, double> DensityEval::patchNetDensity(DensityNets nets, std::map<in
           continue; 
         }
         
-        // 检查y坐标是否重叠
+        // check if y-coordinates overlap
         if (net.uy > patch_ly && net.ly < patch_uy) {
-          // 计算重叠面积
+          // compute overlap area
           const int overlap_lx = std::max(net.lx, patch_lx);
           const int overlap_ly = std::max(net.ly, patch_ly);
           const int overlap_ux = std::min(net.ux, patch_ux);
           const int overlap_uy = std::min(net.uy, patch_uy);
 
-          // 有效重叠面积计算
           const int overlap_width = std::max(0, overlap_ux - overlap_lx);
           const int overlap_height = std::max(0, overlap_uy - overlap_ly);
           const int overlap_area = overlap_width * overlap_height;
 
-          // 累加密度贡献（当且仅当有重叠时）
           if (overlap_area > 0) {
               density += static_cast<double>(overlap_area) / patch_area;
           }
@@ -747,7 +744,7 @@ std::map<int, int> DensityEval::patchMacroMargin(DensityCells cells, DensityRegi
       }
     }
 
-    // 预处理：将宏按x坐标排序，提升查找性能
+    // preprocess: sort macros by x coordinate to improve search efficiency
     std::sort(macros.begin(), macros.end(), [](const DensityCell& a, const DensityCell& b) {
       return a.lx < b.lx;
     });
@@ -755,19 +752,19 @@ std::map<int, int> DensityEval::patchMacroMargin(DensityCells cells, DensityRegi
     for (const auto& [patch_id, coord] : patch_coords) {
       auto [l_range, u_range] = coord;
       
-      // 提取当前 patch 的物理边界
+      // extract physical boundaries of the current patch
       const int patch_lx = l_range.first;
       const int patch_ly = l_range.second;
       const int patch_ux = u_range.first;
       const int patch_uy = u_range.second;
-      // 计算核心区域的边界
+      // compute core area boundaries
       int32_t h_right = core.ux;
       int32_t h_left = core.lx;
       int32_t v_up = core.uy;
       int32_t v_down = core.ly;
 
       if (patch_ux <= h_left || patch_lx >= h_right || patch_uy <= v_down || patch_ly >= v_up) {
-        patch_macro_margin[patch_id] = 0; // 确保所有情况都有赋值
+        patch_macro_margin[patch_id] = 0; // make sure margin is zero if patch is outside core
         continue;
       }
 
@@ -779,7 +776,7 @@ std::map<int, int> DensityEval::patchMacroMargin(DensityCells cells, DensityRegi
       int overlap_area = 0;
       int margin = 0;
 
-      // 使用二分查找确定x坐标范围，减少需要检查的宏数量
+      // use binary search to find candidate macros that may overlap with the patch
       auto lower_it = std::lower_bound(macros.begin(), macros.end(), patch_lx,
                                        [](const DensityCell& macro, int x) {
                                          return macro.lx + macro.width <= x;
@@ -789,11 +786,11 @@ std::map<int, int> DensityEval::patchMacroMargin(DensityCells cells, DensityRegi
                                          return x < macro.lx;
                                        });
 
-      // 只检查x坐标范围内可能重叠的宏
+      // only check macros that may overlap in the x-coordinate range
       for (auto it = lower_it; it != upper_it; ++it) {
         const auto& macro = *it;
         
-        // 检查y坐标是否重叠
+        // check if y-coordinates overlap
         if (macro.ly + macro.height > patch_ly && macro.ly < patch_uy) {
           int32_t rect_lx = std::max(patch_lx, macro.lx);
           int32_t rect_ly = std::max(patch_ly, macro.ly);
@@ -811,11 +808,11 @@ std::map<int, int> DensityEval::patchMacroMargin(DensityCells cells, DensityRegi
       }
       
       if (!overlap) {
-        // 再次使用相同的范围进行margin计算
+        // use the same range again for margin calculation
         for (auto it = lower_it; it != upper_it; ++it) {
           const auto& macro = *it;
           
-          // 检查y坐标是否重叠
+          // check if y-coordinates overlap
           if (macro.ly + macro.height > patch_ly && macro.ly < patch_uy) {
             int32_t macro_middle_x = macro.lx + macro.width * 0.5;
             int32_t macro_middle_y = macro.ly + macro.height * 0.5;

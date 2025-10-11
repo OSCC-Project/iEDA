@@ -29,6 +29,67 @@ FixFanout::FixFanout(ino::DbInterface *db_interface) : _db_interface(db_interfac
   _max_fanout = _db_interface->get_max_fanout();
 }
 
+/**
+ * 临时修复io问题,此函数有问题可联系zzs
+ */
+void FixFanout::fixIO() {
+  idb::IdbNetList *idb_net_list = _idb->get_def_service()->get_design()->get_net_list();
+  idb::IdbInstanceList *idb_instance_list =
+      _idb->get_def_service()->get_design()->get_instance_list();
+  idb::IdbCellMasterList *idb_cell_master_list =
+      _idb->get_def_service()->get_layout()->get_cell_master_list();
+  idb::IdbPins *idb_io_pin_list =
+      _idb->get_def_service()->get_design()->get_io_pin_list();
+  std::string buffer_name = _db_interface->get_insert_buffer();
+  size_t      new_idx = 0;
+
+  for (idb::IdbPin *idb_io_pin : idb_io_pin_list->get_pin_list()) {
+    if (idb_io_pin->get_net() == nullptr) {
+      continue;
+    }
+    if (idb_io_pin->get_pin_name() == idb_io_pin->get_net()->get_net_name()) {
+      continue;
+    }
+    // 在当前net中解开io pin
+    idb::IdbNet *origin_net = idb_io_pin->get_net();
+    if (origin_net == nullptr) {
+      std::cout << "curr_net is empty !!!" << std::endl;
+    }
+    origin_net->remove_pin(idb_io_pin);
+    // 加入原来的io net
+    idb::IdbNet *io_net = idb_net_list->find_net(idb_io_pin->get_pin_name());
+    if (io_net == nullptr) {
+      io_net = new IdbNet();
+      io_net->set_net_name(idb_io_pin->get_pin_name());
+      idb_net_list->add_net(io_net);
+    }
+    idb_io_pin->set_net(io_net);
+    idb_io_pin->set_net_name(io_net->get_net_name());
+    // 生成buf
+    idb::IdbInstance *new_buf = new IdbInstance();
+    new_buf->set_name("zzs_buf_" + std::to_string(new_idx++));
+    new_buf->set_cell_master(idb_cell_master_list->find_cell_master(buffer_name));
+    idb_instance_list->add_instance(new_buf);
+    // 插入buf
+    for (idb::IdbPin *buf_pin : new_buf->get_pin_list()->get_pin_list()) {
+      if (buf_pin->get_term()->get_type() == idb::IdbConnectType::kPower ||
+          buf_pin->get_term()->get_type() == idb::IdbConnectType::kGround) {
+        continue;
+      }
+      if (buf_pin->get_term()->get_direction() == idb::IdbConnectDirection::kInput) {
+        origin_net->add_instance_pin(buf_pin);
+        buf_pin->set_net(origin_net);
+        buf_pin->set_net_name(origin_net->get_net_name());
+      } else if (buf_pin->get_term()->get_direction() ==
+                 idb::IdbConnectDirection::kOutput) {
+        io_net->add_instance_pin(buf_pin);
+        buf_pin->set_net(io_net);
+        buf_pin->set_net_name(io_net->get_net_name());
+      }
+    }
+  }
+}
+
 void FixFanout::fixFanout() {
   _db_interface->set_eval_data();
   _idb_layout = _idb->get_lef_service()->get_layout();
@@ -64,11 +125,11 @@ void FixFanout::fixFanout() {
 }
 
 void FixFanout::fixFanout(IdbNet *net) {
-  int fanout = net->get_load_pins().size();
+  int  fanout = net->get_load_pins().size();
   bool have_switch_name = false;
   while (fanout > _max_fanout) {
     auto load_pins = net->get_load_pins();
-    bool connect_to_port = false;  // if net connect to a port need rename for the net
+    bool connect_to_port = false; // if net connect to a port need rename for the net
     for (auto pin : load_pins) {
       if (pin->is_io_pin()) {
         connect_to_port = true;
@@ -155,7 +216,7 @@ void FixFanout::disconnectPin(IdbPin *dpin, IdbNet *dnet) {
 }
 
 void FixFanout::connect(IdbInstance *dinst, IdbPin *dpin, IdbNet *dnet) {
-  if(dinst) {
+  if (dinst) {
     auto  &dpin_list = dinst->get_pin_list()->get_pin_list();
     string port_name = dpin->get_pin_name();
     for (auto dpin : dpin_list) {

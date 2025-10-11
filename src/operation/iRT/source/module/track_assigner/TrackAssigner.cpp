@@ -118,9 +118,7 @@ void TrackAssigner::setTAComParam(TAModel& ta_model)
   /**
    * prefer_wire_unit, schedule_interval, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times
    */
-  // clang-format off
   TAComParam ta_com_param(prefer_wire_unit, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
-  // clang-format on
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", ta_com_param.get_prefer_wire_unit());
   RTLOG.info(Loc::current(), "schedule_interval: ", ta_com_param.get_schedule_interval());
   RTLOG.info(Loc::current(), "fixed_rect_unit: ", ta_com_param.get_fixed_rect_unit());
@@ -1077,7 +1075,18 @@ void TrackAssigner::updateTaskSchedule(TAPanel& ta_panel, std::vector<TATask*>& 
       if (!RTUTIL.exist(violation.get_violation_net_set(), ta_task->get_net_idx())) {
         continue;
       }
-      bool result_overlap = RTUTIL.isClosedOverlap(violation_shape.get_real_rect(), ta_task->get_bounding_box());
+      bool result_overlap = false;
+      for (Segment<LayerCoord>& segment : ta_panel.get_net_task_detailed_result_map()[ta_task->get_net_idx()][ta_task->get_task_idx()]) {
+        for (NetShape& net_shape : RTDM.getNetDetailedShapeList(ta_task->get_net_idx(), segment)) {
+          if (violation_shape.get_layer_idx() == net_shape.get_layer_idx() && RTUTIL.isClosedOverlap(violation_shape.get_real_rect(), net_shape.get_rect())) {
+            result_overlap = true;
+            break;
+          }
+        }
+        if (result_overlap) {
+          break;
+        }
+      }
       if (!result_overlap) {
         continue;
       }
@@ -1447,6 +1456,9 @@ void TrackAssigner::outputNetCSV(TAModel& ta_model)
   if (!output_inter_result) {
     return;
   }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::vector<GridMap<int32_t>> layer_net_map;
   layer_net_map.resize(routing_layer_list.size());
   for (GridMap<int32_t>& net_map : layer_net_map) {
@@ -1483,7 +1495,7 @@ void TrackAssigner::outputNetCSV(TAModel& ta_model)
     }
     RTUTIL.closeFileStream(net_csv_file);
   }
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void TrackAssigner::outputViolationCSV(TAModel& ta_model)
@@ -1495,6 +1507,9 @@ void TrackAssigner::outputViolationCSV(TAModel& ta_model)
   if (!output_inter_result) {
     return;
   }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::vector<GridMap<int32_t>> layer_violation_map;
   layer_violation_map.resize(routing_layer_list.size());
   for (GridMap<int32_t>& violation_map : layer_violation_map) {
@@ -1519,7 +1534,7 @@ void TrackAssigner::outputViolationCSV(TAModel& ta_model)
     }
     RTUTIL.closeFileStream(violation_csv_file);
   }
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void TrackAssigner::outputJson(TAModel& ta_model)

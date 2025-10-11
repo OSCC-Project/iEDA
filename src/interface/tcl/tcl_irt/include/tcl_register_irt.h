@@ -24,12 +24,14 @@ namespace tcl {
 
 int registerCmdRT()
 {
-  registerTclCmd(TclClearDef, "clear_def");
-  registerTclCmd(TclDestroyRT, "destroy_rt");
+  // rt
   registerTclCmd(TclInitRT, "init_rt");
-  registerTclCmd(TclOutputDBJson, "output_db_json");
   registerTclCmd(TclRunEGR, "run_egr");
   registerTclCmd(TclRunRT, "run_rt");
+  registerTclCmd(TclDestroyRT, "destroy_rt");
+  // aux
+  registerTclCmd(TclRTCleanDef, "rt_clean_def");
+  registerTclCmd(TclRTFixFanout, "rt_fix_fanout");
   return EXIT_SUCCESS;
 }
 
