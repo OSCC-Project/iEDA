@@ -57,7 +57,6 @@ void InitEGR::runEGR(bool enable_timing)
   auto clock_layer_name = routing_layers.size() >= 4 ? routing_layers[routing_layers.size() - 4]->get_name() : logic_layer_name;
   std::map<std::string, std::any> config_map;
   config_map.insert({"-temp_directory_path", _egr_dir_path});
-  config_map.insert({"-output_inter_result", 1});
   config_map.insert({"-bottom_routing_layer", logic_layer_name});  // only for 28nm
   config_map.insert({"-top_routing_layer", clock_layer_name});     // only for 28nm
   if (enable_timing == true) {

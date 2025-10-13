@@ -19,8 +19,8 @@ using namespace ::std;
 
 struct NetMetadata
 {
-  int32_t lx, ly, ux, uy;     // 预计算的net边界框
-  double hor_rudy, ver_rudy;  // 预计算的RUDY因子
+  int32_t lx, ly, ux, uy;     // precomputed bounding box
+  double hor_rudy, ver_rudy;  // precomputed RUDY factors
 };
 
 

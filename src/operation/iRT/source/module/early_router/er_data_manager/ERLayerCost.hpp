@@ -14,25 +14,31 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "RTInterface.hpp"
-#include "tcl_rt.h"
-#include "tcl_util.h"
+#pragma once
 
-namespace tcl {
+#include "RTHeader.hpp"
 
-TclRTClearDef::TclRTClearDef(const char* cmd_name) : TclCmd(cmd_name)
+namespace irt {
+
+class ERLayerCost
 {
-}
+ public:
+  ERLayerCost() = default;
+  ~ERLayerCost() = default;
+  // getter
+  int32_t get_parent_layer_idx() const { return _parent_layer_idx; }
+  int32_t get_layer_idx() const { return _layer_idx; }
+  double get_history_cost() const { return _history_cost; }
+  // setter
+  void set_parent_layer_idx(const int32_t parent_layer_idx) { _parent_layer_idx = parent_layer_idx; }
+  void set_layer_idx(const int32_t layer_idx) { _layer_idx = layer_idx; }
+  void set_history_cost(const double history_cost) { _history_cost = history_cost; }
+  // function
 
-unsigned TclRTClearDef::exec()
-{
-  if (!check()) {
-    return 0;
-  }
+ private:
+  int32_t _parent_layer_idx = -1;
+  int32_t _layer_idx = -1;
+  double _history_cost = 0;
+};
 
-  RTI.clearDef();
-
-  return 1;
-}
-
-}  // namespace tcl
+}  // namespace irt

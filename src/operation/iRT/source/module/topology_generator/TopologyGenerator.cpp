@@ -920,6 +920,9 @@ void TopologyGenerator::outputGuide(TGModel& tg_model)
   if (!output_inter_result) {
     return;
   }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::vector<TGNet>& tg_net_list = tg_model.get_tg_net_list();
 
   std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(RTUTIL.getString(tg_temp_directory_path, "route.guide"));
@@ -982,7 +985,7 @@ void TopologyGenerator::outputGuide(TGModel& tg_model)
     }
   }
   RTUTIL.closeFileStream(guide_file_stream);
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void TopologyGenerator::outputNetCSV(TGModel& tg_model)
@@ -992,6 +995,9 @@ void TopologyGenerator::outputNetCSV(TGModel& tg_model)
   if (!output_inter_result) {
     return;
   }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::ofstream* net_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(tg_temp_directory_path, "net_map.csv"));
   GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
   for (int32_t y = tg_node_map.get_y_size() - 1; y >= 0; y--) {
@@ -1001,7 +1007,7 @@ void TopologyGenerator::outputNetCSV(TGModel& tg_model)
     RTUTIL.pushStream(net_csv_file, "\n");
   }
   RTUTIL.closeFileStream(net_csv_file);
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void TopologyGenerator::outputOverflowCSV(TGModel& tg_model)
@@ -1011,6 +1017,9 @@ void TopologyGenerator::outputOverflowCSV(TGModel& tg_model)
   if (!output_inter_result) {
     return;
   }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::ofstream* overflow_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(tg_temp_directory_path, "overflow_map.csv"));
   GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
   for (int32_t y = tg_node_map.get_y_size() - 1; y >= 0; y--) {
@@ -1020,7 +1029,7 @@ void TopologyGenerator::outputOverflowCSV(TGModel& tg_model)
     RTUTIL.pushStream(overflow_csv_file, "\n");
   }
   RTUTIL.closeFileStream(overflow_csv_file);
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void TopologyGenerator::outputJson(TGModel& tg_model)
@@ -1135,6 +1144,7 @@ void TopologyGenerator::debugPlotTGModel(TGModel& tg_model, std::string flag)
 {
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   Die& die = RTDM.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
 
   int32_t point_size = 5;
@@ -1172,6 +1182,30 @@ void TopologyGenerator::debugPlotTGModel(TGModel& tg_model, std::string flag)
       gcell_axis_struct.push(gp_path);
     }
     gp_gds.addStruct(gcell_axis_struct);
+  }
+
+  // track_axis_struct
+  {
+    GPStruct track_axis_struct("track_axis_struct");
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      std::vector<int32_t> x_list = RTUTIL.getScaleList(die.get_real_ll_x(), die.get_real_ur_x(), routing_layer.getXTrackGridList());
+      std::vector<int32_t> y_list = RTUTIL.getScaleList(die.get_real_ll_y(), die.get_real_ur_y(), routing_layer.getYTrackGridList());
+      for (int32_t x : x_list) {
+        GPPath gp_path;
+        gp_path.set_data_type(static_cast<int32_t>(GPDataType::kAxis));
+        gp_path.set_segment(x, die.get_real_ll_y(), x, die.get_real_ur_y());
+        gp_path.set_layer_idx(RTGP.getGDSIdxByRouting(routing_layer.get_layer_idx()));
+        track_axis_struct.push(gp_path);
+      }
+      for (int32_t y : y_list) {
+        GPPath gp_path;
+        gp_path.set_data_type(static_cast<int32_t>(GPDataType::kAxis));
+        gp_path.set_segment(die.get_real_ll_x(), y, die.get_real_ur_x(), y);
+        gp_path.set_layer_idx(RTGP.getGDSIdxByRouting(routing_layer.get_layer_idx()));
+        track_axis_struct.push(gp_path);
+      }
+    }
+    gp_gds.addStruct(track_axis_struct);
   }
 
   // fixed_rect

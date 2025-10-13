@@ -55,6 +55,7 @@ void iNO::fixFanout() {
   cout << R"(                                                   )" << endl;
   cout << "\033[0m" << endl;
   ino::FixFanout *fix_fanout = new FixFanout(_db_interface);
+  fix_fanout->fixIO();
   fix_fanout->fixFanout();
   delete fix_fanout;
 }

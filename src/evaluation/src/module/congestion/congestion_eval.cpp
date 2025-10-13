@@ -306,7 +306,7 @@ string CongestionEval::evalRUDY(CongestionNets nets, CongestionRegion region, in
 
         int32_t overlap_area = 0;
         if (overlap_lx == overlap_ux) {
-          overlap_area = overlap_uy - overlap_ly;  // 假设线宽为1
+          overlap_area = overlap_uy - overlap_ly;  // assume wire width is 1
         } else if (overlap_ly == overlap_uy) {
           overlap_area = overlap_ux - overlap_lx;
         } else {
@@ -376,7 +376,7 @@ string CongestionEval::evalLUTRUDY(CongestionNets nets, CongestionRegion region,
       net_ux = std::max(net_ux, pin.lx);
       net_uy = std::max(net_uy, pin.ly);
     }
-    // 计算引脚数目、纵横比、L-ness
+    // compute pin count, aspect ratio, L-ness
     int pin_num = net.pins.size();
     int aspect_ratio = 1;
     if (net_ux - net_lx >= net_uy - net_ly && net_uy - net_ly != 0) {
@@ -425,7 +425,7 @@ string CongestionEval::evalLUTRUDY(CongestionNets nets, CongestionRegion region,
 
         int32_t overlap_area = 0;
         if (overlap_lx == overlap_ux) {
-          overlap_area = overlap_uy - overlap_ly;  // 假设线宽为1
+          overlap_area = overlap_uy - overlap_ly;  // assume wire width is 1
         } else if (overlap_ly == overlap_uy) {
           overlap_area = overlap_ux - overlap_lx;
         } else {
@@ -815,10 +815,6 @@ float CongestionEval::evalAvgUtilization(string stage, string rudy_dir_path, str
   size_t idx_1_percent = std::max(size_t(1), static_cast<size_t>(std::ceil(size * 0.01)));
   size_t idx_2_percent = std::max(size_t(1), static_cast<size_t>(std::ceil(size * 0.02)));
   size_t idx_5_percent = std::max(size_t(1), static_cast<size_t>(std::ceil(size * 0.05)));
-  // size_t idx_0_5_percent = std::max(size_t(1), static_cast<size_t>(std::ceil(size * 0.1)));
-  // size_t idx_1_percent = std::max(size_t(1), static_cast<size_t>(std::ceil(size * 0.2)));
-  // size_t idx_2_percent = std::max(size_t(1), static_cast<size_t>(std::ceil(size * 0.3)));
-  // size_t idx_5_percent = std::max(size_t(1), static_cast<size_t>(std::ceil(size * 0.4)));
 
   float sum_05 = 0.0f;
   float sum_1 = 0.0f;
@@ -1590,7 +1586,6 @@ std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getEGRMap(b
 
 std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getDemandSupplyDiffMap(bool is_run_egr)
 {
-  // 如果未指定目录，使用默认路径
   std::string congestion_dir = dmInst->get_config().get_output_path() + "/rt/rt_temp_directory";
 
   if (is_run_egr == true) {
@@ -1599,27 +1594,27 @@ std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getDemandSu
     destroyEGR();
   }
 
-  // 构造early_router和supply_analyzer的完整路径
+  // construct demand and supply directory paths
   std::string demand_dir = congestion_dir + "/early_router";
-  std::string supply_dir = congestion_dir + "/supply_analyzer";
+  std::string supply_dir = congestion_dir + "/early_router";
 
   printf("demand_dir: %s\nsupply_dir: %s\n", demand_dir.c_str(), supply_dir.c_str());
 
-  // 用于存储最终的差值矩阵
+  // store the final diff matrices
   std::map<std::string, std::vector<std::vector<int>>> diff_map;
-  // 临时存储demand和supply矩阵
+  // store the read demand and supply matrices
   std::map<std::string, std::vector<std::vector<int>>> demand_matrices;
   std::map<std::string, std::vector<std::vector<int>>> supply_matrices;
 
-  // 读取demand矩阵
+  // read demand matrices
   std::filesystem::path demand_path(demand_dir);
   for (const auto& entry : std::filesystem::directory_iterator(demand_path)) {
     std::string filename = entry.path().filename().string();
-    if (filename.find("demand_map_") == 0) {
-      // 提取层名 (AP, M1, M2等)
-      std::string layer_name = filename.substr(11, filename.length() - 15);
+    if (filename.find("net_map_") == 0) {
+      // extract layer name (net_map_ = 8 chars, .csv = 4 chars)
+      std::string layer_name = filename.substr(8, filename.length() - 8 - 4);
 
-      // 读取文件内容
+      // read file content
       std::ifstream file(entry.path());
       std::string line;
       std::vector<std::vector<int>> matrix;
@@ -1632,21 +1627,21 @@ std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getDemandSu
         }
         matrix.push_back(row);
       }
-      // 反转行顺序（转换为左下角原点）
+      // reverse row order (to convert to bottom-left origin)
       std::reverse(matrix.begin(), matrix.end());
       demand_matrices[layer_name] = matrix;
     }
   }
 
-  // 读取supply矩阵
+  // read supply matrices
   std::filesystem::path supply_path(supply_dir);
   for (const auto& entry : std::filesystem::directory_iterator(supply_path)) {
     std::string filename = entry.path().filename().string();
     if (filename.find("supply_map_") == 0) {
-      // 提取层名 (AP, M1, M2等)
-      std::string layer_name = filename.substr(11, filename.length() - 15);
+      // extract layer name (supply_map_ = 11 chars, .csv = 4 chars)
+      std::string layer_name = filename.substr(11, filename.length() - 11 - 4);
 
-      // 读取文件内容
+      // read file content
       std::ifstream file(entry.path());
       std::string line;
       std::vector<std::vector<int>> matrix;
@@ -1659,25 +1654,25 @@ std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getDemandSu
         }
         matrix.push_back(row);
       }
-      // 反转行顺序（转换为左下角原点）
+      // reverse row order (to convert to bottom-left origin)
       std::reverse(matrix.begin(), matrix.end());
       supply_matrices[layer_name] = matrix;
     }
   }
 
-  // 计算差值矩阵
+  // calculate demand - supply for each layer
   for (const auto& [layer_name, demand_matrix] : demand_matrices) {
-    // 检查该层是否同时存在supply数据
+    // check if corresponding supply matrix exists
     if (supply_matrices.find(layer_name) != supply_matrices.end()) {
       const auto& supply_matrix = supply_matrices[layer_name];
 
-      // 确保矩阵尺寸相同
+      // make sure matrices are of the same size
       if (demand_matrix.size() == supply_matrix.size() && demand_matrix[0].size() == supply_matrix[0].size()) {
         std::vector<std::vector<int>> diff_matrix;
         for (size_t i = 0; i < demand_matrix.size(); ++i) {
           std::vector<int> diff_row;
           for (size_t j = 0; j < demand_matrix[i].size(); ++j) {
-            // 计算差值
+            // calculate demand - supply
             diff_row.push_back(demand_matrix[i][j] - supply_matrix[i][j]);
           }
           diff_matrix.push_back(diff_row);
@@ -1696,17 +1691,17 @@ std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getDemandSu
 std::map<int, double> CongestionEval::patchRUDYCongestion(CongestionNets nets,
                                                           std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
 {
-  // 预计算线网数据
+  // precompute net data for efficiency
   auto net_metadata = precomputeNetData(nets);
 
-  // 预处理：按x坐标排序线网数据
+  // presort nets by their lx coordinate for binary search
   std::sort(net_metadata.begin(), net_metadata.end(), [](const NetMetadata& a, const NetMetadata& b) {
     return a.lx < b.lx;
   });
 
   std::map<int, double> patch_rudy_map;
 
-  // 处理每个patch
+  // process each patch
   for (const auto& [patch_id, coord] : patch_coords) {
     const auto& [l_range, u_range] = coord;
     const int patch_lx = l_range.first, patch_ly = l_range.second;
@@ -1715,7 +1710,7 @@ std::map<int, double> CongestionEval::patchRUDYCongestion(CongestionNets nets,
 
     double rudy = 0.0;
 
-    // 使用二分查找确定x坐标范围
+    // use binary search to find candidate nets that may overlap with the patch
     auto start_it = std::lower_bound(net_metadata.begin(), net_metadata.end(), patch_lx,
                                      [](const NetMetadata& net, int x) {
                                        return net.ux < x;
@@ -1726,13 +1721,13 @@ std::map<int, double> CongestionEval::patchRUDYCongestion(CongestionNets nets,
                                      return x < net.lx;
                                    });
 
-    // 遍历可能重叠的线网
+    // tranverse candidate nets and check for overlap
     for (auto it = start_it; it != end_it; ++it) {
       const auto& net = *it;
 
-      // 检查y坐标是否重叠
+      // check vertical overlap
       if (net.ly <= patch_uy && net.uy >= patch_ly) {
-        // 计算重叠区域
+        // compute overlap area
         const int overlap_lx = std::max(net.lx, patch_lx);
         const int overlap_ly = std::max(net.ly, patch_ly);
         const int overlap_ux = std::min(net.ux, patch_ux);
@@ -1741,7 +1736,7 @@ std::map<int, double> CongestionEval::patchRUDYCongestion(CongestionNets nets,
         const int overlap_width = overlap_ux - overlap_lx;
         const int overlap_height = overlap_uy - overlap_ly;
         if (overlap_width > 0 && overlap_height > 0) {
-          // 累加RUDY值（使用预计算结果）
+          // accumulate RUDY contribution
           rudy += (overlap_width * overlap_height) * (net.hor_rudy + net.ver_rudy) / patch_area;
         }
       }
@@ -1755,13 +1750,13 @@ std::map<int, double> CongestionEval::patchEGRCongestion(std::map<int, std::pair
 {
   std::map<int, double> patch_egr_congestion;
 
-  // 获取各层拥塞数据
+  // get congestion data for all layers
   auto congestion_layer_map = getDemandSupplyDiffMap();
   if (congestion_layer_map.empty()) {
     return patch_egr_congestion;
   }
 
-  // 动态获取矩阵尺寸（取第一个有效层的尺寸）
+  // get matrix dimensions dynamically (take the first valid layer's dimensions)
   const auto& first_matrix = congestion_layer_map.begin()->second;
   const size_t matrix_rows = first_matrix.size();
   const size_t matrix_cols = matrix_rows > 0 ? first_matrix[0].size() : 0;
@@ -1771,7 +1766,7 @@ std::map<int, double> CongestionEval::patchEGRCongestion(std::map<int, std::pair
     return patch_egr_congestion;
   }
 
-  // 步骤1：创建累加矩阵
+  // step 1 : aggregate congestion across all layers
   std::vector<std::vector<int>> total_congestion(matrix_rows, std::vector<int>(matrix_cols, 0));
   for (const auto& [layer, matrix] : congestion_layer_map) {
     for (size_t row = 0; row < matrix_rows; ++row) {
@@ -1781,31 +1776,31 @@ std::map<int, double> CongestionEval::patchEGRCongestion(std::map<int, std::pair
     }
   }
 
-  // 步骤2：获取物理坐标范围
+  // step 2 : get physical coordinate range
   int max_phy_x = 0, max_phy_y = 0;
   for (const auto& [id, coords] : patch_coords) {
-    max_phy_x = std::max(max_phy_x, coords.second.first);   // 物理坐标最大值X
-    max_phy_y = std::max(max_phy_y, coords.second.second);  // 物理坐标最大值Y
+    max_phy_x = std::max(max_phy_x, coords.second.first);   
+    max_phy_y = std::max(max_phy_y, coords.second.second);  
   }
 
-  // 步骤3：建立映射关系
+  // step 3: establish mapping for each patch
   for (const auto& [patch_id, coords] : patch_coords) {
     const auto& [left_bottom, right_top] = coords;
     const auto& [phy_x1, phy_y1] = left_bottom;
     const auto& [phy_x2, phy_y2] = right_top;
 
-    // 计算中心点坐标（物理坐标）
+    // compute center point (physical coordinates)
     const double center_phy_x = (phy_x1 + phy_x2) / 2.0;
     const double center_phy_y = (phy_y1 + phy_y2) / 2.0;
 
-    // 映射到矩阵行列索引
+    // map to matrix row/col indices
     const int matrix_row
         = std::clamp(static_cast<int>((center_phy_y / max_phy_y) * (matrix_rows - 1)), 0, static_cast<int>(matrix_rows - 1));
 
     const int matrix_col
         = std::clamp(static_cast<int>((center_phy_x / max_phy_x) * (matrix_cols - 1)), 0, static_cast<int>(matrix_cols - 1));
 
-    // 存储结果
+    // store congestion value
     patch_egr_congestion[patch_id] = total_congestion[matrix_row][matrix_col];
   }
 
@@ -1815,16 +1810,16 @@ std::map<int, double> CongestionEval::patchEGRCongestion(std::map<int, std::pair
 std::map<int, std::map<std::string, double>> CongestionEval::patchLayerEGRCongestion(
     std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
 {
-  // 返回结构: patch_id -> {layer_name -> congestion_value}
+  // return : patch_id -> {layer_name -> congestion_value}
   std::map<int, std::map<std::string, double>> patch_layer_congestion;
 
-  // 获取各层拥塞数据
+  // get congestion data for all layers
   auto congestion_layer_map = getDemandSupplyDiffMap(false);
   if (congestion_layer_map.empty()) {
     return patch_layer_congestion;
   }
 
-  // 动态获取矩阵尺寸（取第一个有效层的尺寸）
+  // get matrix dimensions dynamically (take the first valid layer's dimensions)
   const auto& first_matrix = congestion_layer_map.begin()->second;
   const size_t matrix_rows = first_matrix.size();
   const size_t matrix_cols = matrix_rows > 0 ? first_matrix[0].size() : 0;
@@ -1834,31 +1829,31 @@ std::map<int, std::map<std::string, double>> CongestionEval::patchLayerEGRConges
     return patch_layer_congestion;
   }
 
-  // 获取物理坐标范围
+  // get physical coordinate range
   int max_phy_x = 0, max_phy_y = 0;
   for (const auto& [id, coords] : patch_coords) {
-    max_phy_x = std::max(max_phy_x, coords.second.first);   // 物理坐标最大值X
-    max_phy_y = std::max(max_phy_y, coords.second.second);  // 物理坐标最大值Y
+    max_phy_x = std::max(max_phy_x, coords.second.first); 
+    max_phy_y = std::max(max_phy_y, coords.second.second); 
   }
 
-  // 为每个patch的每一层建立映射关系
+  // establish mapping for each patch
   for (const auto& [patch_id, coords] : patch_coords) {
     const auto& [left_bottom, right_top] = coords;
     const auto& [phy_x1, phy_y1] = left_bottom;
     const auto& [phy_x2, phy_y2] = right_top;
 
-    // 计算中心点坐标（物理坐标）
+    // compute center point (physical coordinates)
     const double center_phy_x = (phy_x1 + phy_x2) / 2.0;
     const double center_phy_y = (phy_y1 + phy_y2) / 2.0;
 
-    // 映射到矩阵行列索引
+    // map to matrix row/col indices
     const int matrix_row
         = std::clamp(static_cast<int>((center_phy_y / max_phy_y) * (matrix_rows - 1)), 0, static_cast<int>(matrix_rows - 1));
 
     const int matrix_col
         = std::clamp(static_cast<int>((center_phy_x / max_phy_x) * (matrix_cols - 1)), 0, static_cast<int>(matrix_cols - 1));
 
-    // 为每一层存储拥塞值
+    // store congestion values for all layers
     std::map<std::string, double> layer_congestion;
     for (const auto& [layer_name, congestion_matrix] : congestion_layer_map) {
       layer_congestion[layer_name] = congestion_matrix[matrix_row][matrix_col];
@@ -1877,7 +1872,7 @@ std::vector<NetMetadata> CongestionEval::precomputeNetData(const CongestionNets&
 
   for (const auto& net : nets) {
     NetMetadata md;
-    // 计算边界框
+    // compute bounding box
     md.lx = INT32_MAX;
     md.ly = INT32_MAX;
     md.ux = INT32_MIN;
@@ -1889,12 +1884,12 @@ std::vector<NetMetadata> CongestionEval::precomputeNetData(const CongestionNets&
       md.uy = std::max(md.uy, pin.ly);
     }
     
-    // 安全检查：跳过无效的net坐标
+    // skip nets without valid pins
     if (md.lx == INT32_MAX || md.ly == INT32_MAX || md.ux == INT32_MIN || md.uy == INT32_MIN) {
-      continue; // 跳过没有有效pin的net
+      continue; 
     }
     
-    // 预计算RUDY因子
+    // precompute RUDY factors
     md.hor_rudy = (md.uy == md.ly) ? 1.0 : 1.0 / (md.uy - md.ly);
     md.ver_rudy = (md.ux == md.lx) ? 1.0 : 1.0 / (md.ux - md.lx);
 

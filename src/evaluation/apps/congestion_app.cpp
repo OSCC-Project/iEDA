@@ -54,7 +54,8 @@ int main(const int argc, const char* argv[])
 
 void TestEgrDataStructure()
 {
-  std::string congestion_dir = "/home/yhqiu/net_level_collect/benchmark/large_model_test/rt/rt_temp_directory/early_router";
+  // specify the path to the early router output directory
+  std::string congestion_dir = "./rt/rt_temp_directory/early_router";
 
   ieval::CongestionAPI api;
   std::map<std::string, std::vector<std::vector<int>>> egr_map = api.getEGRMap();
@@ -77,6 +78,7 @@ void TestEgrMap()
 {
   ieval::CongestionAPI congestion_api;
 
+  // specify the path to the early router output directory
   std::string map_path = "./rt_temp_directory";
   std::string stage = "place";
 
@@ -138,7 +140,8 @@ void TestEgrOverflow()
 {
   ieval::CongestionAPI congestion_api;
 
-  std::string map_path = "/home/yhqiu/benchmark/AiEDA/application/test/iEDA/rt_temp_directory";
+  // specify the path to the early router output directory
+  std::string map_path = "./rt/rt_temp_directory";
   std::string stage = "place";
 
   ieval::OverflowSummary overflow_summary;
@@ -159,7 +162,9 @@ void TestRudyUtilization()
   ieval::CongestionAPI congestion_api;
   std::string stage = "place";
 
-  std::string map_path = "/home/yhqiu/benchmark/AiEDA/third_party/iEDA/bin";
+  // specify the path to the rudy map directory
+  std::string map_path = "./map/";
+  
   ieval::UtilizationSummary utilization_summary;
   utilization_summary = congestion_api.rudyUtilization(stage, map_path, false);
   std::cout << "max utilization horizontal: " << utilization_summary.max_utilization_horizontal << std::endl;

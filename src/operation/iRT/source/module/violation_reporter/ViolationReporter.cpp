@@ -429,6 +429,9 @@ void ViolationReporter::outputNetCSV(VRModel& vr_model)
   if (!output_inter_result) {
     return;
   }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::vector<GridMap<int32_t>> layer_net_map;
   layer_net_map.resize(routing_layer_list.size());
   for (GridMap<int32_t>& net_map : layer_net_map) {
@@ -470,7 +473,7 @@ void ViolationReporter::outputNetCSV(VRModel& vr_model)
     }
     RTUTIL.closeFileStream(net_csv_file);
   }
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void ViolationReporter::outputViolationCSV(VRModel& vr_model)
@@ -482,6 +485,9 @@ void ViolationReporter::outputViolationCSV(VRModel& vr_model)
   if (!output_inter_result) {
     return;
   }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::vector<GridMap<int32_t>> layer_violation_map;
   layer_violation_map.resize(routing_layer_list.size());
   for (GridMap<int32_t>& violation_map : layer_violation_map) {
@@ -506,7 +512,7 @@ void ViolationReporter::outputViolationCSV(VRModel& vr_model)
     }
     RTUTIL.closeFileStream(violation_csv_file);
   }
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void ViolationReporter::outputJson(VRModel& vr_model)

@@ -209,15 +209,16 @@ std::vector<LayerRect> PinAccessor::getLegalShapeList(PAModel& pa_model, int32_t
     for (auto& [routing_layer_idx, pin_shape_list] : routing_pin_shape_map) {
       routing_pin_shape_list.emplace_back(routing_layer_idx, pin_shape_list);
     }
-  }
-  if (pa_pin->get_is_core()) {
-    std::sort(routing_pin_shape_list.begin(), routing_pin_shape_list.end(),
-              [](const std::pair<int32_t, std::vector<EXTLayerRect>>& a, const std::pair<int32_t, std::vector<EXTLayerRect>>& b) { return a.first > b.first; });
-  } else {
-    std::sort(routing_pin_shape_list.begin(), routing_pin_shape_list.end(),
-              [](const std::pair<int32_t, std::vector<EXTLayerRect>>& a, const std::pair<int32_t, std::vector<EXTLayerRect>>& b) {
-                return (a.first % 2 != 0 && b.first % 2 == 0) || (a.first % 2 == b.first % 2 && a.first > b.first);
-              });
+    if (pa_pin->get_is_core()) {
+      std::sort(
+          routing_pin_shape_list.begin(), routing_pin_shape_list.end(),
+          [](const std::pair<int32_t, std::vector<EXTLayerRect>>& a, const std::pair<int32_t, std::vector<EXTLayerRect>>& b) { return a.first > b.first; });
+    } else {
+      std::sort(routing_pin_shape_list.begin(), routing_pin_shape_list.end(),
+                [](const std::pair<int32_t, std::vector<EXTLayerRect>>& a, const std::pair<int32_t, std::vector<EXTLayerRect>>& b) {
+                  return (a.first % 2 != 0 && b.first % 2 == 0) || (a.first % 2 == b.first % 2 && a.first > b.first);
+                });
+    }
   }
   std::vector<LayerRect> legal_rect_list;
   for (auto& [routing_layer_idx, pin_shape_list] : routing_pin_shape_list) {
@@ -3499,6 +3500,9 @@ void PinAccessor::outputNetCSV(PAModel& pa_model)
   if (!output_inter_result) {
     return;
   }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::vector<GridMap<int32_t>> layer_net_map;
   layer_net_map.resize(routing_layer_list.size());
   for (GridMap<int32_t>& net_map : layer_net_map) {
@@ -3545,7 +3549,7 @@ void PinAccessor::outputNetCSV(PAModel& pa_model)
     }
     RTUTIL.closeFileStream(net_csv_file);
   }
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void PinAccessor::outputViolationCSV(PAModel& pa_model)
@@ -3557,6 +3561,9 @@ void PinAccessor::outputViolationCSV(PAModel& pa_model)
   if (!output_inter_result) {
     return;
   }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::vector<GridMap<int32_t>> layer_violation_map;
   layer_violation_map.resize(routing_layer_list.size());
   for (GridMap<int32_t>& violation_map : layer_violation_map) {
@@ -3581,7 +3588,7 @@ void PinAccessor::outputViolationCSV(PAModel& pa_model)
     }
     RTUTIL.closeFileStream(violation_csv_file);
   }
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void PinAccessor::outputJson(PAModel& pa_model)
