@@ -442,7 +442,7 @@ int32_t RustVerilogRead::build_assign()
           auto* the_left_io_pin = idb_io_pin_list->find_pin(left_net_name.c_str());
           auto* the_right_io_pin = idb_io_pin_list->find_pin(right_net_name.c_str());
 
-          if (the_left_idb_net && the_right_idb_net) {
+          if (the_left_idb_net && the_right_idb_net && the_left_idb_net != the_right_idb_net) {
             // assign net = net, need merge two net to one net.
 
             // std::cout << "merge " << left_net_name << " = " << right_net_name << "\n";
