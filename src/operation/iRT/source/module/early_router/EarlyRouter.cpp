@@ -72,6 +72,7 @@ void EarlyRouter::route()
   buildLayerOrientSupply(er_model);
   assignLayer(er_model);
   outputResult(er_model);
+  cleanTempResult(er_model);
   // debugPlotERModel(er_model, "best");
   updateSummary(er_model);
   printSummary(er_model);
@@ -1969,6 +1970,22 @@ void EarlyRouter::outputLayerOverflowCSV(ERModel& er_model)
     RTUTIL.closeFileStream(overflow_csv_file);
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+void EarlyRouter::cleanTempResult(ERModel& er_model)
+{
+  Die& die = RTDM.getDatabase().get_die();
+
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      RTDM.updateNetDetailedResultToGCellMap(ChangeType::kDel, net_idx, segment);
+    }
+  }
+  for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      RTDM.updateNetDetailedPatchToGCellMap(ChangeType::kDel, net_idx, patch);
+    }
+  }
 }
 
 #if 1  // update env

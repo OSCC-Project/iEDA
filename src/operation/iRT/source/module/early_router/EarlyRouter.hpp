@@ -116,6 +116,7 @@ class EarlyRouter
   void outputLayerGuide(ERModel& er_model);
   void outputLayerNetCSV(ERModel& er_model);
   void outputLayerOverflowCSV(ERModel& er_model);
+  void cleanTempResult(ERModel& er_model);
 
 #if 1  // update env
   void updateDemandToGraph(ERModel& er_model, ChangeType change_type, MTree<PlanarCoord>& coord_tree);
