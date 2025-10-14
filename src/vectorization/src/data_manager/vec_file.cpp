@@ -686,6 +686,11 @@ bool VecLayoutFileIO::saveJsonTech()
 
     /// vias
     {
+      auto* idb_layout = dmInst->get_idb_layout();
+      auto* idb_design = dmInst->get_idb_design();
+      auto* idb_lef_vias = idb_layout->get_via_list();
+      auto* idb_def_vias = idb_design->get_via_list();
+
       auto& via_map = _layout->get_via_name_map();
       json_tech["via_num"] = via_map.size();
 
@@ -694,7 +699,107 @@ bool VecLayoutFileIO::saveJsonTech()
         json json_via;
         json_via["id"] = id;
         json_via["name"] = via_name;
+        
+        auto* idb_via = idb_lef_vias->find_via(via_name);
+        if (idb_via == nullptr) {
+          idb_via = idb_def_vias->find_via(via_name);
+        }
+        
+        if (idb_via != nullptr) {
+          // RECT in bottom layer, cut layer, top layer
+          auto bottom_layer_shape = idb_via->get_bottom_layer_shape();
+          auto bottom_bbox = bottom_layer_shape.get_bounding_box();
+          json json_bottom_bbox;
+          json_bottom_bbox["llx"] = bottom_bbox.get_low_x();
+          json_bottom_bbox["lly"] = bottom_bbox.get_low_y();
+          json_bottom_bbox["urx"] = bottom_bbox.get_high_x();
+          json_bottom_bbox["ury"] = bottom_bbox.get_high_y();
+          json_via["bottom"] = json_bottom_bbox;
+          
+          auto cut_layer_shape = idb_via->get_cut_layer_shape();
+          auto cut_bbox = cut_layer_shape.get_bounding_box();
+          json json_cut_bbox;
+          json_cut_bbox["llx"] = cut_bbox.get_low_x();
+          json_cut_bbox["lly"] = cut_bbox.get_low_y();
+          json_cut_bbox["urx"] = cut_bbox.get_high_x();
+          json_cut_bbox["ury"] = cut_bbox.get_high_y();
+          json_via["cut"] = json_cut_bbox;
+          
+          auto top_layer_shape = idb_via->get_top_layer_shape();
+          auto top_bbox = top_layer_shape.get_bounding_box();
+          json json_top_bbox;
+          json_top_bbox["llx"] = top_bbox.get_low_x();
+          json_top_bbox["lly"] = top_bbox.get_low_y();
+          json_top_bbox["urx"] = top_bbox.get_high_x();
+          json_top_bbox["ury"] = top_bbox.get_high_y();
+          json_via["top"] = json_top_bbox;
+          
+          // Cut size (row and col array)
+          json_via["row"] = idb_via->get_instance()->get_cut_rows();
+          json_via["col"] = idb_via->get_instance()->get_cut_cols();
 
+          // Direction
+          auto bottom_center = bottom_bbox.get_middle_point();
+          auto cut_center = cut_bbox.get_middle_point();
+          auto top_center = top_bbox.get_middle_point();
+          
+          std::string bottom_direction = "C"; // default center
+          std::string top_direction = "C"; // default center
+
+          // Use aspect ratio to determine orientation type
+          int bottom_width = bottom_bbox.get_width();
+          int bottom_height = bottom_bbox.get_height();
+          double bottom_aspect_ratio = (double)bottom_width / bottom_height;
+          int top_width = top_bbox.get_width();
+          int top_height = top_bbox.get_height();
+          double top_aspect_ratio = (double)top_width / top_height;
+
+          if (bottom_aspect_ratio > 1.1) {
+            // Horizontal direction - check if cut is left (W) or right (E) shifted
+            if (std::abs(cut_center.get_x() - bottom_center.get_x()) > 1) {  
+              if (cut_center.get_x() < bottom_center.get_x()) {
+                bottom_direction = "W";
+              } else {
+                bottom_direction = "E";
+              }
+            }
+          } else if (bottom_aspect_ratio < 0.9) {
+            // Vertical direction - check if cut is up (N) or down (S) shifted
+            if (std::abs(cut_center.get_y() - bottom_center.get_y()) > 1) {  
+              if (cut_center.get_y() > bottom_center.get_y()) {
+                bottom_direction = "N";
+              } else {
+                bottom_direction = "S";
+              }
+            }
+          }
+          // else: aspect ratio is between 0.9 and 1.1, or symmetric, remains "C" (center)
+        
+          if (top_aspect_ratio > 1.1) {
+            // Horizontal direction - check if cut is left (W) or right (E) shifted
+            if (std::abs(cut_center.get_x() - top_center.get_x()) > 1) {  
+              if (cut_center.get_x() < top_center.get_x()) {
+                top_direction = "W";
+              } else {
+                top_direction = "E";
+              }
+            }
+          } else if (top_aspect_ratio < 0.9) {
+            // Vertical direction - check if cut is up (N) or down (S) shifted
+            if (std::abs(cut_center.get_y() - top_center.get_y()) > 1) {  
+              if (cut_center.get_y() > top_center.get_y()) {
+                top_direction = "N";
+              } else {
+                top_direction = "S";
+              }
+            }
+          }
+          // else: aspect ratio is between 0.9 and 1.1, or symmetric, remains "C" (center)
+          
+          json_via["bottom_direction"] = bottom_direction;
+          json_via["top_direction"] = top_direction;
+        }
+        
         json_via_list.push_back(json_via);
       }
 
