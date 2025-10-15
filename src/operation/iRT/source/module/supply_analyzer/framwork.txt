@@ -2,5 +2,5 @@ initSAModel:初始化model
 setSAComParam:设置sa_model的参数
 buildSupplySchedule:构建将要计算的Schedule
 analyzeSupply:分析GCell之间的形状等特征,确定supply
-
-
+buildIgnoreNet:构建可忽略的net
+analyzeDemandUnit:分析每个gcell上不同的damand
