@@ -56,8 +56,11 @@ void EarlyRouter::route()
   RTLOG.info(Loc::current(), "Starting...");
   ERModel er_model = initERModel();
   setERComParam(er_model);
-  generateAccessPoint(er_model);
-  generateAccessPatch(er_model);
+  initAccessPointList(er_model);
+  buildConflictList(er_model);
+  eliminateConflict(er_model);
+  uploadAccessPoint(er_model);
+  uploadAccessPatch(er_model);
   buildSupplySchedule(er_model);
   analyzeSupply(er_model);
   buildIgnoreNet(er_model);
@@ -148,7 +151,7 @@ void EarlyRouter::setERComParam(ERModel& er_model)
   er_model.set_er_com_param(er_com_param);
 }
 
-void EarlyRouter::generateAccessPoint(ERModel& er_model)
+void EarlyRouter::initAccessPointList(ERModel& er_model)
 {
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
@@ -182,38 +185,77 @@ void EarlyRouter::generateAccessPoint(ERModel& er_model)
       if (routing_pin_shape_list.empty()) {
         RTLOG.error(Loc::current(), "The routing_pin_shape_list is empty!");
       }
-      er_pin.set_access_point(AccessPoint(er_pin.get_pin_idx(), getAccessCoord(routing_pin_shape_list.front().second)));
+      for (LayerCoord access_coord : getAccessCoordList(routing_pin_shape_list.front().second)) {
+        er_pin.get_access_point_list().emplace_back(er_pin.get_pin_idx(), access_coord);
+      }
     }
 
     std::vector<PlanarCoord> coord_list;
     for (ERPin& er_pin : er_net.get_er_pin_list()) {
-      coord_list.push_back(er_pin.get_access_point().get_real_coord());
+      for (AccessPoint& access_point : er_pin.get_access_point_list()) {
+        coord_list.push_back(access_point.get_real_coord());
+      }
     }
     BoundingBox& bounding_box = er_net.get_bounding_box();
     bounding_box.set_real_rect(RTUTIL.getBoundingBox(coord_list));
     bounding_box.set_grid_rect(RTUTIL.getOpenGCellGridRect(bounding_box.get_real_rect(), gcell_axis));
-
     for (ERPin& er_pin : er_net.get_er_pin_list()) {
-      AccessPoint& access_point = er_pin.get_access_point();
-      access_point.set_grid_coord(RTUTIL.getGCellGridCoordByBBox(access_point.get_real_coord(), gcell_axis, bounding_box));
+      for (AccessPoint& access_point : er_pin.get_access_point_list()) {
+        access_point.set_grid_coord(RTUTIL.getGCellGridCoordByBBox(access_point.get_real_coord(), gcell_axis, bounding_box));
+        RTDM.updateNetAccessPointToGCellMap(ChangeType::kAdd, er_net.get_net_idx(), &access_point);
+      }
     }
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-LayerCoord EarlyRouter::getAccessCoord(std::vector<EXTLayerRect>& shape_list)
+std::vector<LayerCoord> EarlyRouter::getAccessCoordList(std::vector<EXTLayerRect>& pin_shape_list)
 {
   Die& die = RTDM.getDatabase().get_die();
   int32_t manufacture_grid = RTDM.getDatabase().get_manufacture_grid();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::map<int32_t, PlanarRect>& layer_enclosure_map = RTDM.getDatabase().get_layer_enclosure_map();
 
+  int32_t curr_layer_idx;
+  {
+    for (EXTLayerRect& pin_shape : pin_shape_list) {
+      if (pin_shape_list.front().get_layer_idx() != pin_shape.get_layer_idx()) {
+        RTLOG.error(Loc::current(), "The pin_shape_list is not on the same layer!");
+      }
+    }
+    curr_layer_idx = pin_shape_list.front().get_layer_idx();
+  }
+  std::vector<PlanarRect> legal_rect_list;
+  {
+    std::vector<PlanarRect> origin_pin_shape_list;
+    for (EXTLayerRect& pin_shape : pin_shape_list) {
+      origin_pin_shape_list.push_back(pin_shape.get_real_rect());
+    }
+    std::vector<PlanarRect> shrinked_rect_list;
+    {
+      PlanarRect& enclosure = layer_enclosure_map[curr_layer_idx];
+      int32_t enclosure_half_x_span = enclosure.getXSpan() / 2;
+      int32_t enclosure_half_y_span = enclosure.getYSpan() / 2;
+      int32_t half_min_width = routing_layer_list[curr_layer_idx].get_min_width() / 2;
+      int32_t shrinked_x_size = std::max(half_min_width, enclosure_half_x_span);
+      int32_t shrinked_y_size = std::max(half_min_width, enclosure_half_y_span);
+      for (PlanarRect& real_rect :
+           RTUTIL.getClosedShrinkedRectListByBoost(origin_pin_shape_list, shrinked_x_size, shrinked_y_size, shrinked_x_size, shrinked_y_size)) {
+        shrinked_rect_list.push_back(real_rect);
+      }
+    }
+    if (shrinked_rect_list.empty()) {
+      legal_rect_list = origin_pin_shape_list;
+    } else {
+      legal_rect_list = shrinked_rect_list;
+    }
+  }
   std::vector<LayerCoord> layer_coord_list;
-  for (EXTLayerRect& legal_shape : shape_list) {
-    int32_t ll_x = legal_shape.get_real_rect().get_ll_x();
-    int32_t ll_y = legal_shape.get_real_rect().get_ll_y();
-    int32_t ur_x = legal_shape.get_real_rect().get_ur_x();
-    int32_t ur_y = legal_shape.get_real_rect().get_ur_y();
-    int32_t curr_layer_idx = legal_shape.get_layer_idx();
+  for (PlanarRect& legal_shape : legal_rect_list) {
+    int32_t ll_x = legal_shape.get_ll_x();
+    int32_t ll_y = legal_shape.get_ll_y();
+    int32_t ur_x = legal_shape.get_ur_x();
+    int32_t ur_y = legal_shape.get_ur_y();
     // 避免 off_grid
     while (ll_x % manufacture_grid != 0) {
       ll_x++;
@@ -311,10 +353,246 @@ LayerCoord EarlyRouter::getAccessCoord(std::vector<EXTLayerRect>& shape_list)
   if (layer_coord_list.empty()) {
     RTLOG.error(Loc::current(), "The layer_coord_list is empty!");
   }
-  return layer_coord_list.front();
+  return layer_coord_list;
 }
 
-void EarlyRouter::generateAccessPatch(ERModel& er_model)
+void EarlyRouter::buildConflictList(ERModel& er_model)
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  std::vector<ERConflictGroup>& er_conflict_group_list = er_model.get_er_conflict_group_list();
+
+  std::map<ERPin*, std::set<ERPin*>> pin_conflict_map;
+  for (auto& [curr_pin, conflict_pin_set] : getPinConlictMap(er_model)) {
+    pin_conflict_map[curr_pin] = conflict_pin_set;
+  }
+  for (auto& [curr_pin, conflict_pin_set] : pin_conflict_map) {
+    if (conflict_pin_set.empty()) {
+      continue;
+    }
+    std::vector<std::pair<ERPin*, ERPin*>> conflict_list;
+    std::map<ERPin*, int32_t> pin_idx_map;
+    std::queue<ERPin*> pin_queue = RTUTIL.initQueue(curr_pin);
+    while (!pin_queue.empty()) {
+      ERPin* er_pin = RTUTIL.getFrontAndPop(pin_queue);
+      if (!RTUTIL.exist(pin_idx_map, er_pin)) {
+        pin_idx_map[er_pin] = pin_idx_map.size();
+      }
+      if (!RTUTIL.exist(pin_conflict_map, er_pin)) {
+        continue;
+      }
+      std::set<ERPin*>& conflict_pin_set = pin_conflict_map[er_pin];
+      for (ERPin* conflict_pin : conflict_pin_set) {
+        conflict_list.emplace_back(er_pin, conflict_pin);
+        pin_queue.push(conflict_pin);
+      }
+      conflict_pin_set.clear();
+    }
+    ERConflictGroup er_conflict_group;
+    std::vector<std::vector<ERConflictPoint>>& conflict_point_list_list = er_conflict_group.get_conflict_point_list_list();
+    conflict_point_list_list.resize(pin_idx_map.size());
+    for (auto& [er_pin, conflict_point_list_idx] : pin_idx_map) {
+      std::vector<ERConflictPoint> conflict_point_list;
+      for (AccessPoint& access_point : er_pin->get_access_point_list()) {
+        ERConflictPoint conflict_point;
+        conflict_point.set_er_pin(er_pin);
+        conflict_point.set_access_point(&access_point);
+        conflict_point.set_coord(access_point.get_real_coord());
+        conflict_point_list.push_back(conflict_point);
+      }
+      conflict_point_list_list[conflict_point_list_idx] = conflict_point_list;
+    }
+    std::map<int32_t, std::vector<int32_t>>& conflict_map = er_conflict_group.get_conflict_map();
+    for (std::pair<ERPin*, ERPin*>& conflict_pair : conflict_list) {
+      conflict_map[pin_idx_map[conflict_pair.first]].push_back(pin_idx_map[conflict_pair.second]);
+    }
+    er_conflict_group_list.push_back(er_conflict_group);
+  }
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+std::vector<std::pair<ERPin*, std::set<ERPin*>>> EarlyRouter::getPinConlictMap(ERModel& er_model)
+{
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+  Die& die = RTDM.getDatabase().get_die();
+
+  std::vector<ERNet>& er_net_list = er_model.get_er_net_list();
+
+  std::vector<std::pair<ERPin*, std::set<ERPin*>>> pin_conflict_list;
+  for (ERNet& er_net : er_net_list) {
+    for (ERPin& er_pin : er_net.get_er_pin_list()) {
+      pin_conflict_list.emplace_back(&er_pin, std::set<ERPin*>{});
+    }
+  }
+#pragma omp parallel for
+  for (std::pair<ERPin*, std::set<ERPin*>>& pin_conflict_pair : pin_conflict_list) {
+    ERPin* er_pin = pin_conflict_pair.first;
+    std::set<ERPin*>& conflict_pin_set = pin_conflict_pair.second;
+
+    for (AccessPoint& access_point : er_pin->get_access_point_list()) {
+      PlanarCoord& grid_coord = access_point.get_grid_coord();
+      for (int32_t x : {grid_coord.get_x() - 1, grid_coord.get_x(), grid_coord.get_x() + 1}) {
+        for (int32_t y : {grid_coord.get_y() - 1, grid_coord.get_y(), grid_coord.get_y() + 1}) {
+          if (!RTUTIL.isInside(die.get_grid_rect(), PlanarCoord(x, y))) {
+            continue;
+          }
+          for (auto& [net_idx, access_point_set] : gcell_map[x][y].get_net_access_point_map()) {
+            for (AccessPoint* gcell_access_point : access_point_set) {
+              ERPin* gcell_pin = &er_net_list[net_idx].get_er_pin_list()[gcell_access_point->get_pin_idx()];
+              if (gcell_pin == er_pin) {
+                continue;
+              }
+              if (hasConflict(er_model, access_point, *gcell_access_point)) {
+                conflict_pin_set.insert(gcell_pin);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return pin_conflict_list;
+}
+
+bool EarlyRouter::hasConflict(ERModel& er_model, AccessPoint& curr_access_point, AccessPoint& gcell_access_point)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::map<int32_t, PlanarRect>& layer_enclosure_map = RTDM.getDatabase().get_layer_enclosure_map();
+
+  std::set<int32_t> conflict_layer_idx_set;
+  {
+    int32_t start_layer_idx = curr_access_point.get_layer_idx();
+    int32_t end_layer_idx = gcell_access_point.get_layer_idx();
+    RTUTIL.swapByASC(start_layer_idx, end_layer_idx);
+    for (int32_t layer_idx = start_layer_idx; layer_idx <= end_layer_idx; layer_idx++) {
+      if (layer_idx < (static_cast<int32_t>(routing_layer_list.size()) - 1)) {
+        conflict_layer_idx_set.insert(layer_idx);
+        conflict_layer_idx_set.insert(layer_idx + 1);
+      } else {
+        conflict_layer_idx_set.insert(layer_idx);
+        conflict_layer_idx_set.insert(layer_idx - 1);
+      }
+    }
+  }
+  PlanarCoord& curr_real_coord = curr_access_point.get_real_coord();
+  PlanarCoord& gcell_real_coord = gcell_access_point.get_real_coord();
+  for (int32_t conflict_layer_idx : conflict_layer_idx_set) {
+    RoutingLayer& routing_layer = routing_layer_list[conflict_layer_idx];
+    int32_t min_width = routing_layer.get_min_width();
+    int32_t min_length = routing_layer.get_min_area() / min_width;
+    int32_t min_spacing = routing_layer.getPRLSpacing(min_width);
+
+    int32_t x_distance = 0;
+    int32_t y_distance = 0;
+    if (routing_layer.isPreferH()) {
+      x_distance = min_length + min_spacing;
+      y_distance = min_width + min_spacing;
+    } else {
+      x_distance = min_width + min_spacing;
+      y_distance = min_length + min_spacing;
+    }
+    PlanarRect searched_rect = RTUTIL.getEnlargedRect(curr_real_coord, x_distance, y_distance, x_distance, y_distance);
+    if (RTUTIL.isInside(searched_rect, gcell_real_coord, false)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void EarlyRouter::eliminateConflict(ERModel& er_model)
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  // 给有conflict的pin设置
+  for (ERConflictGroup& er_conflict_group : er_model.get_er_conflict_group_list()) {
+    for (ERConflictPoint& best_point : getBestPointList(er_conflict_group)) {
+      best_point.get_er_pin()->set_access_point(*best_point.get_access_point());
+    }
+  }
+  // 给没有conflict的pin设置
+  for (ERNet& er_net : er_model.get_er_net_list()) {
+    for (ERPin& er_pin : er_net.get_er_pin_list()) {
+      if (er_pin.get_access_point().get_layer_idx() < 0) {
+        er_pin.set_access_point(er_pin.get_access_point_list().front());
+      }
+    }
+  }
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+std::vector<ERConflictPoint> EarlyRouter::getBestPointList(ERConflictGroup& er_conflict_group)
+{
+  std::vector<std::vector<ERConflictPoint>>& conflict_point_list_list = er_conflict_group.get_conflict_point_list_list();
+  std::map<int32_t, std::vector<int32_t>>& conflict_map = er_conflict_group.get_conflict_map();
+
+  std::vector<ERConflictPoint> curr_ap_list;
+  for (std::vector<ERConflictPoint>& conflict_point_list : conflict_point_list_list) {
+    curr_ap_list.push_back(conflict_point_list.front());
+  }
+  bool improved = true;
+  while (improved) {
+    improved = false;
+    for (int32_t i = 0; i < static_cast<int32_t>(conflict_point_list_list.size()); ++i) {
+      std::vector<int32_t> conflict_j_list;
+      if (RTUTIL.exist(conflict_map, i)) {
+        conflict_j_list = conflict_map[i];
+      } else {
+        RTLOG.error(Loc::current(), "The conflict_map is not exist i!");
+      }
+      int32_t max_min_distance = INT32_MIN;
+      ERConflictPoint best_ap = curr_ap_list[i];
+      for (ERConflictPoint& conflict_point : conflict_point_list_list[i]) {
+        int32_t min_distance = INT32_MAX;
+        for (int32_t j : conflict_j_list) {
+          min_distance = std::min(min_distance, RTUTIL.getManhattanDistance(conflict_point, curr_ap_list[j]));
+        }
+        if (max_min_distance < min_distance) {
+          max_min_distance = min_distance;
+          best_ap = conflict_point;
+        }
+      }
+      if (best_ap.get_access_point() != curr_ap_list[i].get_access_point()) {
+        curr_ap_list[i] = best_ap;
+        improved = true;
+      }
+    }
+  }
+  return curr_ap_list;
+}
+
+void EarlyRouter::uploadAccessPoint(ERModel& er_model)
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  Die& die = RTDM.getDatabase().get_die();
+
+  for (auto& [net_idx, access_point_set] : RTDM.getNetAccessPointMap(die)) {
+    for (AccessPoint* access_point : access_point_set) {
+      RTDM.updateNetAccessPointToGCellMap(ChangeType::kDel, net_idx, access_point);
+    }
+  }
+  for (ERNet& er_net : er_model.get_er_net_list()) {
+    std::vector<PlanarCoord> coord_list;
+    for (ERPin& er_pin : er_net.get_er_pin_list()) {
+      coord_list.push_back(er_pin.get_access_point().get_real_coord());
+    }
+    BoundingBox& bounding_box = er_net.get_bounding_box();
+    bounding_box.set_real_rect(RTUTIL.getBoundingBox(coord_list));
+    bounding_box.set_grid_rect(RTUTIL.getOpenGCellGridRect(bounding_box.get_real_rect(), gcell_axis));
+    for (ERPin& er_pin : er_net.get_er_pin_list()) {
+      AccessPoint& access_point = er_pin.get_access_point();
+      access_point.set_grid_coord(RTUTIL.getGCellGridCoordByBBox(access_point.get_real_coord(), gcell_axis, bounding_box));
+      RTDM.updateNetAccessPointToGCellMap(ChangeType::kAdd, er_net.get_net_idx(), &access_point);
+    }
+  }
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+void EarlyRouter::uploadAccessPatch(ERModel& er_model)
 {
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
@@ -2371,16 +2649,14 @@ void EarlyRouter::debugPlotERModel(ERModel& er_model, std::string flag)
   }
 
   // access_point
-  for (ERNet& er_net : er_model.get_er_net_list()) {
-    GPStruct access_point_struct(RTUTIL.getString("access_point(net_", er_net.get_net_idx(), ")"));
-    for (ERPin& er_pin : er_net.get_er_pin_list()) {
-      AccessPoint& access_point = er_pin.get_access_point();
-
-      int32_t x = access_point.get_real_x();
-      int32_t y = access_point.get_real_y();
+  for (auto& [net_idx, access_point_set] : RTDM.getNetAccessPointMap(die)) {
+    GPStruct access_point_struct(RTUTIL.getString("access_point(net_", net_idx, ")"));
+    for (AccessPoint* access_point : access_point_set) {
+      int32_t x = access_point->get_real_x();
+      int32_t y = access_point->get_real_y();
 
       GPBoundary access_point_boundary;
-      access_point_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(access_point.get_layer_idx()));
+      access_point_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(access_point->get_layer_idx()));
       access_point_boundary.set_data_type(static_cast<int32_t>(GPDataType::kAccessPoint));
       access_point_boundary.set_rect(x - point_size, y - point_size, x + point_size, y + point_size);
       access_point_struct.push(access_point_boundary);

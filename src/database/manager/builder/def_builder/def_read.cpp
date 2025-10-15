@@ -1865,6 +1865,7 @@ int32_t DefRead::parse_via(defiVia* def_via)
         def_via->rowCol(&num_rows, &num_cols);
       }
       master_generate->set_cut_row_col(num_rows, num_cols);
+      master_instance->set_cut_row_col(num_rows, num_cols);
 
       /// if pattern exist, cut array must follow the pattern rule
       if (def_via->hasCutPattern()) {
@@ -1924,6 +1925,15 @@ int32_t DefRead::parse_via(defiVia* def_via)
         max_x = std::max(max_x, ur_x);
         max_y = std::max(max_y, ur_y);
       }
+    }
+
+    {
+      int32_t num_rows = 1;
+      int32_t num_cols = 1;
+      if (def_via->hasRowCol()) {
+        def_via->rowCol(&num_rows, &num_cols);
+      }
+      master_instance->set_cut_row_col(num_rows, num_cols);
     }
 
     master_instance->set_cut_rect(min_x, min_y, max_x, max_y);

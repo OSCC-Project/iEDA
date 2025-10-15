@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include "ERConflictGroup.hpp"
 #include "ERComParam.hpp"
 #include "ERNet.hpp"
 #include "ERNode.hpp"
@@ -31,6 +32,7 @@ class ERModel
   // getter
   std::vector<ERNet>& get_er_net_list() { return _er_net_list; }
   ERComParam& get_er_com_param() { return _er_com_param; }
+  std::vector<ERConflictGroup>& get_er_conflict_group_list() { return _er_conflict_group_list; }
   std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>>& get_grid_pair_list_list() { return _grid_pair_list_list; }
   std::vector<ERNet*>& get_er_task_list() { return _er_task_list; }
   GridMap<ERNode>& get_planar_node_map() { return _planar_node_map; }
@@ -38,6 +40,7 @@ class ERModel
   // setter
   void set_er_net_list(const std::vector<ERNet>& er_net_list) { _er_net_list = er_net_list; }
   void set_er_com_param(const ERComParam& er_com_param) { _er_com_param = er_com_param; }
+  void set_er_conflict_group_list(const std::vector<ERConflictGroup>& er_conflict_group_list) { _er_conflict_group_list = er_conflict_group_list; }
   void set_grid_pair_list_list(const std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>>& grid_pair_list_list)
   {
     _grid_pair_list_list = grid_pair_list_list;
@@ -55,6 +58,7 @@ class ERModel
  private:
   std::vector<ERNet> _er_net_list;
   ERComParam _er_com_param;
+  std::vector<ERConflictGroup> _er_conflict_group_list;
   std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>> _grid_pair_list_list;
   std::vector<ERNet*> _er_task_list;
   GridMap<ERNode> _planar_node_map;
