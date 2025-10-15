@@ -185,6 +185,8 @@ void RTInterface::destroyRT()
 
 void RTInterface::cleanDef()
 {
+#if 1
+
   //////////////////////////////////////////
   // 删除net内所有的wire
   IdbNetList* idb_net_list = dmInst->get_idb_def_service()->get_design()->get_net_list();
@@ -209,6 +211,8 @@ void RTInterface::cleanDef()
   }
   // 删除虚空的io_pin
   //////////////////////////////////////////
+
+#endif
 
 #if 0
 
