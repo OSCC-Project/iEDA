@@ -53,9 +53,15 @@ class EarlyRouter
   std::vector<ERNet> convertToERNetList(std::vector<Net>& net_list);
   ERNet convertToERNet(Net& net);
   void setERComParam(ERModel& er_model);
-  void generateAccessPoint(ERModel& er_model);
-  LayerCoord getAccessCoord(std::vector<EXTLayerRect>& shape_list);
-  void generateAccessPatch(ERModel& er_model);
+  void initAccessPointList(ERModel& er_model);
+  std::vector<LayerCoord> getAccessCoordList(std::vector<EXTLayerRect>& shape_list);
+  void buildConflictList(ERModel& er_model);
+  std::vector<std::pair<ERPin*, std::set<ERPin*>>> getPinConlictMap(ERModel& er_model);
+  bool hasConflict(ERModel& er_model, AccessPoint& curr_access_point, AccessPoint& gcell_access_point);
+  void eliminateConflict(ERModel& er_model);
+  std::vector<ERConflictPoint> getBestPointList(ERConflictGroup& er_conflict_group);
+  void uploadAccessPoint(ERModel& er_model);
+  void uploadAccessPatch(ERModel& er_model);
   void buildSupplySchedule(ERModel& er_model);
   void analyzeSupply(ERModel& er_model);
   EXTLayerRect getSearchRect(LayerCoord& first_coord, LayerCoord& second_coord);
@@ -116,6 +122,7 @@ class EarlyRouter
   void outputLayerGuide(ERModel& er_model);
   void outputLayerNetCSV(ERModel& er_model);
   void outputLayerOverflowCSV(ERModel& er_model);
+  void cleanTempResult(ERModel& er_model);
 
 #if 1  // update env
   void updateDemandToGraph(ERModel& er_model, ChangeType change_type, MTree<PlanarCoord>& coord_tree);
