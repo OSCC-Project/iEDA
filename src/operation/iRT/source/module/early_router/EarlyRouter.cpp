@@ -57,10 +57,12 @@ void EarlyRouter::route()
   ERModel er_model = initERModel();
   setERComParam(er_model);
   initAccessPointList(er_model);
+  // debugPlotERModel(er_model, "before");
   buildConflictList(er_model);
   eliminateConflict(er_model);
   uploadAccessPoint(er_model);
   uploadAccessPatch(er_model);
+  // debugPlotERModel(er_model, "middle");
   buildSupplySchedule(er_model);
   analyzeSupply(er_model);
   buildIgnoreNet(er_model);
@@ -75,8 +77,8 @@ void EarlyRouter::route()
   buildLayerOrientSupply(er_model);
   assignLayer(er_model);
   outputResult(er_model);
+  // debugPlotERModel(er_model, "after");
   cleanTempResult(er_model);
-  // debugPlotERModel(er_model, "best");
   updateSummary(er_model);
   printSummary(er_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -120,6 +122,7 @@ ERNet EarlyRouter::convertToERNet(Net& net)
 
 void EarlyRouter::setERComParam(ERModel& er_model)
 {
+  int32_t max_candidate_point_num = 10;
   int32_t supply_reduction = 0;
   double boundary_wire_unit = 1;
   double internal_wire_unit = 1;
@@ -133,11 +136,12 @@ void EarlyRouter::setERComParam(ERModel& er_model)
   double overflow_unit = 4 * non_prefer_wire_unit;
 
   /**
-   * supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit, topo_spilt_length, expand_step_num, expand_step_length, via_unit,
-   * overflow_unit
+   * max_candidate_point_num, supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit, topo_spilt_length, expand_step_num,
+   * expand_step_length, via_unit, overflow_unit
    */
-  ERComParam er_com_param(supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit, topo_spilt_length, expand_step_num, expand_step_length,
-                          via_unit, overflow_unit);
+  ERComParam er_com_param(max_candidate_point_num, supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit, topo_spilt_length,
+                          expand_step_num, expand_step_length, via_unit, overflow_unit);
+  RTLOG.info(Loc::current(), "max_candidate_point_num: ", er_com_param.get_max_candidate_point_num());
   RTLOG.info(Loc::current(), "supply_reduction: ", er_com_param.get_supply_reduction());
   RTLOG.info(Loc::current(), "boundary_wire_unit: ", er_com_param.get_boundary_wire_unit());
   RTLOG.info(Loc::current(), "internal_wire_unit: ", er_com_param.get_internal_wire_unit());
@@ -185,7 +189,7 @@ void EarlyRouter::initAccessPointList(ERModel& er_model)
       if (routing_pin_shape_list.empty()) {
         RTLOG.error(Loc::current(), "The routing_pin_shape_list is empty!");
       }
-      for (LayerCoord access_coord : getAccessCoordList(routing_pin_shape_list.front().second)) {
+      for (LayerCoord access_coord : getAccessCoordList(er_model, routing_pin_shape_list.front().second)) {
         er_pin.get_access_point_list().emplace_back(er_pin.get_pin_idx(), access_coord);
       }
     }
@@ -209,7 +213,7 @@ void EarlyRouter::initAccessPointList(ERModel& er_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-std::vector<LayerCoord> EarlyRouter::getAccessCoordList(std::vector<EXTLayerRect>& pin_shape_list)
+std::vector<LayerCoord> EarlyRouter::getAccessCoordList(ERModel& er_model, std::vector<EXTLayerRect>& pin_shape_list)
 {
   Die& die = RTDM.getDatabase().get_die();
   int32_t manufacture_grid = RTDM.getDatabase().get_manufacture_grid();
@@ -269,7 +273,7 @@ std::vector<LayerCoord> EarlyRouter::getAccessCoordList(std::vector<EXTLayerRect
     while (ur_y % manufacture_grid != 0) {
       ur_y--;
     }
-    RoutingLayer curr_routing_layer = routing_layer_list[curr_layer_idx];
+    RoutingLayer& curr_routing_layer = routing_layer_list[curr_layer_idx];
     std::vector<int32_t> x_track_list = RTUTIL.getScaleList(ll_x, ur_x, curr_routing_layer.getXTrackGridList());
     std::vector<int32_t> y_track_list = RTUTIL.getScaleList(ll_y, ur_y, curr_routing_layer.getYTrackGridList());
     std::vector<int32_t> x_shape_list;
@@ -295,15 +299,13 @@ std::vector<LayerCoord> EarlyRouter::getAccessCoordList(std::vector<EXTLayerRect
       y_shape_list.emplace_back(ur_y);
     }
     // track grid
-    if (layer_coord_list.empty()) {
-      for (int32_t x : x_track_list) {
-        for (int32_t y : y_track_list) {
-          layer_coord_list.emplace_back(x, y, curr_layer_idx);
-        }
+    for (int32_t x : x_track_list) {
+      for (int32_t y : y_track_list) {
+        layer_coord_list.emplace_back(x, y, curr_layer_idx);
       }
     }
     // on track
-    if (layer_coord_list.empty()) {
+    {
       for (int32_t x : x_shape_list) {
         for (int32_t y : y_track_list) {
           layer_coord_list.emplace_back(x, y, curr_layer_idx);
@@ -316,11 +318,9 @@ std::vector<LayerCoord> EarlyRouter::getAccessCoordList(std::vector<EXTLayerRect
       }
     }
     // on shape
-    if (layer_coord_list.empty()) {
-      for (int32_t x : x_shape_list) {
-        for (int32_t y : y_shape_list) {
-          layer_coord_list.emplace_back(x, y, curr_layer_idx);
-        }
+    for (int32_t x : x_shape_list) {
+      for (int32_t y : y_shape_list) {
+        layer_coord_list.emplace_back(x, y, curr_layer_idx);
       }
     }
   }
@@ -350,10 +350,36 @@ std::vector<LayerCoord> EarlyRouter::getAccessCoordList(std::vector<EXTLayerRect
   }
   std::sort(layer_coord_list.begin(), layer_coord_list.end(), CmpLayerCoordByXASC());
   layer_coord_list.erase(std::unique(layer_coord_list.begin(), layer_coord_list.end()), layer_coord_list.end());
+  uniformSampleCoordList(er_model, layer_coord_list);
   if (layer_coord_list.empty()) {
     RTLOG.error(Loc::current(), "The layer_coord_list is empty!");
   }
   return layer_coord_list;
+}
+
+void EarlyRouter::uniformSampleCoordList(ERModel& er_model, std::vector<LayerCoord>& layer_coord_list)
+{
+  int32_t max_candidate_point_num = er_model.get_er_com_param().get_max_candidate_point_num();
+
+  PlanarRect bounding_box = RTUTIL.getBoundingBox(layer_coord_list);
+  int32_t grid_num = static_cast<int32_t>(std::sqrt(max_candidate_point_num));
+  double grid_x_span = bounding_box.getXSpan() / grid_num;
+  double grid_y_span = bounding_box.getYSpan() / grid_num;
+
+  std::set<PlanarCoord, CmpPlanarCoordByXASC> visited_set;
+  std::vector<LayerCoord> new_layer_coord_list;
+  for (LayerCoord& layer_coord : layer_coord_list) {
+    PlanarCoord grid_coord(static_cast<int32_t>((layer_coord.get_x() - bounding_box.get_ll_x()) / grid_x_span),
+                           static_cast<int32_t>((layer_coord.get_y() - bounding_box.get_ll_y()) / grid_y_span));
+    if (!RTUTIL.exist(visited_set, grid_coord)) {
+      new_layer_coord_list.push_back(layer_coord);
+      visited_set.insert(grid_coord);
+      if (static_cast<int32_t>(new_layer_coord_list.size()) >= max_candidate_point_num) {
+        break;
+      }
+    }
+  }
+  layer_coord_list = new_layer_coord_list;
 }
 
 void EarlyRouter::buildConflictList(ERModel& er_model)
@@ -399,6 +425,7 @@ void EarlyRouter::buildConflictList(ERModel& er_model)
         conflict_point.set_er_pin(er_pin);
         conflict_point.set_access_point(&access_point);
         conflict_point.set_coord(access_point.get_real_coord());
+        conflict_point.set_layer_idx(access_point.get_layer_idx());
         conflict_point_list.push_back(conflict_point);
       }
       conflict_point_list_list[conflict_point_list_idx] = conflict_point_list;
@@ -443,7 +470,7 @@ std::vector<std::pair<ERPin*, std::set<ERPin*>>> EarlyRouter::getPinConlictMap(E
               if (gcell_pin == er_pin) {
                 continue;
               }
-              if (hasConflict(er_model, access_point, *gcell_access_point)) {
+              if (hasConflict(access_point, *gcell_access_point)) {
                 conflict_pin_set.insert(gcell_pin);
               }
             }
@@ -455,15 +482,19 @@ std::vector<std::pair<ERPin*, std::set<ERPin*>>> EarlyRouter::getPinConlictMap(E
   return pin_conflict_list;
 }
 
-bool EarlyRouter::hasConflict(ERModel& er_model, AccessPoint& curr_access_point, AccessPoint& gcell_access_point)
+bool EarlyRouter::hasConflict(AccessPoint& curr_access_point, AccessPoint& gcell_access_point)
+{
+  return hasConflict(curr_access_point.getRealLayerCoord(), gcell_access_point.getRealLayerCoord());
+}
+
+bool EarlyRouter::hasConflict(LayerCoord layer_coord1, LayerCoord layer_coord2)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::map<int32_t, PlanarRect>& layer_enclosure_map = RTDM.getDatabase().get_layer_enclosure_map();
 
   std::set<int32_t> conflict_layer_idx_set;
   {
-    int32_t start_layer_idx = curr_access_point.get_layer_idx();
-    int32_t end_layer_idx = gcell_access_point.get_layer_idx();
+    int32_t start_layer_idx = layer_coord1.get_layer_idx();
+    int32_t end_layer_idx = layer_coord2.get_layer_idx();
     RTUTIL.swapByASC(start_layer_idx, end_layer_idx);
     for (int32_t layer_idx = start_layer_idx; layer_idx <= end_layer_idx; layer_idx++) {
       if (layer_idx < (static_cast<int32_t>(routing_layer_list.size()) - 1)) {
@@ -475,25 +506,24 @@ bool EarlyRouter::hasConflict(ERModel& er_model, AccessPoint& curr_access_point,
       }
     }
   }
-  PlanarCoord& curr_real_coord = curr_access_point.get_real_coord();
-  PlanarCoord& gcell_real_coord = gcell_access_point.get_real_coord();
+  PlanarCoord& planar_coord1 = layer_coord1.get_planar_coord();
+  PlanarCoord& planar_coord2 = layer_coord2.get_planar_coord();
   for (int32_t conflict_layer_idx : conflict_layer_idx_set) {
     RoutingLayer& routing_layer = routing_layer_list[conflict_layer_idx];
     int32_t min_width = routing_layer.get_min_width();
     int32_t min_length = routing_layer.get_min_area() / min_width;
-    int32_t min_spacing = routing_layer.getPRLSpacing(min_width);
 
     int32_t x_distance = 0;
     int32_t y_distance = 0;
     if (routing_layer.isPreferH()) {
-      x_distance = min_length + min_spacing;
-      y_distance = min_width + min_spacing;
+      x_distance = min_length;
+      y_distance = min_width;
     } else {
-      x_distance = min_width + min_spacing;
-      y_distance = min_length + min_spacing;
+      x_distance = min_width;
+      y_distance = min_length;
     }
-    PlanarRect searched_rect = RTUTIL.getEnlargedRect(curr_real_coord, x_distance, y_distance, x_distance, y_distance);
-    if (RTUTIL.isInside(searched_rect, gcell_real_coord, false)) {
+    PlanarRect searched_rect = RTUTIL.getEnlargedRect(planar_coord1, x_distance, y_distance, x_distance, y_distance);
+    if (RTUTIL.isInside(searched_rect, planar_coord2, false)) {
       return true;
     }
   }
@@ -541,15 +571,22 @@ std::vector<ERConflictPoint> EarlyRouter::getBestPointList(ERConflictGroup& er_c
       } else {
         RTLOG.error(Loc::current(), "The conflict_map is not exist i!");
       }
-      int32_t max_min_distance = INT32_MIN;
+      int32_t best_conflict_count = INT32_MAX;
+      int32_t best_min_distance = INT32_MAX;
       ERConflictPoint best_ap = curr_ap_list[i];
       for (ERConflictPoint& conflict_point : conflict_point_list_list[i]) {
+        int32_t conflict_count = 0;
         int32_t min_distance = INT32_MAX;
         for (int32_t j : conflict_j_list) {
+          if (hasConflict(conflict_point, curr_ap_list[j])) {
+            ++conflict_count;
+          }
           min_distance = std::min(min_distance, RTUTIL.getManhattanDistance(conflict_point, curr_ap_list[j]));
         }
-        if (max_min_distance < min_distance) {
-          max_min_distance = min_distance;
+        // 优先比较冲突数，其次比较最小曼哈顿距离（越小越好）
+        if (conflict_count < best_conflict_count || (conflict_count == best_conflict_count && min_distance < best_min_distance)) {
+          best_conflict_count = conflict_count;
+          best_min_distance = min_distance;
           best_ap = conflict_point;
         }
       }
@@ -599,53 +636,78 @@ void EarlyRouter::uploadAccessPatch(ERModel& er_model)
 
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::map<int32_t, PlanarRect>& layer_enclosure_map = RTDM.getDatabase().get_layer_enclosure_map();
   int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
   int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
+  int32_t only_pitch = RTDM.getOnlyPitch();
 
-  std::vector<ERNet>& er_net_list = er_model.get_er_net_list();
-
-  for (ERNet& er_net : er_net_list) {
+  for (ERNet& er_net : er_model.get_er_net_list()) {
     for (ERPin& er_pin : er_net.get_er_pin_list()) {
-      AccessPoint& access_point = er_pin.get_access_point();
-      int32_t curr_layer_idx = access_point.get_layer_idx();
+      PlanarCoord access_coord = er_pin.get_access_point().get_real_coord();
+      int32_t curr_layer_idx = er_pin.get_access_point().get_layer_idx();
+      {
+        RoutingLayer& routing_layer = routing_layer_list[curr_layer_idx];
+        std::vector<int32_t> x_track_list
+            = RTUTIL.getScaleList(access_coord.get_x() - only_pitch, access_coord.get_x() + only_pitch, routing_layer.getXTrackGridList());
+        std::vector<int32_t> y_track_list
+            = RTUTIL.getScaleList(access_coord.get_y() - only_pitch, access_coord.get_y() + only_pitch, routing_layer.getYTrackGridList());
 
+        int32_t min_distance = INT_MAX;
+        PlanarCoord best_coord = access_coord;
+        for (int32_t x : x_track_list) {
+          for (int32_t y : y_track_list) {
+            PlanarCoord track_coord(x, y);
+            int32_t distance = RTUTIL.getManhattanDistance(access_coord, track_coord);
+            if (distance < min_distance) {
+              min_distance = distance;
+              best_coord = track_coord;
+            }
+          }
+        }
+        access_coord = best_coord;
+      }
       int32_t min_layer_idx = curr_layer_idx;
       int32_t max_layer_idx = curr_layer_idx;
-      if (er_pin.get_is_core()) {
-        if (curr_layer_idx < bottom_routing_layer_idx) {
-          max_layer_idx = bottom_routing_layer_idx + 1;
-        } else if (top_routing_layer_idx < curr_layer_idx) {
-          max_layer_idx = top_routing_layer_idx - 1;
-        } else if (curr_layer_idx < top_routing_layer_idx) {
-          max_layer_idx = curr_layer_idx + 1;
+      {
+        if (er_pin.get_is_core()) {
+          if (curr_layer_idx < bottom_routing_layer_idx) {
+            max_layer_idx = bottom_routing_layer_idx + 1;
+          } else if (top_routing_layer_idx < curr_layer_idx) {
+            max_layer_idx = top_routing_layer_idx - 1;
+          } else if (curr_layer_idx < top_routing_layer_idx) {
+            max_layer_idx = curr_layer_idx + 1;
+          } else {
+            max_layer_idx = curr_layer_idx - 1;
+          }
         } else {
-          max_layer_idx = curr_layer_idx - 1;
+          if (curr_layer_idx < bottom_routing_layer_idx) {
+            max_layer_idx = bottom_routing_layer_idx;
+          } else if (top_routing_layer_idx < curr_layer_idx) {
+            max_layer_idx = top_routing_layer_idx;
+          } else if (curr_layer_idx < top_routing_layer_idx) {
+            max_layer_idx = curr_layer_idx;
+          } else {
+            max_layer_idx = curr_layer_idx;
+          }
         }
-      } else {
-        if (curr_layer_idx < bottom_routing_layer_idx) {
-          max_layer_idx = bottom_routing_layer_idx;
-        } else if (top_routing_layer_idx < curr_layer_idx) {
-          max_layer_idx = top_routing_layer_idx;
-        } else if (curr_layer_idx < top_routing_layer_idx) {
-          max_layer_idx = curr_layer_idx;
-        } else {
-          max_layer_idx = curr_layer_idx;
-        }
+        RTUTIL.swapByASC(min_layer_idx, max_layer_idx);
       }
-      RTUTIL.swapByASC(min_layer_idx, max_layer_idx);
       for (int32_t layer_idx = min_layer_idx; layer_idx <= max_layer_idx; layer_idx++) {
         if (layer_idx == curr_layer_idx) {
           continue;
         }
         RoutingLayer& routing_layer = routing_layer_list[layer_idx];
         int32_t half_width = routing_layer.get_min_width() / 2;
-        int32_t half_length = routing_layer.get_min_area() / routing_layer.get_min_width() / 2;
+        int32_t min_length = routing_layer.get_min_area() / routing_layer.get_min_width();
+        PlanarRect& enclosure = layer_enclosure_map[layer_idx];
+        int32_t half_x_span = enclosure.getXSpan() / 2;
+        int32_t half_y_span = enclosure.getYSpan() / 2;
 
         EXTLayerRect patch;
         if (routing_layer.isPreferH()) {
-          patch.set_real_rect(RTUTIL.getEnlargedRect(access_point.get_real_coord(), half_length, half_width, half_length, half_width));
+          patch.set_real_rect(RTUTIL.getEnlargedRect(access_coord, min_length - half_x_span, half_width, half_x_span, half_width));
         } else {
-          patch.set_real_rect(RTUTIL.getEnlargedRect(access_point.get_real_coord(), half_width, half_length, half_width, half_length));
+          patch.set_real_rect(RTUTIL.getEnlargedRect(access_coord, half_width, min_length - half_y_span, half_width, half_y_span));
         }
         patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(patch.get_real_rect(), gcell_axis));
         patch.set_layer_idx(layer_idx);

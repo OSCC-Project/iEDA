@@ -20,7 +20,7 @@
 
 namespace irt {
 
-class ERConflictPoint : public PlanarCoord
+class ERConflictPoint : public LayerCoord
 {
  public:
   ERConflictPoint() = default;
