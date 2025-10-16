@@ -390,7 +390,7 @@ std::vector<AccessPoint> PinAccessor::getAccessPointList(PAModel& pa_model, int3
     while (ur_y % manufacture_grid != 0) {
       ur_y--;
     }
-    RoutingLayer curr_routing_layer = routing_layer_list[curr_layer_idx];
+    RoutingLayer& curr_routing_layer = routing_layer_list[curr_layer_idx];
     std::vector<int32_t> x_track_list = RTUTIL.getScaleList(ll_x, ur_x, curr_routing_layer.getXTrackGridList());
     std::vector<int32_t> y_track_list = RTUTIL.getScaleList(ll_y, ur_y, curr_routing_layer.getYTrackGridList());
     std::vector<int32_t> x_shape_list;
