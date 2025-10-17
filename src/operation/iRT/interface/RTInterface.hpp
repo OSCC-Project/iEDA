@@ -81,6 +81,7 @@ class RTInterface
   void destroyRT();
   void cleanDef();
   void fixFanout();
+  void getCongestion();
 #endif
 
 #endif

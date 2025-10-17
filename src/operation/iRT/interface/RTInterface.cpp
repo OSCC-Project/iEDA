@@ -352,6 +352,39 @@ void RTInterface::fixFanout()
   }
 }
 
+void RTInterface::getCongestion()
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  initFlute();
+  RTGP.init();
+  RTDE.init();
+
+  PinAccessor::initInst();
+  RTPA.access();
+  PinAccessor::destroyInst();
+
+  SupplyAnalyzer::initInst();
+  RTSA.analyze();
+  SupplyAnalyzer::destroyInst();
+
+  TopologyGenerator::initInst();
+  RTTG.generate();
+  TopologyGenerator::destroyInst();
+
+  LayerAssigner::initInst();
+  RTLA.assign();
+  LayerAssigner::destroyInst();
+
+  destroyFlute();
+  RTGP.destroy();
+  RTDE.destroy();
+
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+
+}
+
 #endif
 
 #endif
