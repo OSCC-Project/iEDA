@@ -14,26 +14,25 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
-
+#include "RTInterface.hpp"
 #include "tcl_rt.h"
-
-using namespace ieda;
+#include "tcl_util.h"
 
 namespace tcl {
 
-int registerCmdRT()
+TclRTGetCongestion::TclRTGetCongestion(const char* cmd_name) : TclCmd(cmd_name)
 {
-  // rt
-  registerTclCmd(TclInitRT, "init_rt");
-  registerTclCmd(TclRunEGR, "run_egr");
-  registerTclCmd(TclRunRT, "run_rt");
-  registerTclCmd(TclDestroyRT, "destroy_rt");
-  // aux
-  registerTclCmd(TclRTCleanDef, "rt_clean_def");
-  registerTclCmd(TclRTFixFanout, "rt_fix_fanout");
-  registerTclCmd(TclRTGetCongestion, "rt_get_congestion");
-  return EXIT_SUCCESS;
+}
+
+unsigned TclRTGetCongestion::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+
+  RTI.getCongestion();
+
+  return 1;
 }
 
 }  // namespace tcl
