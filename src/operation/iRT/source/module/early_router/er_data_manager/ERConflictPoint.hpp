@@ -16,23 +16,25 @@
 // ***************************************************************************************
 #pragma once
 
-#include "LayerCoord.hpp"
+#include "ERPin.hpp"
 
 namespace irt {
 
-class ERGroup
+class ERConflictPoint : public LayerCoord
 {
  public:
-  ERGroup() = default;
-  ~ERGroup() = default;
+  ERConflictPoint() = default;
+  ~ERConflictPoint() = default;
   // getter
-  std::vector<LayerCoord>& get_coord_list() { return _coord_list; }
+  ERPin* get_er_pin() { return _er_pin; }
+  AccessPoint* get_access_point() { return _access_point; }
   // setter
-  void set_coord_list(const std::vector<LayerCoord>& coord_list) { _coord_list = coord_list; }
+  void set_er_pin(ERPin* er_pin) { _er_pin = er_pin; }
+  void set_access_point(AccessPoint* access_point) { _access_point = access_point; }
   // function
-
  private:
-  std::vector<LayerCoord> _coord_list;
+  ERPin* _er_pin = nullptr;
+  AccessPoint* _access_point = nullptr;
 };
 
 }  // namespace irt

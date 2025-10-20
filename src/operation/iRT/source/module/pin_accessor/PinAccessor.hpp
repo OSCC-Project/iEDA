@@ -83,7 +83,7 @@ class PinAccessor
   void buildPANodeNeighbor(PABox& pa_box);
   void buildOrientNetMap(PABox& pa_box);
   void buildNetShadowMap(PABox& pa_box);
-  void exemptPinShape(PABox& pa_box);
+  void exemptPinShape(PAModel& pa_model, PABox& pa_box);
   void routePABox(PABox& pa_box);
   std::vector<PATask*> initTaskSchedule(PABox& pa_box);
   void updateGraph(PABox& pa_box, PATask* pa_task);

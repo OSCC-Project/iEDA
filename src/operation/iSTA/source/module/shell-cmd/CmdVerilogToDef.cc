@@ -85,8 +85,8 @@ unsigned CmdVerilogToDef::exec() {
 
   TclOption* def_option = getOptionOrArg("-def");
   const auto* def_file = def_option->getStringVal();
-  if (const auto ret = db_builder->saveDef(def_file); !ret) {
-    LOG_FATAL << "Fail to Save DEF file!";
+  if (const auto ret = db_builder->saveDef(def_file); ret) {
+    LOG_ERROR << "Fail to Save DEF file!";
   }
 
   // the below two lines is used to test idb verilog.

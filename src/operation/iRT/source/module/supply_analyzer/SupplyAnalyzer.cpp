@@ -87,9 +87,7 @@ void SupplyAnalyzer::setSAComParam(SAModel& sa_model)
   /**
    * supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit
    */
-  // clang-format off
   SAComParam sa_com_param(supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit);
-  // clang-format on
   RTLOG.info(Loc::current(), "supply_reduction: ", sa_com_param.get_supply_reduction());
   RTLOG.info(Loc::current(), "boundary_wire_unit: ", sa_com_param.get_boundary_wire_unit());
   RTLOG.info(Loc::current(), "internal_wire_unit: ", sa_com_param.get_internal_wire_unit());
@@ -438,10 +436,13 @@ void SupplyAnalyzer::outputPlanarSupplyCSV(SAModel& sa_model)
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
   std::string& sa_temp_directory_path = RTDM.getConfig().sa_temp_directory_path;
-  // int32_t output_inter_result = RTDM.getConfig().output_inter_result;
-  // if (!output_inter_result) {
-  //   return;
-  // }
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
+    return;
+  }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   std::ofstream* supply_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(sa_temp_directory_path, "supply_map_planar.csv"));
   for (int32_t y = gcell_map.get_y_size() - 1; y >= 0; y--) {
     for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
@@ -456,7 +457,7 @@ void SupplyAnalyzer::outputPlanarSupplyCSV(SAModel& sa_model)
     RTUTIL.pushStream(supply_csv_file, "\n");
   }
   RTUTIL.closeFileStream(supply_csv_file);
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void SupplyAnalyzer::outputLayerSupplyCSV(SAModel& sa_model)
@@ -468,6 +469,9 @@ void SupplyAnalyzer::outputLayerSupplyCSV(SAModel& sa_model)
   if (!output_inter_result) {
     return;
   }
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::ofstream* supply_csv_file
         = RTUTIL.getOutputFileStream(RTUTIL.getString(sa_temp_directory_path, "supply_map_", routing_layer.get_layer_name(), ".csv"));
@@ -483,7 +487,7 @@ void SupplyAnalyzer::outputLayerSupplyCSV(SAModel& sa_model)
     }
     RTUTIL.closeFileStream(supply_csv_file);
   }
-  RTLOG.info(Loc::current(), "The csv file has been saved");
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 #endif

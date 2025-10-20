@@ -11,6 +11,7 @@
 #ifndef IPL_GEOMETRY_HH
 #define IPL_GEOMETRY_HH
 #include <vector>
+using std::size_t;
 using std::vector;
 namespace ipl {
 template <typename T>

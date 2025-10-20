@@ -78,6 +78,7 @@ void testMakeSingleModule(idb::NetlistReader* nr, string topModuleName) {
 #include <regex>
 
 #include "IdbDesign.h"
+#include "log/Log.hh"
 
 namespace idb {
 
@@ -441,8 +442,7 @@ int32_t RustVerilogRead::build_assign()
           auto* the_left_io_pin = idb_io_pin_list->find_pin(left_net_name.c_str());
           auto* the_right_io_pin = idb_io_pin_list->find_pin(right_net_name.c_str());
 
-          if ((the_left_idb_net && the_right_idb_net && !the_left_io_pin && !the_right_io_pin)
-              || (the_left_idb_net && the_right_idb_net && the_left_io_pin && the_right_io_pin)) {
+          if (the_left_idb_net && the_right_idb_net && the_left_idb_net != the_right_idb_net) {
             // assign net = net, need merge two net to one net.
 
             // std::cout << "merge " << left_net_name << " = " << right_net_name << "\n";
@@ -476,23 +476,28 @@ int32_t RustVerilogRead::build_assign()
             idb_net_list->remove_net(left_net_name);
             remove_to_merge_nets[left_net_name] = the_right_idb_net;
 
-          } else if (the_left_idb_net && !the_left_io_pin) {            
+          } else if (the_left_idb_net) {
             if (the_right_io_pin && the_right_io_pin->is_io_pin()) {
               // assign net = input_port;
               the_left_idb_net->add_io_pin(the_right_io_pin);
               the_right_io_pin->set_net(the_left_idb_net);
               the_right_io_pin->set_net_name(the_left_idb_net->get_net_name());
             } else {
-              std::cout << "assign " << left_net_name << " = " << right_net_name << " is not processed." << "\n";
+              LOG_WARNING << "assign " << left_net_name << " = " << right_net_name << " is not processed.";
+              bool has_b0 = (right_net_name.find("1'b0") != std::string::npos);
+              bool has_b1 = (right_net_name.find("1'b1") != std::string::npos);
+              if (has_b0 || has_b1) {
+                LOG_ERROR << "constant net should connect to tie cell.";
+              }
             }
-          } else if (the_right_idb_net && !the_right_io_pin) {           
-            if (the_left_io_pin->is_io_pin()) {
+          } else if (the_right_idb_net) {
+            if (the_left_io_pin && the_left_io_pin->is_io_pin()) {
                // assign output_port = net;
               the_right_idb_net->add_io_pin(the_left_io_pin);
               the_left_io_pin->set_net(the_right_idb_net);
               the_left_io_pin->set_net_name(the_right_idb_net->get_net_name());
             } else {
-              std::cout << "assign " << left_net_name << " = " << right_net_name << " is not processed." << "\n";
+              LOG_WARNING << "assign " << left_net_name << " = " << right_net_name << " is not processed.";
             }
           } else if (!the_left_idb_net && !the_right_idb_net && the_right_io_pin) {
             // assign output_port = input_port;
@@ -520,10 +525,10 @@ int32_t RustVerilogRead::build_assign()
               the_left_io_pin->set_net(idb_net);
               the_left_io_pin->set_net_name(idb_net->get_net_name());
             } else {
-              std::cout << "assign " << left_net_name << " = " << right_net_name << " is not processed." << "\n";
+              LOG_WARNING << "assign " << left_net_name << " = " << right_net_name << " is not processed.";
             }
           } else {
-            std::cout << "assign " << left_net_name << " = " << right_net_name << " is not processed." << "\n";
+            LOG_WARNING << "assign " << left_net_name << " = " << right_net_name << " is not processed.";
           }
         };
 
@@ -573,8 +578,7 @@ int32_t RustVerilogRead::build_assign()
             id_net_name = slice_net_id->base_id;
             base_id_index = slice_net_id->range_base;
           } else {
-            std::cout << "left net id should be id or bus slice id";
-            assert(false);
+            LOG_FATAL << "left net id should be id or bus slice id";
           }
 
           auto verilog_id_concat = rust_convert_verilog_net_concat_expr(concat_net_expr)->verilog_id_concat;
@@ -691,8 +695,7 @@ int32_t RustVerilogRead::build_assign()
         }
 
       } else {
-        std::cout << "assign declaration's lhs/rhs is not VerilogNetIDExpr class." << std::endl;
-        assert(false);
+        LOG_FATAL << "assign declaration's lhs/rhs is not VerilogNetIDExpr class.";
       }
     }
   }
@@ -850,7 +853,7 @@ int32_t RustVerilogRead::build_components()
 
       auto* cell_master = idb_master_list->find_cell_master(cell_master_name);
       if (cell_master == nullptr) {
-        std::cout << "Error : can not find cell master = " << cell_master_name << std::endl;
+        LOG_ERROR << "Error : can not find cell master = " << cell_master_name;
         continue;
       }
       idb_instance->set_cell_master(cell_master);

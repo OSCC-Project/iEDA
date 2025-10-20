@@ -19,7 +19,7 @@
  * @author Dawn Li (dawnli619215645@gmail.com)
  */
 #include "CtsNet.hh"
-
+#include <algorithm>
 #include <set>
 
 #include "log/Log.hh"

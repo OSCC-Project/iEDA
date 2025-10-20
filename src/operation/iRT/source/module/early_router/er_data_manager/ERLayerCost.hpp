@@ -16,28 +16,29 @@
 // ***************************************************************************************
 #pragma once
 
-#include "AccessPoint.hpp"
-#include "EXTLayerRect.hpp"
-#include "Pin.hpp"
-#include "PlanarCoord.hpp"
 #include "RTHeader.hpp"
 
 namespace irt {
 
-class ERPin : public Pin
+class ERLayerCost
 {
  public:
-  ERPin() = default;
-  explicit ERPin(const Pin& pin) : Pin(pin) {}
-  ~ERPin() = default;
+  ERLayerCost() = default;
+  ~ERLayerCost() = default;
   // getter
-  std::vector<AccessPoint>& get_access_point_list() { return _access_point_list; }
+  int32_t get_parent_layer_idx() const { return _parent_layer_idx; }
+  int32_t get_layer_idx() const { return _layer_idx; }
+  double get_history_cost() const { return _history_cost; }
   // setter
-  void set_access_point_list(const std::vector<AccessPoint>& access_point_list) { _access_point_list = access_point_list; }
+  void set_parent_layer_idx(const int32_t parent_layer_idx) { _parent_layer_idx = parent_layer_idx; }
+  void set_layer_idx(const int32_t layer_idx) { _layer_idx = layer_idx; }
+  void set_history_cost(const double history_cost) { _history_cost = history_cost; }
   // function
 
  private:
-  std::vector<AccessPoint> _access_point_list;
+  int32_t _parent_layer_idx = -1;
+  int32_t _layer_idx = -1;
+  double _history_cost = 0;
 };
 
 }  // namespace irt

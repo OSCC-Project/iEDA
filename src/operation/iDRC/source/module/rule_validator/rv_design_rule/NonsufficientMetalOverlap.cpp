@@ -24,7 +24,7 @@ void RuleValidator::verifyNonsufficientMetalOverlap(RVBox& rv_box)
 
   std::map<int32_t, std::map<int32_t, std::vector<PlanarRect>>> routing_net_rect_map;
   for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
-    if (!drc_shape->get_is_routing() || drc_shape->get_net_idx() == -1) {
+    if (!drc_shape->get_is_routing()) {
       continue;
     }
     routing_net_rect_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()].push_back(drc_shape->get_rect());
@@ -36,79 +36,92 @@ void RuleValidator::verifyNonsufficientMetalOverlap(RVBox& rv_box)
     routing_net_rect_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()].push_back(drc_shape->get_rect());
   }
   for (auto& [routing_layer_idx, net_rect_map] : routing_net_rect_map) {
-    RoutingLayer& routing_layer = routing_layer_list[routing_layer_idx];
-    int32_t min_width = routing_layer.get_nonsufficient_metal_overlap_rule().min_width;
-    int32_t half_width = min_width / 2;
     for (auto& [net_idx, rect_list] : net_rect_map) {
-      std::map<int32_t, GTLPolySetInt> scale_gtl_poly_set_map;
+      GTLPolySetInt gtl_poly_set;
       for (PlanarRect& rect : rect_list) {
-        PlanarCoord mid_coord = rect.getMidPoint();
-        if (routing_layer.isPreferH()) {
-          scale_gtl_poly_set_map[mid_coord.get_y()] += DRCUTIL.convertToGTLRectInt(rect);
-        } else {
-          scale_gtl_poly_set_map[mid_coord.get_x()] += DRCUTIL.convertToGTLRectInt(rect);
-        }
+        gtl_poly_set += DRCUTIL.convertToGTLRectInt(rect);
       }
       rect_list.clear();
-      for (auto& [scale, gtl_poly_set] : scale_gtl_poly_set_map) {
-        std::vector<GTLRectInt> gtl_rect_list;
-        gtl::get_max_rectangles(gtl_rect_list, gtl_poly_set);
-        for (GTLRectInt& gtl_rect : gtl_rect_list) {
-          rect_list.push_back(DRCUTIL.convertToPlanarRect(gtl_rect));
-        }
+      std::vector<GTLRectInt> gtl_rect_list;
+      gtl::get_max_rectangles(gtl_rect_list, gtl_poly_set);
+      for (GTLRectInt& gtl_rect : gtl_rect_list) {
+        rect_list.push_back(DRCUTIL.convertToPlanarRect(gtl_rect));
       }
-      std::map<int32_t, GTLPolySetInt> rect_overlap_gtl_poly_set_map;
-      for (size_t i = 0; i < rect_list.size(); i++) {
-        for (size_t j = i + 1; j < rect_list.size(); j++) {
-          if (!DRCUTIL.isClosedOverlap(rect_list[i], rect_list[j])) {
-            continue;
-          }
-          GTLRectInt gtl_rect = DRCUTIL.convertToGTLRectInt(DRCUTIL.getEnlargedRect(DRCUTIL.getOverlap(rect_list[i], rect_list[j]), 1));
-          rect_overlap_gtl_poly_set_map[static_cast<int32_t>(i)] += gtl_rect;
-          rect_overlap_gtl_poly_set_map[static_cast<int32_t>(j)] += gtl_rect;
-        }
+    }
+  }
+  std::map<int32_t, std::map<int32_t, bgi::rtree<BGRectInt, bgi::quadratic<16>>>> routing_net_bg_rtree_map;
+  for (auto& [routing_layer_idx, net_rect_map] : routing_net_rect_map) {
+    for (auto& [net_idx, rect_list] : net_rect_map) {
+      for (PlanarRect& rect : rect_list) {
+        routing_net_bg_rtree_map[routing_layer_idx][net_idx].insert(DRCUTIL.convertToBGRectInt(rect));
       }
-      std::vector<PlanarRect> overlap_rect_list;
-      for (auto& [rect_idx, overlap_gtl_poly_set] : rect_overlap_gtl_poly_set_map) {
-        std::vector<GTLPolyInt> gtl_poly_list;
-        overlap_gtl_poly_set.get_polygons(gtl_poly_list);
-        for (GTLPolyInt& gtl_poly : gtl_poly_list) {
-          GTLRectInt gtl_rect;
-          gtl::extents(gtl_rect, gtl_poly);
-          PlanarRect overlap_rect = DRCUTIL.convertToPlanarRect(gtl_rect);
-          if (!DRCUTIL.hasShrinkedRect(overlap_rect, 1)) {
+    }
+  }
+  for (auto& [routing_layer_idx, net_rect_map] : routing_net_rect_map) {
+    RoutingLayer& routing_layer = routing_layer_list[routing_layer_idx];
+    int32_t min_width = routing_layer.get_minimum_width_rule().min_width;
+    int32_t half_width = min_width / 2;
+    for (auto& [net_idx, rect_list] : net_rect_map) {
+      for (PlanarRect& rect : rect_list) {
+        std::vector<BGRectInt> bg_rect_list;
+        {
+          PlanarRect check_rect = rect;
+          routing_net_bg_rtree_map[routing_layer_idx][net_idx].query(bgi::intersects(DRCUTIL.convertToBGRectInt(check_rect)), std::back_inserter(bg_rect_list));
+        }
+        for (auto& bg_env_rect : bg_rect_list) {
+          PlanarRect env_rect = DRCUTIL.convertToPlanarRect(bg_env_rect);
+          if (!DRCUTIL.isClosedOverlap(rect, env_rect)) {
             continue;
           }
-          overlap_rect = DRCUTIL.getShrinkedRect(overlap_rect, 1);
-          if (rect_list[rect_idx].getArea() <= overlap_rect.getArea()) {
+          if (env_rect == rect) {
             continue;
           }
+          PlanarRect overlap_rect = DRCUTIL.getOverlap(rect, env_rect);
           double diag_length = std::hypot(overlap_rect.getXSpan(), overlap_rect.getYSpan());
           if (diag_length >= min_width) {
             continue;
           }
-          overlap_rect_list.push_back(overlap_rect);
-        }
-      }
-      for (PlanarRect& overlap_rect : overlap_rect_list) {
-        int32_t x_enlarge_size = 0;
-        if (overlap_rect.getXSpan() < half_width) {
-          x_enlarge_size = half_width - overlap_rect.getXSpan();
-        }
-        int32_t y_enlarge_size = 0;
-        if (overlap_rect.getYSpan() < half_width) {
-          y_enlarge_size = half_width - overlap_rect.getYSpan();
-        }
-        PlanarRect violation_rect = DRCUTIL.getEnlargedRect(overlap_rect, x_enlarge_size, y_enlarge_size, x_enlarge_size, y_enlarge_size);
+          if (overlap_rect.get_ll() == overlap_rect.get_ur()) {
+            continue;
+          }
+          std::vector<BGRectInt> overlap_rect_env_list;
+          {
+            PlanarRect check_rect = overlap_rect;
+            routing_net_bg_rtree_map[routing_layer_idx][net_idx].query(bgi::intersects(DRCUTIL.convertToBGRectInt(check_rect)),
+                                                                       std::back_inserter(overlap_rect_env_list));
+          }
+          bool is_inside = false;
+          for (auto& overlap_rect_env : overlap_rect_env_list) {
+            PlanarRect thirdrect = DRCUTIL.convertToPlanarRect(overlap_rect_env);
+            if ((DRCUTIL.isInside(thirdrect, overlap_rect) && DRCUTIL.isOpenOverlap(thirdrect, overlap_rect)) && thirdrect != rect && thirdrect != env_rect
+                && thirdrect.getWidth() >= min_width && DRCUTIL.getOverlap(thirdrect, rect) != overlap_rect
+                && DRCUTIL.getOverlap(thirdrect, env_rect) != overlap_rect) {
+              is_inside = true;
+              break;
+            }
+          }
+          if (is_inside) {
+            continue;
+          }
+          int32_t x_enlarge_size = 0;
+          if (overlap_rect.getXSpan() < half_width) {
+            x_enlarge_size = half_width - overlap_rect.getXSpan();
+          }
+          int32_t y_enlarge_size = 0;
+          if (overlap_rect.getYSpan() < half_width) {
+            y_enlarge_size = half_width - overlap_rect.getYSpan();
+          }
+          PlanarRect violation_rect = DRCUTIL.getEnlargedRect(overlap_rect, x_enlarge_size, y_enlarge_size, x_enlarge_size, y_enlarge_size);
 
-        Violation violation;
-        violation.set_violation_type(ViolationType::kNonsufficientMetalOverlap);
-        violation.set_is_routing(true);
-        violation.set_violation_net_set({net_idx});
-        violation.set_required_size(0);
-        violation.set_layer_idx(routing_layer_idx);
-        violation.set_rect(violation_rect);
-        rv_box.get_violation_list().push_back(violation);
+          Violation violation;
+          violation.set_violation_type(ViolationType::kNonsufficientMetalOverlap);
+          violation.set_is_routing(true);
+          violation.set_violation_net_set({net_idx});
+          violation.set_required_size(0);
+          violation.set_layer_idx(routing_layer_idx);
+          violation.set_rect(violation_rect);
+          rv_box.get_violation_list().push_back(violation);
+        }
       }
     }
   }

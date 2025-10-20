@@ -904,10 +904,6 @@ int32_t DefRead::parse_component(defiComponent* def_component)
 
   std::string inst_name = def_component->id();
   std::string new_inst_name = ieda::Str::trimEscape(inst_name);
-  if ("u_NV_NVDLA_cbuf/u_cbuf_ram_bank6_ram0/rmod/u_mema" == new_inst_name) {
-    int a = 0;
-    a += 1;
-  }
 
   IdbInstance* instance = instance_list->add_instance(new_inst_name);
   if (instance == nullptr) {
@@ -1092,7 +1088,9 @@ int32_t DefRead::parse_net(defiNet* def_net)
 
     IdbPin* pin = nullptr;
     if (io_name.compare("PIN") == 0) {
-      pin = io_pin_list->find_pin(def_net->pin(i));
+      std::string pin_name = def_net->pin(i);
+      pin_name = ieda::Str::trimEscape(pin_name);
+      pin = io_pin_list->find_pin(pin_name);
       if (pin == nullptr) {
         std::cout << "Can not find Pin in Pin list ... pin name = " << def_net->pin(i) << std::endl;
       } else {
@@ -1103,7 +1101,9 @@ int32_t DefRead::parse_net(defiNet* def_net)
       IdbInstance* instance = instance_list->find_instance(io_name);
       if (instance != nullptr) {
         net->get_instance_list()->add_instance(instance);
-        pin = instance->get_pin_by_term(def_net->pin(i));
+        std::string pin_name = def_net->pin(i);
+        pin_name = ieda::Str::trimEscape(pin_name);
+        pin = instance->get_pin_by_term(pin_name);
         if (pin == nullptr) {
           std::cout << "Can not find Pin in Pin list ... pin name = " << def_net->pin(i) << std::endl;
         } else {
@@ -1332,11 +1332,14 @@ int32_t DefRead::parse_pdn(defiNet* def_net)
 
   for (int i = 0; i < def_net->numConnections(); i++) {
     string io_name = def_net->instance(i);
+    io_name = ieda::Str::trimEscape(io_name);
     IdbPin* pin = nullptr;
     if (io_name.compare("*") == 0) {
       net->add_pin_string(def_net->pin(i));
     } else if (io_name.compare("PIN") == 0) {
-      pin = io_pin_list->find_pin(def_net->pin(i));
+      std::string pin_name = def_net->pin(i);
+      pin_name = ieda::Str::trimEscape(pin_name);
+      pin = io_pin_list->find_pin(pin_name);
       if (pin == nullptr) {
         std::cout << "Can not find Pin in Pin list ... pin name = " << def_net->pin(i) << std::endl;
       } else {
@@ -1347,7 +1350,9 @@ int32_t DefRead::parse_pdn(defiNet* def_net)
       IdbInstance* instance = instance_list->find_instance(io_name);
       if (instance != nullptr) {
         net->add_instance(instance);
-        pin = instance->get_pin_by_term(def_net->pin(i));
+        std::string pin_name = def_net->pin(i);
+        pin_name = ieda::Str::trimEscape(pin_name);
+        pin = instance->get_pin_by_term(pin_name);
         if (pin == nullptr) {
           std::cout << "Can not find Pin in Pin list ... pin name = " << def_net->pin(i) << std::endl;
         } else {
@@ -1860,6 +1865,7 @@ int32_t DefRead::parse_via(defiVia* def_via)
         def_via->rowCol(&num_rows, &num_cols);
       }
       master_generate->set_cut_row_col(num_rows, num_cols);
+      master_instance->set_cut_row_col(num_rows, num_cols);
 
       /// if pattern exist, cut array must follow the pattern rule
       if (def_via->hasCutPattern()) {
@@ -1919,6 +1925,15 @@ int32_t DefRead::parse_via(defiVia* def_via)
         max_x = std::max(max_x, ur_x);
         max_y = std::max(max_y, ur_y);
       }
+    }
+
+    {
+      int32_t num_rows = 1;
+      int32_t num_cols = 1;
+      if (def_via->hasRowCol()) {
+        def_via->rowCol(&num_rows, &num_cols);
+      }
+      master_instance->set_cut_row_col(num_rows, num_cols);
     }
 
     master_instance->set_cut_rect(min_x, min_y, max_x, max_y);

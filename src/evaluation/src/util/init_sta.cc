@@ -393,7 +393,7 @@ void InitSTA::buildRCTree(const std::string& routing_type)
   for (size_t net_id = 0; net_id < idb_nets.size(); ++net_id) {
     auto* idb_net = idb_nets[net_id];
     sta_net = sta_netlist->findNet(idb_net->get_net_name().c_str());
-    if (sta_net == nullptr) {
+    if (sta_net == nullptr || sta_net->getDriver() == nullptr) {
       continue;
     }
     STA_INST->resetRcTree(sta_net);
@@ -673,6 +673,7 @@ void InitSTA::initPowerEngine()
     PW_INST->get_power()->initToggleSPData();
   }
   PW_INST->get_power()->updatePower();
+  PW_INST->get_power()->reportPower(false);
 }
 
 void InitSTA::updateResult(const std::string& routing_type)
@@ -1765,7 +1766,7 @@ std::map<int, double> InitSTA::patchTimingMap(std::map<int, std::pair<std::pair<
   auto* idb_adapter = STA_INST->getIDBAdapter();
   auto dbu = idb_adapter->get_dbu();
 
-  // 预处理：将实例坐标转换并按x坐标排序，提升查找性能
+  // preprocess: convert instance coordinates and sort by x coordinate to improve search performance
   std::vector<std::tuple<int64_t, int64_t, double>> sorted_instances;
   sorted_instances.reserve(inst_timing_map.size());
 
@@ -1775,7 +1776,7 @@ std::map<int, double> InitSTA::patchTimingMap(std::map<int, std::pair<std::pair<
     sorted_instances.emplace_back(inst_x, inst_y, slack);
   }
 
-  // 按x坐标排序，便于后续二分查找
+  // sort by x coordinate for binary search
   std::sort(sorted_instances.begin(), sorted_instances.end());
 
   for (const auto& [patch_id, coord] : patch) {
@@ -1788,11 +1789,11 @@ std::map<int, double> InitSTA::patchTimingMap(std::map<int, std::pair<std::pair<
     double min_slack = std::numeric_limits<double>::max();
     bool found_instance = false;
 
-    // 使用二分查找确定x坐标范围，减少需要检查的实例数量
+    // use binary search to determine the x coordinate range, reducing the number of instances to check
     auto lower_it = std::lower_bound(sorted_instances.begin(), sorted_instances.end(), std::make_tuple(patch_lx, INT64_MIN, 0.0));
     auto upper_it = std::upper_bound(sorted_instances.begin(), sorted_instances.end(), std::make_tuple(patch_ux, INT64_MAX, 0.0));
 
-    // 只检查x坐标在范围内的实例
+    // only check instances with x coordinates within the range
     for (auto it = lower_it; it != upper_it; ++it) {
       int64_t inst_y = std::get<1>(*it);
       double slack = std::get<2>(*it);
@@ -1831,7 +1832,7 @@ std::map<int, double> InitSTA::patchPowerMap(std::map<int, std::pair<std::pair<i
   auto* idb_adapter = STA_INST->getIDBAdapter();
   auto dbu = idb_adapter->get_dbu();
 
-  // 预处理：将实例坐标转换并按x坐标排序，提升查找性能
+  // preprocess: convert instance coordinates and sort by x coordinate to improve search performance
   std::vector<std::tuple<int64_t, int64_t, double>> sorted_instances;
   sorted_instances.reserve(inst_power_map.size());
 
@@ -1841,7 +1842,7 @@ std::map<int, double> InitSTA::patchPowerMap(std::map<int, std::pair<std::pair<i
     sorted_instances.emplace_back(inst_x, inst_y, power);
   }
 
-  // 按x坐标排序，便于后续二分查找
+  // sort by x coordinate for binary search
   std::sort(sorted_instances.begin(), sorted_instances.end());
 
   for (const auto& [patch_id, coord] : patch) {
@@ -1853,11 +1854,11 @@ std::map<int, double> InitSTA::patchPowerMap(std::map<int, std::pair<std::pair<i
 
     double total_power = 0.0;
 
-    // 使用二分查找确定x坐标范围，减少需要检查的实例数量
+    // use binary search to determine the x coordinate range, reducing the number of instances to check
     auto lower_it = std::lower_bound(sorted_instances.begin(), sorted_instances.end(), std::make_tuple(patch_lx, INT64_MIN, 0.0));
     auto upper_it = std::upper_bound(sorted_instances.begin(), sorted_instances.end(), std::make_tuple(patch_ux, INT64_MAX, 0.0));
 
-    // 只检查x坐标在范围内的实例
+    // only check instances with x coordinates within the range
     for (auto it = lower_it; it != upper_it; ++it) {
       int64_t inst_y = std::get<1>(*it);
       double power = std::get<2>(*it);
@@ -1899,7 +1900,7 @@ std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<
   auto* idb_adapter = STA_INST->getIDBAdapter();
   auto dbu = idb_adapter->get_dbu();
 
-  // 预处理：将实例坐标转换并按x坐标排序，提升查找性能
+  // preprocess: convert instance coordinates and sort by x coordinate to improve search performance
   std::vector<std::tuple<int64_t, int64_t, double>> sorted_instances;
   sorted_instances.reserve(instance_to_ir_drop.size());
 
@@ -1910,7 +1911,7 @@ std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<
     sorted_instances.emplace_back(inst_x, inst_y, ir_drop);
   }
 
-  // 按x坐标排序，便于后续二分查找
+  // sort by x coordinate for binary search
   std::sort(sorted_instances.begin(), sorted_instances.end());
 
   for (const auto& [patch_id, coord] : patch) {
@@ -1923,11 +1924,11 @@ std::map<int, double> InitSTA::patchIRDropMap(std::map<int, std::pair<std::pair<
     double max_ir_drop = 0.0;
     bool found_instance = false;
 
-    // 使用二分查找确定x坐标范围，减少需要检查的实例数量
+    // use binary search to determine the x coordinate range, reducing the number of instances to check
     auto lower_it = std::lower_bound(sorted_instances.begin(), sorted_instances.end(), std::make_tuple(patch_lx, INT64_MIN, 0.0));
     auto upper_it = std::upper_bound(sorted_instances.begin(), sorted_instances.end(), std::make_tuple(patch_ux, INT64_MAX, 0.0));
 
-    // 只检查x坐标在范围内的实例
+    // only check instances with x coordinates within the range
     for (auto it = lower_it; it != upper_it; ++it) {
       int64_t inst_y = std::get<1>(*it);
       double ir_drop = std::get<2>(*it);

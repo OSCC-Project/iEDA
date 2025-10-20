@@ -31,6 +31,7 @@ class Pin
   // getter
   int32_t get_pin_idx() const { return _pin_idx; }
   std::string& get_pin_name() { return _pin_name; }
+  bool get_is_core() const { return _is_core; }
   std::vector<EXTLayerRect>& get_routing_shape_list() { return _routing_shape_list; }
   std::vector<EXTLayerRect>& get_cut_shape_list() { return _cut_shape_list; }
   bool get_is_driven() const { return _is_driven; }
@@ -38,6 +39,7 @@ class Pin
   // setter
   void set_pin_idx(const int32_t pin_idx) { _pin_idx = pin_idx; }
   void set_pin_name(const std::string& pin_name) { _pin_name = pin_name; }
+  void set_is_core(const bool is_core) { _is_core = is_core; }
   void set_routing_shape_list(const std::vector<EXTLayerRect>& routing_shape_list) { _routing_shape_list = routing_shape_list; }
   void set_cut_shape_list(const std::vector<EXTLayerRect>& cut_shape_list) { _cut_shape_list = cut_shape_list; }
   void set_is_driven(const bool is_driven) { _is_driven = is_driven; }
@@ -47,6 +49,7 @@ class Pin
  private:
   int32_t _pin_idx = -1;
   std::string _pin_name;
+  bool _is_core = false;
   std::vector<EXTLayerRect> _routing_shape_list;
   std::vector<EXTLayerRect> _cut_shape_list;
   bool _is_driven = false;

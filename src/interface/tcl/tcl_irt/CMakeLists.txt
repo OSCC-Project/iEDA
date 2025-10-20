@@ -1,10 +1,11 @@
 add_library(tcl_irt 
-    ${HOME_INTERFACE}/tcl/tcl_irt/src/tcl_clear_def.cpp
-    ${HOME_INTERFACE}/tcl/tcl_irt/src/tcl_destroy_rt.cpp
     ${HOME_INTERFACE}/tcl/tcl_irt/src/tcl_init_rt.cpp
-    ${HOME_INTERFACE}/tcl/tcl_irt/src/tcl_output_db_json.cpp
     ${HOME_INTERFACE}/tcl/tcl_irt/src/tcl_run_egr.cpp
     ${HOME_INTERFACE}/tcl/tcl_irt/src/tcl_run_rt.cpp
+    ${HOME_INTERFACE}/tcl/tcl_irt/src/tcl_destroy_rt.cpp
+    ${HOME_INTERFACE}/tcl/tcl_irt/src/tcl_rt_clean_def.cpp
+    ${HOME_INTERFACE}/tcl/tcl_irt/src/tcl_rt_fix_fanout.cpp
+    ${HOME_INTERFACE}/tcl/tcl_irt/src/tcl_rt_get_congestion.cpp
 )
 
 target_link_libraries(tcl_irt 

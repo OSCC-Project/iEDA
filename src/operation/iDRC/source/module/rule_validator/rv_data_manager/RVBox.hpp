@@ -19,10 +19,10 @@
 #include "DRCShape.hpp"
 #include "LayerRect.hpp"
 #include "PlanarRect.hpp"
+#include "RVComParam.hpp"
 #include "RVSummary.hpp"
 #include "Segment.hpp"
 #include "Violation.hpp"
-#include "RVComParam.hpp"
 
 namespace idrc {
 

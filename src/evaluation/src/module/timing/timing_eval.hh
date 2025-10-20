@@ -64,6 +64,9 @@ class TimingEval
   std::map<int, double> patchTimingMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch);
   std::map<int, double> patchPowerMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch);
   std::map<int, double> patchIRDropMap(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& patch);
+  
+  void buildRCTree(const std::string& routing_type);
+  void buildSpefRCTree(const std::string& work_dir);
 
  private:
   static TimingEval* _timing_eval;

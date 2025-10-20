@@ -125,10 +125,10 @@ struct VRSummary
 
 struct ERSummary
 {
-  std::map<int32_t, int32_t> routing_demand_map;
-  int32_t total_demand = 0;
-  std::map<int32_t, int32_t> routing_overflow_map;
-  int32_t total_overflow = 0;
+  std::map<int32_t, double> routing_demand_map;
+  double total_demand = 0;
+  std::map<int32_t, double> routing_overflow_map;
+  double total_overflow = 0;
   std::map<int32_t, double> routing_wire_length_map;
   double total_wire_length = 0;
   std::map<int32_t, int32_t> cut_via_num_map;
