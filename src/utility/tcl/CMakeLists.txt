@@ -3,7 +3,6 @@ set(CMAKE_CXX_STANDARD 20)
 
 find_package(TCL 8.6 QUIET)
 if(TCL_FOUND)
-  find_path(TCL_INCLUDE_DIR tcl.h PATH_SUFFIXES tcl8.6)
   include_directories(${TCL_INCLUDE_PATH})
 else(TCL_FOUND)
   # install Tcl 8.6 https://github.com/tcltk/tcl/tree/core-8-6-branch
