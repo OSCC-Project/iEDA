@@ -57,7 +57,7 @@ void FixFanout::fixIO() {
       }
       // 构建新的net
       idb::IdbNet *new_net = new IdbNet();
-      new_net->set_net_name("zzs_net_" + std::to_string(new_idx++));
+      new_net->set_net_name("fixio_net_" + std::to_string(new_idx++));
       idb_net_list->add_net(new_net);
       // 将原instance pin加入新net
       for (idb::IdbPin *instance_pin : instance_pin_list) {
@@ -67,7 +67,7 @@ void FixFanout::fixIO() {
       }
       // 生成buf
       idb::IdbInstance *new_buf = new IdbInstance();
-      new_buf->set_name("zzs_buf_" + std::to_string(new_idx++));
+      new_buf->set_name("fixio_buf_" + std::to_string(new_idx++));
       new_buf->set_cell_master(idb_cell_master_list->find_cell_master(buffer_name));
       idb_instance_list->add_instance(new_buf);
       // 插入buf
@@ -102,7 +102,7 @@ void FixFanout::fixIO() {
       idb_io_pin->set_net_name(io_net->get_net_name());
       // 生成buf
       idb::IdbInstance *new_buf = new IdbInstance();
-      new_buf->set_name("zzs_buf_" + std::to_string(new_idx++));
+      new_buf->set_name("fixio_buf_" + std::to_string(new_idx++));
       new_buf->set_cell_master(idb_cell_master_list->find_cell_master(buffer_name));
       idb_instance_list->add_instance(new_buf);
       // 插入buf
