@@ -48,43 +48,80 @@ void FixFanout::fixIO() {
       continue;
     }
     if (idb_io_pin->get_pin_name() == idb_io_pin->get_net()->get_net_name()) {
-      continue;
-    }
-    // 在当前net中解开io pin
-    idb::IdbNet *origin_net = idb_io_pin->get_net();
-    if (origin_net == nullptr) {
-      std::cout << "curr_net is empty !!!" << std::endl;
-    }
-    origin_net->remove_pin(idb_io_pin);
-    // 加入原来的io net
-    idb::IdbNet *io_net = idb_net_list->find_net(idb_io_pin->get_pin_name());
-    if (io_net == nullptr) {
-      io_net = new IdbNet();
-      io_net->set_net_name(idb_io_pin->get_pin_name());
-      idb_net_list->add_net(io_net);
-    }
-    idb_io_pin->set_net(io_net);
-    idb_io_pin->set_net_name(io_net->get_net_name());
-    // 生成buf
-    idb::IdbInstance *new_buf = new IdbInstance();
-    new_buf->set_name("zzs_buf_" + std::to_string(new_idx++));
-    new_buf->set_cell_master(idb_cell_master_list->find_cell_master(buffer_name));
-    idb_instance_list->add_instance(new_buf);
-    // 插入buf
-    for (idb::IdbPin *buf_pin : new_buf->get_pin_list()->get_pin_list()) {
-      if (buf_pin->get_term()->get_type() == idb::IdbConnectType::kPower ||
-          buf_pin->get_term()->get_type() == idb::IdbConnectType::kGround) {
-        continue;
+      idb::IdbNet               *origin_net = idb_io_pin->get_net();
+      std::vector<idb::IdbPin *> instance_pin_list =
+          origin_net->get_instance_pin_list()->get_pin_list();
+      // 在origin net中解开所有instance_pin
+      for (idb::IdbPin *instance_pin : instance_pin_list) {
+        origin_net->remove_pin(instance_pin);
       }
-      if (buf_pin->get_term()->get_direction() == idb::IdbConnectDirection::kInput) {
-        origin_net->add_instance_pin(buf_pin);
-        buf_pin->set_net(origin_net);
-        buf_pin->set_net_name(origin_net->get_net_name());
-      } else if (buf_pin->get_term()->get_direction() ==
-                 idb::IdbConnectDirection::kOutput) {
-        io_net->add_instance_pin(buf_pin);
-        buf_pin->set_net(io_net);
-        buf_pin->set_net_name(io_net->get_net_name());
+      // 构建新的net
+      idb::IdbNet *new_net = new IdbNet();
+      new_net->set_net_name("zzs_net_" + std::to_string(new_idx++));
+      idb_net_list->add_net(new_net);
+      // 将原instance pin加入新net
+      for (idb::IdbPin *instance_pin : instance_pin_list) {
+        new_net->add_instance_pin(instance_pin);
+        instance_pin->set_net(new_net);
+        instance_pin->set_net_name(new_net->get_net_name());
+      }
+      // 生成buf
+      idb::IdbInstance *new_buf = new IdbInstance();
+      new_buf->set_name("zzs_buf_" + std::to_string(new_idx++));
+      new_buf->set_cell_master(idb_cell_master_list->find_cell_master(buffer_name));
+      idb_instance_list->add_instance(new_buf);
+      // 插入buf
+      for (idb::IdbPin *buf_pin : new_buf->get_pin_list()->get_pin_list()) {
+        if (buf_pin->get_term()->get_type() == idb::IdbConnectType::kPower ||
+            buf_pin->get_term()->get_type() == idb::IdbConnectType::kGround) {
+          continue;
+        }
+        if (buf_pin->get_term()->get_direction() == idb::IdbConnectDirection::kInput) {
+          origin_net->add_instance_pin(buf_pin);
+          buf_pin->set_net(origin_net);
+          buf_pin->set_net_name(origin_net->get_net_name());
+        } else if (buf_pin->get_term()->get_direction() ==
+                   idb::IdbConnectDirection::kOutput) {
+          new_net->add_instance_pin(buf_pin);
+          buf_pin->set_net(new_net);
+          buf_pin->set_net_name(new_net->get_net_name());
+        }
+      }
+
+    } else {
+      idb::IdbNet *origin_net = idb_io_pin->get_net();
+      // 在origin net中解开io pin
+      origin_net->remove_pin(idb_io_pin);
+      // 加入原来的io net
+      idb::IdbNet *io_net = idb_net_list->find_net(idb_io_pin->get_pin_name());
+      if (io_net == nullptr) {
+        io_net = new IdbNet();
+        io_net->set_net_name(idb_io_pin->get_pin_name());
+        idb_net_list->add_net(io_net);
+      }
+      idb_io_pin->set_net(io_net);
+      idb_io_pin->set_net_name(io_net->get_net_name());
+      // 生成buf
+      idb::IdbInstance *new_buf = new IdbInstance();
+      new_buf->set_name("zzs_buf_" + std::to_string(new_idx++));
+      new_buf->set_cell_master(idb_cell_master_list->find_cell_master(buffer_name));
+      idb_instance_list->add_instance(new_buf);
+      // 插入buf
+      for (idb::IdbPin *buf_pin : new_buf->get_pin_list()->get_pin_list()) {
+        if (buf_pin->get_term()->get_type() == idb::IdbConnectType::kPower ||
+            buf_pin->get_term()->get_type() == idb::IdbConnectType::kGround) {
+          continue;
+        }
+        if (buf_pin->get_term()->get_direction() == idb::IdbConnectDirection::kInput) {
+          origin_net->add_instance_pin(buf_pin);
+          buf_pin->set_net(origin_net);
+          buf_pin->set_net_name(origin_net->get_net_name());
+        } else if (buf_pin->get_term()->get_direction() ==
+                   idb::IdbConnectDirection::kOutput) {
+          io_net->add_instance_pin(buf_pin);
+          buf_pin->set_net(io_net);
+          buf_pin->set_net_name(io_net->get_net_name());
+        }
       }
     }
   }

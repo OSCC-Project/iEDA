@@ -14,30 +14,25 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
+#include "RTInterface.hpp"
+#include "tcl_rt.h"
+#include "tcl_util.h"
 
-#include "AccessPoint.hpp"
-#include "EXTLayerRect.hpp"
-#include "Pin.hpp"
-#include "PlanarCoord.hpp"
-#include "RTHeader.hpp"
+namespace tcl {
 
-namespace irt {
-
-class ERPin : public Pin
+TclRTGetCongestion::TclRTGetCongestion(const char* cmd_name) : TclCmd(cmd_name)
 {
- public:
-  ERPin() = default;
-  explicit ERPin(const Pin& pin) : Pin(pin) {}
-  ~ERPin() = default;
-  // getter
-  std::vector<AccessPoint>& get_access_point_list() { return _access_point_list; }
-  // setter
-  void set_access_point_list(const std::vector<AccessPoint>& access_point_list) { _access_point_list = access_point_list; }
-  // function
+}
 
- private:
-  std::vector<AccessPoint> _access_point_list;
-};
+unsigned TclRTGetCongestion::exec()
+{
+  if (!check()) {
+    return 0;
+  }
 
-}  // namespace irt
+  RTI.getCongestion();
+
+  return 1;
+}
+
+}  // namespace tcl

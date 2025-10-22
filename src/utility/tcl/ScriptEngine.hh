@@ -24,7 +24,11 @@
 
 #pragma once
 
-#include <tcl8.6/tcl.h>
+#if __has_include(<tcl8.6/tcl.h>)
+  #include <tcl8.6/tcl.h>
+#else
+  #include <tcl.h>
+#endif
 
 #include <memory>
 #include <mutex>

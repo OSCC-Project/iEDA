@@ -5,5 +5,5 @@ buildLayerNodeMap:初始化graph
 buildLANodeNeighbor:构建graph的邻居
 buildOrientSupply:从supply_analyzer获取supply的access
 buildPlaneTree:从顶层拿取topo树
-routeLAModel:
+routeLAModel:进行层分配
     routeLATask:一个接一个的la_net进行布线

@@ -134,4 +134,14 @@ std::map<int, double> TimingAPI::patchIRDropMap(std::map<int, std::pair<std::pai
   return EVAL_STA_INST->patchIRDropMap(patch_xy_map);
 }
 
+void TimingAPI::buildRCTree(const std::string& routing_type)
+{
+  EVAL_STA_INST->buildRCTree(routing_type);
+}
+
+void TimingAPI::buildSpefRCTree(const std::string& work_dir)
+{
+  EVAL_STA_INST->buildSpefRCTree(work_dir);
+}
+
 }  // namespace ieval

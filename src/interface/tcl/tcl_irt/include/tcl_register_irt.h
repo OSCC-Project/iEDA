@@ -32,6 +32,7 @@ int registerCmdRT()
   // aux
   registerTclCmd(TclRTCleanDef, "rt_clean_def");
   registerTclCmd(TclRTFixFanout, "rt_fix_fanout");
+  registerTclCmd(TclRTGetCongestion, "rt_get_congestion");
   return EXIT_SUCCESS;
 }
 

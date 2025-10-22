@@ -16,28 +16,28 @@
 // ***************************************************************************************
 #pragma once
 
-#include "AccessPoint.hpp"
-#include "EXTLayerRect.hpp"
-#include "Pin.hpp"
-#include "PlanarCoord.hpp"
-#include "RTHeader.hpp"
+#include "ERConflictPoint.hpp"
 
 namespace irt {
 
-class ERPin : public Pin
+class ERConflictGroup
 {
  public:
-  ERPin() = default;
-  explicit ERPin(const Pin& pin) : Pin(pin) {}
-  ~ERPin() = default;
+  ERConflictGroup() = default;
+  ~ERConflictGroup() = default;
   // getter
-  std::vector<AccessPoint>& get_access_point_list() { return _access_point_list; }
+  std::vector<std::vector<ERConflictPoint>>& get_conflict_point_list_list() { return _conflict_point_list_list; }
+  std::map<int32_t, std::vector<int32_t>>& get_conflict_map() { return _conflict_map; }
   // setter
-  void set_access_point_list(const std::vector<AccessPoint>& access_point_list) { _access_point_list = access_point_list; }
+  void set_conflict_point_list_list(const std::vector<std::vector<ERConflictPoint>>& conflict_point_list_list)
+  {
+    _conflict_point_list_list = conflict_point_list_list;
+  }
+  void set_conflict_map(const std::map<int32_t, std::vector<int32_t>>& conflict_map) { _conflict_map = conflict_map; }
   // function
-
  private:
-  std::vector<AccessPoint> _access_point_list;
+  std::vector<std::vector<ERConflictPoint>> _conflict_point_list_list;
+  std::map<int32_t, std::vector<int32_t>> _conflict_map;
 };
 
 }  // namespace irt

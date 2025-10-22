@@ -185,6 +185,8 @@ void RTInterface::destroyRT()
 
 void RTInterface::cleanDef()
 {
+#if 1
+
   //////////////////////////////////////////
   // 删除net内所有的wire
   IdbNetList* idb_net_list = dmInst->get_idb_def_service()->get_design()->get_net_list();
@@ -209,6 +211,8 @@ void RTInterface::cleanDef()
   }
   // 删除虚空的io_pin
   //////////////////////////////////////////
+
+#endif
 
 #if 0
 
@@ -346,6 +350,39 @@ void RTInterface::fixFanout()
     }
     RTLOG.info(Loc::current(), "Fixed ", origin_net_set.size(), " nets!( +", idb_net_list->get_num() - begin_net_num, " nets )");
   }
+}
+
+void RTInterface::getCongestion()
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  initFlute();
+  RTGP.init();
+  RTDE.init();
+
+  PinAccessor::initInst();
+  RTPA.access();
+  PinAccessor::destroyInst();
+
+  SupplyAnalyzer::initInst();
+  RTSA.analyze();
+  SupplyAnalyzer::destroyInst();
+
+  TopologyGenerator::initInst();
+  RTTG.generate();
+  TopologyGenerator::destroyInst();
+
+  LayerAssigner::initInst();
+  RTLA.assign();
+  LayerAssigner::destroyInst();
+
+  destroyFlute();
+  RTGP.destroy();
+  RTDE.destroy();
+
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+
 }
 
 #endif

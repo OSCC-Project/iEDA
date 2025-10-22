@@ -1308,9 +1308,14 @@ int LefRead::parse_via(lefiVia* lef_via)
     via_master->set_via_shape();
 
     /// rows and cols
-    if (lef_via->hasRowCol()) {
-      via_master->set_cut_row_col(lef_via->numCutRows(), lef_via->numCutCols());
+    int32_t num_rows = 1;
+    int32_t num_cols = 1;
+    if (lef_via->hasRowCol()){
+      num_rows = lef_via->numCutRows();
+      num_cols = lef_via->numCutCols();
     }
+    via_master->set_cut_row_col(num_rows, num_cols);
+
   }
 
   return kDbSuccess;

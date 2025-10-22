@@ -16,28 +16,25 @@
 // ***************************************************************************************
 #pragma once
 
-#include "AccessPoint.hpp"
-#include "EXTLayerRect.hpp"
-#include "Pin.hpp"
-#include "PlanarCoord.hpp"
-#include "RTHeader.hpp"
+#include "ERPin.hpp"
 
 namespace irt {
 
-class ERPin : public Pin
+class ERConflictPoint : public LayerCoord
 {
  public:
-  ERPin() = default;
-  explicit ERPin(const Pin& pin) : Pin(pin) {}
-  ~ERPin() = default;
+  ERConflictPoint() = default;
+  ~ERConflictPoint() = default;
   // getter
-  std::vector<AccessPoint>& get_access_point_list() { return _access_point_list; }
+  ERPin* get_er_pin() { return _er_pin; }
+  AccessPoint* get_access_point() { return _access_point; }
   // setter
-  void set_access_point_list(const std::vector<AccessPoint>& access_point_list) { _access_point_list = access_point_list; }
+  void set_er_pin(ERPin* er_pin) { _er_pin = er_pin; }
+  void set_access_point(AccessPoint* access_point) { _access_point = access_point; }
   // function
-
  private:
-  std::vector<AccessPoint> _access_point_list;
+  ERPin* _er_pin = nullptr;
+  AccessPoint* _access_point = nullptr;
 };
 
 }  // namespace irt
