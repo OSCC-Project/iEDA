@@ -88,7 +88,7 @@ class EarlyRouter
   std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByUPattern(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
   std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByInner3Bends(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
   std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByOuter3Bends(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
-  double getNodeCost(ERModel& er_model, std::vector<Segment<PlanarCoord>>& routing_segment_list);
+  void updateERCandidate(ERModel& er_model, ERCandidate& er_candidate);
   MTree<PlanarCoord> getCoordTree(ERModel& er_model, std::vector<Segment<PlanarCoord>>& routing_segment_list);
   void resetSinglePlanarTask(ERModel& er_model);
   void buildLayerNodeMap(ERModel& er_model);
