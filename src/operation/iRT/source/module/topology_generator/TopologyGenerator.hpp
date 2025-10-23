@@ -20,6 +20,7 @@
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Monitor.hpp"
+#include "TGCandidate.hpp"
 #include "TGModel.hpp"
 
 namespace irt {
@@ -67,7 +68,7 @@ class TopologyGenerator
   std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByUPattern(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
   std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByInner3Bends(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
   std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByOuter3Bends(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
-  double getNodeCost(TGModel& tg_model, std::vector<Segment<PlanarCoord>>& routing_segment_list);
+  void updateTGCandidate(TGModel& tg_model, TGCandidate& tg_candidate);
   MTree<PlanarCoord> getCoordTree(TGModel& tg_model, std::vector<Segment<PlanarCoord>>& routing_segment_list);
   void uploadNetResult(TGModel& tg_model, MTree<PlanarCoord>& coord_tree);
   void resetSingleTask(TGModel& tg_model);

@@ -91,6 +91,7 @@ class DetailedRouter
   void resetPathHead(DRBox& dr_box);
   void updatePathResult(DRBox& dr_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(DRNode* node);
+  void updateDirectionSet(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);
   void resetSinglePath(DRBox& dr_box);
   void updateTaskResult(DRBox& dr_box);
@@ -102,6 +103,7 @@ class DetailedRouter
   double getNodeCost(DRBox& dr_box, DRNode* curr_node, Orientation orientation);
   double getKnownWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getKnownViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
+  double getKnownBendCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getKnownSelfCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateCostToEnd(DRBox& dr_box, DRNode* curr_node);
   double getEstimateCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
