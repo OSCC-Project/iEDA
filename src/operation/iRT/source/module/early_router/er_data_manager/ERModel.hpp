@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
-#include "ERConflictGroup.hpp"
 #include "ERComParam.hpp"
+#include "ERConflictGroup.hpp"
 #include "ERNet.hpp"
 #include "ERNode.hpp"
 #include "RTHeader.hpp"
