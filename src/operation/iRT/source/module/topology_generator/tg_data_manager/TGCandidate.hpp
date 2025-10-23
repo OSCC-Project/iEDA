@@ -26,27 +26,35 @@ class TGCandidate
 {
  public:
   TGCandidate() = default;
-  TGCandidate(int32_t topo_idx, const std::vector<Segment<PlanarCoord>>& routing_segment_list, double cost)
+  TGCandidate(int32_t topo_idx, const std::vector<Segment<PlanarCoord>>& routing_segment_list, int32_t total_length, bool is_blocked, double total_cost)
   {
     _topo_idx = topo_idx;
     _routing_segment_list = routing_segment_list;
-    _cost = cost;
+    _total_length = total_length;
+    _is_blocked = is_blocked;
+    _total_cost = total_cost;
   }
   ~TGCandidate() = default;
   // getter
   int32_t get_topo_idx() const { return _topo_idx; }
   std::vector<Segment<PlanarCoord>>& get_routing_segment_list() { return _routing_segment_list; }
-  double get_cost() const { return _cost; }
+  int32_t get_total_length() const { return _total_length; }
+  bool get_is_blocked() const { return _is_blocked; }
+  double get_total_cost() const { return _total_cost; }
   // setter
   void set_topo_idx(const int32_t topo_idx) { _topo_idx = topo_idx; }
   void set_routing_segment_list(const std::vector<Segment<PlanarCoord>>& routing_segment_list) { _routing_segment_list = routing_segment_list; }
-  void set_cost(const double cost) { _cost = cost; }
+  void set_total_length(const int32_t total_length) { _total_length = total_length; }
+  void set_is_blocked(const bool is_blocked) { _is_blocked = is_blocked; }
+  void set_total_cost(const double total_cost) { _total_cost = total_cost; }
   // function
 
  private:
   int32_t _topo_idx = -1;
   std::vector<Segment<PlanarCoord>> _routing_segment_list;
-  double _cost = 0.0;
+  int32_t _total_length = 0;
+  bool _is_blocked = false;
+  double _total_cost = 0.0;
 };
 
 }  // namespace irt

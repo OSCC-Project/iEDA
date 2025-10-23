@@ -111,6 +111,9 @@ class DRNode : public LayerCoord
     return cost;
   }
 #if 1  // astar
+  // single task
+  std::set<Direction>& get_direction_set() { return _direction_set; }
+  void set_direction_set(std::set<Direction>& direction_set) { _direction_set = direction_set; }
   // single path
   DRNodeState& get_state() { return _state; }
   DRNode* get_parent_node() const { return _parent_node; }
@@ -136,6 +139,8 @@ class DRNode : public LayerCoord
   // violation
   std::map<Orientation, int32_t> _orient_violation_number_map;
 #if 1  // astar
+  // single task
+  std::set<Direction> _direction_set;
   // single path
   DRNodeState _state = DRNodeState::kNone;
   DRNode* _parent_node = nullptr;
