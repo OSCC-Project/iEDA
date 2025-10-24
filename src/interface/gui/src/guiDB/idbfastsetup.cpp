@@ -1102,10 +1102,10 @@ void IdbSpeedUpSetup::createBlockage() {
     int urx = 0;
     int ury = 0;
     for (auto idb_rect : idb_blockage->get_rect_list()) {
-      llx = min(llx, idb_rect->get_low_x());
-      lly = min(lly, idb_rect->get_low_y());
-      urx = max(urx, idb_rect->get_high_x());
-      ury = max(ury, idb_rect->get_high_y());
+      llx = std::min(llx, idb_rect->get_low_x());
+      lly = std::min(lly, idb_rect->get_low_y());
+      urx = std::max(urx, idb_rect->get_high_x());
+      ury = std::max(ury, idb_rect->get_high_y());
       gui_block->set_halo_rect(_transform.db_to_guidb_rect(idb_rect));
     }
 

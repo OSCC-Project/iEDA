@@ -21,7 +21,7 @@
 
 #include "builder.h"
 #include "file_cts.h"
-#include "idrc_violation.h"
+#include "ids.hpp"
 #include "mainwindow.h"
 #include "vec_net.h"
 
@@ -49,7 +49,7 @@ namespace igui {
     /// data operation-
     void readDB(std::vector<std::string> lef_paths, std::string def_path);
     void readDB(IdbBuilder* _builder);
-    void readDrcDb(std::map<std::string, std::vector<idrc::DrcViolation*>>& drc_db, int max_num = -1);
+    void readDrcDb(std::map<std::string, std::map<std::string, std::vector<ids::Violation>>>& drc_db, int max_num = -1);
     void readClockTreeDb(std::vector<iplf::CtsTreeNodeMap*>& node_list);
     void readGraphDb(std::map<int, ivec::VecNet> net_map);
 
