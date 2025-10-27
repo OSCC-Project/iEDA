@@ -68,6 +68,7 @@ void TopologyGenerator::generate()
   outputGuide(tg_model);
   outputNetCSV(tg_model);
   outputOverflowCSV(tg_model);
+  outputDemandCSV(tg_model);
   outputJson(tg_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -136,6 +137,32 @@ void TopologyGenerator::initTGTaskList(TGModel& tg_model)
     tg_task_list.push_back(&tg_net);
   }
   std::sort(tg_task_list.begin(), tg_task_list.end(), CmpTGNet());
+  
+  // 输出排序后的网络信息到CSV文件
+  std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
+  std::ofstream* task_list_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(tg_temp_directory_path, "tg_task_list.csv"));
+  
+  // 写入表头
+  RTUTIL.pushStream(task_list_csv_file, "net_idx,net_name,pin_count,connect_type,bbox_ll_x,bbox_ll_y,bbox_ur_x,bbox_ur_y\n");
+  
+  // 写入每个网络的信息
+  GetConnectTypeName get_connect_type_name;
+  for (TGNet* tg_net : tg_task_list) {
+    Net* origin_net = tg_net->get_origin_net();
+    BoundingBox& bounding_box = tg_net->get_bounding_box();
+    
+    RTUTIL.pushStream(task_list_csv_file, tg_net->get_net_idx(), ",");
+    RTUTIL.pushStream(task_list_csv_file, origin_net->get_net_name(), ",");
+    RTUTIL.pushStream(task_list_csv_file, tg_net->get_tg_pin_list().size(), ",");
+    RTUTIL.pushStream(task_list_csv_file, get_connect_type_name(tg_net->get_connect_type()), ",");
+    RTUTIL.pushStream(task_list_csv_file, bounding_box.get_real_ll_x(), ",");
+    RTUTIL.pushStream(task_list_csv_file, bounding_box.get_real_ll_y(), ",");
+    RTUTIL.pushStream(task_list_csv_file, bounding_box.get_real_ur_x(), ",");
+    RTUTIL.pushStream(task_list_csv_file, bounding_box.get_real_ur_y(), "\n");
+  }
+  
+  RTUTIL.closeFileStream(task_list_csv_file);
+  RTLOG.info(Loc::current(), "The tg_task_list.csv file has been saved to ", tg_temp_directory_path);
 }
 
 void TopologyGenerator::buildTGNodeMap(TGModel& tg_model)
@@ -229,6 +256,12 @@ void TopologyGenerator::generateTGModel(TGModel& tg_model)
   Monitor stage_monitor;
   for (size_t i = 0; i < tg_task_list.size(); i++) {
     routeTGTask(tg_model, tg_task_list[i]);
+    
+    // 每50个net输出一次demand map
+    if ((i + 1) % 50 == 0) {
+      outputDemandCSV(tg_model, static_cast<int32_t>(i + 1));
+    }
+    
     if ((i + 1) % batch_size == 0 || (i + 1) == tg_task_list.size()) {
       RTLOG.info(Loc::current(), "Routed ", (i + 1), "/", tg_task_list.size(), "(", RTUTIL.getPercentage(i + 1, tg_task_list.size()), ") nets",
                  stage_monitor.getStatsInfo());
@@ -1030,6 +1063,39 @@ void TopologyGenerator::outputOverflowCSV(TGModel& tg_model)
   }
   RTUTIL.closeFileStream(overflow_csv_file);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+void TopologyGenerator::outputDemandCSV(TGModel& tg_model)
+{
+  std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
+
+  std::ofstream* demand_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(tg_temp_directory_path, "demand_map.csv"));
+  GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
+  for (int32_t y = tg_node_map.get_y_size() - 1; y >= 0; y--) {
+    for (int32_t x = 0; x < tg_node_map.get_x_size(); x++) {
+      RTUTIL.pushStream(demand_csv_file, tg_node_map[x][y].getDemand(), ",");
+    }
+    RTUTIL.pushStream(demand_csv_file, "\n");
+  }
+  RTUTIL.closeFileStream(demand_csv_file);
+  RTLOG.info(Loc::current(), "The demand csv file has been saved");
+}
+
+void TopologyGenerator::outputDemandCSV(TGModel& tg_model, int32_t net_index)
+{
+  std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
+
+  std::string filename = RTUTIL.getString("demand_map_", net_index, ".csv");
+  std::ofstream* demand_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(tg_temp_directory_path, filename));
+  GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
+  for (int32_t y = tg_node_map.get_y_size() - 1; y >= 0; y--) {
+    for (int32_t x = 0; x < tg_node_map.get_x_size(); x++) {
+      RTUTIL.pushStream(demand_csv_file, tg_node_map[x][y].getDemand(), ",");
+    }
+    RTUTIL.pushStream(demand_csv_file, "\n");
+  }
+  RTUTIL.closeFileStream(demand_csv_file);
+  RTLOG.info(Loc::current(), "The demand csv file ", filename, " has been saved");
 }
 
 void TopologyGenerator::outputJson(TGModel& tg_model)
