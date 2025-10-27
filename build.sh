@@ -36,9 +36,7 @@ BUILD_THREADS="$(nproc)"
 CMAKE_OPTIONS=(
   "-DCMAKE_BUILD_TYPE=Release"
   "-DCMD_BUILD=ON"
-  "-DBUILD_STATIC_LIB=${BUILD_STATIC_LIB:-ON}"
 )
-  # "-DBUILD_PYTHON=${BUILD_PYTHON:-OFF}"
   # "-DBUILD_GUI=${BUILD_GUI:-OFF}"
   # "-DCOMPATIBILITY_MODE=${COMPATIBILITY_MODE:-OFF}"
   # "-DUSE_PROFILER=${USE_PROFILER:-OFF}"
@@ -70,7 +68,7 @@ echo -e "  ${bold}-r${clear} run iEDA hello test after build (default OFF)"
 echo -e "  ${bold}-j${clear} job threads for building iEDA (default ${BUILD_THREADS} (num of cores))"
 echo -e "  ${bold}-b${clear} iEDA binary path (default at ${BINARY_DIR})"
 echo -e "  ${bold}-i${clear} apt-get install (root/sudo required) dependencies before build (default OFF)"
-echo -e "  ${bold}-p${clear} build Python bindings (default OFF)"
+echo -e "  ${bold}-p${clear} build AIEDA (default OFF)"
 echo -e "  ${bold}-g${clear} enable GUI components (default OFF)"
 echo -e "  ${bold}-s${clear} enable address sanitizer (default OFF)"
 echo -e "  ${bold}-P${clear} enable performance profiling (default OFF)"
@@ -361,7 +359,7 @@ perform_clean()
 
 opt_build_target()
 {
-  BINARY_TARGET=${OPTARG}
+  BINARY_TARGET=$1
 }
 
 opt_dry_run()
@@ -374,29 +372,34 @@ opt_non_interactive()
   NON_INTERACTIVE="ON"
 }
 
+opt_build_aieda()
+{
+  CMAKE_OPTIONS+=("-DBUILD_AIEDA=ON")
+  opt_build_target "ieda_py"
+}
+
 # invalid args
 if [[ $1 != "" ]] && [[ $1 != -* ]]; then
   help_msg_exit 1
 fi
 
-while getopts j:b:t:i:rndDypx opt; do
+while getopts j:b:t:i:rndDyp opt; do
   case "${opt}" in
-    j) opt_thread_num "$OPTARG"     ;;
-    b) opt_binary_dir "$OPTARG"     ;;
-    t) opt_build_target "$OPTARG"   ;;
+    j) opt_thread_num "$OPTARG"   ;;
+    b) opt_binary_dir "$OPTARG"   ;;
+    t) opt_build_target "$OPTARG" ;;
     i) opt_install_dependencies "$OPTARG" ;;
     r) opt_run_ieda               ;;
     n) opt_no_build               ;;
     d) opt_del_build              ;;
     D) opt_dry_run                ;;
     y) opt_non_interactive        ;;
-    p) CMAKE_OPTIONS+=("-DBUILD_PYTHON=ON") ;;
+    p) opt_build_aieda            ;;
     g) CMAKE_OPTIONS+=("-DBUILD_GUI=ON")    ;;
     s) CMAKE_OPTIONS+=("-DSANITIZER=ON")    ;;
     P) CMAKE_OPTIONS+=("-DUSE_PROFILER=ON") ;;
     G) CMAKE_OPTIONS+=("-DUSE_GPU=ON")      ;;
     C) CMAKE_OPTIONS+=("-DCOMPATIBILITY_MODE=ON") ;;
-    x) CMAKE_OPTIONS+=("-DCCLOUD_WORKAROUND=ON") ;;
     h) help_msg_exit 0            ;;
     *) help_msg_exit 1            ;;
   esac

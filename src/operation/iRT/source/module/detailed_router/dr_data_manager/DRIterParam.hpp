@@ -22,11 +22,12 @@ class DRIterParam
 {
  public:
   DRIterParam() = default;
-  DRIterParam(double prefer_wire_unit, double non_prefer_wire_unit, double via_unit, int32_t size, int32_t offset, int32_t schedule_interval,
+  DRIterParam(double prefer_wire_unit, double non_prefer_wire_unit, double bend_unit, double via_unit, int32_t size, int32_t offset, int32_t schedule_interval,
               double fixed_rect_unit, double routed_rect_unit, double violation_unit, int32_t max_routed_times, int32_t max_candidate_patch_num)
   {
     _prefer_wire_unit = prefer_wire_unit;
     _non_prefer_wire_unit = non_prefer_wire_unit;
+    _bend_unit = bend_unit;
     _via_unit = via_unit;
     _size = size;
     _offset = offset;
@@ -41,6 +42,7 @@ class DRIterParam
   // getter
   double get_prefer_wire_unit() const { return _prefer_wire_unit; }
   double get_non_prefer_wire_unit() const { return _non_prefer_wire_unit; }
+  double get_bend_unit() const { return _bend_unit; }
   double get_via_unit() const { return _via_unit; }
   int32_t get_size() const { return _size; }
   int32_t get_offset() const { return _offset; }
@@ -53,6 +55,7 @@ class DRIterParam
   // setter
   void set_prefer_wire_unit(const double prefer_wire_unit) { _prefer_wire_unit = prefer_wire_unit; }
   void set_non_prefer_wire_unit(const double non_prefer_wire_unit) { _non_prefer_wire_unit = non_prefer_wire_unit; }
+  void set_bend_unit(const double bend_unit) { _bend_unit = bend_unit; }
   void set_via_unit(const double via_unit) { _via_unit = via_unit; }
   void set_size(const int32_t size) { _size = size; }
   void set_offset(const int32_t offset) { _offset = offset; }
@@ -66,6 +69,7 @@ class DRIterParam
  private:
   double _prefer_wire_unit = 0;
   double _non_prefer_wire_unit = 0;
+  double _bend_unit = 0;
   double _via_unit = 0;
   int32_t _size = -1;
   int32_t _offset = -1;

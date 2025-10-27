@@ -23,7 +23,7 @@ namespace igui {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   bool GuiIO::autoRunDrcCheckDef() { return true; }
 
-  void GuiIO::readDrcDb(std::map<std::string, std::vector<idrc::DrcViolation*>>& drc_db, int max_num) {
+  void GuiIO::readDrcDb(std::map<std::string, std::map<std::string, std::vector<ids::Violation>>>& drc_db, int max_num) {
     _gui_win->get_scene()->createDrc(drc_db, max_num);
   }
 

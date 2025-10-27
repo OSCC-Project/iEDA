@@ -43,7 +43,7 @@
 #include "guistandardcell.h"
 #include "guistring.h"
 #include "guivia.h"
-#include "idrc_violation.h"
+#include "ids.hpp"
 #include "lef_service.h"
 #include "transform.h"
 #include "vec_net.h"
@@ -75,7 +75,7 @@ class IdbSpeedUpSetup : public DbSetup {
   void search(std::string search_text);
 
   /// drc
-  void showDrc(std::map<std::string, std::vector<idrc::DrcViolation*>>& drc_db, int max_num = -1);
+  void showDrc(std::map<std::string, std::map<std::string, std::vector<ids::Violation>>>& drc_db, int max_num = -1);
 
   void showGraph(std::map<int, ivec::VecNet> net_map);
 
@@ -151,7 +151,7 @@ class IdbSpeedUpSetup : public DbSetup {
   void createBlockage();
 
   /// DRC
-  void createDrc(GuiSpeedupDrcList* drc_list, idrc::DrcViolation* drc_db);
+  void createDrc(GuiSpeedupDrcList* drc_list, ids::Violation& drc_db);
 
   void createPinPortShape(vector<IdbPin*>& pin_list, GuiSpeedupItem* item = nullptr);
   void createLayerShape(IdbLayerShape& layer_shape, GuiSpeedupItem* item = nullptr);

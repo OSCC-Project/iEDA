@@ -30,7 +30,7 @@
 #include "file_placement.h"
 #include "guiitem.h"
 #include "guitree.h"
-#include "idrc_violation.h"
+#include "ids.hpp"
 #include "line.h"
 #include "ruler.h"
 #include "shape.h"
@@ -62,7 +62,7 @@ class GuiGraphicsScene : public QGraphicsScene {
   void createChip(std::map<std::string, std::list<std::string>> map);
   void createChip(std::vector<std::string> lef_paths, std::string def_path);
   void createChip(IdbBuilder* builder, std::string type = "");
-  void createDrc(std::map<std::string, std::vector<idrc::DrcViolation*>>& drc_db, int max_num = -1);
+  void createDrc(std::map<std::string, std::map<std::string, std::vector<ids::Violation>>>& drc_db, int max_num = -1);
   void createClockTree(std::vector<iplf::CtsTreeNodeMap*>& node_list);
   void updateInstanceInFastMode(std::vector<iplf::FileInstance>& file_inst_list);
   void createGraph(std::map<int, ivec::VecNet> net_map);

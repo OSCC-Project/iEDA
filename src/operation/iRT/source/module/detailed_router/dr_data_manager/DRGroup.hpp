@@ -27,13 +27,16 @@ class DRGroup
   DRGroup() = default;
   ~DRGroup() = default;
   // getter
-  std::vector<LayerCoord>& get_coord_list() { return _coord_list; }
+  std::map<LayerCoord, std::set<Direction>, CmpLayerCoordByXASC>& get_coord_direction_map() { return _coord_direction_map; }
   // setter
-  void set_coord_list(const std::vector<LayerCoord>& coord_list) { _coord_list = coord_list; }
+  void set_coord_direction_map(const std::map<LayerCoord, std::set<Direction>, CmpLayerCoordByXASC>& coord_direction_map)
+  {
+    _coord_direction_map = coord_direction_map;
+  }
   // function
 
  private:
-  std::vector<LayerCoord> _coord_list;
+  std::map<LayerCoord, std::set<Direction>, CmpLayerCoordByXASC> _coord_direction_map;
 };
 
 }  // namespace irt

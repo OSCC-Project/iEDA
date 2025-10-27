@@ -156,7 +156,7 @@ void GuiGraphicsScene::createChip(IdbBuilder* builder, std::string type) {
   }
 }
 
-void GuiGraphicsScene::createDrc(std::map<std::string, std::vector<idrc::DrcViolation*>>& drc_db, int max_num) {
+void GuiGraphicsScene::createDrc(std::map<std::string, std::map<std::string, std::vector<ids::Violation>>>& drc_db, int max_num) {
   ((IdbSpeedUpSetup*)_db_setup)->showDrc(drc_db, max_num);
 }
 

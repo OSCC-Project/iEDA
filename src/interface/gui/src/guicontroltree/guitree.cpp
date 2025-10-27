@@ -157,8 +157,8 @@ void GuiTree::onItemClicked(QTreeWidgetItem *item, int column) {
 
   Qt::CheckState state = item->checkState(column);
   /// save data
-  string parent_name = "";
-  string node_name   = "";
+  std::string parent_name = "";
+  std::string node_name   = "";
 
   /// case 1 : click on the parent node
   if (item->childCount() > 0) {

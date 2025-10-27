@@ -25,7 +25,7 @@
 #include "tcl_gui.h"
 
 #include "gui_io.h"
-#include "lm_api.h"
+#include "vec_api.h"
 #include "tool_manager.h"
 
 namespace tcl {
@@ -243,17 +243,16 @@ unsigned CmdGuiShowGraph::exec()
   if (!check()) {
     return 0;
   }
-  std::cout << "333" << std::endl;
+
   std::string path = "";
   TclOption* path_opt = getOptionOrArg(TCL_PATH);
   if (path_opt != nullptr) {
     path = path_opt->getStringVal();
   }
-  std::cout << "2222" << std::endl;
+
   ivec::VectorizationApi lm_api;
   auto data = lm_api.getGraph(path);
 
-  std::cout << "11111" << std::endl;
   iplf::tmInst->guiShowGraph(data);
 
   return 1;

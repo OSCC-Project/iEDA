@@ -1139,21 +1139,31 @@ std::vector<Segment<PlanarCoord>> EarlyRouter::getPlanarRoutingSegmentList(ERMod
   std::vector<ERCandidate> er_candidate_list;
   for (size_t i = 0; i < planar_topo_list.size(); i++) {
     for (std::vector<Segment<PlanarCoord>> routing_segment_list : getRoutingSegmentListList(er_model, planar_topo_list[i])) {
-      er_candidate_list.emplace_back(i, routing_segment_list, 0);
+      er_candidate_list.emplace_back(i, routing_segment_list, 0, false, 0);
     }
   }
 #pragma omp parallel for
   for (ERCandidate& er_candidate : er_candidate_list) {
-    er_candidate.set_cost(getNodeCost(er_model, er_candidate.get_routing_segment_list()));
+    updateERCandidate(er_model, er_candidate);
   }
   std::map<int32_t, ERCandidate*> topo_candidate_map;
   for (ERCandidate& er_candidate : er_candidate_list) {
     int32_t topo_idx = er_candidate.get_topo_idx();
     if (!RTUTIL.exist(topo_candidate_map, topo_idx)) {
       topo_candidate_map[topo_idx] = &er_candidate;
+      continue;
     }
-    if (er_candidate.get_cost() < topo_candidate_map[topo_idx]->get_cost()) {
+    ERCandidate* current_best = topo_candidate_map[topo_idx];
+    if (!er_candidate.get_is_blocked() && current_best->get_is_blocked()) {
       topo_candidate_map[topo_idx] = &er_candidate;
+    } else if (!er_candidate.get_is_blocked() && !current_best->get_is_blocked()) {
+      if (er_candidate.get_total_length() < current_best->get_total_length()) {
+        topo_candidate_map[topo_idx] = &er_candidate;
+      }
+    } else if (er_candidate.get_is_blocked() && current_best->get_is_blocked()) {
+      if (er_candidate.get_total_cost() < current_best->get_total_cost()) {
+        topo_candidate_map[topo_idx] = &er_candidate;
+      }
     }
   }
   std::vector<Segment<PlanarCoord>> routing_segment_list;
@@ -1563,14 +1573,19 @@ std::vector<std::vector<Segment<PlanarCoord>>> EarlyRouter::getRoutingSegmentLis
   return routing_segment_list_list;
 }
 
-double EarlyRouter::getNodeCost(ERModel& er_model, std::vector<Segment<PlanarCoord>>& routing_segment_list)
+void EarlyRouter::updateERCandidate(ERModel& er_model, ERCandidate& er_candidate)
 {
   double overflow_unit = er_model.get_er_com_param().get_overflow_unit();
   GridMap<ERNode>& planar_node_map = er_model.get_planar_node_map();
   int32_t curr_net_idx = er_model.get_curr_er_task()->get_net_idx();
 
-  double node_cost = 0;
-  for (Segment<PlanarCoord>& coord_segment : routing_segment_list) {
+  int32_t total_length = 0;
+  for (Segment<PlanarCoord>& coord_segment : er_candidate.get_routing_segment_list()) {
+    total_length += RTUTIL.getManhattanDistance(coord_segment.get_first(), coord_segment.get_second());
+  }
+  bool is_blocked = false;
+  double total_cost = 0;
+  for (Segment<PlanarCoord>& coord_segment : er_candidate.get_routing_segment_list()) {
     PlanarCoord& first_coord = coord_segment.get_first();
     PlanarCoord& second_coord = coord_segment.get_second();
     if (!RTUTIL.isRightAngled(first_coord, second_coord)) {
@@ -1585,11 +1600,17 @@ double EarlyRouter::getNodeCost(ERModel& er_model, std::vector<Segment<PlanarCoo
     Direction direction = RTUTIL.getDirection(first_coord, second_coord);
     for (int32_t x = first_x; x <= second_x; x++) {
       for (int32_t y = first_y; y <= second_y; y++) {
-        node_cost += planar_node_map[x][y].getOverflowCost(curr_net_idx, direction, overflow_unit);
+        double overflow_cost = planar_node_map[x][y].getOverflowCost(curr_net_idx, direction, overflow_unit);
+        if (overflow_cost > 1) {
+          is_blocked = true;
+        }
+        total_cost += overflow_cost;
       }
     }
   }
-  return node_cost;
+  er_candidate.set_total_length(total_length);
+  er_candidate.set_is_blocked(is_blocked);
+  er_candidate.set_total_cost(total_cost);
 }
 
 MTree<PlanarCoord> EarlyRouter::getCoordTree(ERModel& er_model, std::vector<Segment<PlanarCoord>>& routing_segment_list)
