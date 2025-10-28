@@ -1056,7 +1056,7 @@ bool DetailedRouter::searchEnded(DRBox& dr_box)
 
 void DetailedRouter::expandSearching(DRBox& dr_box)
 {
-  PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& open_queue = dr_box.get_open_queue();
+  OpenQueue<DRNode>& open_queue = dr_box.get_open_queue();
   DRNode* path_head_node = dr_box.get_path_head_node();
 
   for (auto& [orientation, neighbor_node] : path_head_node->get_neighbor_node_map()) {
@@ -1070,8 +1070,7 @@ void DetailedRouter::expandSearching(DRBox& dr_box)
     if (neighbor_node->isOpen() && known_cost < neighbor_node->get_known_cost()) {
       neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
-      // 对优先队列中的值修改了,需要重新建堆
-      std::make_heap(open_queue.begin(), open_queue.end(), CmpDRNodeCost());
+      open_queue.push(neighbor_node);
     } else if (neighbor_node->isNone()) {
       neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
@@ -1166,9 +1165,7 @@ void DetailedRouter::resetStartAndEnd(DRBox& dr_box)
 
 void DetailedRouter::resetSinglePath(DRBox& dr_box)
 {
-  PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost> empty_queue;
-  dr_box.set_open_queue(empty_queue);
-
+  dr_box.get_open_queue().clear();
   std::vector<DRNode*>& single_path_visited_node_list = dr_box.get_single_path_visited_node_list();
   for (DRNode* visited_node : single_path_visited_node_list) {
     visited_node->set_state(DRNodeState::kNone);
@@ -1233,7 +1230,7 @@ void DetailedRouter::resetSingleRouteTask(DRBox& dr_box)
 
 void DetailedRouter::pushToOpenList(DRBox& dr_box, DRNode* curr_node)
 {
-  PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& open_queue = dr_box.get_open_queue();
+  OpenQueue<DRNode>& open_queue = dr_box.get_open_queue();
   std::vector<DRNode*>& single_task_visited_node_list = dr_box.get_single_task_visited_node_list();
   std::vector<DRNode*>& single_path_visited_node_list = dr_box.get_single_path_visited_node_list();
 
@@ -1245,12 +1242,8 @@ void DetailedRouter::pushToOpenList(DRBox& dr_box, DRNode* curr_node)
 
 DRNode* DetailedRouter::popFromOpenList(DRBox& dr_box)
 {
-  PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& open_queue = dr_box.get_open_queue();
-
-  DRNode* node = nullptr;
-  if (!open_queue.empty()) {
-    node = open_queue.top();
-    open_queue.pop();
+  DRNode* node = dr_box.get_open_queue().pop();
+  if (node != nullptr) {
     node->set_state(DRNodeState::kClose);
   }
   return node;

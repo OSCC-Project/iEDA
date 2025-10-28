@@ -18,7 +18,7 @@
 
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
-#include "PriorityQueue.hpp"
+#include "OpenQueue.hpp"
 #include "SRBoxId.hpp"
 #include "SRIterParam.hpp"
 #include "SRNode.hpp"
@@ -84,11 +84,11 @@ class SRBox
   }
   void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list) { _routing_segment_list = routing_segment_list; }
   // single path
-  PriorityQueue<SRNode*, std::vector<SRNode*>, CmpSRNodeCost>& get_open_queue() { return _open_queue; }
+  OpenQueue<SRNode>& get_open_queue() { return _open_queue; }
   std::vector<SRNode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }
   SRNode* get_path_head_node() { return _path_head_node; }
   int32_t get_end_node_list_idx() const { return _end_node_list_idx; }
-  void set_open_queue(const PriorityQueue<SRNode*, std::vector<SRNode*>, CmpSRNodeCost>& open_queue) { _open_queue = open_queue; }
+  void set_open_queue(const OpenQueue<SRNode>& open_queue) { _open_queue = open_queue; }
   void set_single_path_visited_node_list(const std::vector<SRNode*>& single_path_visited_node_list)
   {
     _single_path_visited_node_list = single_path_visited_node_list;
@@ -119,7 +119,7 @@ class SRBox
   std::vector<SRNode*> _single_task_visited_node_list;
   std::vector<Segment<LayerCoord>> _routing_segment_list;
   // single path
-  PriorityQueue<SRNode*, std::vector<SRNode*>, CmpSRNodeCost> _open_queue;
+  OpenQueue<SRNode> _open_queue;
   std::vector<SRNode*> _single_path_visited_node_list;
   SRNode* _path_head_node = nullptr;
   int32_t _end_node_list_idx = -1;

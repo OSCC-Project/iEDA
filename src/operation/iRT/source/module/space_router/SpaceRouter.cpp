@@ -896,7 +896,7 @@ bool SpaceRouter::searchEnded(SRBox& sr_box)
 
 void SpaceRouter::expandSearching(SRBox& sr_box)
 {
-  PriorityQueue<SRNode*, std::vector<SRNode*>, CmpSRNodeCost>& open_queue = sr_box.get_open_queue();
+  OpenQueue<SRNode>& open_queue = sr_box.get_open_queue();
   SRNode* path_head_node = sr_box.get_path_head_node();
 
   for (auto& [orientation, neighbor_node] : path_head_node->get_neighbor_node_map()) {
@@ -910,8 +910,7 @@ void SpaceRouter::expandSearching(SRBox& sr_box)
     if (neighbor_node->isOpen() && known_cost < neighbor_node->get_known_cost()) {
       neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
-      // 对优先队列中的值修改了,需要重新建堆
-      std::make_heap(open_queue.begin(), open_queue.end(), CmpSRNodeCost());
+      open_queue.push(neighbor_node);
     } else if (neighbor_node->isNone()) {
       neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
@@ -992,9 +991,7 @@ void SpaceRouter::resetStartAndEnd(SRBox& sr_box)
 
 void SpaceRouter::resetSinglePath(SRBox& sr_box)
 {
-  PriorityQueue<SRNode*, std::vector<SRNode*>, CmpSRNodeCost> empty_queue;
-  sr_box.set_open_queue(empty_queue);
-
+  sr_box.get_open_queue().clear();
   std::vector<SRNode*>& single_path_visited_node_list = sr_box.get_single_path_visited_node_list();
   for (SRNode* visited_node : single_path_visited_node_list) {
     visited_node->set_state(SRNodeState::kNone);
@@ -1058,7 +1055,7 @@ void SpaceRouter::resetSingleTask(SRBox& sr_box)
 
 void SpaceRouter::pushToOpenList(SRBox& sr_box, SRNode* curr_node)
 {
-  PriorityQueue<SRNode*, std::vector<SRNode*>, CmpSRNodeCost>& open_queue = sr_box.get_open_queue();
+  OpenQueue<SRNode>& open_queue = sr_box.get_open_queue();
   std::vector<SRNode*>& single_task_visited_node_list = sr_box.get_single_task_visited_node_list();
   std::vector<SRNode*>& single_path_visited_node_list = sr_box.get_single_path_visited_node_list();
 
@@ -1070,12 +1067,8 @@ void SpaceRouter::pushToOpenList(SRBox& sr_box, SRNode* curr_node)
 
 SRNode* SpaceRouter::popFromOpenList(SRBox& sr_box)
 {
-  PriorityQueue<SRNode*, std::vector<SRNode*>, CmpSRNodeCost>& open_queue = sr_box.get_open_queue();
-
-  SRNode* node = nullptr;
-  if (!open_queue.empty()) {
-    node = open_queue.top();
-    open_queue.pop();
+  SRNode* node = sr_box.get_open_queue().pop();
+  if (node != nullptr) {
     node->set_state(SRNodeState::kClose);
   }
   return node;

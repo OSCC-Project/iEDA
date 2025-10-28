@@ -18,13 +18,13 @@
 
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
+#include "OpenQueue.hpp"
 #include "PABoxId.hpp"
 #include "PAIterParam.hpp"
 #include "PANode.hpp"
 #include "PAPatch.hpp"
 #include "PAShadow.hpp"
 #include "PATask.hpp"
-#include "PriorityQueue.hpp"
 #include "ScaleAxis.hpp"
 #include "Violation.hpp"
 
@@ -119,11 +119,11 @@ class PABox
   }
   void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list) { _routing_segment_list = routing_segment_list; }
   // single path
-  PriorityQueue<PANode*, std::vector<PANode*>, CmpPANodeCost>& get_open_queue() { return _open_queue; }
+  OpenQueue<PANode>& get_open_queue() { return _open_queue; }
   std::vector<PANode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }
   PANode* get_path_head_node() { return _path_head_node; }
   int32_t get_end_node_list_idx() const { return _end_node_list_idx; }
-  void set_open_queue(const PriorityQueue<PANode*, std::vector<PANode*>, CmpPANodeCost>& open_queue) { _open_queue = open_queue; }
+  void set_open_queue(const OpenQueue<PANode>& open_queue) { _open_queue = open_queue; }
   void set_single_path_visited_node_list(const std::vector<PANode*>& single_path_visited_node_list)
   {
     _single_path_visited_node_list = single_path_visited_node_list;
@@ -177,7 +177,7 @@ class PABox
   std::vector<PANode*> _single_task_visited_node_list;
   std::vector<Segment<LayerCoord>> _routing_segment_list;
   // single path
-  PriorityQueue<PANode*, std::vector<PANode*>, CmpPANodeCost> _open_queue;
+  OpenQueue<PANode> _open_queue;
   std::vector<PANode*> _single_path_visited_node_list;
   PANode* _path_head_node = nullptr;
   int32_t _end_node_list_idx = -1;
