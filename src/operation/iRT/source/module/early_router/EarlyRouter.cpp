@@ -562,7 +562,8 @@ std::vector<ERConflictPoint> EarlyRouter::getBestPointList(ERConflictGroup& er_c
     curr_ap_list.push_back(conflict_point_list.front());
   }
   bool improved = true;
-  while (improved) {
+  int32_t iter_num = static_cast<int32_t>(conflict_point_list_list.size() * 2);
+  while (improved && iter_num--) {
     improved = false;
     for (int32_t i = 0; i < static_cast<int32_t>(conflict_point_list_list.size()); ++i) {
       std::vector<int32_t> conflict_j_list;
