@@ -19,7 +19,6 @@
 #include "LAComParam.hpp"
 #include "LANet.hpp"
 #include "LANode.hpp"
-#include "PriorityQueue.hpp"
 
 namespace irt {
 

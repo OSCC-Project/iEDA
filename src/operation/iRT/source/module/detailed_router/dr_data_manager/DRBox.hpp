@@ -25,7 +25,7 @@
 #include "DRTask.hpp"
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
-#include "PriorityQueue.hpp"
+#include "OpenQueue.hpp"
 #include "ScaleAxis.hpp"
 #include "Violation.hpp"
 
@@ -117,11 +117,11 @@ class DRBox
   }
   void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list) { _routing_segment_list = routing_segment_list; }
   // single path
-  PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& get_open_queue() { return _open_queue; }
+  OpenQueue<DRNode>& get_open_queue() { return _open_queue; }
   std::vector<DRNode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }
   DRNode* get_path_head_node() { return _path_head_node; }
   int32_t get_end_node_list_idx() const { return _end_node_list_idx; }
-  void set_open_queue(const PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& open_queue) { _open_queue = open_queue; }
+  void set_open_queue(const OpenQueue<DRNode>& open_queue) { _open_queue = open_queue; }
   void set_single_path_visited_node_list(const std::vector<DRNode*>& single_path_visited_node_list)
   {
     _single_path_visited_node_list = single_path_visited_node_list;
@@ -173,7 +173,7 @@ class DRBox
   std::vector<DRNode*> _single_task_visited_node_list;
   std::vector<Segment<LayerCoord>> _routing_segment_list;
   // single path
-  PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost> _open_queue;
+  OpenQueue<DRNode> _open_queue;
   std::vector<DRNode*> _single_path_visited_node_list;
   DRNode* _path_head_node = nullptr;
   int32_t _end_node_list_idx = -1;

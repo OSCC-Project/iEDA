@@ -1093,6 +1093,7 @@ void PinAccessor::buildLayerShadowMap(PABox& pa_box)
 
 void PinAccessor::buildPANodeNeighbor(PABox& pa_box)
 {
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
   int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
 
@@ -1104,34 +1105,20 @@ void PinAccessor::buildPANodeNeighbor(PABox& pa_box)
       routing_hv = false;
     }
     GridMap<PANode>& pa_node_map = layer_node_map[layer_idx];
+    std::set<int32_t> neighbor_layer_x_axis_set;
+    std::set<int32_t> neighbor_layer_y_axis_set;
+    if (layer_idx != 0) {
+      neighbor_layer_x_axis_set.insert(layer_axis_map[layer_idx - 1].first.begin(), layer_axis_map[layer_idx - 1].first.end());
+      neighbor_layer_y_axis_set.insert(layer_axis_map[layer_idx - 1].second.begin(), layer_axis_map[layer_idx - 1].second.end());
+    }
+    if (layer_idx != static_cast<int32_t>(layer_node_map.size()) - 1) {
+      neighbor_layer_x_axis_set.insert(layer_axis_map[layer_idx + 1].first.begin(), layer_axis_map[layer_idx + 1].first.end());
+      neighbor_layer_y_axis_set.insert(layer_axis_map[layer_idx + 1].second.begin(), layer_axis_map[layer_idx + 1].second.end());
+    }
+    std::set<int32_t>& curr_axis = (routing_layer_list[layer_idx].isPreferH()) ? layer_axis_map[layer_idx].first : layer_axis_map[layer_idx].second;
     for (int32_t x = 0; x < pa_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < pa_node_map.get_y_size(); y++) {
         std::map<Orientation, PANode*>& neighbor_node_map = pa_node_map[x][y].get_neighbor_node_map();
-        std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-        std::set<int32_t> neighbor_layer_x_axis_set;
-        std::set<int32_t> neighbor_layer_y_axis_set;
-        if (layer_idx != 0) {
-          for (int32_t x_scale : layer_axis_map[layer_idx - 1].first) {
-            neighbor_layer_x_axis_set.insert(x_scale);
-          }
-          for (int32_t y_scale : layer_axis_map[layer_idx - 1].second) {
-            neighbor_layer_y_axis_set.insert(y_scale);
-          }
-        }
-        if (layer_idx != static_cast<int32_t>(layer_node_map.size()) - 1) {
-          for (int32_t x_scale : layer_axis_map[layer_idx + 1].first) {
-            neighbor_layer_x_axis_set.insert(x_scale);
-          }
-          for (int32_t y_scale : layer_axis_map[layer_idx + 1].second) {
-            neighbor_layer_y_axis_set.insert(y_scale);
-          }
-        }
-        std::set<int32_t> curr_axis;
-        if (routing_layer_list[layer_idx].isPreferH()) {
-          curr_axis = layer_axis_map[layer_idx].first;
-        } else {
-          curr_axis = layer_axis_map[layer_idx].second;
-        }
         if (routing_hv) {
           if (!routing_layer_list[layer_idx].isPreferH()) {
             if (RTUTIL.exist(curr_axis, pa_node_map[x][y].get_y())) {
@@ -1488,7 +1475,7 @@ bool PinAccessor::searchEnded(PABox& pa_box)
 
 void PinAccessor::expandSearching(PABox& pa_box)
 {
-  PriorityQueue<PANode*, std::vector<PANode*>, CmpPANodeCost>& open_queue = pa_box.get_open_queue();
+  OpenQueue<PANode>& open_queue = pa_box.get_open_queue();
   PANode* path_head_node = pa_box.get_path_head_node();
 
   for (auto& [orientation, neighbor_node] : path_head_node->get_neighbor_node_map()) {
@@ -1502,8 +1489,7 @@ void PinAccessor::expandSearching(PABox& pa_box)
     if (neighbor_node->isOpen() && known_cost < neighbor_node->get_known_cost()) {
       neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
-      // 对优先队列中的值修改了,需要重新建堆
-      std::make_heap(open_queue.begin(), open_queue.end(), CmpPANodeCost());
+      open_queue.push(neighbor_node);
     } else if (neighbor_node->isNone()) {
       neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
@@ -1584,9 +1570,7 @@ void PinAccessor::resetStartAndEnd(PABox& pa_box)
 
 void PinAccessor::resetSinglePath(PABox& pa_box)
 {
-  PriorityQueue<PANode*, std::vector<PANode*>, CmpPANodeCost> empty_queue;
-  pa_box.set_open_queue(empty_queue);
-
+  pa_box.get_open_queue().clear();
   std::vector<PANode*>& single_path_visited_node_list = pa_box.get_single_path_visited_node_list();
   for (PANode* visited_node : single_path_visited_node_list) {
     visited_node->set_state(PANodeState::kNone);
@@ -1649,7 +1633,7 @@ void PinAccessor::resetSingleRouteTask(PABox& pa_box)
 
 void PinAccessor::pushToOpenList(PABox& pa_box, PANode* curr_node)
 {
-  PriorityQueue<PANode*, std::vector<PANode*>, CmpPANodeCost>& open_queue = pa_box.get_open_queue();
+  OpenQueue<PANode>& open_queue = pa_box.get_open_queue();
   std::vector<PANode*>& single_task_visited_node_list = pa_box.get_single_task_visited_node_list();
   std::vector<PANode*>& single_path_visited_node_list = pa_box.get_single_path_visited_node_list();
 
@@ -1661,12 +1645,8 @@ void PinAccessor::pushToOpenList(PABox& pa_box, PANode* curr_node)
 
 PANode* PinAccessor::popFromOpenList(PABox& pa_box)
 {
-  PriorityQueue<PANode*, std::vector<PANode*>, CmpPANodeCost>& open_queue = pa_box.get_open_queue();
-
-  PANode* node = nullptr;
-  if (!open_queue.empty()) {
-    node = open_queue.top();
-    open_queue.pop();
+  PANode* node = pa_box.get_open_queue().pop();
+  if (node != nullptr) {
     node->set_state(PANodeState::kClose);
   }
   return node;

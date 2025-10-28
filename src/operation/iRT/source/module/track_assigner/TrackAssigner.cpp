@@ -629,7 +629,7 @@ bool TrackAssigner::searchEnded(TAPanel& ta_panel)
 
 void TrackAssigner::expandSearching(TAPanel& ta_panel)
 {
-  PriorityQueue<TANode*, std::vector<TANode*>, CmpTANodeCost>& open_queue = ta_panel.get_open_queue();
+  OpenQueue<TANode>& open_queue = ta_panel.get_open_queue();
   TANode* path_head_node = ta_panel.get_path_head_node();
 
   for (auto& [orientation, neighbor_node] : path_head_node->get_neighbor_node_map()) {
@@ -646,8 +646,7 @@ void TrackAssigner::expandSearching(TAPanel& ta_panel)
     if (neighbor_node->isOpen() && known_cost < neighbor_node->get_known_cost()) {
       neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
-      // 对优先队列中的值修改了,需要重新建堆
-      std::make_heap(open_queue.begin(), open_queue.end(), CmpTANodeCost());
+      open_queue.push(neighbor_node);
     } else if (neighbor_node->isNone()) {
       neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
@@ -728,9 +727,7 @@ void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
 
 void TrackAssigner::resetSinglePath(TAPanel& ta_panel)
 {
-  PriorityQueue<TANode*, std::vector<TANode*>, CmpTANodeCost> empty_queue;
-  ta_panel.set_open_queue(empty_queue);
-
+  ta_panel.get_open_queue().clear();
   std::vector<TANode*>& single_path_visited_node_list = ta_panel.get_single_path_visited_node_list();
   for (TANode* visited_node : single_path_visited_node_list) {
     visited_node->set_state(TANodeState::kNone);
@@ -798,7 +795,7 @@ void TrackAssigner::resetSingleTask(TAPanel& ta_panel)
 
 void TrackAssigner::pushToOpenList(TAPanel& ta_panel, TANode* curr_node)
 {
-  PriorityQueue<TANode*, std::vector<TANode*>, CmpTANodeCost>& open_queue = ta_panel.get_open_queue();
+  OpenQueue<TANode>& open_queue = ta_panel.get_open_queue();
   std::vector<TANode*>& single_task_visited_node_list = ta_panel.get_single_task_visited_node_list();
   std::vector<TANode*>& single_path_visited_node_list = ta_panel.get_single_path_visited_node_list();
 
@@ -810,12 +807,8 @@ void TrackAssigner::pushToOpenList(TAPanel& ta_panel, TANode* curr_node)
 
 TANode* TrackAssigner::popFromOpenList(TAPanel& ta_panel)
 {
-  PriorityQueue<TANode*, std::vector<TANode*>, CmpTANodeCost>& open_queue = ta_panel.get_open_queue();
-
-  TANode* node = nullptr;
-  if (!open_queue.empty()) {
-    node = open_queue.top();
-    open_queue.pop();
+  TANode* node = ta_panel.get_open_queue().pop();
+  if (node != nullptr) {
     node->set_state(TANodeState::kClose);
   }
   return node;

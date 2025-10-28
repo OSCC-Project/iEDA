@@ -116,12 +116,12 @@ void DetailedRouter::routeDRModel(DRModel& dr_model)
    */
   std::vector<DRIterParam> dr_iter_param_list;
   // clang-format off
-  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, bend_unit, via_unit, 3, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
-  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, bend_unit, via_unit, 3, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
-  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, bend_unit, via_unit, 3, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
-  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, bend_unit, via_unit, 3, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
-  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, bend_unit, via_unit, 3, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
-  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, bend_unit, via_unit, 3, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
+  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, bend_unit, via_unit, 12, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
+  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, bend_unit, via_unit, 12, 4, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
+  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, bend_unit, via_unit, 12, 8, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
+  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, bend_unit, via_unit, 12, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
+  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, bend_unit, via_unit, 12, 4, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
+  dr_iter_param_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, bend_unit, via_unit, 12, 8, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3, 10);
   // clang-format on
   initRoutingState(dr_model);
   for (int32_t i = 0, iter = 1; i < static_cast<int32_t>(dr_iter_param_list.size()); i++, iter++) {
@@ -690,6 +690,7 @@ void DetailedRouter::buildLayerShadowMap(DRBox& dr_box)
 
 void DetailedRouter::buildDRNodeNeighbor(DRBox& dr_box)
 {
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
   int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
 
@@ -701,34 +702,20 @@ void DetailedRouter::buildDRNodeNeighbor(DRBox& dr_box)
       routing_hv = false;
     }
     GridMap<DRNode>& dr_node_map = layer_node_map[layer_idx];
+    std::set<int32_t> neighbor_layer_x_axis_set;
+    std::set<int32_t> neighbor_layer_y_axis_set;
+    if (layer_idx != 0) {
+      neighbor_layer_x_axis_set.insert(layer_axis_map[layer_idx - 1].first.begin(), layer_axis_map[layer_idx - 1].first.end());
+      neighbor_layer_y_axis_set.insert(layer_axis_map[layer_idx - 1].second.begin(), layer_axis_map[layer_idx - 1].second.end());
+    }
+    if (layer_idx != static_cast<int32_t>(layer_node_map.size()) - 1) {
+      neighbor_layer_x_axis_set.insert(layer_axis_map[layer_idx + 1].first.begin(), layer_axis_map[layer_idx + 1].first.end());
+      neighbor_layer_y_axis_set.insert(layer_axis_map[layer_idx + 1].second.begin(), layer_axis_map[layer_idx + 1].second.end());
+    }
+    std::set<int32_t>& curr_axis = (routing_layer_list[layer_idx].isPreferH()) ? layer_axis_map[layer_idx].first : layer_axis_map[layer_idx].second;
     for (int32_t x = 0; x < dr_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < dr_node_map.get_y_size(); y++) {
         std::map<Orientation, DRNode*>& neighbor_node_map = dr_node_map[x][y].get_neighbor_node_map();
-        std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-        std::set<int32_t> neighbor_layer_x_axis_set;
-        std::set<int32_t> neighbor_layer_y_axis_set;
-        if (layer_idx != 0) {
-          for (int32_t x_scale : layer_axis_map[layer_idx - 1].first) {
-            neighbor_layer_x_axis_set.insert(x_scale);
-          }
-          for (int32_t y_scale : layer_axis_map[layer_idx - 1].second) {
-            neighbor_layer_y_axis_set.insert(y_scale);
-          }
-        }
-        if (layer_idx != static_cast<int32_t>(layer_node_map.size()) - 1) {
-          for (int32_t x_scale : layer_axis_map[layer_idx + 1].first) {
-            neighbor_layer_x_axis_set.insert(x_scale);
-          }
-          for (int32_t y_scale : layer_axis_map[layer_idx + 1].second) {
-            neighbor_layer_y_axis_set.insert(y_scale);
-          }
-        }
-        std::set<int32_t> curr_axis;
-        if (routing_layer_list[layer_idx].isPreferH()) {
-          curr_axis = layer_axis_map[layer_idx].first;
-        } else {
-          curr_axis = layer_axis_map[layer_idx].second;
-        }
         if (routing_hv) {
           if (!routing_layer_list[layer_idx].isPreferH()) {
             if (RTUTIL.exist(curr_axis, dr_node_map[x][y].get_y())) {
@@ -1069,7 +1056,7 @@ bool DetailedRouter::searchEnded(DRBox& dr_box)
 
 void DetailedRouter::expandSearching(DRBox& dr_box)
 {
-  PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& open_queue = dr_box.get_open_queue();
+  OpenQueue<DRNode>& open_queue = dr_box.get_open_queue();
   DRNode* path_head_node = dr_box.get_path_head_node();
 
   for (auto& [orientation, neighbor_node] : path_head_node->get_neighbor_node_map()) {
@@ -1083,8 +1070,7 @@ void DetailedRouter::expandSearching(DRBox& dr_box)
     if (neighbor_node->isOpen() && known_cost < neighbor_node->get_known_cost()) {
       neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
-      // 对优先队列中的值修改了,需要重新建堆
-      std::make_heap(open_queue.begin(), open_queue.end(), CmpDRNodeCost());
+      open_queue.push(neighbor_node);
     } else if (neighbor_node->isNone()) {
       neighbor_node->set_known_cost(known_cost);
       neighbor_node->set_parent_node(path_head_node);
@@ -1179,9 +1165,7 @@ void DetailedRouter::resetStartAndEnd(DRBox& dr_box)
 
 void DetailedRouter::resetSinglePath(DRBox& dr_box)
 {
-  PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost> empty_queue;
-  dr_box.set_open_queue(empty_queue);
-
+  dr_box.get_open_queue().clear();
   std::vector<DRNode*>& single_path_visited_node_list = dr_box.get_single_path_visited_node_list();
   for (DRNode* visited_node : single_path_visited_node_list) {
     visited_node->set_state(DRNodeState::kNone);
@@ -1246,7 +1230,7 @@ void DetailedRouter::resetSingleRouteTask(DRBox& dr_box)
 
 void DetailedRouter::pushToOpenList(DRBox& dr_box, DRNode* curr_node)
 {
-  PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& open_queue = dr_box.get_open_queue();
+  OpenQueue<DRNode>& open_queue = dr_box.get_open_queue();
   std::vector<DRNode*>& single_task_visited_node_list = dr_box.get_single_task_visited_node_list();
   std::vector<DRNode*>& single_path_visited_node_list = dr_box.get_single_path_visited_node_list();
 
@@ -1258,12 +1242,8 @@ void DetailedRouter::pushToOpenList(DRBox& dr_box, DRNode* curr_node)
 
 DRNode* DetailedRouter::popFromOpenList(DRBox& dr_box)
 {
-  PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& open_queue = dr_box.get_open_queue();
-
-  DRNode* node = nullptr;
-  if (!open_queue.empty()) {
-    node = open_queue.top();
-    open_queue.pop();
+  DRNode* node = dr_box.get_open_queue().pop();
+  if (node != nullptr) {
     node->set_state(DRNodeState::kClose);
   }
   return node;
