@@ -26,7 +26,7 @@ int registerCmdRT()
 {
   // rt
   registerTclCmd(TclInitRT, "init_rt");
-  registerTclCmd(TclRunEGR, "run_egr");
+  registerTclCmd(TclRunERT, "run_ert");
   registerTclCmd(TclRunRT, "run_rt");
   registerTclCmd(TclDestroyRT, "destroy_rt");
   // aux

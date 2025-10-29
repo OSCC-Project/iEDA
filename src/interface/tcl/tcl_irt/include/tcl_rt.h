@@ -36,11 +36,11 @@ class TclInitRT : public TclCmd
   std::vector<std::pair<std::string, ValueType>> _config_list;
 };
 
-class TclRunEGR : public TclCmd
+class TclRunERT : public TclCmd
 {
  public:
-  explicit TclRunEGR(const char* cmd_name);
-  ~TclRunEGR() override = default;
+  explicit TclRunERT(const char* cmd_name);
+  ~TclRunERT() override = default;
 
   unsigned check() override { return 1; };
 
