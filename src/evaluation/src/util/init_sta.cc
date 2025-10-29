@@ -111,7 +111,8 @@ void InitSTA::runPlaceVecSTA(const std::string& routing_type, const bool& rt_don
   updateResult(routing_type);
 }
 
-void InitSTA::runSpefVecSTA(std::string work_dir) {
+void InitSTA::runSpefVecSTA(std::string work_dir)
+{
   initStaEngine();
 
   buildSpefRCTree(work_dir);
@@ -120,19 +121,20 @@ void InitSTA::runSpefVecSTA(std::string work_dir) {
 }
 
 ///@brief save ppa index into csv.
-void InitSTA::saveTimingPowerBenchmark() {
+void InitSTA::saveTimingPowerBenchmark()
+{
   // get freq、TNS、Top100 path delay
-  std::map<std::string, std::pair<double, double>> clock_freq_map; // clock_name, <freq, TNS>
+  std::map<std::string, std::pair<double, double>> clock_freq_map;  // clock_name, <freq, TNS>
   auto all_clocks = STA_INST->getClockList();
   for (auto* clock : all_clocks) {
-      double clock_period = clock->getPeriodNs();
-      double slack = STA_INST->getWNS(clock->get_clock_name(), ista::AnalysisMode::kMax);
+    double clock_period = clock->getPeriodNs();
+    double slack = STA_INST->getWNS(clock->get_clock_name(), ista::AnalysisMode::kMax);
 
-      // freq is period inverse.
-      double freq_MHz = 1000 / (clock_period - slack);
+    // freq is period inverse.
+    double freq_MHz = 1000 / (clock_period - slack);
 
-      double TNS = STA_INST->getTNS(clock->get_clock_name(), ista::AnalysisMode::kMax);
-      clock_freq_map[clock->get_clock_name()] = std::make_pair(freq_MHz, TNS);
+    double TNS = STA_INST->getTNS(clock->get_clock_name(), ista::AnalysisMode::kMax);
+    clock_freq_map[clock->get_clock_name()] = std::make_pair(freq_MHz, TNS);
   }
 
   std::vector<std::pair<std::string, double>> end_vertex_to_path_delay;
@@ -151,7 +153,7 @@ void InitSTA::saveTimingPowerBenchmark() {
   double leakage_power = PW_INST->get_power()->getSumLeakagePower();
   double internal_power = PW_INST->get_power()->getSumInternalPower();
   double switch_power = PW_INST->get_power()->getSumSwitchPower();
-  
+
   // net density need in single file.
   // save to json.
 
@@ -161,7 +163,7 @@ void InitSTA::saveTimingPowerBenchmark() {
   std::ofstream json_file(benchmark_file_path, std::ios::out | std::ios::trunc);
   if (!json_file.is_open()) {
     LOG_ERROR << "Fail to open timing_power_benchmark.json";
-    return; 
+    return;
   }
 
   json json_data;
@@ -337,7 +339,8 @@ void InitSTA::callRT(const std::string& routing_type)
   RT_INST.initRT(config_map);
 
   if (routing_type == "EGR") {
-    RT_INST.runEGR();
+    std::map<std::string, std::any> ert_config_map;
+    RT_INST.runERT(ert_config_map);
   } else if (routing_type == "DR") {
     RT_INST.runRT();
   }
@@ -653,7 +656,8 @@ void InitSTA::buildVecRCTree(ivec::VecLayout* vec_layout, std::string work_dir)
   STA_INST->reportWirePaths(10000);
 }
 
-void InitSTA::buildSpefRCTree(std::string work_dir) {
+void InitSTA::buildSpefRCTree(std::string work_dir)
+{
   std::string spef_path = dmInst->get_config().get_spef_path();
   LOG_INFO << "spef path: " << spef_path;
   STA_INST->readSpef(spef_path.c_str());
@@ -664,7 +668,6 @@ void InitSTA::buildSpefRCTree(std::string work_dir) {
   STA_INST->set_design_work_space(path_dir.c_str());
   STA_INST->reportWirePaths(10000);
 }
-
 
 void InitSTA::initPowerEngine()
 {
@@ -714,7 +717,7 @@ void InitSTA::updateResult(const std::string& routing_type)
   }
   _power[routing_type]["static_power"] = static_power;
   _power[routing_type]["dynamic_power"] = dynamic_power;
-  
+
   // save benchmark file for test.
   saveTimingPowerBenchmark();
 }
@@ -1058,7 +1061,7 @@ TimingWireGraph InitSTA::getTimingWireGraph()
 
   auto* ista = STA_INST->get_ista();
   LOG_ERROR_IF(!ista->isBuildGraph()) << "timing graph is not build";
-  
+
   // build equivalent library cells map
   auto& all_libs = ista->getAllLib();
   std::vector<LibLibrary*> equiv_libs;
@@ -1186,7 +1189,7 @@ TimingWireGraph InitSTA::getTimingWireGraph()
     power_feature._sp = pwr_vertex->getSPData(std::nullopt);
 
     power_feature._node_internal_power = pwr_vertex->getInternalPower();
-    
+
     double switch_power = 0.0;
     if (vertex_to_switch_power.contains(pwr_vertex)) {
       switch_power = vertex_to_switch_power[pwr_vertex];
@@ -1258,28 +1261,26 @@ TimingWireGraph InitSTA::getTimingWireGraph()
           ieda::Stats stats2;
           auto& from_node = wire_edge->get_from();
           auto& to_node = wire_edge->get_to();
-          
+
           // from node
           auto wire_from_node_index = create_net_node(from_node);
           auto& wire_from_node = timing_wire_graph.getNode(wire_from_node_index);
           wire_from_node._node_feature._node_slews
               = {max_rise_all_nodes_slew[from_node.get_name()], max_fall_all_nodes_slew[from_node.get_name()],
                  min_rise_all_nodes_slew[from_node.get_name()], min_fall_all_nodes_slew[from_node.get_name()]};
-          wire_from_node._node_feature._node_caps = {from_node.cap(AnalysisMode::kMax, TransType::kRise),
-                                                     from_node.cap(AnalysisMode::kMax, TransType::kFall),
-                                                     from_node.cap(AnalysisMode::kMin, TransType::kRise),
-                                                     from_node.cap(AnalysisMode::kMin, TransType::kFall)};
-          
+          wire_from_node._node_feature._node_caps
+              = {from_node.cap(AnalysisMode::kMax, TransType::kRise), from_node.cap(AnalysisMode::kMax, TransType::kFall),
+                 from_node.cap(AnalysisMode::kMin, TransType::kRise), from_node.cap(AnalysisMode::kMin, TransType::kFall)};
+
           // to node
           auto wire_to_node_index = create_net_node(to_node);
           auto& wire_to_node = timing_wire_graph.getNode(wire_to_node_index);
           wire_to_node._node_feature._node_slews
               = {max_rise_all_nodes_slew[to_node.get_name()], max_fall_all_nodes_slew[to_node.get_name()],
                  min_rise_all_nodes_slew[to_node.get_name()], min_fall_all_nodes_slew[to_node.get_name()]};
-          wire_to_node._node_feature._node_caps = {to_node.cap(AnalysisMode::kMax, TransType::kRise),
-                                                   to_node.cap(AnalysisMode::kMax, TransType::kFall),
-                                                   to_node.cap(AnalysisMode::kMin, TransType::kRise),
-                                                   to_node.cap(AnalysisMode::kMin, TransType::kFall)};
+          wire_to_node._node_feature._node_caps
+              = {to_node.cap(AnalysisMode::kMax, TransType::kRise), to_node.cap(AnalysisMode::kMax, TransType::kFall),
+                 to_node.cap(AnalysisMode::kMin, TransType::kRise), to_node.cap(AnalysisMode::kMin, TransType::kFall)};
 
           auto& net_wire_edge = timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
           net_wire_edge._edge_feature._edge_resistance = wire_edge->get_res();
@@ -1315,7 +1316,7 @@ TimingWireGraph InitSTA::getTimingWireGraph()
       auto* the_pwr_arc = ipower->get_power_graph().staToPwrArc(the_arc);
       if (the_pwr_arc) {
         edge_power_feature._inst_arc_internal_power = dynamic_cast<ipower::PwrInstArc*>(the_pwr_arc)->getInternalPower();
-      } 
+      }
 
       inst_arc_edge._edge_feature = edge_feature;
       inst_arc_edge._power_feature = edge_power_feature;
@@ -1357,9 +1358,7 @@ TimingInstanceGraph InitSTA::getTimingInstanceGraph()
   timing_instance_graph._nodes.reserve(the_timing_graph->get_vertexes().size() * 10);
 
   /// create node in instance graph
-  auto create_node = [&timing_instance_graph, ipower](
-                         std::string& node_name,
-                         ista::DesignObject* obj) -> unsigned {
+  auto create_node = [&timing_instance_graph, ipower](std::string& node_name, ista::DesignObject* obj) -> unsigned {
     auto index = timing_instance_graph.findNode(node_name);
     if (!index) {
       TimingInstanceNode the_node;
@@ -1447,16 +1446,16 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
 
       node_feature_json["node_coord"] = json::array({node_feature._node_coord.first, node_feature._node_coord.second});
       node_feature_json["node_slews"] = json::array({std::get<0>(node_feature._node_slews), std::get<1>(node_feature._node_slews),
-                                                 std::get<2>(node_feature._node_slews), std::get<3>(node_feature._node_slews)});
+                                                     std::get<2>(node_feature._node_slews), std::get<3>(node_feature._node_slews)});
       node_feature_json["node_capacitances"] = json::array({std::get<0>(node_feature._node_caps), std::get<1>(node_feature._node_caps),
-                                                        std::get<2>(node_feature._node_caps), std::get<3>(node_feature._node_caps)});
+                                                            std::get<2>(node_feature._node_caps), std::get<3>(node_feature._node_caps)});
       node_feature_json["node_arrive_times"] = json::array({std::get<0>(node_feature._node_ats), std::get<1>(node_feature._node_ats),
-                                                        std::get<2>(node_feature._node_ats), std::get<3>(node_feature._node_ats)});
+                                                            std::get<2>(node_feature._node_ats), std::get<3>(node_feature._node_ats)});
       node_feature_json["node_required_times"] = json::array({std::get<0>(node_feature._node_rats), std::get<1>(node_feature._node_rats),
-                                                          std::get<2>(node_feature._node_rats), std::get<3>(node_feature._node_rats)});
-      node_feature_json["node_net_load_delays"] = json::array(
-          {std::get<0>(node_feature._node_net_delays), std::get<1>(node_feature._node_net_delays),
-           std::get<2>(node_feature._node_net_delays), std::get<3>(node_feature._node_net_delays)});
+                                                              std::get<2>(node_feature._node_rats), std::get<3>(node_feature._node_rats)});
+      node_feature_json["node_net_load_delays"]
+          = json::array({std::get<0>(node_feature._node_net_delays), std::get<1>(node_feature._node_net_delays),
+                         std::get<2>(node_feature._node_net_delays), std::get<3>(node_feature._node_net_delays)});
 
       node_feature_json["node_toggle"] = node._power_feature._toggle;
       node_feature_json["node_sp"] = node._power_feature._sp;
@@ -1480,12 +1479,11 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
       auto& edge_feature = edge._edge_feature;
       json edge_feature_json;
       edge_feature_json["edge_delay"] = json::array({std::get<0>(edge_feature._edge_delay), std::get<1>(edge_feature._edge_delay),
-                                                 std::get<2>(edge_feature._edge_delay), std::get<3>(edge_feature._edge_delay)});
+                                                     std::get<2>(edge_feature._edge_delay), std::get<3>(edge_feature._edge_delay)});
       edge_feature_json["edge_resistance"] = edge_feature._edge_resistance;
 
       auto& edge_power_feature = edge._power_feature;
       edge_feature_json["inst_arc_internal_power"] = edge_power_feature._inst_arc_internal_power;
-
 
       j.push_back({{"id", edge_id_str},
                    {"from_node", edge._from_node},
@@ -1527,10 +1525,7 @@ void SaveTimingInstanceGraph(const TimingInstanceGraph& timing_instance_graph, c
     json j = json::array();
     for (unsigned node_id = 0; auto& node : timing_instance_graph._nodes) {
       std::string id_str = "node_" + std::to_string(node_id++);
-      j.push_back({{"id", id_str},
-                   {"name", node._name},
-                   {"leakage_power",
-                   node._node_feature._leakage_power}});
+      j.push_back({{"id", id_str}, {"name", node._name}, {"leakage_power", node._node_feature._leakage_power}});
     }
     nodes_json = j;
   });

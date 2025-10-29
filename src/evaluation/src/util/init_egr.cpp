@@ -63,7 +63,8 @@ void InitEGR::runEGR(bool enable_timing)
     config_map.insert({"-enable_timing", 1});
   }
   rt_interface.initRT(config_map);
-  rt_interface.runEGR();
+  std::map<std::string, std::any> ert_config_map;
+  rt_interface.runERT(ert_config_map);
   rt_interface.destroyRT();
 }
 

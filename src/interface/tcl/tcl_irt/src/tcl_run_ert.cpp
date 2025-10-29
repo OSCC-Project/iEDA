@@ -24,16 +24,20 @@
 
 namespace tcl {
 
-TclRunEGR::TclRunEGR(const char* cmd_name) : TclCmd(cmd_name)
+TclRunERT::TclRunERT(const char* cmd_name) : TclCmd(cmd_name)
 {
+  _config_list.push_back(std::make_pair("-resolve_congestion", ValueType::kString));
+
+  TclUtil::addOption(this, _config_list);
 }
 
-unsigned TclRunEGR::exec()
+unsigned TclRunERT::exec()
 {
   if (!check()) {
     return 0;
   }
-  RTI.runEGR();
+  std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
+  RTI.runERT(config_map);
   return 1;
 }
 

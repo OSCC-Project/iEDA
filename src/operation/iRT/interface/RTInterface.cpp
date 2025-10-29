@@ -92,7 +92,7 @@ void RTInterface::initRT(std::map<std::string, std::any> config_map)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void RTInterface::runEGR()
+void RTInterface::runERT(std::map<std::string, std::any> config_map)
 {
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
@@ -101,7 +101,7 @@ void RTInterface::runEGR()
   RTGP.init();
 
   EarlyRouter::initInst();
-  RTER.route();
+  RTER.route(config_map);
   EarlyRouter::destroyInst();
 
   destroyFlute();
@@ -382,7 +382,6 @@ void RTInterface::getCongestion()
   RTDE.destroy();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
-
 }
 
 #endif

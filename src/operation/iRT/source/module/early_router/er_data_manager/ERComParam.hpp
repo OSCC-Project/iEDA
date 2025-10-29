@@ -24,9 +24,10 @@ class ERComParam
 {
  public:
   ERComParam() = default;
-  ERComParam(int32_t max_candidate_point_num, int32_t supply_reduction, double boundary_wire_unit, double internal_wire_unit, double internal_via_unit,
-             int32_t topo_spilt_length, int32_t expand_step_num, int32_t expand_step_length, double via_unit, double overflow_unit)
+  ERComParam(std::string resolve_congestion, int32_t max_candidate_point_num, int32_t supply_reduction, double boundary_wire_unit, double internal_wire_unit,
+             double internal_via_unit, int32_t topo_spilt_length, int32_t expand_step_num, int32_t expand_step_length, double via_unit, double overflow_unit)
   {
+    _resolve_congestion = resolve_congestion;
     _max_candidate_point_num = max_candidate_point_num;
     _supply_reduction = supply_reduction;
     _boundary_wire_unit = boundary_wire_unit;
@@ -40,6 +41,7 @@ class ERComParam
   }
   ~ERComParam() = default;
   // getter
+  std::string& get_resolve_congestion() { return _resolve_congestion; }
   int32_t get_max_candidate_point_num() const { return _max_candidate_point_num; }
   int32_t get_supply_reduction() const { return _supply_reduction; }
   double get_boundary_wire_unit() const { return _boundary_wire_unit; }
@@ -51,6 +53,7 @@ class ERComParam
   double get_via_unit() const { return _via_unit; }
   double get_overflow_unit() const { return _overflow_unit; }
   // setter
+  void set_resolve_congestion(std::string& resolve_congestion) { _resolve_congestion = resolve_congestion; }
   void set_max_candidate_point_num(const int32_t max_candidate_point_num) { _max_candidate_point_num = max_candidate_point_num; }
   void set_supply_reduction(const int32_t supply_reduction) { _supply_reduction = supply_reduction; }
   void set_boundary_wire_unit(const double boundary_wire_unit) { _boundary_wire_unit = boundary_wire_unit; }
@@ -63,6 +66,7 @@ class ERComParam
   void set_overflow_unit(const double overflow_unit) { _overflow_unit = overflow_unit; }
 
  private:
+  std::string _resolve_congestion;
   int32_t _max_candidate_point_num = -1;
   int32_t _supply_reduction = -1;
   double _boundary_wire_unit = -1;
