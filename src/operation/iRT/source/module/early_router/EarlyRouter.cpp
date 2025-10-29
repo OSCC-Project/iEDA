@@ -122,7 +122,6 @@ ERNet EarlyRouter::convertToERNet(Net& net)
 
 void EarlyRouter::setERComParam(ERModel& er_model, std::map<std::string, std::any> config_map)
 {
-  // low | medium | high
   std::string resolve_congestion = RTUTIL.getConfigValue<std::string>(config_map, "-resolve_congestion", "high");
 
   int32_t max_candidate_point_num = 10;
