@@ -355,7 +355,7 @@ void JsonTextWriter::writeStruct(int i)
       // if (j != element_list.size() - 1) {
       // }
     }
-    if(element_list.size()>1)
+    // if(element_list.size()>1)
       (*_stream) <<std::endl<<indent3<<"]";
     write_endstr(i+1,0);
 
@@ -454,16 +454,16 @@ void JsonTextWriter::write_bgnstr(JsonStruct* str,int i) const
   std::string indent2(4*(i+1), ' ');
   std::string indent3(4*(i+2), ' ');
   (*_stream) <<indent<< "{" << std::endl;
-  if(str->get_element_list().size()>1){
+  // if(str->get_element_list().size()>1){
   (*_stream) <<indent2<< "\"type\" : \"group\"," <<std::endl;
-  }
+  // }
   // else 
   //   (*_stream) <<indent2<< "\"type\" : \"not a group\"," <<std::endl;
   (*_stream) <<indent2<< "\"struct name\" :"<<"\""<<str->get_name()<<"\"";
   // myHash_temp[str->get_name()]++;
-  if(str->get_element_list().size()>1){
+  // if(str->get_element_list().size()>1){
   (*_stream) <<"," <<std::endl<<indent2<< "\"children\":[" <<std::endl;
-  }
+  // }
   // (*_stream) <<indent3<< "\"lastmodify\" : \""<< fmt_time(str->get_last_mod()) <<"\""<<std::endl;
   // (*_stream) << "\"lastmodify\" : \""<<fmt_time(str->get_bgn_str()) << " " << fmt_time(str->get_last_mod()) << std::endl;
 }
