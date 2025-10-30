@@ -97,25 +97,29 @@ bool IoPlacer::autoPlacePins(std::string layer_name, int width, int height, std:
 
   auto idb_die = idb_layout->get_die();
   auto idb_core = idb_layout->get_core();
-  idb::IdbLayer* left_right_layer = nullptr;
-  idb::IdbLayer* bottom_top_layer = nullptr;
+  idb::IdbLayer* horizontal_layer = nullptr;
+  idb::IdbLayer* vertical_layer = nullptr;
   {
     auto curr_layer = idb_layout->get_layers()->find_layer(layer_name);
     idb::IdbLayerRouting* curr_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(curr_layer);
 
     if (curr_routing_layer->get_direction() == idb::IdbLayerDirection::kHorizontal) {
-      left_right_layer = curr_layer;
+      horizontal_layer = curr_layer;
     } else {
-      bottom_top_layer = curr_layer;
+      vertical_layer = curr_layer;
     }
 
-    auto above_layer = idb_layout->get_layers()->find_routing_layer(curr_layer->get_id() + 1);
-    idb::IdbLayerRouting* above_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(above_layer);
+    auto neighbour_layer = dynamic_cast<idb::IdbLayerRouting*>(idb_layout->get_layers()->find_routing_layer(curr_layer->get_id() + 1));
+    if (neighbour_layer == nullptr) {
+      neighbour_layer = dynamic_cast<idb::IdbLayerRouting*>(idb_layout->get_layers()->find_routing_layer(curr_layer->get_id() - 1));
+    }
 
-    if (above_routing_layer->get_direction() == idb::IdbLayerDirection::kHorizontal) {
-      left_right_layer = above_layer;
-    } else {
-      bottom_top_layer = above_layer;
+    if (neighbour_layer != nullptr) {
+      if (neighbour_layer->get_direction() == idb::IdbLayerDirection::kHorizontal) {
+        horizontal_layer = neighbour_layer;
+      } else {
+        vertical_layer = neighbour_layer;
+      }
     }
   }
   auto pin_list = idb_design->get_io_pin_list()->get_pin_list();
@@ -163,7 +167,7 @@ bool IoPlacer::autoPlacePins(std::string layer_name, int width, int height, std:
       int shape_ury = shape_lly + width;
 
       shape->add_rect(shape_llx - x, shape_lly - y, shape_urx - x, shape_ury - y);
-      shape->set_layer(left_right_layer);
+      shape->set_layer(horizontal_layer);
     }
   }
 
@@ -201,7 +205,7 @@ bool IoPlacer::autoPlacePins(std::string layer_name, int width, int height, std:
       int shape_ury = shape_lly + width;
 
       shape->add_rect(shape_llx - x, shape_lly - y, shape_urx - x, shape_ury - y);
-      shape->set_layer(left_right_layer);
+      shape->set_layer(horizontal_layer);
     }
   }
 
@@ -239,7 +243,7 @@ bool IoPlacer::autoPlacePins(std::string layer_name, int width, int height, std:
       int shape_ury = shape_lly + height;
 
       shape->add_rect(shape_llx - x, shape_lly - y, shape_urx - x, shape_ury - y);
-      shape->set_layer(bottom_top_layer);
+      shape->set_layer(vertical_layer);
     }
   }
 
@@ -278,7 +282,7 @@ bool IoPlacer::autoPlacePins(std::string layer_name, int width, int height, std:
       int shape_ury = shape_lly + height;
 
       shape->add_rect(shape_llx - x, shape_lly - y, shape_urx - x, shape_ury - y);
-      shape->set_layer(bottom_top_layer);
+      shape->set_layer(vertical_layer);
     }
   }
 
