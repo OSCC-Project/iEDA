@@ -2528,42 +2528,17 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
     enlarged_x_size -= 1;
     enlarged_y_size -= 1;
     PlanarRect planar_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-    
-    std::set<int32_t> x_pre_set;
-    std::set<int32_t> x_mid_set;
-    std::set<int32_t> x_post_set;
-    RTUTIL.getTrackIndexSet(dr_box.get_box_track_axis().get_x_grid_list(), planar_enlarged_rect.get_ll_x(), planar_enlarged_rect.get_ur_x(), x_pre_set, x_mid_set, x_post_set);
-
-    std::set<int32_t> y_pre_set;
-    std::set<int32_t> y_mid_set;
-    std::set<int32_t> y_post_set;
-    RTUTIL.getTrackIndexSet(dr_box.get_box_track_axis().get_y_grid_list(), planar_enlarged_rect.get_ll_y(), planar_enlarged_rect.get_ur_y(), y_pre_set, y_mid_set, y_post_set);
-
-    std::map<std::pair<std::set<int32_t>*, std::set<int32_t>*>, std::set<Orientation>> grid_orientation_map;
-
-    grid_orientation_map[{std::make_pair(&x_pre_set, &y_mid_set)}] = {Orientation::kEast};
-    grid_orientation_map[{std::make_pair(&x_post_set, &y_mid_set)}] = {Orientation::kWest};
-    grid_orientation_map[{std::make_pair(&x_mid_set, &y_pre_set)}] = {Orientation::kNorth};
-    grid_orientation_map[{std::make_pair(&x_mid_set, &y_post_set)}] = {Orientation::kSouth};
-    grid_orientation_map[{std::make_pair(&x_mid_set, &y_mid_set)}] = {Orientation::kEast, Orientation::kWest, Orientation::kNorth, Orientation::kSouth, Orientation::kAbove, Orientation::kBelow};
-
-    for (auto& [set_pair, orientation_set] : grid_orientation_map) {
-      auto& x_set = set_pair.first;
-      auto& y_set = set_pair.second;
-      for(auto x: *x_set){
-          for(auto y: *y_set){
-          DRNode& node = dr_node_map[x][y];
-          for (const Orientation& orientation : orientation_set) {
-            if (orientation == Orientation::kAbove || orientation == Orientation::kBelow) {
-              continue;
-            }
-            if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
-              continue;
-            }
-            node_orientation_map[&node].insert(orientation);
-            node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
-          }
+    for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(planar_enlarged_rect, dr_box.get_box_track_axis())) {
+      DRNode& node = dr_node_map[grid_coord.get_x()][grid_coord.get_y()];
+      for (const Orientation& orientation : orientation_set) {
+        if (orientation == Orientation::kAbove || orientation == Orientation::kBelow) {
+          continue;
         }
+        if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
+          continue;
+        }
+        node_orientation_map[&node].insert(orientation);
+        node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
       }
     }
   }
@@ -2576,45 +2551,19 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
     enlarged_x_size -= 1;
     enlarged_y_size -= 1;
     PlanarRect space_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-    
-    std::set<int32_t> x_pre_set;
-    std::set<int32_t> x_mid_set;
-    std::set<int32_t> x_post_set;
-    RTUTIL.getTrackIndexSet(dr_box.get_box_track_axis().get_x_grid_list(), space_enlarged_rect.get_ll_x(), space_enlarged_rect.get_ur_x(), x_pre_set, x_mid_set, x_post_set);
-
-    std::set<int32_t> y_pre_set;
-    std::set<int32_t> y_mid_set;
-    std::set<int32_t> y_post_set;
-    RTUTIL.getTrackIndexSet(dr_box.get_box_track_axis().get_y_grid_list(), space_enlarged_rect.get_ll_y(), space_enlarged_rect.get_ur_y(), y_pre_set, y_mid_set, y_post_set);
-
-    std::map<std::pair<std::set<int32_t>*, std::set<int32_t>*>, std::set<Orientation>> grid_orientation_map;
-
-    grid_orientation_map[{std::make_pair(&x_pre_set, &y_mid_set)}] = {Orientation::kEast};
-    grid_orientation_map[{std::make_pair(&x_post_set, &y_mid_set)}] = {Orientation::kWest};
-    grid_orientation_map[{std::make_pair(&x_mid_set, &y_pre_set)}] = {Orientation::kNorth};
-    grid_orientation_map[{std::make_pair(&x_mid_set, &y_post_set)}] = {Orientation::kSouth};
-    grid_orientation_map[{std::make_pair(&x_mid_set, &y_mid_set)}] = {Orientation::kEast, Orientation::kWest, Orientation::kNorth, Orientation::kSouth, Orientation::kAbove, Orientation::kBelow};
-
-    
-    for (auto& [set_pair, orientation_set] : grid_orientation_map) {
-      auto& x_set = set_pair.first;
-      auto& y_set = set_pair.second;
-      for(auto x: *x_set){
-          for(auto y: *y_set){
-          DRNode& node = dr_node_map[x][y];
-          for (const Orientation& orientation : orientation_set) {
-            if (orientation == Orientation::kEast || orientation == Orientation::kWest || orientation == Orientation::kSouth
-                || orientation == Orientation::kNorth) {
-              continue;
-            }
-            if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
-              continue;
-            }
-            node_orientation_map[&node].insert(orientation);
-            node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
-          }
+    for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, dr_box.get_box_track_axis())) {
+      DRNode& node = dr_node_map[grid_coord.get_x()][grid_coord.get_y()];
+      for (const Orientation& orientation : orientation_set) {
+        if (orientation == Orientation::kEast || orientation == Orientation::kWest || orientation == Orientation::kSouth
+            || orientation == Orientation::kNorth) {
+          continue;
         }
-      }   
+        if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
+          continue;
+        }
+        node_orientation_map[&node].insert(orientation);
+        node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
+      }
     }
   }
   return node_orientation_map;
@@ -2698,43 +2647,17 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMa
       enlarged_x_size -= 1;
       enlarged_y_size -= 1;
       PlanarRect space_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-    
-      std::set<int32_t> x_pre_set;
-      std::set<int32_t> x_mid_set;
-      std::set<int32_t> x_post_set;
-      RTUTIL.getTrackIndexSet(dr_box.get_box_track_axis().get_x_grid_list(), space_enlarged_rect.get_ll_x(), space_enlarged_rect.get_ur_x(), x_pre_set, x_mid_set, x_post_set);
-
-      std::set<int32_t> y_pre_set;
-      std::set<int32_t> y_mid_set;
-      std::set<int32_t> y_post_set;
-      RTUTIL.getTrackIndexSet(dr_box.get_box_track_axis().get_y_grid_list(), space_enlarged_rect.get_ll_y(), space_enlarged_rect.get_ur_y(), y_pre_set, y_mid_set, y_post_set);
-
-      std::map<std::pair<std::set<int32_t>*, std::set<int32_t>*>, std::set<Orientation>> grid_orientation_map;
-
-      grid_orientation_map[{std::make_pair(&x_pre_set, &y_mid_set)}] = {Orientation::kEast};
-      grid_orientation_map[{std::make_pair(&x_post_set, &y_mid_set)}] = {Orientation::kWest};
-      grid_orientation_map[{std::make_pair(&x_mid_set, &y_pre_set)}] = {Orientation::kNorth};
-      grid_orientation_map[{std::make_pair(&x_mid_set, &y_post_set)}] = {Orientation::kSouth};
-      grid_orientation_map[{std::make_pair(&x_mid_set, &y_mid_set)}] = {Orientation::kEast, Orientation::kWest, Orientation::kNorth, Orientation::kSouth, Orientation::kAbove, Orientation::kBelow};
-
-    
-      for (auto& [set_pair, orientation_set] : grid_orientation_map) {
-        auto& x_set = set_pair.first;
-        auto& y_set = set_pair.second;
-        for(auto x: *x_set){
-          for(auto y: *y_set){
-            if (!RTUTIL.exist(orientation_set, Orientation::kAbove) && !RTUTIL.exist(orientation_set, Orientation::kBelow)) {
-              continue;
-            }
-            DRNode& below_node = layer_node_map[below_routing_layer_idx][x][y];
-            if (RTUTIL.exist(below_node.get_neighbor_node_map(), Orientation::kAbove)) {
-              node_orientation_map[&below_node].insert(Orientation::kAbove);
-            }
-            DRNode& above_node = layer_node_map[above_routing_layer_idx][x][y];
-            if (RTUTIL.exist(above_node.get_neighbor_node_map(), Orientation::kBelow)) {
-              node_orientation_map[&above_node].insert(Orientation::kBelow);
-            }
-          }
+      for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, dr_box.get_box_track_axis())) {
+        if (!RTUTIL.exist(orientation_set, Orientation::kAbove) && !RTUTIL.exist(orientation_set, Orientation::kBelow)) {
+          continue;
+        }
+        DRNode& below_node = layer_node_map[below_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
+        if (RTUTIL.exist(below_node.get_neighbor_node_map(), Orientation::kAbove)) {
+          node_orientation_map[&below_node].insert(Orientation::kAbove);
+        }
+        DRNode& above_node = layer_node_map[above_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
+        if (RTUTIL.exist(above_node.get_neighbor_node_map(), Orientation::kBelow)) {
+          node_orientation_map[&above_node].insert(Orientation::kBelow);
         }
       }
     }

@@ -138,7 +138,7 @@ void EarlyRouter::setERComParam(ERModel& er_model, std::map<std::string, std::an
   double overflow_unit = 4 * non_prefer_wire_unit;
 
   /**
-   * resolve_congestion,max_candidate_point_num, supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit, topo_spilt_length,
+   * resolve_congestion, max_candidate_point_num, supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit, topo_spilt_length,
    * expand_step_num, expand_step_length, via_unit, overflow_unit
    */
   ERComParam er_com_param(resolve_congestion, max_candidate_point_num, supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit,
