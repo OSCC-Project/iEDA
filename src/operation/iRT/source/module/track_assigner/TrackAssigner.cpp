@@ -1348,17 +1348,42 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
     enlarged_x_size -= 1;
     enlarged_y_size -= 1;
     PlanarRect planar_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-    for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(planar_enlarged_rect, ta_panel.get_panel_track_axis())) {
-      TANode& node = ta_node_map[grid_coord.get_x()][grid_coord.get_y()];
-      for (const Orientation& orientation : orientation_set) {
-        if (orientation == Orientation::kAbove || orientation == Orientation::kBelow) {
-          continue;
+    
+    std::set<int32_t> x_pre_set;
+    std::set<int32_t> x_mid_set;
+    std::set<int32_t> x_post_set;
+    RTUTIL.getTrackIndexSet(ta_panel.get_panel_track_axis().get_x_grid_list(), planar_enlarged_rect.get_ll_x(), planar_enlarged_rect.get_ur_x(), x_pre_set, x_mid_set, x_post_set);
+
+    std::set<int32_t> y_pre_set;
+    std::set<int32_t> y_mid_set;
+    std::set<int32_t> y_post_set;
+    RTUTIL.getTrackIndexSet(ta_panel.get_panel_track_axis().get_y_grid_list(), planar_enlarged_rect.get_ll_y(), planar_enlarged_rect.get_ur_y(), y_pre_set, y_mid_set, y_post_set);
+
+    std::map<std::pair<std::set<int32_t>*, std::set<int32_t>*>, std::set<Orientation>> grid_orientation_map;
+
+    grid_orientation_map[{std::make_pair(&x_pre_set, &y_mid_set)}] = {Orientation::kEast};
+    grid_orientation_map[{std::make_pair(&x_post_set, &y_mid_set)}] = {Orientation::kWest};
+    grid_orientation_map[{std::make_pair(&x_mid_set, &y_pre_set)}] = {Orientation::kNorth};
+    grid_orientation_map[{std::make_pair(&x_mid_set, &y_post_set)}] = {Orientation::kSouth};
+    grid_orientation_map[{std::make_pair(&x_mid_set, &y_mid_set)}] = {Orientation::kEast, Orientation::kWest, Orientation::kNorth, Orientation::kSouth, Orientation::kAbove, Orientation::kBelow};
+
+    for (auto& [set_pair, orientation_set] : grid_orientation_map) {
+      auto& x_set = set_pair.first;
+      auto& y_set = set_pair.second;
+      for(auto x: *x_set){
+          for(auto y: *y_set){
+          TANode& node = ta_node_map[x][y];
+          for (const Orientation& orientation : orientation_set) {
+            if (orientation == Orientation::kAbove || orientation == Orientation::kBelow) {
+              continue;
+            }
+            if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
+              continue;
+            }
+            node_orientation_map[&node].insert(orientation);
+            node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
+          }
         }
-        if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
-          continue;
-        }
-        node_orientation_map[&node].insert(orientation);
-        node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
       }
     }
   }
