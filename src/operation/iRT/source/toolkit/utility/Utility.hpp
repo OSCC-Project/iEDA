@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include <cstdlib>
 #include "Direction.hpp"
 #include "EXTPlanarRect.hpp"
 #include "GridMap.hpp"
@@ -1620,7 +1621,7 @@ class Utility
     return grid_rect;
   }
 
-  static std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> getTrackGridOrientationMap(const PlanarRect& real_rect, ScaleAxis& track_axis)
+  static std::map<std::pair<std::set<int32_t>, std::set<int32_t>>, std::set<Orientation>> getTrackGridOrientationMap(const PlanarRect& real_rect, ScaleAxis& track_axis)
   {
     std::set<int32_t> x_pre_set;
     std::set<int32_t> x_mid_set;
@@ -1632,33 +1633,12 @@ class Utility
     std::set<int32_t> y_post_set;
     getTrackIndexSet(track_axis.get_y_grid_list(), real_rect.get_ll_y(), real_rect.get_ur_y(), y_pre_set, y_mid_set, y_post_set);
 
-    std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> grid_orientation_map;
-    for (int32_t x_pre : x_pre_set) {
-      for (int32_t y_mid : y_mid_set) {
-        grid_orientation_map[PlanarCoord(x_pre, y_mid)].insert(Orientation::kEast);
-      }
-    }
-    for (int32_t x_post : x_post_set) {
-      for (int32_t y_mid : y_mid_set) {
-        grid_orientation_map[PlanarCoord(x_post, y_mid)].insert(Orientation::kWest);
-      }
-    }
-    for (int32_t y_pre : y_pre_set) {
-      for (int32_t x_mid : x_mid_set) {
-        grid_orientation_map[PlanarCoord(x_mid, y_pre)].insert(Orientation::kNorth);
-      }
-    }
-    for (int32_t y_post : y_post_set) {
-      for (int32_t x_mid : x_mid_set) {
-        grid_orientation_map[PlanarCoord(x_mid, y_post)].insert(Orientation::kSouth);
-      }
-    }
-    for (int32_t x_mid : x_mid_set) {
-      for (int32_t y_mid : y_mid_set) {
-        grid_orientation_map[PlanarCoord(x_mid, y_mid)].insert(
-            {Orientation::kEast, Orientation::kWest, Orientation::kNorth, Orientation::kSouth, Orientation::kAbove, Orientation::kBelow});
-      }
-    }
+    std::map<std::pair<std::set<int32_t>, std::set<int32_t>>, std::set<Orientation>> grid_orientation_map;
+    grid_orientation_map[{std::make_pair(x_pre_set, y_mid_set)}] = {Orientation::kEast};
+    grid_orientation_map[{std::make_pair(x_post_set, y_mid_set)}] = {Orientation::kWest};
+    grid_orientation_map[{std::make_pair(x_mid_set, y_pre_set)}] = {Orientation::kNorth};
+    grid_orientation_map[{std::make_pair(x_mid_set, y_post_set)}] = {Orientation::kSouth};
+    grid_orientation_map[{std::make_pair(x_mid_set, y_mid_set)}] = {Orientation::kEast, Orientation::kWest, Orientation::kNorth, Orientation::kSouth, Orientation::kAbove, Orientation::kBelow};
     return grid_orientation_map;
   }
 
