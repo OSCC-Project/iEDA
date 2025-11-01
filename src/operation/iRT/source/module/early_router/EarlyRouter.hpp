@@ -36,7 +36,7 @@ class EarlyRouter
   static EarlyRouter& getInst();
   static void destroyInst();
   // function
-  void route();
+  void route(std::map<std::string, std::any> config_map);
 
  private:
   // self
@@ -52,7 +52,7 @@ class EarlyRouter
   ERModel initERModel();
   std::vector<ERNet> convertToERNetList(std::vector<Net>& net_list);
   ERNet convertToERNet(Net& net);
-  void setERComParam(ERModel& er_model);
+  void setERComParam(ERModel& er_model, std::map<std::string, std::any> config_map);
   void initAccessPointList(ERModel& er_model);
   std::vector<LayerCoord> getAccessCoordList(ERModel& er_model, std::vector<EXTLayerRect>& pin_shape_list);
   void uniformSampleCoordList(ERModel& er_model, std::vector<LayerCoord>& layer_coord_list);

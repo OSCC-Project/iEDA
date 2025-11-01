@@ -50,12 +50,12 @@ void EarlyRouter::destroyInst()
 
 // function
 
-void EarlyRouter::route()
+void EarlyRouter::route(std::map<std::string, std::any> config_map)
 {
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
   ERModel er_model = initERModel();
-  setERComParam(er_model);
+  setERComParam(er_model, config_map);
   initAccessPointList(er_model);
   // debugPlotERModel(er_model, "before");
   buildConflictList(er_model);
@@ -120,8 +120,10 @@ ERNet EarlyRouter::convertToERNet(Net& net)
   return er_net;
 }
 
-void EarlyRouter::setERComParam(ERModel& er_model)
+void EarlyRouter::setERComParam(ERModel& er_model, std::map<std::string, std::any> config_map)
 {
+  std::string resolve_congestion = RTUTIL.getConfigValue<std::string>(config_map, "-resolve_congestion", "high");
+
   int32_t max_candidate_point_num = 10;
   int32_t supply_reduction = 0;
   double boundary_wire_unit = 1;
@@ -136,11 +138,12 @@ void EarlyRouter::setERComParam(ERModel& er_model)
   double overflow_unit = 4 * non_prefer_wire_unit;
 
   /**
-   * max_candidate_point_num, supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit, topo_spilt_length, expand_step_num,
-   * expand_step_length, via_unit, overflow_unit
+   * resolve_congestion,max_candidate_point_num, supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit, topo_spilt_length,
+   * expand_step_num, expand_step_length, via_unit, overflow_unit
    */
-  ERComParam er_com_param(max_candidate_point_num, supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit, topo_spilt_length,
-                          expand_step_num, expand_step_length, via_unit, overflow_unit);
+  ERComParam er_com_param(resolve_congestion, max_candidate_point_num, supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit,
+                          topo_spilt_length, expand_step_num, expand_step_length, via_unit, overflow_unit);
+  RTLOG.info(Loc::current(), "resolve_congestion: ", er_com_param.get_resolve_congestion());
   RTLOG.info(Loc::current(), "max_candidate_point_num: ", er_com_param.get_max_candidate_point_num());
   RTLOG.info(Loc::current(), "supply_reduction: ", er_com_param.get_supply_reduction());
   RTLOG.info(Loc::current(), "boundary_wire_unit: ", er_com_param.get_boundary_wire_unit());
@@ -387,55 +390,56 @@ void EarlyRouter::buildConflictList(ERModel& er_model)
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
 
-  std::vector<ERConflictGroup>& er_conflict_group_list = er_model.get_er_conflict_group_list();
-
-  std::map<ERPin*, std::set<ERPin*>> pin_conflict_map;
-  for (auto& [curr_pin, conflict_pin_set] : getPinConlictMap(er_model)) {
-    pin_conflict_map[curr_pin] = conflict_pin_set;
-  }
-  for (auto& [curr_pin, conflict_pin_set] : pin_conflict_map) {
-    if (conflict_pin_set.empty()) {
-      continue;
+  if (er_model.get_er_com_param().get_resolve_congestion() == "high") {
+    std::map<ERPin*, std::set<ERPin*>> pin_conflict_map;
+    for (auto& [curr_pin, conflict_pin_set] : getPinConlictMap(er_model)) {
+      pin_conflict_map[curr_pin] = conflict_pin_set;
     }
-    std::vector<std::pair<ERPin*, ERPin*>> conflict_list;
-    std::map<ERPin*, int32_t> pin_idx_map;
-    std::queue<ERPin*> pin_queue = RTUTIL.initQueue(curr_pin);
-    while (!pin_queue.empty()) {
-      ERPin* er_pin = RTUTIL.getFrontAndPop(pin_queue);
-      if (!RTUTIL.exist(pin_idx_map, er_pin)) {
-        pin_idx_map[er_pin] = pin_idx_map.size();
-      }
-      if (!RTUTIL.exist(pin_conflict_map, er_pin)) {
+    for (auto& [curr_pin, conflict_pin_set] : pin_conflict_map) {
+      if (conflict_pin_set.empty()) {
         continue;
       }
-      std::set<ERPin*>& conflict_pin_set = pin_conflict_map[er_pin];
-      for (ERPin* conflict_pin : conflict_pin_set) {
-        conflict_list.emplace_back(er_pin, conflict_pin);
-        pin_queue.push(conflict_pin);
+      std::vector<std::pair<ERPin*, ERPin*>> conflict_list;
+      std::map<ERPin*, int32_t> pin_idx_map;
+      std::queue<ERPin*> pin_queue = RTUTIL.initQueue(curr_pin);
+      while (!pin_queue.empty()) {
+        ERPin* er_pin = RTUTIL.getFrontAndPop(pin_queue);
+        if (!RTUTIL.exist(pin_idx_map, er_pin)) {
+          pin_idx_map[er_pin] = pin_idx_map.size();
+        }
+        if (!RTUTIL.exist(pin_conflict_map, er_pin)) {
+          continue;
+        }
+        std::set<ERPin*>& conflict_pin_set = pin_conflict_map[er_pin];
+        for (ERPin* conflict_pin : conflict_pin_set) {
+          conflict_list.emplace_back(er_pin, conflict_pin);
+          pin_queue.push(conflict_pin);
+        }
+        conflict_pin_set.clear();
       }
-      conflict_pin_set.clear();
-    }
-    ERConflictGroup er_conflict_group;
-    std::vector<std::vector<ERConflictPoint>>& conflict_point_list_list = er_conflict_group.get_conflict_point_list_list();
-    conflict_point_list_list.resize(pin_idx_map.size());
-    for (auto& [er_pin, conflict_point_list_idx] : pin_idx_map) {
-      std::vector<ERConflictPoint> conflict_point_list;
-      for (AccessPoint& access_point : er_pin->get_access_point_list()) {
-        ERConflictPoint conflict_point;
-        conflict_point.set_er_pin(er_pin);
-        conflict_point.set_access_point(&access_point);
-        conflict_point.set_coord(access_point.get_real_coord());
-        conflict_point.set_layer_idx(access_point.get_layer_idx());
-        conflict_point_list.push_back(conflict_point);
+      ERConflictGroup er_conflict_group;
+      std::vector<std::vector<ERConflictPoint>>& conflict_point_list_list = er_conflict_group.get_conflict_point_list_list();
+      conflict_point_list_list.resize(pin_idx_map.size());
+      for (auto& [er_pin, conflict_point_list_idx] : pin_idx_map) {
+        std::vector<ERConflictPoint> conflict_point_list;
+        for (AccessPoint& access_point : er_pin->get_access_point_list()) {
+          ERConflictPoint conflict_point;
+          conflict_point.set_er_pin(er_pin);
+          conflict_point.set_access_point(&access_point);
+          conflict_point.set_coord(access_point.get_real_coord());
+          conflict_point.set_layer_idx(access_point.get_layer_idx());
+          conflict_point_list.push_back(conflict_point);
+        }
+        conflict_point_list_list[conflict_point_list_idx] = conflict_point_list;
       }
-      conflict_point_list_list[conflict_point_list_idx] = conflict_point_list;
+      std::map<int32_t, std::vector<int32_t>>& conflict_map = er_conflict_group.get_conflict_map();
+      for (std::pair<ERPin*, ERPin*>& conflict_pair : conflict_list) {
+        conflict_map[pin_idx_map[conflict_pair.first]].push_back(pin_idx_map[conflict_pair.second]);
+      }
+      er_model.get_er_conflict_group_list().push_back(er_conflict_group);
     }
-    std::map<int32_t, std::vector<int32_t>>& conflict_map = er_conflict_group.get_conflict_map();
-    for (std::pair<ERPin*, ERPin*>& conflict_pair : conflict_list) {
-      conflict_map[pin_idx_map[conflict_pair.first]].push_back(pin_idx_map[conflict_pair.second]);
-    }
-    er_conflict_group_list.push_back(er_conflict_group);
   }
+
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -562,7 +566,8 @@ std::vector<ERConflictPoint> EarlyRouter::getBestPointList(ERConflictGroup& er_c
     curr_ap_list.push_back(conflict_point_list.front());
   }
   bool improved = true;
-  while (improved) {
+  int32_t iter_num = static_cast<int32_t>(conflict_point_list_list.size() * 2);
+  while (improved && iter_num--) {
     improved = false;
     for (int32_t i = 0; i < static_cast<int32_t>(conflict_point_list_list.size()); ++i) {
       std::vector<int32_t> conflict_j_list;
@@ -1228,13 +1233,17 @@ std::vector<Segment<PlanarCoord>> EarlyRouter::getPlanarTopoList(ERModel& er_mod
 
 std::vector<std::vector<Segment<PlanarCoord>>> EarlyRouter::getRoutingSegmentListList(ERModel& er_model, Segment<PlanarCoord>& planar_topo)
 {
+  std::vector<std::function<std::vector<std::vector<Segment<PlanarCoord>>>(ERModel&, Segment<PlanarCoord>&)>> strategy_list;
+  strategy_list.push_back(std::bind(&EarlyRouter::getRoutingSegmentListByStraight, this, std::placeholders::_1, std::placeholders::_2));
+  strategy_list.push_back(std::bind(&EarlyRouter::getRoutingSegmentListByLPattern, this, std::placeholders::_1, std::placeholders::_2));
+  if (er_model.get_er_com_param().get_resolve_congestion() == "high") {
+    strategy_list.push_back(std::bind(&EarlyRouter::getRoutingSegmentListByZPattern, this, std::placeholders::_1, std::placeholders::_2));
+    strategy_list.push_back(std::bind(&EarlyRouter::getRoutingSegmentListByUPattern, this, std::placeholders::_1, std::placeholders::_2));
+    strategy_list.push_back(std::bind(&EarlyRouter::getRoutingSegmentListByInner3Bends, this, std::placeholders::_1, std::placeholders::_2));
+    strategy_list.push_back(std::bind(&EarlyRouter::getRoutingSegmentListByOuter3Bends, this, std::placeholders::_1, std::placeholders::_2));
+  }
   std::vector<std::vector<Segment<PlanarCoord>>> routing_segment_list_list;
-  for (auto getRoutingSegmentList : {std::bind(&EarlyRouter::getRoutingSegmentListByStraight, this, std::placeholders::_1, std::placeholders::_2),
-                                     std::bind(&EarlyRouter::getRoutingSegmentListByLPattern, this, std::placeholders::_1, std::placeholders::_2),
-                                     std::bind(&EarlyRouter::getRoutingSegmentListByZPattern, this, std::placeholders::_1, std::placeholders::_2),
-                                     std::bind(&EarlyRouter::getRoutingSegmentListByUPattern, this, std::placeholders::_1, std::placeholders::_2),
-                                     std::bind(&EarlyRouter::getRoutingSegmentListByInner3Bends, this, std::placeholders::_1, std::placeholders::_2),
-                                     std::bind(&EarlyRouter::getRoutingSegmentListByOuter3Bends, this, std::placeholders::_1, std::placeholders::_2)}) {
+  for (auto getRoutingSegmentList : strategy_list) {
     for (std::vector<Segment<PlanarCoord>> routing_segment_list : getRoutingSegmentList(er_model, planar_topo)) {
       routing_segment_list_list.push_back(routing_segment_list);
     }

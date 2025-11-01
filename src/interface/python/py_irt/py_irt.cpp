@@ -24,15 +24,24 @@
 #include "flow_config.h"
 namespace python_interface {
 
+bool initConfigMapByJSON(const std::string& config, std::map<std::string, std::any>& config_map);
+
 bool destroyRT()
 {
   RTI.destroyRT();
   return true;
 }
 
-bool runEGR()
+bool runERT(std::string& config, std::map<std::string, std::string>& config_dict)
 {
-  RTI.runEGR();
+  std::map<std::string, std::any> config_map;
+
+  bool pass = false;
+  pass = !pass ? initConfigMapByJSON(config, config_map) : pass;
+  if (!pass) {
+    return false;
+  }
+  RTI.runERT(config_map);
   return true;
 }
 
@@ -41,8 +50,6 @@ bool runRT()
   RTI.runRT();
   return true;
 }
-
-bool initConfigMapByJSON(const std::string& config, std::map<std::string, std::any>& config_map);
 
 bool initRT(std::string& config, std::map<std::string, std::string>& config_dict)
 {
