@@ -35,7 +35,6 @@ class Config
   int32_t enable_notification;       // optional
   int32_t enable_timing;             // optional
   int32_t enable_fast_mode;          // optional
-  int32_t enable_lsa;                // optional
   /////////////////////////////////////////////
   // **********        RT         ********** //
   std::string log_file_path;         // building
