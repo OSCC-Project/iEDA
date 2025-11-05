@@ -26,6 +26,7 @@ namespace tcl {
 
 TclRunERT::TclRunERT(const char* cmd_name) : TclCmd(cmd_name)
 {
+  _config_list.push_back(std::make_pair("-stage", ValueType::kString));
   _config_list.push_back(std::make_pair("-resolve_congestion", ValueType::kString));
 
   TclUtil::addOption(this, _config_list);

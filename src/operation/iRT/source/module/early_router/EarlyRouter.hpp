@@ -128,24 +128,25 @@ class EarlyRouter
   void buildBoxSchedule(ERModel& er_model);
   void routeTrack(ERModel& er_model);
   void routeERBox(ERBox& er_box);
-  void uploadNetResult(ERModel& er_model);
-  void uploadNetPatch(ERModel& er_model);
-  void outputResult(ERModel& er_model);
+  void updateNetResult(ERModel& er_model);
+  void updateNetPatch(ERModel& er_model);
+  void cleanTempResult(ERModel& er_model);
+
+#if 1  // output
   void outputGCellCSV(ERModel& er_model);
+  void outputPlanarSupplyCSV(ERModel& er_model);
+  void outputPlanarGuide(ERModel& er_model);
+  void outputPlanarNetCSV(ERModel& er_model);
+  void outputPlanarOverflowCSV(ERModel& er_model);
   void outputLayerSupplyCSV(ERModel& er_model);
   void outputLayerGuide(ERModel& er_model);
   void outputLayerNetCSV(ERModel& er_model);
   void outputLayerOverflowCSV(ERModel& er_model);
-  void cleanTempResult(ERModel& er_model);
+#endif
 
 #if 1  // update env
   void updateDemandToGraph(ERModel& er_model, ChangeType change_type, MTree<PlanarCoord>& coord_tree);
   void updateDemandToGraph(ERModel& er_model, ChangeType change_type, MTree<LayerCoord>& coord_tree);
-#endif
-
-#if 1  // exhibit
-  void updateSummary(ERModel& er_model);
-  void printSummary(ERModel& er_model);
 #endif
 
 #if 1  // debug
