@@ -33,9 +33,8 @@ class ERNet
   ConnectType& get_connect_type() { return _connect_type; }
   std::vector<ERPin>& get_er_pin_list() { return _er_pin_list; }
   BoundingBox& get_bounding_box() { return _bounding_box; }
-  MTree<PlanarCoord>& get_planar_tree() { return _planar_tree; }
+  MTree<LayerCoord>& get_planar_tree() { return _planar_tree; }
   MTree<ERPillar>& get_pillar_tree() { return _pillar_tree; }
-  MTree<LayerCoord>& get_layer_tree() { return _layer_tree; }
   // const getter
   const ConnectType& get_connect_type() const { return _connect_type; }
   const std::vector<ERPin>& get_er_pin_list() const { return _er_pin_list; }
@@ -46,9 +45,8 @@ class ERNet
   void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
   void set_er_pin_list(const std::vector<ERPin>& er_pin_list) { _er_pin_list = er_pin_list; }
   void set_bounding_box(const BoundingBox& bounding_box) { _bounding_box = bounding_box; }
-  void set_planar_tree(const MTree<PlanarCoord>& planar_tree) { _planar_tree = planar_tree; }
+  void set_planar_tree(const MTree<LayerCoord>& planar_tree) { _planar_tree = planar_tree; }
   void set_pillar_tree(const MTree<ERPillar>& pillar_tree) { _pillar_tree = pillar_tree; }
-  void set_layer_tree(const MTree<LayerCoord>& layer_tree) { _layer_tree = layer_tree; }
   // function
 
  private:
@@ -57,9 +55,8 @@ class ERNet
   ConnectType _connect_type = ConnectType::kNone;
   std::vector<ERPin> _er_pin_list;
   BoundingBox _bounding_box;
-  MTree<PlanarCoord> _planar_tree;
+  MTree<LayerCoord> _planar_tree;
   MTree<ERPillar> _pillar_tree;
-  MTree<LayerCoord> _layer_tree;
 };
 
 struct CmpERNet

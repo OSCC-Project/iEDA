@@ -25,7 +25,7 @@ class ERComParam
  public:
   ERComParam() = default;
   ERComParam(std::string resolve_congestion, int32_t max_candidate_point_num, int32_t supply_reduction, double boundary_wire_unit, double internal_wire_unit,
-             double internal_via_unit, int32_t topo_spilt_length, int32_t expand_step_num, int32_t expand_step_length, double via_unit, double overflow_unit)
+             double internal_via_unit, int32_t expand_step_num, int32_t expand_step_length, double via_unit, double overflow_unit, int32_t schedule_interval)
   {
     _resolve_congestion = resolve_congestion;
     _max_candidate_point_num = max_candidate_point_num;
@@ -33,11 +33,11 @@ class ERComParam
     _boundary_wire_unit = boundary_wire_unit;
     _internal_wire_unit = internal_wire_unit;
     _internal_via_unit = internal_via_unit;
-    _topo_spilt_length = topo_spilt_length;
     _expand_step_num = expand_step_num;
     _expand_step_length = expand_step_length;
     _via_unit = via_unit;
     _overflow_unit = overflow_unit;
+    _schedule_interval = schedule_interval;
   }
   ~ERComParam() = default;
   // getter
@@ -47,11 +47,11 @@ class ERComParam
   double get_boundary_wire_unit() const { return _boundary_wire_unit; }
   double get_internal_wire_unit() const { return _internal_wire_unit; }
   double get_internal_via_unit() const { return _internal_via_unit; }
-  int32_t get_topo_spilt_length() const { return _topo_spilt_length; }
   int32_t get_expand_step_num() const { return _expand_step_num; }
   int32_t get_expand_step_length() const { return _expand_step_length; }
   double get_via_unit() const { return _via_unit; }
   double get_overflow_unit() const { return _overflow_unit; }
+  double get_schedule_interval() const { return _schedule_interval; }
   // setter
   void set_resolve_congestion(std::string& resolve_congestion) { _resolve_congestion = resolve_congestion; }
   void set_max_candidate_point_num(const int32_t max_candidate_point_num) { _max_candidate_point_num = max_candidate_point_num; }
@@ -59,11 +59,11 @@ class ERComParam
   void set_boundary_wire_unit(const double boundary_wire_unit) { _boundary_wire_unit = boundary_wire_unit; }
   void set_internal_wire_unit(const double internal_wire_unit) { _internal_wire_unit = internal_wire_unit; }
   void set_internal_via_unit(const double internal_via_unit) { _internal_via_unit = internal_via_unit; }
-  void set_topo_spilt_length(const int32_t topo_spilt_length) { _topo_spilt_length = topo_spilt_length; }
   void set_expand_step_num(const int32_t expand_step_num) { _expand_step_num = expand_step_num; }
   void set_expand_step_length(const int32_t expand_step_length) { _expand_step_length = expand_step_length; }
   void set_via_unit(const double via_unit) { _via_unit = via_unit; }
   void set_overflow_unit(const double overflow_unit) { _overflow_unit = overflow_unit; }
+  void set_schedule_interval(const double schedule_interval) { _schedule_interval = schedule_interval; }
 
  private:
   std::string _resolve_congestion;
@@ -72,11 +72,11 @@ class ERComParam
   double _boundary_wire_unit = -1;
   double _internal_wire_unit = -1;
   double _internal_via_unit = -1;
-  int32_t _topo_spilt_length = 0;
   int32_t _expand_step_num = 0;
   int32_t _expand_step_length = 0;
   double _via_unit = 0;
   double _overflow_unit = 0;
+  int32_t _schedule_interval = 0;
 };
 
 }  // namespace irt
