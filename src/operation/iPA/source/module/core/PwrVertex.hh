@@ -68,6 +68,11 @@ class PwrVertex {
     return nullptr;
   }
 
+  ista::Net* getConnectNet() {
+    auto* design_obj = _sta_vertex->get_design_obj();
+    return design_obj->get_net();
+  }
+
   std::string getName() const { return _sta_vertex->getName(); }
 
   std::optional<double> getDriveVoltage();

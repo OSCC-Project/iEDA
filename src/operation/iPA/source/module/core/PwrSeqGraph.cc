@@ -22,14 +22,16 @@
  * @date 2023-02-27
  */
 
+#include "PwrSeqGraph.hh"
+
 #include <fstream>
 
-#include "PwrSeqGraph.hh"
 #include "sta/Sta.hh"
 
 namespace ipower {
 
-// static std::shared_mutex rw_mutex;  //! For synchronization read write seq data.
+// static std::shared_mutex rw_mutex;  //! For synchronization read write seq
+// data.
 /**
  * @brief add power vertex of the graph.
  *
@@ -55,10 +57,10 @@ void PwrSeqGraph::addPwrSeqArc(PwrSeqArc* arc) {
 
 /**
  * @brief find seq arc.
- * 
- * @param src_vertex 
- * @param snk_vertex 
- * @return PwrSeqArc* 
+ *
+ * @param src_vertex
+ * @param snk_vertex
+ * @return PwrSeqArc*
  */
 PwrSeqArc* PwrSeqGraph::findSeqArc(PwrSeqVertex* src_vertex,
                                    PwrSeqVertex* snk_vertex) {
@@ -116,6 +118,9 @@ void PwrSeqGraph::printSeqLevelInfo(std::ostream& out) {
   for (auto& [level, level_seq_vertexes] : _level_to_seq_vertex) {
     out << "level: " << level << " number: " << level_seq_vertexes.size()
         << std::endl;
+    for (auto& seq_vertex : level_seq_vertexes) {
+      out << seq_vertex->get_obj_name() << "\n";
+    }
     total_node_num += level_seq_vertexes.size();
   }
 
@@ -134,14 +139,17 @@ bool PwrSeqArcComp::operator()(const PwrSeqArc* const& lhs,
                                const PwrSeqArc* const& rhs) const {
   auto* lhs_src_vertex = lhs->get_src();
   auto* rhs_src_vertex = rhs->get_src();
-  if (lhs_src_vertex != rhs_src_vertex) {
-    return (lhs_src_vertex->get_obj_name() > rhs_src_vertex->get_obj_name());
+  if (lhs_src_vertex->getOneConnectNet() !=
+      rhs_src_vertex->getOneConnectNet()) {
+    return (lhs_src_vertex->getOneConnectNet()->getFullName() >
+            rhs_src_vertex->getOneConnectNet()->getFullName());
   }
 
   auto* lhs_snk_vertex = lhs->get_snk();
   auto* rhs_snk_vertex = rhs->get_snk();
 
-  return (lhs_snk_vertex->get_obj_name() > rhs_snk_vertex->get_obj_name());
+  return (lhs_snk_vertex->getOneConnectNet()->getFullName() >
+          rhs_snk_vertex->getOneConnectNet()->getFullName());
 }
 
 /**
