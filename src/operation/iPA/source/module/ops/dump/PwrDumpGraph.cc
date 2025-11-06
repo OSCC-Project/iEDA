@@ -197,7 +197,7 @@ unsigned PwrDumpGraphYaml::operator()(PwrGraph* the_graph) {
 
   PwrVertex* the_vertex;
   FOREACH_PWR_VERTEX(the_graph, the_vertex) {
-    if (the_vertex->is_const()) {
+    if (!the_vertex->is_const()) {
       the_vertex->exec(*this);
     }
   }
