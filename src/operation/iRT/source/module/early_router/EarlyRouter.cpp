@@ -148,9 +148,14 @@ void EarlyRouter::setERComParam(ERModel& er_model, std::map<std::string, std::an
 {
   // egr2D egr3D edr
   std::string stage = RTUTIL.getConfigValue<std::string>(config_map, "-stage", "egr3D");
+  if (stage != "egr2D" && stage != "egr3D" && stage != "edr") {
+    RTLOG.error(Loc::current(), "The stage is error, valid options are: egr2D, egr3D, edr");
+  }
   // low high
   std::string resolve_congestion = RTUTIL.getConfigValue<std::string>(config_map, "-resolve_congestion", "low");
-
+  if (resolve_congestion != "low" && resolve_congestion != "high") {
+    RTLOG.error(Loc::current(), "The resolve_congestion is error, valid options are: low, high");
+  }
   int32_t max_candidate_point_num = 10;
   int32_t supply_reduction = 0;
   double boundary_wire_unit = 1;
