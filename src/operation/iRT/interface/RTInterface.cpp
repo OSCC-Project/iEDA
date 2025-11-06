@@ -410,7 +410,6 @@ void RTInterface::wrapConfig(std::map<std::string, std::any>& config_map)
   RTDM.getConfig().output_inter_result = RTUTIL.getConfigValue<int32_t>(config_map, "-output_inter_result", 0);
   RTDM.getConfig().enable_notification = RTUTIL.getConfigValue<int32_t>(config_map, "-enable_notification", 0);
   RTDM.getConfig().enable_timing = RTUTIL.getConfigValue<int32_t>(config_map, "-enable_timing", 0);
-  RTDM.getConfig().enable_fast_mode = RTUTIL.getConfigValue<int32_t>(config_map, "-enable_fast_mode", 0);
   /////////////////////////////////////////////
 }
 
