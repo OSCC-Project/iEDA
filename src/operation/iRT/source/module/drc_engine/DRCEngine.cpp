@@ -55,18 +55,13 @@ void DRCEngine::init()
   RTLOG.info(Loc::current(), "Starting...");
 
   RTI.initIDRC();
-  if (!RTDM.getConfig().enable_fast_mode) {
-    buildIgnoredViolationSet();
-  }
+  buildIgnoredViolationSet();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
 {
-  if (RTDM.getConfig().enable_fast_mode) {
-    return {};
-  }
   getViolationListByInterface(de_task);
   filterViolationList(de_task);
   checkViolationList(de_task);

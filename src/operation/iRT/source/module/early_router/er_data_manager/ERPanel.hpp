@@ -14,32 +14,34 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include <set>
+#pragma once
 
-#include "RTInterface.hpp"
-#include "flow_config.h"
-#include "tcl_rt.h"
-#include "tcl_util.h"
-#include "usage/usage.hh"
+#include "ERPanelId.hpp"
+#include "LayerRect.hpp"
+#include "OpenQueue.hpp"
+#include "RTHeader.hpp"
+#include "ScaleAxis.hpp"
+#include "TAComParam.hpp"
+#include "TANode.hpp"
 
-namespace tcl {
+namespace irt {
 
-TclRunERT::TclRunERT(const char* cmd_name) : TclCmd(cmd_name)
+class ERPanel
 {
-  _config_list.push_back(std::make_pair("-stage", ValueType::kString));
-  _config_list.push_back(std::make_pair("-resolve_congestion", ValueType::kString));
+ public:
+  ERPanel() = default;
+  ~ERPanel() = default;
+  // getter
+  EXTLayerRect& get_panel_rect() { return _panel_rect; }
+  ERPanelId& get_er_panel_id() { return _er_panel_id; }
+  // setter
+  void set_panel_rect(const EXTLayerRect& panel_rect) { _panel_rect = panel_rect; }
+  void set_er_panel_id(const ERPanelId& er_panel_id) { _er_panel_id = er_panel_id; }
+  // function
 
-  TclUtil::addOption(this, _config_list);
-}
+ private:
+  EXTLayerRect _panel_rect;
+  ERPanelId _er_panel_id;
+};
 
-unsigned TclRunERT::exec()
-{
-  if (!check()) {
-    return 0;
-  }
-  std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
-  RTI.runERT(config_map);
-  return 1;
-}
-
-}  // namespace tcl
+}  // namespace irt

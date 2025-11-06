@@ -14,32 +14,30 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include <set>
+#pragma once
 
-#include "RTInterface.hpp"
-#include "flow_config.h"
-#include "tcl_rt.h"
-#include "tcl_util.h"
-#include "usage/usage.hh"
+#include "ERBoxId.hpp"
+#include "EXTPlanarRect.hpp"
 
-namespace tcl {
+namespace irt {
 
-TclRunERT::TclRunERT(const char* cmd_name) : TclCmd(cmd_name)
+class ERBox
 {
-  _config_list.push_back(std::make_pair("-stage", ValueType::kString));
-  _config_list.push_back(std::make_pair("-resolve_congestion", ValueType::kString));
+ public:
+  ERBox() = default;
+  ~ERBox() = default;
+  // getter
+  EXTPlanarRect& get_box_rect() { return _box_rect; }
+  ERBoxId& get_er_box_id() { return _er_box_id; }
 
-  TclUtil::addOption(this, _config_list);
-}
+  // setter
+  void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
+  void set_er_box_id(const ERBoxId& er_box_id) { _er_box_id = er_box_id; }
+  // function
 
-unsigned TclRunERT::exec()
-{
-  if (!check()) {
-    return 0;
-  }
-  std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
-  RTI.runERT(config_map);
-  return 1;
-}
+ private:
+  EXTPlanarRect _box_rect;
+  ERBoxId _er_box_id;
+};
 
-}  // namespace tcl
+}  // namespace irt
