@@ -660,30 +660,30 @@ void SupplyAnalyzer::debugPlotSAModel(SAModel& sa_model)
 
           if (RTUTIL.exist(gcell.get_routing_ignore_net_orient_map(), routing_layer.get_layer_idx())) {
             y -= y_reduced_span;
-            GPText gp_text_ignore_net_map;
-            gp_text_ignore_net_map.set_coord(real_rect.get_ll_x(), y);
-            gp_text_ignore_net_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
-            gp_text_ignore_net_map.set_message("ignore_net_map: ");
-            gp_text_ignore_net_map.set_layer_idx(RTGP.getGDSIdxByRouting(routing_layer.get_layer_idx()));
-            gp_text_ignore_net_map.set_presentation(GPTextPresentation::kLeftMiddle);
-            gcell_map_struct.push(gp_text_ignore_net_map);
+            GPText gp_text_ignore_net_orient_map;
+            gp_text_ignore_net_orient_map.set_coord(real_rect.get_ll_x(), y);
+            gp_text_ignore_net_orient_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+            gp_text_ignore_net_orient_map.set_message("ignore_net_orient_map: ");
+            gp_text_ignore_net_orient_map.set_layer_idx(RTGP.getGDSIdxByRouting(routing_layer.get_layer_idx()));
+            gp_text_ignore_net_orient_map.set_presentation(GPTextPresentation::kLeftMiddle);
+            gcell_map_struct.push(gp_text_ignore_net_orient_map);
 
             y -= y_reduced_span;
-            GPText gp_text_ignore_net_map_info;
-            gp_text_ignore_net_map_info.set_coord(real_rect.get_ll_x(), y);
-            gp_text_ignore_net_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
-            std::string ignore_net_map_info_message = "--";
+            GPText gp_text_ignore_net_orient_map_info;
+            gp_text_ignore_net_orient_map_info.set_coord(real_rect.get_ll_x(), y);
+            gp_text_ignore_net_orient_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+            std::string ignore_net_orient_map_info_message = "--";
             for (auto& [net_idx, orient_set] : gcell.get_routing_ignore_net_orient_map()[routing_layer.get_layer_idx()]) {
-              ignore_net_map_info_message += RTUTIL.getString("(", net_idx);
+              ignore_net_orient_map_info_message += RTUTIL.getString("(", net_idx);
               for (Orientation orient : orient_set) {
-                ignore_net_map_info_message += RTUTIL.getString(",", GetOrientationName()(orient));
+                ignore_net_orient_map_info_message += RTUTIL.getString(",", GetOrientationName()(orient));
               }
-              ignore_net_map_info_message += RTUTIL.getString(")");
+              ignore_net_orient_map_info_message += RTUTIL.getString(")");
             }
-            gp_text_ignore_net_map_info.set_message(ignore_net_map_info_message);
-            gp_text_ignore_net_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(routing_layer.get_layer_idx()));
-            gp_text_ignore_net_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
-            gcell_map_struct.push(gp_text_ignore_net_map_info);
+            gp_text_ignore_net_orient_map_info.set_message(ignore_net_orient_map_info_message);
+            gp_text_ignore_net_orient_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(routing_layer.get_layer_idx()));
+            gp_text_ignore_net_orient_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+            gcell_map_struct.push(gp_text_ignore_net_orient_map_info);
           }
         }
       }

@@ -6,7 +6,6 @@ if(NOT BUILD_STATIC_LIB)
 endif()
 
 add_subdirectory(libfort)
-add_subdirectory(LSAssigner4iEDA)
 add_subdirectory(fft)
 add_subdirectory(flute3)
 add_subdirectory(pybind11)

@@ -14,7 +14,6 @@ target_link_libraries(irt_interface
     PRIVATE
     irt_source
     idrc_interface
-    ls_assigner
     power
     ieda_feature
     idm

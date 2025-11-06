@@ -14,32 +14,47 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include <set>
+#pragma once
 
-#include "RTInterface.hpp"
-#include "flow_config.h"
-#include "tcl_rt.h"
-#include "tcl_util.h"
-#include "usage/usage.hh"
+#include "RTHeader.hpp"
 
-namespace tcl {
+namespace irt {
 
-TclRunERT::TclRunERT(const char* cmd_name) : TclCmd(cmd_name)
+class ERBoxId
 {
-  _config_list.push_back(std::make_pair("-stage", ValueType::kString));
-  _config_list.push_back(std::make_pair("-resolve_congestion", ValueType::kString));
-
-  TclUtil::addOption(this, _config_list);
-}
-
-unsigned TclRunERT::exec()
-{
-  if (!check()) {
-    return 0;
+ public:
+  ERBoxId() = default;
+  ERBoxId(const int32_t x, const int32_t y)
+  {
+    _x = x;
+    _y = y;
   }
-  std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
-  RTI.runERT(config_map);
-  return 1;
-}
+  ~ERBoxId() = default;
+  bool operator==(const ERBoxId& other) { return this->_x == other._x && this->_y == other._y; }
+  bool operator!=(const ERBoxId& other) { return !((*this) == other); }
+  // getter
+  int32_t get_x() const { return _x; }
+  int32_t get_y() const { return _y; }
+  // setter
+  void set_x(const int32_t x) { _x = x; }
+  void set_y(const int32_t y) { _y = y; }
+  // function
 
-}  // namespace tcl
+ private:
+  int32_t _x = -1;
+  int32_t _y = -1;
+};
+
+struct CmpERBoxId
+{
+  bool operator()(const ERBoxId& a, const ERBoxId& b) const
+  {
+    if (a.get_x() != b.get_x()) {
+      return a.get_x() < b.get_x();
+    } else {
+      return a.get_y() < b.get_y();
+    }
+  }
+};
+
+}  // namespace irt

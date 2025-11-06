@@ -19,7 +19,6 @@
 #include "RTHeader.hpp"
 #include "Utility.hpp"
 
-
 namespace irt {
 
 #if 1  // astar
@@ -31,7 +30,8 @@ enum class OpenQueueNodeState
 #endif
 
 template <typename T>
-class OpenQueueNode {
+class OpenQueueNode
+{
  public:
   OpenQueueNode() = default;
   ~OpenQueueNode() = default;
@@ -39,7 +39,8 @@ class OpenQueueNode {
       : _node(node),
         _neighbor_node_map_size(node->get_neighbor_node_map().size()),
         _estimated_cost(node->get_estimated_cost()),
-        _known_cost(node->get_known_cost()) {
+        _known_cost(node->get_known_cost())
+  {
     set_state(OpenQueueNodeState::kOpen);
   }
   // getter
