@@ -73,8 +73,7 @@ init_rt -temp_directory_path $TOOL_REPORT_DIR \
         -top_routing_layer "MET5" \
         -thread_number $NUM_THREADS \
         -output_inter_result 0 \
-        -enable_notification 0 \
-        -enable_fast_mode $FAST_ROUTE
+        -enable_notification 0
 
 run_rt
 
