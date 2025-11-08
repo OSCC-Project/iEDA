@@ -3,6 +3,10 @@ set -e
 
 TOP_NAME="gcd"
 CLK_PORT_NAME="clk"
+export USE_FIXED_BBOX=False
+export CORE_UTIL=0.2
+# export DIE_AREA="0.0  0.0 150 150"
+# export CORE_AREA="20 20 130 130"
 echo "Running iEDA Netlist-to-GDS flow for design: $TOP_NAME (clock port: $CLK_PORT_NAME)"
 
 # Ensure PDK_DIR is provided in the environment (must be exported); abort if missing.
@@ -45,11 +49,6 @@ if [ ! -f "$NETLIST_FILE" ]; then
     echo "Error: Netlist file '$NETLIST_FILE' does not exist."
     exit 1
 fi
-
-export USE_FIXED_BBOX=False
-export CORE_UTIL=0.5
-# export DIE_AREA="0.0  0.0 150 150"
-# export CORE_AREA="20 20 130 130"
 
 
 IEDA_TCL_SCRIPTS="iFP_script/run_iFP.tcl
