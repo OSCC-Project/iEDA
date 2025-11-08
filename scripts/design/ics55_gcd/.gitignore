@@ -1,0 +1,11 @@
+*.gds
+*.gz
+*.lib
+*.v
+*.def
+*.txt
+*.log
+*.rpt
+*.spef
+iEDA
+iEDA_gui

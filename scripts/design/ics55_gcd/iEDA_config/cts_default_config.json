@@ -1,0 +1,59 @@
+{
+    "use_skew_tree_alg": "ON",
+    "router_type": "GOCA",
+    "delay_type": "elmore",
+    "cluster_type": "kmeans",
+    "skew_bound": "0.08",
+    "max_buf_tran": "1.0",
+    "max_sink_tran": "1.0",
+    "max_cap": "0.5",
+    "max_fanout": "32",
+    "min_length": "50",
+    "max_length": "400",
+    "scale_size": 50,
+    "cluster_size": 32,
+    "routing_layer": [
+        5,
+        6
+    ],
+    "buffer_type": [
+        "BUFX8H7L",
+        "BUFX12H7L",
+        "BUFX16H7L",
+        "BUFX20H7L"
+    ],
+    "root_buffer_type": "BUFX20H7L",
+    "root_buffer_required": "OFF",
+    "inherit_root": "OFF",
+    "break_long_wire": "OFF",
+    "level_max_length": [
+        "400",
+        "350"
+    ],
+    "level_max_fanout": [
+        32,
+        12
+    ],
+    "level_max_cap": [
+        "0.5"
+    ],
+    "level_skew_bound": [
+        "0.08"
+    ],
+    "level_cluster_ratio": [
+        "1",
+        "0.9"
+    ],
+    "shift_level": 1,
+    "latency_opt_level": 1,
+    "global_latency_opt_ratio": "0.5",
+    "local_latency_opt_ratio": "0.9",
+    "external_model": [],
+    "use_netlist": "OFF",
+    "net_list": [
+        {
+            "clock_name": "core_clock",
+            "net_name": "clk"
+        }
+    ]
+}
