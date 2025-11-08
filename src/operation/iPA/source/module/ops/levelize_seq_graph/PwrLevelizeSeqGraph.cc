@@ -103,13 +103,14 @@ unsigned PwrLevelizeSeq::operator()(PwrSeqGraph* the_seq_graph) {
   LOG_INFO << "the seq graph's level depth "
            << the_seq_graph->get_level_depth();
 
-  bool is_debug = true;
+  bool is_debug = false;
   if (is_debug) {
-    std::string dump_file_name =
-        "/home/shaozheqing/iSO/src/iPower/test/level.txt";
+    std::string dump_file_name = "level.txt";
     std::ofstream level_file(dump_file_name, std::ios::trunc);
     the_seq_graph->printSeqLevelInfo(level_file);
     level_file.close();
+
+    // LOG_FATAL << "levelization done";
   }
 
   double memory_delta = stats.memoryDelta();

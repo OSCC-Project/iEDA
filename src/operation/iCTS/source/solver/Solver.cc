@@ -60,6 +60,8 @@ void Solver::init()
     auto* inst = new Inst(cts_inst->get_name(), cts_inst->get_location(), type);
     auto* load_pin = inst->get_load_pin();
     load_pin->set_name(cts_pin->is_io() ? cts_pin->get_pin_name() : cts_pin->get_full_name());
+    LOG_FATAL_IF(cts_pin->get_location().x() < 0 || cts_pin->get_location().y() < 0)
+        << "Load pin location is invalid: " << load_pin->get_name() << " loc: " << cts_pin->get_location();
     load_pin->set_location(cts_pin->get_location());
 
     // update load pin cap

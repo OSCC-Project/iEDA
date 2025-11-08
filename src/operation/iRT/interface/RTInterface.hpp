@@ -155,10 +155,6 @@ class RTInterface
   std::vector<Segment<PlanarCoord>> getPlanarTopoList(std::vector<PlanarCoord> planar_coord_list);
 #endif
 
-#if 1  // lsa
-  void routeTAPanel(TAPanel& ta_panel);
-#endif
-
 #if 1  // ecos
   void sendNotification(std::string stage, int32_t iter, std::map<std::string, std::string> json_path_map);
 #endif

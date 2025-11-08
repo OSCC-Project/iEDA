@@ -126,6 +126,33 @@ class PwrSeqVertex {
 
   auto& get_seq_in_vertexes() { return _seq_in_vertexes; }
   auto& get_seq_out_vertexes() { return _seq_out_vertexes; }
+  unsigned getSeqOutMaxLevel() {
+    unsigned max_level = 0;
+    for (auto* seq_out_pwr_vertex : _seq_out_vertexes) {
+      unsigned sta_level = seq_out_pwr_vertex->get_sta_vertex()->get_level();
+      if (sta_level > max_level) {
+        max_level = sta_level;
+      }
+    }
+    return max_level;
+  }
+  auto getOneConnectNet() {
+    // first seq in net
+    for (auto* seq_in_vertex : _seq_in_vertexes) {
+      if (auto* net = seq_in_vertex->getConnectNet(); net) {
+        return net;
+      }
+    }
+     // second seq out net
+    for (auto* seq_out_vertex : _seq_out_vertexes) {
+      if (auto* net = seq_out_vertex->getConnectNet(); net) {
+        return net;
+      }
+    }
+
+    LOG_FATAL << "No connect net found!";
+    return static_cast<ista::Net*>(nullptr);
+  }
   auto getDataInVertexes() {
     BTreeSet<PwrVertex*> data_in_vertexes;
     for (auto* seq_in_vertex :

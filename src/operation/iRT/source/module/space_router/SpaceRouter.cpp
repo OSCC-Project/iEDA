@@ -51,9 +51,6 @@ void SpaceRouter::destroyInst()
 
 void SpaceRouter::route()
 {
-  if (RTDM.getConfig().enable_fast_mode) {
-    return;
-  }
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
   SRModel sr_model = initSRModel();

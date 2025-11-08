@@ -496,17 +496,6 @@ void TrackAssigner::buildOrientNetMap(TAPanel& ta_panel)
 
 void TrackAssigner::routeTAPanel(TAPanel& ta_panel)
 {
-  int32_t enable_lsa = RTDM.getConfig().enable_lsa;
-
-  if (!enable_lsa) {
-    routeTAPanelBySelf(ta_panel);
-  } else {
-    routeTAPanelByInterface(ta_panel);
-  }
-}
-
-void TrackAssigner::routeTAPanelBySelf(TAPanel& ta_panel)
-{
   std::vector<TATask*> routing_task_list = initTaskSchedule(ta_panel);
   while (!routing_task_list.empty()) {
     for (TATask* routing_task : routing_task_list) {
@@ -936,9 +925,6 @@ void TrackAssigner::updateViolationList(TAPanel& ta_panel)
 
 std::vector<Violation> TrackAssigner::getViolationList(TAPanel& ta_panel)
 {
-  if (RTDM.getConfig().enable_fast_mode) {
-    return {};
-  }
   std::map<int32_t, std::vector<PlanarRect>> env_net_rect_map;
   std::map<int32_t, std::vector<PlanarRect>> result_net_rect_map;
   {
@@ -1102,12 +1088,6 @@ void TrackAssigner::updateTaskSchedule(TAPanel& ta_panel, std::vector<TATask*>& 
     new_ta_task_list.push_back(routing_task);
   }
   ta_panel.set_ta_task_list(new_ta_task_list);
-}
-
-void TrackAssigner::routeTAPanelByInterface(TAPanel& ta_panel)
-{
-  RTI.routeTAPanel(ta_panel);
-  updateViolationList(ta_panel);
 }
 
 void TrackAssigner::uploadNetResult(TAPanel& ta_panel)

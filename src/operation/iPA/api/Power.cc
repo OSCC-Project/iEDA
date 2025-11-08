@@ -1090,6 +1090,11 @@ unsigned Power::reportPower(bool is_copy) {
     }
   }
 
+  // for debug
+  if (0) {
+    dumpGraph();
+  }
+
   LOG_INFO << "power report end, output dir: " << output_dir;
   double memory_delta = stats.memoryDelta();
   LOG_INFO << "power report memory usage " << memory_delta << "MB";
