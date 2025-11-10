@@ -1328,11 +1328,9 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
     enlarged_x_size -= 1;
     enlarged_y_size -= 1;
     PlanarRect planar_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-    for (auto& [set_pair, orientation_set] : RTUTIL.getTrackGridOrientationMap(planar_enlarged_rect, ta_panel.get_panel_track_axis())) {
-      auto& x_set = set_pair.first;
-      auto& y_set = set_pair.second;
-      for(auto x: *x_set){
-        for(auto y: *y_set){
+    for (auto& [grid, orientation_set] : RTUTIL.getTrackGridOrientationMap(planar_enlarged_rect, ta_panel.get_panel_track_axis())) {
+      for (int32_t x : *grid.first) {
+        for (int32_t y : *grid.second) {
           TANode& node = ta_node_map[x][y];
           for (const Orientation& orientation : orientation_set) {
             if (orientation == Orientation::kAbove || orientation == Orientation::kBelow) {

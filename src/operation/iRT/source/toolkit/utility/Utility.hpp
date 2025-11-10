@@ -1620,16 +1620,17 @@ class Utility
     return grid_rect;
   }
 
-  static std::map<std::pair<std::shared_ptr<std::set<int32_t>>, std::shared_ptr<std::set<int32_t>>>, std::set<Orientation>> getTrackGridOrientationMap(const PlanarRect& real_rect, ScaleAxis& track_axis)
+  static std::map<std::pair<std::shared_ptr<std::set<int32_t>>, std::shared_ptr<std::set<int32_t>>>, std::set<Orientation>> getTrackGridOrientationMap(
+      const PlanarRect& real_rect, ScaleAxis& track_axis)
   {
-    auto x_pre_set=std::make_shared<std::set<int32_t>>();
-    auto x_mid_set=std::make_shared<std::set<int32_t>>();
-    auto x_post_set=std::make_shared<std::set<int32_t>>();
+    std::shared_ptr<std::set<int32_t>> x_pre_set = std::make_shared<std::set<int32_t>>();
+    std::shared_ptr<std::set<int32_t>> x_mid_set = std::make_shared<std::set<int32_t>>();
+    std::shared_ptr<std::set<int32_t>> x_post_set = std::make_shared<std::set<int32_t>>();
     getTrackIndexSet(track_axis.get_x_grid_list(), real_rect.get_ll_x(), real_rect.get_ur_x(), *x_pre_set, *x_mid_set, *x_post_set);
 
-    auto y_pre_set=std::make_shared<std::set<int32_t>>();
-    auto y_mid_set=std::make_shared<std::set<int32_t>>();
-    auto y_post_set=std::make_shared<std::set<int32_t>>();
+    std::shared_ptr<std::set<int32_t>> y_pre_set = std::make_shared<std::set<int32_t>>();
+    std::shared_ptr<std::set<int32_t>> y_mid_set = std::make_shared<std::set<int32_t>>();
+    std::shared_ptr<std::set<int32_t>> y_post_set = std::make_shared<std::set<int32_t>>();
     getTrackIndexSet(track_axis.get_y_grid_list(), real_rect.get_ll_y(), real_rect.get_ur_y(), *y_pre_set, *y_mid_set, *y_post_set);
 
     std::map<std::pair<std::shared_ptr<std::set<int32_t>>, std::shared_ptr<std::set<int32_t>>>, std::set<Orientation>> grid_orientation_map;
@@ -1637,7 +1638,8 @@ class Utility
     grid_orientation_map[{std::make_pair(x_post_set, y_mid_set)}] = {Orientation::kWest};
     grid_orientation_map[{std::make_pair(x_mid_set, y_pre_set)}] = {Orientation::kNorth};
     grid_orientation_map[{std::make_pair(x_mid_set, y_post_set)}] = {Orientation::kSouth};
-    grid_orientation_map[{std::make_pair(x_mid_set, y_mid_set)}] = {Orientation::kEast, Orientation::kWest, Orientation::kNorth, Orientation::kSouth, Orientation::kAbove, Orientation::kBelow};
+    grid_orientation_map[{std::make_pair(x_mid_set, y_mid_set)}]
+        = {Orientation::kEast, Orientation::kWest, Orientation::kNorth, Orientation::kSouth, Orientation::kAbove, Orientation::kBelow};
     return grid_orientation_map;
   }
 
