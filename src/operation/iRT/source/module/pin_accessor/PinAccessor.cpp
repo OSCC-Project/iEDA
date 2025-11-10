@@ -2985,8 +2985,8 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationM
     for (auto& [set_pair, orientation_set] : RTUTIL.getTrackGridOrientationMap(planar_enlarged_rect, pa_box.get_box_track_axis())) {
       auto& x_set = set_pair.first;
       auto& y_set = set_pair.second;
-      for(auto x: x_set){
-          for(auto y: y_set){
+      for(auto x: *x_set){
+        for(auto y: *y_set){
           PANode& node = pa_node_map[x][y];
           for (const Orientation& orientation : orientation_set) {
             if (orientation == Orientation::kAbove || orientation == Orientation::kBelow) {
@@ -3014,8 +3014,8 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationM
     for (auto& [set_pair, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, pa_box.get_box_track_axis())) {
       auto& x_set = set_pair.first;
       auto& y_set = set_pair.second;
-      for(auto x: x_set){
-          for(auto y: y_set){
+      for(auto x: *x_set){
+        for(auto y: *y_set){
           PANode& node = pa_node_map[x][y];
           for (const Orientation& orientation : orientation_set) {
             if (orientation == Orientation::kEast || orientation == Orientation::kWest || orientation == Orientation::kSouth
@@ -3116,8 +3116,8 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getCutNodeOrientationMap(P
       for (auto& [set_pair, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, pa_box.get_box_track_axis())) {
         auto& x_set = set_pair.first;
         auto& y_set = set_pair.second;
-        for(auto x: x_set){
-          for(auto y: y_set){
+        for(auto x: *x_set){
+          for(auto y: *y_set){
             if (!RTUTIL.exist(orientation_set, Orientation::kAbove) && !RTUTIL.exist(orientation_set, Orientation::kBelow)) {
               continue;
             }

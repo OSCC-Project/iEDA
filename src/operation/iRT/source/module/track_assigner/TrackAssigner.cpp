@@ -1331,8 +1331,8 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
     for (auto& [set_pair, orientation_set] : RTUTIL.getTrackGridOrientationMap(planar_enlarged_rect, ta_panel.get_panel_track_axis())) {
       auto& x_set = set_pair.first;
       auto& y_set = set_pair.second;
-      for(auto x: x_set){
-          for(auto y: y_set){
+      for(auto x: *x_set){
+        for(auto y: *y_set){
           TANode& node = ta_node_map[x][y];
           for (const Orientation& orientation : orientation_set) {
             if (orientation == Orientation::kAbove || orientation == Orientation::kBelow) {

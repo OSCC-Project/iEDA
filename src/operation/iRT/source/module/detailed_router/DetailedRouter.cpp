@@ -2531,8 +2531,8 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
     for (auto& [set_pair, orientation_set] : RTUTIL.getTrackGridOrientationMap(planar_enlarged_rect, dr_box.get_box_track_axis())) {
       auto& x_set = set_pair.first;
       auto& y_set = set_pair.second;
-      for(auto x: x_set){
-          for(auto y: y_set){
+      for(auto x: *x_set){
+        for(auto y: *y_set){
           DRNode& node = dr_node_map[x][y];
           for (const Orientation& orientation : orientation_set) {
             if (orientation == Orientation::kAbove || orientation == Orientation::kBelow) {
@@ -2560,8 +2560,8 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
     for (auto& [set_pair, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, dr_box.get_box_track_axis())) {
       auto& x_set = set_pair.first;
       auto& y_set = set_pair.second;
-      for(auto x: x_set){
-          for(auto y: y_set){
+      for(auto x: *x_set){
+        for(auto y: *y_set){
           DRNode& node = dr_node_map[x][y];
           for (const Orientation& orientation : orientation_set) {
             if (orientation == Orientation::kEast || orientation == Orientation::kWest || orientation == Orientation::kSouth
@@ -2662,8 +2662,8 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMa
       for (auto& [set_pair, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, dr_box.get_box_track_axis())) {
         auto& x_set = set_pair.first;
         auto& y_set = set_pair.second;
-        for(auto x: x_set){
-          for(auto y: y_set){
+        for(auto x: *x_set){
+          for(auto y: *y_set){
             if (!RTUTIL.exist(orientation_set, Orientation::kAbove) && !RTUTIL.exist(orientation_set, Orientation::kBelow)) {
               continue;
             }
