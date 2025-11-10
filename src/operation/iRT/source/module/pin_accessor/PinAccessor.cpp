@@ -2982,17 +2982,23 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationM
     enlarged_x_size -= 1;
     enlarged_y_size -= 1;
     PlanarRect planar_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-    for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(planar_enlarged_rect, pa_box.get_box_track_axis())) {
-      PANode& node = pa_node_map[grid_coord.get_x()][grid_coord.get_y()];
-      for (const Orientation& orientation : orientation_set) {
-        if (orientation == Orientation::kAbove || orientation == Orientation::kBelow) {
-          continue;
+    for (auto& [set_pair, orientation_set] : RTUTIL.getTrackGridOrientationMap(planar_enlarged_rect, pa_box.get_box_track_axis())) {
+      auto& x_set = set_pair.first;
+      auto& y_set = set_pair.second;
+      for(auto x: *x_set){
+        for(auto y: *y_set){
+          PANode& node = pa_node_map[x][y];
+          for (const Orientation& orientation : orientation_set) {
+            if (orientation == Orientation::kAbove || orientation == Orientation::kBelow) {
+              continue;
+            }
+            if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
+              continue;
+            }
+            node_orientation_map[&node].insert(orientation);
+            node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
+          }
         }
-        if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
-          continue;
-        }
-        node_orientation_map[&node].insert(orientation);
-        node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
       }
     }
   }
@@ -3005,19 +3011,25 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationM
     enlarged_x_size -= 1;
     enlarged_y_size -= 1;
     PlanarRect space_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-    for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, pa_box.get_box_track_axis())) {
-      PANode& node = pa_node_map[grid_coord.get_x()][grid_coord.get_y()];
-      for (const Orientation& orientation : orientation_set) {
-        if (orientation == Orientation::kEast || orientation == Orientation::kWest || orientation == Orientation::kSouth
-            || orientation == Orientation::kNorth) {
-          continue;
+    for (auto& [set_pair, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, pa_box.get_box_track_axis())) {
+      auto& x_set = set_pair.first;
+      auto& y_set = set_pair.second;
+      for(auto x: *x_set){
+        for(auto y: *y_set){
+          PANode& node = pa_node_map[x][y];
+          for (const Orientation& orientation : orientation_set) {
+            if (orientation == Orientation::kEast || orientation == Orientation::kWest || orientation == Orientation::kSouth
+                || orientation == Orientation::kNorth) {
+              continue;
+            }
+            if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
+              continue;
+            }
+            node_orientation_map[&node].insert(orientation);
+            node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
+          }
         }
-        if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
-          continue;
-        }
-        node_orientation_map[&node].insert(orientation);
-        node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
-      }
+      }   
     }
   }
   return node_orientation_map;
@@ -3101,17 +3113,23 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getCutNodeOrientationMap(P
       enlarged_x_size -= 1;
       enlarged_y_size -= 1;
       PlanarRect space_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-      for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, pa_box.get_box_track_axis())) {
-        if (!RTUTIL.exist(orientation_set, Orientation::kAbove) && !RTUTIL.exist(orientation_set, Orientation::kBelow)) {
-          continue;
-        }
-        PANode& below_node = layer_node_map[below_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
-        if (RTUTIL.exist(below_node.get_neighbor_node_map(), Orientation::kAbove)) {
-          node_orientation_map[&below_node].insert(Orientation::kAbove);
-        }
-        PANode& above_node = layer_node_map[above_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
-        if (RTUTIL.exist(above_node.get_neighbor_node_map(), Orientation::kBelow)) {
-          node_orientation_map[&above_node].insert(Orientation::kBelow);
+      for (auto& [set_pair, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, pa_box.get_box_track_axis())) {
+        auto& x_set = set_pair.first;
+        auto& y_set = set_pair.second;
+        for(auto x: *x_set){
+          for(auto y: *y_set){
+            if (!RTUTIL.exist(orientation_set, Orientation::kAbove) && !RTUTIL.exist(orientation_set, Orientation::kBelow)) {
+              continue;
+            }
+            PANode& below_node = layer_node_map[below_routing_layer_idx][x][y];
+            if (RTUTIL.exist(below_node.get_neighbor_node_map(), Orientation::kAbove)) {
+              node_orientation_map[&below_node].insert(Orientation::kAbove);
+            }
+            PANode& above_node = layer_node_map[above_routing_layer_idx][x][y];
+            if (RTUTIL.exist(above_node.get_neighbor_node_map(), Orientation::kBelow)) {
+              node_orientation_map[&above_node].insert(Orientation::kBelow);
+            }
+          }
         }
       }
     }
