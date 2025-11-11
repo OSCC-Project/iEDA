@@ -438,7 +438,7 @@ void EarlyRouter::buildConflictList(ERModel& er_model)
       while (!pin_queue.empty()) {
         ERPin* er_pin = RTUTIL.getFrontAndPop(pin_queue);
         if (!RTUTIL.exist(pin_idx_map, er_pin)) {
-          pin_idx_map[er_pin] = pin_idx_map.size();
+          pin_idx_map[er_pin] = static_cast<int32_t>(pin_idx_map.size());
         }
         if (!RTUTIL.exist(pin_conflict_map, er_pin)) {
           continue;

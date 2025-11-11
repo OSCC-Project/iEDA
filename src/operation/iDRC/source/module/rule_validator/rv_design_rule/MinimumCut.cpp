@@ -66,7 +66,7 @@ void RuleValidator::verifyMinimumCut(RVBox& rv_box)
         gtl::get_max_rectangles(gtl_rect_list, gtl_poly);
         for (GTLRectInt& gtl_rect : gtl_rect_list) {
           PlanarRect routing_rect = DRCUTIL.convertToPlanarRect(gtl_rect);
-          for (int32_t rule_idx = minimum_cut_rule_list.size() - 1; rule_idx >= 0; rule_idx--) {
+          for (int32_t rule_idx = static_cast<int32_t>(minimum_cut_rule_list.size()) - 1; rule_idx >= 0; rule_idx--) {
             MinimumCutRule& curr_rule = minimum_cut_rule_list[rule_idx];
             if (routing_rect.getWidth() < curr_rule.width) {
               continue;

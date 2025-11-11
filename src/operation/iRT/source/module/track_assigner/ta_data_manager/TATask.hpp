@@ -86,6 +86,16 @@ struct CmpTATask
         sort_status = SortStatus::kFalse;
       }
     }
+    // 常规排序
+    if (sort_status == SortStatus::kEqual) {
+      if (a > b) {
+        sort_status = SortStatus::kTrue;
+      } else if (a == b) {
+        sort_status = SortStatus::kEqual;
+      } else {
+        sort_status = SortStatus::kFalse;
+      }
+    }
     if (sort_status == SortStatus::kTrue) {
       return true;
     } else if (sort_status == SortStatus::kFalse) {

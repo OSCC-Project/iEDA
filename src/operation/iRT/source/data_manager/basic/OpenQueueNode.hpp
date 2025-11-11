@@ -37,7 +37,7 @@ class OpenQueueNode
   ~OpenQueueNode() = default;
   OpenQueueNode(T* node)
       : _node(node),
-        _neighbor_node_map_size(node->get_neighbor_node_map().size()),
+        _neighbor_node_map_size(static_cast<int32_t>(node->get_neighbor_node_map().size())),
         _estimated_cost(node->get_estimated_cost()),
         _known_cost(node->get_known_cost())
   {
@@ -47,7 +47,7 @@ class OpenQueueNode
   double getEstimatedCost() const { return _estimated_cost; }
   double get_known_cost() const { return _known_cost; }
   double get_estimated_cost() const { return _estimated_cost; }
-  double get_neighbor_node_map_size() const { return _neighbor_node_map_size; }
+  int32_t get_neighbor_node_map_size() const { return _neighbor_node_map_size; }
   T* get_node() const { return _node; }
   OpenQueueNodeState get_state() const { return _state; }
   // setter
