@@ -9,15 +9,13 @@ set(CMAKE_CUDA_ARCHITECTURES native)
 
 set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
 
-  # set(CMAKE_BUILD_TYPE "Debug")
-  find_package(CUDAToolkit)
+# set(CMAKE_BUILD_TYPE "Debug")
+find_package(CUDAToolkit)
 
-  set(CMAKE_CXX_STANDARD 20)
-  set(CMAKE_CXX_STANDARD_REQUIRED ON)
-  set(CMAKE_CUDA_STANDARD 17)
-  set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-
-set(CMAKE_CUDA_COMPILER /usr/local/cuda-12.1/bin/nvcc)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CUDA_STANDARD 17)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 enable_language(CUDA)
 
