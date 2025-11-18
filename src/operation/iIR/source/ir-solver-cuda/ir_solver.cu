@@ -44,13 +44,6 @@
 #include <thrust/transform.h>
 #include <thrust/functional.h>
 
-void c_wise_max(double* d_vector, int n, double max_value) {
-  thrust::device_ptr<double> ptr(d_vector);
-  thrust::transform(ptr, ptr + n, 
-                   thrust::make_constant_iterator(max_value), 
-                   ptr, 
-                   thrust::maximum<double>());
-}
 
 namespace iir {
 
