@@ -719,6 +719,8 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
   _ista->resetAllRcNet();
 
   _ista->resetNetlist();
+  _ista->resetGraph();
+
   Netlist& design_netlist = *(_ista->get_netlist());
 
   auto* def_service = _idb->get_def_service();
