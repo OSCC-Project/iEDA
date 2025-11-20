@@ -104,7 +104,9 @@ void EarlyRouter::route(std::map<std::string, std::any> config_map)
     updateNetPatch(er_model);
     // debugPlotERModel(er_model, "dr");
   }
-  cleanTempResult(er_model);
+  if (er_model.get_er_com_param().get_stage() != "edr") {
+    cleanTempResult(er_model);
+  }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
