@@ -217,8 +217,8 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
                 }
               }
               std::vector<std::pair<bool, int32_t>> is_pre_adj_i_list;
-              is_pre_adj_i_list.emplace_back(true, getIdx(i - 1, overhang_distance_list.size()));
-              is_pre_adj_i_list.emplace_back(false, getIdx(i + 1, overhang_distance_list.size()));
+              is_pre_adj_i_list.emplace_back(true, getIdx(i - 1, static_cast<int32_t>(overhang_distance_list.size())));
+              is_pre_adj_i_list.emplace_back(false, getIdx(i + 1, static_cast<int32_t>(overhang_distance_list.size())));
               for (auto& [is_pre, adj_i] : is_pre_adj_i_list) {
                 if (overhang_distance_list[adj_i] != equal_overhang) {
                   continue;
@@ -251,8 +251,8 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
                   }
                 }
                 if (need_spacing) {
-                  need_spacing_list[getIdx(i + 2, overhang_distance_list.size())] = true;
-                  need_spacing_list[getIdx(adj_i + 2, overhang_distance_list.size())] = true;
+                  need_spacing_list[getIdx(i + 2, static_cast<int32_t>(overhang_distance_list.size()))] = true;
+                  need_spacing_list[getIdx(adj_i + 2, static_cast<int32_t>(overhang_distance_list.size()))] = true;
                 }
               }
             }

@@ -1856,12 +1856,7 @@ void RTInterface::sendNotification(std::string stage, int32_t iter, std::map<std
   notification["iter"] = std::to_string(iter);
   notification["json_path_map"] = json_path_map;
   if (!ieda::NotificationUtility::getInstance().sendNotification("iRT", notification).success) {
-    RTLOG.warn(Loc::current(), "Failed to send notification at stage :", stage, " iter :", iter);
-  } else {
-    RTLOG.info(Loc::current(), "Successfully sent notification at stage :", stage, " iter :", iter);
-  }
-  for (auto& [key, value] : json_path_map) {
-    RTLOG.info(Loc::current(), "  ", key, " : ", value);
+    RTLOG.warn(Loc::current(), "Failed to send notification!");
   }
 }
 

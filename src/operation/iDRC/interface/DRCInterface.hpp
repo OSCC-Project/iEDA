@@ -73,7 +73,9 @@ class DRCInterface
   void input(std::map<std::string, std::any>& config_map);
   void wrapConfig(std::map<std::string, std::any>& config_map);
   void wrapDatabase();
+  void wrapDBInfo();
   void wrapMicronDBU();
+  void wrapManufactureGrid();
   void wrapDie();
   void wrapDesignRule();
   void wrapLayerList();

@@ -97,10 +97,7 @@ class RuleValidator
 #if 1  // debug
   void debugPlotRVModel(RVModel& rv_model, std::string flag);
   void debugPlotRVBox(RVBox& rv_box, std::string flag);
-  void debugViolationByType(RVBox& rv_box, ViolationType violation_type);
-  void debugVerifyRVModelByGolden(RVModel& rv_model);
-  void debugVerifyRVBoxByGolden(RVBox& rv_box);
-  void debugOutputViolationByGolden(RVBox& rv_box);
+  void debugOutputViolation(RVModel& rv_model);
 #endif
 };
 
