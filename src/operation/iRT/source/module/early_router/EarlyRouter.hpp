@@ -23,6 +23,7 @@
 #include "ERCandidate.hpp"
 #include "ERModel.hpp"
 #include "ERPackage.hpp"
+#include "ERStage.hpp"
 #include "RTHeader.hpp"
 
 namespace irt {
