@@ -48,13 +48,13 @@ class DataManager
   void updateNetDetailedPatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect);
   void updateViolationToGCellMap(ChangeType change_type, Violation* violation);
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> getTypeLayerNetFixedRectMap(EXTPlanarRect& region);
-  std::map<int32_t, std::set<AccessPoint*>> getNetAccessPointMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<AccessPoint*, CmpAccessPoint>> getNetAccessPointMap(EXTPlanarRect& region);
   std::map<int32_t, std::map<int32_t, std::set<Segment<LayerCoord>*>>> getNetPinAccessResultMap(EXTPlanarRect& region);
   std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>> getNetPinAccessPatchMap(EXTPlanarRect& region);
   std::map<int32_t, std::set<Segment<LayerCoord>*>> getNetGlobalResultMap(EXTPlanarRect& region);
   std::map<int32_t, std::set<Segment<LayerCoord>*>> getNetDetailedResultMap(EXTPlanarRect& region);
   std::map<int32_t, std::set<EXTLayerRect*>> getNetDetailedPatchMap(EXTPlanarRect& region);
-  std::set<Violation*> getViolationSet(EXTPlanarRect& region);
+  std::set<Violation*, CmpViolation> getViolationSet(EXTPlanarRect& region);
 #endif
 
 #if 1  // 获得NetShapeList

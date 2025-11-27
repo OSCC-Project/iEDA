@@ -148,7 +148,7 @@ void DetailedRouter::routeDRModel(DRModel& dr_model)
     outputJson(dr_model);
     RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", dr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, dr_iter_param_list.size()), ")",
                iter_monitor.getStatsInfo(), "*****");
-    if (stopIteration(dr_model)) {
+    if (stopIteration(dr_model, dr_iter_param_list)) {
       break;
     }
   }
@@ -2233,9 +2233,9 @@ void DetailedRouter::updateBestResult(DRModel& dr_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-bool DetailedRouter::stopIteration(DRModel& dr_model)
+bool DetailedRouter::stopIteration(DRModel& dr_model, std::vector<DRIterParam>& dr_iter_param_list)
 {
-  if (getRouteViolationNum(dr_model) == 0) {
+  if (dr_model.get_iter() != static_cast<int32_t>(dr_iter_param_list.size()) && getRouteViolationNum(dr_model) == 0) {
     RTLOG.info(Loc::current(), "***** Iteration stopped early *****");
     return true;
   }

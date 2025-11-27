@@ -28,6 +28,8 @@ class DRGroup
   ~DRGroup() = default;
   // getter
   std::map<LayerCoord, std::set<Direction>, CmpLayerCoordByXASC>& get_coord_direction_map() { return _coord_direction_map; }
+  // const getter
+  const std::map<LayerCoord, std::set<Direction>, CmpLayerCoordByXASC>& get_coord_direction_map() const { return _coord_direction_map; }
   // setter
   void set_coord_direction_map(const std::map<LayerCoord, std::set<Direction>, CmpLayerCoordByXASC>& coord_direction_map)
   {

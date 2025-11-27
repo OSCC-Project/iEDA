@@ -2498,7 +2498,7 @@ void EarlyRouter::routeERBox(ERBox& er_box)
   EXTPlanarRect& box_rect = er_box.get_box_rect();
   PlanarRect& box_real_rect = box_rect.get_real_rect();
 
-  std::map<int32_t, std::set<AccessPoint*>> net_access_point_map = RTDM.getNetAccessPointMap(box_rect);
+  std::map<int32_t, std::set<AccessPoint*, CmpAccessPoint>> net_access_point_map = RTDM.getNetAccessPointMap(box_rect);
   std::map<int32_t, std::vector<Segment<LayerCoord>>> net_task_detailed_result_map;
   for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(box_rect)) {
     for (Segment<LayerCoord>* segment : segment_set) {

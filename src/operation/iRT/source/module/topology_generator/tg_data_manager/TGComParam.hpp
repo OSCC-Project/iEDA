@@ -22,7 +22,7 @@ class TGComParam
 {
  public:
   TGComParam() = default;
-  TGComParam( int32_t expand_step_num, int32_t expand_step_length, double overflow_unit)
+  TGComParam(int32_t expand_step_num, int32_t expand_step_length, double overflow_unit)
   {
     _expand_step_num = expand_step_num;
     _expand_step_length = expand_step_length;

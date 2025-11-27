@@ -36,6 +36,7 @@ class DRTask
   PlanarRect& get_bounding_box() { return _bounding_box; }
   int32_t get_routed_times() { return _routed_times; }
   // const getter
+  const int32_t get_net_idx() const { return _net_idx; }
   const ConnectType& get_connect_type() const { return _connect_type; }
   const std::vector<DRGroup>& get_dr_group_list() const { return _dr_group_list; }
   const PlanarRect& get_bounding_box() const { return _bounding_box; }
@@ -97,16 +98,44 @@ struct CmpDRTask
         sort_status = SortStatus::kFalse;
       }
     }
-    // 常规排序
+
     if (sort_status == SortStatus::kEqual) {
-      if (a > b) {
+      int32_t a_net_idx = a->get_net_idx();
+      int32_t b_net_idx = b->get_net_idx();
+      if (a_net_idx < b_net_idx) {
         sort_status = SortStatus::kTrue;
-      } else if (a == b) {
+      } else if (a_net_idx == b_net_idx) {
         sort_status = SortStatus::kEqual;
       } else {
         sort_status = SortStatus::kFalse;
       }
     }
+
+    if (sort_status == SortStatus::kEqual) {
+      std::vector<LayerCoord> a_coord_list;
+      std::vector<LayerCoord> b_coord_list;
+      for (const DRGroup& dr_group : a->get_dr_group_list()) {
+        for (const auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
+          a_coord_list.push_back(coord);
+        }
+      }
+      for (const DRGroup& dr_group : b->get_dr_group_list()) {
+        for (const auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
+          b_coord_list.push_back(coord);
+        }
+      }
+      std::sort(a_coord_list.begin(), a_coord_list.end(), CmpLayerCoordByXASC());
+      std::sort(b_coord_list.begin(), b_coord_list.end(), CmpLayerCoordByXASC());
+
+      if (std::lexicographical_compare(a_coord_list.begin(), a_coord_list.end(), b_coord_list.begin(), b_coord_list.end(), CmpLayerCoordByXASC())) {
+        sort_status = SortStatus::kTrue;
+      } else if (a_coord_list == b_coord_list) {
+        sort_status = SortStatus::kEqual;
+      } else {
+        sort_status = SortStatus::kFalse;
+      }
+    }
+
     if (sort_status == SortStatus::kTrue) {
       return true;
     } else if (sort_status == SortStatus::kFalse) {

@@ -153,6 +153,8 @@ struct CmpViolation
     }
     return false;
   }
+
+  bool operator()(Violation* a, Violation* b) const { return operator()(*a, *b); }
 };
 
 }  // namespace irt
