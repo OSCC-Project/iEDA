@@ -1934,6 +1934,10 @@ class Utility
   static void mergeOverlapSegment(std::vector<Segment<LayerCoord>>& segment_list,
                                   std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC>& key_coord_pin_map)
   {
+    auto getListByBound = [](const std::set<int32_t>& set, int32_t lower_bound, int32_t upper_bound) {
+      return std::vector<int32_t>(set.lower_bound(lower_bound), set.upper_bound(upper_bound));
+    };
+
     std::vector<Segment<LayerCoord>> h_segment_list;
     std::vector<Segment<LayerCoord>> v_segment_list;
     std::vector<Segment<LayerCoord>> p_segment_list;
@@ -1961,31 +1965,25 @@ class Utility
     p_segment_list = p_segment_list_temp;
 
     // 初始化平面切点
-    std::map<int32_t, std::set<int32_t>> x_cut_list_map;
-    std::map<int32_t, std::set<int32_t>> y_cut_list_map;
-    auto setToSortedVector = [](const std::set<int32_t>& s, int32_t small, int32_t large) -> std::vector<int32_t> {
-      auto it1 = s.lower_bound(small);
-      auto it2 = s.upper_bound(large);
-      std::vector<int32_t> v(it1, it2);
-      return v;
-    };
+    std::map<int32_t, std::set<int32_t>> x_cut_set_map;
+    std::map<int32_t, std::set<int32_t>> y_cut_set_map;
     for (Segment<LayerCoord>& h_segment : h_segment_list) {
       LayerCoord& first_coord = h_segment.get_first();
       LayerCoord& second_coord = h_segment.get_second();
       int32_t layer_idx = first_coord.get_layer_idx();
 
-      x_cut_list_map[layer_idx].insert(first_coord.get_x());
-      x_cut_list_map[layer_idx].insert(second_coord.get_x());
-      y_cut_list_map[layer_idx].insert(first_coord.get_y());
+      x_cut_set_map[layer_idx].insert(first_coord.get_x());
+      x_cut_set_map[layer_idx].insert(second_coord.get_x());
+      y_cut_set_map[layer_idx].insert(first_coord.get_y());
     }
     for (Segment<LayerCoord>& v_segment : v_segment_list) {
       LayerCoord& first_coord = v_segment.get_first();
       LayerCoord& second_coord = v_segment.get_second();
       int32_t layer_idx = first_coord.get_layer_idx();
 
-      y_cut_list_map[layer_idx].insert(first_coord.get_y());
-      y_cut_list_map[layer_idx].insert(second_coord.get_y());
-      x_cut_list_map[layer_idx].insert(first_coord.get_x());
+      y_cut_set_map[layer_idx].insert(first_coord.get_y());
+      y_cut_set_map[layer_idx].insert(second_coord.get_y());
+      x_cut_set_map[layer_idx].insert(first_coord.get_x());
     }
     for (Segment<LayerCoord>& p_segment : p_segment_list) {
       LayerCoord& first_coord = p_segment.get_first();
@@ -1994,15 +1992,15 @@ class Utility
       LayerCoord& second_coord = p_segment.get_second();
       int32_t second_layer_idx = second_coord.get_layer_idx();
 
-      x_cut_list_map[first_layer_idx].insert(first_coord.get_x());
-      y_cut_list_map[first_layer_idx].insert(first_coord.get_y());
-      x_cut_list_map[second_layer_idx].insert(second_coord.get_x());
-      y_cut_list_map[second_layer_idx].insert(second_coord.get_y());
+      x_cut_set_map[first_layer_idx].insert(first_coord.get_x());
+      y_cut_set_map[first_layer_idx].insert(first_coord.get_y());
+      x_cut_set_map[second_layer_idx].insert(second_coord.get_x());
+      y_cut_set_map[second_layer_idx].insert(second_coord.get_y());
     }
     for (auto& [key_coord, pin_idx_set] : key_coord_pin_map) {
       int32_t layer_idx = key_coord.get_layer_idx();
-      x_cut_list_map[layer_idx].insert(key_coord.get_x());
-      y_cut_list_map[layer_idx].insert(key_coord.get_y());
+      x_cut_set_map[layer_idx].insert(key_coord.get_x());
+      y_cut_set_map[layer_idx].insert(key_coord.get_y());
     }
 
     // 切割平面的h线
@@ -2014,13 +2012,7 @@ class Utility
       int32_t layer_idx = h_segment.get_first().get_layer_idx();
 
       swapByASC(first_x, second_x);
-      // std::vector<int32_t> x_list;
-      // for (int32_t x_cut : x_cut_list_map[layer_idx]) {
-      //   if (first_x <= x_cut && x_cut <= second_x) {
-      //     x_list.push_back(x_cut);
-      //   }
-      // }
-      std::vector<int32_t> x_list = setToSortedVector(x_cut_list_map[layer_idx], first_x, second_x);
+      std::vector<int32_t> x_list = getListByBound(x_cut_set_map[layer_idx], first_x, second_x);
       for (size_t i = 1; i < x_list.size(); i++) {
         LayerCoord first_coord(x_list[i - 1], y, layer_idx);
         LayerCoord second_coord(x_list[i], y, layer_idx);
@@ -2038,13 +2030,7 @@ class Utility
       int32_t layer_idx = v_segment.get_first().get_layer_idx();
 
       swapByASC(first_y, second_y);
-      // std::vector<int32_t> y_list;
-      // for (int32_t y_cut : y_cut_list_map[layer_idx]) {
-      //   if (first_y <= y_cut && y_cut <= second_y) {
-      //     y_list.push_back(y_cut);
-      //   }
-      // }
-      std::vector<int32_t> y_list = setToSortedVector(y_cut_list_map[layer_idx], first_y, second_y);
+      std::vector<int32_t> y_list = getListByBound(y_cut_set_map[layer_idx], first_y, second_y);
       for (size_t i = 1; i < y_list.size(); i++) {
         LayerCoord first_coord(x, y_list[i - 1], layer_idx);
         LayerCoord second_coord(x, y_list[i], layer_idx);
