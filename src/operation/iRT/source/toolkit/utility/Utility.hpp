@@ -1256,12 +1256,76 @@ class Utility
   template <typename T>
   static MTree<T> getTreeBySegList(const T& root_value, const std::vector<Segment<T>>& segment_list)
   {
+#define PLAN_A
+#ifdef PLAN_A
+    std::map<T, int32_t, CmpLayerCoordByXASC> coord_map;
+    std::vector<T> unique_coord_list;
+    std::vector<std::vector<int32_t>> adj_list;
+    int32_t idx = 0;
+    for (const auto& segment : segment_list) {
+      const T& first = segment.get_first();
+      const T& second = segment.get_second();
+      int32_t first_idx = -1;
+      int32_t second_idx = -1;
+      if (!exist(coord_map, first)) {
+        first_idx = idx++;
+        coord_map[first] = first_idx;
+        unique_coord_list.push_back(first);
+        adj_list.push_back({});
+      }
+      if (!exist(coord_map, second)) {
+        second_idx = idx++;
+        coord_map[second] = second_idx;
+        unique_coord_list.push_back(second);
+        adj_list.push_back({});
+      }
+      if (first_idx == -1) {
+        first_idx = coord_map[first];
+      }
+      if (second_idx == -1) {
+        second_idx = coord_map[second];
+      }
+      adj_list[first_idx].push_back(second_idx);
+      adj_list[second_idx].push_back(first_idx);
+    }
+
+    if (!exist(coord_map, root_value)) {
+      return MTree<T>(new TNode<T>(root_value));
+    }
+
+    std::vector<TNode<T>*> node_list(unique_coord_list.size(), nullptr);
+    std::vector<bool> visited(unique_coord_list.size(), false);
+
+    int32_t root_idx = coord_map[root_value];
+    std::queue<int32_t> node_queue = initQueue(root_idx);
+    visited[root_idx] = true;
+    TNode<T>* root = new TNode(root_value);
+    node_list[root_idx] = root;
+    while (!node_queue.empty()) {
+      int32_t curr_idx = getFrontAndPop(node_queue);
+      TNode<T>* curr_node = node_list[curr_idx];
+      std::vector<int32_t> neighbor_idx_list;
+      for (const auto& neighbor_idx : adj_list[curr_idx]) {
+        if (!visited[neighbor_idx]) {
+          neighbor_idx_list.push_back(neighbor_idx);
+          visited[neighbor_idx] = true;
+          TNode<T>* child_node = new TNode(unique_coord_list[neighbor_idx]);
+          curr_node->addChild(child_node);
+          node_list[neighbor_idx] = child_node;
+        }
+      }
+      addListToQueue(node_queue, neighbor_idx_list);
+    }
+    return MTree<T>(root);
+#else
     std::vector<std::pair<bool, Segment<T>>> visited_value_pair_list;
+    std::set<T, CmpLayerCoordByXASC> visited_node;  // 需要加一个cmp的传入
     visited_value_pair_list.reserve(segment_list.size());
     for (size_t i = 0; i < segment_list.size(); i++) {
       visited_value_pair_list.emplace_back(false, segment_list[i]);
     }
     TNode<T>* root = new TNode(root_value);
+    visited_node.insert(root_value);
     std::queue<TNode<T>*> node_queue = initQueue(root);
     while (!node_queue.empty()) {
       TNode<T>* node = getFrontAndPop(node_queue);
@@ -1276,6 +1340,11 @@ class Utility
         T& value1 = visited_value_pair.second.get_first();
         T& value2 = visited_value_pair.second.get_second();
         if (value == value1 || value == value2) {
+          T target_val = (value == value1 ? value2 : value1);
+          if (exist(visited_node, target_val)) {
+            continue;
+          }
+          visited_node.insert(target_val);
           TNode<T>* child_node = (value == value1 ? new TNode(value2) : new TNode(value1));
           next_node_list.push_back(child_node);
           node->addChild(child_node);
@@ -1285,6 +1354,7 @@ class Utility
       addListToQueue(node_queue, next_node_list);
     }
     return MTree<T>(root);
+#endif
   }
 
 #endif
@@ -1893,7 +1963,12 @@ class Utility
     // 初始化平面切点
     std::map<int32_t, std::set<int32_t>> x_cut_list_map;
     std::map<int32_t, std::set<int32_t>> y_cut_list_map;
-
+    auto setToSortedVector = [](const std::set<int32_t>& s, int32_t small, int32_t large) -> std::vector<int32_t> {
+      auto it1 = s.lower_bound(small);
+      auto it2 = s.upper_bound(large);
+      std::vector<int32_t> v(it1, it2);
+      return v;
+    };
     for (Segment<LayerCoord>& h_segment : h_segment_list) {
       LayerCoord& first_coord = h_segment.get_first();
       LayerCoord& second_coord = h_segment.get_second();
@@ -1939,12 +2014,13 @@ class Utility
       int32_t layer_idx = h_segment.get_first().get_layer_idx();
 
       swapByASC(first_x, second_x);
-      std::vector<int32_t> x_list;
-      for (int32_t x_cut : x_cut_list_map[layer_idx]) {
-        if (first_x <= x_cut && x_cut <= second_x) {
-          x_list.push_back(x_cut);
-        }
-      }
+      // std::vector<int32_t> x_list;
+      // for (int32_t x_cut : x_cut_list_map[layer_idx]) {
+      //   if (first_x <= x_cut && x_cut <= second_x) {
+      //     x_list.push_back(x_cut);
+      //   }
+      // }
+      std::vector<int32_t> x_list = setToSortedVector(x_cut_list_map[layer_idx], first_x, second_x);
       for (size_t i = 1; i < x_list.size(); i++) {
         LayerCoord first_coord(x_list[i - 1], y, layer_idx);
         LayerCoord second_coord(x_list[i], y, layer_idx);
@@ -1962,12 +2038,13 @@ class Utility
       int32_t layer_idx = v_segment.get_first().get_layer_idx();
 
       swapByASC(first_y, second_y);
-      std::vector<int32_t> y_list;
-      for (int32_t y_cut : y_cut_list_map[layer_idx]) {
-        if (first_y <= y_cut && y_cut <= second_y) {
-          y_list.push_back(y_cut);
-        }
-      }
+      // std::vector<int32_t> y_list;
+      // for (int32_t y_cut : y_cut_list_map[layer_idx]) {
+      //   if (first_y <= y_cut && y_cut <= second_y) {
+      //     y_list.push_back(y_cut);
+      //   }
+      // }
+      std::vector<int32_t> y_list = setToSortedVector(y_cut_list_map[layer_idx], first_y, second_y);
       for (size_t i = 1; i < y_list.size(); i++) {
         LayerCoord first_coord(x, y_list[i - 1], layer_idx);
         LayerCoord second_coord(x, y_list[i], layer_idx);
