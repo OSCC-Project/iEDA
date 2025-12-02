@@ -1254,78 +1254,16 @@ class Utility
 
   // 通过树根节点和边集构建一棵树,也会消除多个连通分量
   template <typename T>
-  static MTree<T> getTreeBySegList(const T& root_value, const std::vector<Segment<T>>& segment_list)
+  static MTree<T> getTreeBySegListByT(const T& root_value, const std::vector<Segment<T>>& segment_list)
   {
-#define PLAN_A
-#ifdef PLAN_A
-    std::map<T, int32_t, CmpLayerCoordByXASC> coord_map;
-    std::vector<T> unique_coord_list;
-    std::vector<std::vector<int32_t>> adj_list;
-    int32_t idx = 0;
-    for (const auto& segment : segment_list) {
-      const T& first = segment.get_first();
-      const T& second = segment.get_second();
-      int32_t first_idx = -1;
-      int32_t second_idx = -1;
-      if (!exist(coord_map, first)) {
-        first_idx = idx++;
-        coord_map[first] = first_idx;
-        unique_coord_list.push_back(first);
-        adj_list.push_back({});
-      }
-      if (!exist(coord_map, second)) {
-        second_idx = idx++;
-        coord_map[second] = second_idx;
-        unique_coord_list.push_back(second);
-        adj_list.push_back({});
-      }
-      if (first_idx == -1) {
-        first_idx = coord_map[first];
-      }
-      if (second_idx == -1) {
-        second_idx = coord_map[second];
-      }
-      adj_list[first_idx].push_back(second_idx);
-      adj_list[second_idx].push_back(first_idx);
-    }
-
-    if (!exist(coord_map, root_value)) {
-      return MTree<T>(new TNode<T>(root_value));
-    }
-
-    std::vector<TNode<T>*> node_list(unique_coord_list.size(), nullptr);
-    std::vector<bool> visited(unique_coord_list.size(), false);
-
-    int32_t root_idx = coord_map[root_value];
-    std::queue<int32_t> node_queue = initQueue(root_idx);
-    visited[root_idx] = true;
-    TNode<T>* root = new TNode(root_value);
-    node_list[root_idx] = root;
-    while (!node_queue.empty()) {
-      int32_t curr_idx = getFrontAndPop(node_queue);
-      TNode<T>* curr_node = node_list[curr_idx];
-      std::vector<int32_t> neighbor_idx_list;
-      for (const auto& neighbor_idx : adj_list[curr_idx]) {
-        if (!visited[neighbor_idx]) {
-          neighbor_idx_list.push_back(neighbor_idx);
-          visited[neighbor_idx] = true;
-          TNode<T>* child_node = new TNode(unique_coord_list[neighbor_idx]);
-          curr_node->addChild(child_node);
-          node_list[neighbor_idx] = child_node;
-        }
-      }
-      addListToQueue(node_queue, neighbor_idx_list);
-    }
-    return MTree<T>(root);
-#else
     std::vector<std::pair<bool, Segment<T>>> visited_value_pair_list;
-    std::set<T, CmpLayerCoordByXASC> visited_node;  // 需要加一个cmp的传入
+    std::vector<T> visited_node_list;
     visited_value_pair_list.reserve(segment_list.size());
     for (size_t i = 0; i < segment_list.size(); i++) {
       visited_value_pair_list.emplace_back(false, segment_list[i]);
     }
     TNode<T>* root = new TNode(root_value);
-    visited_node.insert(root_value);
+    visited_node_list.push_back(root_value);
     std::queue<TNode<T>*> node_queue = initQueue(root);
     while (!node_queue.empty()) {
       TNode<T>* node = getFrontAndPop(node_queue);
@@ -1340,11 +1278,11 @@ class Utility
         T& value1 = visited_value_pair.second.get_first();
         T& value2 = visited_value_pair.second.get_second();
         if (value == value1 || value == value2) {
-          T target_val = (value == value1 ? value2 : value1);
-          if (exist(visited_node, target_val)) {
+          T target_value = (value == value1 ? value2 : value1);
+          if (exist(visited_node_list, target_value)) {
             continue;
           }
-          visited_node.insert(target_val);
+          visited_node_list.push_back(target_value);
           TNode<T>* child_node = (value == value1 ? new TNode(value2) : new TNode(value1));
           next_node_list.push_back(child_node);
           node->addChild(child_node);
@@ -1354,7 +1292,6 @@ class Utility
       addListToQueue(node_queue, next_node_list);
     }
     return MTree<T>(root);
-#endif
   }
 
 #endif
@@ -2087,6 +2024,90 @@ class Utility
       root_coord = candidate_root_coord_list.front();
     }
     return root_coord;
+  }
+
+  // 构建树并通过最小生成树算法去环
+  static MTree<LayerCoord> getTreeBySegList(const LayerCoord& root_value, const std::vector<Segment<LayerCoord>>& segment_list)
+  {
+    if (segment_list.empty()) {
+      return MTree<LayerCoord>(new TNode<LayerCoord>(root_value));
+    }
+    std::map<LayerCoord, int32_t, CmpLayerCoordByXASC> coord_to_idx;
+    {
+      std::vector<LayerCoord> coord_list;
+      coord_list.push_back(root_value);
+      for (const Segment<LayerCoord>& segment : segment_list) {
+        coord_list.push_back(segment.get_first());
+        coord_list.push_back(segment.get_second());
+      }
+      std::sort(coord_list.begin(), coord_list.end(), CmpLayerCoordByXASC());
+      coord_list.erase(std::unique(coord_list.begin(), coord_list.end()), coord_list.end());
+      for (size_t i = 0; i < coord_list.size(); i++) {
+        coord_to_idx[coord_list[i]] = static_cast<int32_t>(i);
+      }
+    }
+    // Kruskal算法：使用并查集构建最小生成树
+    std::map<LayerCoord, std::vector<LayerCoord>, CmpLayerCoordByXASC> adjacency_map;
+    {
+      std::map<int32_t, std::vector<int32_t>> distance_idx_map;
+      for (size_t i = 0; i < segment_list.size(); i++) {
+        distance_idx_map[getManhattanDistance(segment_list[i].get_first(), segment_list[i].get_second())].push_back(static_cast<int32_t>(i));
+      }
+      std::vector<int32_t> union_parent(coord_to_idx.size());
+      for (size_t i = 0; i < union_parent.size(); i++) {
+        union_parent[i] = static_cast<int32_t>(i);
+      }
+      for (auto& [distance, idx_list] : distance_idx_map) {
+        for (int32_t idx : idx_list) {
+          const Segment<LayerCoord>& segment = segment_list[idx];
+          int32_t idx1 = coord_to_idx[segment.get_first()];
+          int32_t idx2 = coord_to_idx[segment.get_second()];
+          // 查找根节点（带路径压缩）
+          int32_t root1 = idx1;
+          while (union_parent[root1] != root1) {
+            int32_t next = union_parent[root1];
+            union_parent[root1] = union_parent[next];
+            root1 = next;
+          }
+          int32_t root2 = idx2;
+          while (union_parent[root2] != root2) {
+            int32_t next = union_parent[root2];
+            union_parent[root2] = union_parent[next];
+            root2 = next;
+          }
+          // 如果不在同一集合，则合并
+          if (root1 != root2) {
+            union_parent[root1] = root2;
+            adjacency_map[segment.get_first()].push_back(segment.get_second());
+            adjacency_map[segment.get_second()].push_back(segment.get_first());
+          }
+        }
+      }
+    }
+    // BFS构建树结构
+    TNode<LayerCoord>* root = new TNode<LayerCoord>(root_value);
+    {
+      std::map<LayerCoord, TNode<LayerCoord>*, CmpLayerCoordByXASC> coord_to_node_map;
+      coord_to_node_map[root_value] = root;
+      std::queue<TNode<LayerCoord>*> queue = initQueue(root);
+      while (!queue.empty()) {
+        TNode<LayerCoord>* current_node = getFrontAndPop(queue);
+        LayerCoord current_coord = current_node->value();
+        if (!exist(adjacency_map, current_coord)) {
+          continue;
+        }
+        for (LayerCoord neighbor_coord : adjacency_map[current_coord]) {
+          if (exist(coord_to_node_map, neighbor_coord)) {
+            continue;
+          }
+          TNode<LayerCoord>* child_node = new TNode<LayerCoord>(neighbor_coord);
+          current_node->addChild(child_node);
+          coord_to_node_map[neighbor_coord] = child_node;
+          queue.push(child_node);
+        }
+      }
+    }
+    return MTree<LayerCoord>(root);
   }
 
   // 删除无效(没有关键坐标的子树)的结点
