@@ -177,7 +177,6 @@ void DRCInterface::wrapConfig(std::map<std::string, std::any>& config_map)
   /////////////////////////////////////////////
   DRCDM.getConfig().temp_directory_path = DRCUTIL.getConfigValue<std::string>(config_map, "-temp_directory_path", "./drc_temp_directory");
   DRCDM.getConfig().thread_number = DRCUTIL.getConfigValue<int32_t>(config_map, "-thread_number", 128);
-  DRCDM.getConfig().golden_directory_path = DRCUTIL.getConfigValue<std::string>(config_map, "-golden_directory_path", "null");
   omp_set_num_threads(std::max(DRCDM.getConfig().thread_number, 1));
   /////////////////////////////////////////////
 }
@@ -989,10 +988,6 @@ std::vector<ids::Shape> DRCInterface::buildResultShapeList()
 
 void DRCInterface::printSummary(std::map<std::string, std::vector<ids::Violation>>& type_violation_map)
 {
-  std::string& golden_directory_path = DRCDM.getConfig().golden_directory_path;
-  if (golden_directory_path != "null") {
-    return;
-  }
   int32_t total_violation_num = 0;
   for (auto& [type, violation_list] : type_violation_map) {
     total_violation_num += static_cast<int32_t>(violation_list.size());

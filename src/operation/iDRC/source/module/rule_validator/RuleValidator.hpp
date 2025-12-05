@@ -85,10 +85,7 @@ class RuleValidator
   bool needVerifying(RVBox& rv_box, ViolationType violation_type);
   void processRVBox(RVBox& rv_box);
   void buildViolationList(RVBox& rv_box);
-  void updateSummary(RVBox& rv_box);
   void buildViolationList(RVModel& rv_model);
-  void updateSummary(RVModel& rv_model);
-  void printSummary(RVModel& rv_model);
 
 #if 1  // aux
   int32_t getIdx(int32_t idx, int32_t coord_size);

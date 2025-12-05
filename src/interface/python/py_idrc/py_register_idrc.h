@@ -25,7 +25,7 @@ namespace py = pybind11;
 
 void register_idrc(py::module& m)
 {
-  m.def("init_drc", init_drc, py::arg("temp_directory_path") = "", py::arg("thread_number") = 128, py::arg("golden_directory_path") = "");
+  m.def("init_drc", init_drc, py::arg("temp_directory_path") = "", py::arg("thread_number") = 128);
   m.def("run_drc", run_drc, py::arg("config") = "", py::arg("report") = "");
   m.def("save_drc", save_drc, py::arg("path") = "");
 }

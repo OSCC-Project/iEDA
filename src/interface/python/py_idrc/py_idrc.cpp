@@ -22,7 +22,7 @@
 
 namespace python_interface {
 
-bool init_drc(const std::string& temp_directory_path, const int& thread_number, const std::string& golden_directory_path)
+bool init_drc(const std::string& temp_directory_path, const int& thread_number)
 {
   std::map<std::string, std::any> config_map;
   if (temp_directory_path != "") {
@@ -30,10 +30,6 @@ bool init_drc(const std::string& temp_directory_path, const int& thread_number, 
   }
 
   config_map.insert(std::make_pair("-thread_number", thread_number));
-
-  if (golden_directory_path != "") {
-    config_map.insert(std::make_pair("-golden_directory_path", golden_directory_path));
-  }
 
   DRCI.initDRC(config_map, false);
   return true;

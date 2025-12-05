@@ -60,8 +60,6 @@ std::vector<Violation> RuleValidator::verify(std::vector<DRCShape>& drc_env_shap
   buildViolationList(rv_model);
   // debugPlotRVModel(rv_model, "best");
   // debugOutputViolation(rv_model);
-  updateSummary(rv_model);
-  printSummary(rv_model);
   DRCLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
   return rv_model.get_violation_list();
 }
@@ -191,7 +189,6 @@ void RuleValidator::verifyRVModel(RVModel& rv_model)
     if (needVerifying(rv_box)) {
       buildViolationSet(rv_box);
       buildViolationList(rv_box);
-      updateSummary(rv_box);
       // debugPlotRVBox(rv_box, "best");
     }
   }
@@ -383,120 +380,6 @@ void RuleValidator::buildViolationList(RVBox& rv_box)
   processRVBox(rv_box);
 }
 
-void RuleValidator::updateSummary(RVBox& rv_box)
-{
-  std::string& golden_directory_path = DRCDM.getConfig().golden_directory_path;
-  if (golden_directory_path == "null") {
-    return;
-  }
-  std::map<std::string, std::map<std::string, int32_t>>& type_statistics_map = rv_box.get_rv_summary().type_statistics_map;
-  int32_t& total_correct_num = rv_box.get_rv_summary().total_correct_num;
-  int32_t& total_incorrect_num = rv_box.get_rv_summary().total_incorrect_num;
-  int32_t& total_missed_num = rv_box.get_rv_summary().total_missed_num;
-  int32_t& total_statistics_num = rv_box.get_rv_summary().total_statistics_num;
-
-  type_statistics_map.clear();
-  total_correct_num = 0;
-  total_incorrect_num = 0;
-  total_missed_num = 0;
-  total_statistics_num = 0;
-
-  // 自己检测的违例
-  std::map<ViolationType, std::set<Violation, CmpViolation>>& type_violation_map = rv_box.get_type_violation_map();
-  for (Violation& violation : rv_box.get_violation_list()) {
-    type_violation_map[violation.get_violation_type()].insert(violation);
-  }
-  // golden的违例
-  std::map<ViolationType, std::set<Violation, CmpViolation>>& type_golden_violation_map = rv_box.get_type_golden_violation_map();
-  {
-    std::string box_golden_txt_path = DRCUTIL.getString(golden_directory_path, "golden_rv_box_", rv_box.get_box_idx(), ".txt");
-    if (DRCUTIL.existFile(box_golden_txt_path)) {
-      std::ifstream* box_golden_txt_file = DRCUTIL.getInputFileStream(box_golden_txt_path);
-      std::string new_line;
-      while (std::getline(*box_golden_txt_file, new_line)) {
-        if (new_line.empty()) {
-          continue;
-        }
-        std::set<std::string> net_idx_string_set;
-        std::string required_size_string;
-        std::string violation_type_name;
-        std::string ll_x_string;
-        std::string ll_y_string;
-        std::string ur_x_string;
-        std::string ur_y_string;
-        std::string layer_idx_string;
-        // 读取
-        std::istringstream net_idx_set_stream(new_line);
-        std::string net_name;
-        while (std::getline(net_idx_set_stream, net_name, ',')) {
-          if (!net_name.empty()) {
-            net_idx_string_set.insert(net_name);
-          }
-        }
-        std::getline(*box_golden_txt_file, new_line);
-        std::istringstream drc_info_stream(new_line);
-        drc_info_stream >> required_size_string >> violation_type_name;
-        std::getline(*box_golden_txt_file, new_line);
-        std::istringstream shape_stream(new_line);
-        shape_stream >> ll_x_string >> ll_y_string >> ur_x_string >> ur_y_string >> layer_idx_string;
-        // 解析
-        std::set<int32_t> violation_net_set;
-        for (const std::string& net_idx_string : net_idx_string_set) {
-          violation_net_set.insert(std::stoi(DRCUTIL.splitString(net_idx_string, '_').back()));
-        }
-        int32_t required_size = std::stoi(required_size_string);
-        ViolationType violation_type = GetViolationTypeByName()(violation_type_name);
-        LayerRect layer_rect;
-        layer_rect.set_ll(std::stoi(ll_x_string), std::stoi(ll_y_string));
-        layer_rect.set_ur(std::stoi(ur_x_string), std::stoi(ur_y_string));
-        layer_rect.set_layer_idx(std::stoi(layer_idx_string));
-
-        Violation violation;
-        violation.set_violation_type(violation_type);
-        violation.set_rect(layer_rect);
-        violation.set_layer_idx(layer_rect.get_layer_idx());
-        violation.set_is_routing(true);
-        violation.set_violation_net_set(violation_net_set);
-        violation.set_required_size(required_size);
-        type_golden_violation_map[violation.get_violation_type()].insert(violation);
-      }
-      DRCUTIL.closeFileStream(box_golden_txt_file);
-    } else {
-      DRCLOG.warn(Loc::current(), "The ", box_golden_txt_path, " is not exist!");
-    }
-  }
-  // 统计违例对比情况
-  for (auto& [type, violation_set] : type_violation_map) {
-    int32_t correct_num = 0;
-    int32_t incorrect_num = 0;
-    for (const Violation& violation : violation_set) {
-      if (DRCUTIL.exist(type_golden_violation_map[type], violation)) {
-        correct_num++;
-      } else {
-        incorrect_num++;
-      }
-    }
-    type_statistics_map[GetViolationTypeName()(type)]["correct_num"] = correct_num;
-    type_statistics_map[GetViolationTypeName()(type)]["incorrect_num"] = incorrect_num;
-    total_correct_num += correct_num;
-    total_incorrect_num += incorrect_num;
-  }
-  for (auto& [type, golden_violation_set] : type_golden_violation_map) {
-    int32_t missed_num = 0;
-    for (const Violation& golden_violation : golden_violation_set) {
-      if (!DRCUTIL.exist(type_violation_map[type], golden_violation)) {
-        missed_num++;
-      }
-    }
-    type_statistics_map[GetViolationTypeName()(type)]["missed_num"] = missed_num;
-    total_missed_num += missed_num;
-  }
-  for (auto& [type, statistics] : type_statistics_map) {
-    statistics["statistics_num"] = statistics["correct_num"] + statistics["incorrect_num"] + statistics["missed_num"];
-  }
-  total_statistics_num = total_correct_num + total_incorrect_num + total_missed_num;
-}
-
 void RuleValidator::buildViolationList(RVModel& rv_model)
 {
   for (RVBox& rv_box : rv_model.get_rv_box_list()) {
@@ -506,68 +389,7 @@ void RuleValidator::buildViolationList(RVModel& rv_model)
   }
 }
 
-void RuleValidator::updateSummary(RVModel& rv_model)
-{
-  std::string& golden_directory_path = DRCDM.getConfig().golden_directory_path;
-  if (golden_directory_path == "null") {
-    return;
-  }
-  std::map<std::string, std::map<std::string, int32_t>>& type_statistics_map = rv_model.get_rv_summary().type_statistics_map;
-  int32_t& total_correct_num = rv_model.get_rv_summary().total_correct_num;
-  int32_t& total_incorrect_num = rv_model.get_rv_summary().total_incorrect_num;
-  int32_t& total_missed_num = rv_model.get_rv_summary().total_missed_num;
-  int32_t& total_statistics_num = rv_model.get_rv_summary().total_statistics_num;
 
-  type_statistics_map.clear();
-  total_correct_num = 0;
-  total_incorrect_num = 0;
-  total_missed_num = 0;
-  total_statistics_num = 0;
-
-  for (RVBox& rv_box : rv_model.get_rv_box_list()) {
-    for (auto& [type, statistics] : rv_box.get_rv_summary().type_statistics_map) {
-      type_statistics_map[type]["correct_num"] += statistics["correct_num"];
-      type_statistics_map[type]["incorrect_num"] += statistics["incorrect_num"];
-      type_statistics_map[type]["missed_num"] += statistics["missed_num"];
-      type_statistics_map[type]["statistics_num"] += statistics["statistics_num"];
-    }
-    total_correct_num += rv_box.get_rv_summary().total_correct_num;
-    total_incorrect_num += rv_box.get_rv_summary().total_incorrect_num;
-    total_missed_num += rv_box.get_rv_summary().total_missed_num;
-    total_statistics_num += rv_box.get_rv_summary().total_statistics_num;
-  }
-}
-
-void RuleValidator::printSummary(RVModel& rv_model)
-{
-  std::string& golden_directory_path = DRCDM.getConfig().golden_directory_path;
-  if (golden_directory_path == "null") {
-    return;
-  }
-  std::map<std::string, std::map<std::string, int32_t>>& type_statistics_map = rv_model.get_rv_summary().type_statistics_map;
-  int32_t& total_correct_num = rv_model.get_rv_summary().total_correct_num;
-  int32_t& total_incorrect_num = rv_model.get_rv_summary().total_incorrect_num;
-  int32_t& total_missed_num = rv_model.get_rv_summary().total_missed_num;
-  int32_t& total_statistics_num = rv_model.get_rv_summary().total_statistics_num;
-
-  fort::char_table type_statistics_map_table;
-  {
-    type_statistics_map_table.set_cell_text_align(fort::text_align::right);
-    type_statistics_map_table << fort::header << "violation_type"
-                              << "correct_num" << "prop"
-                              << "incorrect_num" << "prop"
-                              << "missed_num" << "prop" << fort::endr;
-    for (auto& [type, statistics] : type_statistics_map) {
-      type_statistics_map_table << type << statistics["correct_num"] << DRCUTIL.getPercentage(statistics["correct_num"], statistics["statistics_num"])
-                                << statistics["incorrect_num"] << DRCUTIL.getPercentage(statistics["incorrect_num"], statistics["statistics_num"])
-                                << statistics["missed_num"] << DRCUTIL.getPercentage(statistics["missed_num"], statistics["statistics_num"]) << fort::endr;
-    }
-    type_statistics_map_table << fort::header << "Total" << total_correct_num << DRCUTIL.getPercentage(total_correct_num, total_statistics_num)
-                              << total_incorrect_num << DRCUTIL.getPercentage(total_incorrect_num, total_statistics_num) << total_missed_num
-                              << DRCUTIL.getPercentage(total_missed_num, total_statistics_num) << fort::endr;
-  }
-  DRCUTIL.printTableList({type_statistics_map_table});
-}
 
 #if 1  // aux
 

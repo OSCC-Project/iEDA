@@ -100,10 +100,6 @@ void DataManager::buildConfig()
   // **********        DRC         ********** //
   _config.temp_directory_path = std::filesystem::absolute(_config.temp_directory_path);
   _config.temp_directory_path += "/";
-  if (_config.golden_directory_path != "null") {
-    _config.golden_directory_path = std::filesystem::absolute(_config.golden_directory_path);
-    _config.golden_directory_path += "/";
-  }
   _config.log_file_path = _config.temp_directory_path + "drc.log";
   // **********     RuleValidator  ********** //
   _config.rv_temp_directory_path = _config.temp_directory_path + "rule_validator/";
@@ -301,8 +297,6 @@ void DataManager::printConfig()
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _config.temp_directory_path);
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "thread_number");
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _config.thread_number);
-  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "golden_directory_path");
-  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _config.golden_directory_path);
   // **********        DRC         ********** //
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(0), "DRC_CONFIG_BUILD");
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "log_file_path");
