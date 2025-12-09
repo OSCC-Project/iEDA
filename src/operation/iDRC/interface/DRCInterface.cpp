@@ -156,7 +156,7 @@ std::vector<ids::Violation> DRCInterface::getViolationList(const std::vector<ids
   return ids_violation_list;
 }
 
-void DRCInterface::cmpDRC(std::map<std::string, std::any> config_map)
+void DRCInterface::cmpViolation(std::map<std::string, std::any> config_map)
 {
   Die& die = DRCDM.getDatabase().get_die();
   std::map<std::string, int32_t>& routing_layer_name_to_idx_map = DRCDM.getDatabase().get_routing_layer_name_to_idx_map();
@@ -164,9 +164,18 @@ void DRCInterface::cmpDRC(std::map<std::string, std::any> config_map)
 
   std::map<std::string, std::string> name_dir_map;
   {
-    name_dir_map[DRCUTIL.getConfigValue<std::string>(config_map, "-ref1_name", "null")] = DRCUTIL.getConfigValue<std::string>(config_map, "-ref1_dir", "null");
-    name_dir_map[DRCUTIL.getConfigValue<std::string>(config_map, "-ref2_name", "null")] = DRCUTIL.getConfigValue<std::string>(config_map, "-ref2_dir", "null");
-    name_dir_map[DRCUTIL.getConfigValue<std::string>(config_map, "-ref3_name", "null")] = DRCUTIL.getConfigValue<std::string>(config_map, "-ref3_dir", "null");
+    std::string ref = DRCUTIL.getConfigValue<std::string>(config_map, "-ref", "null");
+    std::istringstream iss(ref);
+    std::string token;
+    while (iss >> token) {
+      auto pos = token.find('=');
+      if (pos == std::string::npos || pos == 0 || pos == token.size() - 1) {
+        continue;
+      }
+      std::string key = token.substr(0, pos);
+      std::string value = token.substr(pos + 1);
+      name_dir_map[key] = value;
+    }
   }
   std::set<ViolationType> violation_type_set;
   {

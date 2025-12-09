@@ -20,25 +20,20 @@
 
 namespace tcl {
 
-TclCmpDRC::TclCmpDRC(const char* cmd_name) : TclCmd(cmd_name)
+TclDRCCmpViolation::TclDRCCmpViolation(const char* cmd_name) : TclCmd(cmd_name)
 {
-  _config_list.push_back(std::make_pair("-ref1_name", ValueType::kString));
-  _config_list.push_back(std::make_pair("-ref1_dir", ValueType::kString));
-  _config_list.push_back(std::make_pair("-ref2_name", ValueType::kString));
-  _config_list.push_back(std::make_pair("-ref2_dir", ValueType::kString));
-  _config_list.push_back(std::make_pair("-ref3_name", ValueType::kString));
-  _config_list.push_back(std::make_pair("-ref3_dir", ValueType::kString));
+  _config_list.push_back(std::make_pair("-ref", ValueType::kString));
 
   TclUtil::addOption(this, _config_list);
 }
 
-unsigned TclCmpDRC::exec()
+unsigned TclDRCCmpViolation::exec()
 {
   if (!check()) {
     return 0;
   }
   std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
-  DRCI.cmpDRC(config_map);
+  DRCI.cmpViolation(config_map);
   return 1;
 }
 

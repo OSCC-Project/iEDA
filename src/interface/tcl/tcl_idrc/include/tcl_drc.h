@@ -35,11 +35,11 @@ class TclCheckDef : public TclCmd
   std::vector<std::pair<std::string, ValueType>> _config_list;
 };
 
-class TclCmpDRC : public TclCmd
+class TclDRCCmpViolation : public TclCmd
 {
  public:
-  explicit TclCmpDRC(const char* cmd_name);
-  ~TclCmpDRC() override = default;
+  explicit TclDRCCmpViolation(const char* cmd_name);
+  ~TclDRCCmpViolation() override = default;
 
   unsigned check() override { return 1; };
 
