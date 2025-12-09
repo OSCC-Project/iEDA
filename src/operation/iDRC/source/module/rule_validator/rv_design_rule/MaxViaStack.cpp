@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void RuleValidator::verifyMaxViaStack(RVBox& rv_box)
+void RuleValidator::verifyMaxViaStack(RVCluster& rv_cluster)
 {
   MaxViaStackRule& max_via_stack_rule = DRCDM.getDatabase().get_max_via_stack_rule();
   std::map<int32_t, std::vector<int32_t>>& routing_to_adjacent_cut_map = DRCDM.getDatabase().get_routing_to_adjacent_cut_map();
@@ -26,14 +26,14 @@ void RuleValidator::verifyMaxViaStack(RVBox& rv_box)
 
   std::map<int32_t, std::map<int32_t, std::vector<PlanarRect>>> cut_net_rect_map;
   std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> cut_bg_rtree_map;
-  for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+  for (DRCShape* drc_shape : rv_cluster.get_drc_env_shape_list()) {
     if (drc_shape->get_is_routing()) {
       continue;
     }
     cut_net_rect_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()].push_back(drc_shape->get_rect());
     cut_bg_rtree_map[drc_shape->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(drc_shape->get_rect()), drc_shape->get_net_idx()));
   }
-  for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+  for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
     if (drc_shape->get_is_routing()) {
       continue;
     }
@@ -116,7 +116,7 @@ void RuleValidator::verifyMaxViaStack(RVBox& rv_box)
           violation.set_rect(curr_stack_rect);
           violation.set_violation_net_set({curr_net_idx});
           violation.set_required_size(max_via_stack_num);
-          rv_box.get_violation_list().push_back(violation);
+          rv_cluster.get_violation_list().push_back(violation);
         }
       }
     }

@@ -18,20 +18,20 @@
 
 namespace idrc {
 
-void RuleValidator::verifyCutShort(RVBox& rv_box)
+void RuleValidator::verifyCutShort(RVCluster& rv_cluster)
 {
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = DRCDM.getDatabase().get_cut_to_adjacent_routing_map();
 
   std::map<int32_t, GTLPolySetInt> cut_gtl_poly_set_map;
   std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> cut_bg_rtree_map;
-  for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+  for (DRCShape* drc_shape : rv_cluster.get_drc_env_shape_list()) {
     if (drc_shape->get_is_routing()) {
       continue;
     }
     cut_gtl_poly_set_map[drc_shape->get_layer_idx()] += DRCUTIL.convertToGTLRectInt(DRCUTIL.getEnlargedRect(drc_shape->get_rect(), 1));
     cut_bg_rtree_map[drc_shape->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(drc_shape->get_rect()), drc_shape->get_net_idx()));
   }
-  for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+  for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
     if (drc_shape->get_is_routing()) {
       continue;
     }
@@ -94,7 +94,7 @@ void RuleValidator::verifyCutShort(RVBox& rv_box)
         violation.set_violation_net_set(net_idx_set);
         violation.set_layer_idx(routing_layer_idx);
         violation.set_rect(violation_rect);
-        rv_box.get_violation_list().push_back(violation);
+        rv_cluster.get_violation_list().push_back(violation);
       }
     }
   }

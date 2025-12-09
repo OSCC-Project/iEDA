@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void RuleValidator::verifyEndOfLineSpacing(RVBox& rv_box)
+void RuleValidator::verifyEndOfLineSpacing(RVCluster& rv_cluster)
 {
 #if 1  // 数据结构定义
   struct PolyInfo
@@ -39,12 +39,12 @@ void RuleValidator::verifyEndOfLineSpacing(RVBox& rv_box)
   std::map<int32_t, std::map<int32_t, std::vector<PolyInfo>>> routing_net_poly_info_map;
   {
     std::map<int32_t, std::map<int32_t, GTLPolySetInt>> routing_net_gtl_poly_set_map;
-    for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+    for (DRCShape* drc_shape : rv_cluster.get_drc_env_shape_list()) {
       if (drc_shape->get_is_routing()) {
         routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
       }
     }
-    for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+    for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
       if (drc_shape->get_is_routing()) {
         routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
       }
@@ -102,12 +102,12 @@ void RuleValidator::verifyEndOfLineSpacing(RVBox& rv_box)
   }
   std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> cut_bg_rtree_map;
   {
-    for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+    for (DRCShape* drc_shape : rv_cluster.get_drc_env_shape_list()) {
       if (!drc_shape->get_is_routing()) {
         cut_bg_rtree_map[drc_shape->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(drc_shape->get_rect()), drc_shape->get_net_idx()));
       }
     }
-    for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+    for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
       if (!drc_shape->get_is_routing()) {
         cut_bg_rtree_map[drc_shape->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(drc_shape->get_rect()), drc_shape->get_net_idx()));
       }
@@ -430,7 +430,7 @@ void RuleValidator::verifyEndOfLineSpacing(RVBox& rv_box)
         if (DRCUTIL.exist(invalid_violation_set, violation)) {
           continue;
         }
-        rv_box.get_violation_list().push_back(violation);
+        rv_cluster.get_violation_list().push_back(violation);
       }
     }
   }

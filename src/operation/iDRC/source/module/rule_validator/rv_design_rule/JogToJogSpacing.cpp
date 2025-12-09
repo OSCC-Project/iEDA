@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void RuleValidator::verifyJogToJogSpacing(RVBox& rv_box)
+void RuleValidator::verifyJogToJogSpacing(RVCluster& rv_cluster)
 {
 }
 

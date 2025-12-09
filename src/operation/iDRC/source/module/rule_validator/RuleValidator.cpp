@@ -55,7 +55,7 @@ std::vector<Violation> RuleValidator::verify(std::vector<DRCShape>& drc_env_shap
   DRCLOG.info(Loc::current(), "Starting...");
   RVModel rv_model = initRVModel(drc_env_shape_list, drc_result_shape_list, drc_check_type_set, drc_check_region_list);
   setRVComParam(rv_model);
-  buildRVBoxList(rv_model);
+  buildRVClusterList(rv_model);
   verifyRVModel(rv_model);
   buildViolationList(rv_model);
   // debugPlotRVModel(rv_model, "best");
@@ -82,23 +82,23 @@ RVModel RuleValidator::initRVModel(std::vector<DRCShape>& drc_env_shape_list, st
 void RuleValidator::setRVComParam(RVModel& rv_model)
 {
   int32_t only_pitch = DRCDM.getOnlyPitch();
-  int32_t box_size = 500 * only_pitch;
+  int32_t grid_size = 100 * only_pitch;
   int32_t expand_size = 5 * only_pitch;
   /**
-   * box_size, expand_size
+   * grid_size, expand_size
    */
   // clang-format off
-  RVComParam rv_com_param(box_size, expand_size);
+  RVComParam rv_com_param(grid_size, expand_size);
   // clang-format on
-  DRCLOG.info(Loc::current(), "box_size: ", rv_com_param.get_box_size());
+  DRCLOG.info(Loc::current(), "grid_size: ", rv_com_param.get_grid_size());
   DRCLOG.info(Loc::current(), "expand_size: ", rv_com_param.get_expand_size());
   rv_model.set_rv_com_param(rv_com_param);
 }
 
-void RuleValidator::buildRVBoxList(RVModel& rv_model)
+void RuleValidator::buildRVClusterList(RVModel& rv_model)
 {
-  std::vector<RVBox>& rv_box_list = rv_model.get_rv_box_list();
-  int32_t box_size = rv_model.get_rv_com_param().get_box_size();
+  std::vector<RVCluster>& rv_cluster_list = rv_model.get_rv_cluster_list();
+  int32_t grid_size = rv_model.get_rv_com_param().get_grid_size();
   int32_t expand_size = rv_model.get_rv_com_param().get_expand_size();
 
   PlanarRect bounding_box(INT32_MAX, INT32_MAX, INT32_MIN, INT32_MIN);
@@ -121,56 +121,56 @@ void RuleValidator::buildRVBoxList(RVModel& rv_model)
     }
     offset_x = bounding_box.get_ll_x();
     offset_y = bounding_box.get_ll_y();
-    grid_x_size = bounding_box.getXSpan() / box_size + 1;
-    grid_y_size = bounding_box.getYSpan() / box_size + 1;
+    grid_x_size = bounding_box.getXSpan() / grid_size + 1;
+    grid_y_size = bounding_box.getYSpan() / grid_size + 1;
   }
-  rv_box_list.resize(grid_x_size * grid_y_size);
+  rv_cluster_list.resize(grid_x_size * grid_y_size);
   for (int32_t grid_x = 0; grid_x < grid_x_size; grid_x++) {
     for (int32_t grid_y = 0; grid_y < grid_y_size; grid_y++) {
-      RVBox& rv_box = rv_box_list[grid_x + grid_y * grid_x_size];
-      rv_box.set_box_idx(grid_x + grid_y * grid_x_size);
-      rv_box.get_box_rect().set_ll(grid_x * box_size + offset_x, grid_y * box_size + offset_y);
-      rv_box.get_box_rect().set_ur((grid_x + 1) * box_size + offset_x, (grid_y + 1) * box_size + offset_y);
-      rv_box.set_rv_com_param(&rv_model.get_rv_com_param());
+      RVCluster& rv_cluster = rv_cluster_list[grid_x + grid_y * grid_x_size];
+      rv_cluster.set_cluster_idx(grid_x + grid_y * grid_x_size);
+      rv_cluster.get_cluster_rect_list().emplace_back(grid_x * grid_size + offset_x, grid_y * grid_size + offset_y, (grid_x + 1) * grid_size + offset_x,
+                                                      (grid_y + 1) * grid_size + offset_y);
+      rv_cluster.set_rv_com_param(&rv_model.get_rv_com_param());
     }
   }
   for (DRCShape& drc_env_shape : rv_model.get_drc_env_shape_list()) {
     PlanarRect searched_rect = DRCUTIL.getEnlargedRect(drc_env_shape.get_rect(), expand_size);
     searched_rect = DRCUTIL.getRegularRect(searched_rect, bounding_box);
-    int32_t grid_ll_x = (searched_rect.get_ll_x() - offset_x) / box_size;
-    int32_t grid_ll_y = (searched_rect.get_ll_y() - offset_y) / box_size;
-    int32_t grid_ur_x = (searched_rect.get_ur_x() - offset_x) / box_size;
-    int32_t grid_ur_y = (searched_rect.get_ur_y() - offset_y) / box_size;
+    int32_t grid_ll_x = (searched_rect.get_ll_x() - offset_x) / grid_size;
+    int32_t grid_ll_y = (searched_rect.get_ll_y() - offset_y) / grid_size;
+    int32_t grid_ur_x = (searched_rect.get_ur_x() - offset_x) / grid_size;
+    int32_t grid_ur_y = (searched_rect.get_ur_y() - offset_y) / grid_size;
     for (int32_t grid_x = grid_ll_x; grid_x <= grid_ur_x; grid_x++) {
       for (int32_t grid_y = grid_ll_y; grid_y <= grid_ur_y; grid_y++) {
-        int32_t box_idx = grid_x + grid_y * grid_x_size;
-        if (static_cast<int32_t>(rv_box_list.size()) <= box_idx) {
-          DRCLOG.error(Loc::current(), "rv_box_list.size() <= box_idx!");
+        int32_t cluster_idx = grid_x + grid_y * grid_x_size;
+        if (static_cast<int32_t>(rv_cluster_list.size()) <= cluster_idx) {
+          DRCLOG.error(Loc::current(), "rv_cluster_list.size() <= cluster_idx!");
         }
-        rv_box_list[box_idx].get_drc_env_shape_list().push_back(&drc_env_shape);
+        rv_cluster_list[cluster_idx].get_drc_env_shape_list().push_back(&drc_env_shape);
       }
     }
   }
   for (DRCShape& drc_result_shape : rv_model.get_drc_result_shape_list()) {
     PlanarRect searched_rect = DRCUTIL.getEnlargedRect(drc_result_shape.get_rect(), expand_size);
     searched_rect = DRCUTIL.getRegularRect(searched_rect, bounding_box);
-    int32_t grid_ll_x = (searched_rect.get_ll_x() - offset_x) / box_size;
-    int32_t grid_ll_y = (searched_rect.get_ll_y() - offset_y) / box_size;
-    int32_t grid_ur_x = (searched_rect.get_ur_x() - offset_x) / box_size;
-    int32_t grid_ur_y = (searched_rect.get_ur_y() - offset_y) / box_size;
+    int32_t grid_ll_x = (searched_rect.get_ll_x() - offset_x) / grid_size;
+    int32_t grid_ll_y = (searched_rect.get_ll_y() - offset_y) / grid_size;
+    int32_t grid_ur_x = (searched_rect.get_ur_x() - offset_x) / grid_size;
+    int32_t grid_ur_y = (searched_rect.get_ur_y() - offset_y) / grid_size;
     for (int32_t grid_x = grid_ll_x; grid_x <= grid_ur_x; grid_x++) {
       for (int32_t grid_y = grid_ll_y; grid_y <= grid_ur_y; grid_y++) {
-        int32_t box_idx = grid_x + grid_y * grid_x_size;
-        if (static_cast<int32_t>(rv_box_list.size()) <= box_idx) {
-          DRCLOG.error(Loc::current(), "rv_box_list.size() <= box_idx!");
+        int32_t cluster_idx = grid_x + grid_y * grid_x_size;
+        if (static_cast<int32_t>(rv_cluster_list.size()) <= cluster_idx) {
+          DRCLOG.error(Loc::current(), "rv_cluster_list.size() <= cluster_idx!");
         }
-        rv_box_list[box_idx].get_drc_result_shape_list().push_back(&drc_result_shape);
+        rv_cluster_list[cluster_idx].get_drc_result_shape_list().push_back(&drc_result_shape);
       }
     }
   }
-  for (RVBox& rv_box : rv_box_list) {
-    rv_box.set_drc_check_type_set(&rv_model.get_drc_check_type_set());
-    rv_box.set_drc_check_region_list(&rv_model.get_drc_check_region_list());
+  for (RVCluster& rv_cluster : rv_cluster_list) {
+    rv_cluster.set_drc_check_type_set(&rv_model.get_drc_check_type_set());
+    rv_cluster.set_drc_check_region_list(&rv_model.get_drc_check_region_list());
   }
   for (DRCShape& drc_result_shape : rv_model.get_drc_result_shape_list()) {
     if (drc_result_shape.get_net_idx() < 0) {
@@ -184,23 +184,23 @@ void RuleValidator::verifyRVModel(RVModel& rv_model)
   Monitor monitor;
   DRCLOG.info(Loc::current(), "Starting...");
 #pragma omp parallel for
-  for (RVBox& rv_box : rv_model.get_rv_box_list()) {
-    buildRVBox(rv_box);
-    if (needVerifying(rv_box)) {
-      buildViolationSet(rv_box);
-      buildViolationList(rv_box);
-      // debugPlotRVBox(rv_box, "best");
+  for (RVCluster& rv_cluster : rv_model.get_rv_cluster_list()) {
+    buildRVCluster(rv_cluster);
+    if (needVerifying(rv_cluster)) {
+      buildEnvViolation(rv_cluster);
+      buildViolationList(rv_cluster);
+      // debugPlotRVCluster(rv_cluster, "best");
     }
   }
   DRCLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void RuleValidator::buildRVBox(RVBox& rv_box)
+void RuleValidator::buildRVCluster(RVCluster& rv_cluster)
 {
   std::map<int32_t, std::vector<int32_t>>& routing_to_adjacent_cut_map = DRCDM.getDatabase().get_routing_to_adjacent_cut_map();
 
-  std::vector<DRCShape>* drc_check_region_list = rv_box.get_drc_check_region_list();
-  int32_t expand_size = rv_box.get_rv_com_param()->get_expand_size();
+  std::vector<DRCShape>* drc_check_region_list = rv_cluster.get_drc_check_region_list();
+  int32_t expand_size = rv_cluster.get_rv_com_param()->get_expand_size();
 
   if (!drc_check_region_list->empty()) {
     std::vector<DRCShape*> drc_env_shape_list;
@@ -214,13 +214,13 @@ void RuleValidator::buildRVBox(RVBox& rv_box)
         std::vector<int32_t>& cut_layer_idx_list = routing_to_adjacent_cut_map[layer_idx];
         type_layer_idx_map[false].insert(cut_layer_idx_list.begin(), cut_layer_idx_list.end());
       }
-      for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+      for (DRCShape* drc_shape : rv_cluster.get_drc_env_shape_list()) {
         if (DRCUTIL.exist(type_layer_idx_map[drc_shape->get_is_routing()], drc_shape->get_layer_idx())
             && DRCUTIL.isClosedOverlap(searched_rect, drc_shape->get_rect())) {
           drc_env_shape_list.push_back(drc_shape);
         }
       }
-      for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+      for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
         if (DRCUTIL.exist(type_layer_idx_map[drc_shape->get_is_routing()], drc_shape->get_layer_idx())
             && DRCUTIL.isClosedOverlap(searched_rect, drc_shape->get_rect())) {
           drc_result_shape_list.push_back(drc_shape);
@@ -231,124 +231,126 @@ void RuleValidator::buildRVBox(RVBox& rv_box)
     drc_env_shape_list.erase(std::unique(drc_env_shape_list.begin(), drc_env_shape_list.end()), drc_env_shape_list.end());
     std::sort(drc_result_shape_list.begin(), drc_result_shape_list.end());
     drc_result_shape_list.erase(std::unique(drc_result_shape_list.begin(), drc_result_shape_list.end()), drc_result_shape_list.end());
-    rv_box.set_drc_env_shape_list(drc_env_shape_list);
-    rv_box.set_drc_result_shape_list(drc_result_shape_list);
+    rv_cluster.set_drc_env_shape_list(drc_env_shape_list);
+    rv_cluster.set_drc_result_shape_list(drc_result_shape_list);
   }
 }
 
-bool RuleValidator::needVerifying(RVBox& rv_box)
+bool RuleValidator::needVerifying(RVCluster& rv_cluster)
 {
-  if (rv_box.get_drc_result_shape_list().empty()) {
+  if (rv_cluster.get_drc_result_shape_list().empty()) {
     return false;
   }
-  for (DRCShape* drc_result_shape : rv_box.get_drc_result_shape_list()) {
-    if (DRCUTIL.isOpenOverlap(rv_box.get_box_rect(), drc_result_shape->get_rect())) {
-      return true;
+  for (DRCShape* drc_result_shape : rv_cluster.get_drc_result_shape_list()) {
+    for (PlanarRect& cluster_rect : rv_cluster.get_cluster_rect_list()) {
+      if (DRCUTIL.isOpenOverlap(cluster_rect, drc_result_shape->get_rect())) {
+        return true;
+      }
     }
   }
   return false;
 }
 
-void RuleValidator::buildViolationSet(RVBox& rv_box)
+void RuleValidator::buildEnvViolation(RVCluster& rv_cluster)
 {
-  std::vector<DRCShape*> temp = rv_box.get_drc_result_shape_list();
-  rv_box.get_drc_result_shape_list().clear();
-  verifyRVBox(rv_box);
-  processRVBox(rv_box);
-  for (Violation& violation : rv_box.get_violation_list()) {
-    rv_box.get_env_violation_set().insert(violation);
+  std::vector<DRCShape*> temp = rv_cluster.get_drc_result_shape_list();
+  rv_cluster.get_drc_result_shape_list().clear();
+  verifyRVCluster(rv_cluster);
+  processRVCluster(rv_cluster);
+  for (Violation& violation : rv_cluster.get_violation_list()) {
+    rv_cluster.get_env_violation_set().insert(violation);
   }
-  rv_box.set_drc_result_shape_list(temp);
-  rv_box.get_violation_list().clear();
+  rv_cluster.set_drc_result_shape_list(temp);
+  rv_cluster.get_violation_list().clear();
 }
 
-void RuleValidator::verifyRVBox(RVBox& rv_box)
+void RuleValidator::verifyRVCluster(RVCluster& rv_cluster)
 {
-  if (needVerifying(rv_box, ViolationType::kAdjacentCutSpacing)) {
-    verifyAdjacentCutSpacing(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kAdjacentCutSpacing)) {
+    verifyAdjacentCutSpacing(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kCornerFillSpacing)) {
-    verifyCornerFillSpacing(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kCornerFillSpacing)) {
+    verifyCornerFillSpacing(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kCornerSpacing)) {
-    verifyCornerSpacing(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kCornerSpacing)) {
+    verifyCornerSpacing(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kCutEOLSpacing)) {
-    verifyCutEOLSpacing(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kCutEOLSpacing)) {
+    verifyCutEOLSpacing(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kCutShort)) {
-    verifyCutShort(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kCutShort)) {
+    verifyCutShort(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kDifferentLayerCutSpacing)) {
-    verifyDifferentLayerCutSpacing(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kDifferentLayerCutSpacing)) {
+    verifyDifferentLayerCutSpacing(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kEnclosure)) {
-    verifyEnclosure(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kEnclosure)) {
+    verifyEnclosure(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kEnclosureEdge)) {
-    verifyEnclosureEdge(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kEnclosureEdge)) {
+    verifyEnclosureEdge(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kEnclosureParallel)) {
-    verifyEnclosureParallel(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kEnclosureParallel)) {
+    verifyEnclosureParallel(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kEndOfLineSpacing)) {
-    verifyEndOfLineSpacing(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kEndOfLineSpacing)) {
+    verifyEndOfLineSpacing(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kFloatingPatch)) {
-    verifyFloatingPatch(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kFloatingPatch)) {
+    verifyFloatingPatch(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kJogToJogSpacing)) {
-    verifyJogToJogSpacing(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kJogToJogSpacing)) {
+    verifyJogToJogSpacing(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kMaximumWidth)) {
-    verifyMaximumWidth(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kMaximumWidth)) {
+    verifyMaximumWidth(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kMaxViaStack)) {
-    verifyMaxViaStack(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kMaxViaStack)) {
+    verifyMaxViaStack(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kMetalShort)) {
-    verifyMetalShort(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kMetalShort)) {
+    verifyMetalShort(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kMinHole)) {
-    verifyMinHole(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kMinHole)) {
+    verifyMinHole(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kMinimumArea)) {
-    verifyMinimumArea(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kMinimumArea)) {
+    verifyMinimumArea(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kMinimumCut)) {
-    verifyMinimumCut(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kMinimumCut)) {
+    verifyMinimumCut(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kMinimumWidth)) {
-    verifyMinimumWidth(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kMinimumWidth)) {
+    verifyMinimumWidth(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kMinStep)) {
-    verifyMinStep(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kMinStep)) {
+    verifyMinStep(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kNonsufficientMetalOverlap)) {
-    verifyNonsufficientMetalOverlap(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kNonsufficientMetalOverlap)) {
+    verifyNonsufficientMetalOverlap(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kNotchSpacing)) {
-    verifyNotchSpacing(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kNotchSpacing)) {
+    verifyNotchSpacing(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kOffGridOrWrongWay)) {
-    verifyOffGridOrWrongWay(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kOffGridOrWrongWay)) {
+    verifyOffGridOrWrongWay(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kOutOfDie)) {
-    verifyOutOfDie(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kOutOfDie)) {
+    verifyOutOfDie(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kParallelRunLengthSpacing)) {
-    verifyParallelRunLengthSpacing(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kParallelRunLengthSpacing)) {
+    verifyParallelRunLengthSpacing(rv_cluster);
   }
-  if (needVerifying(rv_box, ViolationType::kSameLayerCutSpacing)) {
-    verifySameLayerCutSpacing(rv_box);
+  if (needVerifying(rv_cluster, ViolationType::kSameLayerCutSpacing)) {
+    verifySameLayerCutSpacing(rv_cluster);
   }
 }
 
-bool RuleValidator::needVerifying(RVBox& rv_box, ViolationType violation_type)
+bool RuleValidator::needVerifying(RVCluster& rv_cluster, ViolationType violation_type)
 {
   std::set<ViolationType>& exist_rule_set = DRCDM.getDatabase().get_exist_rule_set();
 
-  std::set<ViolationType>* drc_check_type_set = rv_box.get_drc_check_type_set();
+  std::set<ViolationType>* drc_check_type_set = rv_cluster.get_drc_check_type_set();
 
   if (drc_check_type_set->empty()) {
     return DRCUTIL.exist(exist_rule_set, violation_type);
@@ -357,39 +359,39 @@ bool RuleValidator::needVerifying(RVBox& rv_box, ViolationType violation_type)
   }
 }
 
-void RuleValidator::processRVBox(RVBox& rv_box)
+void RuleValidator::processRVCluster(RVCluster& rv_cluster)
 {
   std::vector<Violation> new_violation_list;
-  for (Violation& violation : rv_box.get_violation_list()) {
-    if (DRCUTIL.exist(rv_box.get_env_violation_set(), violation)) {
+  for (Violation& violation : rv_cluster.get_violation_list()) {
+    if (DRCUTIL.exist(rv_cluster.get_env_violation_set(), violation)) {
       continue;
     }
-    if (!DRCUTIL.isOpenOverlap(rv_box.get_box_rect(), violation.get_rect())) {
-      continue;
+    for (PlanarRect& cluster_rect : rv_cluster.get_cluster_rect_list()) {
+      if (!DRCUTIL.isOpenOverlap(cluster_rect, violation.get_rect())) {
+        continue;
+      }
     }
     new_violation_list.push_back(violation);
   }
   std::sort(new_violation_list.begin(), new_violation_list.end(), CmpViolation());
   new_violation_list.erase(std::unique(new_violation_list.begin(), new_violation_list.end()), new_violation_list.end());
-  rv_box.set_violation_list(new_violation_list);
+  rv_cluster.set_violation_list(new_violation_list);
 }
 
-void RuleValidator::buildViolationList(RVBox& rv_box)
+void RuleValidator::buildViolationList(RVCluster& rv_cluster)
 {
-  verifyRVBox(rv_box);
-  processRVBox(rv_box);
+  verifyRVCluster(rv_cluster);
+  processRVCluster(rv_cluster);
 }
 
 void RuleValidator::buildViolationList(RVModel& rv_model)
 {
-  for (RVBox& rv_box : rv_model.get_rv_box_list()) {
-    for (Violation& violation : rv_box.get_violation_list()) {
+  for (RVCluster& rv_cluster : rv_model.get_rv_cluster_list()) {
+    for (Violation& violation : rv_cluster.get_violation_list()) {
       rv_model.get_violation_list().push_back(violation);
     }
   }
 }
-
-
 
 #if 1  // aux
 
@@ -467,21 +469,23 @@ void RuleValidator::debugPlotRVModel(RVModel& rv_model, std::string flag)
   DRCGP.plot(gp_gds, gds_file_path);
 }
 
-void RuleValidator::debugPlotRVBox(RVBox& rv_box, std::string flag)
+void RuleValidator::debugPlotRVCluster(RVCluster& rv_cluster, std::string flag)
 {
   std::string& rv_temp_directory_path = DRCDM.getConfig().rv_temp_directory_path;
 
   GPGDS gp_gds;
 
   GPStruct base_region_struct("base_region");
-  GPBoundary gp_boundary;
-  gp_boundary.set_layer_idx(0);
-  gp_boundary.set_data_type(0);
-  gp_boundary.set_rect(rv_box.get_box_rect());
-  base_region_struct.push(gp_boundary);
+  for (PlanarRect& cluster_rect : rv_cluster.get_cluster_rect_list()) {
+    GPBoundary gp_boundary;
+    gp_boundary.set_layer_idx(0);
+    gp_boundary.set_data_type(0);
+    gp_boundary.set_rect(cluster_rect);
+    base_region_struct.push(gp_boundary);
+  }
   gp_gds.addStruct(base_region_struct);
 
-  for (DRCShape* drc_env_shape : rv_box.get_drc_env_shape_list()) {
+  for (DRCShape* drc_env_shape : rv_cluster.get_drc_env_shape_list()) {
     GPStruct drc_env_shape_struct(DRCUTIL.getString("drc_env_shape(net_", drc_env_shape->get_net_idx(), ")"));
     GPBoundary gp_boundary;
     gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kEnvShape));
@@ -495,7 +499,7 @@ void RuleValidator::debugPlotRVBox(RVBox& rv_box, std::string flag)
     gp_gds.addStruct(drc_env_shape_struct);
   }
 
-  for (DRCShape* drc_result_shape : rv_box.get_drc_result_shape_list()) {
+  for (DRCShape* drc_result_shape : rv_cluster.get_drc_result_shape_list()) {
     GPStruct drc_result_shape_struct(DRCUTIL.getString("drc_result_shape(net_", drc_result_shape->get_net_idx(), ")"));
     GPBoundary gp_boundary;
     gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kResultShape));
@@ -509,7 +513,7 @@ void RuleValidator::debugPlotRVBox(RVBox& rv_box, std::string flag)
     gp_gds.addStruct(drc_result_shape_struct);
   }
 
-  for (Violation& violation : rv_box.get_violation_list()) {
+  for (Violation& violation : rv_cluster.get_violation_list()) {
     std::string net_idx_name = DRCUTIL.getString("net");
     for (int32_t violation_net_idx : violation.get_violation_net_set()) {
       net_idx_name = DRCUTIL.getString(net_idx_name, ",", violation_net_idx);
@@ -527,7 +531,7 @@ void RuleValidator::debugPlotRVBox(RVBox& rv_box, std::string flag)
     gp_gds.addStruct(violation_struct);
   }
 
-  std::string gds_file_path = DRCUTIL.getString(rv_temp_directory_path, flag, "_rv_box_", rv_box.get_box_idx(), ".gds");
+  std::string gds_file_path = DRCUTIL.getString(rv_temp_directory_path, flag, "_rv_cluster_", rv_cluster.get_cluster_idx(), ".gds");
 
   DRCGP.plot(gp_gds, gds_file_path);
 }
