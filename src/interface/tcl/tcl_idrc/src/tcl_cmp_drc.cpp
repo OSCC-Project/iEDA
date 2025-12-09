@@ -14,24 +14,32 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
-
+#include "DRCInterface.hpp"
 #include "tcl_drc.h"
-
-using namespace ieda;
+#include "tcl_util.h"
 
 namespace tcl {
 
-int registerCmdDRC()
+TclCmpDRC::TclCmpDRC(const char* cmd_name) : TclCmd(cmd_name)
 {
-  registerTclCmd(TclCheckDef, "check_def");
-  registerTclCmd(TclDestroyDRC, "destroy_drc");
-  registerTclCmd(TclInitDRC, "init_drc");
-  registerTclCmd(TclCmpDRC, "cmp_drc");
+  _config_list.push_back(std::make_pair("-ref1_name", ValueType::kString));
+  _config_list.push_back(std::make_pair("-ref1_dir", ValueType::kString));
+  _config_list.push_back(std::make_pair("-ref2_name", ValueType::kString));
+  _config_list.push_back(std::make_pair("-ref2_dir", ValueType::kString));
+  _config_list.push_back(std::make_pair("-ref3_name", ValueType::kString));
+  _config_list.push_back(std::make_pair("-ref3_dir", ValueType::kString));
 
-  registerTclCmd(CmdDRCAutoRun, "run_drc");
-  registerTclCmd(CmdDRCSaveDetailFile, "save_drc");
-  return EXIT_SUCCESS;
+  TclUtil::addOption(this, _config_list);
+}
+
+unsigned TclCmpDRC::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+  std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
+  DRCI.cmpDRC(config_map);
+  return 1;
 }
 
 }  // namespace tcl
