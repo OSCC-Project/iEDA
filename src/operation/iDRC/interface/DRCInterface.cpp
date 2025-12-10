@@ -20,7 +20,6 @@
 #include "DataManager.hpp"
 #include "GDSPlotter.hpp"
 #include "Monitor.hpp"
-#include "NotificationUtility.h"
 #include "RuleValidator.hpp"
 #include "feature_manager.h"
 #include "idm.h"
@@ -185,16 +184,30 @@ void DRCInterface::wrapConfig(std::map<std::string, std::any>& config_map)
 
 void DRCInterface::wrapDatabase()
 {
+  wrapDBInfo();
   wrapMicronDBU();
+  wrapManufactureGrid();
   wrapDie();
   wrapDesignRule();
   wrapLayerList();
   wrapLayerInfo();
 }
 
+void DRCInterface::wrapDBInfo()
+{
+  DRCDM.getDatabase().set_design_name(dmInst->get_idb_def_service()->get_design()->get_design_name());
+  DRCDM.getDatabase().set_lef_file_path_list(dmInst->get_idb_lef_service()->get_lef_files());
+  DRCDM.getDatabase().set_def_file_path(dmInst->get_idb_def_service()->get_def_file());
+}
+
 void DRCInterface::wrapMicronDBU()
 {
   DRCDM.getDatabase().set_micron_dbu(dmInst->get_idb_def_service()->get_design()->get_units()->get_micron_dbu());
+}
+
+void DRCInterface::wrapManufactureGrid()
+{
+  DRCDM.getDatabase().set_manufacture_grid(dmInst->get_idb_lef_service()->get_layout()->get_munufacture_grid());
 }
 
 void DRCInterface::wrapDie()

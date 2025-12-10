@@ -54,7 +54,7 @@ class ERComParam
   int32_t get_expand_step_length() const { return _expand_step_length; }
   double get_via_unit() const { return _via_unit; }
   double get_overflow_unit() const { return _overflow_unit; }
-  double get_schedule_interval() const { return _schedule_interval; }
+  int32_t get_schedule_interval() const { return _schedule_interval; }
   // setter
   void set_stage(std::string& stage) { _stage = stage; }
   void set_resolve_congestion(std::string& resolve_congestion) { _resolve_congestion = resolve_congestion; }
@@ -67,7 +67,7 @@ class ERComParam
   void set_expand_step_length(const int32_t expand_step_length) { _expand_step_length = expand_step_length; }
   void set_via_unit(const double via_unit) { _via_unit = via_unit; }
   void set_overflow_unit(const double overflow_unit) { _overflow_unit = overflow_unit; }
-  void set_schedule_interval(const double schedule_interval) { _schedule_interval = schedule_interval; }
+  void set_schedule_interval(const int32_t schedule_interval) { _schedule_interval = schedule_interval; }
 
  private:
   std::string _stage;

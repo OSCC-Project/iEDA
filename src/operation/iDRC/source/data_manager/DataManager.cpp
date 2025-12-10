@@ -323,9 +323,20 @@ void DataManager::printDatabase()
   ////////////////////////////////////////////////
   // ********** DRC ********** //
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(0), "DRC_DATABASE");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "design_name");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _database.get_design_name());
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "lef_file_path_list");
+  for (std::string& lef_file_path : _database.get_lef_file_path_list()) {
+    DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), lef_file_path);
+  }
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "def_file_path");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _database.get_def_file_path());
   // **********     MicronDBU     ********** //
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "micron_dbu");
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _database.get_micron_dbu());
+  // **********  ManufactureGrid  ********** //
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "manufacture_grid");
+  DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(2), _database.get_manufacture_grid());
   // **********        Die        ********** //
   Die& die = _database.get_die();
   DRCLOG.info(Loc::current(), DRCUTIL.getSpaceByTabNum(1), "die");
