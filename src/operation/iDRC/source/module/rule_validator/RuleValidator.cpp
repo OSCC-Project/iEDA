@@ -366,10 +366,15 @@ void RuleValidator::processRVCluster(RVCluster& rv_cluster)
     if (DRCUTIL.exist(rv_cluster.get_env_violation_set(), violation)) {
       continue;
     }
+    bool has_overlap = false;
     for (PlanarRect& cluster_rect : rv_cluster.get_cluster_rect_list()) {
-      if (!DRCUTIL.isOpenOverlap(cluster_rect, violation.get_rect())) {
-        continue;
+      if (DRCUTIL.isOpenOverlap(cluster_rect, violation.get_rect())) {
+        has_overlap = true;
+        break;
       }
+    }
+    if (!has_overlap) {
+      continue;
     }
     new_violation_list.push_back(violation);
   }
