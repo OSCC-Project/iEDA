@@ -139,7 +139,7 @@ class PinAccessor
   void uploadViolation(PAModel& pa_model);
   std::vector<Violation> getRouteViolationList(PAModel& pa_model);
   void updateBestResult(PAModel& pa_model);
-  bool stopIteration(PAModel& pa_model);
+  bool stopIteration(PAModel& pa_model, std::vector<PAIterParam>& pa_iter_param_list);
   void selectBestResult(PAModel& pa_model);
   void uploadBestResult(PAModel& pa_model);
   void uploadAccessPoint(PAModel& pa_model);

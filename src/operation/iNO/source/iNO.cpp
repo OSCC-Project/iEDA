@@ -44,6 +44,13 @@ void iNO::initialization(idb::IdbBuilder *idb_build, ista::TimingEngine *timing)
   _db_interface = ino::DbInterface::get_db_interface(_no_config, idb_build, timing);
 }
 
+void iNO::fixIO() {
+  cout << "fixIO" << endl;
+  ino::FixFanout *fix_fanout = new FixFanout(_db_interface);
+  fix_fanout->fixIO();
+  delete fix_fanout;
+}
+
 void iNO::fixFanout() {
   cout << "\033[1;35m" << endl;
   cout << R"(  ______ _        ______                      _    )" << endl;
@@ -55,7 +62,6 @@ void iNO::fixFanout() {
   cout << R"(                                                   )" << endl;
   cout << "\033[0m" << endl;
   ino::FixFanout *fix_fanout = new FixFanout(_db_interface);
-  fix_fanout->fixIO();
   fix_fanout->fixFanout();
   delete fix_fanout;
 }

@@ -43,6 +43,7 @@ class NoApi {
   // void resetiTOData(idb::IdbBuilder *idb, ista::TimingEngine *timing = nullptr);
   // // function API
   void fixFanout();
+  void fixIO();
 
   void saveDef(std::string saved_def_path = "");
 

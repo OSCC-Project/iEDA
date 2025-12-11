@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #include "EarlyRouter.hpp"
 
+#include "ERStage.hpp"
 #include "GDSPlotter.hpp"
 #include "Monitor.hpp"
 #include "RTInterface.hpp"
@@ -68,8 +69,7 @@ void EarlyRouter::route(std::map<std::string, std::any> config_map)
   analyzeSupply(er_model);
   buildIgnoreNet(er_model);
   analyzeDemandUnit(er_model);
-  if (er_model.get_er_com_param().get_stage() == "egr2D" || er_model.get_er_com_param().get_stage() == "egr3D"
-      || er_model.get_er_com_param().get_stage() == "edr") {
+  if (GetERStageByName()(er_model.get_er_com_param().get_stage()) >= ERStage::kEgr2D) {
     buildPlanarNodeMap(er_model);
     buildPlanarNodeNeighbor(er_model);
     buildPlanarOrientSupply(er_model);
@@ -80,7 +80,7 @@ void EarlyRouter::route(std::map<std::string, std::any> config_map)
     outputPlanarOverflowCSV(er_model);
     // debugPlotERModel(er_model, "tg");
   }
-  if (er_model.get_er_com_param().get_stage() == "egr3D" || er_model.get_er_com_param().get_stage() == "edr") {
+  if (GetERStageByName()(er_model.get_er_com_param().get_stage()) >= ERStage::kEgr3D) {
     buildLayerNodeMap(er_model);
     buildLayerNodeNeighbor(er_model);
     buildLayerOrientSupply(er_model);
@@ -92,7 +92,7 @@ void EarlyRouter::route(std::map<std::string, std::any> config_map)
     outputLayerOverflowCSV(er_model);
     // debugPlotERModel(er_model, "la");
   }
-  if (er_model.get_er_com_param().get_stage() == "edr") {
+  if (GetERStageByName()(er_model.get_er_com_param().get_stage()) >= ERStage::kEdr) {
     initERPanelMap(er_model);
     buildPanelSchedule(er_model);
     assignTrack(er_model);
@@ -103,8 +103,7 @@ void EarlyRouter::route(std::map<std::string, std::any> config_map)
     updateNetResult(er_model);
     updateNetPatch(er_model);
     // debugPlotERModel(er_model, "dr");
-  }
-  if (er_model.get_er_com_param().get_stage() != "edr") {
+  } else {
     cleanTempResult(er_model);
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -2499,7 +2498,7 @@ void EarlyRouter::routeERBox(ERBox& er_box)
   EXTPlanarRect& box_rect = er_box.get_box_rect();
   PlanarRect& box_real_rect = box_rect.get_real_rect();
 
-  std::map<int32_t, std::set<AccessPoint*>> net_access_point_map = RTDM.getNetAccessPointMap(box_rect);
+  std::map<int32_t, std::set<AccessPoint*, CmpAccessPoint>> net_access_point_map = RTDM.getNetAccessPointMap(box_rect);
   std::map<int32_t, std::vector<Segment<LayerCoord>>> net_task_detailed_result_map;
   for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(box_rect)) {
     for (Segment<LayerCoord>* segment : segment_set) {

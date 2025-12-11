@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void RuleValidator::verifyEnclosureParallel(RVBox& rv_box)
+void RuleValidator::verifyEnclosureParallel(RVCluster& rv_cluster)
 {
 #if 1  // 数据结构定义
   struct PolyInfo
@@ -37,12 +37,12 @@ void RuleValidator::verifyEnclosureParallel(RVBox& rv_box)
   std::map<int32_t, std::map<int32_t, std::vector<PolyInfo>>> routing_net_poly_info_map;
   {
     std::map<int32_t, std::map<int32_t, GTLPolySetInt>> routing_net_gtl_poly_set_map;
-    for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+    for (DRCShape* drc_shape : rv_cluster.get_drc_env_shape_list()) {
       if (drc_shape->get_is_routing()) {
         routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
       }
     }
-    for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+    for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
       if (drc_shape->get_is_routing()) {
         routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
       }
@@ -98,7 +98,7 @@ void RuleValidator::verifyEnclosureParallel(RVBox& rv_box)
     }
   }
   std::map<int32_t, std::vector<PlanarRect>> cut_rect_map;
-  for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+  for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
     if (!drc_shape->get_is_routing()) {
       cut_rect_map[drc_shape->get_layer_idx()].push_back(drc_shape->get_rect());
     }
@@ -255,7 +255,7 @@ void RuleValidator::verifyEnclosureParallel(RVBox& rv_box)
               violation.set_layer_idx(below_routing_layer_idx);
               violation.set_rect(cut_rect);
               violation.set_required_size(curr_rule.overhang);
-              rv_box.get_violation_list().push_back(violation);
+              rv_cluster.get_violation_list().push_back(violation);
             }
           }
         }

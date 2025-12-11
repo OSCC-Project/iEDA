@@ -17,7 +17,7 @@
 #include "RuleValidator.hpp"
 
 namespace idrc {
-void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
+void RuleValidator::verifyCutEOLSpacing(RVCluster& rv_cluster)
 {
   std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DRCDM.getDatabase().get_cut_layer_list();
@@ -26,12 +26,12 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
 
   std::map<int32_t, GTLPolySetInt> routing_gtl_poly_set_map;
   {
-    for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+    for (DRCShape* drc_shape : rv_cluster.get_drc_env_shape_list()) {
       if (drc_shape->get_is_routing()) {
         routing_gtl_poly_set_map[drc_shape->get_layer_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
       }
     }
-    for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+    for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
       if (drc_shape->get_is_routing()) {
         routing_gtl_poly_set_map[drc_shape->get_layer_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
       }
@@ -47,12 +47,12 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
   }
   std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> cut_bg_rtree_map;
   {
-    for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+    for (DRCShape* drc_shape : rv_cluster.get_drc_env_shape_list()) {
       if (!drc_shape->get_is_routing()) {
         cut_bg_rtree_map[drc_shape->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(drc_shape->get_rect()), drc_shape->get_net_idx()));
       }
     }
-    for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+    for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
       if (!drc_shape->get_is_routing()) {
         cut_bg_rtree_map[drc_shape->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(drc_shape->get_rect()), drc_shape->get_net_idx()));
       }
@@ -327,7 +327,7 @@ void RuleValidator::verifyCutEOLSpacing(RVBox& rv_box)
             violation.set_layer_idx(violation_routing_layer_idx);
             violation.set_rect(violation_rect);
             violation.set_required_size(required_size);
-            rv_box.get_violation_list().push_back(violation);
+            rv_cluster.get_violation_list().push_back(violation);
           }
         }
       }

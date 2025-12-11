@@ -578,7 +578,7 @@ void PinAccessor::routePAModel(PAModel& pa_model)
     outputJson(pa_model);
     RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", pa_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, pa_iter_param_list.size()), ")",
                iter_monitor.getStatsInfo(), "*****");
-    if (stopIteration(pa_model)) {
+    if (stopIteration(pa_model, pa_iter_param_list)) {
       break;
     }
   }
@@ -2390,7 +2390,7 @@ void PinAccessor::updateTaskSchedule(PABox& pa_box, std::vector<PATask*>& routin
 {
   int32_t max_routed_times = pa_box.get_pa_iter_param()->get_max_routed_times();
 
-  std::set<PATask*> visited_routing_task_set;
+  std::set<PATask*, CmpPATask> visited_routing_task_set;
   std::vector<PATask*> new_routing_task_list;
   for (Violation& violation : pa_box.get_route_violation_list()) {
     EXTLayerRect& violation_shape = violation.get_violation_shape();
@@ -2604,9 +2604,9 @@ void PinAccessor::updateBestResult(PAModel& pa_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-bool PinAccessor::stopIteration(PAModel& pa_model)
+bool PinAccessor::stopIteration(PAModel& pa_model, std::vector<PAIterParam>& pa_iter_param_list)
 {
-  if (getRouteViolationNum(pa_model) == 0) {
+  if (pa_model.get_iter() != static_cast<int32_t>(pa_iter_param_list.size()) && getRouteViolationNum(pa_model) == 0) {
     RTLOG.info(Loc::current(), "***** Iteration stopped early *****");
     return true;
   }

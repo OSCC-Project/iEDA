@@ -20,6 +20,7 @@
 #include "LayerCoord.hpp"
 #include "Orientation.hpp"
 #include "RTHeader.hpp"
+#include "SortStatus.hpp"
 
 namespace irt {
 
@@ -44,6 +45,75 @@ class AccessPoint : public EXTLayerCoord
 
  private:
   int32_t _pin_idx = -1;
+};
+
+struct CmpAccessPoint
+{
+  bool operator()(const AccessPoint& a, const AccessPoint& b) const
+  {
+    SortStatus sort_status = SortStatus::kEqual;
+
+    if (sort_status == SortStatus::kEqual) {
+      int32_t a_pin_idx = a.get_pin_idx();
+      int32_t b_pin_idx = b.get_pin_idx();
+      if (a_pin_idx < b_pin_idx) {
+        sort_status = SortStatus::kTrue;
+      } else if (a_pin_idx == b_pin_idx) {
+        sort_status = SortStatus::kEqual;
+      } else {
+        sort_status = SortStatus::kFalse;
+      }
+    }
+
+    if (sort_status == SortStatus::kEqual) {
+      int32_t a_layer_idx = a.get_layer_idx();
+      int32_t b_layer_idx = b.get_layer_idx();
+      if (a_layer_idx < b_layer_idx) {
+        sort_status = SortStatus::kTrue;
+      } else if (a_layer_idx == b_layer_idx) {
+        sort_status = SortStatus::kEqual;
+      } else {
+        sort_status = SortStatus::kFalse;
+      }
+    }
+
+    if (sort_status == SortStatus::kEqual) {
+      const PlanarCoord& a_real_coord = a.get_real_coord();
+      const PlanarCoord& b_real_coord = b.get_real_coord();
+      if (a_real_coord != b_real_coord) {
+        if (CmpPlanarCoordByXASC()(a_real_coord, b_real_coord)) {
+          sort_status = SortStatus::kTrue;
+        } else {
+          sort_status = SortStatus::kFalse;
+        }
+      } else {
+        sort_status = SortStatus::kEqual;
+      }
+    }
+
+    if (sort_status == SortStatus::kEqual) {
+      const PlanarCoord& a_grid_coord = a.get_grid_coord();
+      const PlanarCoord& b_grid_coord = b.get_grid_coord();
+      if (a_grid_coord != b_grid_coord) {
+        if (CmpPlanarCoordByXASC()(a_grid_coord, b_grid_coord)) {
+          sort_status = SortStatus::kTrue;
+        } else {
+          sort_status = SortStatus::kFalse;
+        }
+      } else {
+        sort_status = SortStatus::kEqual;
+      }
+    }
+
+    if (sort_status == SortStatus::kTrue) {
+      return true;
+    } else if (sort_status == SortStatus::kFalse) {
+      return false;
+    }
+    return false;
+  }
+
+  bool operator()(const AccessPoint* a, const AccessPoint* b) const { return operator()(*a, *b); }
 };
 
 }  // namespace irt

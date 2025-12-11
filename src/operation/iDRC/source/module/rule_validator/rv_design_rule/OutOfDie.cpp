@@ -18,13 +18,13 @@
 
 namespace idrc {
 
-void RuleValidator::verifyOutOfDie(RVBox& rv_box)
+void RuleValidator::verifyOutOfDie(RVCluster& rv_cluster)
 {
   Die& die = DRCDM.getDatabase().get_die();
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = DRCDM.getDatabase().get_cut_to_adjacent_routing_map();
 
   std::map<int32_t, std::map<int32_t, GTLPolySetInt>> routing_net_gtl_poly_set_map;
-  for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+  for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
     if (DRCUTIL.isInside(die, drc_shape->get_rect())) {
       continue;
     }
@@ -52,7 +52,7 @@ void RuleValidator::verifyOutOfDie(RVBox& rv_box)
         violation.set_required_size(0);
         violation.set_layer_idx(routing_layer_idx);
         violation.set_rect(DRCUTIL.convertToPlanarRect(gtl_rect));
-        rv_box.get_violation_list().push_back(violation);
+        rv_cluster.get_violation_list().push_back(violation);
       }
     }
   }

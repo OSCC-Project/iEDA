@@ -37,6 +37,7 @@ class NoIO
   }
 
   /// io
+  bool runNOFixIO(std::string config = "");
   bool runNOFixFanout(std::string config = "");
 
  private:

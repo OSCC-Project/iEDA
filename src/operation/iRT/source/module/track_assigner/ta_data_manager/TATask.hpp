@@ -36,7 +36,9 @@ class TATask
   PlanarRect& get_bounding_box() { return _bounding_box; }
   int32_t get_routed_times() const { return _routed_times; }
   // const getter
+  const int32_t get_net_idx() const { return _net_idx; }
   const ConnectType& get_connect_type() const { return _connect_type; }
+  const std::vector<TAGroup>& get_ta_group_list() const { return _ta_group_list; }
   const PlanarRect& get_bounding_box() const { return _bounding_box; }
   // setter
   void set_net_idx(const int32_t net_idx) { _net_idx = net_idx; }
@@ -86,16 +88,44 @@ struct CmpTATask
         sort_status = SortStatus::kFalse;
       }
     }
-    // 常规排序
+
     if (sort_status == SortStatus::kEqual) {
-      if (a > b) {
+      int32_t a_net_idx = a->get_net_idx();
+      int32_t b_net_idx = b->get_net_idx();
+      if (a_net_idx < b_net_idx) {
         sort_status = SortStatus::kTrue;
-      } else if (a == b) {
+      } else if (a_net_idx == b_net_idx) {
         sort_status = SortStatus::kEqual;
       } else {
         sort_status = SortStatus::kFalse;
       }
     }
+
+    if (sort_status == SortStatus::kEqual) {
+      std::vector<LayerCoord> a_coord_list;
+      std::vector<LayerCoord> b_coord_list;
+      for (const TAGroup& ta_group : a->get_ta_group_list()) {
+        for (const LayerCoord& coord : ta_group.get_coord_list()) {
+          a_coord_list.push_back(coord);
+        }
+      }
+      for (const TAGroup& ta_group : b->get_ta_group_list()) {
+        for (const LayerCoord& coord : ta_group.get_coord_list()) {
+          b_coord_list.push_back(coord);
+        }
+      }
+      std::sort(a_coord_list.begin(), a_coord_list.end(), CmpLayerCoordByLayerASC());
+      std::sort(b_coord_list.begin(), b_coord_list.end(), CmpLayerCoordByLayerASC());
+
+      if (std::lexicographical_compare(a_coord_list.begin(), a_coord_list.end(), b_coord_list.begin(), b_coord_list.end(), CmpLayerCoordByLayerASC())) {
+        sort_status = SortStatus::kTrue;
+      } else if (a_coord_list == b_coord_list) {
+        sort_status = SortStatus::kEqual;
+      } else {
+        sort_status = SortStatus::kFalse;
+      }
+    }
+
     if (sort_status == SortStatus::kTrue) {
       return true;
     } else if (sort_status == SortStatus::kFalse) {

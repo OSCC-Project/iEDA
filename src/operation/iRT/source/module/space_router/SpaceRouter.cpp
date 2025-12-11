@@ -209,7 +209,7 @@ void SpaceRouter::routeSRModel(SRModel& sr_model)
     outputJson(sr_model);
     RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", sr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, sr_iter_param_list.size()), ")",
                iter_monitor.getStatsInfo(), "*****");
-    if (stopIteration(sr_model)) {
+    if (stopIteration(sr_model, sr_iter_param_list)) {
       break;
     }
   }
@@ -502,7 +502,7 @@ void SpaceRouter::initSRTaskList(SRModel& sr_model, SRBox& sr_box)
 
   EXTPlanarRect& box_rect = sr_box.get_box_rect();
   PlanarRect& box_grid_rect = box_rect.get_grid_rect();
-  std::map<int32_t, std::set<AccessPoint*>> net_access_point_map = RTDM.getNetAccessPointMap(box_rect);
+  std::map<int32_t, std::set<AccessPoint*, CmpAccessPoint>> net_access_point_map = RTDM.getNetAccessPointMap(box_rect);
   std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_task_global_result_map = sr_box.get_net_task_global_result_map();
 
   std::map<int32_t, std::vector<SRGroup>> net_group_list_map;
@@ -568,6 +568,8 @@ void SpaceRouter::initSRTaskList(SRModel& sr_model, SRBox& sr_box)
     if (sr_group_list.size() < 2) {
       continue;
     }
+    std::sort(sr_group_list.begin(), sr_group_list.end(),
+              [](SRGroup& a, SRGroup& b) { return CmpLayerCoordByXASC()(a.get_coord_list().front(), b.get_coord_list().front()); });
     SRTask* sr_task = new SRTask();
     sr_task->set_net_idx(net_idx);
     sr_task->set_connect_type(sr_net_list[net_idx].get_connect_type());
@@ -1352,9 +1354,9 @@ void SpaceRouter::updateBestResult(SRModel& sr_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-bool SpaceRouter::stopIteration(SRModel& sr_model)
+bool SpaceRouter::stopIteration(SRModel& sr_model, std::vector<SRIterParam>& sr_iter_param_list)
 {
-  if (getOverflow(sr_model) == 0) {
+  if (sr_model.get_iter() != static_cast<int32_t>(sr_iter_param_list.size()) && getOverflow(sr_model) == 0) {
     RTLOG.info(Loc::current(), "***** Iteration stopped early *****");
     return true;
   }

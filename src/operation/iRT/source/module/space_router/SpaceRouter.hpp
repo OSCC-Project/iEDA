@@ -105,7 +105,7 @@ class SpaceRouter
   double getOverflow(SRModel& sr_model);
   void uploadNetResult(SRModel& sr_model);
   void updateBestResult(SRModel& sr_model);
-  bool stopIteration(SRModel& sr_model);
+  bool stopIteration(SRModel& sr_model, std::vector<SRIterParam>& sr_iter_param_list);
   void selectBestResult(SRModel& sr_model);
   void uploadBestResult(SRModel& sr_model);
 

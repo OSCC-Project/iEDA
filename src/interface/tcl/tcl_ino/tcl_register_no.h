@@ -34,6 +34,7 @@ namespace tcl {
 int registerCmdNO()
 {
   registerTclCmd(CmdNORunFixFanout, "run_no_fixfanout");
+  registerTclCmd(CmdNORunFixIO, "run_no_fixIO");
   registerTclCmd(CmdNOConfig, "no_config");
   return EXIT_SUCCESS;
 }

@@ -1254,14 +1254,16 @@ class Utility
 
   // 通过树根节点和边集构建一棵树,也会消除多个连通分量
   template <typename T>
-  static MTree<T> getTreeBySegList(const T& root_value, const std::vector<Segment<T>>& segment_list)
+  static MTree<T> getTreeBySegListByT(const T& root_value, const std::vector<Segment<T>>& segment_list)
   {
     std::vector<std::pair<bool, Segment<T>>> visited_value_pair_list;
+    std::vector<T> visited_node_list;
     visited_value_pair_list.reserve(segment_list.size());
     for (size_t i = 0; i < segment_list.size(); i++) {
       visited_value_pair_list.emplace_back(false, segment_list[i]);
     }
     TNode<T>* root = new TNode(root_value);
+    visited_node_list.push_back(root_value);
     std::queue<TNode<T>*> node_queue = initQueue(root);
     while (!node_queue.empty()) {
       TNode<T>* node = getFrontAndPop(node_queue);
@@ -1276,6 +1278,11 @@ class Utility
         T& value1 = visited_value_pair.second.get_first();
         T& value2 = visited_value_pair.second.get_second();
         if (value == value1 || value == value2) {
+          T target_value = (value == value1 ? value2 : value1);
+          if (exist(visited_node_list, target_value)) {
+            continue;
+          }
+          visited_node_list.push_back(target_value);
           TNode<T>* child_node = (value == value1 ? new TNode(value2) : new TNode(value1));
           next_node_list.push_back(child_node);
           node->addChild(child_node);
@@ -1864,6 +1871,10 @@ class Utility
   static void mergeOverlapSegment(std::vector<Segment<LayerCoord>>& segment_list,
                                   std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC>& key_coord_pin_map)
   {
+    auto getListByBound = [](const std::set<int32_t>& set, int32_t lower_bound, int32_t upper_bound) {
+      return std::vector<int32_t>(set.lower_bound(lower_bound), set.upper_bound(upper_bound));
+    };
+
     std::vector<Segment<LayerCoord>> h_segment_list;
     std::vector<Segment<LayerCoord>> v_segment_list;
     std::vector<Segment<LayerCoord>> p_segment_list;
@@ -1891,26 +1902,25 @@ class Utility
     p_segment_list = p_segment_list_temp;
 
     // 初始化平面切点
-    std::map<int32_t, std::set<int32_t>> x_cut_list_map;
-    std::map<int32_t, std::set<int32_t>> y_cut_list_map;
-
+    std::map<int32_t, std::set<int32_t>> x_cut_set_map;
+    std::map<int32_t, std::set<int32_t>> y_cut_set_map;
     for (Segment<LayerCoord>& h_segment : h_segment_list) {
       LayerCoord& first_coord = h_segment.get_first();
       LayerCoord& second_coord = h_segment.get_second();
       int32_t layer_idx = first_coord.get_layer_idx();
 
-      x_cut_list_map[layer_idx].insert(first_coord.get_x());
-      x_cut_list_map[layer_idx].insert(second_coord.get_x());
-      y_cut_list_map[layer_idx].insert(first_coord.get_y());
+      x_cut_set_map[layer_idx].insert(first_coord.get_x());
+      x_cut_set_map[layer_idx].insert(second_coord.get_x());
+      y_cut_set_map[layer_idx].insert(first_coord.get_y());
     }
     for (Segment<LayerCoord>& v_segment : v_segment_list) {
       LayerCoord& first_coord = v_segment.get_first();
       LayerCoord& second_coord = v_segment.get_second();
       int32_t layer_idx = first_coord.get_layer_idx();
 
-      y_cut_list_map[layer_idx].insert(first_coord.get_y());
-      y_cut_list_map[layer_idx].insert(second_coord.get_y());
-      x_cut_list_map[layer_idx].insert(first_coord.get_x());
+      y_cut_set_map[layer_idx].insert(first_coord.get_y());
+      y_cut_set_map[layer_idx].insert(second_coord.get_y());
+      x_cut_set_map[layer_idx].insert(first_coord.get_x());
     }
     for (Segment<LayerCoord>& p_segment : p_segment_list) {
       LayerCoord& first_coord = p_segment.get_first();
@@ -1919,15 +1929,15 @@ class Utility
       LayerCoord& second_coord = p_segment.get_second();
       int32_t second_layer_idx = second_coord.get_layer_idx();
 
-      x_cut_list_map[first_layer_idx].insert(first_coord.get_x());
-      y_cut_list_map[first_layer_idx].insert(first_coord.get_y());
-      x_cut_list_map[second_layer_idx].insert(second_coord.get_x());
-      y_cut_list_map[second_layer_idx].insert(second_coord.get_y());
+      x_cut_set_map[first_layer_idx].insert(first_coord.get_x());
+      y_cut_set_map[first_layer_idx].insert(first_coord.get_y());
+      x_cut_set_map[second_layer_idx].insert(second_coord.get_x());
+      y_cut_set_map[second_layer_idx].insert(second_coord.get_y());
     }
     for (auto& [key_coord, pin_idx_set] : key_coord_pin_map) {
       int32_t layer_idx = key_coord.get_layer_idx();
-      x_cut_list_map[layer_idx].insert(key_coord.get_x());
-      y_cut_list_map[layer_idx].insert(key_coord.get_y());
+      x_cut_set_map[layer_idx].insert(key_coord.get_x());
+      y_cut_set_map[layer_idx].insert(key_coord.get_y());
     }
 
     // 切割平面的h线
@@ -1939,12 +1949,7 @@ class Utility
       int32_t layer_idx = h_segment.get_first().get_layer_idx();
 
       swapByASC(first_x, second_x);
-      std::vector<int32_t> x_list;
-      for (int32_t x_cut : x_cut_list_map[layer_idx]) {
-        if (first_x <= x_cut && x_cut <= second_x) {
-          x_list.push_back(x_cut);
-        }
-      }
+      std::vector<int32_t> x_list = getListByBound(x_cut_set_map[layer_idx], first_x, second_x);
       for (size_t i = 1; i < x_list.size(); i++) {
         LayerCoord first_coord(x_list[i - 1], y, layer_idx);
         LayerCoord second_coord(x_list[i], y, layer_idx);
@@ -1962,12 +1967,7 @@ class Utility
       int32_t layer_idx = v_segment.get_first().get_layer_idx();
 
       swapByASC(first_y, second_y);
-      std::vector<int32_t> y_list;
-      for (int32_t y_cut : y_cut_list_map[layer_idx]) {
-        if (first_y <= y_cut && y_cut <= second_y) {
-          y_list.push_back(y_cut);
-        }
-      }
+      std::vector<int32_t> y_list = getListByBound(y_cut_set_map[layer_idx], first_y, second_y);
       for (size_t i = 1; i < y_list.size(); i++) {
         LayerCoord first_coord(x, y_list[i - 1], layer_idx);
         LayerCoord second_coord(x, y_list[i], layer_idx);
@@ -2024,6 +2024,90 @@ class Utility
       root_coord = candidate_root_coord_list.front();
     }
     return root_coord;
+  }
+
+  // 构建树并通过最小生成树算法去环
+  static MTree<LayerCoord> getTreeBySegList(const LayerCoord& root_value, const std::vector<Segment<LayerCoord>>& segment_list)
+  {
+    if (segment_list.empty()) {
+      return MTree<LayerCoord>(new TNode<LayerCoord>(root_value));
+    }
+    std::map<LayerCoord, int32_t, CmpLayerCoordByXASC> coord_to_idx;
+    {
+      std::vector<LayerCoord> coord_list;
+      coord_list.push_back(root_value);
+      for (const Segment<LayerCoord>& segment : segment_list) {
+        coord_list.push_back(segment.get_first());
+        coord_list.push_back(segment.get_second());
+      }
+      std::sort(coord_list.begin(), coord_list.end(), CmpLayerCoordByXASC());
+      coord_list.erase(std::unique(coord_list.begin(), coord_list.end()), coord_list.end());
+      for (size_t i = 0; i < coord_list.size(); i++) {
+        coord_to_idx[coord_list[i]] = static_cast<int32_t>(i);
+      }
+    }
+    // Kruskal算法：使用并查集构建最小生成树
+    std::map<LayerCoord, std::vector<LayerCoord>, CmpLayerCoordByXASC> adjacency_map;
+    {
+      std::map<int32_t, std::vector<int32_t>> distance_idx_map;
+      for (size_t i = 0; i < segment_list.size(); i++) {
+        distance_idx_map[getManhattanDistance(segment_list[i].get_first(), segment_list[i].get_second())].push_back(static_cast<int32_t>(i));
+      }
+      std::vector<int32_t> union_parent(coord_to_idx.size());
+      for (size_t i = 0; i < union_parent.size(); i++) {
+        union_parent[i] = static_cast<int32_t>(i);
+      }
+      for (auto& [distance, idx_list] : distance_idx_map) {
+        for (int32_t idx : idx_list) {
+          const Segment<LayerCoord>& segment = segment_list[idx];
+          int32_t idx1 = coord_to_idx[segment.get_first()];
+          int32_t idx2 = coord_to_idx[segment.get_second()];
+          // 查找根节点（带路径压缩）
+          int32_t root1 = idx1;
+          while (union_parent[root1] != root1) {
+            int32_t next = union_parent[root1];
+            union_parent[root1] = union_parent[next];
+            root1 = next;
+          }
+          int32_t root2 = idx2;
+          while (union_parent[root2] != root2) {
+            int32_t next = union_parent[root2];
+            union_parent[root2] = union_parent[next];
+            root2 = next;
+          }
+          // 如果不在同一集合，则合并
+          if (root1 != root2) {
+            union_parent[root1] = root2;
+            adjacency_map[segment.get_first()].push_back(segment.get_second());
+            adjacency_map[segment.get_second()].push_back(segment.get_first());
+          }
+        }
+      }
+    }
+    // BFS构建树结构
+    TNode<LayerCoord>* root = new TNode<LayerCoord>(root_value);
+    {
+      std::map<LayerCoord, TNode<LayerCoord>*, CmpLayerCoordByXASC> coord_to_node_map;
+      coord_to_node_map[root_value] = root;
+      std::queue<TNode<LayerCoord>*> queue = initQueue(root);
+      while (!queue.empty()) {
+        TNode<LayerCoord>* current_node = getFrontAndPop(queue);
+        LayerCoord current_coord = current_node->value();
+        if (!exist(adjacency_map, current_coord)) {
+          continue;
+        }
+        for (LayerCoord neighbor_coord : adjacency_map[current_coord]) {
+          if (exist(coord_to_node_map, neighbor_coord)) {
+            continue;
+          }
+          TNode<LayerCoord>* child_node = new TNode<LayerCoord>(neighbor_coord);
+          current_node->addChild(child_node);
+          coord_to_node_map[neighbor_coord] = child_node;
+          queue.push(child_node);
+        }
+      }
+    }
+    return MTree<LayerCoord>(root);
   }
 
   // 删除无效(没有关键坐标的子树)的结点

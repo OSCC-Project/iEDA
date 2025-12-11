@@ -19,18 +19,18 @@
 
 namespace idrc {
 
-void RuleValidator::verifyMinimumWidth(RVBox& rv_box)
+void RuleValidator::verifyMinimumWidth(RVCluster& rv_cluster)
 {
   std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
 
   std::map<int32_t, std::map<int32_t, GTLPolySetInt>> routing_net_gtl_poly_set_map;
-  for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+  for (DRCShape* drc_shape : rv_cluster.get_drc_env_shape_list()) {
     if (!drc_shape->get_is_routing() || drc_shape->get_net_idx() == -1) {
       continue;
     }
     routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
   }
-  for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+  for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
     if (!drc_shape->get_is_routing()) {
       continue;
     }
@@ -66,7 +66,7 @@ void RuleValidator::verifyMinimumWidth(RVBox& rv_box)
         violation.set_required_size(min_width);
         violation.set_layer_idx(routing_layer_idx);
         violation.set_rect(DRCUTIL.convertToPlanarRect(gtl_rect));
-        rv_box.get_violation_list().push_back(violation);
+        rv_cluster.get_violation_list().push_back(violation);
       }
     }
   }
