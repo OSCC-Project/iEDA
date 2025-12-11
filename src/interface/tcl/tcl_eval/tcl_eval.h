@@ -81,4 +81,13 @@ public:
   unsigned exec() override;
 };
 
+class CmdEvalEgrConfig : public TclCmd
+{
+ public:
+  explicit CmdEvalEgrConfig(const char* cmd_name);
+  ~CmdEvalEgrConfig() override = default;
+  unsigned check() override;
+  unsigned exec() override;
+};
+
 }  // namespace tcl

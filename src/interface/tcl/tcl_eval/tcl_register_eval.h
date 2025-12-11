@@ -36,6 +36,7 @@ int registerCmdEval()
   registerTclCmd(CmdEvalTimingRun, "run_timing_eval");
   registerTclCmd(CmdEvalWirelengthRun, "run_wirelength_eval");
   registerTclCmd(CmdEvalDensityRun, "run_density_eval");
+  registerTclCmd(CmdEvalEgrConfig, "egr_config");
 
   return EXIT_SUCCESS;
 }
