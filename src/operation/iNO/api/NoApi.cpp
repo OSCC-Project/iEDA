@@ -107,6 +107,8 @@ ista::TimingEngine *NoApi::initISTA(idb::IdbBuilder *idb) {
   return timing_engine;
 }
 
+void NoApi::fixIO() { _ino->fixIO(); }
+
 void NoApi::fixFanout() { _ino->fixFanout(); }
 
 void NoApi::saveDef(string saved_def_path) {

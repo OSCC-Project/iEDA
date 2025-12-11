@@ -88,6 +88,7 @@ class ToolManager
   bool runAiPlacer(std::string config = "", std::string onnx_path = "", std::string normalization_path="");
 
   // iNO
+  bool RunNOFixIO(std::string config = "");
   bool RunNOFixFanout(std::string config = "");
 
   /// iTO

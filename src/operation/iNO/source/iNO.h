@@ -36,6 +36,7 @@ class iNO {
   NoConfig *get_config() { return _no_config; }
 
   void fixFanout();
+  void fixIO();
 
   void initialization(idb::IdbBuilder *idb_build, ista::TimingEngine *timing);
  private:
