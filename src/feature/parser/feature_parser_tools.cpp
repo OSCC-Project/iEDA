@@ -244,36 +244,6 @@ json FeatureParser::buildSummaryRT()
     json_rt["VR"] = vr_json;
   }
 
-  {
-    // ERSummary
-    json er_json;
-    for (auto& [routing_layer_idx, demand] : summary_irt.er_summary.routing_demand_map) {
-      er_json["routing_demand_map"][std::to_string(routing_layer_idx)] = demand;
-    }
-    er_json["total_demand"] = summary_irt.er_summary.total_demand;
-    for (auto& [routing_layer_idx, overflow] : summary_irt.er_summary.routing_overflow_map) {
-      er_json["routing_overflow_map"][std::to_string(routing_layer_idx)] = overflow;
-    }
-    er_json["total_overflow"] = summary_irt.er_summary.total_overflow;
-    for (auto& [routing_layer_idx, wire_length] : summary_irt.er_summary.routing_wire_length_map) {
-      er_json["routing_wire_length_map"][std::to_string(routing_layer_idx)] = wire_length;
-    }
-    er_json["total_wire_length"] = summary_irt.er_summary.total_wire_length;
-    for (auto& [cut_layer_idx, via_num] : summary_irt.er_summary.cut_via_num_map) {
-      er_json["cut_via_num_map"][std::to_string(cut_layer_idx)] = via_num;
-    }
-    er_json["total_via_num"] = summary_irt.er_summary.total_via_num;
-    for (auto& [clock_name, timing] : summary_irt.er_summary.clock_timing_map) {
-      er_json["clock_timing_map"]["clock_name"] = clock_name;
-      er_json["clock_timing_map"]["timing"] = timing;
-    }
-    for (auto& [type, power] : summary_irt.er_summary.type_power_map) {
-      er_json["type_power_map"]["type"] = type;
-      er_json["type_power_map"]["power"] = power;
-    }
-    json_rt["ER"] = er_json;
-  }
-
   return json_rt;
 }
 
