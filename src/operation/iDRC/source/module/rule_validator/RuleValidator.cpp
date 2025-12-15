@@ -391,11 +391,14 @@ void RuleValidator::buildViolationList(RVCluster& rv_cluster)
 
 void RuleValidator::buildViolationList(RVModel& rv_model)
 {
+  std::vector<Violation>& violation_list = rv_model.get_violation_list();
   for (RVCluster& rv_cluster : rv_model.get_rv_cluster_list()) {
     for (Violation& violation : rv_cluster.get_violation_list()) {
-      rv_model.get_violation_list().push_back(violation);
+      violation_list.push_back(violation);
     }
   }
+  std::sort(violation_list.begin(), violation_list.end(), CmpViolation());
+  violation_list.erase(std::unique(violation_list.begin(), violation_list.end()), violation_list.end());
 }
 
 #if 1  // aux
