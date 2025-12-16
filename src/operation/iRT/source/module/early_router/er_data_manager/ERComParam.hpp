@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include "ERStage.hpp"
 #include "RTHeader.hpp"
 
 namespace irt {
@@ -24,7 +25,7 @@ class ERComParam
 {
  public:
   ERComParam() = default;
-  ERComParam(std::string stage, std::string resolve_congestion, int32_t max_candidate_point_num, int32_t supply_reduction, double boundary_wire_unit,
+  ERComParam(ERStage stage, std::string resolve_congestion, int32_t max_candidate_point_num, int32_t supply_reduction, double boundary_wire_unit,
              double internal_wire_unit, double internal_via_unit, int32_t expand_step_num, int32_t expand_step_length, double via_unit, double overflow_unit,
              int32_t schedule_interval)
   {
@@ -43,7 +44,7 @@ class ERComParam
   }
   ~ERComParam() = default;
   // getter
-  std::string& get_stage() { return _stage; }
+  ERStage get_stage() const { return _stage; }
   std::string& get_resolve_congestion() { return _resolve_congestion; }
   int32_t get_max_candidate_point_num() const { return _max_candidate_point_num; }
   int32_t get_supply_reduction() const { return _supply_reduction; }
@@ -56,7 +57,7 @@ class ERComParam
   double get_overflow_unit() const { return _overflow_unit; }
   int32_t get_schedule_interval() const { return _schedule_interval; }
   // setter
-  void set_stage(std::string& stage) { _stage = stage; }
+  void set_stage(const ERStage stage) { _stage = stage; }
   void set_resolve_congestion(std::string& resolve_congestion) { _resolve_congestion = resolve_congestion; }
   void set_max_candidate_point_num(const int32_t max_candidate_point_num) { _max_candidate_point_num = max_candidate_point_num; }
   void set_supply_reduction(const int32_t supply_reduction) { _supply_reduction = supply_reduction; }
@@ -70,7 +71,7 @@ class ERComParam
   void set_schedule_interval(const int32_t schedule_interval) { _schedule_interval = schedule_interval; }
 
  private:
-  std::string _stage;
+  ERStage _stage = ERStage::kNone;
   std::string _resolve_congestion;
   int32_t _max_candidate_point_num = -1;
   int32_t _supply_reduction = -1;

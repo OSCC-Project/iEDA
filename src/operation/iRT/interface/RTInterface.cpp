@@ -1363,19 +1363,6 @@ void RTInterface::outputSummary()
     top_rt_summary.vr_summary.clock_timing_map = rt_summary.vr_summary.clock_timing_map;
     top_rt_summary.vr_summary.type_power_map = rt_summary.vr_summary.type_power_map;
   }
-  // er_summary
-  {
-    top_rt_summary.er_summary.routing_demand_map = rt_summary.er_summary.routing_demand_map;
-    top_rt_summary.er_summary.total_demand = rt_summary.er_summary.total_demand;
-    top_rt_summary.er_summary.routing_overflow_map = rt_summary.er_summary.routing_overflow_map;
-    top_rt_summary.er_summary.total_overflow = rt_summary.er_summary.total_overflow;
-    top_rt_summary.er_summary.routing_wire_length_map = rt_summary.er_summary.routing_wire_length_map;
-    top_rt_summary.er_summary.total_wire_length = rt_summary.er_summary.total_wire_length;
-    top_rt_summary.er_summary.cut_via_num_map = rt_summary.er_summary.cut_via_num_map;
-    top_rt_summary.er_summary.total_via_num = rt_summary.er_summary.total_via_num;
-    top_rt_summary.er_summary.clock_timing_map = rt_summary.er_summary.clock_timing_map;
-    top_rt_summary.er_summary.type_power_map = rt_summary.er_summary.type_power_map;
-  }
 }
 
 #endif
