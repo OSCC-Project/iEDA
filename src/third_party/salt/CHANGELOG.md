@@ -162,3 +162,32 @@ Fixed a bug caused by redundancy after flip and ushit
 ### Rename variable
 
 Changing some variable names and function names for the uniform naming convention does not change the code logic
+
+### Comparator const-correctness in `rsa.h`
+
+Added the `const` qualifier to the comparator `CompInnerNode::operator()` to ensure const-correctness, and added the missing newline at the end of the `rsa.h` file.
+
+```
+diff --git a/src/third_party/salt/base/rsa.h b/src/third_party/salt/base/rsa.h
+index 172829fa7..41dd6222b 100644
+--- a/src/third_party/salt/base/rsa.h
++++ b/src/third_party/salt/base/rsa.h
+@@ -37,7 +37,7 @@ class InnerNode
+ class CompInnerNode
+ {
+	public:
+-  bool operator()(const InnerNode* a, const InnerNode* b)
++  bool operator()(const InnerNode* a, const InnerNode* b) const
+	 {
+		 return a->dist > b->dist ||  // prefer fathest one
+						(a->dist == b->dist
+@@ -88,4 +88,4 @@ class RsaBuilder : public RSABase
+	 void PrintOuterNodes();
+ };
+ 
+-}  // namespace salt
+\ No newline at end of file
++}  // namespace salt
+```
+
+Reason: Fixes a missing `const` on the comparator that could trigger compiler warnings or prevent use on const objects; also adds the POSIX-required newline at EOF.

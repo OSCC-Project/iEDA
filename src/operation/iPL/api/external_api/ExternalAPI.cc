@@ -28,6 +28,7 @@
 #include "timing_api.hh"
 #include "tool_api/ista_io/ista_io.h"
 #include "wirelength_api.h"
+#include "PLAPI.hh"
 
 namespace ipl {
 
@@ -175,6 +176,7 @@ ieval::TotalWLSummary ExternalAPI::evalproIDBWL()
 
 ieval::OverflowSummary ExternalAPI::evalproCongestion()
 {
+  iPLAPIInst.writeBackSourceDataBase();
   CONGESTION_API_INST->egrMap("place");
 
   return CONGESTION_API_INST->egrOverflow("place");

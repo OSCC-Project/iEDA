@@ -123,20 +123,6 @@ struct VRSummary
   std::map<std::string, double> type_power_map;
 };
 
-struct ERSummary
-{
-  std::map<int32_t, double> routing_demand_map;
-  double total_demand = 0;
-  std::map<int32_t, double> routing_overflow_map;
-  double total_overflow = 0;
-  std::map<int32_t, double> routing_wire_length_map;
-  double total_wire_length = 0;
-  std::map<int32_t, int32_t> cut_via_num_map;
-  int32_t total_via_num = 0;
-  std::map<std::string, std::map<std::string, double>> clock_timing_map;
-  std::map<std::string, double> type_power_map;
-};
-
 struct RTSummary
 {
   std::map<int32_t, PASummary> iter_pa_summary_map;
@@ -147,7 +133,6 @@ struct RTSummary
   TASummary ta_summary;
   std::map<int32_t, DRSummary> iter_dr_summary_map;
   VRSummary vr_summary;
-  ERSummary er_summary;
 };
 
 /// ###################################################################################///

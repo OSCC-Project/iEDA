@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void RuleValidator::verifyMinimumCut(RVBox& rv_box)
+void RuleValidator::verifyMinimumCut(RVCluster& rv_cluster)
 {
   std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
   std::map<int32_t, std::vector<int32_t>>& routing_to_adjacent_cut_map = DRCDM.getDatabase().get_routing_to_adjacent_cut_map();
@@ -26,12 +26,12 @@ void RuleValidator::verifyMinimumCut(RVBox& rv_box)
 
   std::map<int32_t, std::map<int32_t, GTLPolySetInt>> routing_net_gtl_poly_set_map;
   {
-    for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+    for (DRCShape* drc_shape : rv_cluster.get_drc_env_shape_list()) {
       if (drc_shape->get_is_routing()) {
         routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
       }
     }
-    for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+    for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
       if (drc_shape->get_is_routing()) {
         routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
       }
@@ -39,12 +39,12 @@ void RuleValidator::verifyMinimumCut(RVBox& rv_box)
   }
   std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> cut_bg_rtree_map;
   {
-    for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+    for (DRCShape* drc_shape : rv_cluster.get_drc_env_shape_list()) {
       if (!drc_shape->get_is_routing()) {
         cut_bg_rtree_map[drc_shape->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(drc_shape->get_rect()), drc_shape->get_net_idx()));
       }
     }
-    for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+    for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
       if (!drc_shape->get_is_routing()) {
         cut_bg_rtree_map[drc_shape->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(drc_shape->get_rect()), drc_shape->get_net_idx()));
       }
@@ -66,7 +66,7 @@ void RuleValidator::verifyMinimumCut(RVBox& rv_box)
         gtl::get_max_rectangles(gtl_rect_list, gtl_poly);
         for (GTLRectInt& gtl_rect : gtl_rect_list) {
           PlanarRect routing_rect = DRCUTIL.convertToPlanarRect(gtl_rect);
-          for (int32_t rule_idx = minimum_cut_rule_list.size() - 1; rule_idx >= 0; rule_idx--) {
+          for (int32_t rule_idx = static_cast<int32_t>(minimum_cut_rule_list.size()) - 1; rule_idx >= 0; rule_idx--) {
             MinimumCutRule& curr_rule = minimum_cut_rule_list[rule_idx];
             if (routing_rect.getWidth() < curr_rule.width) {
               continue;
@@ -150,7 +150,7 @@ void RuleValidator::verifyMinimumCut(RVBox& rv_box)
                   violation.set_layer_idx(below_routing_layer_idx);
                   violation.set_rect(cut_rect);
                   violation.set_required_size(curr_rule.num_cuts);
-                  rv_box.get_violation_list().push_back(violation);
+                  rv_cluster.get_violation_list().push_back(violation);
                 }
               }
             }

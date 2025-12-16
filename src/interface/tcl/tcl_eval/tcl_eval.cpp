@@ -28,6 +28,7 @@
 
 #include "wirelength_io.h"
 #include "density_io.h"
+#include "init_egr.h"
 
 using namespace ieval;
 
@@ -199,3 +200,45 @@ unsigned CmdEvalDensityRun::exec()
   return EvalDensity::runDensityEvalAndOutput(grid_size, stage);
 }
 }  // namespace tcl
+
+
+namespace tcl {
+
+CmdEvalEgrConfig::CmdEvalEgrConfig(const char* cmd_name) : TclCmd(cmd_name)
+{
+  addOption(new TclStringOption("-bottom_routing_layer", 1, nullptr));
+  addOption(new TclStringOption("-top_routing_layer", 1, nullptr));
+  addOption(new TclIntOption("-enable_timing", 1, 0));
+  addOption(new TclStringOption("-temp_directory_path", 1, nullptr));
+  addOption(new TclIntOption("-thread_number", 1, 0));
+  addOption(new TclIntOption("-output_inter_result", 1, 0));
+  addOption(new TclStringOption("-stage", 1, nullptr));
+  addOption(new TclStringOption("-resolve_congestion", 1, nullptr));
+}
+
+unsigned CmdEvalEgrConfig::check() { return 1; }
+
+unsigned CmdEvalEgrConfig::exec()
+{
+  auto* opt_bottom = getOptionOrArg("-bottom_routing_layer");
+  auto* opt_top = getOptionOrArg("-top_routing_layer");
+  auto* opt_timing = getOptionOrArg("-enable_timing");
+  auto* opt_temp = getOptionOrArg("-temp_directory_path");
+  auto* opt_threads = getOptionOrArg("-thread_number");
+  auto* opt_output_inter = getOptionOrArg("-output_inter_result");
+  auto* opt_stage = getOptionOrArg("-stage");
+  auto* opt_resolve = getOptionOrArg("-resolve_congestion");
+  auto* inst = ieval::InitEGR::getInst();
+  if (opt_bottom && opt_bottom->getStringVal()) inst->setBottomRoutingLayer(opt_bottom->getStringVal());
+  if (opt_top && opt_top->getStringVal()) inst->setTopRoutingLayer(opt_top->getStringVal());
+  if (opt_timing) inst->setEnableTimingOverride(opt_timing->getIntVal() != 0);
+  if (opt_temp && opt_temp->getStringVal()) inst->setEGRDirPath(opt_temp->getStringVal());
+  if (opt_threads) inst->setThreadNumberOverride(opt_threads->getIntVal());
+  if (opt_output_inter) inst->setOutputInterResultOverride(opt_output_inter->getIntVal());
+  if (opt_stage && opt_stage->getStringVal()) inst->setStage(opt_stage->getStringVal());
+  if (opt_resolve && opt_resolve->getStringVal()) inst->setResolveCongestion(opt_resolve->getStringVal());
+  return 1;
+}
+
+}
+

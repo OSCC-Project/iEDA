@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void RuleValidator::verifyFloatingPatch(RVBox& rv_box)
+void RuleValidator::verifyFloatingPatch(RVCluster& rv_cluster)
 {
 }
 

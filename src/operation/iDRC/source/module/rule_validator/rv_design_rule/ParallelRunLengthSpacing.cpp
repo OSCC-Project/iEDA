@@ -18,18 +18,18 @@
 
 namespace idrc {
 
-void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
+void RuleValidator::verifyParallelRunLengthSpacing(RVCluster& rv_cluster)
 {
   std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
 
   std::map<int32_t, std::map<int32_t, std::vector<PlanarRect>>> routing_net_rect_map;
-  for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+  for (DRCShape* drc_shape : rv_cluster.get_drc_env_shape_list()) {
     if (!drc_shape->get_is_routing()) {
       continue;
     }
     routing_net_rect_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()].push_back(drc_shape->get_rect());
   }
-  for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+  for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
     if (!drc_shape->get_is_routing()) {
       continue;
     }
@@ -143,7 +143,7 @@ void RuleValidator::verifyParallelRunLengthSpacing(RVBox& rv_box)
             violation.set_layer_idx(routing_layer_idx);
             violation.set_rect(violation_rect);
             violation.set_required_size(required_size);
-            rv_box.get_violation_list().push_back(violation);
+            rv_cluster.get_violation_list().push_back(violation);
           }
         }
       }

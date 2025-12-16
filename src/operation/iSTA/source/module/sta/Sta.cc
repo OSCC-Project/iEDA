@@ -2835,6 +2835,36 @@ unsigned Sta::resetPathData() {
   return 1;
 }
 
+#if CUDA_PROPAGATION
+unsigned Sta::resetGPUData() {
+  _gpu_vertices.clear();
+  _gpu_arcs.clear();
+
+  GPU_Flatten_Data flatten_data;
+  _flatten_data = std::move(flatten_data);
+
+  GPU_Graph gpu_graph;
+  _gpu_graph = std::move(gpu_graph);
+
+  _lib_gpu_arcs.clear();
+
+  free_lib_data_gpu(_gpu_lib_data, _lib_gpu_tables, _lib_gpu_table_ptrs);
+
+  Lib_Data_GPU gpu_lib_data;
+  _gpu_lib_data = std::move(gpu_lib_data);
+
+  _lib_gpu_tables.clear();
+  _lib_gpu_table_ptrs.clear();
+
+  _arc_to_index.clear();
+  _at_to_index.clear();
+  _index_to_at.clear();
+
+  return 1;
+
+}
+#endif
+
 /**
  * @brief update the timing data.
  *

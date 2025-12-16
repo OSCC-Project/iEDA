@@ -37,7 +37,7 @@ class InnerNode
 class CompInnerNode
 {
  public:
-  bool operator()(const InnerNode* a, const InnerNode* b)
+  bool operator()(const InnerNode* a, const InnerNode* b) const
   {
     return a->dist > b->dist ||  // prefer fathest one
            (a->dist == b->dist

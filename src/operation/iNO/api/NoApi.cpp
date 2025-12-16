@@ -107,6 +107,8 @@ ista::TimingEngine *NoApi::initISTA(idb::IdbBuilder *idb) {
   return timing_engine;
 }
 
+void NoApi::fixIO() { _ino->fixIO(); }
+
 void NoApi::fixFanout() { _ino->fixFanout(); }
 
 void NoApi::saveDef(string saved_def_path) {
@@ -137,26 +139,9 @@ ieda_feature::NetOptSummary NoApi::outputSummary() {
     clock_timing.hold_wns = eval_data.hold_wns;
     clock_timing.suggest_freq = eval_data.freq;
 
-    ieda_feature::NOClockTimingCmp clock_cmp {
-      .clock_name = "",
-      .origin = clock_timing,
-      .opt = {
-        .clock_name = "",
-        .setup_tns = 0,
-        .setup_wns = 0,
-        .hold_tns = 0,
-        .hold_wns = 0,
-        .suggest_freq=0,
-      },
-      .delta = {
-        .clock_name = "",
-        .setup_tns = 0,
-        .setup_wns = 0,
-        .hold_tns = 0,
-        .hold_wns = 0,
-        .suggest_freq=0,
-      },
-    };
+    ieda_feature::NOClockTimingCmp clock_cmp;
+    memset(&clock_cmp, 0, sizeof(ieda_feature::NOClockTimingCmp));
+    clock_cmp.origin = clock_timing;
     summary_map[clock_name] = clock_cmp;
   }
 

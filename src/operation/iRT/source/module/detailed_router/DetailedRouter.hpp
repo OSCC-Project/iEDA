@@ -136,7 +136,7 @@ class DetailedRouter
   void uploadViolation(DRModel& dr_model);
   std::vector<Violation> getRouteViolationList(DRModel& dr_model);
   void updateBestResult(DRModel& dr_model);
-  bool stopIteration(DRModel& dr_model);
+  bool stopIteration(DRModel& dr_model, std::vector<DRIterParam>& dr_iter_param_list);
   void selectBestResult(DRModel& dr_model);
   void uploadBestResult(DRModel& dr_model);
 

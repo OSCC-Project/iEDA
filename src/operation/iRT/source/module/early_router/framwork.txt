@@ -32,7 +32,7 @@ buildPanelSchedule:构建时间表
 assignTrack:分配track
 initERBoxMap:初始化Box
 buildBoxSchedule:构建时间表
-routeTrack:在Box内连接
+routeDetailed:在Box内连接
 updateNetResult:更新线网结果
 updateNetPatch:更新patch结果
 cleanTempResult:清空临时结果

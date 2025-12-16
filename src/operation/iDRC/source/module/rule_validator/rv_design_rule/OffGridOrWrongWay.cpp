@@ -18,13 +18,13 @@
 
 namespace idrc {
 
-void RuleValidator::verifyOffGridOrWrongWay(RVBox& rv_box)
+void RuleValidator::verifyOffGridOrWrongWay(RVCluster& rv_cluster)
 {
   int32_t manufacture_grid = DRCDM.getDatabase().get_off_grid_or_wrong_way_rule().manufacture_grid;
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = DRCDM.getDatabase().get_cut_to_adjacent_routing_map();
 
   std::map<int32_t, std::map<int32_t, GTLPolySetInt>> routing_net_gtl_poly_set_map;
-  for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+  for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
     int32_t routing_layer_idx = -1;
     if (!drc_shape->get_is_routing()) {
       std::vector<int32_t>& routing_layer_idx_list = cut_to_adjacent_routing_map[drc_shape->get_layer_idx()];
@@ -57,7 +57,7 @@ void RuleValidator::verifyOffGridOrWrongWay(RVBox& rv_box)
           violation.set_required_size(0);
           violation.set_layer_idx(routing_layer_idx);
           violation.set_rect(rect);
-          rv_box.get_violation_list().push_back(violation);
+          rv_cluster.get_violation_list().push_back(violation);
         }
       }
     }

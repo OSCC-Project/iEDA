@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void RuleValidator::verifyEnclosure(RVBox& rv_box)
+void RuleValidator::verifyEnclosure(RVCluster& rv_cluster)
 {
 }
 

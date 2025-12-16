@@ -33,6 +33,11 @@
 
 #include "builder.h"
 
+#include <algorithm>
+#include <cassert>
+#include <cctype>
+
+#include "IdbInstance.h"
 #include "log/Log.hh"
 
 using std::cout;
@@ -70,6 +75,39 @@ void IdbBuilder::log()
   logModule("Design : " + design->get_design_name());
   logModule("Version : " + design->get_version());
   logModule("Instance : ", design->get_instance_list()->get_num());
+
+  // TODO: 加入gates 计算并打印
+  double min_gate_area = 1e9;
+  double sum_area = 0;
+  IdbInstance* min_gate = nullptr;
+  for (int i = 0; i < design->get_instance_list()->get_instance_list().size(); i++) {
+    auto* inst = design->get_instance_list()->get_instance_list().at(i);
+    double inst_area = inst->get_bounding_box()->get_area();
+    sum_area += inst_area;
+    string inst_name = inst->get_cell_master()->get_name();
+
+    // 将实例名转换为小写以便查找 "inv" 子串
+    string inst_name_lower = inst_name;
+    std::transform(inst_name_lower.begin(), inst_name_lower.end(), inst_name_lower.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+    if (inst_name_lower.find("inv") != std::string::npos) {
+      // 修正：比较实例面积以找到最小的门
+      if (inst_area < min_gate_area) {
+        min_gate = inst;
+        min_gate_area = inst_area;
+      }
+    }
+  }
+
+  if (min_gate == nullptr) {
+    logModule("Gates Num: 0 (no instances found)");
+  } else {
+    int gates_num = static_cast<int>(sum_area / min_gate_area);
+    logModule("Gates Num: ", gates_num);
+    logModule("Inv Gate Name: " + min_gate->get_cell_master()->get_name());
+  }
+
+  // end
   logModule("IO Pins : ", design->get_io_pin_list()->get_pin_num());
   logModule("Vias : ", design->get_via_list()->get_num_via());
   logModule("Nets : ", design->get_net_list()->get_num());

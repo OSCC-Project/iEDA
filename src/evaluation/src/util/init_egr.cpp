@@ -25,7 +25,12 @@ InitEGR* InitEGR::_init_egr = nullptr;
 
 InitEGR::InitEGR()
 {
-  _egr_dir_path = dmInst->get_config().get_output_path() + "/rt/rt_temp_directory";
+  std::string base = dmInst->get_config().get_output_path();
+  if (base.empty()) {
+    base = ".";
+  }
+  _egr_dir_path = base + "/rt/rt_temp_directory";
+  // ieval::createDirectoryRecursive(_egr_dir_path);
 }
 
 InitEGR::~InitEGR()
@@ -55,15 +60,32 @@ void InitEGR::runEGR(bool enable_timing)
   auto routing_layers = idb_layout->get_layers()->get_routing_layers();
   auto logic_layer_name = routing_layers.size() >= 2 ? routing_layers[1]->get_name() : routing_layers[0]->get_name();
   auto clock_layer_name = routing_layers.size() >= 4 ? routing_layers[routing_layers.size() - 4]->get_name() : logic_layer_name;
+  std::string bottom = _bottom_layer_override.empty() ? logic_layer_name : _bottom_layer_override;
+  std::string top = _top_layer_override.empty() ? clock_layer_name : _top_layer_override;
+  bool use_timing = _enable_timing_override_set ? _enable_timing_override : enable_timing;
   std::map<std::string, std::any> config_map;
   config_map.insert({"-temp_directory_path", _egr_dir_path});
-  config_map.insert({"-bottom_routing_layer", logic_layer_name});  // only for 28nm
-  config_map.insert({"-top_routing_layer", clock_layer_name});     // only for 28nm
-  if (enable_timing == true) {
+  config_map.insert({"-bottom_routing_layer", bottom});
+  config_map.insert({"-top_routing_layer", top});
+  if (_thread_number_override_set && _thread_number_override > 0) {
+    config_map.insert({"-thread_number", _thread_number_override});
+  }
+  if (_output_inter_result_override_set) {
+    config_map.insert({"-output_inter_result", _output_inter_result_override});
+  }
+  if (use_timing) {
     config_map.insert({"-enable_timing", 1});
   }
   rt_interface.initRT(config_map);
   std::map<std::string, std::any> ert_config_map;
+  if (!_stage_override.empty()) {
+    // stage：egr2D, egr3D, edr
+    ert_config_map.insert({"-stage", _stage_override});
+  }
+  if (!_resolve_congestion_override.empty()) {
+    // resolve_congestion: low, high
+    ert_config_map.insert({"-resolve_congestion", _resolve_congestion_override});
+  }
   rt_interface.runERT(ert_config_map);
   rt_interface.destroyRT();
 }

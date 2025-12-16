@@ -31,7 +31,11 @@ class Database
   Database() = default;
   ~Database() = default;
   // getter
+  std::string& get_design_name() { return _design_name; }
+  std::vector<std::string>& get_lef_file_path_list() { return _lef_file_path_list; }
+  std::string& get_def_file_path() { return _def_file_path; }
   int32_t get_micron_dbu() const { return _micron_dbu; }
+  int32_t get_manufacture_grid() const { return _manufacture_grid; }
   Die& get_die() { return _die; }
   MaxViaStackRule& get_max_via_stack_rule() { return _max_via_stack_rule; }
   OffGridOrWrongWayRule& get_off_grid_or_wrong_way_rule() { return _off_grid_or_wrong_way_rule; }
@@ -45,11 +49,19 @@ class Database
   std::map<std::string, int32_t>& get_cut_layer_name_to_idx_map() { return _cut_layer_name_to_idx_map; }
   std::map<int32_t, std::vector<int32_t>>& get_cut_to_adjacent_routing_map() { return _cut_to_adjacent_routing_map; }
   // setter
+  void set_design_name(const std::string& design_name) { _design_name = design_name; }
+  void set_lef_file_path_list(const std::vector<std::string>& lef_file_path_list) { _lef_file_path_list = lef_file_path_list; }
+  void set_def_file_path(const std::string& def_file_path) { _def_file_path = def_file_path; }
   void set_micron_dbu(const int32_t micron_dbu) { _micron_dbu = micron_dbu; }
+  void set_manufacture_grid(const int32_t manufacture_grid) { _manufacture_grid = manufacture_grid; }
   // function
 
  private:
+  std::string _design_name;
+  std::vector<std::string> _lef_file_path_list;
+  std::string _def_file_path;
   int32_t _micron_dbu = -1;
+  int32_t _manufacture_grid = -1;
   Die _die;
   MaxViaStackRule _max_via_stack_rule;
   OffGridOrWrongWayRule _off_grid_or_wrong_way_rule;

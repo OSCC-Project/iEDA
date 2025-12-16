@@ -49,4 +49,18 @@ class CmdNORunFixFanout : public TclCmd
   // private data
 };
 
+class CmdNORunFixIO : public TclCmd
+{
+ public:
+  explicit CmdNORunFixIO(const char* cmd_name);
+  ~CmdNORunFixIO() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
 }  // namespace tcl

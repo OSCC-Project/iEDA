@@ -29,6 +29,8 @@ class PAGroup
   // getter
   bool get_is_target() const { return _is_target; }
   std::vector<LayerCoord>& get_coord_list() { return _coord_list; }
+  // const getter
+  const std::vector<LayerCoord>& get_coord_list() const { return _coord_list; }
   // setter
   void set_is_target(const bool is_target) { _is_target = is_target; }
   void set_coord_list(const std::vector<LayerCoord>& coord_list) { _coord_list = coord_list; }

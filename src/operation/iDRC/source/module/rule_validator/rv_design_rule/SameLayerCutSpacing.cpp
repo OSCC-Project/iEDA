@@ -18,21 +18,21 @@
 
 namespace idrc {
 
-void RuleValidator::verifySameLayerCutSpacing(RVBox& rv_box)
+void RuleValidator::verifySameLayerCutSpacing(RVCluster& rv_cluster)
 {
   std::vector<CutLayer>& cut_layer_list = DRCDM.getDatabase().get_cut_layer_list();
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = DRCDM.getDatabase().get_cut_to_adjacent_routing_map();
 
   std::map<int32_t, std::map<int32_t, std::vector<PlanarRect>>> cut_net_rect_map;
   std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> cut_bg_rtree_map;
-  for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+  for (DRCShape* drc_shape : rv_cluster.get_drc_env_shape_list()) {
     if (drc_shape->get_is_routing()) {
       continue;
     }
     cut_net_rect_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()].push_back(drc_shape->get_rect());
     cut_bg_rtree_map[drc_shape->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(drc_shape->get_rect()), drc_shape->get_net_idx()));
   }
-  for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+  for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
     if (drc_shape->get_is_routing()) {
       continue;
     }
@@ -79,7 +79,7 @@ void RuleValidator::verifySameLayerCutSpacing(RVBox& rv_box)
             violation.set_layer_idx(routing_layer_idx);
             violation.set_rect(DRCUTIL.getSpacingRect(rect, env_rect));
             violation.set_required_size(curr_prl_spacing);
-            rv_box.get_violation_list().push_back(violation);
+            rv_cluster.get_violation_list().push_back(violation);
           } else if (gtl::area(curr_spacing_poly_set & gtl_env_rect) > 0) {
             if (curr_spacing <= DRCUTIL.getEuclideanDistance(rect, env_rect)) {
               continue;
@@ -91,7 +91,7 @@ void RuleValidator::verifySameLayerCutSpacing(RVBox& rv_box)
             violation.set_layer_idx(routing_layer_idx);
             violation.set_rect(DRCUTIL.getSpacingRect(rect, env_rect));
             violation.set_required_size(curr_spacing);
-            rv_box.get_violation_list().push_back(violation);
+            rv_cluster.get_violation_list().push_back(violation);
           }
         }
       }

@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #include "EarlyRouter.hpp"
 
+#include "ERStage.hpp"
 #include "GDSPlotter.hpp"
 #include "Monitor.hpp"
 #include "RTInterface.hpp"
@@ -63,13 +64,15 @@ void EarlyRouter::route(std::map<std::string, std::any> config_map)
   eliminateConflict(er_model);
   uploadAccessPoint(er_model);
   uploadAccessPatch(er_model);
+  printAccessSummary(er_model);
   // debugPlotERModel(er_model, "pa");
   buildSupplySchedule(er_model);
   analyzeSupply(er_model);
   buildIgnoreNet(er_model);
   analyzeDemandUnit(er_model);
-  if (er_model.get_er_com_param().get_stage() == "egr2D" || er_model.get_er_com_param().get_stage() == "egr3D"
-      || er_model.get_er_com_param().get_stage() == "edr") {
+  printSupplySummary(er_model);
+  // debugPlotERModel(er_model, "sa");
+  if (er_model.get_er_com_param().get_stage() >= ERStage::kEgr2D) {
     buildPlanarNodeMap(er_model);
     buildPlanarNodeNeighbor(er_model);
     buildPlanarOrientSupply(er_model);
@@ -78,9 +81,10 @@ void EarlyRouter::route(std::map<std::string, std::any> config_map)
     outputPlanarGuide(er_model);
     outputPlanarNetCSV(er_model);
     outputPlanarOverflowCSV(er_model);
+    printPlanarSummary(er_model);
     // debugPlotERModel(er_model, "tg");
   }
-  if (er_model.get_er_com_param().get_stage() == "egr3D" || er_model.get_er_com_param().get_stage() == "edr") {
+  if (er_model.get_er_com_param().get_stage() >= ERStage::kEgr3D) {
     buildLayerNodeMap(er_model);
     buildLayerNodeNeighbor(er_model);
     buildLayerOrientSupply(er_model);
@@ -90,21 +94,25 @@ void EarlyRouter::route(std::map<std::string, std::any> config_map)
     outputLayerGuide(er_model);
     outputLayerNetCSV(er_model);
     outputLayerOverflowCSV(er_model);
+    printLayerSummary(er_model);
     // debugPlotERModel(er_model, "la");
   }
-  if (er_model.get_er_com_param().get_stage() == "edr") {
+  if (er_model.get_er_com_param().get_stage() >= ERStage::kEdr) {
     initERPanelMap(er_model);
     buildPanelSchedule(er_model);
     assignTrack(er_model);
+    printTrackSummary(er_model);
     // debugPlotERModel(er_model, "ta");
     initERBoxMap(er_model);
     buildBoxSchedule(er_model);
-    routeTrack(er_model);
+    routeDetailed(er_model);
+    printDetailedSummary(er_model);
     updateNetResult(er_model);
     updateNetPatch(er_model);
     // debugPlotERModel(er_model, "dr");
+  } else {
+    cleanTempResult(er_model);
   }
-  cleanTempResult(er_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -147,14 +155,14 @@ ERNet EarlyRouter::convertToERNet(Net& net)
 void EarlyRouter::setERComParam(ERModel& er_model, std::map<std::string, std::any> config_map)
 {
   // egr2D egr3D edr
-  std::string stage = RTUTIL.getConfigValue<std::string>(config_map, "-stage", "egr3D");
-  if (stage != "egr2D" && stage != "egr3D" && stage != "edr") {
-    RTLOG.error(Loc::current(), "The stage is error, valid options are: egr2D, egr3D, edr");
+  std::string stage_string = RTUTIL.getConfigValue<std::string>(config_map, "-stage", "null");
+  if (stage_string != "egr2D" && stage_string != "egr3D" && stage_string != "edr") {
+    RTLOG.error(Loc::current(), "Invalid value for '-stage': '" + stage_string + "'. Valid options are: 'egr2D', 'egr3D', 'edr'.");
   }
   // low high
-  std::string resolve_congestion = RTUTIL.getConfigValue<std::string>(config_map, "-resolve_congestion", "low");
+  std::string resolve_congestion = RTUTIL.getConfigValue<std::string>(config_map, "-resolve_congestion", "null");
   if (resolve_congestion != "low" && resolve_congestion != "high") {
-    RTLOG.error(Loc::current(), "The resolve_congestion is error, valid options are: low, high");
+    RTLOG.error(Loc::current(), "Invalid value for '-resolve_congestion': '" + resolve_congestion + "'. Valid options are: 'low', 'high'.");
   }
   int32_t max_candidate_point_num = 10;
   int32_t supply_reduction = 0;
@@ -173,9 +181,9 @@ void EarlyRouter::setERComParam(ERModel& er_model, std::map<std::string, std::an
    * stage, resolve_congestion, max_candidate_point_num, supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit, expand_step_num,
    * expand_step_length, via_unit, overflow_unit, schedule_interval
    */
-  ERComParam er_com_param(stage, resolve_congestion, max_candidate_point_num, supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit,
-                          expand_step_num, expand_step_length, via_unit, overflow_unit, schedule_interval);
-  RTLOG.info(Loc::current(), "stage: ", er_com_param.get_stage());
+  ERComParam er_com_param(GetERStageByName()(stage_string), resolve_congestion, max_candidate_point_num, supply_reduction, boundary_wire_unit,
+                          internal_wire_unit, internal_via_unit, expand_step_num, expand_step_length, via_unit, overflow_unit, schedule_interval);
+  RTLOG.info(Loc::current(), "stage: ", GetERStageName()(er_com_param.get_stage()));
   RTLOG.info(Loc::current(), "resolve_congestion: ", er_com_param.get_resolve_congestion());
   RTLOG.info(Loc::current(), "max_candidate_point_num: ", er_com_param.get_max_candidate_point_num());
   RTLOG.info(Loc::current(), "supply_reduction: ", er_com_param.get_supply_reduction());
@@ -438,7 +446,7 @@ void EarlyRouter::buildConflictList(ERModel& er_model)
       while (!pin_queue.empty()) {
         ERPin* er_pin = RTUTIL.getFrontAndPop(pin_queue);
         if (!RTUTIL.exist(pin_idx_map, er_pin)) {
-          pin_idx_map[er_pin] = pin_idx_map.size();
+          pin_idx_map[er_pin] = static_cast<int32_t>(pin_idx_map.size());
         }
         if (!RTUTIL.exist(pin_conflict_map, er_pin)) {
           continue;
@@ -2461,7 +2469,7 @@ void EarlyRouter::buildBoxSchedule(ERModel& er_model)
   er_model.set_er_box_id_list_list(er_box_id_list_list);
 }
 
-void EarlyRouter::routeTrack(ERModel& er_model)
+void EarlyRouter::routeDetailed(ERModel& er_model)
 {
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
@@ -2476,7 +2484,7 @@ void EarlyRouter::routeTrack(ERModel& er_model)
   size_t routed_box_num = 0;
   for (std::vector<ERBoxId>& er_box_id_list : er_model.get_er_box_id_list_list()) {
     Monitor stage_monitor;
-    // #pragma omp parallel for
+#pragma omp parallel for
     for (ERBoxId& er_box_id : er_box_id_list) {
       ERBox& er_box = er_box_map[er_box_id.get_x()][er_box_id.get_y()];
       routeERBox(er_box);
@@ -2497,7 +2505,7 @@ void EarlyRouter::routeERBox(ERBox& er_box)
   EXTPlanarRect& box_rect = er_box.get_box_rect();
   PlanarRect& box_real_rect = box_rect.get_real_rect();
 
-  std::map<int32_t, std::set<AccessPoint*>> net_access_point_map = RTDM.getNetAccessPointMap(box_rect);
+  std::map<int32_t, std::set<AccessPoint*, CmpAccessPoint>> net_access_point_map = RTDM.getNetAccessPointMap(box_rect);
   std::map<int32_t, std::vector<Segment<LayerCoord>>> net_task_detailed_result_map;
   for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(box_rect)) {
     for (Segment<LayerCoord>* segment : segment_set) {
@@ -3095,6 +3103,346 @@ void EarlyRouter::updateDemandToGraph(ERModel& er_model, ChangeType change_type,
     ERNode& er_node = layer_node_map[usage_coord.get_layer_idx()][usage_coord.get_x()][usage_coord.get_y()];
     er_node.updateDemand(curr_net_idx, orientation_list, change_type);
   }
+}
+
+#endif
+
+#if 1  // exhibit
+
+void EarlyRouter::printAccessSummary(ERModel& er_model)
+{
+  Die& die = RTDM.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+
+  std::map<int32_t, int32_t> routing_patch_num_map;
+  int32_t total_patch_num = 0;
+
+  for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      routing_patch_num_map[patch->get_layer_idx()]++;
+      total_patch_num++;
+    }
+  }
+
+  fort::char_table routing_patch_num_map_table;
+  {
+    routing_patch_num_map_table.set_cell_text_align(fort::text_align::right);
+    routing_patch_num_map_table << fort::header << "routing"
+                                << "#patch"
+                                << "prop" << fort::endr;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      routing_patch_num_map_table << routing_layer.get_layer_name() << routing_patch_num_map[routing_layer.get_layer_idx()]
+                                  << RTUTIL.getPercentage(routing_patch_num_map[routing_layer.get_layer_idx()], total_patch_num) << fort::endr;
+    }
+    routing_patch_num_map_table << fort::header << "Total" << total_patch_num << RTUTIL.getPercentage(total_patch_num, total_patch_num) << fort::endr;
+  }
+  RTUTIL.printTableList({routing_patch_num_map_table});
+}
+
+void EarlyRouter::printSupplySummary(ERModel& er_model)
+{
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+
+  std::map<int32_t, int32_t> routing_supply_map;
+  int32_t total_supply = 0;
+
+  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+      for (auto& [routing_layer_idx, orient_supply_map] : gcell_map[x][y].get_routing_orient_supply_map()) {
+        for (auto& [orient, supply] : orient_supply_map) {
+          routing_supply_map[routing_layer_idx] += supply;
+          total_supply += supply;
+        }
+      }
+    }
+  }
+
+  fort::char_table routing_supply_map_table;
+  {
+    routing_supply_map_table.set_cell_text_align(fort::text_align::right);
+    routing_supply_map_table << fort::header << "routing"
+                             << "supply"
+                             << "prop" << fort::endr;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      routing_supply_map_table << routing_layer.get_layer_name() << routing_supply_map[routing_layer.get_layer_idx()]
+                               << RTUTIL.getPercentage(routing_supply_map[routing_layer.get_layer_idx()], total_supply) << fort::endr;
+    }
+    routing_supply_map_table << fort::header << "Total" << total_supply << RTUTIL.getPercentage(total_supply, total_supply) << fort::endr;
+  }
+  RTUTIL.printTableList({routing_supply_map_table});
+}
+
+void EarlyRouter::printPlanarSummary(ERModel& er_model)
+{
+  int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
+  Die& die = RTDM.getDatabase().get_die();
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+
+  double total_demand = 0;
+  double total_overflow = 0;
+  double total_wire_length = 0;
+
+  GridMap<ERNode>& planar_node_map = er_model.get_planar_node_map();
+
+  for (int32_t x = 0; x < planar_node_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < planar_node_map.get_y_size(); y++) {
+      double node_demand = planar_node_map[x][y].getDemand();
+      double node_overflow = planar_node_map[x][y].getOverflow();
+      total_demand += node_demand;
+      total_overflow += node_overflow;
+    }
+  }
+  for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      LayerCoord& first_coord = segment->get_first();
+      int32_t first_layer_idx = first_coord.get_layer_idx();
+      LayerCoord& second_coord = segment->get_second();
+      int32_t second_layer_idx = second_coord.get_layer_idx();
+
+      if (first_layer_idx == second_layer_idx) {
+        GCell& first_gcell = gcell_map[first_coord.get_x()][first_coord.get_y()];
+        GCell& second_gcell = gcell_map[second_coord.get_x()][second_coord.get_y()];
+        double wire_length = RTUTIL.getManhattanDistance(first_gcell.getMidPoint(), second_gcell.getMidPoint()) / 1.0 / micron_dbu;
+        total_wire_length += wire_length;
+      } else {
+        RTLOG.error(Loc::current(), "first_layer_idx != second_layer_idx!");
+      }
+    }
+  }
+
+  fort::char_table summary_table;
+  {
+    summary_table.set_cell_text_align(fort::text_align::right);
+    summary_table << fort::header << "total_demand" << total_demand << fort::endr;
+    summary_table << fort::header << "total_overflow" << total_overflow << fort::endr;
+    summary_table << fort::header << "total_wire_length" << total_wire_length << fort::endr;
+  }
+  RTUTIL.printTableList({summary_table});
+}
+
+void EarlyRouter::printLayerSummary(ERModel& er_model)
+{
+  int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
+  Die& die = RTDM.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
+
+  std::map<int32_t, double> routing_demand_map;
+  double total_demand = 0;
+  std::map<int32_t, double> routing_overflow_map;
+  double total_overflow = 0;
+  std::map<int32_t, double> routing_wire_length_map;
+  double total_wire_length = 0;
+  std::map<int32_t, int32_t> cut_via_num_map;
+  int32_t total_via_num = 0;
+
+  std::vector<GridMap<ERNode>>& layer_node_map = er_model.get_layer_node_map();
+
+  for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
+    GridMap<ERNode>& er_node_map = layer_node_map[layer_idx];
+    for (int32_t x = 0; x < er_node_map.get_x_size(); x++) {
+      for (int32_t y = 0; y < er_node_map.get_y_size(); y++) {
+        double node_demand = er_node_map[x][y].getDemand();
+        double node_overflow = er_node_map[x][y].getOverflow();
+        routing_demand_map[layer_idx] += node_demand;
+        total_demand += node_demand;
+        routing_overflow_map[layer_idx] += node_overflow;
+        total_overflow += node_overflow;
+      }
+    }
+  }
+  for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      LayerCoord& first_coord = segment->get_first();
+      int32_t first_layer_idx = first_coord.get_layer_idx();
+      LayerCoord& second_coord = segment->get_second();
+      int32_t second_layer_idx = second_coord.get_layer_idx();
+
+      if (first_layer_idx == second_layer_idx) {
+        GCell& first_gcell = gcell_map[first_coord.get_x()][first_coord.get_y()];
+        GCell& second_gcell = gcell_map[second_coord.get_x()][second_coord.get_y()];
+        double wire_length = RTUTIL.getManhattanDistance(first_gcell.getMidPoint(), second_gcell.getMidPoint()) / 1.0 / micron_dbu;
+        routing_wire_length_map[first_layer_idx] += wire_length;
+        total_wire_length += wire_length;
+      } else {
+        RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
+        for (int32_t layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
+          cut_via_num_map[layer_via_master_list[layer_idx].front().get_cut_layer_idx()]++;
+          total_via_num++;
+        }
+      }
+    }
+  }
+
+  fort::char_table routing_demand_map_table;
+  {
+    routing_demand_map_table.set_cell_text_align(fort::text_align::right);
+    routing_demand_map_table << fort::header << "routing"
+                             << "demand"
+                             << "prop" << fort::endr;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      routing_demand_map_table << routing_layer.get_layer_name() << routing_demand_map[routing_layer.get_layer_idx()]
+                               << RTUTIL.getPercentage(routing_demand_map[routing_layer.get_layer_idx()], total_demand) << fort::endr;
+    }
+    routing_demand_map_table << fort::header << "Total" << total_demand << RTUTIL.getPercentage(total_demand, total_demand) << fort::endr;
+  }
+  fort::char_table routing_overflow_map_table;
+  {
+    routing_overflow_map_table.set_cell_text_align(fort::text_align::right);
+    routing_overflow_map_table << fort::header << "routing"
+                               << "overflow"
+                               << "prop" << fort::endr;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      routing_overflow_map_table << routing_layer.get_layer_name() << routing_overflow_map[routing_layer.get_layer_idx()]
+                                 << RTUTIL.getPercentage(routing_overflow_map[routing_layer.get_layer_idx()], total_overflow) << fort::endr;
+    }
+    routing_overflow_map_table << fort::header << "Total" << total_overflow << RTUTIL.getPercentage(total_overflow, total_overflow) << fort::endr;
+  }
+  fort::char_table routing_wire_length_map_table;
+  {
+    routing_wire_length_map_table.set_cell_text_align(fort::text_align::right);
+    routing_wire_length_map_table << fort::header << "routing"
+                                  << "wire_length"
+                                  << "prop" << fort::endr;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      routing_wire_length_map_table << routing_layer.get_layer_name() << routing_wire_length_map[routing_layer.get_layer_idx()]
+                                    << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length) << fort::endr;
+    }
+    routing_wire_length_map_table << fort::header << "Total" << total_wire_length << RTUTIL.getPercentage(total_wire_length, total_wire_length) << fort::endr;
+  }
+  fort::char_table cut_via_num_map_table;
+  {
+    cut_via_num_map_table.set_cell_text_align(fort::text_align::right);
+    cut_via_num_map_table << fort::header << "cut"
+                          << "#via"
+                          << "prop" << fort::endr;
+    for (CutLayer& cut_layer : cut_layer_list) {
+      cut_via_num_map_table << cut_layer.get_layer_name() << cut_via_num_map[cut_layer.get_layer_idx()]
+                            << RTUTIL.getPercentage(cut_via_num_map[cut_layer.get_layer_idx()], total_via_num) << fort::endr;
+    }
+    cut_via_num_map_table << fort::header << "Total" << total_via_num << RTUTIL.getPercentage(total_via_num, total_via_num) << fort::endr;
+  }
+  RTUTIL.printTableList({routing_demand_map_table, routing_overflow_map_table, routing_wire_length_map_table, cut_via_num_map_table});
+}
+
+void EarlyRouter::printTrackSummary(ERModel& er_model)
+{
+  int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
+  Die& die = RTDM.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+
+  std::map<int32_t, double> routing_wire_length_map;
+  double total_wire_length = 0;
+
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      LayerCoord& first_coord = segment->get_first();
+      LayerCoord& second_coord = segment->get_second();
+      if (first_coord.get_layer_idx() == second_coord.get_layer_idx()) {
+        double wire_length = RTUTIL.getManhattanDistance(first_coord, second_coord) / 1.0 / micron_dbu;
+        routing_wire_length_map[first_coord.get_layer_idx()] += wire_length;
+        total_wire_length += wire_length;
+      }
+    }
+  }
+
+  fort::char_table routing_wire_length_map_table;
+  {
+    routing_wire_length_map_table.set_cell_text_align(fort::text_align::right);
+    routing_wire_length_map_table << fort::header << "routing"
+                                  << "wire_length"
+                                  << "prop" << fort::endr;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      routing_wire_length_map_table << routing_layer.get_layer_name() << routing_wire_length_map[routing_layer.get_layer_idx()]
+                                    << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length) << fort::endr;
+    }
+    routing_wire_length_map_table << fort::header << "Total" << total_wire_length << RTUTIL.getPercentage(total_wire_length, total_wire_length) << fort::endr;
+  }
+  RTUTIL.printTableList({routing_wire_length_map_table});
+}
+
+void EarlyRouter::printDetailedSummary(ERModel& er_model)
+{
+  int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
+  Die& die = RTDM.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
+
+  std::map<int32_t, double> routing_wire_length_map;
+  double total_wire_length = 0;
+  std::map<int32_t, int32_t> cut_via_num_map;
+  int32_t total_via_num = 0;
+  std::map<int32_t, int32_t> routing_patch_num_map;
+  int32_t total_patch_num = 0;
+
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      LayerCoord& first_coord = segment->get_first();
+      int32_t first_layer_idx = first_coord.get_layer_idx();
+      LayerCoord& second_coord = segment->get_second();
+      int32_t second_layer_idx = second_coord.get_layer_idx();
+
+      if (first_layer_idx == second_layer_idx) {
+        double wire_length = RTUTIL.getManhattanDistance(first_coord, second_coord) / 1.0 / micron_dbu;
+        routing_wire_length_map[first_layer_idx] += wire_length;
+        total_wire_length += wire_length;
+      } else {
+        RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
+        for (int32_t layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
+          cut_via_num_map[layer_via_master_list[layer_idx].front().get_cut_layer_idx()]++;
+          total_via_num++;
+        }
+      }
+    }
+  }
+  for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      routing_patch_num_map[patch->get_layer_idx()]++;
+      total_patch_num++;
+    }
+  }
+
+  fort::char_table routing_wire_length_map_table;
+  {
+    routing_wire_length_map_table.set_cell_text_align(fort::text_align::right);
+    routing_wire_length_map_table << fort::header << "routing"
+                                  << "wire_length"
+                                  << "prop" << fort::endr;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      routing_wire_length_map_table << routing_layer.get_layer_name() << routing_wire_length_map[routing_layer.get_layer_idx()]
+                                    << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length) << fort::endr;
+    }
+    routing_wire_length_map_table << fort::header << "Total" << total_wire_length << RTUTIL.getPercentage(total_wire_length, total_wire_length) << fort::endr;
+  }
+  fort::char_table cut_via_num_map_table;
+  {
+    cut_via_num_map_table.set_cell_text_align(fort::text_align::right);
+    cut_via_num_map_table << fort::header << "cut"
+                          << "#via"
+                          << "prop" << fort::endr;
+    for (CutLayer& cut_layer : cut_layer_list) {
+      cut_via_num_map_table << cut_layer.get_layer_name() << cut_via_num_map[cut_layer.get_layer_idx()]
+                            << RTUTIL.getPercentage(cut_via_num_map[cut_layer.get_layer_idx()], total_via_num) << fort::endr;
+    }
+    cut_via_num_map_table << fort::header << "Total" << total_via_num << RTUTIL.getPercentage(total_via_num, total_via_num) << fort::endr;
+  }
+  fort::char_table routing_patch_num_map_table;
+  {
+    routing_patch_num_map_table.set_cell_text_align(fort::text_align::right);
+    routing_patch_num_map_table << fort::header << "routing"
+                                << "#patch"
+                                << "prop" << fort::endr;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      routing_patch_num_map_table << routing_layer.get_layer_name() << routing_patch_num_map[routing_layer.get_layer_idx()]
+                                  << RTUTIL.getPercentage(routing_patch_num_map[routing_layer.get_layer_idx()], total_patch_num) << fort::endr;
+    }
+    routing_patch_num_map_table << fort::header << "Total" << total_patch_num << RTUTIL.getPercentage(total_patch_num, total_patch_num) << fort::endr;
+  }
+  RTUTIL.printTableList({routing_wire_length_map_table, cut_via_num_map_table, routing_patch_num_map_table});
 }
 
 #endif

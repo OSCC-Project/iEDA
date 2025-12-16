@@ -20,7 +20,6 @@
 #include "DataManager.hpp"
 #include "GDSPlotter.hpp"
 #include "Monitor.hpp"
-#include "NotificationUtility.h"
 #include "RuleValidator.hpp"
 #include "feature_manager.h"
 #include "idm.h"
@@ -157,6 +156,153 @@ std::vector<ids::Violation> DRCInterface::getViolationList(const std::vector<ids
   return ids_violation_list;
 }
 
+void DRCInterface::cmpViolation(std::map<std::string, std::any> config_map)
+{
+  Die& die = DRCDM.getDatabase().get_die();
+  std::map<std::string, int32_t>& routing_layer_name_to_idx_map = DRCDM.getDatabase().get_routing_layer_name_to_idx_map();
+  std::string& rv_temp_directory_path = DRCDM.getConfig().rv_temp_directory_path;
+
+  std::map<std::string, std::string> name_dir_map;
+  {
+    std::string ref = DRCUTIL.getConfigValue<std::string>(config_map, "-ref", "null");
+    std::istringstream iss(ref);
+    std::string token;
+    while (iss >> token) {
+      auto pos = token.find('=');
+      if (pos == std::string::npos || pos == 0 || pos == token.size() - 1) {
+        continue;
+      }
+      std::string key = token.substr(0, pos);
+      std::string value = token.substr(pos + 1);
+      name_dir_map[key] = value;
+    }
+  }
+  std::set<ViolationType> violation_type_set;
+  {
+    violation_type_set.insert(ViolationType::kAdjacentCutSpacing);
+    violation_type_set.insert(ViolationType::kCornerFillSpacing);
+    violation_type_set.insert(ViolationType::kCornerSpacing);
+    violation_type_set.insert(ViolationType::kCutEOLSpacing);
+    violation_type_set.insert(ViolationType::kCutShort);
+    violation_type_set.insert(ViolationType::kDifferentLayerCutSpacing);
+    violation_type_set.insert(ViolationType::kEndOfLineSpacing);
+    violation_type_set.insert(ViolationType::kEnclosure);
+    violation_type_set.insert(ViolationType::kEnclosureEdge);
+    violation_type_set.insert(ViolationType::kEnclosureParallel);
+    violation_type_set.insert(ViolationType::kFloatingPatch);
+    violation_type_set.insert(ViolationType::kJogToJogSpacing);
+    violation_type_set.insert(ViolationType::kMaximumWidth);
+    violation_type_set.insert(ViolationType::kMaxViaStack);
+    violation_type_set.insert(ViolationType::kMetalShort);
+    violation_type_set.insert(ViolationType::kMinHole);
+    violation_type_set.insert(ViolationType::kMinimumArea);
+    violation_type_set.insert(ViolationType::kMinimumCut);
+    violation_type_set.insert(ViolationType::kMinimumWidth);
+    violation_type_set.insert(ViolationType::kMinStep);
+    violation_type_set.insert(ViolationType::kNonsufficientMetalOverlap);
+    violation_type_set.insert(ViolationType::kNotchSpacing);
+    violation_type_set.insert(ViolationType::kOffGridOrWrongWay);
+    violation_type_set.insert(ViolationType::kOutOfDie);
+    violation_type_set.insert(ViolationType::kParallelRunLengthSpacing);
+    violation_type_set.insert(ViolationType::kSameLayerCutSpacing);
+  }
+
+  GPGDS gp_gds;
+
+  GPStruct base_region_struct("base_region");
+  GPBoundary gp_boundary;
+  gp_boundary.set_layer_idx(0);
+  gp_boundary.set_data_type(0);
+  gp_boundary.set_rect(die);
+  base_region_struct.push(gp_boundary);
+  gp_gds.addStruct(base_region_struct);
+
+  std::vector<DRCShape> drc_env_shape_list;
+  {
+    std::vector<ids::Shape> ids_env_shape_list = buildEnvShapeList();
+    drc_env_shape_list.reserve(ids_env_shape_list.size());
+    for (const ids::Shape& ids_env_shape : ids_env_shape_list) {
+      drc_env_shape_list.push_back(convertToDRCShape(ids_env_shape));
+    }
+  }
+  for (DRCShape& drc_env_shape : drc_env_shape_list) {
+    GPStruct drc_env_shape_struct(DRCUTIL.getString("drc_env_shape(net_", drc_env_shape.get_net_idx(), ")"));
+    GPBoundary gp_boundary;
+    gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kEnvShape));
+    gp_boundary.set_rect(drc_env_shape.get_rect());
+    if (drc_env_shape.get_is_routing()) {
+      gp_boundary.set_layer_idx(DRCGP.getGDSIdxByRouting(drc_env_shape.get_layer_idx()));
+    } else {
+      gp_boundary.set_layer_idx(DRCGP.getGDSIdxByCut(drc_env_shape.get_layer_idx()));
+    }
+    drc_env_shape_struct.push(gp_boundary);
+    gp_gds.addStruct(drc_env_shape_struct);
+  }
+
+  std::vector<DRCShape> drc_result_shape_list;
+  {
+    std::vector<ids::Shape> ids_result_shape_list = buildResultShapeList();
+    drc_result_shape_list.reserve(ids_result_shape_list.size());
+    for (const ids::Shape& ids_result_shape : ids_result_shape_list) {
+      drc_result_shape_list.push_back(convertToDRCShape(ids_result_shape));
+    }
+  }
+  for (DRCShape& drc_result_shape : drc_result_shape_list) {
+    GPStruct drc_result_shape_struct(DRCUTIL.getString("drc_result_shape(net_", drc_result_shape.get_net_idx(), ")"));
+    GPBoundary gp_boundary;
+    gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kResultShape));
+    gp_boundary.set_rect(drc_result_shape.get_rect());
+    if (drc_result_shape.get_is_routing()) {
+      gp_boundary.set_layer_idx(DRCGP.getGDSIdxByRouting(drc_result_shape.get_layer_idx()));
+    } else {
+      gp_boundary.set_layer_idx(DRCGP.getGDSIdxByCut(drc_result_shape.get_layer_idx()));
+    }
+    drc_result_shape_struct.push(gp_boundary);
+    gp_gds.addStruct(drc_result_shape_struct);
+  }
+
+  for (auto& [name, dir] : name_dir_map) {
+    for (ViolationType violation_type : violation_type_set) {
+      GPStruct violation_struct(DRCUTIL.getString("a_", GetViolationTypeName()(violation_type), "_", name));
+      std::set<LayerRect, CmpLayerRectByXASC> violation_rect_set;
+      {
+        std::string violation_txt = DRCUTIL.getString(dir, "/", GetViolationTypeName()(violation_type), ".txt");
+
+        std::ifstream fin(violation_txt);
+        if (fin.is_open()) {
+          std::string line;
+          int llx, lly, urx, ury;
+          std::string layer;
+
+          while (std::getline(fin, line)) {
+            if (line.empty()) {
+              continue;
+            }
+            std::istringstream iss(line);
+            if (iss >> llx >> lly >> urx >> ury >> layer) {
+              LayerRect violation_rect(llx, lly, urx, ury, routing_layer_name_to_idx_map[layer]);
+              violation_rect_set.insert(violation_rect);
+            } else {
+              std::cerr << "这一行解析失败: " << line << '\n';
+            }
+          }
+        }
+      }
+      for (const LayerRect& violation_rect : violation_rect_set) {
+        GPBoundary gp_boundary;
+        gp_boundary.set_data_type(static_cast<int32_t>(DRCGP.convertGPDataType(violation_type)));
+        gp_boundary.set_rect(violation_rect.get_rect());
+        gp_boundary.set_layer_idx(DRCGP.getGDSIdxByRouting(violation_rect.get_layer_idx()));
+        violation_struct.push(gp_boundary);
+      }
+      gp_gds.addStruct(violation_struct);
+    }
+  }
+
+  std::string gds_file_path = DRCUTIL.getString(rv_temp_directory_path, "cmp_drc.gds");
+  DRCGP.plot(gp_gds, gds_file_path);
+}
+
 #endif
 
 #endif
@@ -178,23 +324,36 @@ void DRCInterface::wrapConfig(std::map<std::string, std::any>& config_map)
   /////////////////////////////////////////////
   DRCDM.getConfig().temp_directory_path = DRCUTIL.getConfigValue<std::string>(config_map, "-temp_directory_path", "./drc_temp_directory");
   DRCDM.getConfig().thread_number = DRCUTIL.getConfigValue<int32_t>(config_map, "-thread_number", 128);
-  DRCDM.getConfig().golden_directory_path = DRCUTIL.getConfigValue<std::string>(config_map, "-golden_directory_path", "null");
   omp_set_num_threads(std::max(DRCDM.getConfig().thread_number, 1));
   /////////////////////////////////////////////
 }
 
 void DRCInterface::wrapDatabase()
 {
+  wrapDBInfo();
   wrapMicronDBU();
+  wrapManufactureGrid();
   wrapDie();
   wrapDesignRule();
   wrapLayerList();
   wrapLayerInfo();
 }
 
+void DRCInterface::wrapDBInfo()
+{
+  DRCDM.getDatabase().set_design_name(dmInst->get_idb_def_service()->get_design()->get_design_name());
+  DRCDM.getDatabase().set_lef_file_path_list(dmInst->get_idb_lef_service()->get_lef_files());
+  DRCDM.getDatabase().set_def_file_path(dmInst->get_idb_def_service()->get_def_file());
+}
+
 void DRCInterface::wrapMicronDBU()
 {
   DRCDM.getDatabase().set_micron_dbu(dmInst->get_idb_def_service()->get_design()->get_units()->get_micron_dbu());
+}
+
+void DRCInterface::wrapManufactureGrid()
+{
+  DRCDM.getDatabase().set_manufacture_grid(dmInst->get_idb_lef_service()->get_layout()->get_munufacture_grid());
 }
 
 void DRCInterface::wrapDie()
@@ -976,10 +1135,6 @@ std::vector<ids::Shape> DRCInterface::buildResultShapeList()
 
 void DRCInterface::printSummary(std::map<std::string, std::vector<ids::Violation>>& type_violation_map)
 {
-  std::string& golden_directory_path = DRCDM.getConfig().golden_directory_path;
-  if (golden_directory_path != "null") {
-    return;
-  }
   int32_t total_violation_num = 0;
   for (auto& [type, violation_list] : type_violation_map) {
     total_violation_num += static_cast<int32_t>(violation_list.size());

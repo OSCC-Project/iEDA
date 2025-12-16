@@ -14,36 +14,27 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
+#include "DRCInterface.hpp"
+#include "tcl_drc.h"
+#include "tcl_util.h"
 
-#include "FixFanout.h"
+namespace tcl {
 
-#include <iostream>
-#include <string>
+TclDRCCmpViolation::TclDRCCmpViolation(const char* cmd_name) : TclCmd(cmd_name)
+{
+  _config_list.push_back(std::make_pair("-ref", ValueType::kString));
 
-namespace ino {
+  TclUtil::addOption(this, _config_list);
+}
 
-class NoConfig;
-class DbInterface;
+unsigned TclDRCCmpViolation::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+  std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
+  DRCI.cmpViolation(config_map);
+  return 1;
+}
 
-class iNO {
- public:
-  iNO() = delete;
-  iNO(const std::string &config_file);
-  ~iNO();
-
-  DbInterface *get_db_interface() { return _db_interface; }
-  NoConfig *get_config() { return _no_config; }
-
-  void fixFanout();
-  void fixIO();
-
-  void initialization(idb::IdbBuilder *idb_build, ista::TimingEngine *timing);
- private:
-
-  // data
-  DbInterface *_db_interface;
-  NoConfig    *_no_config = nullptr;
-};
-
-} // namespace ino
+}  // namespace tcl

@@ -18,7 +18,7 @@
 
 namespace idrc {
 
-void RuleValidator::verifyCornerSpacing(RVBox& rv_box)
+void RuleValidator::verifyCornerSpacing(RVCluster& rv_cluster)
 {
 #if 0
   /*
@@ -60,12 +60,12 @@ void RuleValidator::verifyCornerSpacing(RVBox& rv_box)
   std::map<int32_t, std::map<int32_t, std::vector<PolyInfo>>> routing_net_poly_info_map;
   {
     std::map<int32_t, std::map<int32_t, GTLPolySetInt>> routing_net_gtl_poly_set_map;
-    for (DRCShape* drc_shape : rv_box.get_drc_env_shape_list()) {
+    for (DRCShape* drc_shape : rv_cluster.get_drc_env_shape_list()) {
       if (drc_shape->get_is_routing()) {
         routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
       }
     }
-    for (DRCShape* drc_shape : rv_box.get_drc_result_shape_list()) {
+    for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
       if (drc_shape->get_is_routing()) {
         routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
       }
@@ -226,7 +226,7 @@ void RuleValidator::verifyCornerSpacing(RVBox& rv_box)
                 violation.set_violation_net_set({net_idx, env_net_idx});
                 violation.set_layer_idx(routing_layer_idx);
                 violation.set_rect(violation_rect);
-                rv_box.get_violation_list().push_back(violation);
+                rv_cluster.get_violation_list().push_back(violation);
               }
             }
           }

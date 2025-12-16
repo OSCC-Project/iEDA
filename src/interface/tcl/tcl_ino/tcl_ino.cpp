@@ -49,6 +49,35 @@ unsigned CmdNORunFixFanout::exec()
   return 1;
 }
 
+CmdNORunFixIO::CmdNORunFixIO(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* file_name_option = new TclStringOption(TCL_CONFIG, 1, nullptr);
+  addOption(file_name_option);
+}
+
+unsigned CmdNORunFixIO::check()
+{
+  TclOption* file_name_option = getOptionOrArg(TCL_CONFIG);
+  LOG_FATAL_IF(!file_name_option);
+  return 1;
+}
+
+unsigned CmdNORunFixIO::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+
+  TclOption* option = getOptionOrArg(TCL_CONFIG);
+  auto data_config = option->getStringVal();
+
+  if (iplf::tmInst->RunNOFixIO(data_config)) {
+    std::cout << "iNO fixIO run successfully." << std::endl;
+  }
+
+  return 1;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

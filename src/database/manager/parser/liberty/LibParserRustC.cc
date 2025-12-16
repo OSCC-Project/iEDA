@@ -650,10 +650,24 @@ unsigned RustLibertyReader::visitComplexAttri(
                                 max_fall_cap);
        }},
       {"fanout_length", [&]() {
-         double fanout = rust_convert_float_value(attri_0)->value;
-         double length = rust_convert_float_value(attri_1)->value;
-         dynamic_cast<LibWireLoad*>(lib_obj)->add_length_to_map(
-             static_cast<int>(fanout), length);
+         if (attri_values.len == 2) {
+           double fanout = rust_convert_float_value(attri_0)->value;
+           double length = rust_convert_float_value(attri_1)->value;
+           dynamic_cast<LibWireLoad*>(lib_obj)->add_length_to_map(static_cast<int>(fanout), length);
+         } else if (attri_values.len == 1) {
+           // this case is fix cx55 issue, such as:
+           // fanout_length("1", \
+           //  "0");
+
+           char* fanout_length = rust_convert_string_value(attri_0)->value;
+           auto fanout_lenth_vec = Str::split(fanout_length, ",");
+           LOG_FATAL_IF(fanout_lenth_vec.size() != 2);
+
+           double fanout = std::atof(fanout_lenth_vec[0].c_str());
+           double length = std::atof(fanout_lenth_vec[1].c_str());
+
+           dynamic_cast<LibWireLoad*>(lib_obj)->add_length_to_map(static_cast<int>(fanout), length);
+         }
        }}};
 
   if (process_attri.contains(attri_name)) {

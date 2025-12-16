@@ -148,7 +148,7 @@ void DetailedRouter::routeDRModel(DRModel& dr_model)
     outputJson(dr_model);
     RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", dr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, dr_iter_param_list.size()), ")",
                iter_monitor.getStatsInfo(), "*****");
-    if (stopIteration(dr_model)) {
+    if (stopIteration(dr_model, dr_iter_param_list)) {
       break;
     }
   }
@@ -2233,9 +2233,9 @@ void DetailedRouter::updateBestResult(DRModel& dr_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-bool DetailedRouter::stopIteration(DRModel& dr_model)
+bool DetailedRouter::stopIteration(DRModel& dr_model, std::vector<DRIterParam>& dr_iter_param_list)
 {
-  if (getRouteViolationNum(dr_model) == 0) {
+  if (dr_model.get_iter() != static_cast<int32_t>(dr_iter_param_list.size()) && getRouteViolationNum(dr_model) == 0) {
     RTLOG.info(Loc::current(), "***** Iteration stopped early *****");
     return true;
   }
@@ -2528,17 +2528,21 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
     enlarged_x_size -= 1;
     enlarged_y_size -= 1;
     PlanarRect planar_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-    for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(planar_enlarged_rect, dr_box.get_box_track_axis())) {
-      DRNode& node = dr_node_map[grid_coord.get_x()][grid_coord.get_y()];
-      for (const Orientation& orientation : orientation_set) {
-        if (orientation == Orientation::kAbove || orientation == Orientation::kBelow) {
-          continue;
+    for (auto& [grid, orientation_set] : RTUTIL.getTrackGridOrientationMap(planar_enlarged_rect, dr_box.get_box_track_axis())) {
+      for (int32_t x : *grid.first) {
+        for (int32_t y : *grid.second) {
+          DRNode& node = dr_node_map[x][y];
+          for (const Orientation& orientation : orientation_set) {
+            if (orientation == Orientation::kAbove || orientation == Orientation::kBelow) {
+              continue;
+            }
+            if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
+              continue;
+            }
+            node_orientation_map[&node].insert(orientation);
+            node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
+          }
         }
-        if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
-          continue;
-        }
-        node_orientation_map[&node].insert(orientation);
-        node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
       }
     }
   }
@@ -2551,18 +2555,22 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
     enlarged_x_size -= 1;
     enlarged_y_size -= 1;
     PlanarRect space_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-    for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, dr_box.get_box_track_axis())) {
-      DRNode& node = dr_node_map[grid_coord.get_x()][grid_coord.get_y()];
-      for (const Orientation& orientation : orientation_set) {
-        if (orientation == Orientation::kEast || orientation == Orientation::kWest || orientation == Orientation::kSouth
-            || orientation == Orientation::kNorth) {
-          continue;
+    for (auto& [grid, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, dr_box.get_box_track_axis())) {
+      for (int32_t x : *grid.first) {
+        for (int32_t y : *grid.second) {
+          DRNode& node = dr_node_map[x][y];
+          for (const Orientation& orientation : orientation_set) {
+            if (orientation == Orientation::kEast || orientation == Orientation::kWest || orientation == Orientation::kSouth
+                || orientation == Orientation::kNorth) {
+              continue;
+            }
+            if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
+              continue;
+            }
+            node_orientation_map[&node].insert(orientation);
+            node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
+          }
         }
-        if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
-          continue;
-        }
-        node_orientation_map[&node].insert(orientation);
-        node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
       }
     }
   }
@@ -2647,17 +2655,21 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMa
       enlarged_x_size -= 1;
       enlarged_y_size -= 1;
       PlanarRect space_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-      for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, dr_box.get_box_track_axis())) {
-        if (!RTUTIL.exist(orientation_set, Orientation::kAbove) && !RTUTIL.exist(orientation_set, Orientation::kBelow)) {
-          continue;
-        }
-        DRNode& below_node = layer_node_map[below_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
-        if (RTUTIL.exist(below_node.get_neighbor_node_map(), Orientation::kAbove)) {
-          node_orientation_map[&below_node].insert(Orientation::kAbove);
-        }
-        DRNode& above_node = layer_node_map[above_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
-        if (RTUTIL.exist(above_node.get_neighbor_node_map(), Orientation::kBelow)) {
-          node_orientation_map[&above_node].insert(Orientation::kBelow);
+      for (auto& [grid, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, dr_box.get_box_track_axis())) {
+        for (int32_t x : *grid.first) {
+          for (int32_t y : *grid.second) {
+            if (!RTUTIL.exist(orientation_set, Orientation::kAbove) && !RTUTIL.exist(orientation_set, Orientation::kBelow)) {
+              continue;
+            }
+            DRNode& below_node = layer_node_map[below_routing_layer_idx][x][y];
+            if (RTUTIL.exist(below_node.get_neighbor_node_map(), Orientation::kAbove)) {
+              node_orientation_map[&below_node].insert(Orientation::kAbove);
+            }
+            DRNode& above_node = layer_node_map[above_routing_layer_idx][x][y];
+            if (RTUTIL.exist(above_node.get_neighbor_node_map(), Orientation::kBelow)) {
+              node_orientation_map[&above_node].insert(Orientation::kBelow);
+            }
+          }
         }
       }
     }

@@ -28,6 +28,31 @@ NoIO* NoIO::_instance = nullptr;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+bool NoIO::runNOFixIO(std::string config)
+{
+  // if (config.empty()) {
+  //   /// set config path
+  //   config = flowConfigInst->get_ito_path();
+  // }
+
+  flowConfigInst->set_status_stage("iNO - FixIO");
+
+  ieda::Stats stats;
+
+  /// set data config
+  NoApiInst.initNO(config);
+  /// reset lib & sdc
+  resetConfig(NoApiInst.get_no_config());
+
+  NoApiInst.iNODataInit(dmInst->get_idb_builder(), nullptr);
+  NoApiInst.fixIO();
+
+  flowConfigInst->add_status_runtime(stats.elapsedRunTime());
+  flowConfigInst->set_status_memmory(stats.memoryDelta());
+
+  return true;
+}
+
 bool NoIO::runNOFixFanout(std::string config)
 {
   // if (config.empty()) {

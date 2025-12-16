@@ -26,14 +26,14 @@
 
 namespace idrc {
 
-class RVBox
+class RVCluster
 {
  public:
-  RVBox() = default;
-  ~RVBox() = default;
+  RVCluster() = default;
+  ~RVCluster() = default;
   // getter
-  int32_t get_box_idx() const { return _box_idx; }
-  PlanarRect& get_box_rect() { return _box_rect; }
+  int32_t get_cluster_idx() const { return _cluster_idx; }
+  std::vector<PlanarRect>& get_cluster_rect_list() { return _cluster_rect_list; }
   RVComParam* get_rv_com_param() { return _rv_com_param; }
   std::vector<DRCShape*>& get_drc_env_shape_list() { return _drc_env_shape_list; }
   std::vector<DRCShape*>& get_drc_result_shape_list() { return _drc_result_shape_list; }
@@ -41,12 +41,9 @@ class RVBox
   std::vector<DRCShape>* get_drc_check_region_list() { return _drc_check_region_list; }
   std::set<Violation, CmpViolation>& get_env_violation_set() { return _env_violation_set; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
-  std::map<ViolationType, std::set<Violation, CmpViolation>>& get_type_violation_map() { return _type_violation_map; }
-  std::map<ViolationType, std::set<Violation, CmpViolation>>& get_type_golden_violation_map() { return _type_golden_violation_map; }
-  RVSummary& get_rv_summary() { return _rv_summary; }
   // setter
-  void set_box_idx(const int32_t box_idx) { _box_idx = box_idx; }
-  void set_box_rect(const PlanarRect& box_rect) { _box_rect = box_rect; }
+  void set_cluster_idx(const int32_t cluster_idx) { _cluster_idx = cluster_idx; }
+  void set_cluster_rect_list(const std::vector<PlanarRect>& cluster_rect_list) { _cluster_rect_list = cluster_rect_list; }
   void set_rv_com_param(RVComParam* rv_com_param) { _rv_com_param = rv_com_param; }
   void set_drc_env_shape_list(const std::vector<DRCShape*>& drc_env_shape_list) { _drc_env_shape_list = drc_env_shape_list; }
   void set_drc_result_shape_list(const std::vector<DRCShape*>& drc_result_shape_list) { _drc_result_shape_list = drc_result_shape_list; }
@@ -54,19 +51,10 @@ class RVBox
   void set_drc_check_region_list(std::vector<DRCShape>* drc_check_region_list) { _drc_check_region_list = drc_check_region_list; }
   void set_env_violation_set(const std::set<Violation, CmpViolation>& env_violation_set) { _env_violation_set = env_violation_set; }
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
-  void set_type_violation_map(const std::map<ViolationType, std::set<Violation, CmpViolation>>& type_violation_map)
-  {
-    _type_violation_map = type_violation_map;
-  }
-  void set_type_golden_violation_map(const std::map<ViolationType, std::set<Violation, CmpViolation>>& type_golden_violation_map)
-  {
-    _type_golden_violation_map = type_golden_violation_map;
-  }
-  void set_rv_summary(const RVSummary& rv_summary) { _rv_summary = rv_summary; }
   // function
  private:
-  int32_t _box_idx = -1;
-  PlanarRect _box_rect;
+  int32_t _cluster_idx = -1;
+  std::vector<PlanarRect> _cluster_rect_list;
   RVComParam* _rv_com_param = nullptr;
   std::vector<DRCShape*> _drc_env_shape_list;
   std::vector<DRCShape*> _drc_result_shape_list;
@@ -74,9 +62,6 @@ class RVBox
   std::vector<DRCShape>* _drc_check_region_list;
   std::set<Violation, CmpViolation> _env_violation_set;
   std::vector<Violation> _violation_list;
-  std::map<ViolationType, std::set<Violation, CmpViolation>> _type_violation_map;
-  std::map<ViolationType, std::set<Violation, CmpViolation>> _type_golden_violation_map;
-  RVSummary _rv_summary;
 };
 
 }  // namespace idrc
