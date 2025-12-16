@@ -21,8 +21,8 @@
 #include <set>
 
 #include "DPNode.hh"
-#include "DPSegment.hh"
 #include "data/Rectangle.hh"
+
 namespace ipl{
 
 class DPSegment;

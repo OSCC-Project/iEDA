@@ -27,6 +27,8 @@
 #include "database/DPDatabase.hh"
 #include "DPOperator.hh"
 #include "database/DPNode.hh"
+#include "database/DPBin.hh"
+#include "database/DPSegment.hh"
 
 namespace ipl {
 
