@@ -20,12 +20,12 @@
 
 #include <set>
 
+#include "DPBin.hh"
 #include "DPNode.hh"
 
 namespace ipl{
 
 class DPRow;
-class DPBin;
 
 class DPSegment{
 
