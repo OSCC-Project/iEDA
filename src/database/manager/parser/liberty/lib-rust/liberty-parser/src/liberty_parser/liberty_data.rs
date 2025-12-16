@@ -58,6 +58,13 @@ impl LibertyAttrValue for LibertyStringValue {
     fn get_string_value(&self) -> &str {
         &self.value
     }
+    
+    fn get_float_value(&self) -> f64 {
+        // Try to parse string as float, fallback to panic if not possible
+        self.value.parse::<f64>().unwrap_or_else(|_| {
+            panic!("This is unknown value.");
+        })
+    }
 }
 
 /// liberty stmt.
