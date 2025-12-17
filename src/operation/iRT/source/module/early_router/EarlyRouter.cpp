@@ -169,6 +169,7 @@ void EarlyRouter::setERComParam(ERModel& er_model, std::map<std::string, std::an
   double boundary_wire_unit = 1;
   double internal_wire_unit = 1;
   double internal_via_unit = 1;
+  int32_t topo_spilt_length = 10;
   int32_t expand_step_num = 5;
   int32_t expand_step_length = 2;
   double prefer_wire_unit = 1;
@@ -178,11 +179,12 @@ void EarlyRouter::setERComParam(ERModel& er_model, std::map<std::string, std::an
   int32_t schedule_interval = 3;
 
   /**
-   * stage, resolve_congestion, max_candidate_point_num, supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit, expand_step_num,
-   * expand_step_length, via_unit, overflow_unit, schedule_interval
+   * stage, resolve_congestion, max_candidate_point_num, supply_reduction, boundary_wire_unit, internal_wire_unit, internal_via_unit, topo_spilt_length,
+   * expand_step_num, expand_step_length, via_unit, overflow_unit, schedule_interval
    */
   ERComParam er_com_param(GetERStageByName()(stage_string), resolve_congestion, max_candidate_point_num, supply_reduction, boundary_wire_unit,
-                          internal_wire_unit, internal_via_unit, expand_step_num, expand_step_length, via_unit, overflow_unit, schedule_interval);
+                          internal_wire_unit, internal_via_unit, topo_spilt_length, expand_step_num, expand_step_length, via_unit, overflow_unit,
+                          schedule_interval);
   RTLOG.info(Loc::current(), "stage: ", GetERStageName()(er_com_param.get_stage()));
   RTLOG.info(Loc::current(), "resolve_congestion: ", er_com_param.get_resolve_congestion());
   RTLOG.info(Loc::current(), "max_candidate_point_num: ", er_com_param.get_max_candidate_point_num());
@@ -190,6 +192,7 @@ void EarlyRouter::setERComParam(ERModel& er_model, std::map<std::string, std::an
   RTLOG.info(Loc::current(), "boundary_wire_unit: ", er_com_param.get_boundary_wire_unit());
   RTLOG.info(Loc::current(), "internal_wire_unit: ", er_com_param.get_internal_wire_unit());
   RTLOG.info(Loc::current(), "internal_via_unit: ", er_com_param.get_internal_via_unit());
+  RTLOG.info(Loc::current(), "topo_spilt_length: ", er_com_param.get_topo_spilt_length());
   RTLOG.info(Loc::current(), "expand_step_num: ", er_com_param.get_expand_step_num());
   RTLOG.info(Loc::current(), "expand_step_length: ", er_com_param.get_expand_step_length());
   RTLOG.info(Loc::current(), "via_unit: ", er_com_param.get_via_unit());
@@ -1220,6 +1223,8 @@ std::vector<Segment<PlanarCoord>> EarlyRouter::getPlanarRoutingSegmentList(ERMod
 
 std::vector<Segment<PlanarCoord>> EarlyRouter::getPlanarTopoList(ERModel& er_model)
 {
+  int32_t topo_spilt_length = er_model.get_er_com_param().get_topo_spilt_length();
+
   std::vector<PlanarCoord> planar_coord_list;
   {
     for (ERPin& er_pin : er_model.get_curr_er_task()->get_er_pin_list()) {
@@ -1232,7 +1237,37 @@ std::vector<Segment<PlanarCoord>> EarlyRouter::getPlanarTopoList(ERModel& er_mod
   for (Segment<PlanarCoord>& planar_topo : RTI.getPlanarTopoList(planar_coord_list)) {
     PlanarCoord& first_coord = planar_topo.get_first();
     PlanarCoord& second_coord = planar_topo.get_second();
-    planar_topo_list.emplace_back(first_coord, second_coord);
+    int32_t span_x = std::abs(first_coord.get_x() - second_coord.get_x());
+    int32_t span_y = std::abs(first_coord.get_y() - second_coord.get_y());
+    if (span_x > 1 && span_y > 1 && (span_x > topo_spilt_length || span_y > topo_spilt_length)) {
+      int32_t stick_num_x;
+      if (span_x % topo_spilt_length == 0) {
+        stick_num_x = (span_x / topo_spilt_length - 1);
+      } else {
+        stick_num_x = (span_x < topo_spilt_length) ? (span_x - 1) : (span_x / topo_spilt_length);
+      }
+      int32_t stick_num_y;
+      if (span_y % topo_spilt_length == 0) {
+        stick_num_y = (span_y / topo_spilt_length - 1);
+      } else {
+        stick_num_y = (span_y < topo_spilt_length) ? (span_y - 1) : (span_y / topo_spilt_length);
+      }
+      int32_t stick_num = std::min(stick_num_x, stick_num_y);
+
+      std::vector<PlanarCoord> coord_list;
+      coord_list.push_back(first_coord);
+      double delta_x = static_cast<double>(second_coord.get_x() - first_coord.get_x()) / (stick_num + 1);
+      double delta_y = static_cast<double>(second_coord.get_y() - first_coord.get_y()) / (stick_num + 1);
+      for (int32_t i = 1; i <= stick_num; i++) {
+        coord_list.emplace_back(std::round(first_coord.get_x() + i * delta_x), std::round(first_coord.get_y() + i * delta_y));
+      }
+      coord_list.push_back(second_coord);
+      for (size_t i = 1; i < coord_list.size(); i++) {
+        planar_topo_list.emplace_back(coord_list[i - 1], coord_list[i]);
+      }
+    } else {
+      planar_topo_list.emplace_back(first_coord, second_coord);
+    }
   }
   return planar_topo_list;
 }
