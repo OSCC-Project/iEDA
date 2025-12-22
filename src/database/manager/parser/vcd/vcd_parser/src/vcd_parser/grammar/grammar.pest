@@ -24,7 +24,7 @@ header_section = _{
 }
 
 /* definition */
-module_var_name = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "(" | ")" | "." | "[" | "]" | "/" | "$" | "*")* }
+module_var_name = @{ (ASCII_ALPHA | "_" | "\\") ~ (ASCII_ALPHA | ASCII_DIGIT | "\\" | "_" | "(" | ")" | "." | "[" | "]" | "/" | "$" | "*")* }
 
 variable_type   = {
     "event"
@@ -48,7 +48,7 @@ variable_type   = {
 }
 variable_number = @{ ASCII_DIGIT+ }
 variable_ref    = @{
-    (ASCII_ALPHA | ASCII_DIGIT | "!" | "/" | "," | "@" | "'" | ":" | "~" | "#" | "*" | "(" | ")" | "+" | "{" | "}" | "$" | "%" | "[" | "]" | "`" | "\"" | "&" | ";" | "<" | ">" | "=" | "?" | "-" | "^" | "|" | "\\")+
+    (ASCII_ALPHA | ASCII_DIGIT | "." | "_" | "!" | "/" | "," | "@" | "'" | ":" | "~" | "#" | "*" | "(" | ")" | "+" | "{" | "}" | "$" | "%" | "[" | "]" | "`" | "\"" | "&" | ";" | "<" | ">" | "=" | "?" | "-" | "^" | "|" | "\\")+
 }
 
 bus_slice_left  = @{ ASCII_DIGIT+ }

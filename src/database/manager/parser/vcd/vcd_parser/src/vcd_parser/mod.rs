@@ -30,7 +30,8 @@ fn process_version(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFilePars
 
 /// process scale number.
 fn process_scale_number(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileParser) {
-    let scale_number = pair.as_str().parse::<u32>().unwrap();
+    let scale_number_str = pair.as_str().trim();
+    let scale_number = scale_number_str.parse::<u32>().unwrap();
     let vcd_file = vcd_file_parser.get_vcd_file();
     vcd_file.set_time_resolution(scale_number);
 }
@@ -69,7 +70,7 @@ fn process_open_scope(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileP
     let pair_module = inner_pairs.next_back().unwrap();
     let module_name = pair_module.as_str();
 
-    println!("scope module: {}", module_name);
+    // println!("scope module: {}", module_name);
 
     let new_scope: Rc<RefCell<vcd_data::VCDScope>> = Rc::new(RefCell::new(
         vcd_data::VCDScope::new(String::from(module_name)),
@@ -114,14 +115,23 @@ fn process_variable(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFilePar
                 vcd_signal.set_name(String::from(module_var_name));
             }
             Rule::bus_slice => {
+                // let line_no = inner_pair.line_col().0;
+                // println!("line_no: {}", line_no);
                 let mut slice_pairs = inner_pair.into_inner().into_iter();
-                let slice_left_pair = slice_pairs.next().unwrap();
-                let slice_right_pair = slice_pairs.next_back().unwrap();
 
-                let left_index = slice_left_pair.as_str().parse::<i32>().unwrap();
-                let right_index = slice_right_pair.as_str().parse::<i32>().unwrap();
+                if slice_pairs.len() == 1 {
+                    let slice_pair = slice_pairs.next().unwrap();
+                    let index = slice_pair.as_str().parse::<i32>().unwrap();
+                    vcd_signal.set_bus_index(index, index);                    
+                } else {
+                    let slice_left_pair = slice_pairs.next().unwrap();
+                    let slice_right_pair = slice_pairs.next_back().unwrap();
 
-                vcd_signal.set_bus_index(left_index, right_index);
+                    let left_index = slice_left_pair.as_str().parse::<i32>().unwrap();
+                    let right_index = slice_right_pair.as_str().parse::<i32>().unwrap();
+
+                    vcd_signal.set_bus_index(left_index, right_index);
+                }
             }
             _ => todo!(),
         }
