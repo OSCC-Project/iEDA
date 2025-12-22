@@ -127,7 +127,7 @@ class EarlyRouter
   void routeERPanel(ERPanel& er_panel);
   void initERBoxMap(ERModel& er_model);
   void buildBoxSchedule(ERModel& er_model);
-  void routeTrack(ERModel& er_model);
+  void routeDetailed(ERModel& er_model);
   void routeERBox(ERBox& er_box);
   void updateNetResult(ERModel& er_model);
   void updateNetPatch(ERModel& er_model);
@@ -148,6 +148,15 @@ class EarlyRouter
 #if 1  // update env
   void updateDemandToGraph(ERModel& er_model, ChangeType change_type, MTree<PlanarCoord>& coord_tree);
   void updateDemandToGraph(ERModel& er_model, ChangeType change_type, MTree<LayerCoord>& coord_tree);
+#endif
+
+#if 1  // exhibit
+  void printAccessSummary(ERModel& er_model);
+  void printSupplySummary(ERModel& er_model);
+  void printPlanarSummary(ERModel& er_model);
+  void printLayerSummary(ERModel& er_model);
+  void printTrackSummary(ERModel& er_model);
+  void printDetailedSummary(ERModel& er_model);
 #endif
 
 #if 1  // debug

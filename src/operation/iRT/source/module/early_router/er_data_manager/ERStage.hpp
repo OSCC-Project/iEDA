@@ -38,10 +38,10 @@ struct GetERStageName
         violation_type_name = "none";
         break;
       case ERStage::kEgr2D:
-        violation_type_name = "egr_2d";
+        violation_type_name = "egr2D";
         break;
       case ERStage::kEgr3D:
-        violation_type_name = "egr_3d";
+        violation_type_name = "egr3D";
         break;
       case ERStage::kEdr:
         violation_type_name = "edr";
@@ -59,9 +59,9 @@ struct GetERStageByName
   ERStage operator()(const std::string& violation_type_name) const
   {
     ERStage violation_type;
-    if (violation_type_name == "egr_2d") {
+    if (violation_type_name == "egr2D") {
       violation_type = ERStage::kEgr2D;
-    } else if (violation_type_name == "egr_3d") {
+    } else if (violation_type_name == "egr3D") {
       violation_type = ERStage::kEgr3D;
     } else if (violation_type_name == "edr") {
       violation_type = ERStage::kEdr;
