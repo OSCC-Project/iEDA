@@ -170,7 +170,7 @@ pub extern "C" fn rust_convert_vcd_signal(
         let bus_index_option = (*c_vcd_signal).get_bus_index().clone();
 
         let bus_index_ptr = match bus_index_option {
-            Some(bus_index) => &bus_index as *const (i32, i32) as *mut c_void,
+            Some(bus_index) => Box::into_raw(Box::new(bus_index)) as *mut c_void,
             None => null_mut(),
         };
 
