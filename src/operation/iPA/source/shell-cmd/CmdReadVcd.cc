@@ -57,7 +57,8 @@ unsigned CmdReadVcd::exec() {
   auto vcd_file = file_name_option->getStringVal();
 
   TclOption* top_instance_name_option = getOptionOrArg("-top_name");
-  auto top_instance_name = top_instance_name_option->getStringVal();
+  auto* top_instance_name = top_instance_name_option->getStringVal();
+  LOG_FATAL_IF(!top_instance_name) << "netlist top instance name should be specified";
 
   Sta* ista = Sta::getOrCreateSta();
   Power* ipower = Power::getOrCreatePower(&(ista->get_graph()));

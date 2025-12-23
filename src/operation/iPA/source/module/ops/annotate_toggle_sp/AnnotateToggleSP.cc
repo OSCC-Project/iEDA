@@ -43,6 +43,11 @@ unsigned AnnotateToggleSP::operator()(PwrGraph* the_graph) {
 
       PwrVertex* driver_vertex = the_graph->getDriverVertex(net_name_str);
 
+      if (driver_vertex == nullptr) {
+        LOG_ERROR << "signal " << net_name << "'s driver vertex is not found in power graph.";
+        continue;
+      }
+
       driver_vertex->addData(toggle_data, sp_data, PwrDataSource::kAnnotate,
                              std::nullopt);
       // find snk vertexs.

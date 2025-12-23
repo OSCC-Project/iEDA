@@ -239,9 +239,9 @@ fn process_assign_declaration(
 }
 
 fn extract_range(input: &str) -> Option<(&str, i32, i32)> {
-    if let Some(open_bracket) = input.find('[') {
-        if let Some(close_bracket) = input.find(']') {
-            if let Some(colon) = input.find(':') {
+    if let Some(open_bracket) = input.rfind('[') {
+        if let Some(close_bracket) = input.rfind(']') {
+            if let Some(colon) = input.rfind(':') {
                 let name = &input[..open_bracket];
                 let start = input[open_bracket + 1..colon].parse().ok()?;
                 let end = input[colon + 1..close_bracket].parse().ok()?;

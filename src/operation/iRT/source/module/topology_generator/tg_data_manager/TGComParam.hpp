@@ -22,23 +22,27 @@ class TGComParam
 {
  public:
   TGComParam() = default;
-  TGComParam(int32_t expand_step_num, int32_t expand_step_length, double overflow_unit)
+  TGComParam(int32_t topo_spilt_length, int32_t expand_step_num, int32_t expand_step_length, double overflow_unit)
   {
+    _topo_spilt_length = topo_spilt_length;
     _expand_step_num = expand_step_num;
     _expand_step_length = expand_step_length;
     _overflow_unit = overflow_unit;
   }
   ~TGComParam() = default;
   // getter
+  int32_t get_topo_spilt_length() const { return _topo_spilt_length; }
   int32_t get_expand_step_num() const { return _expand_step_num; }
   int32_t get_expand_step_length() const { return _expand_step_length; }
   double get_overflow_unit() const { return _overflow_unit; }
   // setter
+  void set_topo_spilt_length(const int32_t topo_spilt_length) { _topo_spilt_length = topo_spilt_length; }
   void set_expand_step_num(const int32_t expand_step_num) { _expand_step_num = expand_step_num; }
   void set_expand_step_length(const int32_t expand_step_length) { _expand_step_length = expand_step_length; }
   void set_overflow_unit(const double overflow_unit) { _overflow_unit = overflow_unit; }
 
  private:
+  int32_t _topo_spilt_length = 0;
   int32_t _expand_step_num = 0;
   int32_t _expand_step_length = 0;
   double _overflow_unit = 0;

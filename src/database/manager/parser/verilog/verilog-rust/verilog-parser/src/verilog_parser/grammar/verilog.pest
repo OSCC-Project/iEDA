@@ -1,4 +1,5 @@
 decimal_digits  = _{ ASCII_DIGIT }
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
 // bus_index  = _{ "[" ~ decimal_digits+ ~ "]" }
 range_from = { decimal_digits+ }
 range_to = { decimal_digits+ }
@@ -17,8 +18,8 @@ char = _{ no_equal_char | "=" }
 yosys_hierarchy_declaration = {"(* top =" ~ decimal_digits ~ "*)" }
 
 //(assign_port_or_wire_id donnot contain the whitespace.)
-assign_port_or_wire_id = @{ (char+ ~ " " ~ no_equal_char+) | char+ } 
-port_or_wire_id = @{ (char+ ~ " " ~ char+) | char+ }
+assign_port_or_wire_id = @{ (char+ ~ WHITESPACE+ ~ no_equal_char+) | char+ } 
+port_or_wire_id = @{ (char+ ~ WHITESPACE+ ~ char+) | char+ }
 port_list = { port_or_wire_id ~ ("," ~ port_or_wire_id)* }
 // To do (.v before DC)
 // port_bus_list 
@@ -28,9 +29,9 @@ next_wire_list_with_scalar_constant = _{ (("," ~ scalar_constant) | ("," ~ port_
 wire_list_with_scalar_constant = _{ first_wire_list_with_scalar_constant ~ next_wire_list_with_scalar_constant }
 
 cell_id = { char+ }
-inst_id =  @{ (char+ ~ " " ~ char+) | char+  }
+inst_id =  @{ (char+ ~ WHITESPACE+ ~ char+) | char+  }
 module_id = { char+ }
-WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+
 semicolon_opt = _{ ";" }
 
 input_declaration = { "input" ~ bus_slice? ~ port_list  ~ semicolon_opt }

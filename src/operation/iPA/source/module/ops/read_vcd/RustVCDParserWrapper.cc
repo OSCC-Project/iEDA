@@ -99,8 +99,17 @@ unsigned RustVcdParserWrapper::buildAnnotateDB(const char* top_instance_name) {
           }
           if (signal->signal_size == 1) {
             // scalar signal
+            std::string signal_name(signal->name);
+
+            void* c_bus_index = signal->bus_index;
+
+            if (c_bus_index) {
+                Indexes* bus_index = rust_convert_signal_index(c_bus_index);
+                signal_name+= "[" + std::to_string(bus_index->lindex) + "]";
+            }
+
             auto annotate_signal =
-                std::make_unique<AnnotateSignal>(signal->name);
+                std::make_unique<AnnotateSignal>(signal_name);
             the_scope_instance_ptr->addSignal(std::move(annotate_signal));
           } else {
             // bus signal
@@ -136,45 +145,60 @@ unsigned RustVcdParserWrapper::buildAnnotateDB(const char* top_instance_name) {
 
 unsigned RustVcdParserWrapper::calcScopeToggleAndSp(
     const char* top_instance_name) {
+  LOG_INFO << "calculate toggle and sp for scope " << top_instance_name;
+
   RustTcAndSpResVecs* res_vecs =
       rust_calc_scope_tc_sp(top_instance_name, _vcd_file_ptr);
   auto signal_tc_vec = res_vecs->signal_tc_vec;
   auto signal_sp_vec = res_vecs->signal_duration_vec;
 
+  std::map<std::string, std::pair<RustSignalTC*, RustSignalDuration*>> signal_map;
+  void* signal_tc;
+  FOREACH_VEC_ELEM(&signal_tc_vec, void, signal_tc) {
+    RustSignalTC* cur_signal_tc = rust_convert_signal_tc(signal_tc);
+    signal_map[cur_signal_tc->signal_name].first = cur_signal_tc;
+  }
+
+  void* signal_sp;
+  FOREACH_VEC_ELEM(&signal_sp_vec, void, signal_sp) {
+    RustSignalDuration* cur_signal_sp = rust_convert_signal_duration(signal_sp);
+    signal_map[cur_signal_sp->signal_name].second = cur_signal_sp;
+  }
+
   /*set data to annotate db*/
   auto* top_instance = _annotate_db.get_top_instance();
   std::function<void(AnnotateInstance*)> traverse_instance =
       [&traverse_instance, this, &signal_tc_vec,
-       &signal_sp_vec](auto* instance) {
+       &signal_sp_vec, &signal_map](auto* instance) {
+        LOG_INFO << "traverse instance "
+                 << instance->get_module_instance_name();
+
         AnnotateSignal* signal;
         FOREACH_SIGNAL(instance, signal) {
+          LOG_INFO_EVERY_N(100) << "traverse signal " << signal->get_signal_name();
+
           auto& signal_name = signal->get_signal_name();
           auto* record_data = signal->get_record_data();
+
+          if (signal_map.find(std::string(signal_name)) == signal_map.end()) {
+            LOG_INFO << "signal " << signal_name << " not found in vcd tc sp result";
+            continue;
+          }
+
+          auto* cur_signal_tc = signal_map[std::string(signal_name)].first;
+          auto* cur_signal_sp = signal_map[std::string(signal_name)].second;
+
           // set toggle
-          void* signal_tc;
-          FOREACH_VEC_ELEM(&signal_tc_vec, void, signal_tc) {
-            RustSignalTC* cur_signal_tc = rust_convert_signal_tc(signal_tc);
-            auto* cur_name = cur_signal_tc->signal_name;
-            if (ieda::Str::equal(signal_name.c_str(), cur_name)) {
-              auto cur_tc = cur_signal_tc->signal_tc;
-              AnnotateToggle annotate_toggle;
-              annotate_toggle.set_TC(cur_tc);
-              (*record_data).set_toggle_record(std::move(annotate_toggle));
-            }
-          }
+          auto cur_tc = cur_signal_tc->signal_tc;
+          AnnotateToggle annotate_toggle;
+          annotate_toggle.set_TC(cur_tc);
+          (*record_data).set_toggle_record(std::move(annotate_toggle));
+          
           // set sp
-          void* signal_sp;
-          FOREACH_VEC_ELEM(&signal_sp_vec, void, signal_sp) {
-            RustSignalDuration* cur_signal_sp =
-                rust_convert_signal_duration(signal_sp);
-            auto* cur_name = cur_signal_sp->signal_name;
-            if (ieda::Str::equal(signal_name.c_str(), cur_name)) {
-              AnnotateTime annotate_time(
-                  cur_signal_sp->bit_0_duration, cur_signal_sp->bit_1_duration,
-                  cur_signal_sp->bit_x_duration, cur_signal_sp->bit_z_duration);
-              (*record_data).set_time_record(std::move(annotate_time));
-            }
-          }
+          AnnotateTime annotate_time(
+              cur_signal_sp->bit_0_duration, cur_signal_sp->bit_1_duration,
+              cur_signal_sp->bit_x_duration, cur_signal_sp->bit_z_duration);
+          (*record_data).set_time_record(std::move(annotate_time));
         }
 
         AnnotateInstance* child_instance;

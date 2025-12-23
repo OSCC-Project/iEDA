@@ -16,6 +16,8 @@
 // ***************************************************************************************
 #include "py_eval.h"
 
+#include <algorithm>
+
 #include "congestion_api.h"
 #include "density_api.h"
 #include "timing_api.hh"

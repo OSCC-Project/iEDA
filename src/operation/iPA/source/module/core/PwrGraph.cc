@@ -36,8 +36,11 @@ PwrVertex* PwrGraph::getDriverVertex(const std::string& net_name) {
   Net* cur_net = nl->findNet(net_name.c_str());
   DesignObject* cur_obj = cur_net->getDriver();
   auto driver_sta_vertex = get_sta_graph()->findVertex(cur_obj);
-  LOG_FATAL_IF(!driver_sta_vertex)
-      << "net arc" << net_name << "'s driver vertex is not find";
+  if (!driver_sta_vertex) {
+    LOG_ERROR << "net " << net_name << "'s driver vertex is not find";
+    return nullptr;
+  }
+  
   PwrVertex* driver_pwr_vertex = staToPwrVertex(*driver_sta_vertex);
   return driver_pwr_vertex;
 }
