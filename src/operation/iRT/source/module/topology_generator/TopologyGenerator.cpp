@@ -143,7 +143,7 @@ void TopologyGenerator::initTGTaskList(TGModel& tg_model)
   std::ofstream* task_list_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(tg_temp_directory_path, "tg_task_list.csv"));
   
   // 写入表头
-  RTUTIL.pushStream(task_list_csv_file, "net_idx,net_name,pin_count,connect_type,bbox_ll_x,bbox_ll_y,bbox_ur_x,bbox_ur_y\n");
+  RTUTIL.pushStream(task_list_csv_file, "net_idx,net_name,pin_count,connect_type,bbox_ll_x,bbox_ll_y,bbox_ur_x,bbox_ur_y,pins_xy\n");
   
   // 写入每个网络的信息
   GetConnectTypeName get_connect_type_name;
@@ -158,7 +158,17 @@ void TopologyGenerator::initTGTaskList(TGModel& tg_model)
     RTUTIL.pushStream(task_list_csv_file, bounding_box.get_real_ll_x(), ",");
     RTUTIL.pushStream(task_list_csv_file, bounding_box.get_real_ll_y(), ",");
     RTUTIL.pushStream(task_list_csv_file, bounding_box.get_real_ur_x(), ",");
-    RTUTIL.pushStream(task_list_csv_file, bounding_box.get_real_ur_y(), "\n");
+    RTUTIL.pushStream(task_list_csv_file, bounding_box.get_real_ur_y(), ",");
+
+    // 追加 pins 的 (real_x,real_y) 坐标（以一个字段，用分隔符分隔），避免破坏 CSV 结构
+    std::string pins_str;
+    for (size_t pi = 0; pi < tg_net->get_tg_pin_list().size(); ++pi) {
+      TGPin& tg_pin = tg_net->get_tg_pin_list()[pi];
+      AccessPoint& ap = tg_pin.get_access_point();
+      if (!pins_str.empty()) pins_str += "|"; // 使用竖线分隔不同 pin
+      pins_str += RTUTIL.getString("(", ap.get_real_x(), ",", ap.get_real_y(), ")");
+    }
+    RTUTIL.pushStream(task_list_csv_file, "\"", pins_str, "\"", "\n");
   }
   
   RTUTIL.closeFileStream(task_list_csv_file);
@@ -252,14 +262,25 @@ void TopologyGenerator::generateTGModel(TGModel& tg_model)
   std::vector<TGNet*>& tg_task_list = tg_model.get_tg_task_list();
 
   int32_t batch_size = RTUTIL.getBatchSize(tg_task_list.size());
+  // Percentage-based sampling: unify progress to T frames regardless of net count
+  const int32_t T = 100;
+  int32_t last_frame = 0;
 
   Monitor stage_monitor;
   for (size_t i = 0; i < tg_task_list.size(); i++) {
     routeTGTask(tg_model, tg_task_list[i]);
     
-    // 每50个net输出一次demand map
-    if ((i + 1) % 50 == 0) {
-      outputDemandCSV(tg_model, static_cast<int32_t>(i + 1));
+    int32_t routed = static_cast<int32_t>(i + 1);
+    if (!tg_task_list.empty()) {
+      int32_t target_frame = static_cast<int32_t>(
+          std::floor(static_cast<double>(routed) * T / static_cast<int32_t>(tg_task_list.size()))
+      );
+      if (target_frame > T) target_frame = T;
+
+      if (target_frame > last_frame) {
+          outputDemandCSV(tg_model, target_frame); 
+          last_frame = target_frame;
+      }
     }
     
     if ((i + 1) % batch_size == 0 || (i + 1) == tg_task_list.size()) {
