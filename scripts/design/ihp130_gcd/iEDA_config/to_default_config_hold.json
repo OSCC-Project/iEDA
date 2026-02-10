@@ -33,13 +33,13 @@
     "optimize_hold": true,
     "optimize_setup": false,
     "DRV_insert_buffers": [
-        "sky130_fd_sc_hs__buf_8"
+        "sg13g2_buf_8"
     ],
     "setup_insert_buffers": [
-        "sky130_fd_sc_hs__buf_8"
+        "sg13g2_buf_8"
     ],
     "hold_insert_buffers": [
-        "sky130_fd_sc_hs__buf_8"
+        "sg13g2_buf_8"
     ],
     "number_of_decreasing_slack_iter": 5,
     "max_allowed_buffering_fanout": 20,
