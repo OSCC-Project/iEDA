@@ -1,0 +1,5 @@
+add_subdirectory(itf)
+add_subdirectory(itf_builder)
+add_subdirectory(itf_data)
+add_subdirectory(mapping)
+add_subdirectory(cap_table)

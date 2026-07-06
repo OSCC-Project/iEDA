@@ -23,6 +23,7 @@ add_subdirectory(tcl_eval)
 add_subdirectory(tcl_eco)
 add_subdirectory(tcl_vec)
 add_subdirectory(tcl_notification)
+add_subdirectory(tcl_ircx)
 
 if(CONTEST)
 add_subdirectory(tcl_contest)
@@ -43,7 +44,8 @@ target_link_libraries(ieda_tcl
         tcl_flow
         tcl_icts
         tcl_idrc
-        tcl_irt 
+        tcl_irt
+        tcl_ircx
         tcl_ifp 
         tcl_ipdn
         tcl_inst 

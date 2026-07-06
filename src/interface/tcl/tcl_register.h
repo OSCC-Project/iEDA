@@ -52,6 +52,7 @@
 #include "tcl_register_vec.h"
 #include "tcl_register_pnp.h"
 #include "tcl_register_notification.h"
+#include "tcl_register_ircx.h"
 
 #ifdef CONTEST
 #include "tcl_register_contest.h"
@@ -103,6 +104,8 @@ int registerCommands()
 
   /// Power
   registerCmdPower();
+  /// RCX
+  registerCmdRCX();
 
 #ifdef BUILD_GUI
   /// gui
