@@ -65,6 +65,7 @@ class NesterovPlaceConfig
   bool isOptTiming() const { return _is_opt_timing;}
   bool isOptCongestion() const { return _is_opt_congestion;}
   int32_t get_max_net_wirelength() const { return _max_net_wirelength;}
+  int32_t get_global_padding() const { return _global_padding; }
   const std::vector<float>& get_opt_overflow_list() {return _opt_overflow_list;} 
 
   // setter.
@@ -89,6 +90,7 @@ class NesterovPlaceConfig
   void set_is_opt_timing(bool flag) { _is_opt_timing = flag; }
   void set_is_opt_congestion(bool flag) { _is_opt_congestion = flag;}
   void set_max_net_wirelength(int32_t max_wirelength) { _max_net_wirelength = max_wirelength;}
+  void set_global_padding(int32_t padding) { _global_padding = padding; }
   void add_opt_target_overflow(float overflow) { _opt_overflow_list.push_back(overflow);}
 
  private:
@@ -127,6 +129,9 @@ class NesterovPlaceConfig
 
   // about opt target overflow list
   std::vector<float> _opt_overflow_list;
+
+  // about global right padding (site count)
+  int32_t _global_padding = 0;
 };
 
 }  // namespace ipl

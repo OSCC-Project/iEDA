@@ -42,9 +42,6 @@
 #include "tool_manager.h"
 #include "usage/usage.hh"
 
-#ifdef BUILD_QT
-#include "utility/Image.hh"
-#endif
 namespace gtl = boost::polygon;
 using namespace gtl::operators;
 typedef gtl::polygon_90_set_data<int> PolygonSet;
@@ -62,6 +59,7 @@ namespace ipl {
 void NesterovPlace::initNesConfig(Config* config)
 {
   _nes_config = config->get_nes_config();
+  _global_right_padding = _nes_config.get_global_padding();
 
   if (_nes_config.isOptMaxWirelength() || _nes_config.isOptTiming()) {
     _nes_config.add_opt_target_overflow(0.15);
@@ -154,7 +152,11 @@ void NesterovPlace::wrapNesInstanceList()
 
 void NesterovPlace::wrapNesInstance(Instance* inst, NesInstance* nesInst)
 {
-  nesInst->set_origin_shape(std::move(inst->get_shape()));
+  auto inst_shape = inst->get_shape();
+  int32_t site_width = _nes_database->_placer_db->get_layout()->get_site_width();
+  int32_t right_padding = _global_right_padding * site_width;
+  nesInst->set_origin_shape(
+      Rectangle<int32_t>(inst_shape.get_ll_x(), inst_shape.get_ll_y(), inst_shape.get_ur_x() + right_padding, inst_shape.get_ur_y()));
 
   if (inst->isFixed()) {
     nesInst->set_fixed();
@@ -1467,11 +1469,6 @@ if (iter_num == 1 || iter_num % _nes_config.get_info_iter_num() == 0) {
     printAcrossLongNet(long_net_stream, long_width, long_height);
   }
 
-  if (PLOT_IMAGE) {
-    plotInstImage("inst_" + std::to_string(iter_num));
-    plotBinForceLine("bin_" + std::to_string(iter_num));
-  }
-
   if (isJsonOutputEnabled()) {
     plotInstJson("inst_" + std::to_string(iter_num), iter_num, sum_overflow);
 
@@ -1584,60 +1581,6 @@ void NesterovPlace::notifyPLPlaceDensity()
   PlacerDBInst.place_density[0] = grid_manager->obtainAvgGridDensity();
 }
 
-void NesterovPlace::plotInstImage(std::string file_name)
-{
-#ifdef BUILD_QT
-  auto core_shape = _nes_database->_placer_db->get_layout()->get_core_shape();
-  // auto core_shape = _nes_database->_core_shape;
-  std::vector<NesInstance*>& inst_list = _nes_database->_nInstance_list;
-
-  Image image_ploter(core_shape.get_width(), core_shape.get_height(), _nes_database->_nInstance_list.size());
-
-  int32_t core_shift_x = core_shape.get_ll_x();
-  int32_t core_shift_y = core_shape.get_ll_y();
-
-  // plot bin
-  auto bin_grid_shape = _nes_database->_grid_manager->get_shape();
-  int32_t bin_cnt_x = _nes_database->_grid_manager->get_grid_cnt_x();
-  int32_t bin_cnt_y = _nes_database->_grid_manager->get_grid_cnt_y();
-  int32_t bin_width = _nes_database->_grid_manager->get_grid_size_x();
-  int32_t bin_height = _nes_database->_grid_manager->get_grid_size_y();
-  int32_t bin_grid_x = 0;
-  int32_t bin_grid_y = 0;
-
-  for (int32_t i = 0; i < bin_cnt_x; i++) {
-    image_ploter.drawLine(bin_grid_x, bin_grid_y, bin_grid_x, bin_grid_y + bin_grid_shape.get_height(), IMAGE_COLOR::klightGray);
-    bin_grid_x += bin_width;
-  }
-  image_ploter.drawLine(bin_grid_x, bin_grid_y, bin_grid_x, bin_grid_y + bin_grid_shape.get_height(), IMAGE_COLOR::klightGray);
-
-  bin_grid_x = 0;
-  for (int32_t i = 0; i < bin_cnt_y; i++) {
-    image_ploter.drawLine(bin_grid_x, bin_grid_y, bin_grid_x + bin_grid_shape.get_width(), bin_grid_y, IMAGE_COLOR::klightGray);
-    bin_grid_y += bin_height;
-  }
-  image_ploter.drawLine(bin_grid_x, bin_grid_y, bin_grid_x + bin_grid_shape.get_width(), bin_grid_y, IMAGE_COLOR::klightGray);
-
-  for (auto* inst : inst_list = _nes_database->_nInstance_list) {
-    int32_t inst_real_width = inst->get_origin_shape().get_width();
-    int32_t inst_real_height = inst->get_origin_shape().get_height();
-    auto inst_center = inst->get_density_center_coordi();
-    inst_center.set_x(inst_center.get_x() - core_shift_x);
-    inst_center.set_y(inst_center.get_y() - core_shift_y);
-
-    if (inst->isFiller()) {
-      image_ploter.drawRect(inst_center.get_x(), inst_center.get_y(), inst_real_width, inst_real_height, 0.0, IMAGE_COLOR::kBule);
-    } else if (inst->isMacro()) {
-      image_ploter.drawRect(inst_center.get_x(), inst_center.get_y(), inst_real_width, inst_real_height, 0.0, IMAGE_COLOR::kRed);
-    } else {
-      image_ploter.drawRect(inst_center.get_x(), inst_center.get_y(), inst_real_width, inst_real_height, 0.0);
-    }
-  }
-
-  image_ploter.save(iPLAPIInst.obtainTargetDir() + "/pl/plot/" + file_name + ".jpg");
-#endif
-}
-
 void NesterovPlace::plotInstJson(std::string file_name, int32_t cur_iter, float overflow)
 {
   auto core_shape = _nes_database->_placer_db->get_layout()->get_core_shape();
@@ -1678,66 +1621,6 @@ void NesterovPlace::plotInstJson(std::string file_name, int32_t cur_iter, float 
   out_file.close();
 }
 
-void NesterovPlace::plotBinForceLine(std::string file_name)
-{
-#ifdef BUILD_QT
-  auto core_shape = _nes_database->_placer_db->get_layout()->get_core_shape();
-  // auto core_shape = _nes_database->_core_shape;
-  auto& force_2d_x_list = _nes_database->_density_gradient->get_force_2d_x_list();
-  auto& force_2d_y_list = _nes_database->_density_gradient->get_force_2d_y_list();
-
-  Image image_ploter(core_shape.get_width(), core_shape.get_height(), _nes_database->_nInstance_list.size());
-
-  // plot bin
-  auto bin_grid_shape = _nes_database->_grid_manager->get_shape();
-  int32_t bin_cnt_x = _nes_database->_grid_manager->get_grid_cnt_x();
-  int32_t bin_cnt_y = _nes_database->_grid_manager->get_grid_cnt_y();
-  int32_t bin_width = _nes_database->_grid_manager->get_grid_size_x();
-  int32_t bin_height = _nes_database->_grid_manager->get_grid_size_y();
-  int32_t bin_grid_x = 0;
-  int32_t bin_grid_y = 0;
-
-  for (int32_t i = 0; i < bin_cnt_x; i++) {
-    image_ploter.drawLine(bin_grid_x, bin_grid_y, bin_grid_x, bin_grid_y + bin_grid_shape.get_height(), IMAGE_COLOR::klightGray);
-    bin_grid_x += bin_width;
-  }
-  image_ploter.drawLine(bin_grid_x, bin_grid_y, bin_grid_x, bin_grid_y + bin_grid_shape.get_height(), IMAGE_COLOR::klightGray);
-
-  bin_grid_x = 0;
-  for (int32_t i = 0; i < bin_cnt_y; i++) {
-    image_ploter.drawLine(bin_grid_x, bin_grid_y, bin_grid_x + bin_grid_shape.get_width(), bin_grid_y, IMAGE_COLOR::klightGray);
-    bin_grid_y += bin_height;
-  }
-  image_ploter.drawLine(bin_grid_x, bin_grid_y, bin_grid_x + bin_grid_shape.get_width(), bin_grid_y, IMAGE_COLOR::klightGray);
-
-  float electro_force_max = 0;
-  int max_len = std::numeric_limits<int>::max();
-  for (int i = 0; i < bin_cnt_y; i++) {
-    for (int j = 0; j < bin_cnt_x; j++) {
-      electro_force_max = std::max(electro_force_max, std::hypot(force_2d_x_list[i][j], force_2d_y_list[i][j]));
-      max_len = std::min({max_len, bin_width, bin_height});
-    }
-  }
-
-  for (int i = 0; i < bin_cnt_y; i++) {
-    for (int j = 0; j < bin_cnt_x; j++) {
-      float fx = force_2d_x_list[i][j];
-      float fy = force_2d_y_list[i][j];
-      float f = std::hypot(fx, fy);
-      float ratio = f / electro_force_max;
-      float dx = fx / f * max_len * ratio;
-      float dy = fy / f * max_len * ratio;
-
-      int cx = j * bin_width + bin_width / 2;
-      int cy = i * bin_height + bin_height / 2;
-
-      image_ploter.drawArc(cx, cy, cx + dx, cy + dy);
-    }
-  }
-  image_ploter.save(iPLAPIInst.obtainTargetDir() + "/pl/plot/" + file_name + ".jpg");
-#endif
-}
-
 void NesterovPlace::printIterInfoToCsv(std::ofstream& file_stream, int32_t iter_num)
 {
   file_stream << _nes_database->_wirelength_grad_sum << "," << _nes_database->_density_grad_sum * _nes_database->_density_penalty << ","
@@ -1771,11 +1654,17 @@ void NesterovPlace::printDensityMapToCsv(std::string file_name)
 void NesterovPlace::writeBackPlacerDB()
 {
   // #pragma omp parallel for num_threads(_nes_config.get_thread_num())
+  int32_t site_width = _nes_database->_placer_db->get_layout()->get_site_width();
+  int32_t right_padding = _global_right_padding * site_width;
+  int32_t center_compensation_x = right_padding / 2;
+
   for (auto pair : _nes_database->_instance_map) {
     auto* n_inst = pair.first;
     auto* inst = pair.second;
 
-    inst->update_center_coordi(n_inst->get_density_center_coordi());
+    auto inst_center = n_inst->get_density_center_coordi();
+    inst_center.set_x(inst_center.get_x() - center_compensation_x);
+    inst->update_center_coordi(inst_center);
   }
   PlacerDBInst.updateGridManager();
 }

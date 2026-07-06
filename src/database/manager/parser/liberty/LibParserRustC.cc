@@ -233,6 +233,13 @@ unsigned RustLibertyReader::visitSimpleAttri(RustLibertySimpleAttrStmt* attri) {
          lib_port->set_clock_gate_enable_pin(clock_gate_enable_pin1);
          rust_free_string_value(rust_attri_value);
        }},
+      {"clock",
+       [=]() {
+         auto* rust_attri_value = rust_convert_string_value(attri_value);
+         const char* is_clock_pin = rust_attri_value->value;
+         lib_port->set_is_clock_pin(convert_string_to_bool(is_clock_pin));
+         rust_free_string_value(rust_attri_value);
+       }},
       {"default_fanout_load",
        [=]() {
          auto* rust_attri_value = rust_convert_float_value(attri_value);

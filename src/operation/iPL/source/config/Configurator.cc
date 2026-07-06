@@ -81,6 +81,10 @@ void Config::initConfigByJson(nlohmann::json json)
   float min_precondition = getDataByJson(json, {"PL", "GP", "Nesterov", "min_precondition"});
   float min_phi_coef = getDataByJson(json, {"PL", "GP", "Nesterov", "min_phi_coef"});
   float max_phi_coef = getDataByJson(json, {"PL", "GP", "Nesterov", "max_phi_coef"});
+  int32_t gp_global_padding = 0;
+  if (json.contains("PL") && json["PL"].contains("GP") && json["PL"]["GP"].contains("global_right_padding")) {
+    gp_global_padding = getDataByJson(json, {"PL", "GP", "global_right_padding"});
+  }
 
   // Buffer
   int32_t max_buffer_num = getDataByJson(json, {"PL", "BUFFER", "max_buffer_num"});
@@ -165,6 +169,7 @@ void Config::initConfigByJson(nlohmann::json json)
   _nes_config.set_min_precondition(min_precondition);
   _nes_config.set_min_phi_coef(min_phi_coef);
   _nes_config.set_max_phi_coef(max_phi_coef);
+  _nes_config.set_global_padding(gp_global_padding);
   if (is_max_length_opt) {
     _nes_config.set_is_opt_max_wirelength(true);
     _nes_config.set_max_net_wirelength(max_length_constraint);

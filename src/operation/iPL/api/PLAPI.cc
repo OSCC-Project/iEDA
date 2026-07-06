@@ -841,7 +841,8 @@ bool PLAPI::checkLegality()
 
 bool PLAPI::isSTAStarted()
 {
-  return _external_api->isSTAStarted();
+  // return _external_api->isSTAStarted();
+  return false;
 }
 
 bool PLAPI::isPlacerDBStarted()

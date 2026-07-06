@@ -2046,3 +2046,7 @@ RustLibertyReader Lib::loadLibertyWithRustParser(const char* file_name)
 }
 
 }  // namespace ista
+
+namespace ista {
+bool LibPort::isClock() { return _is_clock_pin; }
+}  // namespace ista

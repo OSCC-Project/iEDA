@@ -7,6 +7,7 @@
         "ignore_net_degree": 100,
         "num_threads": 8,
         "GP": {
+            "global_right_padding": 0,
             "Wirelength": {
                 "init_wirelength_coef": 0.25,
                 "reference_hpwl": 446000000,

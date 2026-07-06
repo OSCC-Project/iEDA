@@ -25,13 +25,69 @@
  */
 
 #include "IDBWrapper.hh"
-
+#include "api/TimingEngine.hh"
 #include <cstdlib>
 #include <regex>
 
 #include "utility/Utility.hh"
 
 namespace ipl {
+
+namespace {
+
+IdbPlacementStatus convertToIdbPlacementStatus(Instance* inst)
+{
+  if (inst == nullptr) {
+    return IdbPlacementStatus::kNone;
+  }
+  if (inst->isFixed()) {
+    return IdbPlacementStatus::kFixed;
+  }
+  if (inst->isUnPlaced() || inst->isPlaced()) {
+    return IdbPlacementStatus::kPlaced;
+  }
+  return IdbPlacementStatus::kNone;
+}
+
+IdbOrient convertToIdbOrient(Orient orient)
+{
+  switch (orient) {
+    case Orient::kN_R0:
+      return IdbOrient::kN_R0;
+    case Orient::kS_R180:
+      return IdbOrient::kS_R180;
+    case Orient::kW_R90:
+      return IdbOrient::kW_R90;
+    case Orient::kE_R270:
+      return IdbOrient::kE_R270;
+    case Orient::kFN_MY:
+      return IdbOrient::kFN_MY;
+    case Orient::kFS_MX:
+      return IdbOrient::kFS_MX;
+    case Orient::kFW_MX90:
+      return IdbOrient::kFW_MX90;
+    case Orient::kFE_MY90:
+      return IdbOrient::kFE_MY90;
+    default:
+      return IdbOrient::kNone;
+  }
+}
+
+void updateIdbInstancePlacement(IdbDesign* idb_design, IdbInstance* idb_inst, Instance* pl_inst)
+{
+  if (idb_design == nullptr || idb_inst == nullptr || pl_inst == nullptr) {
+    return;
+  }
+
+  const auto status = convertToIdbPlacementStatus(pl_inst);
+  const auto orient = convertToIdbOrient(pl_inst->get_orient());
+  const auto coord = pl_inst->get_coordi();
+  if (!idb_design->placeInstance(idb_inst->get_name(), coord.get_x(), coord.get_y(), orient, status)) {
+    LOG_ERROR << "[updateIdbInstancePlacement] failed to place iDB inst. inst=" << idb_inst->get_name();
+  }
+}
+
+}  // namespace
 
 IDBWrapper::IDBWrapper(IdbBuilder* idb_builder) : _idbw_database(new IDBWDatabase())
 {
@@ -437,20 +493,46 @@ void IDBWrapper::deleteInstsForTest()
 
 void IDBWrapper::wrapIdbInstance(IdbInstance* idb_inst)
 {
+  if (!idb_inst) {
+    LOG_ERROR << "[wrapIdbInstance] null IdbInstance pointer.";
+    return;
+  }
+
   auto* ipl_design = _idbw_database->_design;
   auto* ipl_layout = _idbw_database->_layout;
+  if (!ipl_design || !ipl_layout) {
+    LOG_ERROR << "[wrapIdbInstance] invalid wrapper database context for inst ptr=" << idb_inst;
+    return;
+  }
 
   std::string inst_name = fixSlash(idb_inst->get_name());
   Instance* inst_ptr = new Instance(inst_name);
 
-  Cell* cell_ptr = ipl_layout->find_cell(idb_inst->get_cell_master()->get_name());
-  LOG_ERROR_IF(!cell_ptr) << "Cell Master has not been created!";
+  auto* idb_cell_master = idb_inst->get_cell_master();
+  if (!idb_cell_master) {
+    LOG_ERROR << "[wrapIdbInstance] null cell master. inst=" << inst_name;
+    delete inst_ptr;
+    return;
+  }
+
+  std::string master_name = idb_cell_master->get_name();
+  Cell* cell_ptr = ipl_layout->find_cell(master_name);
+  if (!cell_ptr) {
+    LOG_ERROR << "[wrapIdbInstance] Cell Master has not been created! inst=" << inst_name << ", master=" << master_name;
+    delete inst_ptr;
+    return;
+  }
   inst_ptr->set_cell_master(cell_ptr);
   if ("IO_BOND_pad_vddio_e0" == inst_name) {
     LOG_INFO << "IO_BOND_pad_vddio_e0";
   }
   // set instace coordinate.
   auto bbox = idb_inst->get_bounding_box();
+  if (!bbox) {
+    LOG_ERROR << "[wrapIdbInstance] null bounding box. inst=" << inst_name;
+    delete inst_ptr;
+    return;
+  }
   inst_ptr->set_shape(bbox->get_low_x(), bbox->get_low_y(), bbox->get_high_x(), bbox->get_high_y());
 
   // set instance state.
@@ -525,11 +607,26 @@ void IDBWrapper::wrapIdbInstance(IdbInstance* idb_inst)
 
   // cover cell type.
   // TODO : where is clock buffer?
-  if (idb_inst->get_cell_master()->is_block()) {
+  auto _timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+  auto _sta = _timing_engine ? _timing_engine->get_ista() : nullptr;
+  auto lib_cell = _sta ? _sta->findLibertyCell(master_name.c_str()) : nullptr;
+  bool is_clock = false;
+  if (!lib_cell) {
+    LOG_WARNING << "[wrapIdbInstance] liberty cell not found. inst=" << inst_name << ", master=" << master_name;
+  } else {
+    for (auto& port : lib_cell->get_cell_ports()) {
+      if (port->isClock()) {
+        is_clock = true;
+        break;
+      }
+    }
+  }
+
+  if (idb_cell_master->is_block()) {
     cell_ptr->set_type(CELL_TYPE::kMacro);
   } else if (inst_ptr->isOutsideInstance()) {
     cell_ptr->set_type(CELL_TYPE::kIOCell);
-  } else if (idb_inst->is_flip_flop()) {
+  } else if (is_clock || idb_inst->is_flip_flop()) {
     cell_ptr->set_type(CELL_TYPE::kFlipflop);
   } else if (idb_inst->get_type() == IdbInstanceType::kDist) {
     cell_ptr->set_type(CELL_TYPE::kPhysicalFiller);
@@ -758,6 +855,7 @@ void IDBWrapper::wrapRegions(IdbDesign* idb_design)
 
 void IDBWrapper::writeBackSourceDatabase()
 {
+  auto* idb_design = _idbw_database->get_idb_builder()->get_def_service()->get_design();
   for (auto* inst : _idbw_database->_design->get_instance_list()) {
     if (inst->isFakeInstance()) {
       continue;
@@ -775,90 +873,27 @@ void IDBWrapper::writeBackSourceDatabase()
     }
 
     if (idb_inst) {
-      // set state.
-      if (inst->isFixed()) {
-        idb_inst->set_status(IdbPlacementStatus::kFixed);
-      } else if (inst->isUnPlaced() || inst->isPlaced()) {
-        idb_inst->set_status(IdbPlacementStatus::kPlaced);
-      } else {
-        idb_inst->set_status(IdbPlacementStatus::kNone);
-      }
-      // if (inst->isUnPlaced()) {
-      //   // idb_inst->set_status(IdbPlacementStatus::kUnplaced);
-      // } else if (inst->isPlaced()) {
-      //   idb_inst->set_status(IdbPlacementStatus::kPlaced);
-      // } else if (inst->isFixed()) {
-      //   idb_inst->set_status(IdbPlacementStatus::kFixed);
-      // } else {
-      //   idb_inst->set_status(IdbPlacementStatus::kNone);
-      // }
-
-      // set orient.
-      auto inst_orient = inst->get_orient();
-      if (inst_orient == Orient::kN_R0) {
-        idb_inst->set_orient(IdbOrient::kN_R0);
-      } else if (inst_orient == Orient::kS_R180) {
-        idb_inst->set_orient(IdbOrient::kS_R180);
-      } else if (inst_orient == Orient::kW_R90) {
-        idb_inst->set_orient(IdbOrient::kW_R90);
-      } else if (inst_orient == Orient::kE_R270) {
-        idb_inst->set_orient(IdbOrient::kE_R270);
-      } else if (inst_orient == Orient::kFN_MY) {
-        idb_inst->set_orient(IdbOrient::kFN_MY);
-      } else if (inst_orient == Orient::kFS_MX) {
-        idb_inst->set_orient(IdbOrient::kFS_MX);
-      } else if (inst_orient == Orient::kFW_MX90) {
-        idb_inst->set_orient(IdbOrient::kFW_MX90);
-      } else if (inst_orient == Orient::kFE_MY90) {
-        idb_inst->set_orient(IdbOrient::kFE_MY90);
-      } else {
-        idb_inst->set_orient(IdbOrient::kNone);
-      }
-
-      // set coordi.
-      idb_inst->set_coodinate(inst->get_coordi().get_x(), inst->get_coordi().get_y());
+      updateIdbInstancePlacement(idb_design, idb_inst, inst);
     } else {
-      auto* idb_new_inst
-          = _idbw_database->get_idb_builder()->get_def_service()->get_design()->get_instance_list()->add_instance(inst->get_name());
-      auto* idb_cell_master = _idbw_database->get_idb_builder()->get_lef_service()->get_layout()->get_cell_master_list()->find_cell_master(
-          inst->get_cell_master()->get_name());
-      // set cell master.
-      idb_new_inst->set_cell_master(idb_cell_master);
-
-      // set cell name
-
-      // set state.
-      if (inst->isFixed()) {
-        idb_new_inst->set_status(IdbPlacementStatus::kFixed);
-      } else if (inst->isUnPlaced() || inst->isPlaced()) {
-        idb_new_inst->set_status(IdbPlacementStatus::kPlaced);
-      } else {
-        idb_new_inst->set_status(IdbPlacementStatus::kNone);
+      auto* cell_master = inst->get_cell_master();
+      if (cell_master == nullptr) {
+        LOG_ERROR << "[writeBackSourceDatabase] skip creating iDB inst without cell master. inst=" << inst->get_name();
+        continue;
       }
 
-      // set orient.
-      auto inst_orient = inst->get_orient();
-      if (inst_orient == Orient::kN_R0) {
-        idb_new_inst->set_orient(IdbOrient::kN_R0);
-      } else if (inst_orient == Orient::kS_R180) {
-        idb_new_inst->set_orient(IdbOrient::kS_R180);
-      } else if (inst_orient == Orient::kW_R90) {
-        idb_new_inst->set_orient(IdbOrient::kW_R90);
-      } else if (inst_orient == Orient::kE_R270) {
-        idb_new_inst->set_orient(IdbOrient::kE_R270);
-      } else if (inst_orient == Orient::kFN_MY) {
-        idb_new_inst->set_orient(IdbOrient::kFN_MY);
-      } else if (inst_orient == Orient::kFS_MX) {
-        idb_new_inst->set_orient(IdbOrient::kFS_MX);
-      } else if (inst_orient == Orient::kFW_MX90) {
-        idb_new_inst->set_orient(IdbOrient::kFW_MX90);
-      } else if (inst_orient == Orient::kFE_MY90) {
-        idb_new_inst->set_orient(IdbOrient::kFE_MY90);
-      } else {
+      const auto status = convertToIdbPlacementStatus(inst);
+      const auto orient = convertToIdbOrient(inst->get_orient());
+      const auto coord = inst->get_coordi();
+      auto* idb_new_inst = idb_design->createInstance(inst->get_name(), cell_master->get_name(), IdbInstanceType::kNone, status, orient,
+                                                      coord.get_x(), coord.get_y());
+      if (idb_new_inst == nullptr) {
+        LOG_ERROR << "[writeBackSourceDatabase] failed to create iDB inst. inst=" << inst->get_name()
+                  << ", master=" << cell_master->get_name();
+        continue;
       }
 
-      // set coordi.
-      idb_new_inst->set_coodinate(inst->get_coordi().get_x(), inst->get_coordi().get_y());
+      updateIdbInstancePlacement(idb_design, idb_new_inst, inst);
+      _idbw_database->_idb_inst_map[inst] = idb_new_inst;
     }
   }
 }
