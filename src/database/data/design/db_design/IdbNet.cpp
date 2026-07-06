@@ -51,6 +51,7 @@ IdbNet::IdbNet()
 
   _fix_bump = false;
   _frequency = -1;
+  _average_coordinate = nullptr;
 
   _io_pin_list = new IdbPins();
   _instance_pin_list = new IdbPins();
@@ -61,6 +62,11 @@ IdbNet::IdbNet()
 
 IdbNet::~IdbNet()
 {
+  if (_io_pin_list != nullptr) {
+    delete _io_pin_list;
+    _io_pin_list = nullptr;
+  }
+
   if (_instance_pin_list != nullptr) {
     delete _instance_pin_list;
     _instance_pin_list = nullptr;
@@ -75,6 +81,11 @@ IdbNet::~IdbNet()
   if (_wire_list != nullptr) {
     delete _wire_list;
     _wire_list = nullptr;
+  }
+
+  if (_average_coordinate != nullptr) {
+    delete _average_coordinate;
+    _average_coordinate = nullptr;
   }
 }
 
@@ -91,6 +102,17 @@ void IdbNet::set_connect_type(string type)
 void IdbNet::set_source_type(string type)
 {
   _source_type = IdbEnum::GetInstance()->get_instance_property()->get_type(type);
+}
+
+void IdbNet::set_average_coordinate(IdbCoordinate<int32_t>* average_coordinate)
+{
+  if (_average_coordinate == average_coordinate) {
+    return;
+  }
+  if (_average_coordinate != nullptr) {
+    delete _average_coordinate;
+  }
+  _average_coordinate = average_coordinate;
 }
 
 // If pin's direction is OUTPUT, the pin is a driven pin
@@ -140,6 +162,7 @@ IdbPin* IdbNet::get_driving_pin()
   //   }
   //   }
 
+  // 临时修复，可能会有问题，zzs
   if (!_io_pin_list->get_pin_list().empty()) {
     return _io_pin_list->get_pin_list().front();
   }
@@ -199,16 +222,75 @@ bool IdbNet::set_bounding_box()
   return false;
 }
 
+bool IdbNet::has_io_pin(IdbPin* io_pin)
+{
+  return _io_pin_list != nullptr && _io_pin_list->contains(io_pin);
+}
+
+bool IdbNet::has_instance_pin(IdbPin* inst_pin)
+{
+  return _instance_pin_list != nullptr && _instance_pin_list->contains(inst_pin);
+}
+
+bool IdbNet::has_instance(IdbInstance* instance)
+{
+  return _instance_list != nullptr && _instance_list->contains(instance);
+}
+
+IdbPin* IdbNet::add_io_pin_unique(IdbPin* io_pin)
+{
+  if (_io_pin_list == nullptr || io_pin == nullptr) {
+    return nullptr;
+  }
+
+  return _io_pin_list->add_pin_ref_unique(io_pin);
+}
+
+IdbPin* IdbNet::add_instance_pin_unique(IdbPin* inst_pin)
+{
+  if (_instance_pin_list == nullptr || inst_pin == nullptr) {
+    return nullptr;
+  }
+
+  return _instance_pin_list->add_pin_ref_unique(inst_pin);
+}
+
+bool IdbNet::erase_pin_ref(IdbPin* pin)
+{
+  bool erased = false;
+  if (_io_pin_list != nullptr) {
+    erased |= _io_pin_list->erase_pin_ref(pin);
+  }
+  if (_instance_pin_list != nullptr) {
+    erased |= _instance_pin_list->erase_pin_ref(pin);
+  }
+
+  return erased;
+}
+
+bool IdbNet::erase_instance_ref(IdbInstance* instance)
+{
+  if (_instance_list == nullptr || instance == nullptr) {
+    return false;
+  }
+
+  return _instance_list->erase_instance_ref(instance);
+}
+
 void IdbNet::remove_pin(IdbPin* pin)
 {
-  _io_pin_list->remove_pin(pin);
-  _instance_pin_list->remove_pin(pin);
+  erase_pin_ref(pin);
+  if (pin != nullptr && pin->get_net() == this) {
+    pin->remove_net();
+  }
 }
 
 void IdbNet::remove_segment(IdbRegularWireSegment* seg_del)
 {
   for (auto* wire : _wire_list->get_wire_list()) {
-    wire->delete_seg(seg_del);
+    if (wire->delete_seg(seg_del)) {
+      return;
+    }
   }
 }
 
@@ -248,6 +330,139 @@ uint64_t IdbNet::get_via_number()
   }
 
   return number;
+}
+
+void IdbNet::mergeWireSegments()
+{
+  if (_wire_list == nullptr) {
+    return;
+  }
+
+  auto split_segment = [](IdbRegularWireSegment* segment, bool keep_via) -> IdbRegularWireSegment* {
+    if (segment == nullptr) {
+      return nullptr;
+    }
+
+    if (keep_via) {
+      segment->clearPoints();
+      return nullptr;
+    }
+
+    IdbRegularWireSegment* via_seg = new IdbRegularWireSegment();
+    via_seg->set_layer_status(true);
+    via_seg->set_layer_name(segment->get_layer_name());
+    via_seg->set_layer(segment->get_layer());
+    via_seg->set_via_list(segment->take_via_list());
+    via_seg->set_is_via(true);
+    segment->set_is_via(false);
+    return via_seg;
+  };
+
+  auto merge = [&](std::map<int, std::vector<IdbRegularWireSegment*>>& segment_map,
+                   bool b_horizontal) -> std::pair<std::vector<IdbRegularWireSegment*>, std::vector<IdbRegularWireSegment*>> {
+    std::vector<IdbRegularWireSegment*> new_segments;
+    std::vector<IdbRegularWireSegment*> delete_segments;
+
+    for (auto& [coordinate, segments] : segment_map) {
+      if (segments.size() < 2) {
+        continue;
+      }
+
+      std::sort(segments.begin(), segments.end(), [&](IdbRegularWireSegment* a, IdbRegularWireSegment* b) {
+        return b_horizontal ? a->get_point_start()->get_x() < b->get_point_start()->get_x()
+                            : a->get_point_start()->get_y() < b->get_point_start()->get_y();
+      });
+
+      auto it_1 = segments.begin();
+      auto it_2 = segments.begin() + 1;
+      for (; it_2 != segments.end(); it_2++) {
+        auto coord_1_begin = b_horizontal ? (*it_1)->get_point_start()->get_x() : (*it_1)->get_point_start()->get_y();
+        auto coord_1_end = b_horizontal ? (*it_1)->get_point_second()->get_x() : (*it_1)->get_point_second()->get_y();
+        auto coord_2_begin = b_horizontal ? (*it_2)->get_point_start()->get_x() : (*it_2)->get_point_start()->get_y();
+        auto coord_2_end = b_horizontal ? (*it_2)->get_point_second()->get_x() : (*it_2)->get_point_second()->get_y();
+        if (coord_1_begin > coord_1_end) {
+          std::swap(coord_1_begin, coord_1_end);
+        }
+        if (coord_2_begin > coord_2_end) {
+          std::swap(coord_2_begin, coord_2_end);
+        }
+
+        if (coord_1_end >= coord_2_begin) {
+          auto end_coord = std::max(coord_1_end, coord_2_end);
+          b_horizontal ? (*it_1)->get_point_second()->set_x(end_coord) : (*it_1)->get_point_second()->set_y(end_coord);
+
+          if ((*it_1)->is_via()) {
+            IdbRegularWireSegment* via_seg = split_segment((*it_1), false);
+            if (via_seg != nullptr) {
+              new_segments.push_back(via_seg);
+            }
+          }
+
+          if ((*it_2)->is_via()) {
+            split_segment((*it_2), true);
+          } else {
+            delete_segments.push_back((*it_2));
+          }
+        } else {
+          it_1 = it_2;
+        }
+      }
+    }
+
+    return std::make_pair(new_segments, delete_segments);
+  };
+
+  auto update_net = [&](std::vector<IdbRegularWireSegment*>& new_segments, std::vector<IdbRegularWireSegment*>& delete_segments) {
+    for (auto* del_seg : delete_segments) {
+      remove_segment(del_seg);
+    }
+
+    if (!new_segments.empty()) {
+      if (_wire_list->get_wire_list().empty()) {
+        _wire_list->add_wire();
+      }
+      auto& wire_segs = _wire_list->get_wire_list()[0]->get_segment_list();
+      wire_segs.insert(wire_segs.end(), new_segments.begin(), new_segments.end());
+    }
+  };
+
+  struct LayerData
+  {
+    std::map<int, std::vector<IdbRegularWireSegment*>> horizontal_map;
+    std::map<int, std::vector<IdbRegularWireSegment*>> vertical_map;
+  };
+  std::map<int, LayerData> layer_map;
+
+  for (auto* wire : _wire_list->get_wire_list()) {
+    if (wire == nullptr) {
+      continue;
+    }
+    for (auto* segment : wire->get_segment_list()) {
+      if (segment == nullptr || segment->get_layer() == nullptr || !segment->is_wire()) {
+        continue;
+      }
+
+      auto& layer_data = layer_map[segment->get_layer()->get_order()];
+      auto* point_start = segment->get_point_start();
+      auto* point_end = segment->get_point_end();
+      if (point_start == nullptr || point_end == nullptr) {
+        continue;
+      }
+
+      if (point_start->get_y() == point_end->get_y()) {
+        layer_data.horizontal_map[point_start->get_y()].emplace_back(segment);
+      } else {
+        layer_data.vertical_map[point_start->get_x()].emplace_back(segment);
+      }
+    }
+  }
+
+  for (auto& [layer_id, layer_data] : layer_map) {
+    auto [new_segs_h, del_segs_h] = merge(layer_data.horizontal_map, true);
+    auto [new_segs_v, del_segs_v] = merge(layer_data.vertical_map, false);
+    update_net(new_segs_h, del_segs_h);
+    update_net(new_segs_v, del_segs_v);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -295,26 +510,80 @@ IdbNet* IdbNetList::find_net(size_t index)
   return nullptr;
 }
 
+bool IdbNetList::rename_net(IdbNet* net, string new_name)
+{
+  if (net == nullptr || new_name.empty()) {
+    return false;
+  }
+
+  if (find_net(new_name) != nullptr && find_net(new_name) != net) {
+    return false;
+  }
+
+  const string old_name = net->get_net_name();
+  if (!old_name.empty()) {
+    auto map_iter = _net_map.find(old_name);
+    if (map_iter != _net_map.end() && map_iter->second == net) {
+      _net_map.erase(map_iter);
+    }
+  }
+
+  net->set_net_name(new_name);
+  _net_map[new_name] = net;
+
+  std::vector<IdbPin*> pin_list;
+  if (net->get_io_pins() != nullptr) {
+    auto& io_pins = net->get_io_pins()->get_pin_list();
+    pin_list.insert(pin_list.end(), io_pins.begin(), io_pins.end());
+  }
+  if (net->get_instance_pin_list() != nullptr) {
+    auto& inst_pins = net->get_instance_pin_list()->get_pin_list();
+    pin_list.insert(pin_list.end(), inst_pins.begin(), inst_pins.end());
+  }
+  for (auto* pin : pin_list) {
+    if (pin != nullptr && pin->get_net() == net) {
+      pin->set_net_name(new_name);
+    }
+  }
+
+  return true;
+}
+
 IdbNet* IdbNetList::add_net(IdbNet* net)
 {
   IdbNet* pNet = net;
   if (pNet == nullptr) {
     pNet = new IdbNet();
   }
+
+  if (!pNet->get_net_name().empty()) {
+    IdbNet* existed_net = find_net(pNet->get_net_name());
+    if (existed_net != nullptr) {
+      return existed_net;
+    }
+  }
+
   pNet->set_id(_mutex_index++);
   _net_list.emplace_back(pNet);
-  _net_map.insert(make_pair(pNet->get_net_name(), pNet));
+  if (!pNet->get_net_name().empty()) {
+    _net_map[pNet->get_net_name()] = pNet;
+  }
 
   return pNet;
 }
 
 IdbNet* IdbNetList::add_net(string name, IdbConnectType type)
 {
+  IdbNet* existed_net = find_net(name);
+  if (existed_net != nullptr) {
+    return existed_net;
+  }
+
   IdbNet* pNet = new IdbNet();
   pNet->set_id(_mutex_index++);
   pNet->set_net_name(name);
   pNet->set_connect_type(type);
-  _net_map.insert(make_pair(name, pNet));
+  _net_map[name] = pNet;
   _net_list.emplace_back(pNet);
 
   return pNet;
@@ -338,6 +607,25 @@ bool IdbNetList::remove_net(string name)
   auto it = std::find_if(_net_list.begin(), _net_list.end(), [name](auto net) { return name == net->get_net_name(); });
   if (it == _net_list.end()) {
     return false;
+  }
+
+  if (*it != nullptr) {
+    std::vector<IdbPin*> pin_list;
+    auto* net = *it;
+    if (net->get_io_pins() != nullptr) {
+      auto& io_pins = net->get_io_pins()->get_pin_list();
+      pin_list.insert(pin_list.end(), io_pins.begin(), io_pins.end());
+    }
+    if (net->get_instance_pin_list() != nullptr) {
+      auto& inst_pins = net->get_instance_pin_list()->get_pin_list();
+      pin_list.insert(pin_list.end(), inst_pins.begin(), inst_pins.end());
+    }
+
+    for (auto* pin : pin_list) {
+      if (pin != nullptr && pin->get_net() == net) {
+        pin->remove_net();
+      }
+    }
   }
 
   /// delete net & release resource

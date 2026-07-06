@@ -31,6 +31,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "IdbRegion.h"
 
+#include <algorithm>
+
 using namespace std;
 namespace idb {
 
@@ -70,6 +72,25 @@ void IdbRegion::clear_boundary()
       boudary = nullptr;
     }
   }
+}
+
+std::vector<IdbInstance*>& IdbRegion::add_instance(IdbInstance* instance)
+{
+  if (instance != nullptr
+      && std::find(_instance_list.begin(), _instance_list.end(), instance) == _instance_list.end()) {
+    _instance_list.emplace_back(instance);
+  }
+  return _instance_list;
+}
+
+bool IdbRegion::remove_instance(IdbInstance* instance)
+{
+  auto iter = std::remove(_instance_list.begin(), _instance_list.end(), instance);
+  if (iter == _instance_list.end()) {
+    return false;
+  }
+  _instance_list.erase(iter, _instance_list.end());
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -167,11 +167,18 @@ class IdbNet : public IdbObject
   void set_fix_bump(bool fix_bump) { _fix_bump = fix_bump; }
   void set_frequency(double frequency) { _frequency = frequency; }
 
-  void set_average_coordinate(IdbCoordinate<int32_t>* average_coordinate) { _average_coordinate = average_coordinate; }
+  void set_average_coordinate(IdbCoordinate<int32_t>* average_coordinate);
 
-  void add_io_pin(IdbPin* io_pin) { _io_pin_list->add_pin_list(io_pin); }
+  bool has_io_pin(IdbPin* io_pin);
+  bool has_instance_pin(IdbPin* inst_pin);
+  bool has_instance(IdbInstance* instance);
+  IdbPin* add_io_pin_unique(IdbPin* io_pin);
+  IdbPin* add_instance_pin_unique(IdbPin* inst_pin);
+  bool erase_pin_ref(IdbPin* pin);
+  bool erase_instance_ref(IdbInstance* instance);
+  void add_io_pin(IdbPin* io_pin) { add_io_pin_unique(io_pin); }
   //   void set_io_pin(IdbPin* io_pin) { _io_pin = io_pin; }
-  void add_instance_pin(IdbPin* inst_pin) { _instance_pin_list->add_pin_list(inst_pin); }
+  void add_instance_pin(IdbPin* inst_pin) { add_instance_pin_unique(inst_pin); }
   bool set_bounding_box();
 
   // Delete
@@ -180,6 +187,7 @@ class IdbNet : public IdbObject
 
   // operator
   void clear_wire_list();
+  void mergeWireSegments();
   bool checkConnection();
   uint64_t wireLength();
   uint64_t get_via_number();
@@ -310,11 +318,14 @@ class IdbNetList
 
   IdbNet* find_net(string name);
   IdbNet* find_net(size_t index);
+  bool contains(string name) { return find_net(name) != nullptr; }
+  bool rename_net(IdbNet* net, string new_name);
 
   // setter
   IdbNet* add_net(IdbNet* net = nullptr);
   IdbNet* add_net(string name, IdbConnectType type = IdbConnectType::kNone);
   bool remove_net(string name);
+  bool remove_net_only(string name) { return remove_net(name); }
 
   void clear_wire_list();
 

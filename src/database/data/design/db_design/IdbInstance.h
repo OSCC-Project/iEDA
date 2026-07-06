@@ -179,6 +179,7 @@ class IdbInstanceList
 
   // getter
   vector<IdbInstance*>& get_instance_list() { return _instance_list; }
+  vector<IdbInstance*> get_macro_list();
   vector<IdbInstance*> get_iopad_list(std::vector<std::string> master_list = std::vector<std::string>{});
   vector<IdbInstance*> get_corner_list(std::vector<std::string> master_list = std::vector<std::string>{});
   int32_t get_num(IdbInstanceType type = IdbInstanceType::kMax);
@@ -218,6 +219,8 @@ class IdbInstanceList
   IdbInstance* find_instance(string name);
   IdbInstance* find_instance(size_t index);
   vector<IdbInstance*> find_instance_by_master(string master_name);
+  bool contains(IdbInstance* instance);
+  bool contains(string name) { return find_instance(name) != nullptr; }
   bool has_io_cell()
   {
     for (IdbInstance* instance : _instance_list) {
@@ -243,6 +246,9 @@ class IdbInstanceList
   // setter
   IdbInstance* add_instance(IdbInstance* instance = nullptr);
   IdbInstance* add_instance(string name);
+  bool add_instance_ref(IdbInstance* instance);
+  bool erase_instance_ref(string name);
+  bool erase_instance_ref(IdbInstance* instance);
   bool remove_instance(string name);
   void reset(bool delete_memory = true);
 

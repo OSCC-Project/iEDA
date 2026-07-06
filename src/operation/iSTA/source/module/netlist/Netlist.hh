@@ -135,6 +135,24 @@ class Netlist : public DesignObject {
     _nets.erase(it);
   }
 
+  bool renameNet(Net* net, const char* new_name) {
+    if (net == nullptr || new_name == nullptr || new_name[0] == '\0') {
+      return false;
+    }
+    auto found_new_net = _str2net.find(new_name);
+    if (found_new_net != _str2net.end() && found_new_net->second != net) {
+      return false;
+    }
+    auto it = std::find_if(_nets.begin(), _nets.end(),
+                           [net](auto& the_net) { return net == &the_net; });
+    if (it == _nets.end()) {
+      return false;
+    }
+    _str2net.erase(net->get_name());
+    net->set_name(new_name);
+    _str2net[net->get_name()] = net;
+    return true;
+  }
   Net* findNet(const char* net_name) const {
     auto found_net = _str2net.find(net_name);
 

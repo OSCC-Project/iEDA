@@ -171,6 +171,8 @@ class TimingIDBAdapter : public TimingDBAdapter {
                  idb::IdbConnectType connect_type);
   void deleteNet(Net* sta_net);
 
+  bool renameNet(Net* sta_net, const std::string& new_name);
+  bool swapNetNames(Net* left, Net* right);
   void crossRef(Instance* sta_inst, IdbInstance* db_inst) {
     _sta2dbInst[sta_inst] = db_inst;
     _db2staInst[db_inst] = sta_inst;

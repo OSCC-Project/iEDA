@@ -93,7 +93,7 @@ ista::TimingEngine *NoApi::initISTA(idb::IdbBuilder *idb) {
 
   auto idb_adapter = std::make_unique<TimingIDBAdapter>(timing_engine->get_ista());
   idb_adapter->set_idb(idb);
-  idb_adapter->convertDBToTimingNetlist();
+  idb_adapter->convertDBToTimingNetlist(true);
   timing_engine->set_db_adapter(std::move(idb_adapter));
 
   const char *sdc_file = no_config->get_sdc_file().c_str();
@@ -139,8 +139,7 @@ ieda_feature::NetOptSummary NoApi::outputSummary() {
     clock_timing.hold_wns = eval_data.hold_wns;
     clock_timing.suggest_freq = eval_data.freq;
 
-    ieda_feature::NOClockTimingCmp clock_cmp;
-    memset(&clock_cmp, 0, sizeof(ieda_feature::NOClockTimingCmp));
+    ieda_feature::NOClockTimingCmp clock_cmp{};
     clock_cmp.origin = clock_timing;
     summary_map[clock_name] = clock_cmp;
   }

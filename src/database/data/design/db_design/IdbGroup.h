@@ -56,7 +56,8 @@ class IdbGroup
   // setter
   void set_group_name(std::string name) { _group_name = name; }
   void set_region(IdbRegion* region) { _region = region; }
-  void add_instance(IdbInstance* instance) { _instance_list->add_instance(instance); }
+  void add_instance(IdbInstance* instance);
+  bool remove_instance(IdbInstance* instance);
 
  private:
   std::string _group_name;

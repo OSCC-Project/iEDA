@@ -86,7 +86,7 @@ class IdbRegularWireSegment
   IdbCoordinate<int32_t>* get_point_end();
   const bool is_wire() { return _point_list.size() >= _POINT_MAX_ ? true : false; }
   const bool is_via() { return _is_via; }
-  vector<IdbVia*> get_via_list() { return _via_list; }
+  vector<IdbVia*>& get_via_list() { return _via_list; }
   const bool is_rect() { return _is_rect; }
   IdbRect* get_delta_rect() { return _delta_rect; }
   IdbRect get_segment_rect();
@@ -101,6 +101,7 @@ class IdbRegularWireSegment
   IdbCoordinate<int32_t>* add_virtual_point(int32_t x, int32_t y);
   void set_is_via(bool is_via) { _is_via = is_via; }
   void set_via_list(vector<IdbVia*> via_list);
+  vector<IdbVia*> take_via_list();
   void set_via(IdbVia* via) { _via_list.emplace_back(via); }
   IdbVia* copy_via(IdbVia* via);
   void init_via_list(int32_t size) { _via_list.reserve(size); }
@@ -183,7 +184,7 @@ class IdbRegularWire
   void set_shield_name(string shield_name) { _shiled_name = shield_name; }
   IdbRegularWireSegment* add_segment(IdbRegularWireSegment* segment = nullptr);
   IdbRegularWireSegment* add_segment(string layer_name);
-  void delete_seg(IdbRegularWireSegment* seg_del);
+  bool delete_seg(IdbRegularWireSegment* seg_del);
   void reset();
 
   // operator

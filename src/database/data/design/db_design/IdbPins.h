@@ -107,6 +107,7 @@ class IdbPin : public IdbObject
       _net_name = "";
     }
   }
+  void remove_special_net() { _special_net = nullptr; }
 
   // operator
   bool isConnected() { return is_net_pin(); }
@@ -148,14 +149,19 @@ class IdbPins
   IdbPin* find_pin_by_term(std::string term_name);
   std::pair<IdbPin*, IdbRect*> find_pin_by_coordinate(IdbCoordinate<int32_t>* coordinate, IdbLayer* layer = nullptr);
   IdbPin* find_pin_by_coordinate_list(vector<IdbCoordinate<int32_t>*>& coordinate_list, IdbLayer* layer);
+  bool contains(IdbPin* pin);
+  bool contains(std::string pin_name, std::string instance_name = "");
   // setter
   IdbPin* add_pin_list(IdbPin* pin = nullptr);
   IdbPin* add_pin_list(string pin_name);
+  IdbPin* add_pin_ref_unique(IdbPin* pin);
   void reset();
   void init(int32_t size) { _pin_list.reserve(size); }
 
   // Operate
   void remove_pin(IdbPin* pin_remove);
+  bool erase_pin_ref(IdbPin* pin_remove);
+  bool delete_pin(IdbPin* pin_remove);
   int32_t getIOPortWidth();
   void checkPins();
 

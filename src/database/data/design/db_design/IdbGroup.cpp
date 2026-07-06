@@ -53,9 +53,22 @@ IdbGroup::IdbGroup(string group_name)
 IdbGroup::~IdbGroup()
 {
   if (_instance_list) {
+    _instance_list->reset(false);
     delete _instance_list;
     _instance_list = nullptr;
   }
+}
+
+void IdbGroup::add_instance(IdbInstance* instance)
+{
+  if (_instance_list != nullptr) {
+    _instance_list->add_instance_ref(instance);
+  }
+}
+
+bool IdbGroup::remove_instance(IdbInstance* instance)
+{
+  return _instance_list != nullptr && _instance_list->erase_instance_ref(instance);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

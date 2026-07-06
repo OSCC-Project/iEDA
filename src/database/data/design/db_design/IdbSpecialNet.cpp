@@ -91,17 +91,68 @@ void IdbSpecialNet::set_source_type(string type)
 
 void IdbSpecialNet::add_io_pin(IdbPin* io_pin)
 {
-  _io_pin_list->add_pin_list(io_pin);
+  _io_pin_list->add_pin_ref_unique(io_pin);
 }
 
 void IdbSpecialNet::add_instance_pin(IdbPin* inst_pin)
 {
-  _instance_pin_list->add_pin_list(inst_pin);
+  _instance_pin_list->add_pin_ref_unique(inst_pin);
 }
 
 void IdbSpecialNet::add_instance(IdbInstance* instance)
 {
-  _instance_list->add_instance(instance);
+  _instance_list->add_instance_ref(instance);
+}
+
+void IdbSpecialNet::add_wildcard_instance_pin(const string& term_name)
+{
+  if (term_name.empty() || matches_wildcard_instance_pin(term_name)) {
+    return;
+  }
+
+  _pin_string_list.emplace_back(term_name);
+}
+
+bool IdbSpecialNet::matches_wildcard_instance_pin(const string& term_name) const
+{
+  return std::find(_pin_string_list.begin(), _pin_string_list.end(), term_name) != _pin_string_list.end();
+}
+
+bool IdbSpecialNet::has_io_pin(IdbPin* io_pin)
+{
+  return _io_pin_list != nullptr && _io_pin_list->contains(io_pin);
+}
+
+bool IdbSpecialNet::has_instance_pin(IdbPin* inst_pin)
+{
+  return _instance_pin_list != nullptr && _instance_pin_list->contains(inst_pin);
+}
+
+bool IdbSpecialNet::has_instance(IdbInstance* instance)
+{
+  return _instance_list != nullptr && _instance_list->contains(instance);
+}
+
+bool IdbSpecialNet::erase_pin_ref(IdbPin* pin)
+{
+  bool erased = false;
+  if (_io_pin_list != nullptr) {
+    erased |= _io_pin_list->erase_pin_ref(pin);
+  }
+  if (_instance_pin_list != nullptr) {
+    erased |= _instance_pin_list->erase_pin_ref(pin);
+  }
+
+  return erased;
+}
+
+bool IdbSpecialNet::erase_instance_ref(IdbInstance* instance)
+{
+  if (_instance_list == nullptr || instance == nullptr) {
+    return false;
+  }
+
+  return _instance_list->erase_instance_ref(instance);
 }
 
 /// get the width for this net in layer "layer name"
@@ -221,6 +272,14 @@ IdbSpecialNet* IdbSpecialNetList::add_net(IdbSpecialNet* net)
   if (pNet == nullptr) {
     pNet = new IdbSpecialNet();
   }
+
+  if (!pNet->get_net_name().empty()) {
+    IdbSpecialNet* existed_net = find_net(pNet->get_net_name());
+    if (existed_net != nullptr) {
+      return existed_net;
+    }
+  }
+
   _net_list.emplace_back(pNet);
 
   return pNet;
@@ -228,11 +287,48 @@ IdbSpecialNet* IdbSpecialNetList::add_net(IdbSpecialNet* net)
 
 IdbSpecialNet* IdbSpecialNetList::add_net(string name)
 {
+  IdbSpecialNet* existed_net = find_net(name);
+  if (existed_net != nullptr) {
+    return existed_net;
+  }
+
   IdbSpecialNet* pNet = new IdbSpecialNet();
   pNet->set_net_name(name);
   _net_list.emplace_back(pNet);
 
   return pNet;
+}
+
+bool IdbSpecialNetList::remove_net(string name)
+{
+  auto it = std::find_if(_net_list.begin(), _net_list.end(), [name](auto net) { return net != nullptr && name == net->get_net_name(); });
+  if (it == _net_list.end()) {
+    return false;
+  }
+
+  if (*it != nullptr) {
+    std::vector<IdbPin*> pin_list;
+    auto* net = *it;
+    if (net->get_io_pin_list() != nullptr) {
+      auto& io_pins = net->get_io_pin_list()->get_pin_list();
+      pin_list.insert(pin_list.end(), io_pins.begin(), io_pins.end());
+    }
+    if (net->get_instance_pin_list() != nullptr) {
+      auto& inst_pins = net->get_instance_pin_list()->get_pin_list();
+      pin_list.insert(pin_list.end(), inst_pins.begin(), inst_pins.end());
+    }
+
+    for (auto* pin : pin_list) {
+      if (pin != nullptr && pin->get_special_net() == net) {
+        pin->remove_special_net();
+      }
+    }
+  }
+
+  delete *it;
+  *it = nullptr;
+  _net_list.erase(it);
+  return true;
 }
 
 IdbSpecialWire* IdbSpecialNetList::generateWire(string net_name)

@@ -405,6 +405,18 @@ IdbInstanceList::~IdbInstanceList()
   reset();
 }
 
+vector<IdbInstance*> IdbInstanceList::get_macro_list()
+{
+  vector<IdbInstance*> macro_list;
+  for (auto inst : _instance_list) {
+    if (inst->get_cell_master()->is_block()) {
+      macro_list.push_back(inst);
+    }
+  }
+
+  return macro_list;
+}
+
 void IdbInstanceList::reset(bool delete_memory)
 {
   _instance_map.clear();
@@ -438,6 +450,16 @@ IdbInstance* IdbInstanceList::find_instance(size_t index)
   return nullptr;
 }
 
+bool IdbInstanceList::contains(IdbInstance* instance)
+{
+  if (instance == nullptr) {
+    return false;
+  }
+
+  auto iter = std::find(_instance_list.begin(), _instance_list.end(), instance);
+  return iter != _instance_list.end();
+}
+
 vector<IdbInstance*> IdbInstanceList::find_instance_by_master(string master_name)
 {
   vector<IdbInstance*> inst_list;
@@ -457,22 +479,89 @@ IdbInstance* IdbInstanceList::add_instance(IdbInstance* instance)
   if (pInstance == nullptr) {
     pInstance = new IdbInstance();
   }
+
+  if (!pInstance->get_name().empty()) {
+    IdbInstance* existed_inst = find_instance(pInstance->get_name());
+    if (existed_inst != nullptr) {
+      return existed_inst;
+    }
+  } else if (contains(pInstance)) {
+    return pInstance;
+  }
+
   pInstance->set_id(_mutex_index++);
   _instance_list.emplace_back(pInstance);
-  _instance_map.insert(make_pair(instance->get_name(), pInstance));
+  if (!pInstance->get_name().empty()) {
+    _instance_map[pInstance->get_name()] = pInstance;
+  }
 
   return pInstance;
 }
 
 IdbInstance* IdbInstanceList::add_instance(string name)
 {
+  IdbInstance* existed_inst = find_instance(name);
+  if (existed_inst != nullptr) {
+    return existed_inst;
+  }
+
   IdbInstance* pInstance = new IdbInstance();
   pInstance->set_id(_mutex_index++);
   pInstance->set_name(name);
   _instance_list.emplace_back(pInstance);
-  _instance_map.insert(make_pair(name, pInstance));
+  _instance_map[name] = pInstance;
 
   return pInstance;
+}
+
+bool IdbInstanceList::add_instance_ref(IdbInstance* instance)
+{
+  if (instance == nullptr) {
+    return false;
+  }
+
+  if (contains(instance)) {
+    return true;
+  }
+
+  const auto& name = instance->get_name();
+  if (!name.empty()) {
+    IdbInstance* existed_inst = find_instance(name);
+    if (existed_inst != nullptr) {
+      return existed_inst == instance;
+    }
+    _instance_map[name] = instance;
+  }
+
+  _instance_list.emplace_back(instance);
+  return true;
+}
+
+bool IdbInstanceList::erase_instance_ref(string name)
+{
+  auto map_iter = _instance_map.find(name);
+  if (map_iter != _instance_map.end()) {
+    _instance_map.erase(map_iter);
+  }
+
+  auto iter = std::find_if(_instance_list.begin(), _instance_list.end(), [&name](auto instance) {
+    return instance != nullptr && instance->get_name() == name;
+  });
+  if (iter == _instance_list.end()) {
+    return false;
+  }
+
+  _instance_list.erase(iter);
+  return true;
+}
+
+bool IdbInstanceList::erase_instance_ref(IdbInstance* instance)
+{
+  if (instance == nullptr) {
+    return false;
+  }
+
+  return erase_instance_ref(instance->get_name());
 }
 
 /**
@@ -527,7 +616,7 @@ int32_t IdbInstanceList::get_pin_list_by_names(vector<string> pin_name_list, Idb
         vector<string>::iterator iter = std::find(pin_name_list.begin(), pin_name_list.end(), pin->get_term_name());
         if (iter != pin_name_list.end()) {
           pin_list->add_pin_list(pin);
-          instance_list->add_instance(instance);
+          instance_list->add_instance_ref(instance);
           ++number;
 
           // just only one pin connected to current net in one instance

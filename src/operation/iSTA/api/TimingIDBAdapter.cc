@@ -955,4 +955,35 @@ std::string TimingIDBAdapter::changeStaBusNetNameToIdb(
   return Str::addBackslash(sta_net_name);
 }
 
+
+bool TimingIDBAdapter::renameNet(Net* sta_net, const std::string& new_name) {
+  if (sta_net == nullptr || new_name.empty()) { return false; }
+  IdbNet* dnet = staToDb(sta_net);
+  if (dnet == nullptr) { dnet = _idb_design->get_net_list()->find_net(sta_net->get_name()); }
+  if (dnet == nullptr) { return false; }
+  const std::string old_name = sta_net->get_name();
+  if (old_name == new_name) { return true; }
+  auto* design_netlist = getNetlist();
+  if (design_netlist->findNet(new_name.c_str()) != nullptr) { return false; }
+  if (!_idb_design->renameNet(dnet, new_name)) { return false; }
+  if (!design_netlist->renameNet(sta_net, new_name.c_str())) { _idb_design->renameNet(dnet, old_name); return false; }
+  crossRef(sta_net, dnet);
+  return true;
+}
+bool TimingIDBAdapter::swapNetNames(Net* left, Net* right) {
+  if (left == nullptr || right == nullptr || left == right) { return false; }
+  const std::string left_name = left->get_name();
+  const std::string right_name = right->get_name();
+  const std::string temp_base = "__ista_swap_net_";
+  std::string temp_name = _idb_design == nullptr ? temp_base : _idb_design->makeUniqueNetName(temp_base);
+  auto* design_netlist = getNetlist();
+  for (uint64_t index = 0; design_netlist->findNet(temp_name.c_str()) != nullptr
+       || (_idb_design != nullptr && _idb_design->get_net_list()->find_net(temp_name) != nullptr); ++index) {
+    temp_name = temp_base + "_" + std::to_string(index);
+  }
+  if (!renameNet(left, temp_name)) { return false; }
+  if (!renameNet(right, left_name)) { renameNet(left, left_name); return false; }
+  if (!renameNet(left, right_name)) { renameNet(right, right_name); renameNet(left, left_name); return false; }
+  return true;
+}
 }  // namespace ista

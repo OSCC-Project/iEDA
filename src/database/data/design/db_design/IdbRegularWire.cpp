@@ -193,12 +193,16 @@ IdbVia* IdbRegularWireSegment::copy_via(IdbVia* via)
 
 void IdbRegularWireSegment::set_via_list(vector<IdbVia*> via_list)
 {
-  if (_via_list.size() > 0) {
-    set_is_via(true);
-  } else {
-    set_is_via(false);
-  }
-  _via_list = via_list;
+  _via_list = std::move(via_list);
+  set_is_via(!_via_list.empty());
+}
+
+vector<IdbVia*> IdbRegularWireSegment::take_via_list()
+{
+  vector<IdbVia*> via_list;
+  via_list.swap(_via_list);
+  set_is_via(false);
+  return via_list;
 }
 
 void IdbRegularWireSegment::set_delta_rect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y)
@@ -611,11 +615,17 @@ IdbRegularWireSegment* IdbRegularWire::add_segment(string layer_name)
   return segment;
 }
 
-void IdbRegularWire::delete_seg(IdbRegularWireSegment* seg_del)
+bool IdbRegularWire::delete_seg(IdbRegularWireSegment* seg_del)
 {
-  _segment_list.erase(std::find(_segment_list.begin(), _segment_list.end(), seg_del));
+  auto iter = std::find(_segment_list.begin(), _segment_list.end(), seg_del);
+  if (iter == _segment_list.end()) {
+    return false;
+  }
+
+  _segment_list.erase(iter);
   delete seg_del;
   seg_del = nullptr;
+  return true;
 }
 
 void IdbRegularWire::clear_segment()

@@ -54,6 +54,29 @@
 
 namespace idb {
 
+enum class IdbCreatePolicy
+{
+  kReturnExisting,
+  kErrorIfExists,
+  kReplaceExisting
+};
+
+struct IdbConnectivityCheckResult
+{
+  bool ok = true;
+  int duplicate_net_count = 0;
+  int duplicate_instance_count = 0;
+  int duplicate_io_pin_count = 0;
+  int stale_regular_pin_ref_count = 0;
+  int stale_pin_net_ref_count = 0;
+  int stale_special_pin_ref_count = 0;
+  int pin_reverse_mismatch_count = 0;
+  int net_instance_mismatch_count = 0;
+  int duplicate_pin_ref_count = 0;
+  int floating_pin_count = 0;
+  std::vector<std::string> messages;
+};
+
 class IdbDesign
 {
  public:
@@ -100,9 +123,54 @@ class IdbDesign
   double transToUDB(int32_t value) { return ((double) value) / _units->get_micron_dbu(); }
 
   //   void createDefaultVias(IdbLayers* layers);
+  IdbPin* createOrFindIoPin(const std::string& pin_name, IdbCreatePolicy policy = IdbCreatePolicy::kReturnExisting);
+  bool removeIoPinSafe(const std::string& pin_name);
+  bool removeIoPinSafe(IdbPin* pin);
+  IdbInstance* createInstance(const std::string& inst_name, const std::string& master_name,
+                              IdbInstanceType type = IdbInstanceType::kNone,
+                              IdbPlacementStatus status = IdbPlacementStatus::kNone,
+                              IdbOrient orient = IdbOrient::kNone, int32_t coord_x = 0, int32_t coord_y = 0,
+                              IdbCreatePolicy policy = IdbCreatePolicy::kReturnExisting);
+  bool placeInstance(const std::string& inst_name, int32_t coord_x, int32_t coord_y, IdbOrient orient,
+                     IdbPlacementStatus status = IdbPlacementStatus::kPlaced);
+  bool replaceInstanceMaster(const std::string& inst_name, const std::string& master_name, bool preserve_connection = true);
+  bool removeInstanceSafe(const std::string& inst_name);
+  std::string makeUniqueInstanceName(const std::string& prefix) const;
+  IdbNet* createOrFindNet(const std::string& net_name, IdbConnectType type = IdbConnectType::kNone,
+                          IdbCreatePolicy policy = IdbCreatePolicy::kReturnExisting);
+  std::string makeUniqueNetName(const std::string& prefix) const;
+  bool setNetConnectType(const std::string& net_name, IdbConnectType type);
+  bool connectPinToNet(IdbPin* pin, IdbNet* net);
+  bool connectIoPinToNet(const std::string& io_pin_name, const std::string& net_name);
+  bool connectInstancePinToNet(const std::string& inst_name, const std::string& pin_name, const std::string& net_name);
+  bool disconnectPinFromNet(IdbPin* pin);
+  bool removeNetSafe(const std::string& net_name);
+  bool renameNet(IdbNet* net, const std::string& new_name);
+  bool mergeNetInto(const std::string& target_net_name, const std::string& source_net_name, bool move_wires = true);
+  IdbSpecialNet* createOrFindSpecialNet(const std::string& net_name, IdbConnectType type = IdbConnectType::kNone,
+                                        IdbCreatePolicy policy = IdbCreatePolicy::kReturnExisting);
+  bool connectPinToSpecialNet(IdbPin* pin, IdbSpecialNet* net);
+  IdbSpecialNet* findSpecialNetForInstancePin(IdbPin* pin) const;
+  int32_t connectInstancePinsToSpecialNet(const std::vector<std::string>& pin_name_list, IdbSpecialNet* net);
+  int32_t materializeSpecialNetWildcardPins(IdbSpecialNet* net);
+  int32_t materializeAllSpecialNetWildcardPins();
+  bool disconnectPinFromSpecialNet(IdbPin* pin);
+  bool removeSpecialNetSafe(const std::string& net_name);
+  void mergeAllNetWires();
+  IdbPlacementBlockage* addPlacementBlockage(int32_t llx, int32_t lly, int32_t urx, int32_t ury);
+  void addPlacementHalo(const std::string& instance_name, int32_t distance_top, int32_t distance_bottom, int32_t distance_left,
+                        int32_t distance_right);
+  void removeBlockageExceptPGNet();
+  void clearBlockage(std::string type = "");
+  void addRoutingBlockage(int32_t llx, int32_t lly, int32_t urx, int32_t ury, const std::vector<std::string>& layers,
+                          const bool& is_except_pgnet);
+  void addRoutingHalo(const std::string& instance_name, const std::vector<std::string>& layers, int32_t distance_top,
+                      int32_t distance_bottom, int32_t distance_left, int32_t distance_right, const bool& is_except_pgnet);
+  IdbConnectivityCheckResult validateConnectivity(bool check_floating = false) const;
+  bool writeConnectivitySnapshot(const std::string& path, bool check_floating = false) const;
   bool connectIOPinToPowerStripe(std::vector<IdbCoordinate<int32_t>*>& point_list, IdbLayer* layer);
   bool connectPowerStripe(std::vector<IdbCoordinate<int32_t>*>& point_list, std::string net_name, std::string layer_name);
-
+  std::vector<std::string> m_instID2Name;
  private:
   std::string _version = "5.8";
   std::string _design_name;

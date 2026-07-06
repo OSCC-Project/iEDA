@@ -64,11 +64,8 @@ class IdbRegion
   IdbRect* add_boundary(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y);
   void clear_boundary();
 
-  std::vector<IdbInstance*>& add_instance(IdbInstance* instance)
-  {
-    _instance_list.emplace_back(instance);
-    return _instance_list;
-  }
+  std::vector<IdbInstance*>& add_instance(IdbInstance* instance);
+  bool remove_instance(IdbInstance* instance);
 
   // operator
 

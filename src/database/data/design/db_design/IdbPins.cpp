@@ -31,6 +31,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "IdbPins.h"
 
+#include <algorithm>
 #include <cmath>
 
 #include "IdbInstance.h"
@@ -536,9 +537,13 @@ uint IdbPins::get_connected_pin_num()
 
 IdbPin* IdbPins::find_pin(IdbPin* pin)
 {
+  if (pin == nullptr) {
+    return nullptr;
+  }
+
   for (IdbPin* pin_iter : _pin_list) {
     if (pin_iter->get_pin_name() == pin->get_pin_name() && pin->get_instance() == pin_iter->get_instance()) {
-      return pin;
+      return pin_iter;
     }
   }
 
@@ -561,6 +566,16 @@ IdbPin* IdbPins::find_pin(string pin_name, std::string instance_name)
   }
 
   return nullptr;
+}
+
+bool IdbPins::contains(IdbPin* pin)
+{
+  return find_pin(pin) != nullptr;
+}
+
+bool IdbPins::contains(std::string pin_name, std::string instance_name)
+{
+  return find_pin(pin_name, instance_name) != nullptr;
 }
 
 IdbPin* IdbPins::find_pin_by_term(string term_name)
@@ -646,42 +661,42 @@ IdbPin* IdbPins::find_pin_by_coordinate_list(vector<IdbCoordinate<int32_t>*>& co
 
 IdbPin* IdbPins::add_pin_list(IdbPin* pin)
 {
-  //   IdbPin* pPin = nullptr;
-  //   if (pin == nullptr) {
-  //     pPin = new IdbPin();
-  //     _pin_list.emplace_back(pPin);
-  //   } else {
-  //     pPin = find_pin(pin);
-  //     if (nullptr == pPin) {
-  //       _pin_list.emplace_back(pin);
-  //       pPin = pin;
-  //     }
-  //   }
-  IdbPin* pPin = nullptr;
   if (pin == nullptr) {
-    pPin = new IdbPin();
+    IdbPin* pPin = new IdbPin();
     _pin_list.emplace_back(pPin);
-  } else {
-    _pin_list.emplace_back(pin);
-    pPin = pin;
+    return pPin;
   }
 
-  return pPin;
+  return add_pin_ref_unique(pin);
 }
 
 IdbPin* IdbPins::add_pin_list(string pin_name)
 {
-  //   IdbPin* pPin = find_pin(pin_name);
-  //   if (pPin == nullptr) {
-  //     pPin = new IdbPin();
-  //     pPin->set_pin_name(pin_name);
-  //     _pin_list.emplace_back(pPin);
-  //   }
-  IdbPin* pPin = new IdbPin();
+  IdbPin* pPin = find_pin(pin_name);
+  if (pPin != nullptr) {
+    return pPin;
+  }
+
+  pPin = new IdbPin();
   pPin->set_pin_name(pin_name);
   _pin_list.emplace_back(pPin);
 
   return pPin;
+}
+
+IdbPin* IdbPins::add_pin_ref_unique(IdbPin* pin)
+{
+  if (pin == nullptr) {
+    return nullptr;
+  }
+
+  IdbPin* existed_pin = find_pin(pin);
+  if (existed_pin != nullptr) {
+    return existed_pin;
+  }
+
+  _pin_list.emplace_back(pin);
+  return pin;
 }
 /**
  * check if same pin exist and remove it
@@ -721,15 +736,32 @@ void IdbPins::reset()
 
 void IdbPins::remove_pin(IdbPin* pin_remove)
 {
-  for (auto it = _pin_list.begin(); it != _pin_list.end(); it++) {
-    IdbPin* pin = *it;
-    if (pin == pin_remove) {
-      pin->remove_net();
-      _pin_list.erase(it);
-
-      return;
-    }
+  if (pin_remove != nullptr) {
+    pin_remove->remove_net();
   }
+
+  erase_pin_ref(pin_remove);
+}
+
+bool IdbPins::erase_pin_ref(IdbPin* pin_remove)
+{
+  auto it = std::find(_pin_list.begin(), _pin_list.end(), pin_remove);
+  if (it == _pin_list.end()) {
+    return false;
+  }
+
+  _pin_list.erase(it);
+  return true;
+}
+
+bool IdbPins::delete_pin(IdbPin* pin_remove)
+{
+  if (!erase_pin_ref(pin_remove)) {
+    return false;
+  }
+
+  delete pin_remove;
+  return true;
 }
 
 int32_t IdbPins::getIOPortWidth()
