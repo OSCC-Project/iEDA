@@ -1,0 +1,21 @@
+library (ics55_fill_stub) {
+  technology (cmos);
+  delay_model : table_lookup;
+  time_unit : "1ns";
+  voltage_unit : "1V";
+  current_unit : "1mA";
+  capacitive_load_unit (1,pf);
+  pulling_resistance_unit : "1kohm";
+  leakage_power_unit : "1nW";
+  default_cell_leakage_power : 0;
+  nom_process : 1;
+  nom_temperature : 25;
+  nom_voltage : 1.08;
+  operating_conditions (typical) { process : 1; temperature : 25; voltage : 1.08; tree_type : balanced_tree; }
+  default_operating_conditions : typical;
+  cell (FILLTAPH7R) {
+    area : 0.56;
+    pg_pin (VDD) { pg_type : primary_power; voltage_name : "VDD"; }
+    pg_pin (VSS) { pg_type : primary_ground; voltage_name : "VSS"; }
+  }
+}
