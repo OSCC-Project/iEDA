@@ -46,34 +46,29 @@ int32_t PdnPlan::transUnitDB(double value)
 void PdnPlan::addIOPin(std::string pin_name, std::string net_name, std::string direction, bool is_power)
 {
   auto idb_design = dmInst->get_idb_design();
+  idb::IdbConnectType power_type = is_power ? idb::IdbConnectType::kPower : idb::IdbConnectType::kGround;
   idb::IdbSpecialNet* power_net = idb_design->get_special_net_list()->find_net(net_name);
 
   if (power_net == nullptr) {
     std::cout << "[iPDN info]: add net = " << net_name << std::endl;
-    power_net = new idb::IdbSpecialNet();
-    power_net->set_net_name(net_name);
-    idb::IdbConnectType power_type = is_power ? idb::IdbConnectType::kPower : idb::IdbConnectType::kGround;
-    power_net->set_connect_type(power_type);
-    idb_design->get_special_net_list()->add_net(power_net);
   }
+  power_net = idb_design->createOrFindSpecialNet(net_name, power_type);
   idb::IdbPin* io_pin = idb_design->get_io_pin_list()->find_pin(pin_name);
   if (io_pin == nullptr) {
-    io_pin = new idb::IdbPin();
-    idb_design->get_io_pin_list()->add_pin_list(io_pin);
+    io_pin = idb_design->createOrFindIoPin(pin_name);
   }
   idb::IdbTerm* io_term = io_pin->get_term();
   if (io_term == nullptr) {
-    io_term = new IdbTerm();
+    io_term = io_pin->set_term();
   }
   io_pin->set_as_io();
-  io_pin->set_special_net(power_net);
-  io_pin->set_net_name(net_name);
   io_pin->set_term(io_term);
   io_pin->set_pin_name(pin_name);
   //   idb::IdbConnectDirection direct = transferStringToConnectDirection(direction);
   idb::IdbConnectDirection direct = idb::IdbEnum::GetInstance()->get_connect_property()->get_direction(direction);
   io_term->set_direction(direct);
   io_term->set_type(power_net->get_connect_type());
+  idb_design->connectPinToSpecialNet(io_pin, power_net);
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -81,20 +76,9 @@ void PdnPlan::addIOPin(std::string pin_name, std::string net_name, std::string d
 void PdnPlan::globalConnect(const std::string pdn_net_name, const std::string instance_pdn_pin_name, bool is_power)
 {
   auto idb_design = dmInst->get_idb_design();
-  auto idb_pdn_list = idb_design->get_special_net_list();
-
-  idb::IdbSpecialNet* special_net = idb_pdn_list->find_net(pdn_net_name);
-  if (special_net == nullptr) {
-    special_net = new idb::IdbSpecialNet();
-    idb_pdn_list->add_net(special_net);
-    special_net->set_net_name(pdn_net_name);
-  }
+  idb::IdbConnectType type = is_power ? idb::IdbConnectType::kPower : idb::IdbConnectType::kGround;
+  idb::IdbSpecialNet* special_net = idb_design->createOrFindSpecialNet(pdn_net_name, type);
   special_net->add_pin_string(instance_pdn_pin_name);
-  if (is_power) {
-    special_net->set_connect_type(idb::IdbConnectType::kPower);
-  } else {
-    special_net->set_connect_type(idb::IdbConnectType::kGround);
-  }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -169,9 +153,7 @@ void PdnPlan::createGrid(std::string power_net_name, std::string ground_net_name
   auto idb_blockage_list = idb_design->get_blockage_list();
 
   int32_t x_start = idb_core->get_bounding_box()->get_low_x();
-  int32_t y_start = idb_core->get_bounding_box()->get_low_y();
   int32_t x_end = idb_core->get_bounding_box()->get_high_x();
-  int32_t y_end = idb_core->get_bounding_box()->get_high_y();
 
   auto layer = idb_layer_list->find_layer(layer_name);
   /// get the default layer pitch in layer metal 1
@@ -230,10 +212,8 @@ void PdnPlan::createGrid(std::string power_net_name, std::string ground_net_name
     }
   }
 
-  idb_core->get_bounding_box()->set_low_y(y_start - width / 2);
-  idb_core->get_bounding_box()->set_high_y(y_end + width / 2);
-  std::cout << "Core ll coordinate change to:" << idb_core->get_bounding_box()->get_low_x() << " , "
-            << idb_core->get_bounding_box()->get_low_y() << std::endl;
+  // Keep the floorplan core box unchanged. Expanding the real core box here
+  // can leak into later stripe generation and create PG shapes outside DIEAREA.
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -416,16 +396,7 @@ void PdnPlan::createStripe(std::string power_net_name, std::string ground_net_na
     std::cout << "Error : can not find layer." << std::endl;
   }
 
-  /// hardcode
-  // string  routing_layer_name = routing_layers[0]->get_name();
-  /// 110nm
-  std::string routing_layer_name = "METAL1";
-  /// sky 130
-  // string  routing_layer_name = "met1";
   auto core_boundingbox = idb_core->get_bounding_box();
-  int32_t rail_half_route_width = _layer_power_route_info_map[routing_layer_name].get_route_width() / 2;
-  core_boundingbox->set_low_y(core_boundingbox->get_low_y() - rail_half_route_width);
-  core_boundingbox->set_high_y(core_boundingbox->get_high_y() + rail_half_route_width);
 
   int32_t x_start = core_boundingbox->get_low_x();
   int32_t y_start = core_boundingbox->get_low_y();

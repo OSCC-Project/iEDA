@@ -381,13 +381,11 @@ void PowerRouter::addPowerPort(PNPGridManager pnp_network, std::string pin_name,
     LOG_INFO << "Create a new io pin.";
 
     // create a new io pin
-    io_pin = new idb::IdbPin();
-    io_pin->set_pin_name(pin_name);
-    io_pin->set_net_name(pin_name);
+    io_pin = idb_design->createOrFindIoPin(pin_name);
     io_pin->set_term();
-    idb_design->get_io_pin_list()->get_pin_list().emplace_back(io_pin);
-  }
-  else {
+  } else if (io_pin->get_term() == nullptr) {
+    io_pin->set_term();
+  } else {
     io_pin->get_term()->get_port_list().clear();
   }
 
@@ -525,18 +523,9 @@ void PowerRouter::addVSSNet(PNPGridManager pnp_network)
 {
   auto idb_design = dmInst->get_idb_design();
 
-  idb::IdbSpecialNet* vss_net = idb_design->get_special_net_list()->find_net("VSS");
-
-  if (vss_net == nullptr) {
-    idb::IdbSpecialNet* power_net = new idb::IdbSpecialNet();
-    power_net->set_net_name("VSS");
-    power_net->set_connect_type(idb::IdbConnectType::kGround);
-    idb::IdbPin* io_pin = new idb::IdbPin();
-    io_pin->set_pin_name("VSS");
-    power_net->add_io_pin(io_pin);
-
-    idb_design->get_special_net_list()->add_net(power_net);
-    vss_net = power_net;
+  idb::IdbSpecialNet* vss_net = idb_design->createOrFindSpecialNet("VSS", idb::IdbConnectType::kGround);
+  if (auto* io_pin = idb_design->createOrFindIoPin("VSS"); io_pin != nullptr) {
+    idb_design->connectPinToSpecialNet(io_pin, vss_net);
   }
 
   addPowerStripesToDie(vss_net, pnp_network);
@@ -555,18 +544,9 @@ void PowerRouter::addVDDNet(PNPGridManager pnp_network)
 {
   auto idb_design = dmInst->get_idb_design();
 
-  idb::IdbSpecialNet* vdd_net = idb_design->get_special_net_list()->find_net("VDD");
-
-  if (vdd_net == nullptr) {
-    idb::IdbSpecialNet* power_net = new idb::IdbSpecialNet();
-    power_net->set_net_name("VDD");
-    power_net->set_connect_type(idb::IdbConnectType::kPower);
-    idb::IdbPin* io_pin = new idb::IdbPin();
-    io_pin->set_pin_name("VDD");
-    power_net->add_io_pin(io_pin);
-
-    idb_design->get_special_net_list()->add_net(power_net);
-    vdd_net = power_net;
+  idb::IdbSpecialNet* vdd_net = idb_design->createOrFindSpecialNet("VDD", idb::IdbConnectType::kPower);
+  if (auto* io_pin = idb_design->createOrFindIoPin("VDD"); io_pin != nullptr) {
+    idb_design->connectPinToSpecialNet(io_pin, vdd_net);
   }
 
   addPowerStripesToDie(vdd_net, pnp_network);
