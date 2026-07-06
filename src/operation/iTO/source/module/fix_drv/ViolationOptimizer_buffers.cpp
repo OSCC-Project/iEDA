@@ -79,11 +79,9 @@ void ViolationOptimizer::insertBuffer(int x, int y, ista::Net* net, ista::LibCel
   net_signal_input = net;
   // make net name
   std::string net_created_name = (toConfig->get_drv_net_prefix() + to_string(toDmInst->add_net_num()));
-  net_signal_output = db_adapter->createNet(net_created_name.c_str(), nullptr);
-
-  idb::IdbNet* db_net_signal_output = db_adapter->staToDb(net_signal_output);
   idb::IdbNet* db_net_signal_input = db_adapter->staToDb(net_signal_input);
-  db_net_signal_output->set_connect_type(db_net_signal_input->get_connect_type());
+  auto connect_type = db_net_signal_input == nullptr ? idb::IdbConnectType::kSignal : db_net_signal_input->get_connect_type();
+  net_signal_output = db_adapter->createNet(net_created_name.c_str(), nullptr, connect_type);
 
   // Re-connect the pins_loaded to net_signal_output.
   for (auto* pin_port : pins_loaded) {

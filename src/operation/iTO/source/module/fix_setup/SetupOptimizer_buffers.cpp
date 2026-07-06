@@ -90,7 +90,9 @@ void SetupOptimizer::implementVGSolution(BufferedOption* buf_opt, Net* net)
     Instance* buffer = idb_adapter->createInstance(insert_buf_cell, buffer_created_name.c_str());
 
     std::string net_created_name = toConfig->get_setup_net_prefix() + std::to_string(toDmInst->add_net_num());
-    Net* net_out = idb_adapter->createNet(net_created_name.c_str(), nullptr);
+    auto* current_db_net = idb_adapter->staToDb(current_net);
+    auto connect_type = current_db_net == nullptr ? idb::IdbConnectType::kSignal : current_db_net->get_connect_type();
+    Net* net_out = idb_adapter->createNet(net_created_name.c_str(), nullptr, connect_type);
 
     LibPort *input, *output;
     insert_buf_cell->bufferPorts(input, output);
@@ -183,22 +185,19 @@ void SetupOptimizer::insertBufferDivideFanout(StaVertex *driver_vertex) {
         ->createInstance(buf_cell, name.c_str());
   };
 
-  auto createBufferNet = [&](const std::string &name) {
-    return timingEngine->get_sta_adapter()
-        ->createNet(name.c_str(), nullptr);
-  };
-
   std::string buffer_created_name = toConfig->get_setup_buffer_prefix() + std::to_string(toDmInst->add_buffer_num());
   std::string net_name = toConfig->get_setup_net_prefix() + std::to_string(toDmInst->add_net_num());
 
   auto insert_buf_cell = timingEngine->get_buf_lowest_driver_res();
   auto buffer = createBufferInstance(insert_buf_cell, buffer_created_name);
-  auto net_signal_output = createBufferNet(net_name);
+  auto* idb_adapter = timingEngine->get_sta_adapter();
+  auto* db_net_signal_input = idb_adapter->staToDb(net);
+  auto connect_type = db_net_signal_input == nullptr ? idb::IdbConnectType::kSignal : db_net_signal_input->get_connect_type();
+  auto net_signal_output = idb_adapter->createNet(net_name.c_str(), nullptr, connect_type);
 
   LibPort *input, *output;
   insert_buf_cell->bufferPorts(input, output);
 
-  auto *idb_adapter = timingEngine->get_sta_adapter();
   if (!idb_adapter->attach(buffer, input->get_port_name(), net) ||
       !idb_adapter->attach(buffer, output->get_port_name(), net_signal_output)) {
     LOG_ERROR << "Failed to attach buffer ports.";

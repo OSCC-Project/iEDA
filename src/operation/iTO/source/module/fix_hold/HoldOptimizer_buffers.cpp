@@ -49,11 +49,9 @@ void HoldOptimizer::insertHoldDelay(string insert_buf_name, string pin_name, int
   Net *net_signal_input, *net_signal_output;
   net_signal_input = driver_net;
   std::string net_created_name = (toConfig->get_hold_net_prefix() + "byhand_" + to_string(toDmInst->add_net_num()));
-  net_signal_output = idb_adapter->createNet(net_created_name.c_str(), nullptr);
-
-  idb::IdbNet* db_net_signal_output = idb_adapter->staToDb(net_signal_output);
   idb::IdbNet* db_net_signal_input = idb_adapter->staToDb(net_signal_input);
-  db_net_signal_output->set_connect_type(db_net_signal_input->get_connect_type());
+  auto connect_type = db_net_signal_input == nullptr ? idb::IdbConnectType::kSignal : db_net_signal_input->get_connect_type();
+  net_signal_output = idb_adapter->createNet(net_created_name.c_str(), nullptr, connect_type);
 
   /**
    * @brief re-connect load pin to outnet
@@ -90,11 +88,8 @@ void HoldOptimizer::insertHoldDelay(string insert_buf_name, string pin_name, int
     } else {
       std::string net_name = (toConfig->get_hold_net_prefix() + "byhand_" + to_string(toDmInst->add_net_num()));
 
-      buf_out_net = idb_adapter->createNet(net_name.c_str(), nullptr);
+      buf_out_net = idb_adapter->createNet(net_name.c_str(), nullptr, connect_type);
     }
-
-    idb::IdbNet* buf_out_net_db = idb_adapter->staToDb(buf_out_net);
-    buf_out_net_db->set_connect_type(db_net_signal_input->get_connect_type());
 
     std::string buffer_created_name = (toConfig->get_hold_buffer_prefix() + "byhand_" + to_string(toDmInst->add_buffer_num()));
     Instance* buffer = idb_adapter->createInstance(insert_buffer_cell, buffer_created_name.c_str());
@@ -260,9 +255,9 @@ void HoldOptimizer::insertBufferOptHold(StaVertex* driver_vertex, int insert_num
         ->createInstance(buf_cell, name.c_str());
   };
 
-  auto createBufferNet = [&](const std::string &name) {
+  auto createBufferNet = [&](const std::string &name, idb::IdbConnectType connect_type) {
     return timingEngine->get_sta_adapter()
-        ->createNet(name.c_str(), nullptr);
+        ->createNet(name.c_str(), nullptr, connect_type);
   };
 
   auto* driver_obj = driver_vertex->get_design_obj();
@@ -276,11 +271,9 @@ void HoldOptimizer::insertBufferOptHold(StaVertex* driver_vertex, int insert_num
   net_signal_input = driver_net;
 
   std::string net_name = (toConfig->get_hold_net_prefix() + to_string(toDmInst->add_net_num()));
-  net_signal_output = createBufferNet(net_name);
-
-  idb::IdbNet* db_net_signal_output = idb_adapter->staToDb(net_signal_output);
   idb::IdbNet* db_net_signal_input = idb_adapter->staToDb(net_signal_input);
-  db_net_signal_output->set_connect_type(db_net_signal_input->get_connect_type());
+  auto connect_type = db_net_signal_input == nullptr ? idb::IdbConnectType::kSignal : db_net_signal_input->get_connect_type();
+  net_signal_output = createBufferNet(net_name, connect_type);
 
   for (auto* pin_port : pins_loaded) {
     if (pin_port->isPin()) {
@@ -331,11 +324,8 @@ void HoldOptimizer::insertBufferOptHold(StaVertex* driver_vertex, int insert_num
       buf_out_net = net_signal_output;
     } else {
       std::string net_name = (toConfig->get_hold_net_prefix() + to_string(toDmInst->add_net_num()));
-      buf_out_net = createBufferNet(net_name);
+      buf_out_net = createBufferNet(net_name, connect_type);
     }
-
-    idb::IdbNet* buf_out_net_db = idb_adapter->staToDb(buf_out_net);
-    buf_out_net_db->set_connect_type(db_net_signal_input->get_connect_type());
 
     std::string buffer_created_name = (toConfig->get_hold_buffer_prefix() + to_string(toDmInst->add_buffer_num()));
     buffer = createBufferInstance(_hold_insert_buf_cell, buffer_created_name);

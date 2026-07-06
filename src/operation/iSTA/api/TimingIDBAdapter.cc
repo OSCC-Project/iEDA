@@ -986,4 +986,15 @@ bool TimingIDBAdapter::swapNetNames(Net* left, Net* right) {
   if (!renameNet(left, right_name)) { renameNet(right, right_name); renameNet(left, left_name); return false; }
   return true;
 }
+
+bool TimingIDBAdapter::placeInstance(Instance* inst, int32_t coord_x, int32_t coord_y,
+                                     idb::IdbOrient orient, idb::IdbPlacementStatus status) {
+  if (inst == nullptr) { return false; }
+  IdbInstance* idb_inst = staToDb(inst);
+  if (idb_inst == nullptr) {
+    idb_inst = _idb_design->get_instance_list()->find_instance(inst->get_name());
+    if (idb_inst != nullptr) { crossRef(inst, idb_inst); }
+  }
+  return idb_inst != nullptr && _idb_design->placeInstance(idb_inst->get_name(), coord_x, coord_y, orient, status);
+}
 }  // namespace ista

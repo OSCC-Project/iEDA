@@ -40,17 +40,14 @@ void ToTimingEngine::placeInstance(int x, int y, ista::Instance* place_inst)
 {
   TimingIDBAdapter* idb_adapter = get_sta_adapter();
   idb::IdbInstance* idb_inst = idb_adapter->staToDb(place_inst);
+  if (idb_inst == nullptr || idb_inst->get_cell_master() == nullptr) {
+    return;
+  }
   unsigned master_width = idb_inst->get_cell_master()->get_width();
   std::pair<int, int> loc = toPlacer->findNearestSpace(master_width, x, y);
-  idb_inst->set_status_placed();
-  idb_inst->set_coodinate(loc.first, loc.second);
-  // set orient
   auto row = toPlacer->findRow(loc.second);
-  if (row) {
-    idb_inst->set_orient(row->get_site()->get_orient());
-  } else {
-    idb_inst->set_orient(idb::IdbOrient::kN_R0);
-  }
+  auto orient = row ? row->get_site()->get_orient() : idb::IdbOrient::kN_R0;
+  idb_adapter->placeInstance(place_inst, loc.first, loc.second, orient, idb::IdbPlacementStatus::kPlaced);
   toPlacer->updateRow(master_width, loc.first, loc.second);
 }
 
