@@ -29,6 +29,7 @@ class RoutingLayerParser : public PropertyBaseParser<IdbLayerRouting>
  private:
   bool parse_lef58_area(const std::string& value, IdbLayerRouting* data);
   bool parse_lef58_conerfillspacing(const std::string& value, IdbLayerRouting* data);
+  bool parse_lef58_cornerspacing(const std::string& value, IdbLayerRouting* data);
   bool parse_lef58_minimuncut(const std::string& value, IdbLayerRouting* data);
   bool parse_lef58_minstep(const std::string& value, IdbLayerRouting* data);
   bool parse_lef58_spacing(const std::string& value, IdbLayerRouting* data);

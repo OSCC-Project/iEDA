@@ -19,15 +19,20 @@
 #include "DRCHeader.hpp"
 
 namespace idrc {
+struct SameLayerCutSpacing
+{
+  int32_t curr_spacing = -1;
+  int32_t curr_prl = -1;
+  int32_t curr_prl_spacing = -1;
+  bool has_same_net = false;
+};
 
 class SameLayerCutSpacingRule
 {
  public:
   SameLayerCutSpacingRule() = default;
   ~SameLayerCutSpacingRule() = default;
-  int32_t curr_spacing = -1;
-  int32_t curr_prl = -1;
-  int32_t curr_prl_spacing = -1;
+  std::vector<SameLayerCutSpacing> spacings;
 };
 
 }  // namespace idrc

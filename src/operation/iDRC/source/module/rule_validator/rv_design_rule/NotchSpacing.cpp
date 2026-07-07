@@ -21,75 +21,64 @@ namespace idrc {
 void RuleValidator::verifyNotchSpacing(RVCluster& rv_cluster)
 {
   std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
+  const auto& layer_data = rv_cluster.get_layer_data();
 
-  std::map<int32_t, std::map<int32_t, GTLPolySetInt>> routing_net_gtl_poly_set_map;
-  for (DRCShape* drc_shape : rv_cluster.get_drc_env_shape_list()) {
-    if (!drc_shape->get_is_routing() && drc_shape->get_net_idx() == -1) {
-      continue;
-    }
-    routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
-  }
-  for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
-    if (!drc_shape->get_is_routing()) {
-      continue;
-    }
-    routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
-  }
-  for (auto& [routing_layer_idx, net_gtl_poly_set_map] : routing_net_gtl_poly_set_map) {
+  for (auto& [routing_layer_idx, rv_layer_data] : layer_data) {
     RoutingLayer& routing_layer = routing_layer_list[routing_layer_idx];
     NotchSpacingRule& notch_spacing_rule = routing_layer.get_notch_spacing_rule();
     int32_t notch_spacing = notch_spacing_rule.notch_spacing;
     int32_t notch_length = notch_spacing_rule.notch_length;
     std::optional<int32_t> concave_ends = notch_spacing_rule.concave_ends;
-    for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set_map) {
-      std::vector<GTLHolePolyInt> origin_hole_poly_list;
-      gtl_poly_set.get(origin_hole_poly_list);
+    for (auto& [net_idx, routing_net] : rv_layer_data.nets) {
+      if (net_idx == -1) {
+        continue;
+      }
       GTLPolySetInt violation_poly_set;
-      for (GTLHolePolyInt& origin_hole_poly : origin_hole_poly_list) {
-        std::vector<std::pair<GTLHolePolyInt, bool>> check_hole_pair_list;
-        {
-          check_hole_pair_list.emplace_back(origin_hole_poly, false);
-          for (auto iter = origin_hole_poly.begin_holes(); iter != origin_hole_poly.end_holes(); iter++) {
-            GTLPolyInt gtl_poly = *iter;
-            GTLHolePolyInt check_hole_poly;
-            check_hole_poly.set(gtl_poly.begin(), gtl_poly.end());
-            check_hole_pair_list.emplace_back(check_hole_poly, true);
-          }
-        }
+      for (const PolygonData& polygon_data : rv_layer_data.getPolygons(routing_net)) {
         std::vector<PlanarRect> origin_rect_list;
         {
-          std::vector<GTLRectInt> gtl_rect_list;
-          gtl::get_max_rectangles(gtl_rect_list, origin_hole_poly);
-          for (GTLRectInt& gtl_rect : gtl_rect_list) {
+          for (const MaxRectData& max_rect_data : rv_layer_data.getMaxRects(polygon_data)) {
+            GTLRectInt gtl_rect = max_rect_data.rect;
             origin_rect_list.push_back(DRCUTIL.convertToPlanarRect(gtl_rect));
           }
         }
-        for (auto& [check_hole_poly, is_hole] : check_hole_pair_list) {
-          int32_t coord_size = static_cast<int32_t>(check_hole_poly.size());
-          if (coord_size < 4) {
-            return;
+
+        std::set<int32_t> visited_boundary_ids;
+        for (const BoundaryData& seed_boundary : rv_layer_data.getBoundaries(polygon_data)) {
+          int32_t seed_boundary_id = rv_layer_data.getBoundaryId(seed_boundary);
+          if (DRCUTIL.exist(visited_boundary_ids, seed_boundary_id)) {
+            continue;
           }
+
+          std::vector<int32_t> ring_boundary_ids;
+          int32_t boundary_id = seed_boundary_id;
+          do {
+            if (DRCUTIL.exist(visited_boundary_ids, boundary_id)) {
+              break;
+            }
+            visited_boundary_ids.insert(boundary_id);
+            ring_boundary_ids.push_back(boundary_id);
+            boundary_id = rv_layer_data.getBoundary(boundary_id).next_boundary_id;
+          } while (boundary_id != seed_boundary_id);
+
+          int32_t coord_size = static_cast<int32_t>(ring_boundary_ids.size());
+          if (coord_size < 4) {
+            continue;
+          }
+
           std::vector<bool> convex_corner_list;
           std::vector<int32_t> edge_length_list;
           std::vector<Segment<PlanarCoord>> edge_list;
-          {
-            std::vector<PlanarCoord> coord_list;
-            for (auto iter = check_hole_poly.begin(); iter != check_hole_poly.end(); iter++) {
-              coord_list.push_back(DRCUTIL.convertToPlanarCoord(*iter));
-            }
-            for (int32_t i = 0; i < coord_size; i++) {
-              PlanarCoord& pre_coord = coord_list[getIdx(i - 1, coord_size)];
-              PlanarCoord& curr_coord = coord_list[i];
-              PlanarCoord& post_coord = coord_list[getIdx(i + 1, coord_size)];
-              if (is_hole) {
-                convex_corner_list.push_back(DRCUTIL.isConcaveCorner(DRCUTIL.getRotation(check_hole_poly), pre_coord, curr_coord, post_coord));
-              } else {
-                convex_corner_list.push_back(DRCUTIL.isConvexCorner(DRCUTIL.getRotation(check_hole_poly), pre_coord, curr_coord, post_coord));
-              }
-              edge_length_list.push_back(DRCUTIL.getManhattanDistance(pre_coord, curr_coord));
-              edge_list.emplace_back(pre_coord, curr_coord);
-            }
+          convex_corner_list.reserve(coord_size);
+          edge_length_list.reserve(coord_size);
+          edge_list.reserve(coord_size);
+          for (int32_t ring_boundary_id : ring_boundary_ids) {
+            const BoundaryData& boundary_data = rv_layer_data.getBoundary(ring_boundary_id);
+            convex_corner_list.push_back(boundary_data.isConvex);
+            edge_length_list.push_back(boundary_data.edge_length);
+            edge_list.emplace_back(boundary_data.begin_coord, boundary_data.end_coord);
           }
+
           for (int32_t i = 0; i < coord_size; i++) {
             if (concave_ends.has_value()) {
               if (!convex_corner_list[getIdx(i - 1, coord_size)] || convex_corner_list[i] || convex_corner_list[getIdx(i + 1, coord_size)]
@@ -122,7 +111,9 @@ void RuleValidator::verifyNotchSpacing(RVCluster& rv_cluster)
                         if (concave_ends < origin_rect.getWidth()) {
                           has_violation = false;
                         }
-                        break;
+                        if (has_violation == false) {
+                          break;
+                        }
                       }
                     }
                   }

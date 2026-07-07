@@ -101,6 +101,51 @@ class Lef58CornerFillSpacing
   int32_t _eol_width;
 };
 
+// LEF58_CORNERSPACING
+class Lef58CornerSpacing
+{
+ public:
+  enum class CornerType
+  {
+    kNone,
+    kConvexCorner,
+    kConcaveCorner
+  };
+
+  class WidthSpacing
+  {
+   public:
+    WidthSpacing() = default;
+    WidthSpacing(int32_t width, int32_t spacing) : _width(width), _spacing(spacing) {}
+
+    [[nodiscard]] int32_t get_width() const { return _width; }
+    [[nodiscard]] int32_t get_spacing() const { return _spacing; }
+    void set_width(int32_t width) { _width = width; }
+    void set_spacing(int32_t spacing) { _spacing = spacing; }
+
+   private:
+    int32_t _width;
+    int32_t _spacing;
+  };
+
+  [[nodiscard]] CornerType get_corner_type() const { return _corner_type; }
+  [[nodiscard]] std::optional<int32_t> get_except_eol() const { return _except_eol; }
+  [[nodiscard]] const std::vector<WidthSpacing>& get_width_spacing_list() const { return _width_spacing_list; }
+
+  void set_corner_type(CornerType corner_type) { _corner_type = corner_type; }
+  void set_except_eol(int32_t except_eol) { _except_eol = except_eol; }
+  template <typename... Args>
+  void add_width_spacing(Args&&... args)
+  {
+    _width_spacing_list.emplace_back(std::forward<Args>(args)...);
+  }
+
+ private:
+  CornerType _corner_type = CornerType::kNone;
+  std::optional<int32_t> _except_eol;
+  std::vector<WidthSpacing> _width_spacing_list;
+};
+
 // LEF58_MINIMUMCUT
 class Lef58MinimumCut
 {

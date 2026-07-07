@@ -27,6 +27,9 @@ namespace idb::routinglayer_property {
   bool parse_lef58_conerfillspacing(Iterator beg, Iterator end, lef58_cornerfillspacing& spacing);
 
   template<typename Iterator>
+  bool parse_lef58_cornerspacing(Iterator beg, Iterator end, std::vector<lef58_cornerspacing>& spacings);
+
+  template<typename Iterator>
   bool parse_lef58_minimumcut(Iterator beg, Iterator end, std::vector<lef58_minimumcut>& cuts);
 
   template<typename Iterator>
@@ -65,6 +68,25 @@ namespace idb::routinglayer_property {
         lit(";");
 
     bool ok = qi::phrase_parse(beg, end, corner_spacing_rule, space, spacing);
+    if (!ok || beg != end) {
+      std::cout << "Parse \"" << std::string(beg, end) << "\" failed" << std::endl;
+      return false;
+    }
+    return true;
+  }
+
+  template<typename Iterator>
+  bool parse_lef58_cornerspacing(Iterator beg, Iterator end, std::vector<lef58_cornerspacing>& spacings) {
+    const static qi::rule<Iterator, lef58_cornerspacing_width(), space_type> width_spacing_rule =
+        lit("WIDTH") >> double_ >> lit("SPACING") >> double_;
+    const static qi::rule<Iterator, lef58_cornerspacing(), space_type> corner_spacing_rule =
+        lit("CORNERSPACING")
+        >> (qi::string("CONVEXCORNER") | qi::string("CONCAVECORNER"))
+        >> -(lit("EXCEPTEOL") >> double_)
+        >> +width_spacing_rule
+        >> lit(";");
+
+    bool ok = qi::phrase_parse(beg, end, +corner_spacing_rule, space, spacings);
     if (!ok || beg != end) {
       std::cout << "Parse \"" << std::string(beg, end) << "\" failed" << std::endl;
       return false;

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "DRCHeader.hpp"
+#include "Direction.hpp"
 #include "Logger.hpp"
 #include "Orientation.hpp"
 #include "PlanarRect.hpp"
@@ -56,13 +57,56 @@ class Utility
     }
   }
 
-  static int32_t getParallelLength(PlanarRect& a, PlanarRect& b)
+  static double getProjectionDistance(PlanarRect a, PlanarRect b)
   {
-    int32_t x_parallel_length = std::max(0, std::min(a.get_ur_x(), b.get_ur_x()) - std::max(a.get_ll_x(), b.get_ll_x()));
-    int32_t y_parallel_length = std::max(0, std::min(a.get_ur_y(), b.get_ur_y()) - std::max(a.get_ll_y(), b.get_ll_y()));
+    int32_t x_spacing = std::max(b.get_ll_x() - a.get_ur_x(), a.get_ll_x() - b.get_ur_x());
+    int32_t y_spacing = std::max(b.get_ll_y() - a.get_ur_y(), a.get_ll_y() - b.get_ur_y());
+    if (getParallelLength(a, b) >= 0) {
+      return getEuclideanDistance(a, b);
+    } else {
+      return std::max(std::abs(x_spacing), std::abs(y_spacing));
+    }
+  }
+
+  static int32_t getParallelLength(const PlanarRect& a, const PlanarRect& b)
+  {
+    int32_t x_parallel_length = std::min(a.get_ur_x(), b.get_ur_x()) - std::max(a.get_ll_x(), b.get_ll_x());
+    int32_t y_parallel_length = std::min(a.get_ur_y(), b.get_ur_y()) - std::max(a.get_ll_y(), b.get_ll_y());
     return std::max(x_parallel_length, y_parallel_length);
   }
 
+  static int32_t getOrientEdgeDistance(PlanarRect& a, PlanarRect& b, Orientation orient)
+  {
+    PlanarRect a_edge_rect = getRect(a.getOrientEdge(orient));
+    PlanarRect b_edge_rect = getRect(b.getOrientEdge(orient));
+    return static_cast<int32_t>(getEuclideanDistance(a_edge_rect, b_edge_rect));
+  }
+
+  static int32_t getOrientEnclosure(PlanarRect master, PlanarRect insider, Orientation orient)
+  {
+    bool isBeyond = false;
+    switch (orient) {
+      case Orientation::kNorth:
+        isBeyond = (insider.get_ur_y() >= master.get_ur_y());
+        break;
+      case Orientation::kWest:
+        isBeyond = (insider.get_ll_x() <= master.get_ll_x());
+        break;
+      case Orientation::kSouth:
+        isBeyond = (insider.get_ll_y() <= master.get_ll_y());
+        break;
+      case Orientation::kEast:
+        isBeyond = (insider.get_ur_x() >= master.get_ur_x());
+        break;
+      default:
+        return -1;
+    }
+
+    if (isBeyond)
+      return 0;
+
+    return getOrientEdgeDistance(master, insider, orient);
+  }
 #endif
 
 #if 1  // 方向方位计算
@@ -100,6 +144,99 @@ class Utility
       }
     }
     return orientation;
+  }
+
+  static Orientation getOppositeOrientation(Orientation orientation)
+  {
+    Orientation opposite_orientation = Orientation::kNone;
+    switch (orientation) {
+      case Orientation::kEast:
+        opposite_orientation = Orientation::kWest;
+        break;
+      case Orientation::kWest:
+        opposite_orientation = Orientation::kEast;
+        break;
+      case Orientation::kSouth:
+        opposite_orientation = Orientation::kNorth;
+        break;
+      case Orientation::kNorth:
+        opposite_orientation = Orientation::kSouth;
+        break;
+      case Orientation::kAbove:
+        opposite_orientation = Orientation::kBelow;
+        break;
+      case Orientation::kBelow:
+        opposite_orientation = Orientation::kAbove;
+        break;
+      default:
+        DRCLOG.error(Loc::current(), "The orientation is error!");
+        break;
+    }
+    return opposite_orientation;
+  }
+
+  static std::vector<Orientation> getOrthogonalOrientationList(Orientation orientation)
+  {
+    std::vector<Orientation> orientation_list;
+    if (orientation == Orientation::kEast || orientation == Orientation::kWest) {
+      orientation_list.push_back(Orientation::kNorth);
+      orientation_list.push_back(Orientation::kSouth);
+    } else if (orientation == Orientation::kSouth || orientation == Orientation::kNorth) {
+      orientation_list.push_back(Orientation::kEast);
+      orientation_list.push_back(Orientation::kWest);
+    } else {
+      DRCLOG.error(Loc::current(), "The orientation is error!");
+    }
+    return orientation_list;
+  }
+
+  // 获取 rect 某个角点向内部的两个方向
+  static bool getCornerOrientsInRect(const PlanarRect& rect, const PlanarCoord& corner_point, Orientation& orient1, Orientation& orient2)
+  {
+    int32_t x = corner_point.get_x();
+    int32_t y = corner_point.get_y();
+    if (x == rect.get_ll_x() && y == rect.get_ll_y()) {
+      orient1 = Orientation::kEast;
+      orient2 = Orientation::kNorth;
+      return true;
+    }
+    if (x == rect.get_ur_x() && y == rect.get_ur_y()) {
+      orient1 = Orientation::kWest;
+      orient2 = Orientation::kSouth;
+      return true;
+    }
+    if (x == rect.get_ll_x() && y == rect.get_ur_y()) {
+      orient1 = Orientation::kEast;
+      orient2 = Orientation::kSouth;
+      return true;
+    }
+    if (x == rect.get_ur_x() && y == rect.get_ll_y()) {
+      orient1 = Orientation::kWest;
+      orient2 = Orientation::kNorth;
+      return true;
+    }
+    return false;
+  }
+
+  static Direction getOppositeDirection(Direction direction)
+  {
+    if (direction == Direction::kHorizontal) {
+      return Direction::kVertical;
+    } else if (direction == Direction::kVertical) {
+      return Direction::kHorizontal;
+    } else {
+      return Direction::kNone;
+    }
+  }
+
+  static Orientation getOrientaionFromDirection(Direction direction, bool is_ur)
+  {
+    if (direction == Direction::kHorizontal) {
+      return is_ur ? Orientation::kNorth : Orientation::kSouth;
+    } else if (direction == Direction::kVertical) {
+      return is_ur ? Orientation::kEast : Orientation::kWest;
+    }
+    return Orientation::kNone;
   }
 
   // 判断线段方向
@@ -194,6 +331,37 @@ class Utility
     return isInside(master, seg.get_first()) && isInside(master, seg.get_second());
   }
 
+  static bool isInside(const PlanarRect& master, const Segment<PlanarCoord>& seg, bool boundary)
+  {
+    if (!isInside(master, seg.get_first(), true) || !isInside(master, seg.get_second(), true)) {
+      return false;
+    }
+    if (!boundary) {
+      PlanarCoord p1 = seg.get_first();
+      PlanarCoord p2 = seg.get_second();
+
+      int32_t x1 = p1.get_x(), y1 = p1.get_y();
+      int32_t x2 = p2.get_x(), y2 = p2.get_y();
+      int32_t xmin = master.get_ll_x(), ymin = master.get_ll_y();
+      int32_t xmax = master.get_ur_x(), ymax = master.get_ur_y();
+
+      // 判断垂直线段：如果线段在 master 的左边界或右边界上完全/部分重叠
+      if (x1 == x2) {
+        if (x1 == xmin || x1 == xmax) {
+          return false;
+        }
+      }
+
+      // 判断水平线段：如果线段在 master 的下边界或上边界上完全/部分重叠
+      if (y1 == y2) {
+        if (y1 == ymin || y1 == ymax) {
+          return false;
+        }
+      }
+    }
+    return isInside(master, seg);
+  }
+
   // 线段在线段内
   static bool isInside(const Segment<PlanarCoord>& master, const Segment<PlanarCoord>& seg)
   {
@@ -242,11 +410,217 @@ class Utility
     }
   }
 
+  // abut = 90 / abut < 90 ?
+  static bool isDirectionOverlap(const PlanarRect& master, const PlanarRect& rect, Direction direction)
+  {
+    if (direction == Direction::kHorizontal) {
+      return isOpenOverlap(getRect(rect.getOrientEdge(Orientation::kNorth)), master) || isOpenOverlap(getRect(rect.getOrientEdge(Orientation::kSouth)), master);
+    } else if (direction == Direction::kVertical) {
+      return isOpenOverlap(getRect(rect.getOrientEdge(Orientation::kWest)), master) || isOpenOverlap(getRect(rect.getOrientEdge(Orientation::kEast)), master);
+    }
+    return false;
+  }
+
+  static Orientation getTouchedEdgeOrient(PlanarRect rect, Segment<PlanarCoord> segment)
+  {
+    Orientation edge_orient = Orientation::kNone;
+    for (Orientation orient : {Orientation::kNorth, Orientation::kSouth, Orientation::kWest, Orientation::kEast}) {
+      Segment<PlanarCoord> orient_edge = rect.getOrientEdge(orient);
+      if (isInside(orient_edge, segment) || isInside(segment, orient_edge)) {
+        edge_orient = orient;
+        break;
+      }
+    }
+    return edge_orient;
+  }
+
+  // 判断两个rect在polyset中是否连通
+  static bool isRectConnectInPolyset(const GTLPolySetInt& polyset, const PlanarRect& rect1, const PlanarRect& rect2)
+  {
+    std::vector<GTLPolyInt> components;
+    polyset.get(components);
+
+    for (const auto& poly : components) {
+      GTLPolySetInt test_set;
+      test_set += poly;
+
+      if (!gtl::empty(test_set & convertToGTLRectInt(rect1)) && !gtl::empty(test_set & convertToGTLRectInt(rect2))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
 #endif
 
 #if 1  // boost数据结构工具函数
 
 #if 1  // int类型
+
+  // 判断gtlpoly 和 gtlrect是否相交
+  static bool isPolyRectIntersect(const GTLPolyInt& poly, const GTLRectInt& rect)
+  {
+    GTLPolySetInt temp_set;
+    temp_set += poly;
+    return !gtl::empty(temp_set & rect);
+  }
+
+  // 区间合并，计算polyset在坐标轴上的投影长度
+  static int32_t getProjectionLength(const GTLPolySetInt& ps, int32_t axis)
+  {
+    std::vector<GTLRectInt> rects;
+    gtl::get_max_rectangles(rects, ps);
+    if (rects.empty())
+      return 0;
+
+    std::vector<std::pair<int32_t, int32_t>> intervals;
+    for (const auto& r : rects) {
+      if (axis == 0)
+        intervals.push_back({gtl::xl(r), gtl::xh(r)});
+      else
+        intervals.push_back({gtl::yl(r), gtl::yh(r)});
+    }
+
+    std::sort(intervals.begin(), intervals.end());
+    int32_t totalLen = 0;
+    if (!intervals.empty()) {
+      int32_t curLow = intervals[0].first;
+      int32_t curHigh = intervals[0].second;
+      for (size_t i = 1; i < intervals.size(); ++i) {
+        if (intervals[i].first < curHigh) {
+          curHigh = std::max(curHigh, intervals[i].second);
+        } else {
+          totalLen += (curHigh - curLow);
+          curLow = intervals[i].first;
+          curHigh = intervals[i].second;
+        }
+      }
+      totalLen += (curHigh - curLow);
+    }
+    return totalLen;
+  }
+
+  // 计算两个rect减去连通部分，剩下矩形的多段PRL
+  static int32_t getDirectPRL(const GTLPolySetInt& polyset, const PlanarRect& rect1, const PlanarRect& rect2)
+  {
+    GTLRectInt g1 = convertToGTLRectInt(rect1);
+    GTLRectInt g2 = convertToGTLRectInt(rect2);
+
+    int32_t overlapX_low = std::max(gtl::xl(g1), gtl::xl(g2));
+    int32_t overlapX_high = std::min(gtl::xh(g1), gtl::xh(g2));
+    int32_t overlapY_low = std::max(gtl::yl(g1), gtl::yl(g2));
+    int32_t overlapY_high = std::min(gtl::yh(g1), gtl::yh(g2));
+
+    bool hasXOverlap = overlapX_low < overlapX_high;
+    bool hasYOverlap = overlapY_low < overlapY_high;
+
+    if (!hasXOverlap && !hasYOverlap)
+      return 0;
+
+    GTLRectInt gapRect;
+    int32_t axisToMeasure = -1;
+
+    // 优先处理左右相对 (Y方向重叠)
+    if (hasYOverlap) {
+      int32_t x_low = std::min(gtl::xh(g1), gtl::xh(g2));
+      int32_t x_high = std::max(gtl::xl(g1), gtl::xl(g2));
+      if (x_low < x_high) {
+        axisToMeasure = 1;
+        gtl::set_points(gapRect, gtl::point_data<int32_t>(x_low, overlapY_low), gtl::point_data<int32_t>(x_high, overlapY_high));
+      }
+    }
+
+    // 如果没有水平间隙，尝试处理垂直相对 (X方向重叠)
+    if (axisToMeasure == -1 && hasXOverlap) {
+      int32_t y_low = std::min(gtl::yh(g1), gtl::yh(g2));
+      int32_t y_high = std::max(gtl::yl(g1), gtl::yl(g2));
+      if (y_low < y_high) {
+        axisToMeasure = 0;
+        gtl::set_points(gapRect, gtl::point_data<int32_t>(overlapX_low, y_low), gtl::point_data<int32_t>(overlapX_high, y_high));
+      }
+    }
+
+    if (axisToMeasure == -1)
+      return 0;
+
+    std::vector<GTLPolyInt> components;
+    polyset.get(components);
+
+    GTLPolySetInt bridge_in_gap;
+    GTLPolySetInt gapSet;
+    gapSet += gapRect;
+
+    for (const auto& poly : components) {
+      if (isPolyRectIntersect(poly, g1) && isPolyRectIntersect(poly, g2)) {
+        GTLPolySetInt poly_set;
+        poly_set += poly;
+        poly_set -= g1;
+        poly_set -= g2;
+
+        bridge_in_gap += (poly_set & gapSet);
+      }
+    }
+
+    GTLPolySetInt freeSpace = gapSet - bridge_in_gap;
+
+    return getProjectionLength(freeSpace, axisToMeasure);
+  }
+
+  // 找到polyset和rect最大的prl
+  static int32_t getPolysetMaxPRL(const GTLPolySetInt& polyset, PlanarRect rect)
+  {
+    std::vector<GTLRectInt> gtl_rects;
+    gtl::get_max_rectangles(gtl_rects, polyset);
+    int32_t max_prl = std::numeric_limits<int32_t>::min();
+    for (auto gtl_rect : gtl_rects) {
+      PlanarRect max_rect = convertToPlanarRect(gtl_rect);
+      int32_t prl = getParallelLength(rect, max_rect);
+      max_prl = std::max(max_prl, prl);
+    }
+    return max_prl;
+  }
+
+  // 找到polyset在某个矩形内，相对某个方向的边
+  static bool isPolysetExternal(const GTLPolySetInt& polyset, PlanarRect rect, Orientation orient)
+  {
+    std::vector<GTLHolePolyInt> polys;
+    polyset.get(polys);
+
+    Orientation target_orient = getOppositeOrientation(orient);
+
+    for (const auto& poly : polys) {
+      std::vector<GTLPointInt> pts(poly.begin(), poly.end());
+      size_t n = pts.size();
+
+      for (size_t i = 0; i < n; ++i) {
+        const auto& prev_pt = pts[i];
+        const auto& curr_pt = pts[(i + 1) % n];
+        Orientation curr_orient = Orientation::kNone;
+
+        if (curr_pt.y() == prev_pt.y()) {  // 水平边
+          if (curr_pt.x() < prev_pt.x())
+            curr_orient = Orientation::kNorth;
+          else if (curr_pt.x() > prev_pt.x())
+            curr_orient = Orientation::kSouth;
+        } else if (curr_pt.x() == prev_pt.x()) {  // 垂直边
+          if (curr_pt.y() > prev_pt.y())
+            curr_orient = Orientation::kEast;
+          else if (curr_pt.y() < prev_pt.y())
+            curr_orient = Orientation::kWest;
+        }
+
+        if (curr_orient == target_orient) {
+          PlanarRect edge_rect{std::min(prev_pt.x(), curr_pt.x()), std::min(prev_pt.y(), curr_pt.y()), std::max(prev_pt.x(), curr_pt.x()),
+                               std::max(prev_pt.y(), curr_pt.y())};
+
+          if (isOpenOverlap(rect, edge_rect)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
 
   static Rotation getRotation(GTLPolyInt& gtl_poly)
   {
@@ -272,18 +646,93 @@ class Utility
     }
   }
 
+  static std::map<Orientation, std::vector<PlanarRect>> getPolyExtEdges(GTLPolySetInt polyset)
+  {
+    std::map<Orientation, std::vector<PlanarRect>> result;
+    std::vector<GTLHolePolyInt> poly_list;
+    polyset.get(poly_list);
+
+    for (GTLHolePolyInt& poly : poly_list) {
+      std::vector<std::pair<std::vector<PlanarCoord>, bool>> rings;
+
+      // 处理外轮廓
+      std::vector<PlanarCoord> outer_coords;
+      for (auto it = poly.begin(); it != poly.end(); ++it) {
+        outer_coords.push_back(DRCUTIL.convertToPlanarCoord(*it));
+      }
+      rings.push_back({std::move(outer_coords), false});
+
+      // 处理内孔
+      for (auto h_it = poly.begin_holes(); h_it != poly.end_holes(); ++h_it) {
+        std::vector<PlanarCoord> hole_coords;
+        for (auto p_it = (*h_it).begin(); p_it != (*h_it).end(); ++p_it) {
+          hole_coords.push_back(DRCUTIL.convertToPlanarCoord(*p_it));
+        }
+        rings.push_back({std::move(hole_coords), true});
+      }
+
+      bool is_ccw = (getRotation(poly) == Rotation::kCounterclockwise);
+
+      for (const auto& [coords, is_hole] : rings) {
+        int32_t n = static_cast<int32_t>(coords.size());
+        if (n < 2)
+          continue;
+
+        for (int32_t i = 0; i < n; ++i) {
+          const PlanarCoord& p1 = coords[i];
+          const PlanarCoord& p2 = coords[(i + 1) % n];  // 闭合回路
+
+          if (p1 == p2)
+            continue;
+
+          // 对于 CCW 外轮廓：+X方向的边位于底部(South)，+Y方向的边位于右侧(East)，以此类推
+          // 如果是 CW 或者内孔，则逻辑翻转
+          bool reverse = !is_ccw;
+
+          Orientation orient = Orientation::kNone;
+          if (p1.get_y() == p2.get_y()) {  // 水平边
+            if (p2.get_x() > p1.get_x()) {
+              orient = reverse ? Orientation::kNorth : Orientation::kSouth;
+            } else {
+              orient = reverse ? Orientation::kSouth : Orientation::kNorth;
+            }
+          } else if (p1.get_x() == p2.get_x()) {  // 垂直边
+            if (p2.get_y() > p1.get_y()) {
+              orient = reverse ? Orientation::kWest : Orientation::kEast;
+            } else {
+              orient = reverse ? Orientation::kEast : Orientation::kWest;
+            }
+          }
+
+          if (orient != Orientation::kNone) {
+            result[orient].push_back(DRCUTIL.getRect(Segment<PlanarCoord>(p1, p2)));
+          }
+        }
+      }
+    }
+    return result;
+  }
+
   static PlanarCoord convertToPlanarCoord(GTLPointInt gtl_point) { return PlanarCoord(gtl_point.x(), gtl_point.y()); }
 
-  static PlanarRect convertToPlanarRect(GTLRectInt& gtl_rect) { return PlanarRect(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect)); }
+  static PlanarRect convertToPlanarRect(const GTLRectInt& gtl_rect)
+  {
+    return PlanarRect(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect));
+  }
 
-  static PlanarRect convertToPlanarRect(BGRectInt& boost_box)
+  static PlanarRect convertToPlanarRect(const BGRectInt& boost_box)
   {
     return PlanarRect(boost_box.min_corner().x(), boost_box.min_corner().y(), boost_box.max_corner().x(), boost_box.max_corner().y());
   }
 
   static BGRectInt convertToBGRectInt(const PlanarRect& rect)
   {
-    return BGRectInt(BGPointInt(rect.get_ll_x(), rect.get_ll_y()), BGPointInt(rect.get_ur_x(), rect.get_ur_y()));
+    BGPointInt p1(rect.get_ll_x(), rect.get_ll_y());
+    BGPointInt p2(rect.get_ur_x(), rect.get_ur_y());
+    BGRectInt bg_rect(p1, p2);
+    // 防止出现ll > ur的情况
+    bg::correct(bg_rect);
+    return bg_rect;
   }
 
   static BGRectInt convertToBGRectInt(GTLRectInt& gtl_rect)
@@ -450,6 +899,8 @@ class Utility
 
 #if 1  // 形状有关计算
 
+  static Segment<PlanarCoord> getReversedSegment(Segment<PlanarCoord> segment) { return Segment<PlanarCoord>{segment.get_second(), segment.get_first()}; }
+
   static PlanarRect getRect(PlanarCoord start_coord, PlanarCoord end_coord)
   {
     PlanarRect rect;
@@ -460,16 +911,20 @@ class Utility
     return rect;
   }
 
+  static PlanarRect getRect(Segment<PlanarCoord> segment) { return getRect(segment.get_first(), segment.get_second()); }
+
   // 三个点的叉乘
-  static int32_t crossProduct(Rotation rotation, PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
+  static int64_t crossProduct(Rotation rotation, PlanarCoord& first_coord, PlanarCoord& second_coord, PlanarCoord& third_coord)
   {
-    int32_t cross_product = 0;
+    // Use 64-bit arithmetic here because large layout coordinates can make the
+    // area term exceed int32_t and flip the sign, which breaks convex/concave checks.
+    int64_t cross_product = 0;
     if (rotation == Rotation::kClockwise) {
-      cross_product = ((second_coord.get_x() - first_coord.get_x()) * (third_coord.get_y() - first_coord.get_y())
-                       - (second_coord.get_y() - first_coord.get_y()) * (third_coord.get_x() - first_coord.get_x()));
+      cross_product = (static_cast<int64_t>(second_coord.get_x()) - first_coord.get_x()) * (static_cast<int64_t>(third_coord.get_y()) - first_coord.get_y())
+                      - (static_cast<int64_t>(second_coord.get_y()) - first_coord.get_y()) * (static_cast<int64_t>(third_coord.get_x()) - first_coord.get_x());
     } else if (rotation == Rotation::kCounterclockwise) {
-      cross_product = ((second_coord.get_x() - third_coord.get_x()) * (first_coord.get_y() - third_coord.get_y())
-                       - (second_coord.get_y() - third_coord.get_y()) * (first_coord.get_x() - third_coord.get_x()));
+      cross_product = (static_cast<int64_t>(second_coord.get_x()) - third_coord.get_x()) * (static_cast<int64_t>(first_coord.get_y()) - third_coord.get_y())
+                      - (static_cast<int64_t>(second_coord.get_y()) - third_coord.get_y()) * (static_cast<int64_t>(first_coord.get_x()) - third_coord.get_x());
     } else {
       DRCLOG.error(Loc::current(), "The rotation is error!");
     }
@@ -550,6 +1005,36 @@ class Utility
   static PlanarRect getEnlargedRect(PlanarRect rect, int32_t x_enlarge_size, int32_t y_enlarge_size)
   {
     return getEnlargedRect(rect, x_enlarge_size, y_enlarge_size, x_enlarge_size, y_enlarge_size);
+  }
+
+  // 指定方向扩大矩形
+  static PlanarRect getEnlargedRect(PlanarRect rect, Orientation orientation, int32_t enlarge_size)
+  {
+    if (orientation == Orientation::kNorth) {
+      rect = getEnlargedRect(rect, 0, 0, 0, enlarge_size);
+    } else if (orientation == Orientation::kSouth) {
+      rect = getEnlargedRect(rect, 0, enlarge_size, 0, 0);
+    } else if (orientation == Orientation::kWest) {
+      rect = getEnlargedRect(rect, enlarge_size, 0, 0, 0);
+    } else if (orientation == Orientation::kEast) {
+      rect = getEnlargedRect(rect, 0, 0, enlarge_size, 0);
+    }
+    return rect;
+  }
+
+  // 指定方向扩大矩形,但只获得扩大的那一部分
+  static PlanarRect getEnlargedPartRect(PlanarRect rect, Orientation orientation, int32_t enlarge_size)
+  {
+    if (orientation == Orientation::kNorth) {
+      rect = DRCUTIL.getEnlargedRect(rect.get_ur(), rect.getXSpan(), 0, 0, enlarge_size);
+    } else if (orientation == Orientation::kSouth) {
+      rect = DRCUTIL.getEnlargedRect(rect.get_ll(), 0, enlarge_size, rect.getXSpan(), 0);
+    } else if (orientation == Orientation::kWest) {
+      rect = DRCUTIL.getEnlargedRect(rect.get_ll(), enlarge_size, 0, 0, rect.getYSpan());
+    } else if (orientation == Orientation::kEast) {
+      rect = DRCUTIL.getEnlargedRect(rect.get_ur(), 0, rect.getYSpan(), enlarge_size, 0);
+    }
+    return rect;
   }
 
   // 扩大矩形
@@ -1086,6 +1571,24 @@ class Utility
     std::string string = oss.str();
     oss.clear();
     return string;
+  }
+
+  static std::string getBooleanName(bool value) { return value ? "true" : "false"; }
+
+  template <typename T>
+  static std::string getStringList(const std::vector<T>& value_list, const std::string& delimiter = ", ", const std::string& prefix = "[",
+                                   const std::string& suffix = "]")
+  {
+    std::stringstream oss;
+    oss << prefix;
+    for (size_t i = 0; i < value_list.size(); ++i) {
+      if (i > 0) {
+        oss << delimiter;
+      }
+      oss << value_list[i];
+    }
+    oss << suffix;
+    return oss.str();
   }
 
   template <typename Stream, typename T, typename... Args>

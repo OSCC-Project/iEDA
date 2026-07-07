@@ -110,12 +110,24 @@ class IdbLayerSpacing
   const int32_t get_min_spacing() const { return _min_spacing; }
   const int32_t get_min_width() const { return _min_width; }
   const int32_t get_max_width() const { return _max_width; }
+  const int32_t get_eol_width() const { return _eol_width; }
+  const int32_t get_eol_within() const { return _eol_within; }
+  const bool get_has_parallel_edge() const { return _has_parallel_edge; }
+  const int32_t get_par_space() const { return _par_space; }
+  const int32_t get_par_within() const { return _par_within; }
+  const bool get_has_two_edges() const { return _has_two_edges; }
 
   // setter
   void set_spacing_type(IdbLayerSpacingType spacing_type) { _spacing_type = spacing_type; }
   void set_min_spacing(int32_t min_spacing) { _min_spacing = min_spacing; }
   void set_min_width(int32_t min_width) { _min_width = min_width; }
   void set_max_width(int32_t max_width) { _max_width = max_width; }
+  void set_eol_width(int32_t eol_width) { _eol_width = eol_width; }
+  void set_eol_within(int32_t eol_within) { _eol_within = eol_within; }
+  void set_has_parallel_edge(bool has_parallel_edge) { _has_parallel_edge = has_parallel_edge; }
+  void set_par_space(int32_t par_space) { _par_space = par_space; }
+  void set_par_within(int32_t par_within) { _par_within = par_within; }
+  void set_has_two_edges(bool has_two_edges) { _has_two_edges = has_two_edges; }
 
   // operator
   bool isDefault() { return _spacing_type == IdbLayerSpacingType::kSpacingDefault ? true : false; }
@@ -126,6 +138,14 @@ class IdbLayerSpacing
   int32_t _min_spacing;
   int32_t _min_width;
   int32_t _max_width;
+
+  // end of line 
+  int32_t _eol_width;
+  int32_t _eol_within;
+  bool _has_parallel_edge;
+  int32_t _par_space;
+  int32_t _par_within;
+  bool _has_two_edges;
 };
 
 class IdbLayerSpacingList
@@ -343,6 +363,7 @@ class IdbLayerRouting : public IdbLayer
   std::vector<std::shared_ptr<routinglayer::Lef58SpacingEol>>& get_lef58_spacing_eol_list() { return _lef58_spacing_eol_list; };
   std::vector<std::shared_ptr<routinglayer::Lef58Area>>& get_lef58_area() { return _lef58_area; }
   std::shared_ptr<routinglayer::Lef58CornerFillSpacing> get_lef58_corner_fill_spacing() { return _lef58_corner_fill_spacing; }
+  std::vector<std::shared_ptr<routinglayer::Lef58CornerSpacing>>& get_lef58_corner_spacing_list() { return _lef58_corner_spacing_list; }
   std::vector<std::shared_ptr<routinglayer::Lef58MinimumCut>>& get_lef58_minimum_cut() { return _lef58_minimum_cut; }
   std::vector<std::shared_ptr<routinglayer::Lef58MinStep>>& get_lef58_min_step() { return _lef58_min_steps; }
   std::shared_ptr<routinglayer::Lef58SpacingNotchlength> get_lef58_spacing_notchlength() { return _lef58_spacing_notchlength; }
@@ -391,6 +412,10 @@ class IdbLayerRouting : public IdbLayer
   void set_lef58_cornerfill_spacing(std::shared_ptr<routinglayer::Lef58CornerFillSpacing> cornerfill_spacing)
   {
     _lef58_corner_fill_spacing = std::move(cornerfill_spacing);
+  }
+  void add_lef58_corner_spacing(std::shared_ptr<routinglayer::Lef58CornerSpacing> corner_spacing)
+  {
+    _lef58_corner_spacing_list.emplace_back(std::move(corner_spacing));
   }
   void add_lef58_minimum_cut(std::shared_ptr<routinglayer::Lef58MinimumCut> minimum_cut)
   {
@@ -443,6 +468,7 @@ class IdbLayerRouting : public IdbLayer
   std::vector<std::shared_ptr<routinglayer::Lef58SpacingEol>> _lef58_spacing_eol_list;
   std::vector<std::shared_ptr<routinglayer::Lef58Area>> _lef58_area;
   std::shared_ptr<routinglayer::Lef58CornerFillSpacing> _lef58_corner_fill_spacing;
+  std::vector<std::shared_ptr<routinglayer::Lef58CornerSpacing>> _lef58_corner_spacing_list;
   std::vector<std::shared_ptr<routinglayer::Lef58MinimumCut>> _lef58_minimum_cut;
   std::vector<std::shared_ptr<routinglayer::Lef58MinStep>> _lef58_min_steps;
   std::shared_ptr<routinglayer::Lef58SpacingNotchlength> _lef58_spacing_notchlength;
@@ -556,9 +582,13 @@ class IdbLayerCutSpacing
   void set_adjacent_cuts(std::optional<AdjacentCuts> adj) { _adjacnet_cuts = adj; }
   [[nodiscard]] std::optional<AdjacentCuts> get_adjacent_cuts() const { return _adjacnet_cuts; }
 
+  void set_has_same_net(bool has_same_net) { _has_same_net = has_same_net; };
+  [[nodiscard]] bool get_has_same_net() const { return _has_same_net; }
+
  private:
   int32_t _spacing;
   std::optional<AdjacentCuts> _adjacnet_cuts;
+  bool _has_same_net;
 };
 
 class IdbLayerCut : public IdbLayer

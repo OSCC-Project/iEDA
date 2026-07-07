@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include "AdjacentCutSpacingRule.hpp"
 #include "CutEOLSpacingRule.hpp"
 #include "DRCHeader.hpp"
 #include "DifferentLayerCutSpacingRule.hpp"
@@ -35,6 +36,7 @@ class CutLayer
   int32_t get_layer_idx() const { return _layer_idx; }
   int32_t get_layer_order() const { return _layer_order; }
   std::string& get_layer_name() { return _layer_name; }
+  AdjacentCutSpacingRule& get_adjacent_cut_rule() { return _adjacent_cut_rule; }
   CutEOLSpacingRule& get_cut_eol_spacing_rule() { return _cut_eol_spacing_rule; }
   DifferentLayerCutSpacingRule& get_different_layer_cut_spacing_rule() { return _different_layer_cut_spacing_rule; }
   std::vector<EnclosureEdgeRule>& get_enclosure_edge_rule_list() { return _enclosure_edge_rule_list; }
@@ -49,6 +51,7 @@ class CutLayer
   int32_t _layer_idx = -1;
   int32_t _layer_order = -1;
   std::string _layer_name;
+  AdjacentCutSpacingRule _adjacent_cut_rule;
   CutEOLSpacingRule _cut_eol_spacing_rule;
   DifferentLayerCutSpacingRule _different_layer_cut_spacing_rule;
   std::vector<EnclosureEdgeRule> _enclosure_edge_rule_list;

@@ -56,7 +56,7 @@ class DRCInterface
 #if 1  // 外部调用DRC的API
 
 #if 1  // iDRC
-  void initDRC(std::map<std::string, std::any> config_map, bool enable_quiet);
+  void initDRC(std::map<std::string, std::any> config_map, bool enable_quiet = true);
   void checkDef();
   void destroyDRC();
   std::vector<ids::Violation> getViolationList(const std::vector<ids::Shape>& ids_env_shape_list, const std::vector<ids::Shape>& ids_result_shape_list,
@@ -99,7 +99,8 @@ class DRCInterface
   std::vector<ids::Shape> buildResultShapeList();
   void printSummary(std::map<std::string, std::vector<ids::Violation>>& type_violation_map);
   void outputViolationJson(std::map<std::string, std::vector<ids::Violation>>& type_violation_map);
-  void outputSummary(std::map<std::string, std::vector<ids::Violation>>& type_violation_map);
+  void outputViolationFile(std::map<std::string, std::vector<ids::Violation>>& type_violation_map);
+  void outputTofeature(std::map<std::string, std::vector<ids::Violation>>& type_violation_map);
   DRCShape convertToDRCShape(const ids::Shape& ids_shape);
 #endif
 

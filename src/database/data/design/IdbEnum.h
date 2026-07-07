@@ -387,6 +387,7 @@ enum class IdbLayerSpacingType : uint8_t
   kSpacingDefault,
   kSpacingRange,
   kSpacingRangeLenThreshold,
+  kSpacingEndOfLine,
   //!-----tbd-------------
   kMax
 };

@@ -21,81 +21,68 @@ namespace idrc {
 void RuleValidator::verifyCutShort(RVCluster& rv_cluster)
 {
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = DRCDM.getDatabase().get_cut_to_adjacent_routing_map();
+  const auto& layer_data = rv_cluster.get_layer_data();
 
-  std::map<int32_t, GTLPolySetInt> cut_gtl_poly_set_map;
-  std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> cut_bg_rtree_map;
-  for (DRCShape* drc_shape : rv_cluster.get_drc_env_shape_list()) {
-    if (drc_shape->get_is_routing()) {
+  for (const auto& [cut_layer_idx, rv_layer_data] : layer_data) {
+    if (rv_layer_data.cut_pool.empty()) {
       continue;
     }
-    cut_gtl_poly_set_map[drc_shape->get_layer_idx()] += DRCUTIL.convertToGTLRectInt(DRCUTIL.getEnlargedRect(drc_shape->get_rect(), 1));
-    cut_bg_rtree_map[drc_shape->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(drc_shape->get_rect()), drc_shape->get_net_idx()));
-  }
-  for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
-    if (drc_shape->get_is_routing()) {
-      continue;
-    }
-    cut_gtl_poly_set_map[drc_shape->get_layer_idx()] += DRCUTIL.convertToGTLRectInt(DRCUTIL.getEnlargedRect(drc_shape->get_rect(), 1));
-    cut_bg_rtree_map[drc_shape->get_layer_idx()].insert(std::make_pair(DRCUTIL.convertToBGRectInt(drc_shape->get_rect()), drc_shape->get_net_idx()));
-  }
-  for (auto& [cut_layer_idx, gtl_poly_set] : cut_gtl_poly_set_map) {
+    std::vector<Violation> layer_violations;
     int32_t routing_layer_idx = -1;
     {
       std::vector<int32_t>& routing_layer_idx_list = cut_to_adjacent_routing_map[cut_layer_idx];
       routing_layer_idx = *std::min_element(routing_layer_idx_list.begin(), routing_layer_idx_list.end());
     }
-    std::vector<PlanarRect> violation_rect_list;
-    {
-      std::vector<GTLHolePolyInt> gtl_hole_poly_list;
-      gtl_poly_set.self_intersect();
-      gtl_poly_set.get(gtl_hole_poly_list);
-      for (GTLHolePolyInt& gtl_hole_poly : gtl_hole_poly_list) {
-        std::vector<GTLRectInt> gtl_rect_list;
-        gtl::get_max_rectangles(gtl_rect_list, gtl_hole_poly);
-        for (GTLRectInt& gtl_rect : gtl_rect_list) {
-          PlanarRect violation_rect = DRCUTIL.convertToPlanarRect(gtl_rect);
-          if (!DRCUTIL.hasShrinkedRect(violation_rect, 1)) {
-            continue;
-          }
-          violation_rect_list.push_back(DRCUTIL.getShrinkedRect(violation_rect, 1));
-        }
-      }
-    }
-    for (PlanarRect& violation_rect : violation_rect_list) {
-      std::set<int32_t> env_net_idx_set;
-      {
-        std::vector<std::pair<BGRectInt, int32_t>> bg_rect_net_pair_list;
-        cut_bg_rtree_map[cut_layer_idx].query(bgi::intersects(DRCUTIL.convertToBGRectInt(violation_rect)), std::back_inserter(bg_rect_net_pair_list));
-        for (auto& [bg_rect, net_idx] : bg_rect_net_pair_list) {
-          env_net_idx_set.insert(net_idx);
-        }
-      }
-      if (env_net_idx_set.empty() || (env_net_idx_set.size() == 1 && *env_net_idx_set.begin() == -1)) {
+
+    for (const CutData& cut_data : rv_layer_data.getCuts()) {
+      if (cut_data.isEnv) {
         continue;
       }
-      std::vector<std::set<int32_t>> net_idx_set_list;
-      {
-        if (env_net_idx_set.size() <= 2) {
-          net_idx_set_list.push_back(env_net_idx_set);
-        } else {
-          std::vector<int32_t> net_idx_list(env_net_idx_set.begin(), env_net_idx_set.end());
-          for (size_t i = 0; i < net_idx_list.size(); ++i) {
-            for (size_t j = i + 1; j < net_idx_list.size(); ++j) {
-              net_idx_set_list.emplace_back(std::set<int32_t>{net_idx_list[i], net_idx_list[j]});
-            }
-          }
+      GTLRectInt curr_cut_gtl_rect = cut_data.rect;
+      PlanarRect cut_rect = DRCUTIL.convertToPlanarRect(curr_cut_gtl_rect);
+      std::vector<CutData> overlap_cut_list;
+      rv_layer_data.queryCuts(cut_data.rect, std::back_inserter(overlap_cut_list));
+      for (const CutData& overlap_cut_data : overlap_cut_list) {
+        if (overlap_cut_data.net_idx > cut_data.net_idx) {
+          continue;
         }
-      }
-      for (std::set<int32_t>& net_idx_set : net_idx_set_list) {
+        PlanarRect env_rect = DRCUTIL.convertToPlanarRect(overlap_cut_data.rect);
+        if (cut_data.net_idx == overlap_cut_data.net_idx && cut_rect == env_rect) {
+          continue;
+        }
         Violation violation;
         violation.set_violation_type(ViolationType::kCutShort);
         violation.set_required_size(0);
         violation.set_is_routing(true);
-        violation.set_violation_net_set(net_idx_set);
+        violation.set_violation_net_set({cut_data.net_idx, overlap_cut_data.net_idx});
         violation.set_layer_idx(routing_layer_idx);
-        violation.set_rect(violation_rect);
-        rv_cluster.get_violation_list().push_back(violation);
+        violation.set_rect(DRCUTIL.getOverlap(cut_rect, env_rect));
+        layer_violations.push_back(std::move(violation));
       }
+    }
+
+    // sort and unique
+    {
+      if (layer_violations.size() > 1) {
+        std::sort(layer_violations.begin(), layer_violations.end(), [](const Violation& a, const Violation& b) {
+          CmpPlanarRectByXASC rect_cmp;
+          if (rect_cmp(a.get_rect(), b.get_rect()))
+            return true;
+          if (rect_cmp(b.get_rect(), a.get_rect()))
+            return false;
+
+          return a.get_violation_net_set() < b.get_violation_net_set();
+        });
+
+        auto last = std::unique(layer_violations.begin(), layer_violations.end(), [](const Violation& a, const Violation& b) {
+          return a.get_rect() == b.get_rect() && a.get_violation_net_set() == b.get_violation_net_set();
+        });
+
+        layer_violations.erase(last, layer_violations.end());
+      }
+
+      auto& final_list = rv_cluster.get_violation_list();
+      final_list.insert(final_list.end(), std::make_move_iterator(layer_violations.begin()), std::make_move_iterator(layer_violations.end()));
     }
   }
 }

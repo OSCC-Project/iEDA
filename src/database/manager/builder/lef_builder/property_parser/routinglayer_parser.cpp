@@ -32,6 +32,9 @@ bool RoutingLayerParser::parse(const std::string& name, const std::string& value
   if (name == "LEF58_CORNERFILLSPACING") {
     return parse_lef58_conerfillspacing(value, data);
   }
+  if (name == "LEF58_CORNERSPACING") {
+    return parse_lef58_cornerspacing(value, data);
+  }
   if (name == "LEF58_MINIMUMCUT") {
     return parse_lef58_minimuncut(value, data);
   }
@@ -93,6 +96,34 @@ bool RoutingLayerParser::parse_lef58_conerfillspacing(const std::string& value, 
   cornerfill_spacing->set_length1(transUnitDB(cornerspacing._length1));
   cornerfill_spacing->set_length2(transUnitDB(cornerspacing._length2));
   cornerfill_spacing->set_eol_width(transUnitDB(cornerspacing._eol_width));
+  return true;
+}
+bool RoutingLayerParser::parse_lef58_cornerspacing(const std::string& value, IdbLayerRouting* data)
+{
+  std::vector<routinglayer_property::lef58_cornerspacing> cornerspacings;
+  bool parse_ok = routinglayer_property::parse_lef58_cornerspacing(value.begin(), value.end(), cornerspacings);
+  if (not parse_ok) {
+    return false;
+  }
+
+  for (const auto& cornerspacing : cornerspacings) {
+    auto corner_spacing = std::make_shared<routinglayer::Lef58CornerSpacing>();
+    data->add_lef58_corner_spacing(corner_spacing);
+
+    if (cornerspacing._corner_type == "CONVEXCORNER") {
+      corner_spacing->set_corner_type(routinglayer::Lef58CornerSpacing::CornerType::kConvexCorner);
+    } else if (cornerspacing._corner_type == "CONCAVECORNER") {
+      corner_spacing->set_corner_type(routinglayer::Lef58CornerSpacing::CornerType::kConcaveCorner);
+    }
+
+    if (cornerspacing._except_eol.has_value()) {
+      corner_spacing->set_except_eol(transUnitDB(cornerspacing._except_eol.value()));
+    }
+
+    for (const auto& width_spacing : cornerspacing._width_spacings) {
+      corner_spacing->add_width_spacing(transUnitDB(width_spacing._width), transUnitDB(width_spacing._spacing));
+    }
+  }
   return true;
 }
 bool RoutingLayerParser::parse_lef58_minimuncut(const std::string& value, IdbLayerRouting* data)

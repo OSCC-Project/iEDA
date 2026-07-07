@@ -27,8 +27,8 @@ class Config
   ~Config() = default;
   //////////////////////////////////////////////
   // **********        DRC         ********** //
-  std::string temp_directory_path;    // required
-  int32_t thread_number;              // optional
+  std::string temp_directory_path;  // required
+  int32_t thread_number;            // optional
   /////////////////////////////////////////////
   // **********        DRC         ********** //
   std::string log_file_path;  // building

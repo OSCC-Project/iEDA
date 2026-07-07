@@ -365,7 +365,7 @@ void GDSPlotter::checkSRefList(GPGDS& gp_gds)
 
 void GDSPlotter::plotGDS(GPGDS& gp_gds, std::string gds_file_path)
 {
-  Monitor monitor;
+  auto monitor = Monitor::create();
 
   DRCLOG.info(Loc::current(), "The gds file is being saved...");
 
@@ -381,7 +381,7 @@ void GDSPlotter::plotGDS(GPGDS& gp_gds, std::string gds_file_path)
   DRCUTIL.pushStream(gds_file, "ENDLIB", "\n");
   DRCUTIL.closeFileStream(gds_file);
 
-  DRCLOG.info(Loc::current(), "The gds file has been saved in '", gds_file_path, "'!", monitor.getStatsInfo());
+  DRCLOG.info(Loc::current(), "The gds file has been saved in '", gds_file_path, "'!", monitor ? monitor->getStatsInfo() : "");
 }
 
 void GDSPlotter::plotStruct(std::ofstream* gds_file, GPStruct& gp_struct)

@@ -233,6 +233,25 @@ struct lef58_spacingtable_jogtojog
   std::vector<lef58_spacingtable_jogtojog_width> _width;
 };
 
+//////////////////////////////////
+//     LEF58_CORNERSPACING      //
+//////////////////////////////////
+
+struct lef58_cornerspacing_width
+{
+  double _width;
+  double _spacing;
+};
+
+struct lef58_cornerspacing 
+{
+  std::string _corner_type;
+  std::optional<double> _except_eol;
+  std::vector<lef58_cornerspacing_width> _width_spacings;
+};
+
+
+
 }  // namespace idb::routinglayer_property
 
 BOOST_FUSION_ADAPT_STRUCT(idb::routinglayer_property::double_pair, (double, first)(double, second))
@@ -323,3 +342,7 @@ BOOST_FUSION_ADAPT_STRUCT(idb::routinglayer_property::lef58_spacingtable_jogtojo
 BOOST_FUSION_ADAPT_STRUCT(idb::routinglayer_property::lef58_spacingtable_jogtojog,
                           (double, _jog2jog_spacing)(double, _jog_width)(double, _short_jog_spacing)(
                               std::vector<idb::routinglayer_property::lef58_spacingtable_jogtojog_width>, _width))
+BOOST_FUSION_ADAPT_STRUCT(idb::routinglayer_property::lef58_cornerspacing_width, (double, _width)(double, _spacing))
+BOOST_FUSION_ADAPT_STRUCT(idb::routinglayer_property::lef58_cornerspacing,
+                          (std::string, _corner_type)(std::optional<double>, _except_eol)(
+                              std::vector<idb::routinglayer_property::lef58_cornerspacing_width>, _width_spacings))

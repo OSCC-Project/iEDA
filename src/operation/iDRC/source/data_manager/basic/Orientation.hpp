@@ -16,8 +16,6 @@
 // ***************************************************************************************
 #pragma once
 
-#include <string>
-
 #include "Logger.hpp"
 
 namespace idrc {

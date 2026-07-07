@@ -72,6 +72,12 @@ IdbLayerSpacing::IdbLayerSpacing()
   _min_spacing = -1;
   _min_width = -1;
   _max_width = -1;
+  _eol_width = -1;
+  _eol_within = -1;
+  _has_parallel_edge = false;
+  _par_space = -1;
+  _par_within = -1;
+  _has_two_edges = false;
 }
 IdbLayerSpacing::~IdbLayerSpacing()
 {

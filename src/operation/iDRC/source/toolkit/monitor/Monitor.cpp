@@ -23,6 +23,14 @@ namespace idrc {
 
 // public
 
+std::optional<Monitor> Monitor::create()
+{
+  if (DRCLOG.isQuiet()) {
+    return std::nullopt;
+  }
+  return std::optional<Monitor>{std::in_place};
+}
+
 std::string Monitor::getStatsInfo()
 {
   std::string stats_info;

@@ -90,6 +90,43 @@ TEST(RoutingLayerTest, LEF58CORNERFILLSPACING) {
   EXPECT_EQ(spacing._eol_width, 0.06);
 }
 
+TEST(RoutingLayerTest, LEF58CORNERSPACINGMultipleRules) {
+  std::vector<lef58_cornerspacing> spacings;
+  const std::string str = R"(
+    CORNERSPACING CONVEXCORNER EXCEPTEOL 0.08
+    WIDTH 0.00 SPACING 0.10
+    WIDTH 0.20 SPACING 0.20
+    WIDTH 0.50 SPACING 0.30 ;
+    CORNERSPACING CONCAVECORNER
+    WIDTH 0.00 SPACING 0.12
+    WIDTH 0.18 SPACING 0.22 ;)";
+
+  bool ok = parse_lef58_cornerspacing(str.begin(), str.end(), spacings);
+  EXPECT_TRUE(ok);
+  ASSERT_EQ(spacings.size(), 2);
+
+  const auto& convex_spacing = spacings[0];
+  EXPECT_EQ(convex_spacing._corner_type, "CONVEXCORNER");
+  EXPECT_TRUE(convex_spacing._except_eol.has_value());
+  EXPECT_EQ(convex_spacing._except_eol.value(), 0.08);
+  EXPECT_EQ(convex_spacing._width_spacings.size(), 3);
+  EXPECT_EQ(convex_spacing._width_spacings[0]._width, 0.00);
+  EXPECT_EQ(convex_spacing._width_spacings[0]._spacing, 0.10);
+  EXPECT_EQ(convex_spacing._width_spacings[1]._width, 0.20);
+  EXPECT_EQ(convex_spacing._width_spacings[1]._spacing, 0.20);
+  EXPECT_EQ(convex_spacing._width_spacings[2]._width, 0.50);
+  EXPECT_EQ(convex_spacing._width_spacings[2]._spacing, 0.30);
+
+  const auto& concave_spacing = spacings[1];
+  EXPECT_EQ(concave_spacing._corner_type, "CONCAVECORNER");
+  EXPECT_FALSE(concave_spacing._except_eol.has_value());
+  EXPECT_EQ(concave_spacing._width_spacings.size(), 2);
+  EXPECT_EQ(concave_spacing._width_spacings[0]._width, 0.00);
+  EXPECT_EQ(concave_spacing._width_spacings[0]._spacing, 0.12);
+  EXPECT_EQ(concave_spacing._width_spacings[1]._width, 0.18);
+  EXPECT_EQ(concave_spacing._width_spacings[1]._spacing, 0.22);
+}
+
 TEST(RoutingLayerTest, LEF58MINIMUNCUT) {
   std::vector<lef58_minimumcut> cuts;
   const std::string str = R"(

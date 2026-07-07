@@ -50,22 +50,22 @@ void DataManager::destroyInst()
 
 void DataManager::input(std::map<std::string, std::any>& config_map)
 {
-  Monitor monitor;
+  auto monitor = Monitor::create();
   DRCLOG.info(Loc::current(), "Starting...");
   DRCI.input(config_map);
   buildConfig();
   buildDatabase();
   printConfig();
   printDatabase();
-  DRCLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  DRCLOG.info(Loc::current(), "Completed", monitor ? monitor->getStatsInfo() : "");
 }
 
 void DataManager::output()
 {
-  Monitor monitor;
+  auto monitor = Monitor::create();
   DRCLOG.info(Loc::current(), "Starting...");
   DRCI.output();
-  DRCLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  DRCLOG.info(Loc::current(), "Completed", monitor ? monitor->getStatsInfo() : "");
 }
 
 #if 1  // 获得唯一的pitch

@@ -16,8 +16,6 @@
 // ***************************************************************************************
 #pragma once
 
-#include <thread>
-
 #include "DRCHeader.hpp"
 #include "LogLevel.hpp"
 
@@ -34,9 +32,13 @@ class Logger
   static Logger& getInst();
   static void destroyInst();
   // function
-  void enableQuiet() { _enable_quiet = true; }
+  void setQuiet(bool enable_quiet) { _enable_quiet = enable_quiet; }
 
-  void disableQuiet() { _enable_quiet = false; }
+  void enableQuiet() { setQuiet(true); }
+
+  void disableQuiet() { setQuiet(false); }
+
+  bool isQuiet() const { return _enable_quiet; }
 
   void openLogFileStream(const std::string& log_file_path)
   {
@@ -83,7 +85,7 @@ class Logger
   // self
   static Logger* _log_instance;
   // config & database
-  bool _enable_quiet = false;
+  bool _enable_quiet = true;
   std::string _log_file_path;
   std::ofstream* _log_file = nullptr;
   std::vector<std::string> _temp_log_list;
@@ -98,7 +100,7 @@ class Logger
   template <typename T, typename... Args>
   void printLog(LogLevel log_level, Loc location, const T& value, const Args&... args)
   {
-    if (_enable_quiet) {
+    if (_enable_quiet && log_level != LogLevel::kError) {
       return;
     }
     const char* log_color_start;

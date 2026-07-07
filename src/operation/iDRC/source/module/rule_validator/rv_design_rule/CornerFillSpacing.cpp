@@ -21,31 +21,9 @@ namespace idrc {
 void RuleValidator::verifyCornerFillSpacing(RVCluster& rv_cluster)
 {
   std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
+  const auto& layer_data = rv_cluster.get_layer_data();
 
-  std::map<int32_t, std::map<int32_t, GTLPolySetInt>> routing_net_gtl_poly_set_map;
-  for (DRCShape* drc_shape : rv_cluster.get_drc_env_shape_list()) {
-    if (!drc_shape->get_is_routing() || drc_shape->get_net_idx() == -1) {
-      continue;
-    }
-    routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
-  }
-  for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
-    if (!drc_shape->get_is_routing()) {
-      continue;
-    }
-    routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
-  }
-  std::map<int32_t, bgi::rtree<std::pair<BGRectInt, int32_t>, bgi::quadratic<16>>> routing_bg_rtree_map;
-  for (auto& [routing_layer_idx, net_gtl_poly_set_map] : routing_net_gtl_poly_set_map) {
-    for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set_map) {
-      std::vector<GTLRectInt> gtl_rect_list;
-      gtl::get_max_rectangles(gtl_rect_list, gtl_poly_set);
-      for (GTLRectInt& gtl_rect : gtl_rect_list) {
-        routing_bg_rtree_map[routing_layer_idx].insert(std::make_pair(DRCUTIL.convertToBGRectInt(gtl_rect), net_idx));
-      }
-    }
-  }
-  for (auto& [routing_layer_idx, net_gtl_poly_set_map] : routing_net_gtl_poly_set_map) {
+  for (auto& [routing_layer_idx, rv_layer_data] : layer_data) {
     RoutingLayer& routing_layer = routing_layer_list[routing_layer_idx];
     CornerFillSpacingRule& corner_fill_spacing_rule = routing_layer.get_corner_fill_spacing_rule();
     if (!corner_fill_spacing_rule.has_corner_fill) {
@@ -56,58 +34,53 @@ void RuleValidator::verifyCornerFillSpacing(RVCluster& rv_cluster)
     int32_t edge_length_2 = corner_fill_spacing_rule.edge_length_2;
     int32_t adjacent_eol = corner_fill_spacing_rule.adjacent_eol;
     std::map<std::set<int32_t>, GTLPolySetInt> net_violation_poly_set_map;
-    for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set_map) {
-      std::vector<GTLHolePolyInt> gtl_hole_poly_list;
-      gtl_poly_set.get(gtl_hole_poly_list);
-      for (GTLHolePolyInt& gtl_hole_poly : gtl_hole_poly_list) {
-        int32_t coord_size = static_cast<int32_t>(gtl_hole_poly.size());
-        if (coord_size < 4) {
+    for (auto& [net_idx, routing_net] : rv_layer_data.nets) {
+      for (const PolygonData& polygon_data : rv_layer_data.getPolygons(routing_net)) {
+        if (rv_layer_data.getOuterBoundaryCount(polygon_data) < 4) {
           continue;
         }
-        std::vector<PlanarCoord> coord_list;
-        for (auto iter = gtl_hole_poly.begin(); iter != gtl_hole_poly.end(); iter++) {
-          coord_list.push_back(DRCUTIL.convertToPlanarCoord(*iter));
-        }
-        std::set<int32_t> valid_idx_set;
-        {
-          std::vector<bool> convex_corner_list;
-          std::vector<int32_t> edge_length_list;
-          for (int32_t i = 0; i < coord_size; i++) {
-            PlanarCoord& pre_coord = coord_list[getIdx(i - 1, coord_size)];
-            PlanarCoord& curr_coord = coord_list[i];
-            PlanarCoord& post_coord = coord_list[getIdx(i + 1, coord_size)];
-            convex_corner_list.push_back(DRCUTIL.isConvexCorner(DRCUTIL.getRotation(gtl_hole_poly), pre_coord, curr_coord, post_coord));
-            edge_length_list.push_back(DRCUTIL.getManhattanDistance(pre_coord, curr_coord));
+        int32_t polygon_id = rv_layer_data.getPolygonId(polygon_data);
+
+        std::vector<int32_t> valid_boundary_id_list;
+        for (const BoundaryData& curr_boundary : rv_layer_data.getBoundaries(polygon_data)) {
+          if (curr_boundary.isHole || curr_boundary.isConvex) {
+            continue;
           }
-          std::set<int32_t> eol_edge_idx_set;
-          for (int32_t i = 0; i < coord_size; i++) {
-            if (convex_corner_list[getIdx(i - 1, coord_size)] && convex_corner_list[i]) {
-              eol_edge_idx_set.insert(i);
+
+          int32_t boundary_id = rv_layer_data.getBoundaryId(curr_boundary);
+          const BoundaryData& prev_boundary = rv_layer_data.getPrevBoundary(boundary_id);
+          const BoundaryData& next_boundary = rv_layer_data.getNextBoundary(boundary_id);
+          if (prev_boundary.isHole || next_boundary.isHole) {
+            continue;
+          }
+
+          bool is_valid_corner_fill = false;
+          if (curr_boundary.edge_length < edge_length_1 && next_boundary.edge_length < edge_length_2) {
+            const BoundaryData& next_next_boundary = rv_layer_data.getBoundary(next_boundary.next_boundary_id);
+            if (next_boundary.isConvex && next_next_boundary.isConvex && next_next_boundary.edge_length < adjacent_eol) {
+              is_valid_corner_fill = true;
             }
           }
-          for (int32_t i = 0; i < coord_size; i++) {
-            if (convex_corner_list[i]) {
-              continue;
+          if (next_boundary.edge_length < edge_length_1 && curr_boundary.edge_length < edge_length_2) {
+            const BoundaryData& prev_prev_boundary = rv_layer_data.getBoundary(prev_boundary.prev_boundary_id);
+            if (prev_prev_boundary.isConvex && prev_boundary.isConvex && prev_boundary.edge_length < adjacent_eol) {
+              is_valid_corner_fill = true;
             }
-            if (edge_length_list[i] < edge_length_1 && edge_length_list[getIdx(i + 1, coord_size)] < edge_length_2) {
-              if (DRCUTIL.exist(eol_edge_idx_set, getIdx(i + 2, coord_size)) && edge_length_list[getIdx(i + 2, coord_size)] < adjacent_eol) {
-                valid_idx_set.insert(i);
-              }
-            }
-            if (edge_length_list[getIdx(i + 1, coord_size)] < edge_length_1 && edge_length_list[i] < edge_length_2) {
-              if (DRCUTIL.exist(eol_edge_idx_set, getIdx(i - 1, coord_size)) && edge_length_list[getIdx(i - 1, coord_size)] < adjacent_eol) {
-                valid_idx_set.insert(i);
-              }
-            }
+          }
+          if (is_valid_corner_fill) {
+            valid_boundary_id_list.push_back(boundary_id);
           }
         }
-        for (int32_t valid_idx : valid_idx_set) {
-          PlanarCoord curr_coord = coord_list[valid_idx];
+
+        for (int32_t valid_boundary_id : valid_boundary_id_list) {
+          const BoundaryData& curr_boundary = rv_layer_data.getBoundary(valid_boundary_id);
+          const BoundaryData& next_boundary = rv_layer_data.getNextBoundary(valid_boundary_id);
+          PlanarCoord curr_coord = curr_boundary.end_coord;
           PlanarRect corner_fill_rect;
           std::vector<Orientation> orientation_list;
           {
-            PlanarCoord pre_coord = coord_list[getIdx(valid_idx - 1, coord_size)];
-            PlanarCoord post_coord = coord_list[getIdx(valid_idx + 1, coord_size)];
+            PlanarCoord pre_coord = curr_boundary.begin_coord;
+            PlanarCoord post_coord = next_boundary.end_coord;
             PlanarCoord diag_coord(pre_coord.get_x() ^ curr_coord.get_x() ^ post_coord.get_x(), pre_coord.get_y() ^ curr_coord.get_y() ^ post_coord.get_y());
             corner_fill_rect = DRCUTIL.getRect(curr_coord, diag_coord);
             orientation_list = DRCUTIL.getOrientationList(curr_coord, diag_coord);
@@ -126,14 +99,14 @@ void RuleValidator::verifyCornerFillSpacing(RVCluster& rv_cluster)
               check_rect = DRCUTIL.getEnlargedRect(check_rect, 0, 0, 0, corner_fill_spacing);
             }
           }
-          std::vector<std::pair<BGRectInt, int32_t>> bg_rect_net_pair_list;
-          routing_bg_rtree_map[routing_layer_idx].query(bgi::intersects(DRCUTIL.convertToBGRectInt(check_rect)), std::back_inserter(bg_rect_net_pair_list));
-          for (auto& [bg_env_rect, env_net_idx] : bg_rect_net_pair_list) {
-            PlanarRect env_rect = DRCUTIL.convertToPlanarRect(bg_env_rect);
-            GTLRectInt env_gtl_rect = DRCUTIL.convertToGTLRectInt(bg_env_rect);
-            if (gtl::area(gtl_hole_poly & env_gtl_rect) == gtl::area(env_gtl_rect)) {
+          std::vector<std::pair<GTLRectInt, int32_t>> gtl_rect_id_pair_list;
+          rv_layer_data.queryMaxRects(DRCUTIL.convertToGTLRectInt(check_rect), std::back_inserter(gtl_rect_id_pair_list));
+          for (auto& [env_gtl_rect, env_max_rect_id] : gtl_rect_id_pair_list) {
+            int32_t env_net_idx = rv_layer_data.getNetIdxByMaxRectId(env_max_rect_id);
+            if (net_idx == env_net_idx && rv_layer_data.getMaxRect(env_max_rect_id).polygon_id == polygon_id) {
               continue;
             }
+            PlanarRect env_rect = DRCUTIL.convertToPlanarRect(env_gtl_rect);
             if (!DRCUTIL.isOpenOverlap(env_rect, check_rect)) {
               continue;
             }

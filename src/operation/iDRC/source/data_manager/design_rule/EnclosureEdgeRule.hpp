@@ -32,6 +32,11 @@ class EnclosureEdgeRule
   int32_t par_length = -1;
   int32_t par_within = -1;
   bool has_except_two_edges = false;
+  bool has_convexcorners = false;
+  int32_t convex_length = -1;
+  int32_t adjacent_length = -1;
+  int32_t convex_par_within = -1;
+  int32_t length = -1;
 };
 
 }  // namespace idrc

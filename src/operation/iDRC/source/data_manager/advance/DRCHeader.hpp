@@ -35,6 +35,7 @@
 #include <climits>
 #include <cmath>
 #include <condition_variable>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <ctime>
@@ -45,6 +46,7 @@
 #include <iomanip>
 #include <iostream>
 #include <list>
+#include <map>
 #include <mutex>
 #include <optional>
 #include <ostream>

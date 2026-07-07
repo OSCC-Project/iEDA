@@ -66,13 +66,13 @@ void RuleValidator::verifyMaxViaStack(RVCluster& rv_cluster)
       layer_net_stack_rect_map[cut_layer_idx].push_back(net_stack_rect_pair);
       for (int32_t curr_cut_layer_idx = cut_layer_idx; curr_cut_layer_idx < top_cut_layer_idx; curr_cut_layer_idx++) {
         std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>> net_used_rect_set;
-        for (auto& [net_idx, stack_rect] : layer_net_stack_rect_map[curr_cut_layer_idx]) {
+        for (size_t i = 0; i < layer_net_stack_rect_map[curr_cut_layer_idx].size(); i++) {
           std::vector<std::pair<BGRectInt, int32_t>> bg_rect_net_pair_list;
-          PlanarRect check_rect = stack_rect;
+          PlanarRect check_rect = net_stack_rect_pair.second;
           cut_bg_rtree_map[curr_cut_layer_idx + 1].query(bgi::intersects(DRCUTIL.convertToBGRectInt(check_rect)), std::back_inserter(bg_rect_net_pair_list));
           for (auto& [bg_env_rect, env_net_idx] : bg_rect_net_pair_list) {
             PlanarRect env_rect = DRCUTIL.convertToPlanarRect(bg_env_rect);
-            if (!DRCUTIL.isOpenOverlap(stack_rect, env_rect)) {
+            if (!DRCUTIL.isOpenOverlap(net_stack_rect_pair.second, env_rect)) {
               continue;
             }
             if (DRCUTIL.exist(net_used_rect_set[env_net_idx], env_rect)) {

@@ -69,7 +69,9 @@ class PlanarRect
   inline int32_t getPerimeter() const;
   inline double getArea() const;
   inline std::vector<Segment<PlanarCoord>> getEdgeList() const;
+  inline std::vector<Segment<PlanarCoord>> getCounterclockwiseEdgeList() const;
   inline Segment<PlanarCoord> getOrientEdge(Orientation orient) const;
+  inline Orientation getEdgeOrient(Segment<PlanarCoord> segment) const;
   inline PlanarCoord getMidPoint() const;
   inline bool isIncorrect() const;
 
@@ -151,6 +153,20 @@ inline std::vector<Segment<PlanarCoord>> PlanarRect::getEdgeList() const
   return segment_list;
 }
 
+inline std::vector<Segment<PlanarCoord>> PlanarRect::getCounterclockwiseEdgeList() const
+{
+  int32_t ll_x = _ll.get_x();
+  int32_t ll_y = _ll.get_y();
+  int32_t ur_x = _ur.get_x();
+  int32_t ur_y = _ur.get_y();
+  std::vector<Segment<PlanarCoord>> segment_list;
+  segment_list.emplace_back(PlanarCoord(ll_x, ur_y), _ll);
+  segment_list.emplace_back(_ll, PlanarCoord(ur_x, ll_y));
+  segment_list.emplace_back(PlanarCoord(ur_x, ll_y), _ur);
+  segment_list.emplace_back(_ur, PlanarCoord(ll_x, ur_y));
+  return segment_list;
+}
+
 inline Segment<PlanarCoord> PlanarRect::getOrientEdge(Orientation orient) const
 {
   int32_t ll_x = _ll.get_x();
@@ -171,6 +187,20 @@ inline Segment<PlanarCoord> PlanarRect::getOrientEdge(Orientation orient) const
     DRCLOG.error(Loc::current(), "The orient is error!");
   }
   return segment;
+}
+
+inline Orientation PlanarRect::getEdgeOrient(Segment<PlanarCoord> segment) const
+{
+  Orientation edge_orient = Orientation::kNone;
+  for (Orientation orient : {Orientation::kNorth, Orientation::kSouth, Orientation::kWest, Orientation::kEast}) {
+    Segment<PlanarCoord> orient_edge = getOrientEdge(orient);
+    if ((segment.get_first() == orient_edge.get_first() && segment.get_second() == orient_edge.get_second())
+        || (segment.get_first() == orient_edge.get_second() && segment.get_second() == orient_edge.get_first())) {
+      edge_orient = orient;
+      break;
+    }
+  }
+  return edge_orient;
 }
 
 inline PlanarCoord PlanarRect::getMidPoint() const

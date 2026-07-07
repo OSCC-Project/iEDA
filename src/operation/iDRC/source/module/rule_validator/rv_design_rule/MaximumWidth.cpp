@@ -14,8 +14,6 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include <cstdint>
-
 #include "RuleValidator.hpp"
 
 namespace idrc {
@@ -23,26 +21,19 @@ namespace idrc {
 void RuleValidator::verifyMaximumWidth(RVCluster& rv_cluster)
 {
   std::vector<RoutingLayer>& routing_layer_list = DRCDM.getDatabase().get_routing_layer_list();
+  const auto& layer_data = rv_cluster.get_layer_data();
 
-  std::map<int32_t, std::map<int32_t, GTLPolySetInt>> routing_net_gtl_poly_set_map;
-  for (DRCShape* drc_shape : rv_cluster.get_drc_env_shape_list()) {
-    if (!drc_shape->get_is_routing() || drc_shape->get_net_idx() == -1) {
-      continue;
-    }
-    routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
-  }
-  for (DRCShape* drc_shape : rv_cluster.get_drc_result_shape_list()) {
-    if (!drc_shape->get_is_routing()) {
-      continue;
-    }
-    routing_net_gtl_poly_set_map[drc_shape->get_layer_idx()][drc_shape->get_net_idx()] += DRCUTIL.convertToGTLRectInt(drc_shape->get_rect());
-  }
-  for (auto& [routing_layer_idx, net_gtl_poly_set_map] : routing_net_gtl_poly_set_map) {
+  for (const auto& [routing_layer_idx, rv_layer_data] : layer_data) {
     int32_t max_width = routing_layer_list[routing_layer_idx].get_maximum_width_rule().max_width;
-    for (auto& [net_idx, gtl_poly_set] : net_gtl_poly_set_map) {
-      std::vector<GTLRectInt> gtl_rect_list;
-      gtl::get_max_rectangles(gtl_rect_list, gtl_poly_set);
-      for (GTLRectInt& gtl_rect : gtl_rect_list) {
+    for (const auto& [net_idx, routing_net] : rv_layer_data.nets) {
+      if (net_idx == -1) {
+        continue;
+      }
+      for (const MaxRectData& max_rect_data : rv_layer_data.getMaxRects(routing_net)) {
+        if (max_rect_data.isEnv) {
+          continue;
+        }
+        const GTLRectInt& gtl_rect = max_rect_data.rect;
         int32_t span = std::min(gtl::xh(gtl_rect) - gtl::xl(gtl_rect), gtl::yh(gtl_rect) - gtl::yl(gtl_rect));
         if (span <= max_width) {
           continue;

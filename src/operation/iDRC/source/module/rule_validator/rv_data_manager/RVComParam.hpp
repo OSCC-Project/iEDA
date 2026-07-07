@@ -22,21 +22,21 @@ class RVComParam
 {
  public:
   RVComParam() = default;
-  RVComParam(int32_t grid_size, int32_t expand_size)
+  RVComParam(int32_t cluster_size, int32_t expand_size)
   {
-    _grid_size = grid_size;
+    _cluster_size = cluster_size;
     _expand_size = expand_size;
   }
   ~RVComParam() = default;
   // getter
-  int32_t get_grid_size() const { return _grid_size; }
+  int32_t get_cluster_size() const { return _cluster_size; }
   int32_t get_expand_size() const { return _expand_size; }
   // setter
-  void set_grid_size(const int32_t grid_size) { _grid_size = grid_size; }
+  void set_cluster_size(const int32_t cluster_size) { _cluster_size = cluster_size; }
   void set_expand_size(const int32_t expand_size) { _expand_size = expand_size; }
 
  private:
-  int32_t _grid_size = -1;
+  int32_t _cluster_size = -1;
   int32_t _expand_size = -1;
 };
 

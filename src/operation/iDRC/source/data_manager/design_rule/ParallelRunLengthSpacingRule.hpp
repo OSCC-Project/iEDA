@@ -21,6 +21,24 @@
 
 namespace idrc {
 
+enum class LayerSpacingType : uint8_t
+{
+  kNone,
+  kSpacingDefault,
+  kSpacingRange,
+  //!-----tbd-------------
+  kSpacingRangeLenThreshold,
+  kSpacingEOL,
+  kMax
+};
+struct LayerSpacing
+{
+  LayerSpacingType spacing_type;
+  int32_t min_spacing;
+  int32_t min_width;
+  int32_t max_width;
+};
+
 class ParallelRunLengthSpacingRule
 {
  public:
@@ -30,16 +48,16 @@ class ParallelRunLengthSpacingRule
   int32_t getSpacing(int32_t width, int32_t parallel_length)
   {
     int32_t width_idx = static_cast<int32_t>(width_list.size()) - 1;
-    for (int32_t i = width_idx; 0 <= i; i--) {
-      if (width_list[i] <= width) {
-        width_idx = i;
+    for (int32_t i = 1; i <= width_idx; i++) {
+      if (width <= width_list[i]) {
+        width_idx = i - 1;
         break;
       }
     }
     int32_t parallel_length_idx = static_cast<int32_t>(parallel_length_list.size()) - 1;
-    for (int32_t i = parallel_length_idx; 0 <= i; i--) {
-      if (parallel_length_list[i] <= parallel_length) {
-        parallel_length_idx = i;
+    for (int32_t i = 1; i <= parallel_length_idx; i++) {
+      if (parallel_length <= parallel_length_list[i]) {
+        parallel_length_idx = i - 1;
         break;
       }
     }
@@ -48,6 +66,35 @@ class ParallelRunLengthSpacingRule
   std::vector<int32_t> width_list;
   std::vector<int32_t> parallel_length_list;
   GridMap<int32_t> width_parallel_length_map;
+  bool has_spacing_table = false;
+
+  std::vector<LayerSpacing> spacing_list;
+  bool has_spacing_list = false;
+
+  int32_t getSpacingWithWidth(int32_t width)
+  {
+    int32_t spacing = -1;
+    int32_t default_spacing = -1;
+    for (auto& layerSpacing : spacing_list) {
+      if (layerSpacing.spacing_type == LayerSpacingType::kSpacingRange) {
+        if (layerSpacing.min_width <= width && width <= layerSpacing.max_width) {
+          spacing = layerSpacing.min_spacing;
+        }
+      } else {
+        default_spacing = layerSpacing.min_spacing;
+      }
+    }
+    return spacing == -1 ? default_spacing : spacing;
+  }
+
+  int32_t getSpacingMaxWidth()
+  {
+    int32_t spacing = -1;
+    for (auto& layerSpacing : spacing_list) {
+      spacing = std::max(spacing, layerSpacing.min_spacing);
+    }
+    return spacing;
+  }
 };
 
 }  // namespace idrc

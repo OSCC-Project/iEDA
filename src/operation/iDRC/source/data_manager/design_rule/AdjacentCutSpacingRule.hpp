@@ -25,6 +25,10 @@ class AdjacentCutSpacingRule
  public:
   AdjacentCutSpacingRule() = default;
   ~AdjacentCutSpacingRule() = default;
+
+  int32_t cut_spacing;
+  int32_t adjacnet_cuts;
+  int32_t cut_within;
 };
 
 }  // namespace idrc
