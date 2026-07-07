@@ -103,7 +103,7 @@ class SRNode : public LayerCoord
       }
       double boundary_supply = 0;
       if (RTUTIL.exist(_orient_supply_map, orient)) {
-        boundary_supply = (_orient_supply_map[orient] * _boundary_wire_unit);
+        boundary_supply = _orient_supply_map[orient];
       }
       boundary_overflow += calcCost(boundary_demand, boundary_supply);
     }
@@ -135,7 +135,7 @@ class SRNode : public LayerCoord
       }
       double internal_supply = 0;
       for (auto& [orient, supply] : _orient_supply_map) {
-        internal_supply += (supply * _internal_wire_unit);
+        internal_supply += supply;
       }
       internal_overflow += calcCost(internal_demand, internal_supply);
     }
@@ -176,16 +176,30 @@ class SRNode : public LayerCoord
     double boundary_demand = 0;
     for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
       if (RTUTIL.exist(_orient_net_map, orient)) {
-        boundary_demand += (static_cast<double>(_orient_net_map[orient].size()) * _boundary_wire_unit);
+        for (int32_t demand_net_idx : _orient_net_map[orient]) {
+          if (RTUTIL.exist(_ignore_net_orient_map, demand_net_idx) && RTUTIL.exist(_ignore_net_orient_map[demand_net_idx], orient)) {
+            continue;
+          }
+          boundary_demand += _boundary_wire_unit;
+        }
       }
     }
     double internal_demand = 0;
     for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
       if (RTUTIL.exist(_orient_net_map, orient)) {
-        internal_demand += (static_cast<double>(_orient_net_map[orient].size()) * _internal_wire_unit);
+        for (int32_t demand_net_idx : _orient_net_map[orient]) {
+          if (RTUTIL.exist(_ignore_net_orient_map, demand_net_idx) && RTUTIL.exist(_ignore_net_orient_map[demand_net_idx], orient)) {
+            continue;
+          }
+          internal_demand += _internal_wire_unit;
+        }
       }
     }
     for (auto& [net_idx, orient_set] : _net_orient_map) {
+      if (RTUTIL.exist(_ignore_net_orient_map, net_idx)
+          && (RTUTIL.exist(_ignore_net_orient_map[net_idx], Orientation::kAbove) || RTUTIL.exist(_ignore_net_orient_map[net_idx], Orientation::kBelow))) {
+        continue;
+      }
       if (RTUTIL.exist(orient_set, Orientation::kEast) || RTUTIL.exist(orient_set, Orientation::kWest) || RTUTIL.exist(orient_set, Orientation::kSouth)
           || RTUTIL.exist(orient_set, Orientation::kNorth)) {
         continue;
@@ -214,7 +228,7 @@ class SRNode : public LayerCoord
       }
       double boundary_supply = 0;
       if (RTUTIL.exist(_orient_supply_map, orient)) {
-        boundary_supply = (_orient_supply_map[orient] * _boundary_wire_unit);
+        boundary_supply = _orient_supply_map[orient];
       }
       boundary_overflow += std::max(0.0, boundary_demand - boundary_supply);
     }
@@ -246,7 +260,7 @@ class SRNode : public LayerCoord
       }
       double internal_supply = 0;
       for (auto& [orient, supply] : _orient_supply_map) {
-        internal_supply += (supply * _internal_wire_unit);
+        internal_supply += supply;
       }
       internal_overflow += std::max(0.0, internal_demand - internal_supply);
     }
@@ -270,7 +284,7 @@ class SRNode : public LayerCoord
       }
       double boundary_supply = 0;
       if (RTUTIL.exist(_orient_supply_map, orient)) {
-        boundary_supply = (_orient_supply_map[orient] * _boundary_wire_unit);
+        boundary_supply = _orient_supply_map[orient];
       }
       if (boundary_demand - boundary_supply > 0) {
         overflow_net_set.insert(_orient_net_map[orient].begin(), _orient_net_map[orient].end());
@@ -303,7 +317,7 @@ class SRNode : public LayerCoord
       }
       double internal_supply = 0;
       for (auto& [orient, supply] : _orient_supply_map) {
-        internal_supply += (supply * _internal_wire_unit);
+        internal_supply += supply;
       }
       if (internal_demand - internal_supply > 0) {
         for (auto& [net_idx, orient_set] : _net_orient_map) {

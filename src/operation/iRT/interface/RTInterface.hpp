@@ -80,8 +80,7 @@ class RTInterface
   void runRT();
   void destroyRT();
   void cleanDef();
-  void fixFanout();
-  void getCongestion();
+  void fixFanout(std::map<std::string, std::any> config_map);
 #endif
 
 #endif
@@ -113,6 +112,10 @@ class RTInterface
   void wrapDrivenPin(Net& net, idb::IdbNet* idb_net);
   Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
   ConnectType getRTConnectTypeByDB(idb::IdbConnectType idb_connect_type);
+  idb::IdbRegularWireSegment* getIDBSegmentByNetResult(int32_t net_idx, Segment<LayerCoord>& segment);
+  idb::IdbRegularWireSegment* getIDBSegmentByNetPatch(int32_t net_idx, EXTLayerRect& ext_layer_rect);
+  idb::IdbRegularWireSegment* getIDBWire(int32_t net_idx, Segment<LayerCoord>& segment);
+  idb::IdbRegularWireSegment* getIDBVia(int32_t net_idx, Segment<LayerCoord>& segment);
 #endif
 
 #if 1  // output
@@ -121,13 +124,6 @@ class RTInterface
   void outputGCellGrid();
   void outputNetList();
   void outputSummary();
-#endif
-
-#if 1  // convert idb
-  idb::IdbRegularWireSegment* getIDBSegmentByNetResult(int32_t net_idx, Segment<LayerCoord>& segment);
-  idb::IdbRegularWireSegment* getIDBSegmentByNetPatch(int32_t net_idx, EXTLayerRect& ext_layer_rect);
-  idb::IdbRegularWireSegment* getIDBWire(int32_t net_idx, Segment<LayerCoord>& segment);
-  idb::IdbRegularWireSegment* getIDBVia(int32_t net_idx, Segment<LayerCoord>& segment);
 #endif
 
 #endif
@@ -144,9 +140,9 @@ class RTInterface
 #endif
 
 #if 1  // iSTA
-  void updateTimingAndPower(std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
-                            std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list,
-                            std::map<std::string, std::map<std::string, double>>& clock_timing, std::map<std::string, double>& power);
+  void updateTiming(std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
+                    std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list,
+                    std::map<std::string, std::map<std::string, double>>& clock_timing);
 #endif
 
 #if 1  // flute

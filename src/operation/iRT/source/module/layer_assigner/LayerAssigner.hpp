@@ -38,8 +38,28 @@ class LayerAssigner
   void assign();
 
  private:
+  struct LAOverflowEdge
+  {
+    PlanarCoord first_coord;
+    PlanarCoord second_coord;
+    int32_t layer_idx = -1;
+    bool has_true_overflow = false;
+    double total_true_overflow = 0.0;
+    double max_true_overflow = 0.0;
+    double total_soft_congestion = 0.0;
+    double max_soft_congestion = 0.0;
+    double max_usage_ratio = 0.0;
+    std::vector<PlanarCoord> split_coord_list;
+  };
+  struct LARefineLayerHint
+  {
+    PlanarCoord first_coord;
+    PlanarCoord second_coord;
+    int32_t layer_idx = -1;
+  };
   // self
   static LayerAssigner* _la_instance;
+  std::vector<LARefineLayerHint> _refine_layer_hint_list;
 
   LayerAssigner() = default;
   LayerAssigner(const LayerAssigner& other) = delete;
@@ -62,7 +82,11 @@ class LayerAssigner
   void initSingleTask(LAModel& la_model, LANet* la_task);
   bool needRouting(LAModel& la_model);
   void spiltPlaneTree(LAModel& la_model);
+  int32_t getTopoSpiltLength(LAModel& la_model, int32_t segment_length);
   void insertMidPoint(LAModel& la_model, TNode<LayerCoord>* planar_node, TNode<LayerCoord>* child_node);
+  std::vector<LAOverflowEdge> getOverflowEdgeList(LAModel& la_model);
+  void splitPlaneTreeByOverflow(LAModel& la_model, std::vector<LAOverflowEdge>& overflow_edge_list);
+  void insertPointList(TNode<LayerCoord>* planar_node, TNode<LayerCoord>* child_node, std::vector<PlanarCoord>& point_list);
   void buildPillarTree(LAModel& la_model);
   LAPillar convertLAPillar(LayerCoord& layer_coord, std::map<PlanarCoord, std::set<int32_t>, CmpPlanarCoordByXASC>& coord_pin_layer_map);
   void assignPillarTree(LAModel& la_model);
@@ -73,11 +97,16 @@ class LayerAssigner
   std::pair<int32_t, double> getParentPillarCost(LAModel& la_model, LAPackage& la_package, int32_t candidate_layer_idx);
   double getExtraViaCost(LAModel& la_model, std::set<int32_t>& layer_idx_set, int32_t candidate_layer_idx);
   double getSegmentCost(LAModel& la_model, LAPackage& la_package, int32_t candidate_layer_idx);
+  double getLayerBiasCost(LAModel& la_model, LAPackage& la_package, std::vector<int32_t>& candidate_layer_idx_list, int32_t candidate_layer_idx);
+  double getRefineLayerHintCost(LAModel& la_model, LAPackage& la_package, int32_t candidate_layer_idx);
+  double getLayerSwitchCost(LAModel& la_model, LAPackage& la_package, int32_t parent_layer_idx, int32_t candidate_layer_idx);
   double getChildPillarCost(LAModel& la_model, LAPackage& la_package, int32_t candidate_layer_idx);
   void assignBackward(LAModel& la_model);
   int32_t getBestLayerBySelf(TNode<LAPillar>* pillar_node);
   int32_t getBestLayerByChild(TNode<LAPillar>* parent_pillar_node);
   void buildLayerTree(LAModel& la_model);
+  MTree<LayerCoord> getAssignedCoordTree(LAModel& la_model);
+  void commitLayerTree(LAModel& la_model, MTree<LayerCoord>& coord_tree);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(LAModel& la_model);
   MTree<LayerCoord> getCoordTree(LAModel& la_model, std::vector<Segment<LayerCoord>>& routing_segment_list);
   void uploadNetResult(LAModel& la_model, MTree<LayerCoord>& coord_tree);

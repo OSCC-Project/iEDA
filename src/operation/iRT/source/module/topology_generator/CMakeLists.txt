@@ -22,5 +22,4 @@ target_include_directories(irt_topology_generator
     PUBLIC
     ${IRT_MODULE}/topology_generator/tg_data_manager
     ${IRT_MODULE}/topology_generator
-
 )

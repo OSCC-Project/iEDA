@@ -79,8 +79,8 @@ class EarlyRouter
   void generateERTask(ERModel& er_model, ERNet* er_task);
   void initSinglePlanarTask(ERModel& er_model, ERNet* er_task);
   std::vector<Segment<PlanarCoord>> getPlanarRoutingSegmentList(ERModel& er_model);
+  std::vector<ERCandidate> getERCandidateList(ERModel& er_model);
   std::vector<Segment<PlanarCoord>> getPlanarTopoList(ERModel& er_model);
-  std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListList(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
   std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByStraight(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
   std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByLPattern(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
   std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByZPattern(ERModel& er_model, Segment<PlanarCoord>& planar_topo);

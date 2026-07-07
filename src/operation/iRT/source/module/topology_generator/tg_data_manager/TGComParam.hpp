@@ -22,12 +22,14 @@ class TGComParam
 {
  public:
   TGComParam() = default;
-  TGComParam(int32_t topo_spilt_length, int32_t expand_step_num, int32_t expand_step_length, double overflow_unit)
+  TGComParam(int32_t topo_spilt_length, int32_t expand_step_num, int32_t expand_step_length, double overflow_unit,
+             double corner_weight = 0.3)
   {
     _topo_spilt_length = topo_spilt_length;
     _expand_step_num = expand_step_num;
     _expand_step_length = expand_step_length;
     _overflow_unit = overflow_unit;
+    _corner_weight = corner_weight;
   }
   ~TGComParam() = default;
   // getter
@@ -35,17 +37,20 @@ class TGComParam
   int32_t get_expand_step_num() const { return _expand_step_num; }
   int32_t get_expand_step_length() const { return _expand_step_length; }
   double get_overflow_unit() const { return _overflow_unit; }
+  double get_corner_weight() const { return _corner_weight; }
   // setter
   void set_topo_spilt_length(const int32_t topo_spilt_length) { _topo_spilt_length = topo_spilt_length; }
   void set_expand_step_num(const int32_t expand_step_num) { _expand_step_num = expand_step_num; }
   void set_expand_step_length(const int32_t expand_step_length) { _expand_step_length = expand_step_length; }
   void set_overflow_unit(const double overflow_unit) { _overflow_unit = overflow_unit; }
+  void set_corner_weight(const double corner_weight) { _corner_weight = corner_weight; }
 
  private:
   int32_t _topo_spilt_length = 0;
   int32_t _expand_step_num = 0;
   int32_t _expand_step_length = 0;
   double _overflow_unit = 0;
+  double _corner_weight = 0.3;
 };
 
 }  // namespace irt

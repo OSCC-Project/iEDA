@@ -53,7 +53,6 @@ class TGSummary
   double total_overflow = 0;
   double total_wire_length = 0;
   std::map<std::string, std::map<std::string, double>> clock_timing_map;
-  std::map<std::string, double> type_power_map;
 };
 
 class LASummary
@@ -70,7 +69,6 @@ class LASummary
   std::map<int32_t, int32_t> cut_via_num_map;
   int32_t total_via_num = 0;
   std::map<std::string, std::map<std::string, double>> clock_timing_map;
-  std::map<std::string, double> type_power_map;
 };
 
 class SRSummary
@@ -87,7 +85,6 @@ class SRSummary
   std::map<int32_t, int32_t> cut_via_num_map;
   int32_t total_via_num = 0;
   std::map<std::string, std::map<std::string, double>> clock_timing_map;
-  std::map<std::string, double> type_power_map;
 };
 
 class TASummary
@@ -115,7 +112,6 @@ class DRSummary
   std::map<int32_t, int32_t> routing_violation_num_map;
   int32_t total_violation_num = 0;
   std::map<std::string, std::map<std::string, double>> clock_timing_map;
-  std::map<std::string, double> type_power_map;
 };
 
 class VRSummary
@@ -138,7 +134,6 @@ class VRSummary
   std::map<int32_t, int32_t> among_net_routing_violation_num_map;
   int32_t among_net_total_violation_num = 0;
   std::map<std::string, std::map<std::string, double>> clock_timing_map;
-  std::map<std::string, double> type_power_map;
 };
 
 class Summary

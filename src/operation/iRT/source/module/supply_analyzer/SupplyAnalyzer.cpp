@@ -400,8 +400,9 @@ void SupplyAnalyzer::updateSummary(SAModel& sa_model)
     for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
       for (auto& [routing_layer_idx, orient_supply_map] : gcell_map[x][y].get_routing_orient_supply_map()) {
         for (auto& [orient, supply] : orient_supply_map) {
-          routing_supply_map[routing_layer_idx] += supply;
-          total_supply += supply;
+          // boundary_supply + internal_supply
+          routing_supply_map[routing_layer_idx] += (2 * supply);
+          total_supply += (2 * supply);
         }
       }
     }
@@ -449,7 +450,8 @@ void SupplyAnalyzer::outputPlanarSupplyCSV(SAModel& sa_model)
       int32_t total_supply = 0;
       for (RoutingLayer& routing_layer : routing_layer_list) {
         for (auto& [orient, supply] : gcell_map[x][y].get_routing_orient_supply_map()[routing_layer.get_layer_idx()]) {
-          total_supply += supply;
+          // boundary_supply + internal_supply
+          total_supply += (2 * supply);
         }
       }
       RTUTIL.pushStream(supply_csv_file, total_supply, ",");
@@ -479,7 +481,8 @@ void SupplyAnalyzer::outputLayerSupplyCSV(SAModel& sa_model)
       for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
         int32_t total_supply = 0;
         for (auto& [orient, supply] : gcell_map[x][y].get_routing_orient_supply_map()[routing_layer.get_layer_idx()]) {
-          total_supply += supply;
+          // boundary_supply + internal_supply
+          total_supply += (2 * supply);
         }
         RTUTIL.pushStream(supply_csv_file, total_supply, ",");
       }

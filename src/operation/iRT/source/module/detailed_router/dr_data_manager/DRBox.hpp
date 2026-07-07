@@ -110,6 +110,7 @@ class DRBox
   std::vector<DRNode*>& get_path_node_list() { return _path_node_list; }
   std::vector<DRNode*>& get_single_task_visited_node_list() { return _single_task_visited_node_list; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
+  std::map<DRNode*, AccessPoint*>& get_source_node_access_point_map() { return _source_node_access_point_map; }
   void set_curr_route_task(DRTask* curr_route_task) { _curr_route_task = curr_route_task; }
   void set_start_node_list_list(const std::vector<std::vector<DRNode*>>& start_node_list_list) { _start_node_list_list = start_node_list_list; }
   void set_end_node_list_list(const std::vector<std::vector<DRNode*>>& end_node_list_list) { _end_node_list_list = end_node_list_list; }
@@ -175,6 +176,7 @@ class DRBox
   std::vector<DRNode*> _path_node_list;
   std::vector<DRNode*> _single_task_visited_node_list;
   std::vector<Segment<LayerCoord>> _routing_segment_list;
+  std::map<DRNode*, AccessPoint*> _source_node_access_point_map;
   // single path
   OpenQueue<DRNode> _open_queue;
   std::vector<DRNode*> _single_path_visited_node_list;

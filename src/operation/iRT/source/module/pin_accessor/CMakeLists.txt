@@ -22,5 +22,4 @@ target_include_directories(irt_pin_accessor
     PUBLIC
     ${IRT_MODULE}/pin_accessor/pa_data_manager
     ${IRT_MODULE}/pin_accessor
-
 )

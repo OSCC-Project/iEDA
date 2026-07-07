@@ -64,7 +64,7 @@ class GDSPlotter
   void buildTopStruct(GPGDS& gp_gds);
   void checkSRefList(GPGDS& gp_gds);
   void plotGDS(GPGDS& gp_gds, std::string gds_file_path);
-  void plotStruct(std::ofstream* gds_file, GPStruct& gp_struct);
+  void plotStruct(std::ofstream* gds_file, GPStruct& gp_struct, const std::vector<int32_t>& date_list);
   void plotBoundary(std::ofstream* gds_file, GPBoundary& gp_boundary);
   void plotPath(std::ofstream* gds_file, GPPath& gp_path);
   void plotText(std::ofstream* gds_file, GPText& gp_text);

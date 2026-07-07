@@ -503,8 +503,10 @@ void TrackAssigner::routeTAPanel(TAPanel& ta_panel)
       routing_task->addRoutedTimes();
     }
     updateViolationList(ta_panel);
+    updateBestResult(ta_panel);
     updateTaskSchedule(ta_panel, routing_task_list);
   }
+  selectBestResult(ta_panel);
 }
 
 std::vector<TATask*> TrackAssigner::initTaskSchedule(TAPanel& ta_panel)
@@ -1039,6 +1041,22 @@ std::vector<Violation> TrackAssigner::getViolationListByShort(TAPanel& ta_panel,
   return violation_list;
 }
 
+void TrackAssigner::updateBestResult(TAPanel& ta_panel)
+{
+  std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& best_net_task_detailed_result_map
+      = ta_panel.get_best_net_task_detailed_result_map();
+  std::vector<Violation>& best_violation_list = ta_panel.get_best_violation_list();
+
+  int32_t curr_violation_num = static_cast<int32_t>(ta_panel.get_violation_list().size());
+  if (!best_net_task_detailed_result_map.empty()) {
+    if (static_cast<int32_t>(best_violation_list.size()) < curr_violation_num) {
+      return;
+    }
+  }
+  best_net_task_detailed_result_map = ta_panel.get_net_task_detailed_result_map();
+  best_violation_list = ta_panel.get_violation_list();
+}
+
 void TrackAssigner::updateTaskSchedule(TAPanel& ta_panel, std::vector<TATask*>& routing_task_list)
 {
   int32_t max_routed_times = ta_panel.get_ta_com_param()->get_max_routed_times();
@@ -1088,6 +1106,13 @@ void TrackAssigner::updateTaskSchedule(TAPanel& ta_panel, std::vector<TATask*>& 
     new_ta_task_list.push_back(routing_task);
   }
   ta_panel.set_ta_task_list(new_ta_task_list);
+}
+
+void TrackAssigner::selectBestResult(TAPanel& ta_panel)
+{
+  updateBestResult(ta_panel);
+  ta_panel.set_net_task_detailed_result_map(ta_panel.get_best_net_task_detailed_result_map());
+  ta_panel.set_violation_list(ta_panel.get_best_violation_list());
 }
 
 void TrackAssigner::uploadNetResult(TAPanel& ta_panel)

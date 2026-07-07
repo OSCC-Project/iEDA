@@ -16,10 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
-#include <sys/resource.h>
-#include <sys/time.h>
-
-#include <string>
+#include "RTHeader.hpp"
 
 namespace irt {
 

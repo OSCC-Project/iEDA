@@ -1541,10 +1541,18 @@ class Utility
           scale_line_list.push_back(scale_grid.get_start_line());
         }
       } else {
-        for (int32_t scale_line = scale_grid.get_start_line(); scale_line <= scale_grid.get_end_line(); scale_line += scale_grid.get_step_length()) {
-          if (begin_line <= scale_line && scale_line <= end_line) {
-            scale_line_list.push_back(scale_line);
-          }
+        int32_t start_line = scale_grid.get_start_line();
+        int32_t end_line_by_grid = scale_grid.get_end_line();
+        int32_t step_length = scale_grid.get_step_length();
+        int32_t first_line = std::max(begin_line, start_line);
+        int32_t last_line = std::min(end_line, end_line_by_grid);
+        if (first_line > last_line) {
+          continue;
+        }
+        int32_t first_idx = (first_line - start_line + step_length - 1) / step_length;
+        int32_t last_idx = (last_line - start_line) / step_length;
+        for (int32_t i = first_idx; i <= last_idx; i++) {
+          scale_line_list.push_back(start_line + i * step_length);
         }
       }
     }
@@ -1561,7 +1569,6 @@ class Utility
   {
     swapByASC(begin_line, end_line);
 
-    std::vector<int32_t> scale_line_list;
     for (ScaleGrid& scale_grid : scale_grid_list) {
       if (scale_grid.get_step_length() == 0) {
         if (scale_grid.get_start_line() < begin_line) {
@@ -1571,12 +1578,22 @@ class Utility
           post_scale_set.push_back(scale_grid.get_start_line());
         }
       } else {
-        for (int32_t scale_line = scale_grid.get_start_line(); scale_line <= scale_grid.get_end_line(); scale_line += scale_grid.get_step_length()) {
-          if (scale_line < begin_line) {
-            pre_scale_list.push_back(scale_line);
+        int32_t start_line = scale_grid.get_start_line();
+        int32_t end_line_by_grid = scale_grid.get_end_line();
+        int32_t step_length = scale_grid.get_step_length();
+        if (start_line < begin_line) {
+          int32_t pre_last_line = std::min(end_line_by_grid, begin_line - 1);
+          int32_t pre_last_idx = (pre_last_line - start_line) / step_length;
+          for (int32_t i = 0; i <= pre_last_idx; i++) {
+            pre_scale_list.push_back(start_line + i * step_length);
           }
-          if (end_line < scale_line) {
-            post_scale_set.push_back(scale_line);
+        }
+        if (end_line < end_line_by_grid) {
+          int32_t post_first_line = std::max(start_line, end_line + 1);
+          int32_t post_first_idx = (post_first_line - start_line + step_length - 1) / step_length;
+          int32_t post_last_idx = (end_line_by_grid - start_line) / step_length;
+          for (int32_t i = post_first_idx; i <= post_last_idx; i++) {
+            post_scale_set.push_back(start_line + i * step_length);
           }
         }
       }
@@ -3200,6 +3217,15 @@ class Utility
   static bool diffSign(T a, T b)
   {
     return !sameSign(a, b);
+  }
+
+  static double retainPlaces(double a, int32_t n = 1)
+  {
+    if (n <= 0) {
+      return std::round(a);
+    }
+    const double scale = std::pow(10.0, static_cast<double>(n));
+    return std::round(a * scale) / scale;
   }
 
   template <typename Key>

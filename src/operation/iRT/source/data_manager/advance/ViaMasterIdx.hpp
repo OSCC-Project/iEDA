@@ -16,7 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
-#include "LayerRect.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
@@ -24,7 +24,14 @@ class ViaMasterIdx
 {
  public:
   ViaMasterIdx() = default;
+  ViaMasterIdx(int32_t below_layer_idx, int32_t via_idx)
+  {
+    _below_layer_idx = below_layer_idx;
+    _via_idx = via_idx;
+  }
   ~ViaMasterIdx() = default;
+  bool operator==(const ViaMasterIdx& other) const { return _below_layer_idx == other._below_layer_idx && _via_idx == other._via_idx; }
+  bool operator!=(const ViaMasterIdx& other) const { return !((*this) == other); }
   // getter
   int32_t get_below_layer_idx() const { return _below_layer_idx; }
   int32_t get_via_idx() const { return _via_idx; }
@@ -32,6 +39,7 @@ class ViaMasterIdx
   void set_below_layer_idx(const int32_t below_layer_idx) { _below_layer_idx = below_layer_idx; }
   void set_via_idx(const int32_t via_idx) { _via_idx = via_idx; }
   // function
+  bool isValid() const { return _below_layer_idx >= 0 && _via_idx >= 0; }
 
  private:
   int32_t _below_layer_idx = -1;

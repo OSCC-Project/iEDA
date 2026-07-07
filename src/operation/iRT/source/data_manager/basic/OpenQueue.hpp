@@ -16,8 +16,6 @@
 // ***************************************************************************************
 #pragma once
 
-#include <queue>
-
 #include "OpenQueueNode.hpp"
 
 namespace irt {

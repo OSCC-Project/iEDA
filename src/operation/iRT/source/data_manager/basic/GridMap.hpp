@@ -119,10 +119,12 @@ inline void GridMap<T>::init(size_t x_size, size_t y_size)
 template <typename T>
 inline void GridMap<T>::init(int32_t x_size, int32_t y_size)
 {
+  freeDataMap();
+  _x_size = x_size;
+  _y_size = y_size;
+  initDataMap();
   if constexpr (std::is_same<T, int32_t>::value || std::is_same<T, double>::value) {
-    init(x_size, y_size, 0);
-  } else {
-    init(x_size, y_size, T());
+    assignDataMap(0);
   }
 }
 

@@ -16,9 +16,6 @@
 // ***************************************************************************************
 #pragma once
 
-#include <string>
-#include <vector>
-
 #include "EXTLayerRect.hpp"
 #include "LayerCoord.hpp"
 #include "Pin.hpp"

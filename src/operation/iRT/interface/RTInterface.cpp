@@ -31,14 +31,10 @@
 #include "TopologyGenerator.hpp"
 #include "TrackAssigner.hpp"
 #include "ViolationReporter.hpp"
-#include "api/PowerEngine.hh"
-#include "api/TimingEngine.hh"
-#include "api/TimingIDBAdapter.hh"
 #include "feature_irt.h"
 #include "feature_manager.h"
 #include "flute3/flute.h"
 #include "idm.h"
-#include "tool_api/ista_io/ista_io.h"
 
 namespace irt {
 
@@ -188,7 +184,8 @@ void RTInterface::cleanDef()
 
   //////////////////////////////////////////
   // 删除net内所有的wire
-  IdbNetList* idb_net_list = dmInst->get_idb_def_service()->get_design()->get_net_list();
+  auto* idb_design = dmInst->get_idb_def_service()->get_design();
+  IdbNetList* idb_net_list = idb_design->get_net_list();
   for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
     idb_net->clear_wire_list();
   }
@@ -197,7 +194,7 @@ void RTInterface::cleanDef()
 
   //////////////////////////////////////////
   // 删除虚空的io_pin
-  idb::IdbPins* idb_pin_list = dmInst->get_idb_def_service()->get_design()->get_io_pin_list();
+  idb::IdbPins* idb_pin_list = idb_design->get_io_pin_list();
   std::vector<idb::IdbPin*> remove_pin_list;
   for (idb::IdbPin* io_pin : idb_pin_list->get_pin_list()) {
     if (io_pin->get_port_box_list().empty()) {
@@ -206,7 +203,7 @@ void RTInterface::cleanDef()
     }
   }
   for (idb::IdbPin* io_pin : remove_pin_list) {
-    idb_pin_list->remove_pin(io_pin);
+    idb_design->removeIoPinSafe(io_pin);
   }
   // 删除虚空的io_pin
   //////////////////////////////////////////
@@ -255,15 +252,14 @@ void RTInterface::cleanDef()
   // 删除net: 虚拟的io_pin与io_cell连接的PAD
   std::vector<std::string> remove_net_list;
   for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
-    bool has_io_pin = false;
-    if (idb_net->get_io_pins() != nullptr) {
-      has_io_pin = true;
-    }
+    bool has_io_pin = idb_net != nullptr && idb_net->has_io_pins();
     bool has_io_cell = false;
-    for (idb::IdbInstance* instance : idb_net->get_instance_list()->get_instance_list()) {
-      if (instance->get_cell_master()->is_pad()) {
-        has_io_cell = true;
-        break;
+    if (idb_net != nullptr && idb_net->get_instance_list() != nullptr) {
+      for (idb::IdbInstance* instance : idb_net->get_instance_list()->get_instance_list()) {
+        if (instance != nullptr && instance->get_cell_master() != nullptr && instance->get_cell_master()->is_pad()) {
+          has_io_cell = true;
+          break;
+        }
       }
     }
     if (has_io_pin && has_io_cell) {
@@ -272,7 +268,7 @@ void RTInterface::cleanDef()
     }
   }
   for (std::string remove_net : remove_net_list) {
-    idb_net_list->remove_net(remove_net);
+    idb_design->removeNetSafe(remove_net);
   }
   // 删除net: 虚拟的io_pin与io_cell连接的PAD
   //////////////////////////////////////////
@@ -280,13 +276,13 @@ void RTInterface::cleanDef()
 #endif
 }
 
-void RTInterface::fixFanout()
+void RTInterface::fixFanout(std::map<std::string, std::any> config_map)
 {
-  idb::IdbNetList* idb_net_list = dmInst->get_idb_def_service()->get_design()->get_net_list();
-  idb::IdbInstanceList* idb_instance_list = dmInst->get_idb_def_service()->get_design()->get_instance_list();
-  idb::IdbCellMasterList* idb_cell_master_list = dmInst->get_idb_def_service()->get_layout()->get_cell_master_list();
+  std::string buffer_name = RTUTIL.getConfigValue<std::string>(config_map, "-buffer_name", "buffer_name");
+  auto* idb_design = dmInst->get_idb_def_service()->get_design();
+  idb::IdbNetList* idb_net_list = idb_design->get_net_list();
 
-  size_t max_fanout = 16;
+  size_t max_fanout = 32;
   while (true) {
     std::set<idb::IdbNet*> origin_net_set;
     for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
@@ -302,7 +298,7 @@ void RTInterface::fixFanout()
       // 解开所有的pin
       std::vector<idb::IdbPin*> load_pin_list = origin_net->get_load_pins();
       for (idb::IdbPin* load_pin : load_pin_list) {
-        origin_net->remove_pin(load_pin);
+        idb_design->disconnectPinFromNet(load_pin);
       }
       std::vector<std::vector<idb::IdbPin*>> load_pin_list_list;
       for (size_t i = 0; i < load_pin_list.size(); i += max_fanout) {
@@ -312,75 +308,34 @@ void RTInterface::fixFanout()
       for (std::vector<idb::IdbPin*>& load_pin_list : load_pin_list_list) {
         static size_t new_idx = 0;
         // 生成net
-        idb::IdbNet* new_net = new IdbNet();
-        new_net->set_net_name(RTUTIL.getString("rt_fanout_net_", new_idx++));
-        idb_net_list->add_net(new_net);
+        idb::IdbNet* new_net = idb_design->createOrFindNet(idb_design->makeUniqueNetName(RTUTIL.getString("rt_fanout_net_", new_idx++)),
+                                                           idb::IdbConnectType::kSignal, idb::IdbCreatePolicy::kErrorIfExists);
         // 生成buf
-        idb::IdbInstance* new_buf = new IdbInstance();
-        new_buf->set_name(RTUTIL.getString("rt_fanout_buf_", new_idx++));
-        new_buf->set_cell_master(idb_cell_master_list->find_cell_master(RTUTIL.getString("BUFFD3BWP35P140LVT")));
-        idb_instance_list->add_instance(new_buf);
+        idb::IdbInstance* new_buf = idb_design->createInstance(idb_design->makeUniqueInstanceName(RTUTIL.getString("rt_fanout_buf_", new_idx++)), buffer_name,
+                                                               idb::IdbInstanceType::kTiming, idb::IdbPlacementStatus::kNone, idb::IdbOrient::kNone, 0, 0,
+                                                               idb::IdbCreatePolicy::kErrorIfExists);
+        if (new_net == nullptr || new_buf == nullptr) {
+          RTLOG.error(Loc::current(), "new_net == nullptr || new_buf == nullptr!");
+        }
         // 连接buf
         for (idb::IdbPin* buf_pin : new_buf->get_pin_list()->get_pin_list()) {
           if (buf_pin->get_term()->get_type() == idb::IdbConnectType::kPower || buf_pin->get_term()->get_type() == idb::IdbConnectType::kGround) {
             continue;
           }
           if (buf_pin->get_term()->get_direction() == idb::IdbConnectDirection::kInput) {
-            origin_net->add_instance_pin(buf_pin);
-            buf_pin->set_net(origin_net);
-            buf_pin->set_net_name(origin_net->get_net_name());
+            idb_design->connectPinToNet(buf_pin, origin_net);
           } else if (buf_pin->get_term()->get_direction() == idb::IdbConnectDirection::kOutput) {
-            new_net->add_instance_pin(buf_pin);
-            buf_pin->set_net(new_net);
-            buf_pin->set_net_name(new_net->get_net_name());
+            idb_design->connectPinToNet(buf_pin, new_net);
           }
         }
         // 连接pin
         for (idb::IdbPin* load_pin : load_pin_list) {
-          if (load_pin->is_io_pin()) {
-            new_net->add_io_pin(load_pin);
-          } else {
-            new_net->add_instance_pin(load_pin);
-          }
-          load_pin->set_net(new_net);
-          load_pin->set_net_name(new_net->get_net_name());
+          idb_design->connectPinToNet(load_pin, new_net);
         }
       }
     }
     RTLOG.info(Loc::current(), "Fixed ", origin_net_set.size(), " nets!( +", idb_net_list->get_num() - begin_net_num, " nets )");
   }
-}
-
-void RTInterface::getCongestion()
-{
-  Monitor monitor;
-  RTLOG.info(Loc::current(), "Starting...");
-
-  initFlute();
-  RTGP.init();
-  RTDE.init();
-
-  PinAccessor::initInst();
-  RTPA.access();
-  PinAccessor::destroyInst();
-
-  SupplyAnalyzer::initInst();
-  RTSA.analyze();
-  SupplyAnalyzer::destroyInst();
-
-  TopologyGenerator::initInst();
-  RTTG.generate();
-  TopologyGenerator::destroyInst();
-
-  LayerAssigner::initInst();
-  RTLA.assign();
-  LayerAssigner::destroyInst();
-
-  destroyFlute();
-  RTGP.destroy();
-  RTDE.destroy();
-
-  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 #endif
@@ -764,6 +719,10 @@ void RTInterface::wrapObstacleList()
     for (idb::IdbInstance* idb_instance : idb_instance_list) {
       // instance obs
       for (idb::IdbLayerShape* obs_box : idb_instance->get_obs_box_list()) {
+        if (obs_box->get_layer() == nullptr) {
+          // RTLOG.warn(Loc::current(), "The obs box layer is empty for instance ", idb_instance->get_name());
+          continue;
+        }
         if (obs_box->get_layer()->is_routing()) {
           total_routing_obstacle_num += obs_box->get_rect_list().size();
         } else if (obs_box->get_layer()->is_cut()) {
@@ -824,6 +783,10 @@ void RTInterface::wrapObstacleList()
       // instance obs
       for (idb::IdbLayerShape* obs_box : idb_instance->get_obs_box_list()) {
         for (idb::IdbRect* rect : obs_box->get_rect_list()) {
+          if (obs_box->get_layer() == nullptr) {
+            // RTLOG.warn(Loc::current(), "The obs box layer is empty for instance ", idb_instance->get_name());
+            continue;
+          }
           Obstacle obstacle;
           obstacle.set_real_ll(rect->get_low_x(), rect->get_low_y());
           obstacle.set_real_ur(rect->get_high_x(), rect->get_high_y());
@@ -981,9 +944,13 @@ bool RTInterface::isSkipping(idb::IdbNet* idb_net, bool with_log)
     has_io_pin = true;
   }
   bool has_io_cell = false;
-  std::vector<idb::IdbInstance*>& idb_instance_list = idb_net->get_instance_list()->get_instance_list();
-  if (idb_instance_list.size() == 1 && idb_instance_list.front()->get_cell_master()->is_pad()) {
-    has_io_cell = true;
+  if (idb_net->get_instance_list() != nullptr) {
+    std::vector<idb::IdbInstance*>& idb_instance_list = idb_net->get_instance_list()->get_instance_list();
+    if (idb_instance_list.size() == 1) {
+      auto* instance = idb_instance_list.front();
+      auto* cell_master = instance == nullptr ? nullptr : instance->get_cell_master();
+      has_io_cell = cell_master != nullptr && cell_master->is_pad();
+    }
   }
   if (has_io_pin && has_io_cell) {
     return true;
@@ -991,13 +958,13 @@ bool RTInterface::isSkipping(idb::IdbNet* idb_net, bool with_log)
 
   int32_t pin_num = 0;
   for (idb::IdbPin* idb_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
-    if (idb_pin->get_term()->get_port_number() <= 0) {
+    if (idb_pin == nullptr || idb_pin->get_term() == nullptr || idb_pin->get_term()->get_port_number() <= 0) {
       continue;
     }
     pin_num++;
   }
   for (idb::IdbPin* idb_pin : idb_net->get_io_pins()->get_pin_list()) {
-    if (idb_pin->get_term()->get_port_number() <= 0) {
+    if (idb_pin == nullptr || idb_pin->get_term() == nullptr || idb_pin->get_term()->get_port_number() <= 0) {
       continue;
     }
     pin_num++;
@@ -1290,7 +1257,6 @@ void RTInterface::outputSummary()
     top_rt_summary.tg_summary.total_overflow = rt_summary.tg_summary.total_overflow;
     top_rt_summary.tg_summary.total_wire_length = rt_summary.tg_summary.total_wire_length;
     top_rt_summary.tg_summary.clock_timing_map = rt_summary.tg_summary.clock_timing_map;
-    top_rt_summary.tg_summary.type_power_map = rt_summary.tg_summary.type_power_map;
   }
   // la_summary
   {
@@ -1303,7 +1269,6 @@ void RTInterface::outputSummary()
     top_rt_summary.la_summary.cut_via_num_map = rt_summary.la_summary.cut_via_num_map;
     top_rt_summary.la_summary.total_via_num = rt_summary.la_summary.total_via_num;
     top_rt_summary.la_summary.clock_timing_map = rt_summary.la_summary.clock_timing_map;
-    top_rt_summary.la_summary.type_power_map = rt_summary.la_summary.type_power_map;
   }
   // sr_summary
   {
@@ -1318,7 +1283,6 @@ void RTInterface::outputSummary()
       top_sr_summary.cut_via_num_map = sr_summary.cut_via_num_map;
       top_sr_summary.total_via_num = sr_summary.total_via_num;
       top_sr_summary.clock_timing_map = sr_summary.clock_timing_map;
-      top_sr_summary.type_power_map = sr_summary.type_power_map;
     }
   }
   // ta_summary
@@ -1341,7 +1305,6 @@ void RTInterface::outputSummary()
       top_dr_summary.routing_violation_num_map = dr_summary.routing_violation_num_map;
       top_dr_summary.total_violation_num = dr_summary.total_violation_num;
       top_dr_summary.clock_timing_map = dr_summary.clock_timing_map;
-      top_dr_summary.type_power_map = dr_summary.type_power_map;
     }
   }
   // vr_summary
@@ -1361,13 +1324,8 @@ void RTInterface::outputSummary()
     top_rt_summary.vr_summary.among_net_routing_violation_num_map = rt_summary.vr_summary.among_net_routing_violation_num_map;
     top_rt_summary.vr_summary.among_net_total_violation_num = rt_summary.vr_summary.among_net_total_violation_num;
     top_rt_summary.vr_summary.clock_timing_map = rt_summary.vr_summary.clock_timing_map;
-    top_rt_summary.vr_summary.type_power_map = rt_summary.vr_summary.type_power_map;
   }
 }
-
-#endif
-
-#if 1  // convert idb
 
 idb::IdbRegularWireSegment* RTInterface::getIDBSegmentByNetResult(int32_t net_idx, Segment<LayerCoord>& segment)
 {
@@ -1435,7 +1393,16 @@ idb::IdbRegularWireSegment* RTInterface::getIDBVia(int32_t net_idx, Segment<Laye
   if (below_layer_idx < 0 || below_layer_idx >= static_cast<int32_t>(layer_via_master_list.size())) {
     RTLOG.error(Loc::current(), "The via below_layer_idx is illegal!");
   }
-  std::string via_name = layer_via_master_list[below_layer_idx].front().get_via_name();
+  ViaMaster* via_master = &layer_via_master_list[below_layer_idx].front();
+  if (segment.hasValidViaMaster()) {
+    ViaMasterIdx& via_master_idx = segment.get_via_master_idx();
+    int32_t via_idx = via_master_idx.get_via_idx();
+    if (via_master_idx.get_below_layer_idx() == below_layer_idx && via_idx >= 0
+        && via_idx < static_cast<int32_t>(layer_via_master_list[below_layer_idx].size())) {
+      via_master = &layer_via_master_list[below_layer_idx][via_idx];
+    }
+  }
+  std::string via_name = via_master->get_via_name();
   idb::IdbVia* idb_via = lef_via_list->find_via(via_name);
   if (idb_via == nullptr) {
     idb_via = def_via_list->find_via(via_name);
@@ -1552,241 +1519,216 @@ ids::Shape RTInterface::getIDSShape(int32_t net_idx, LayerRect layer_rect, bool 
 
 #if 1  // iSTA
 
-void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
-                                       std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list,
-                                       std::map<std::string, std::map<std::string, double>>& clock_timing, std::map<std::string, double>& power)
+void RTInterface::updateTiming(std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
+                               std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list,
+                               std::map<std::string, std::map<std::string, double>>& clock_timing)
 {
-#if 1  // 数据结构定义
-  struct RCPin
-  {
-    RCPin() = default;
-    RCPin(LayerCoord coord, bool is_real_pin, std::string pin_name)
-    {
-      _coord = coord;
-      _is_real_pin = is_real_pin;
-      _pin_name = pin_name;
-    }
-    RCPin(LayerCoord coord, bool is_real_pin, int32_t fake_pin_id)
-    {
-      _coord = coord;
-      _is_real_pin = is_real_pin;
-      _fake_pin_id = fake_pin_id;
-    }
-    ~RCPin() = default;
+  // #if 1  // 数据结构定义
+  //   struct RCPin
+  //   {
+  //     RCPin() = default;
+  //     RCPin(LayerCoord coord, bool is_real_pin, std::string pin_name)
+  //     {
+  //       _coord = coord;
+  //       _is_real_pin = is_real_pin;
+  //       _pin_name = pin_name;
+  //     }
+  //     RCPin(LayerCoord coord, bool is_real_pin, int32_t fake_pin_id)
+  //     {
+  //       _coord = coord;
+  //       _is_real_pin = is_real_pin;
+  //       _fake_pin_id = fake_pin_id;
+  //     }
+  //     ~RCPin() = default;
 
-    LayerCoord _coord;
-    bool _is_real_pin = false;
-    std::string _pin_name;
-    int32_t _fake_pin_id = -1;
-  };
-#endif
+  //     LayerCoord _coord;
+  //     bool _is_real_pin = false;
+  //     std::string _pin_name;
+  //     int32_t _fake_pin_id = -1;
+  //   };
+  // #endif
 
-#if 1  // 函数定义
-  auto initTimingEngine = [](std::string workspace) {
-    ista::TimingEngine* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
-    if (!timing_engine->isBuildGraph()) {
-      timing_engine->set_design_work_space(workspace.c_str());
-      timing_engine->readLiberty(dmInst->get_config().get_lib_paths());
-      auto db_adapter = std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
-      db_adapter->set_idb(dmInst->get_idb_builder());
-      db_adapter->convertDBToTimingNetlist();
-      timing_engine->set_db_adapter(std::move(db_adapter));
-      timing_engine->readSdc(dmInst->get_config().get_sdc_path().c_str());
-      timing_engine->buildGraph();
-    }
-    timing_engine->initRcTree();
-    return timing_engine;
-  };
-  auto initPowerEngine = [](std::string workspace) {
-    auto* power_engine = ipower::PowerEngine::getOrCreatePowerEngine();
-    if (!power_engine->isBuildGraph()) {
-      power_engine->get_power()->set_design_work_space(workspace.c_str());
-      power_engine->get_power()->initPowerGraphData();
-      power_engine->get_power()->initToggleSPData();
-    }
-    return power_engine;
-  };
-  auto getRCSegmentList
-      = [](std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>& coord_real_pin_map, std::vector<Segment<LayerCoord>>& routing_segment_list) {
-          // 预处理 对名字去重
-          for (auto& [coord, real_pin_list] : coord_real_pin_map) {
-            std::sort(real_pin_list.begin(), real_pin_list.end());
-            real_pin_list.erase(std::unique(real_pin_list.begin(), real_pin_list.end()), real_pin_list.end());
-          }
-          // 构建coord_fake_pin_map
-          std::map<LayerCoord, int32_t, CmpLayerCoordByXASC> coord_fake_pin_map;
-          {
-            int32_t fake_id = 0;
-            for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
-              LayerCoord& first_coord = routing_segment.get_first();
-              LayerCoord& second_coord = routing_segment.get_second();
+  // #if 1  // 函数定义
+  //   auto initTimingEngine = [](std::string workspace) {
+  //     ista::TimingEngine* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+  //     if (!timing_engine->isBuildGraph()) {
+  //       timing_engine->set_design_work_space(workspace.c_str());
+  //       timing_engine->readLiberty(dmInst->get_config().get_lib_paths());
+  //       auto db_adapter = std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
+  //       db_adapter->set_idb(dmInst->get_idb_builder());
+  //       db_adapter->convertDBToTimingNetlist();
+  //       timing_engine->set_db_adapter(std::move(db_adapter));
+  //       timing_engine->readSdc(dmInst->get_config().get_sdc_path().c_str());
+  //       timing_engine->buildGraph();
+  //     }
+  //     timing_engine->initRcTree();
+  //     return timing_engine;
+  //   };
+  //   auto getRCSegmentList
+  //       = [](std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>& coord_real_pin_map, std::vector<Segment<LayerCoord>>& routing_segment_list)
+  //       {
+  //           // 预处理 对名字去重
+  //           for (auto& [coord, real_pin_list] : coord_real_pin_map) {
+  //             std::sort(real_pin_list.begin(), real_pin_list.end());
+  //             real_pin_list.erase(std::unique(real_pin_list.begin(), real_pin_list.end()), real_pin_list.end());
+  //           }
+  //           // 构建coord_fake_pin_map
+  //           std::map<LayerCoord, int32_t, CmpLayerCoordByXASC> coord_fake_pin_map;
+  //           {
+  //             int32_t fake_id = 0;
+  //             for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
+  //               LayerCoord& first_coord = routing_segment.get_first();
+  //               LayerCoord& second_coord = routing_segment.get_second();
 
-              if (!RTUTIL.exist(coord_real_pin_map, first_coord) && !RTUTIL.exist(coord_fake_pin_map, first_coord)) {
-                coord_fake_pin_map[first_coord] = fake_id++;
-              }
-              if (!RTUTIL.exist(coord_real_pin_map, second_coord) && !RTUTIL.exist(coord_fake_pin_map, second_coord)) {
-                coord_fake_pin_map[second_coord] = fake_id++;
-              }
-            }
-          }
-          std::vector<Segment<RCPin>> rc_segment_list;
-          {
-            // 生成线长为0的线段
-            for (auto& [coord, real_pin_list] : coord_real_pin_map) {
-              for (size_t i = 1; i < real_pin_list.size(); i++) {
-                RCPin first_rc_pin(coord, true, RTUTIL.escapeBackslash(real_pin_list[i - 1]));
-                RCPin second_rc_pin(coord, true, RTUTIL.escapeBackslash(real_pin_list[i]));
-                rc_segment_list.emplace_back(first_rc_pin, second_rc_pin);
-              }
-            }
-            // 生成线长大于0的线段
-            for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
-              auto getRCPin = [&](LayerCoord& coord) {
-                RCPin rc_pin;
-                if (RTUTIL.exist(coord_real_pin_map, coord)) {
-                  rc_pin = RCPin(coord, true, RTUTIL.escapeBackslash(coord_real_pin_map[coord].front()));
-                } else if (RTUTIL.exist(coord_fake_pin_map, coord)) {
-                  rc_pin = RCPin(coord, false, coord_fake_pin_map[coord]);
-                } else {
-                  RTLOG.error(Loc::current(), "The coord is not exist!");
-                }
-                return rc_pin;
-              };
-              rc_segment_list.emplace_back(getRCPin(routing_segment.get_first()), getRCPin(routing_segment.get_second()));
-            }
-          }
-          return rc_segment_list;
-        };
-  auto getRctNode = [](ista::TimingEngine* timing_engine, ista::Netlist* sta_net_list, ista::Net* ista_net, RCPin& rc_pin) {
-    ista::RctNode* rct_node = nullptr;
-    if (rc_pin._is_real_pin) {
-      ista::DesignObject* pin_port = nullptr;
-      auto pin_port_list = sta_net_list->findPin(rc_pin._pin_name.c_str(), false, false);
-      if (!pin_port_list.empty()) {
-        pin_port = pin_port_list.front();
-      } else {
-        pin_port = sta_net_list->findPort(rc_pin._pin_name.c_str());
-      }
-      rct_node = timing_engine->makeOrFindRCTreeNode(pin_port);
-    } else {
-      rct_node = timing_engine->makeOrFindRCTreeNode(ista_net, rc_pin._fake_pin_id);
-    }
-    return rct_node;
-  };
-#endif
+  //               if (!RTUTIL.exist(coord_real_pin_map, first_coord) && !RTUTIL.exist(coord_fake_pin_map, first_coord)) {
+  //                 coord_fake_pin_map[first_coord] = fake_id++;
+  //               }
+  //               if (!RTUTIL.exist(coord_real_pin_map, second_coord) && !RTUTIL.exist(coord_fake_pin_map, second_coord)) {
+  //                 coord_fake_pin_map[second_coord] = fake_id++;
+  //               }
+  //             }
+  //           }
+  //           std::vector<Segment<RCPin>> rc_segment_list;
+  //           {
+  //             // 生成线长为0的线段
+  //             for (auto& [coord, real_pin_list] : coord_real_pin_map) {
+  //               for (size_t i = 1; i < real_pin_list.size(); i++) {
+  //                 RCPin first_rc_pin(coord, true, RTUTIL.escapeBackslash(real_pin_list[i - 1]));
+  //                 RCPin second_rc_pin(coord, true, RTUTIL.escapeBackslash(real_pin_list[i]));
+  //                 rc_segment_list.emplace_back(first_rc_pin, second_rc_pin);
+  //               }
+  //             }
+  //             // 生成线长大于0的线段
+  //             for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
+  //               auto getRCPin = [&](LayerCoord& coord) {
+  //                 RCPin rc_pin;
+  //                 if (RTUTIL.exist(coord_real_pin_map, coord)) {
+  //                   rc_pin = RCPin(coord, true, RTUTIL.escapeBackslash(coord_real_pin_map[coord].front()));
+  //                 } else if (RTUTIL.exist(coord_fake_pin_map, coord)) {
+  //                   rc_pin = RCPin(coord, false, coord_fake_pin_map[coord]);
+  //                 } else {
+  //                   RTLOG.error(Loc::current(), "The coord is not exist!");
+  //                 }
+  //                 return rc_pin;
+  //               };
+  //               rc_segment_list.emplace_back(getRCPin(routing_segment.get_first()), getRCPin(routing_segment.get_second()));
+  //             }
+  //           }
+  //           return rc_segment_list;
+  //         };
+  //   auto getRctNode = [](ista::TimingEngine* timing_engine, ista::Netlist* sta_net_list, ista::Net* ista_net, RCPin& rc_pin) {
+  //     ista::RctNode* rct_node = nullptr;
+  //     if (rc_pin._is_real_pin) {
+  //       ista::DesignObject* pin_port = nullptr;
+  //       auto pin_port_list = sta_net_list->findPin(rc_pin._pin_name.c_str(), false, false);
+  //       if (!pin_port_list.empty()) {
+  //         pin_port = pin_port_list.front();
+  //       } else {
+  //         pin_port = sta_net_list->findPort(rc_pin._pin_name.c_str());
+  //       }
+  //       rct_node = timing_engine->makeOrFindRCTreeNode(pin_port);
+  //     } else {
+  //       rct_node = timing_engine->makeOrFindRCTreeNode(ista_net, rc_pin._fake_pin_id);
+  //     }
+  //     return rct_node;
+  //   };
+  // #endif
 
-#if 1  // 预处理流程
-  // 每个pin只留一个连通的坐标
-  for (size_t i = 0; i < real_pin_coord_map_list.size(); i++) {
-    std::vector<Segment<LayerCoord>>& routing_segment_list = routing_segment_list_list[i];
-    for (auto& [pin_name, coord_list] : real_pin_coord_map_list[i]) {
-      if (coord_list.size() < 2) {
-        continue;
-      }
-      if (routing_segment_list.empty()) {
-        coord_list.erase(coord_list.begin() + 1, coord_list.end());
-      } else {
-        for (LayerCoord& coord : coord_list) {
-          bool is_exist = false;
-          for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
-            if (coord == routing_segment.get_first() || coord == routing_segment.get_second()) {
-              is_exist = true;
-              break;
-            }
-          }
-          if (is_exist) {
-            coord_list[0] = coord;
-            coord_list.erase(coord_list.begin() + 1, coord_list.end());
-            break;
-          }
-        }
-      }
-      if (coord_list.size() > 2) {
-        RTLOG.error(Loc::current(), "The pin ", pin_name, " is not in segment_list");
-      }
-    }
-  }
-  // coord_real_pin_map_list
-  std::vector<std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>> coord_real_pin_map_list;
-  coord_real_pin_map_list.resize(real_pin_coord_map_list.size());
-  for (size_t i = 0; i < real_pin_coord_map_list.size(); i++) {
-    for (auto& [real_pin, coord_list] : real_pin_coord_map_list[i]) {
-      for (LayerCoord& coord : coord_list) {
-        coord_real_pin_map_list[i][coord].push_back(real_pin);
-      }
-    }
-  }
-#endif
+  // #if 1  // 预处理流程
+  //   // 每个pin只留一个连通的坐标
+  //   for (size_t i = 0; i < real_pin_coord_map_list.size(); i++) {
+  //     std::vector<Segment<LayerCoord>>& routing_segment_list = routing_segment_list_list[i];
+  //     for (auto& [pin_name, coord_list] : real_pin_coord_map_list[i]) {
+  //       if (coord_list.size() < 2) {
+  //         continue;
+  //       }
+  //       if (routing_segment_list.empty()) {
+  //         coord_list.erase(coord_list.begin() + 1, coord_list.end());
+  //       } else {
+  //         for (LayerCoord& coord : coord_list) {
+  //           bool is_exist = false;
+  //           for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
+  //             if (coord == routing_segment.get_first() || coord == routing_segment.get_second()) {
+  //               is_exist = true;
+  //               break;
+  //             }
+  //           }
+  //           if (is_exist) {
+  //             coord_list[0] = coord;
+  //             coord_list.erase(coord_list.begin() + 1, coord_list.end());
+  //             break;
+  //           }
+  //         }
+  //       }
+  //       if (coord_list.size() > 2) {
+  //         RTLOG.error(Loc::current(), "The pin ", pin_name, " is not in segment_list");
+  //       }
+  //     }
+  //   }
+  //   // coord_real_pin_map_list
+  //   std::vector<std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>> coord_real_pin_map_list;
+  //   coord_real_pin_map_list.resize(real_pin_coord_map_list.size());
+  //   for (size_t i = 0; i < real_pin_coord_map_list.size(); i++) {
+  //     for (auto& [real_pin, coord_list] : real_pin_coord_map_list[i]) {
+  //       for (LayerCoord& coord : coord_list) {
+  //         coord_real_pin_map_list[i][coord].push_back(real_pin);
+  //       }
+  //     }
+  //   }
+  // #endif
 
-#if 1  // 主流程
-  std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
-  std::string& temp_directory_path = RTDM.getConfig().temp_directory_path;
+  // #if 1  // 主流程
+  //   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
+  //   std::string& temp_directory_path = RTDM.getConfig().temp_directory_path;
 
-  ista::TimingEngine* timing_engine = initTimingEngine(RTUTIL.getString(temp_directory_path, "other_tools/ista/"));
-  ista::Netlist* sta_net_list = timing_engine->get_netlist();
+  //   ista::TimingEngine* timing_engine = initTimingEngine(RTUTIL.getString(temp_directory_path, "other_tools/ista/"));
+  //   ista::Netlist* sta_net_list = timing_engine->get_netlist();
 
-  for (size_t net_idx = 0; net_idx < coord_real_pin_map_list.size(); net_idx++) {
-    ista::Net* ista_net = sta_net_list->findNet(RTUTIL.escapeBackslash(net_list[net_idx].get_net_name()).c_str());
-    timing_engine->resetRcTree(ista_net);
-    for (Segment<RCPin>& segment : getRCSegmentList(coord_real_pin_map_list[net_idx], routing_segment_list_list[net_idx])) {
-      RCPin& first_rc_pin = segment.get_first();
-      RCPin& second_rc_pin = segment.get_second();
+  //   for (size_t net_idx = 0; net_idx < coord_real_pin_map_list.size(); net_idx++) {
+  //     ista::Net* ista_net = sta_net_list->findNet(RTUTIL.escapeBackslash(net_list[net_idx].get_net_name()).c_str());
+  //     timing_engine->resetRcTree(ista_net);
+  //     for (Segment<RCPin>& segment : getRCSegmentList(coord_real_pin_map_list[net_idx], routing_segment_list_list[net_idx])) {
+  //       RCPin& first_rc_pin = segment.get_first();
+  //       RCPin& second_rc_pin = segment.get_second();
 
-      double cap = 0;
-      double res = 0;
-      if (first_rc_pin._coord.get_layer_idx() == second_rc_pin._coord.get_layer_idx()) {
-        int32_t distance = RTUTIL.getManhattanDistance(first_rc_pin._coord, second_rc_pin._coord);
-        int32_t unit = dmInst->get_idb_def_service()->get_design()->get_units()->get_micron_dbu();
-        std::optional<double> width = std::nullopt;
-        cap = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())
-                  ->getCapacitance(first_rc_pin._coord.get_layer_idx() + 1, distance / 1.0 / unit, width);
-        res = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())
-                  ->getResistance(first_rc_pin._coord.get_layer_idx() + 1, distance / 1.0 / unit, width);
-      }
+  //       double cap = 0;
+  //       double res = 0;
+  //       if (first_rc_pin._coord.get_layer_idx() == second_rc_pin._coord.get_layer_idx()) {
+  //         int32_t distance = RTUTIL.getManhattanDistance(first_rc_pin._coord, second_rc_pin._coord);
+  //         int32_t unit = dmInst->get_idb_def_service()->get_design()->get_units()->get_micron_dbu();
+  //         std::optional<double> width = std::nullopt;
+  //         cap = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())
+  //                   ->getCapacitance(first_rc_pin._coord.get_layer_idx() + 1, distance / 1.0 / unit, width);
+  //         res = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())
+  //                   ->getResistance(first_rc_pin._coord.get_layer_idx() + 1, distance / 1.0 / unit, width);
+  //       }
 
-      ista::RctNode* first_node = getRctNode(timing_engine, sta_net_list, ista_net, first_rc_pin);
-      ista::RctNode* second_node = getRctNode(timing_engine, sta_net_list, ista_net, second_rc_pin);
-      timing_engine->makeResistor(ista_net, first_node, second_node, res);
-      timing_engine->incrCap(first_node, cap / 2, true);
-      timing_engine->incrCap(second_node, cap / 2, true);
-    }
-    timing_engine->updateRCTreeInfo(ista_net);
-    // auto* rc_tree = timing_engine->get_ista()->getRcNet(ista_net)->rct();
-    // rc_tree->printGraphViz();
-    // int32_t a = 0;
-    // dot -Tpdf tree.dot -o tree.pdf
-  }
-  timing_engine->updateTiming();
-  timing_engine->reportTiming();
+  //       ista::RctNode* first_node = getRctNode(timing_engine, sta_net_list, ista_net, first_rc_pin);
+  //       ista::RctNode* second_node = getRctNode(timing_engine, sta_net_list, ista_net, second_rc_pin);
+  //       timing_engine->makeResistor(ista_net, first_node, second_node, res);
+  //       timing_engine->incrCap(first_node, cap / 2, true);
+  //       timing_engine->incrCap(second_node, cap / 2, true);
+  //     }
+  //     timing_engine->updateRCTreeInfo(ista_net);
+  //     // auto* rc_tree = timing_engine->get_ista()->getRcNet(ista_net)->rct();
+  //     // rc_tree->printGraphViz();
+  //     // int32_t a = 0;
+  //     // dot -Tpdf tree.dot -o tree.pdf
+  //   }
+  //   timing_engine->updateTiming();
+  //   timing_engine->reportTiming();
 
-  auto clk_list = timing_engine->getClockList();
-  std::ranges::for_each(clk_list, [&](ista::StaClock* clk) {
-    auto clk_name = clk->get_clock_name();
-    auto setup_tns = timing_engine->getTNS(clk_name, AnalysisMode::kMax);
-    auto setup_wns = timing_engine->getWNS(clk_name, AnalysisMode::kMax);
-    auto suggest_freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
-    clock_timing[clk_name]["TNS"] = setup_tns;
-    clock_timing[clk_name]["WNS"] = setup_wns;
-    clock_timing[clk_name]["Freq(MHz)"] = suggest_freq;
-  });
-  ipower::PowerEngine* power_engine = initPowerEngine(RTUTIL.getString(temp_directory_path, "other_tools/ipw/"));
-  power_engine->get_power()->updatePower();
-  power_engine->get_power()->reportPower();
-
-  double static_power = 0;
-  for (const auto& data : power_engine->get_power()->get_leakage_powers()) {
-    static_power += data->get_leakage_power();
-  }
-  double dynamic_power = 0;
-  for (const auto& data : power_engine->get_power()->get_internal_powers()) {
-    dynamic_power += data->get_internal_power();
-  }
-  for (const auto& data : power_engine->get_power()->get_switch_powers()) {
-    dynamic_power += data->get_switch_power();
-  }
-  power["static_power"] = static_power;
-  power["dynamic_power"] = dynamic_power;
-#endif
+  //   auto clk_list = timing_engine->getClockList();
+  //   std::ranges::for_each(clk_list, [&](ista::StaClock* clk) {
+  //     auto clk_name = clk->get_clock_name();
+  //     auto setup_tns = timing_engine->getTNS(clk_name, AnalysisMode::kMax);
+  //     auto setup_wns = timing_engine->getWNS(clk_name, AnalysisMode::kMax);
+  //     auto suggest_freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
+  //     clock_timing[clk_name]["TNS"] = setup_tns;
+  //     clock_timing[clk_name]["WNS"] = setup_wns;
+  //     clock_timing[clk_name]["Freq(MHz)"] = suggest_freq;
+  //   });
+  // #endif
 }
 
 #endif

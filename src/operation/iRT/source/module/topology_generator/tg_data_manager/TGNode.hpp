@@ -24,6 +24,33 @@
 
 namespace irt {
 
+struct TGNodeCost
+{
+  double usage_cost = 0.0;
+  double saturation_cost = 0.0;
+  double hotspot_cost = 0.0;
+  double overflow_cost = 0.0;
+  double overflow = 0.0;
+  double max_usage_ratio = 0.0;
+  int32_t saturation_orient_num = 0;
+  int32_t hotspot_orient_num = 0;
+  int32_t overflow_orient_num = 0;
+
+  double getTotalCost() const { return usage_cost + saturation_cost + hotspot_cost + overflow_cost; }
+  void addCost(const TGNodeCost& cost)
+  {
+    usage_cost += cost.usage_cost;
+    saturation_cost += cost.saturation_cost;
+    hotspot_cost += cost.hotspot_cost;
+    overflow_cost += cost.overflow_cost;
+    overflow += cost.overflow;
+    max_usage_ratio = std::max(max_usage_ratio, cost.max_usage_ratio);
+    saturation_orient_num += cost.saturation_orient_num;
+    hotspot_orient_num += cost.hotspot_orient_num;
+    overflow_orient_num += cost.overflow_orient_num;
+  }
+};
+
 class TGNode : public PlanarCoord
 {
  public:
@@ -56,13 +83,20 @@ class TGNode : public PlanarCoord
     }
     return neighbor_node;
   }
-  double getOverflowCost(int32_t net_idx, Direction direction, double overflow_unit)
+  TGNodeCost getCost(int32_t net_idx, Direction direction, double overflow_unit,
+                     const std::set<Orientation>* extra_orient_set = nullptr)
   {
     if (!validDemandUnit()) {
       RTLOG.error(Loc::current(), "The demand unit is error!");
     }
     std::map<Orientation, std::set<int32_t>> orient_net_map = _orient_net_map;
     std::map<int32_t, std::set<Orientation>> net_orient_map = _net_orient_map;
+    if (extra_orient_set) {
+      for (Orientation orient : *extra_orient_set) {
+        orient_net_map[orient].insert(net_idx);
+        net_orient_map[net_idx].insert(orient);
+      }
+    }
     if (direction == Direction::kHorizontal) {
       for (Orientation orient : {Orientation::kEast, Orientation::kWest}) {
         orient_net_map[orient].insert(net_idx);
@@ -76,7 +110,7 @@ class TGNode : public PlanarCoord
     } else {
       RTLOG.error(Loc::current(), "The direction is error!");
     }
-    double boundary_overflow = 0;
+    TGNodeCost node_cost;
     for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
       double boundary_demand = 0;
       if (RTUTIL.exist(orient_net_map, orient)) {
@@ -89,11 +123,10 @@ class TGNode : public PlanarCoord
       }
       double boundary_supply = 0;
       if (RTUTIL.exist(_orient_supply_map, orient)) {
-        boundary_supply = (_orient_supply_map[orient] * _boundary_wire_unit);
+        boundary_supply = _orient_supply_map[orient];
       }
-      boundary_overflow += calcCost(boundary_demand, boundary_supply);
+      node_cost.addCost(calcCost(boundary_demand, boundary_supply, overflow_unit));
     }
-    double internal_overflow = 0;
     {
       double internal_demand = 0;
       for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
@@ -108,13 +141,16 @@ class TGNode : public PlanarCoord
       }
       double internal_supply = 0;
       for (auto& [orient, supply] : _orient_supply_map) {
-        internal_supply += (supply * _internal_wire_unit);
+        internal_supply += supply;
       }
-      internal_overflow += calcCost(internal_demand, internal_supply);
+      node_cost.addCost(calcCost(internal_demand, internal_supply, overflow_unit));
     }
-    double cost = 0;
-    cost += (overflow_unit * (boundary_overflow + internal_overflow));
-    return cost;
+    return node_cost;
+  }
+  double getOverflowCost(int32_t net_idx, Direction direction, double overflow_unit,
+                         const std::set<Orientation>* extra_orient_set = nullptr)
+  {
+    return getCost(net_idx, direction, overflow_unit, extra_orient_set).getTotalCost();
   }
   bool validDemandUnit()
   {
@@ -126,15 +162,47 @@ class TGNode : public PlanarCoord
     }
     return true;
   }
-  double calcCost(double demand, double supply)
+  TGNodeCost calcCost(double demand, double supply, double overflow_unit)
   {
-    double cost = 0;
-    if (demand == supply) {
-      cost = 1;
-    } else if (demand > supply) {
-      cost = std::pow(demand - supply + 1, 4);
-    } else if (demand < supply) {
-      cost = std::pow(demand / supply, 4);
+    constexpr double kSaturationStartRatio = 0.8;
+    constexpr double kHotspotStartRatio = 0.9;
+    constexpr double kFullSupplyPenaltyScale = 1.0;
+    constexpr double kHotspotPenaltyScale = 2.0;
+
+    TGNodeCost cost;
+    if (supply <= 0) {
+      if (demand <= 0) {
+        return cost;
+      }
+      cost.max_usage_ratio = demand + 1.0;
+      cost.overflow = demand;
+      cost.overflow_orient_num = 1;
+      cost.overflow_cost = overflow_unit * std::pow(cost.overflow + 1, 4);
+      return cost;
+    }
+
+    double usage_ratio = demand / supply;
+    cost.max_usage_ratio = usage_ratio;
+    if (demand > supply) {
+      cost.overflow = demand - supply;
+      cost.overflow_orient_num = 1;
+      cost.overflow_cost = overflow_unit * std::pow(cost.overflow + 1, 4);
+      return cost;
+    }
+
+    cost.usage_cost = overflow_unit * std::pow(usage_ratio, 4);
+    if (usage_ratio >= kSaturationStartRatio) {
+      double saturation_ratio = (usage_ratio - kSaturationStartRatio) / (1.0 - kSaturationStartRatio);
+      cost.saturation_orient_num = 1;
+      cost.saturation_cost = overflow_unit * std::pow(saturation_ratio, 2);
+      if (usage_ratio >= 1.0) {
+        cost.saturation_cost += overflow_unit * kFullSupplyPenaltyScale;
+      }
+    }
+    if (usage_ratio >= kHotspotStartRatio) {
+      double hotspot_ratio = (usage_ratio - kHotspotStartRatio) / (1.0 - kHotspotStartRatio);
+      cost.hotspot_orient_num = 1;
+      cost.hotspot_cost = overflow_unit * kHotspotPenaltyScale * std::pow(hotspot_ratio, 2);
     }
     return cost;
   }
@@ -146,13 +214,23 @@ class TGNode : public PlanarCoord
     double boundary_demand = 0;
     for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
       if (RTUTIL.exist(_orient_net_map, orient)) {
-        boundary_demand += (static_cast<double>(_orient_net_map[orient].size()) * _boundary_wire_unit);
+        for (int32_t demand_net_idx : _orient_net_map[orient]) {
+          if (RTUTIL.exist(_ignore_net_orient_map, demand_net_idx) && RTUTIL.exist(_ignore_net_orient_map[demand_net_idx], orient)) {
+            continue;
+          }
+          boundary_demand += _boundary_wire_unit;
+        }
       }
     }
     double internal_demand = 0;
     for (Orientation orient : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
       if (RTUTIL.exist(_orient_net_map, orient)) {
-        internal_demand += (static_cast<double>(_orient_net_map[orient].size()) * _internal_wire_unit);
+        for (int32_t demand_net_idx : _orient_net_map[orient]) {
+          if (RTUTIL.exist(_ignore_net_orient_map, demand_net_idx) && RTUTIL.exist(_ignore_net_orient_map[demand_net_idx], orient)) {
+            continue;
+          }
+          internal_demand += _internal_wire_unit;
+        }
       }
     }
     return (boundary_demand + internal_demand);
@@ -175,7 +253,7 @@ class TGNode : public PlanarCoord
       }
       double boundary_supply = 0;
       if (RTUTIL.exist(_orient_supply_map, orient)) {
-        boundary_supply = (_orient_supply_map[orient] * _boundary_wire_unit);
+        boundary_supply = _orient_supply_map[orient];
       }
       boundary_overflow += std::max(0.0, boundary_demand - boundary_supply);
     }
@@ -194,7 +272,7 @@ class TGNode : public PlanarCoord
       }
       double internal_supply = 0;
       for (auto& [orient, supply] : _orient_supply_map) {
-        internal_supply += (supply * _internal_wire_unit);
+        internal_supply += supply;
       }
       internal_overflow += std::max(0.0, internal_demand - internal_supply);
     }

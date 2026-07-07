@@ -38,9 +38,19 @@ class PAModel
   PAIterParam& get_pa_iter_param() { return _pa_iter_param; }
   GridMap<PABox>& get_pa_box_map() { return _pa_box_map; }
   std::vector<std::vector<PABoxId>>& get_pa_box_id_list_list() { return _pa_box_id_list_list; }
+  std::set<std::pair<int32_t, int32_t>>& get_reroute_pin_set() { return _reroute_pin_set; }
   std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& get_best_net_pin_access_result_map() { return _best_net_pin_access_result_map; }
   std::map<int32_t, std::map<int32_t, std::vector<EXTLayerRect>>>& get_best_net_pin_access_patch_map() { return _best_net_pin_access_patch_map; }
   std::vector<Violation>& get_best_route_violation_list() { return _best_route_violation_list; }
+  std::vector<std::pair<EXTLayerRect*, bool>>& get_fixed_env_shape_list() { return _fixed_env_shape_list; }
+  std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& get_fixed_net_pin_shape_map() { return _fixed_net_pin_shape_map; }
+  std::map<int32_t, std::vector<AccessPoint*>>& get_curr_net_access_point_map() { return _curr_net_access_point_map; }
+  std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>*>>>& get_curr_net_pin_access_result_map()
+  {
+    return _curr_net_pin_access_result_map;
+  }
+  std::map<int32_t, std::map<int32_t, std::vector<EXTLayerRect*>>>& get_curr_net_pin_access_patch_map() { return _curr_net_pin_access_patch_map; }
+  std::vector<Violation>& get_curr_route_violation_list() { return _curr_route_violation_list; }
   // setter
   void set_pa_com_param(const PAComParam& pa_com_param) { _pa_com_param = pa_com_param; }
   void set_pa_net_list(const std::vector<PANet>& pa_net_list) { _pa_net_list = pa_net_list; }
@@ -67,9 +77,18 @@ class PAModel
   PAIterParam _pa_iter_param;
   GridMap<PABox> _pa_box_map;
   std::vector<std::vector<PABoxId>> _pa_box_id_list_list;
+  std::set<std::pair<int32_t, int32_t>> _reroute_pin_set;
   std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>> _best_net_pin_access_result_map;
   std::map<int32_t, std::map<int32_t, std::vector<EXTLayerRect>>> _best_net_pin_access_patch_map;
   std::vector<Violation> _best_route_violation_list;
+  // fixed env/pin_shape在model内缓存一次，避免每次全量drc check都重新从Gcell构建
+  std::vector<std::pair<EXTLayerRect*, bool>> _fixed_env_shape_list;
+  std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> _fixed_net_pin_shape_map;
+  // 缓存ap，result，patch，避免每次从取全量数据时反查所有gcell
+  std::map<int32_t, std::vector<AccessPoint*>> _curr_net_access_point_map;
+  std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>*>>> _curr_net_pin_access_result_map;
+  std::map<int32_t, std::map<int32_t, std::vector<EXTLayerRect*>>> _curr_net_pin_access_patch_map;
+  std::vector<Violation> _curr_route_violation_list;
 };
 
 }  // namespace irt

@@ -96,7 +96,9 @@ class TrackAssigner
   std::vector<Violation> getViolationList(TAPanel& ta_panel);
   std::vector<Violation> getViolationListByShort(TAPanel& ta_panel, std::map<int32_t, std::vector<PlanarRect>>& env_net_rect_map,
                                                  std::map<int32_t, std::vector<PlanarRect>>& result_net_rect_map);
+  void updateBestResult(TAPanel& ta_panel);
   void updateTaskSchedule(TAPanel& ta_panel, std::vector<TATask*>& routing_task_list);
+  void selectBestResult(TAPanel& ta_panel);
   void uploadNetResult(TAPanel& ta_panel);
   void uploadViolation(TAPanel& ta_panel);
   void freeTAPanel(TAPanel& ta_panel);

@@ -59,8 +59,9 @@ class TopologyGenerator
   void routeTGTask(TGModel& tg_model, TGNet* tg_net);
   void initSingleTask(TGModel& tg_model, TGNet* tg_net);
   std::vector<Segment<PlanarCoord>> getRoutingSegmentList(TGModel& tg_model);
+  std::vector<TGCandidate> getTGCandidateList(TGModel& tg_model, std::vector<Segment<PlanarCoord>>& planar_topo_list);
   std::vector<Segment<PlanarCoord>> getPlanarTopoList(TGModel& tg_model);
-  std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListList(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
+  bool isLongObliqueTopo(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
   std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByStraight(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
   std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByLPattern(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
   std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByZPattern(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
@@ -68,13 +69,16 @@ class TopologyGenerator
   std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByUPattern(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
   std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByInner3Bends(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
   std::vector<std::vector<Segment<PlanarCoord>>> getRoutingSegmentListByOuter3Bends(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
-  void updateTGCandidate(TGModel& tg_model, TGCandidate& tg_candidate);
+  using TGShadowDemandMap = std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC>;
+  void updateTGCandidate(TGModel& tg_model, TGCandidate& tg_candidate,
+                         const TGShadowDemandMap* shadow_demand_map = nullptr);
   MTree<PlanarCoord> getCoordTree(TGModel& tg_model, std::vector<Segment<PlanarCoord>>& routing_segment_list);
   void uploadNetResult(TGModel& tg_model, MTree<PlanarCoord>& coord_tree);
   void resetSingleTask(TGModel& tg_model);
 
 #if 1  // update env
   void updateDemandToGraph(TGModel& tg_model, ChangeType change_type, MTree<PlanarCoord>& coord_tree);
+  void addCandidateToShadow(TGShadowDemandMap& shadow_map, TGCandidate& tg_candidate);
 #endif
 
 #if 1  // exhibit

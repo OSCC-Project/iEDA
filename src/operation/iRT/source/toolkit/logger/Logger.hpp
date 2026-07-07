@@ -16,8 +16,6 @@
 // ***************************************************************************************
 #pragma once
 
-#include <thread>
-
 #include "LogLevel.hpp"
 #include "RTHeader.hpp"
 

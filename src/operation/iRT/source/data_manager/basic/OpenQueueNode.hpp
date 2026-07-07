@@ -37,7 +37,7 @@ class OpenQueueNode
   ~OpenQueueNode() = default;
   OpenQueueNode(T* node)
       : _node(node),
-        _neighbor_node_map_size(static_cast<int32_t>(node->get_neighbor_node_map().size())),
+        _neighbor_node_map_size(getNeighborNodeMapSize(node)),
         _estimated_cost(node->get_estimated_cost()),
         _known_cost(node->get_known_cost())
   {
@@ -62,6 +62,15 @@ class OpenQueueNode
   bool isDel() { return _state == OpenQueueNodeState::kDel; }
 
  private:
+  static int32_t getNeighborNodeMapSize(T* node)
+  {
+    if constexpr (requires { node->get_neighbor_node_num(); }) {
+      return node->get_neighbor_node_num();
+    } else {
+      return static_cast<int32_t>(node->get_neighbor_node_map().size());
+    }
+  }
+
   T* _node;
   int32_t _neighbor_node_map_size;
   double _estimated_cost;

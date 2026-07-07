@@ -24,15 +24,26 @@ class PAComParam
 {
  public:
   PAComParam() = default;
-  PAComParam(int32_t max_candidate_point_num) { _max_candidate_point_num = max_candidate_point_num; }
+  PAComParam(int32_t max_candidate_point_num, int32_t extra_via_master_num, int32_t ap_per_via_master)
+  {
+    _max_candidate_point_num = max_candidate_point_num;
+    _extra_via_master_num = extra_via_master_num;
+    _ap_per_via_master = ap_per_via_master;
+  }
   ~PAComParam() = default;
   // getter
   int32_t get_max_candidate_point_num() const { return _max_candidate_point_num; }
+  int32_t get_extra_via_master_num() const { return _extra_via_master_num; }
+  int32_t get_ap_per_via_master() const { return _ap_per_via_master; }
   // setter
   void set_max_candidate_point_num(const int32_t max_candidate_point_num) { _max_candidate_point_num = max_candidate_point_num; }
+  void set_extra_via_master_num(const int32_t extra_via_master_num) { _extra_via_master_num = extra_via_master_num; }
+  void set_ap_per_via_master(const int32_t ap_per_via_master) { _ap_per_via_master = ap_per_via_master; }
 
  private:
   int32_t _max_candidate_point_num = 0;
+  int32_t _extra_via_master_num = 0;
+  int32_t _ap_per_via_master = 0;
 };
 
 }  // namespace irt

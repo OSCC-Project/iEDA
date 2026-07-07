@@ -551,6 +551,34 @@ std::vector<NetShape> DataManager::getNetDetailedShapeList(int32_t net_idx, std:
 std::vector<NetShape> DataManager::getNetDetailedShapeList(int32_t net_idx, Segment<LayerCoord>& segment)
 {
   std::vector<NetShape> net_shape_list;
+  LayerCoord& first_coord = segment.get_first();
+  LayerCoord& second_coord = segment.get_second();
+  if (segment.hasValidViaMaster() && first_coord.get_layer_idx() != second_coord.get_layer_idx()
+      && first_coord.get_planar_coord() == second_coord.get_planar_coord() && std::abs(first_coord.get_layer_idx() - second_coord.get_layer_idx()) == 1) {
+    std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
+    ViaMasterIdx& via_master_idx = segment.get_via_master_idx();
+    int32_t below_layer_idx = std::min(first_coord.get_layer_idx(), second_coord.get_layer_idx());
+    int32_t via_idx = via_master_idx.get_via_idx();
+    if (via_master_idx.get_below_layer_idx() == below_layer_idx && below_layer_idx >= 0
+        && below_layer_idx < static_cast<int32_t>(layer_via_master_list.size()) && via_idx >= 0
+        && via_idx < static_cast<int32_t>(layer_via_master_list[below_layer_idx].size())) {
+      ViaMaster& via_master = layer_via_master_list[below_layer_idx][via_idx];
+
+      LayerRect& above_enclosure = via_master.get_above_enclosure();
+      LayerRect offset_above_enclosure(RTUTIL.getOffsetRect(above_enclosure, first_coord), above_enclosure.get_layer_idx());
+      net_shape_list.emplace_back(net_idx, offset_above_enclosure, true);
+
+      LayerRect& below_enclosure = via_master.get_below_enclosure();
+      LayerRect offset_below_enclosure(RTUTIL.getOffsetRect(below_enclosure, first_coord), below_enclosure.get_layer_idx());
+      net_shape_list.emplace_back(net_idx, offset_below_enclosure, true);
+
+      for (PlanarRect& cut_shape : via_master.get_cut_shape_list()) {
+        LayerRect offset_cut_shape(RTUTIL.getOffsetRect(cut_shape, first_coord), via_master.get_cut_layer_idx());
+        net_shape_list.emplace_back(net_idx, offset_cut_shape, false);
+      }
+      return net_shape_list;
+    }
+  }
   for (NetShape& net_shape : getNetDetailedShapeList(net_idx, segment.get_first(), segment.get_second())) {
     net_shape_list.push_back(net_shape);
   }

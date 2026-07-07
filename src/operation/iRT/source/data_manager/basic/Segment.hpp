@@ -18,6 +18,7 @@
 
 #include "LayerCoord.hpp"
 #include "RTHeader.hpp"
+#include "ViaMasterIdx.hpp"
 
 namespace irt {
 
@@ -31,20 +32,31 @@ class Segment
     _first = first;
     _second = second;
   }
+  Segment(const T& first, const T& second, const ViaMasterIdx& via_master_idx)
+  {
+    _first = first;
+    _second = second;
+    _via_master_idx = via_master_idx;
+  }
   ~Segment() = default;
   // getter
   T& get_first() { return _first; }
   T& get_second() { return _second; }
   const T& get_first() const { return _first; }
   const T& get_second() const { return _second; }
+  ViaMasterIdx& get_via_master_idx() { return _via_master_idx; }
+  const ViaMasterIdx& get_via_master_idx() const { return _via_master_idx; }
   // setter
   void set_first(const T& x) { _first = x; }
   void set_second(const T& y) { _second = y; }
+  void set_via_master_idx(const ViaMasterIdx& via_master_idx) { _via_master_idx = via_master_idx; }
   // function
+  bool hasValidViaMaster() const { return _via_master_idx.isValid(); }
 
  private:
   T _first;
   T _second;
+  ViaMasterIdx _via_master_idx;
 };
 
 struct SortSegmentInnerXASC
