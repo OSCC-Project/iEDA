@@ -1,5 +1,4 @@
 {
-    "use_skew_tree_alg": "ON",
     "router_type": "GOCA",
     "delay_type": "elmore",
     "cluster_type": "kmeans",
@@ -37,9 +36,6 @@
     ],
     "level_max_cap": [
         "0.5"
-    ],
-    "level_skew_bound": [
-        "0.08"
     ],
     "level_cluster_ratio": [
         "1",
