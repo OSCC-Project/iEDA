@@ -1,103 +1,51 @@
-# # DEBUG CTS
-# set(DEBUG_ICTS_API ON)
-# # DEBUG DATA MANAGER
-# set(DEBUG_ICTS_CONFIG ON)
-# set(DEBUG_ICTS_DATABASE ON)
-# set(DEBUG_ICTS_IO ON)
-# set(DEBUG_ICTS_REPORT ON)
+include_directories(${PROJECT_SOURCE_DIR}/src/third_party/abseil-cpp ${PROJECT_SOURCE_DIR}/src/database/manager/parser ${PROJECT_SOURCE_DIR}/src/operation/iSTA/source/module/include ${PROJECT_SOURCE_DIR}/src/operation/iSTA/source/module)
+add_compile_options(-include ${CMAKE_CURRENT_SOURCE_DIR}/ecc_lib_bridge.hh)
+message(STATUS "############## CTS: START CMAKE ##############")
 
-# # DEBUG MODEL
-# set(DEBUG_ICTS_MODEL ON)
+# Debug options
+# source/database
+option(DEBUG_ICTS_SOURCE_DATABASE_CONFIG "source database config" OFF)
+option(DEBUG_ICTS_SOURCE_DATABASE_DESIGN "source database design" OFF)
+option(DEBUG_ICTS_SOURCE_DATABASE_IO "source database io" OFF)
+option(DEBUG_ICTS_SOURCE_DATABASE_SPATIAL "source database spatial" OFF)
+option(DEBUG_ICTS_SOURCE_DATABASE "source database" OFF)
 
-# # DEBUG MODULE
-# set(DEBUG_ICTS_EVALUATOR ON)
-# set(DEBUG_ICTS_ROUTER ON)
+# source/utils
+option(DEBUG_ICTS_SOURCE_UTILS_LOGGER "source utils logger" OFF)
+option(DEBUG_ICTS_SOURCE_UTILS_GEOMETRY "source utils geometry" OFF)
+option(DEBUG_ICTS_SOURCE_UTILS "source utils" OFF)
 
-# DEBUG SOLVER
-# set(DEBUG_ICTS_SOLVER ON)
-# set(DEBUG_ICTS_SOLVER_DATABASE ON)
-# set(DEBUG_ICTS_BALANCE_CLUSTERING ON)
-# set(DEBUG_ICTS_ANNEAL_OPT ON)
-# set(DEBUG_ICTS_MIN_COST_FLOW ON)
-# set(DEBUG_ICTS_TIMING_PROPAGATOR ON)
-# set(DEBUG_ICTS_TREE_BUILDER ON)
-# set(DEBUG_ICTS_BST ON)
-# set(DEBUG_ICTS_CBS ON)
-# set(DEBUG_ICTS_LOCAL_LEGALIZATION ON)
+# source/flow
+option(DEBUG_ICTS_SOURCE_FLOW_SYNTHESIS_REALIZATION "source flow synthesis realization" OFF)
+option(DEBUG_ICTS_SOURCE_FLOW "source flow" OFF)
 
-# # DEBUG TEST
-# set(DEBUG_ICTS_TEST ON)
+# source/module
+option(DEBUG_ICTS_SOURCE_MODULE_TOPOLOGY_KMEANS "source module topology kmeans" OFF)
+option(DEBUG_ICTS_SOURCE_MODULE_TOPOLOGY_MCF "source module topology mcf" OFF)
+option(DEBUG_ICTS_SOURCE_MODULE_TOPOLOGY_CLUSTERING "source module topology clustering" OFF)
+option(DEBUG_ICTS_SOURCE_MODULE_TOPOLOGY "source module topology" OFF)
+option(DEBUG_ICTS_SOURCE_MODULE "source module" OFF)
 
-# Debug definitions
-if(DEBUG_ICTS_API)
-  add_compile_definitions(DEBUG_ICTS_API)
-endif()
-if(DEBUG_ICTS_CONFIG)
-  add_compile_definitions(DEBUG_ICTS_CONFIG)
-endif()
-if(DEBUG_ICTS_DATABASE)
-  add_compile_definitions(DEBUG_ICTS_DATABASE)
-endif()
-if(DEBUG_ICTS_IO)
-  add_compile_definitions(DEBUG_ICTS_IO)
-endif()
-if(DEBUG_ICTS_REPORT)
-  add_compile_definitions(DEBUG_ICTS_REPORT)
-endif()
-if(DEBUG_ICTS_MODEL)
-  add_compile_definitions(DEBUG_ICTS_MODEL)
-endif()
-if(DEBUG_ICTS_EVALUATOR)
-  add_compile_definitions(DEBUG_ICTS_EVALUATOR)
-endif()
-if(DEBUG_ICTS_ROUTER)
-  add_compile_definitions(DEBUG_ICTS_ROUTER)
-endif()
-if(DEBUG_ICTS_CBS)
-  add_compile_definitions(DEBUG_ICTS_CBS)
-endif()
-if(DEBUG_ICTS_SOLVER)
-  add_compile_definitions(DEBUG_ICTS_SOLVER)
-endif()
-if(DEBUG_ICTS_SOLVER_DATABASE)
-  add_compile_definitions(DEBUG_ICTS_SOLVER_DATABASE)
-endif()
-if(DEBUG_ICTS_BALANCE_CLUSTERING)
-  add_compile_definitions(DEBUG_ICTS_BALANCE_CLUSTERING)
-endif()
-if(DEBUG_ICTS_MIN_COST_FLOW)
-  add_compile_definitions(DEBUG_ICTS_MIN_COST_FLOW)
-endif()
-if(DEBUG_ICTS_ANNEAL_OPT)
-  add_compile_definitions(DEBUG_ICTS_ANNEAL_OPT)
-endif()
-if(DEBUG_ICTS_TIMING_PROPAGATOR)
-  add_compile_definitions(DEBUG_ICTS_TIMING_PROPAGATOR)
-endif()
-if(DEBUG_ICTS_BST)
-  add_compile_definitions(DEBUG_ICTS_BST)
-endif()
-if(DEBUG_ICTS_LOCAL_LEGALIZATION)
-  add_compile_definitions(DEBUG_ICTS_LOCAL_LEGALIZATION)
-endif()
-if(DEBUG_ICTS_TREE_BUILDER)
-  add_compile_definitions(DEBUG_ICTS_TREE_BUILDER)
-endif()
-if(DEBUG_ICTS_TEST)
-  add_compile_definitions(DEBUG_ICTS_TEST)
-endif()
+# source
+option(DEBUG_ICTS_SOURCE "source" OFF)
 
-# path setting
+# api
+option(DEBUG_ICTS_API "api" OFF)
+
+# test
+option(DEBUG_ICTS_TEST "test" OFF)
+
+# Path setting
 set(HOME_ICTS ${HOME_OPERATION}/iCTS)
-set(HOME_ISTA ${HOME_OPERATION}/iSTA)
-set(HOME_ITO ${HOME_OPERATION}/iTO)
 
-set(ICTS_API ${HOME_ICTS}/api)
 set(ICTS_EXTERNAL_LIBS ${HOME_ICTS}/external_libs)
+set(ICTS_API ${HOME_ICTS}/api)
 set(ICTS_SOURCE ${HOME_ICTS}/source)
 set(ICTS_TEST ${HOME_ICTS}/test)
 
-add_subdirectory(${ICTS_API})
 add_subdirectory(${ICTS_EXTERNAL_LIBS})
 add_subdirectory(${ICTS_SOURCE})
-# add_subdirectory(${ICTS_TEST})
+add_subdirectory(${ICTS_API})
+add_subdirectory(${ICTS_TEST})
+
+message(STATUS "############## CTS: END CMAKE ##############")

@@ -31,10 +31,10 @@
 #include <string>
 #include <vector>
 
-#include "../database/interaction/RT_DRC/ids.hpp"
+#include "feature_drc.h"
 #include "feature_irt.h"
 #include "feature_summary.h"
-
+#include "../database/interaction/RT_DRC/ids.hpp"
 #define featureInst ieda_feature::FeatureManager::getInstance()
 
 namespace ieda_feature {
@@ -66,6 +66,7 @@ class FeatureManager
   // route data
   bool save_route_data(std::string path);
   bool read_route_data(std::string path);
+  bool feature_macro_drc(std::string path, std::string drc_path);
   // evaluation
   bool save_eval_summary(std::string path, int32_t grid_size);
   bool save_timing_eval_summary(std::string path);

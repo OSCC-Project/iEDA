@@ -29,10 +29,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "CTSAPI.hh"
-#include "NoApi.hpp"
-#include "PLAPI.hh"
-#include "RTInterface.hpp"
-#include "ToApi.hpp"
 #include "feature_builder.h"
 #include "idm.h"
 #include "report_evaluator.h"
@@ -42,7 +38,7 @@ namespace ieda_feature {
 
 PlaceSummary FeatureBuilder::buildPLSummary(std::string step)
 {
-  PlaceSummary summary = iPLAPIInst.outputSummary(step);
+  PlaceSummary summary;
 
   return summary;
 }
@@ -56,22 +52,21 @@ RTSummary FeatureBuilder::buildRTSummary()
 
 CTSSummary FeatureBuilder::buildCTSSummary()
 {
-  CTSSummary summary = CTSAPIInst.outputSummary();
+  CTSSummary summary = CTS_API_INST.outputSummary();
 
   return summary;
 }
 
 NetOptSummary FeatureBuilder::buildNetOptSummary()
 {
-  NetOptSummary summary = NoApiInst.outputSummary();
+  NetOptSummary summary;
 
   return summary;
 }
 
 TimingOptSummary FeatureBuilder::buildTimingOptSummary()
 {
-  TimingOptSummary summary = ToApiInst.outputSummary();
-  
+  TimingOptSummary summary;
 
   return summary;
 }

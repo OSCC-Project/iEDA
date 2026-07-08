@@ -26,35 +26,7 @@ class Log;
 class Str;
 class Time;
 }  // namespace ieda
-namespace icts {
-struct PathInfo;
-enum class LayerPattern;
-class Node;
-class Pin;
-class Net;
-class Inst;
-enum class TopoType;
-class CtsCellLib;
-class CtsLibs;
-class CtsReportTable;
-class CtsLog;
-class CtsInstance;
-class CtsConfig;
-class CtsDesign;
-class CtsDBWrapper;
-class CtsPin;
-class CtsSignalWire;
-class CtsNet;
-class EvalNet;
-class Evaluator;
-class Endpoint;
-enum class FitType;
-class ModelBase;
-class ModelFactory;
-template <typename T>
-class CtsPoint;
-using Point = icts::CtsPoint<int>;
-}  // namespace icts
+// ecc-merge: icts interaction block disabled (ecc iCTS has own types)
 
 namespace ista {
 class TimingEngine;

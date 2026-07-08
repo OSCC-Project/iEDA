@@ -9,3 +9,7 @@ target_include_directories(feature_db
     PUBLIC 
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+install(TARGETS feature_db
+    LIBRARY DESTINATION ${ECC_INSTALL_LIB_DIR}
+    RUNTIME DESTINATION ${ECC_INSTALL_LIB_DIR})

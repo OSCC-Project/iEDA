@@ -1,0 +1,32 @@
+add_library(
+  icts_source_flow_synthesis_htree_solution
+  ${ICTS_FLOW_SYNTHESIS_HTREE_SOLUTION}/Solution.cc
+  ${ICTS_FLOW_SYNTHESIS_HTREE_SOLUTION}/analytical/AnalyticalSolution.cc
+  ${ICTS_FLOW_SYNTHESIS_HTREE_SOLUTION}/finalization/SolutionFinalizer.cc
+  ${ICTS_FLOW_SYNTHESIS_HTREE_SOLUTION}/discrete/DiscreteSolution.cc
+  ${ICTS_FLOW_SYNTHESIS_HTREE_SOLUTION}/report/SolutionReport.cc
+  ${ICTS_FLOW_SYNTHESIS_HTREE_SOLUTION}/report/StageReport.cc
+  ${ICTS_FLOW_SYNTHESIS_HTREE_SOLUTION}/selection/SolutionSelection.cc
+)
+
+target_link_libraries(
+  icts_source_flow_synthesis_htree_solution
+  PRIVATE
+  icts_source_database_io
+  icts_source_flow_synthesis_htree_synthesis_state
+  icts_source_flow_synthesis_htree_analytical_solver
+  icts_source_flow_synthesis_htree_depth_plan
+  icts_source_flow_synthesis_htree_embedding
+  icts_source_flow_synthesis_htree_plan
+  icts_source_flow_synthesis_htree_topology_pruning
+  icts_source_database_design
+  icts_source_utils_logger
+  log
+)
+
+target_include_directories(
+  icts_source_flow_synthesis_htree_solution
+  PUBLIC
+  ${ICTS_SOURCE}
+  ${ICTS_FLOW}
+)

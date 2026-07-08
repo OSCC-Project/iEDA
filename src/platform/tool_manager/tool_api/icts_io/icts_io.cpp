@@ -16,12 +16,12 @@
 // ***************************************************************************************
 #include "icts_io.h"
 
+#include <glog/logging.h>
+
 #include "builder.h"
 #include "dm_cts_config.h"
 #include "flow_config.h"
 #include "iCTS/api/CTSAPI.hh"
-#include "ista_io.h"
-#include "source/module/sta/StaClockTree.hh"
 #include "usage/usage.hh"
 
 namespace iplf {
@@ -41,8 +41,20 @@ bool CtsIO::runCTS(std::string config, std::string work_dir)
 
   ieda::Stats stats;
 
-  CTSAPIInst.init(config, work_dir);
-  CTSAPIInst.runCTS();
+  const auto setup_status = CTS_API_INST.init(config, work_dir);
+  if (!setup_status.ok()) {
+    LOG(ERROR) << "iCTS setup failed: " << setup_status.message;
+    flowConfigInst->add_status_runtime(stats.elapsedRunTime());
+    flowConfigInst->set_status_memmory(stats.memoryDelta());
+    return false;
+  }
+  const auto run_status = CTS_API_INST.runCTS();
+  if (!run_status.ok()) {
+    LOG(ERROR) << "iCTS run failed: " << run_status.message;
+    flowConfigInst->add_status_runtime(stats.elapsedRunTime());
+    flowConfigInst->set_status_memmory(stats.memoryDelta());
+    return false;
+  }
 
   flowConfigInst->add_status_runtime(stats.elapsedRunTime());
   flowConfigInst->set_status_memmory(stats.memoryDelta());
@@ -55,7 +67,11 @@ bool CtsIO::reportCTS(std::string path)
   if (path.empty()) {
     path = flowConfigInst->get_icts_path();
   }
-  CTSAPIInst.report(path);
+  const auto report_status = CTS_API_INST.report(path);
+  if (!report_status.ok()) {
+    LOG(ERROR) << "iCTS report failed: " << report_status.message;
+    return false;
+  }
   return true;
 }
 
@@ -149,13 +165,9 @@ bool CtsIO::readTreeDataFromFile(std::string path)
 
 bool CtsIO::saveTreeDataToFile(std::string path)
 {
-  _node_list.clear();
-
   if (path.empty()) {
     return false;
   }
-
-  getTreeData();
 
   FileCtsManager file(path, (int32_t) CtsDbId::kCtsGuiData);
 
@@ -167,73 +179,13 @@ vector<CtsTreeNodeMap*>& CtsIO::getTreeData(std::string path)
   _node_list.clear();
 
   if (path.empty()) {
-    auto& sta_tree = staInst->getClockTree();
-    wrapTree(sta_tree);
-    updateLeafNumber();
+    return _node_list;
   } else {
     /// get drc detail data from file
     readTreeDataFromFile(path);
   }
 
   return _node_list;
-}
-
-void CtsIO::wrapTree(std::vector<std::unique_ptr<ista::StaClockTree>>& sta_tree_list)
-{
-  _node_list.clear();
-
-  for (auto& sta_tree : sta_tree_list) {
-    CtsTreeNodeMap* node_map = addTreeNodeMap(sta_tree_list.size());
-
-    /// save root
-    auto sta_root_node = sta_tree->get_root_node();
-    CtsFileTreeNode file_root_node;
-    memset(&file_root_node, 0, sizeof(CtsFileTreeNode));
-
-    CtsTreeNode* root_node = new CtsTreeNode(file_root_node);
-    root_node->set_node_name(sta_root_node->get_inst_name_str());
-
-    node_map->addNode(root_node);
-    node_map->set_root(root_node);
-
-    /// save child
-    for (auto& sta_child_node : sta_tree->get_child_nodes()) {
-      /// get delay
-      double parent_input_max_rise_AT = 0;
-      auto parent_input_max_rise_ATs = sta_child_node->getInputPinMaxRiseAT();
-      if (parent_input_max_rise_ATs.size() > 0) {
-        parent_input_max_rise_AT = (*parent_input_max_rise_ATs.begin()).second;
-      }
-
-      CtsFileTreeNode file_node;
-      memset(&file_node, 0, sizeof(CtsFileTreeNode));
-
-      CtsTreeNode* node = new CtsTreeNode(file_node);
-      node->set_node_name(sta_child_node->get_inst_name_str());
-      node->set_delay(parent_input_max_rise_AT);
-
-      node_map->addNode(node);
-    }
-
-    for (auto& sta_child_arc : sta_tree->get_child_arcs()) {
-      auto sta_node_parent = sta_child_arc->get_parent_node();
-      auto sta_node_child = sta_child_arc->get_child_node();
-      if (sta_node_parent == nullptr || sta_node_child == nullptr) {
-        std::cout << "[Warning] : No sta node in arc" << std::endl;
-        continue;
-      }
-
-      auto cts_node_parent = node_map->findNode(sta_node_parent->get_inst_name_str());
-      auto cts_node_child = node_map->findNode(sta_node_child->get_inst_name_str());
-      if (cts_node_parent == nullptr || cts_node_child == nullptr) {
-        continue;
-      }
-
-      cts_node_child->set_parent_name(sta_node_parent->get_inst_name_str());
-
-      cts_node_parent->addChildNode(cts_node_child);
-    }
-  }
 }
 
 void CtsIO::updateLeafNumber()

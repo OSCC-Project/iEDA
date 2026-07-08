@@ -1,0 +1,8 @@
+add_subdirectory(dataset)
+add_subdirectory(data)
+add_subdirectory(io)
+add_subdirectory(logging)
+add_subdirectory(topology)
+add_subdirectory(visualization)
+add_subdirectory(clustering)
+add_subdirectory(realtech)

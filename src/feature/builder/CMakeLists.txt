@@ -22,9 +22,7 @@ target_link_libraries(feature_builder
         flow_config
         idm
         irt_interface
-        ipl-api
         icts_api
-        ito_api
         # ista-engine
         # idrc_pro_api
         ieda_report_evaluator

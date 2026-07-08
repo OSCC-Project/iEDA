@@ -297,20 +297,6 @@ json FeatureParser::buildSummaryCTS()
   json_cts["max_clock_wirelength"] = summary.max_clock_wirelength;
   json_cts["total_clock_wirelength"] = summary.total_clock_wirelength;
 
-  json json_timing;
-  for (int i = 0; i < (int) summary.clocks_timing.size(); ++i) {
-    auto clock_timing = summary.clocks_timing[i];
-
-    json_timing[i]["clock_name"] = clock_timing.clock_name;
-    json_timing[i]["setup_tns"] = clock_timing.setup_tns;
-    json_timing[i]["setup_wns"] = clock_timing.setup_wns;
-    json_timing[i]["hold_tns"] = clock_timing.hold_tns;
-    json_timing[i]["hold_wns"] = clock_timing.hold_wns;
-    json_timing[i]["suggest_freq"] = clock_timing.suggest_freq;
-  }
-
-  json_cts["clocks_timing"] = json_timing;
-
   return json_cts;
 }
 

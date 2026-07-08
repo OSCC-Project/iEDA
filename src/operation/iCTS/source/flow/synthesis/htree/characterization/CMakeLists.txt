@@ -1,0 +1,25 @@
+set(ICTS_FLOW_SYNTHESIS_HTREE_CHARACTERIZATION_LIBRARY ${ICTS_FLOW_SYNTHESIS_HTREE_CHARACTERIZATION}/library)
+set(ICTS_FLOW_SYNTHESIS_HTREE_CHARACTERIZATION_WIRELENGTH ${ICTS_FLOW_SYNTHESIS_HTREE_CHARACTERIZATION}/wirelength)
+
+add_subdirectory(${ICTS_FLOW_SYNTHESIS_HTREE_CHARACTERIZATION_LIBRARY})
+add_subdirectory(${ICTS_FLOW_SYNTHESIS_HTREE_CHARACTERIZATION_WIRELENGTH})
+
+add_library(icts_source_flow_synthesis_htree_characterization ${ICTS_FLOW_SYNTHESIS_HTREE_CHARACTERIZATION}/Characterization.cc)
+
+target_link_libraries(
+  icts_source_flow_synthesis_htree_characterization
+  PUBLIC
+  icts_source_module_characterization
+  PRIVATE
+  icts_source_flow_synthesis_htree_characterization_library
+  icts_source_flow_synthesis_htree_characterization_wirelength
+  icts_source_utils_logger
+  log
+)
+
+target_include_directories(
+  icts_source_flow_synthesis_htree_characterization
+  PUBLIC
+  ${ICTS_SOURCE}
+  ${ICTS_FLOW}
+)

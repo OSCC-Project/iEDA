@@ -9,9 +9,8 @@ target_include_directories(tool_api_icts
 
 target_link_libraries(tool_api_icts
     PRIVATE
+        icts_api
         flow_config
         file_manager_cts
-        ista-engine
         idm
-        sta
 )

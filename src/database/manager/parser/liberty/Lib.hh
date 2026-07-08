@@ -752,6 +752,11 @@ class LibLeakagePower : public LibObject
 class LibArc : public LibObject
 {
  public:
+  std::string get_when() { return _arc_when_ecc; }
+  void set_arc_when(const std::string& w) { _arc_when_ecc = w; }
+ private:
+  std::string _arc_when_ecc;
+ public:
   enum class ArcType
   {
     kDelayArc,
@@ -1030,6 +1035,7 @@ class LibPowerArcSet
 class LibCell : public LibObject
 {
  public:
+  double convertInternalPowerTableToMwNs(double v) { return v; }
   LibCell(const char* cell_name, LibLibrary* owner_lib);
   ~LibCell() override;
 

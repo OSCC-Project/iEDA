@@ -230,6 +230,12 @@ bool FeatureManager::read_route_data(std::string path)
   return feature_parser.readRouteData(path, &_route_data);
 }
 
+bool FeatureManager::feature_macro_drc(std::string path, std::string drc_path)
+{
+  FeatureParser feature_parser;
+  return feature_parser.buildMacroDrc(path, drc_path);
+}
+
 bool FeatureManager::save_cong_map(std::string stage, std::string csv_dir)
 {
   FeatureParser feature_parser;

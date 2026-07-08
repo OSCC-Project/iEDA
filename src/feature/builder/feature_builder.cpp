@@ -63,7 +63,7 @@ SummaryInfo FeatureBuilder::buildSummaryInfo()
 {
   SummaryInfo info;
 
-  info.eda_tool = "iEDA";
+  info.eda_tool = "ecc";
   info.eda_version = iplf::flowConfigInst->get_env_info_software_version();
   info.design_name = dmInst->get_idb_design()->get_design_name();
   info.design_version = dmInst->get_idb_design()->get_version();

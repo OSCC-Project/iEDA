@@ -17,7 +17,6 @@
 #pragma once
 
 #include <iostream>
-#include <memory>
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -26,10 +25,6 @@
 #include "file_cts.h"
 
 #define ctsInst (iplf::CtsIO::getInstance())
-
-namespace ista {
-class StaClockTree;
-}
 
 namespace iplf {
 
@@ -115,9 +110,6 @@ class CtsIO
 
   CtsIO() {}
   ~CtsIO() = default;
-
-  //   void buildData(icts::CTS& cts);
-  void wrapTree(std::vector<std::unique_ptr<ista::StaClockTree>>& sta_tree_list);
 
   int64_t updateTotalNumberForLeaf(CtsTreeNode* node);
 };

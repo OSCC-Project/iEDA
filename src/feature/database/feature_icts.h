@@ -18,8 +18,6 @@
 
 #include <cstdint>
 
-#include "feature_ista.h"
-
 namespace ieda_feature {
 
 struct CTSSummary
@@ -31,8 +29,6 @@ struct CTSSummary
   int32_t max_level_of_clock_tree;
   int32_t max_clock_wirelength;
   double total_clock_wirelength;
-
-  std::vector<ClockTiming> clocks_timing;
 };
 
 }  // namespace ieda_feature
