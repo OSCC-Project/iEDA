@@ -4,7 +4,7 @@ export WORKSPACE=$(cd "$(dirname "$0")";pwd)
 
 # (fixed) iEDA setting
 export CONFIG_DIR=$WORKSPACE/iEDA_config
-export FOUNDRY_DIR=$WORKSPACE/../../foundry/sky130
+export FOUNDRY_DIR=${FOUNDRY_ROOT:-/home/lxq/AiEDA/Foundary}/sky130
 export RESULT_DIR=$WORKSPACE/result
 export TCL_SCRIPT_DIR=$WORKSPACE/script
 

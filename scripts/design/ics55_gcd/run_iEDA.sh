@@ -11,8 +11,8 @@ echo "Running iEDA Netlist-to-GDS flow for design: $TOP_NAME (clock port: $CLK_P
 
 # Ensure PDK_DIR is provided in the environment (must be exported); abort if missing.
 if [ -z "${PDK_DIR:-}" ]; then
-    echo "Error: PDK_DIR is not set. Please export PDK_DIR before running this script."
-    exit 1
+    export PDK_DIR=${FOUNDRY_ROOT:-/home/lxq/AiEDA/Foundary}/ics55
+    echo "PDK_DIR defaulted to $PDK_DIR"
 fi
 export TECH_LEF="${PDK_DIR}/prtech/techLEF/N551P6M_ieda.lef"
 export LEF_STDCELL="${PDK_DIR}/IP/STD_cell/ics55_LLSC_H7C_V1p10C100/ics55_LLSC_H7CR/lef/ics55_LLSC_H7CR_ieda.lef \
