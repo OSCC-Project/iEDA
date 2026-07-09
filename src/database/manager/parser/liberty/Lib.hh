@@ -612,7 +612,7 @@ class LibPort : public LibObject
   LibCell* _ower_cell;  //!< The cell owner the port.
   LibertyPortType _port_type = LibertyPortType::kDefault;
   bool _clock_gate_clock_pin = false;   //!< The flag of gate clock pin.
-  bool _is_clock_pin = false;           //!< clock pin flag (ecc merge)
+  bool _is_clock_pin = false;           //!< clock pin flag
   bool _clock_gate_enable_pin = false;  //!< The flag of gate enable pin.
   RustLibertyExpr* _func_expr = nullptr;
   std::string _func_expr_str;                                        //!< store func expr string for debug.
@@ -752,10 +752,10 @@ class LibLeakagePower : public LibObject
 class LibArc : public LibObject
 {
  public:
-  std::string get_when() { return _arc_when_ecc; }
-  void set_arc_when(const std::string& w) { _arc_when_ecc = w; }
+  std::string get_when() { return _arc_when; }
+  void set_arc_when(const std::string& w) { _arc_when = w; }
  private:
-  std::string _arc_when_ecc;
+  std::string _arc_when;
  public:
   enum class ArcType
   {

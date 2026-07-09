@@ -3,7 +3,7 @@ set -e
 export HOME=/home/lxq
 export MAMBA_ROOT_PREFIX=/home/lxq/AiEDA/micromamba
 eval "$(/home/lxq/.local/bin/micromamba shell hook -s bash)"
-micromamba activate ecc
+micromamba activate ieda-build
 export CC CXX
 export LIBRARY_PATH="$CONDA_PREFIX/lib:$LIBRARY_PATH"
 export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:$LD_LIBRARY_PATH"

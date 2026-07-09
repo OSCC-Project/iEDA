@@ -1,5 +1,5 @@
 include_directories(${PROJECT_SOURCE_DIR}/src/third_party/abseil-cpp ${PROJECT_SOURCE_DIR}/src/database/manager/parser ${PROJECT_SOURCE_DIR}/src/operation/iSTA/source/module/include ${PROJECT_SOURCE_DIR}/src/operation/iSTA/source/module)
-add_compile_options(-include ${CMAKE_CURRENT_SOURCE_DIR}/ecc_lib_bridge.hh)
+add_compile_options(-include ${CMAKE_CURRENT_SOURCE_DIR}/cts_lib_bridge.hh)
 message(STATUS "############## CTS: START CMAKE ##############")
 
 # Debug options

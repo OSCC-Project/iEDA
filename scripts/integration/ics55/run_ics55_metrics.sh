@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 export HOME=/home/lxq
 export MAMBA_ROOT_PREFIX=/home/lxq/AiEDA/micromamba
-eval "$(/home/lxq/.local/bin/micromamba shell hook -s bash)"; micromamba activate ecc
+eval "$(/home/lxq/.local/bin/micromamba shell hook -s bash)"; micromamba activate ieda-build
 export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:$LD_LIBRARY_PATH"
 export PDK_DIR=/home/lxq/AiEDA/ics55-pdk
 W=/home/lxq/AiEDA/iEDA/scripts/design/ics55_gcd; cd $W

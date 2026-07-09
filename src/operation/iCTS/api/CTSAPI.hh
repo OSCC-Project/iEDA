@@ -34,7 +34,7 @@ struct CTSSummary;
 namespace icts {
 
 #define CTS_API_INST (icts::CTSAPI::getInst())
-#define CTSAPIInst (icts::CTSAPI::getInst())  // ecc-merge: compat alias for iEDA tcl_cts
+#define CTSAPIInst (icts::CTSAPI::getInst())  // compat alias for iEDA tcl_cts
 
 class Flow;
 struct CTSRuntime;

@@ -44,7 +44,7 @@ target_include_directories(ircx_headers
     ${HOME_THIRDPARTY}
 )
 
-# add_subdirectory(ics55) # disabled: ecc-specific install
+# add_subdirectory(ics55) # disabled: vendor-specific install
 add_subdirectory(source/parser)
 add_subdirectory(source/database)
 add_subdirectory(source/module/topology)

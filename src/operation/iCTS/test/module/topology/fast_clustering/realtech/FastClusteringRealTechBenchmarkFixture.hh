@@ -39,11 +39,11 @@
 
 namespace icts_test::fast_clustering::realtech {
 
-inline constexpr std::string_view kBenchmarkRoot = "/nfs/share/home/huangzhipeng/code-new/ecc-benchmark/runs/20260422_125008";
-inline constexpr std::string_view kIcs55Workspace = "/home/liweiguo/project/ecc-tools-dev/scripts/design/ics55_dev";
+inline constexpr std::string_view kBenchmarkRoot = "/nfs/share/home/huangzhipeng/code-new/cts-benchmark/runs/20260422_125008";
+inline constexpr std::string_view kIcs55Workspace = "/home/liweiguo/project/cts-tools-dev/scripts/design/ics55_dev";
 inline constexpr std::string_view kCtsConfigPath
-    = "/home/liweiguo/project/ecc-tools-dev/scripts/design/ics55_dev/iEDA_config/cts_default_config.json";
-inline constexpr std::string_view kDefaultSdcPath = "/home/liweiguo/project/ecc-tools-dev/scripts/design/ics55_dev/default.sdc";
+    = "/home/liweiguo/project/cts-tools-dev/scripts/design/ics55_dev/iEDA_config/cts_default_config.json";
+inline constexpr std::string_view kDefaultSdcPath = "/home/liweiguo/project/cts-tools-dev/scripts/design/ics55_dev/default.sdc";
 inline constexpr std::size_t kRequiredCaseCount = 20;
 inline constexpr std::string_view kClusterSvgDirName = "cluster_svgs";
 

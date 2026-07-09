@@ -26,7 +26,7 @@ class Log;
 class Str;
 class Time;
 }  // namespace ieda
-// ecc-merge: icts interaction block disabled (ecc iCTS has own types)
+// icts interaction block disabled (has own types)
 
 namespace ista {
 class TimingEngine;

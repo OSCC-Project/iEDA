@@ -1,10 +1,10 @@
 # iRCX ICS55 SDK
 
-本目录只放置 ecc-tools 侧的 CMake 集成配置。ICS55 专用 iRCX SDK 需要作为 CMake package 安装到外部 prefix，供 `ecc-tools` 通过 `find_package(IrcxIcs55 CONFIG REQUIRED)` 查找。
+本目录只放置 external-tools 侧的 CMake 集成配置。ICS55 专用 iRCX SDK 需要作为 CMake package 安装到外部 prefix，供 `external-tools` 通过 `find_package(IrcxIcs55 CONFIG REQUIRED)` 查找。
 
 ## CMake 查找方式
 
-配置 ecc-tools 时通过 CMake CLI 指定 SDK prefix 或 package config 目录：
+配置 external-tools 时通过 CMake CLI 指定 SDK prefix 或 package config 目录：
 
 ```sh
 cmake -S . -B build \
@@ -14,7 +14,7 @@ cmake -S . -B build \
   -DIrcxIcs55_DIR=/path/to/ircx_ics55_sdk_prefix/lib/cmake/IrcxIcs55
 ```
 
-`CMakeLists.txt` 会定义 ecc-tools 内部兼容 target：
+`CMakeLists.txt` 会定义 external-tools 内部兼容 target：
 
 ```cmake
 ircx_ics55
@@ -72,7 +72,7 @@ ircx_ics55_report();
 
 ## 运行依赖
 
-该 SDK 不依赖内部 iEDA/iRCX 动态库。glog、gflags、OpenMP/libgomp、libunwind、libcurl、Tcl、TBB、libstdc++、libgcc_s 等运行时依赖由 ecc-tools 的统一构建/运行环境提供。
+该 SDK 不依赖内部 iEDA/iRCX 动态库。glog、gflags、OpenMP/libgomp、libunwind、libcurl、Tcl、TBB、libstdc++、libgcc_s 等运行时依赖由 external-tools 的统一构建/运行环境提供。
 
 `CMakeLists.txt` 会在配置阶段检查直接依赖是否存在；缺失时会 fail fast。
 

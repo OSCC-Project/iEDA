@@ -38,7 +38,7 @@
 #include "IdbNet.h"
 #include "IdbPins.h"
 #include "IdbTerm.h"
-// ecc-merge: use iEDA Rust liberty parser
+// use iEDA Rust liberty parser
 #include "SdcClockReader.hh"
 #include "SdcClockTraceAlgorithm.hh"
 #include "liberty/Lib.hh"

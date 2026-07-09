@@ -41,7 +41,7 @@
 #include "IdbNet.h"
 #include "IdbPins.h"
 #include "IdbTerm.h"
-// ecc-merge: use iEDA Rust liberty parser
+// use iEDA Rust liberty parser
 #include "Log.hh"
 #include "Vector.hh"
 #include "Wrapper.hh"

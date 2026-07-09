@@ -1,32 +1,30 @@
-# iEDA + ecc-tools Integration — Build & Run Notes
+# iEDA — Build & Run Notes
 
-Base: original OSCC-Project/iEDA (retain all iEDA content; ecc-tools wins on
-code-level conflicts). ecc-tools main is fetched into ref `refs/remotes/ecc/main`
-(and the alternative "ecc as base" merge is preserved on branch `wip/ecc-based-merge`).
+Base: OSCC-Project/iEDA. This tree integrates the additional tool sources directly
+into the standard iEDA layout; there is no separate overlay to track.
 
 ## Toolchain (no sudo — userspace conda)
-micromamba env `ecc` at /home/lxq/AiEDA/micromamba/envs/ecc provides gcc-10,
+micromamba env `ieda-build` (at /home/lxq/AiEDA/micromamba/envs) provides gcc-10,
 cmake, ninja, boost, glog, gflags, eigen, gtest, tbb, gmp, metis, libhwloc,
 cairo, tk(tcl), libunwind, rust, pybind11. Eigen exposed via
 `$CONDA_PREFIX/include/Eigen` symlink -> eigen3/Eigen.
 
 ## Build iEDA (shared libs — conda has no static glog/gflags)
-    scripts/ecc_integration/ieda_build.sh clean   # configure+build target iEDA
+    scripts/integration/ieda_build.sh clean   # configure + build target iEDA
 Key flags: -DBUILD_STATIC_LIB=OFF, conda CC/CXX, LIBRARY_PATH=$CONDA_PREFIX/lib.
 Output: bin/iEDA (run with LD_LIBRARY_PATH=$CONDA_PREFIX/lib).
 
 ## Run gcd flows (netlist -> GDS)
-- sky130: scripts/ecc_integration/run_sky130.sh  -> result/final_design.gds2
-- ics55:  PDK from openecos-projects/icsprout55-pdk (extract liberty releases into
-  IP/STD_cell/.../H7C{L,R,H}/liberty; symlink *_ieda.lef -> *_ecos.lef);
-  PDK_DIR=/home/lxq/AiEDA/ics55-pdk scripts/ecc_integration/run_ics55.sh
+- sky130:    scripts/integration/run_sky130.sh   -> result/final_design.gds2
+- ics55:     PDK_DIR=/home/lxq/AiEDA/ics55-pdk scripts/integration/run_ics55.sh
+- nangate45: scripts/design/nangate45_gcd/run_iEDA.sh  (foundry: Foundary/nangate45)
 
-## Metrics (sky130 verified)
-- STA:   result/to/{drv,hold}/sta/gcd.rpt (slack/TNS/freq)
-- Power: iPW run_power -> result/sta/gcd.pwr (Total 1.96 mW)
-- DRC:   iRT DRC -> result/drc/detail.drc (0 violations)
-- IR-drop: report_ir_drop needs PDN power-source (bump) geometry — pending PDN config
+## Metrics
+- STA:     result/to/{drv,hold}/sta/gcd.rpt (slack / TNS / freq)
+- Power:   iPW run_power -> result/sta/gcd.pwr
+- DRC:     iRT DRC + iDRC signoff -> result/drc/detail.drc
+- IR-drop: report_ir_drop needs PDN power-source (bump) geometry — see PDN config
 
 ## Status
-sky130 gcd netlist->GDS + STA/power/DRC: DONE. ics55 gcd netlist->GDS: DONE.
-TODO: ics55 power/DRC report scripts; sky130 IR-drop PDN; iRCX port; per-tool ecc merge.
+sky130 gcd netlist->GDS + STA/power/DRC: DONE. ics55 gcd netlist->GDS: DONE (DRC 0).
+TODO: ics55 power/DRC report scripts; sky130 IR-drop PDN; nangate45 gcd DRC closure.
