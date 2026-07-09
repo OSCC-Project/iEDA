@@ -69,7 +69,8 @@ auto queryLibPortCapacitancePf(idb::LibCell* lib_cell, idb::LibPort* lib_port) -
   cap_value = std::max(cap_value, lib_port->get_port_cap(idb::AnalysisMode::kMax, idb::TransType::kFall).value_or(0.0));
   cap_value = std::max(cap_value, lib_port->get_port_cap(idb::AnalysisMode::kMin, idb::TransType::kRise).value_or(0.0));
   cap_value = std::max(cap_value, lib_port->get_port_cap(idb::AnalysisMode::kMin, idb::TransType::kFall).value_or(0.0));
-  return convertLibCapToPf(lib_cell, cap_value);
+  // LibPort caps are already normalized to pF by the Rust liberty parser; do not reconvert.
+  return cap_value;
 }
 
 auto findBufferArcSet(idb::LibCell* lib_cell) -> std::optional<idb::LibArcSet*>
@@ -288,7 +289,7 @@ auto extractBufferCellFromLibCell(Wrapper& wrapper, idb::LibCell* lib_cell) -> F
   auto output_cap_limit_pf = 0.0;
   if (output_port != nullptr) {
     if (auto cap_limit = output_port->get_port_cap_limit(idb::AnalysisMode::kMax); cap_limit.has_value()) {
-      output_cap_limit_pf = convertLibCapToPf(lib_cell, *cap_limit);
+      output_cap_limit_pf = *cap_limit;  // already pF (parser-normalized)
     }
   }
   if (output_cap_limit_pf <= 0.0) {

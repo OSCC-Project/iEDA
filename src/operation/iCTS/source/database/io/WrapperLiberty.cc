@@ -39,7 +39,7 @@
 #include "IdbCellMaster.h"
 #include "IdbLayout.h"
 #include "IdbUnits.h"
-// ecc-merge: use iEDA Rust liberty parser
+// use iEDA Rust liberty parser
 #include "Log.hh"
 #include "Type.hh"
 #include "Vector.hh"
@@ -89,11 +89,10 @@ auto resolvePositiveMax(const std::vector<std::optional<double>>& values) -> dou
 
 auto convertLibCapToPf(idb::LibCell* lib_cell, double cap_value) -> double
 {
-  auto* owner_lib = lib_cell != nullptr ? lib_cell->get_owner_lib() : nullptr;
-  if (owner_lib == nullptr) {
-    return cap_value;
-  }
-  return idb::ConvertCapUnit(owner_lib->get_cap_unit(), idb::CapacitiveUnit::kPF, cap_value);
+  // LibPort caps are already normalized to pF by the Rust liberty parser
+  // (LUT table axes are NOT normalized and use ConvertCapUnit directly elsewhere).
+  (void)lib_cell;
+  return cap_value;
 }
 
 auto convertLibTimeToNs(idb::LibCell* lib_cell, double time_value) -> double
