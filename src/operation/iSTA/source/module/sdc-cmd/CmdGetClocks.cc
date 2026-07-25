@@ -47,7 +47,9 @@ unsigned CmdGetClocks::exec() {
 
   std::vector<SdcCollectionObj> obj_list;
 
-  for (auto& [clock_name, the_clock] : the_clocks) {
+  for (auto& clock_pair : the_clocks) {
+    auto& clock_name = clock_pair.first;
+    auto& the_clock = clock_pair.second;
     auto it = std::find_if(
         clock_list.begin(), clock_list.end(), [clock_name](auto clock_pattern) {
           if ((clock_pattern == "*") || (clock_name == clock_pattern)) {

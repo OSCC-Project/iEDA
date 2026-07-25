@@ -65,7 +65,9 @@ namespace ista {
 void ReducedPath::deleteNoCapNode(RcTree& rc_tree,
                                   const std::set<RctNode*>& pin_nodes) {
   Vector<RctNode*> to_be_removed_nodes;
-  for (auto& [node_name, rc_node] : rc_tree.get_nodes()) {
+  for (auto& node_pair : rc_tree.get_nodes()) {
+    auto& node_name = node_pair.first;
+    auto& rc_node = node_pair.second;
     if (rc_node.cap() == 0.0) {
       // only delete the internal direct node.
       if (((rc_node.get_fanin().size() == 2) &&
@@ -543,7 +545,10 @@ MatrixXd ArnoldiNet::calcDelayAndSlew(
       }
     }
 
-    auto [diag, B, W] = *_diag_B_W;
+    auto diag_B_W = *_diag_B_W;
+    auto& diag = std::get<0>(diag_B_W);
+    auto& B = std::get<1>(diag_B_W);
+    auto& W = std::get<2>(diag_B_W);
 
     DVERBOSE_VLOG(1) << "diag\n" << diag;
     DVERBOSE_VLOG(1) << "W\n" << W;
@@ -831,8 +836,9 @@ std::optional<std::pair<double, MatrixXd>> ArnoldiNet::delay(
     std::optional<LibCurrentData*> output_current, AnalysisMode mode,
     TransType trans_type) {
   if (output_current) {
-    auto [total_time, num_points] =
-        (*output_current)->getSimulationTotalTimeAndNumPoints();
+    auto total_time_and_num_points = (*output_current)->getSimulationTotalTimeAndNumPoints();
+    auto total_time = std::get<0>(total_time_and_num_points);
+    auto num_points = std::get<1>(total_time_and_num_points);
 
     auto get_current = [&output_current](
                            double start_time, double end_time,
@@ -869,8 +875,9 @@ std::optional<double> ArnoldiNet::slew(
   // }
 
   if (output_current) {
-    auto [total_time, num_points] =
-        (*output_current)->getSimulationTotalTimeAndNumPoints();
+    auto total_time_and_num_points = (*output_current)->getSimulationTotalTimeAndNumPoints();
+    auto total_time = std::get<0>(total_time_and_num_points);
+    auto num_points = std::get<1>(total_time_and_num_points);
 
     auto get_current = [&output_current](
                            double start_time, double end_time,
