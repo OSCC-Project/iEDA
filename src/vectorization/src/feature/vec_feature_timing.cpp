@@ -84,7 +84,9 @@ void VecFeatureTiming::build()
 void VecFeatureTiming::buildWireTimingPowerFeature(VecNet* vec_net, const std::string& net_name)
 {
   auto* eval_tp = ieval::InitSTA::getInst();
-  auto [toggle, voltage] = eval_tp->getNetToggleAndVoltage(net_name);
+  auto toggle_voltage = eval_tp->getNetToggleAndVoltage(net_name);
+  double toggle = toggle_voltage.first;
+  double voltage = toggle_voltage.second;
   auto all_node_slews = eval_tp->getAllNodesSlew(net_name);
 
   auto get_node_feature = [this, eval_tp, toggle, voltage, &all_node_slews](
@@ -92,7 +94,9 @@ void VecFeatureTiming::buildWireTimingPowerFeature(VecNet* vec_net, const std::s
     std::string node_name;
     int pin_id = vec_node->get_node_data()->get_pin_id();
     if (pin_id != -1) {
-      auto [inst_name, pin_type_name] = _layout->findPinName(pin_id);
+      auto pin_name_pair = _layout->findPinName(pin_id);
+      auto inst_name = pin_name_pair.first;
+      auto pin_type_name = pin_name_pair.second;
       auto pin_name = !inst_name.empty() ? (inst_name + ":" + pin_type_name) : pin_type_name;
       node_name = pin_name;
     } else {
@@ -115,10 +119,24 @@ void VecFeatureTiming::buildWireTimingPowerFeature(VecNet* vec_net, const std::s
 
   for (auto& wire : vec_net->get_wires()) {
     auto* wire_feature = wire.get_feature(true);
-    auto [src, snk] = wire.get_connected_nodes();
+    auto connected_nodes = wire.get_connected_nodes();
+    auto* src = connected_nodes.first;
+    auto* snk = connected_nodes.second;
 
-    auto [src_R, src_C, src_slew, src_delay, src_power] = get_node_feature(net_name, src);
-    auto [snk_R, snk_C, snk_slew, snk_delay, snk_power] = get_node_feature(net_name, snk);
+    auto src_feature = get_node_feature(net_name, src);
+    auto snk_feature = get_node_feature(net_name, snk);
+
+    double src_R = std::get<0>(src_feature);
+    double src_C = std::get<1>(src_feature);
+    double src_slew = std::get<2>(src_feature);
+    double src_delay = std::get<3>(src_feature);
+    double src_power = std::get<4>(src_feature);
+
+    double snk_R = std::get<0>(snk_feature);
+    double snk_C = std::get<1>(snk_feature);
+    double snk_slew = std::get<2>(snk_feature);
+    double snk_delay = std::get<3>(snk_feature);
+    double snk_power = std::get<4>(snk_feature);
 
     double wire_resistance = std::abs(snk_R - src_R);
     double wire_capacitance = std::abs(snk_C - src_C);

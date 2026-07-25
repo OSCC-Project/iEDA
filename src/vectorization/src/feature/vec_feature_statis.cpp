@@ -105,7 +105,9 @@ void VecFeatureStatis::feature_graph()
       for (auto& wire : vec_net.get_wires()) {
         auto* wire_feature = wire.get_feature(true);
 
-        for (auto& [node1, node2] : wire.get_paths()) {
+        for (auto& node_pair : wire.get_paths()) {
+          auto* node1 = node_pair.first;
+          auto* node2 = node_pair.second;
           if (node1->get_layer_id() == node2->get_layer_id()) {
             auto order = node1->get_layer_id();
             auto* layout_layer = layout_layers.findLayoutLayer(order);
@@ -303,17 +305,23 @@ void VecFeatureStatis::feature_patch()
       patch.ir_drop_map = cell_ir_map_find->second;
     }
 
-    for (auto& [layer_id, patch_layer] : patch.get_layer_map()) {
+    for (auto& layer_pair : patch.get_layer_map()) {
+      auto& layer_id = layer_pair.first;
+      auto& patch_layer = layer_pair.second;
       patch_layer.wire_width = layout_layers.findLayoutLayer(layer_id)->get_wire_width();
       // obtain congestion value for each layer in the patch
       std::string layer_name = layout_layers.findLayoutLayer(layer_id)->get_layer_name();
       patch_layer.congestion = layer_congestion_map[patch_id][layer_name];
 
-      for (auto& [net_id, vec_net] : patch_layer.get_sub_nets()) {
+      for (auto& net_pair : patch_layer.get_sub_nets()) {
+        auto& net_id = net_pair.first;
+        auto& vec_net = net_pair.second;
         for (auto& wire : vec_net.get_wires()) {
           auto* wire_feature = wire.get_feature(true);
 
-          for (auto& [node1, node2] : wire.get_paths()) {
+          for (auto& node_pair : wire.get_paths()) {
+            auto* node1 = node_pair.first;
+            auto* node2 = node_pair.second;
             if (node1->get_layer_id() == node2->get_layer_id()) {
               auto order = node1->get_layer_id();
               auto* layout_layer = layout_layers.findLayoutLayer(order);
