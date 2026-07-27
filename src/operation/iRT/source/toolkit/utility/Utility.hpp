@@ -120,7 +120,7 @@ class Utility
 
   static Orientation getOppositeOrientation(Orientation orientation)
   {
-    Orientation opposite_orientation;
+    Orientation opposite_orientation = Orientation::kNone;
     switch (orientation) {
       case Orientation::kEast:
         opposite_orientation = Orientation::kWest;
@@ -142,7 +142,7 @@ class Utility
         break;
       default:
         RTLOG.error(Loc::current(), "The orientation is error!");
-        break;
+        return Orientation::kNone;
     }
     return opposite_orientation;
   }
@@ -345,7 +345,7 @@ class Utility
     if (intersection_point.get_x() == -1 && intersection_point.get_y() == -1) {
       return false;
     }
-    return false;
+    return true;
   }
 
   // 判断矩形是否与线段相交
@@ -492,6 +492,7 @@ class Utility
   {
     if (coord_list.empty()) {
       RTLOG.error(Loc::current(), "The coord list is empty!");
+      return false;
     } else if (coord_list.size() <= 2) {
       return true;
     } else {

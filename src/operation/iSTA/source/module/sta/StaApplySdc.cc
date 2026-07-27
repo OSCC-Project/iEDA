@@ -671,7 +671,9 @@ unsigned StaApplySdc::processClockUncertainty(
 
   auto obj2uncertainty = get_uncertainty();
 
-  for (auto [obj, uncertainty] : obj2uncertainty) {
+  for (auto& obj_pair : obj2uncertainty) {
+    auto& obj = obj_pair.first;
+    auto& uncertainty = obj_pair.second;
     std::visit(overloaded{
                    [&apply_clock_uncertainty_to_clk,
                     uncertainty](SdcCommandObj* sdc_obj) {

@@ -22,7 +22,9 @@ add_subdirectory(tcl_feature)
 add_subdirectory(tcl_eval)
 add_subdirectory(tcl_eco)
 add_subdirectory(tcl_vec)
-add_subdirectory(tcl_notification)
+if(BUILD_NOTIFICATION)
+  add_subdirectory(tcl_notification)
+endif()
 
 if(CONTEST)
 add_subdirectory(tcl_contest)
@@ -58,7 +60,6 @@ target_link_libraries(ieda_tcl
         tcl_eco
         tcl_vec
         tcl_ipnp
-        tcl_notification
 )
 
 target_include_directories(ieda_tcl 
@@ -73,6 +74,10 @@ target_include_directories(ieda_tcl
     ${HOME_PLATFORM}/tool_manager
     ${HOME_PLATFORM}/tool_manager/tool_api
 )
+
+if(BUILD_NOTIFICATION)
+  target_link_libraries(ieda_tcl PUBLIC tcl_notification)
+endif()
 
 if(BUILD_GUI)
   target_link_libraries(ieda_tcl PUBLIC tcl_gui)

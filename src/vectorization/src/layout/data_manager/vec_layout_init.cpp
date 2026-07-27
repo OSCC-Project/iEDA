@@ -237,7 +237,9 @@ void VecLayoutInit::buildLayoutGrid()
     auto& layout_layer = it->second;
 
     auto& grid = layout_layer.get_grid();
-    auto [node_row_num, node_col_num] = grid.buildNodeMatrix(order);
+    auto node_row_col = grid.buildNodeMatrix(order);
+    auto node_row_num = node_row_col.first;
+    auto node_col_num = node_row_col.second;
 
     LOG_INFO << "Vectorization layer order : " << order << ", row = " << node_row_num << ", col = " << node_col_num;
   }
@@ -257,7 +259,9 @@ void VecLayoutInit::transVia(idb::IdbVia* idb_via, int net_id, VecNodeTYpe type)
   }
   auto& grid = layout_layer->get_grid();
   auto* via_coordinate = idb_via->get_coordinate();
-  auto [row, col] = gridInfoInst.findNodeID(via_coordinate->get_x(), via_coordinate->get_y());
+  auto node_id = gridInfoInst.findNodeID(via_coordinate->get_x(), via_coordinate->get_y());
+  auto row = node_id.first;
+  auto col = node_id.second;
 
   auto* node = grid.get_node(row, col, true);
   node->set_col_id(col);
@@ -319,10 +323,10 @@ void VecLayoutInit::initPDN()
     _layout->add_pdn_map(i, idb_net->get_net_name());
 
     auto* idb_wires = idb_net->get_wire_list();
-    for (auto* idb_wire : idb_wires->get_wire_list()) {
+      for (auto* idb_wire : idb_wires->get_wire_list()) {
 #pragma omp parallel for schedule(dynamic)
-      for (int i = 0; i < (int) idb_wire->get_segment_list().size(); ++i) {
-        auto* idb_segment = idb_wire->get_segment_list()[i];
+        for (int segment_idx = 0; segment_idx < (int) idb_wire->get_segment_list().size(); ++segment_idx) {
+        auto* idb_segment = idb_wire->get_segment_list()[segment_idx];
         /// wire
         if (idb_segment->get_point_num() >= 2) {
           auto* routing_layer = dynamic_cast<IdbLayerRouting*>(idb_segment->get_layer());
@@ -358,7 +362,11 @@ void VecLayoutInit::initPDN()
             continue;
           }
           auto& grid = layout_layer->get_grid();
-          auto [row_1, row_2, co_1, col_2] = gridInfoInst.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
+          auto node_range = gridInfoInst.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
+          auto row_1 = std::get<0>(node_range);
+          auto row_2 = std::get<1>(node_range);
+          auto co_1 = std::get<2>(node_range);
+          auto col_2 = std::get<3>(node_range);
           for (int row = row_1; row <= row_2; ++row) {
             for (int col = co_1; col <= col_2; ++col) {
               /// set node data
@@ -517,7 +525,9 @@ void VecLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, VecNodeTYpe type,
     if (layer_shape->is_via()) {
       for (IdbRect* rect : layer_shape->get_rect_list()) {
         /// build grid
-        auto [row_id, col_id] = gridInfoInst.findNodeID(rect->get_middle_point_x(), rect->get_middle_point_y());
+        auto node_id = gridInfoInst.findNodeID(rect->get_middle_point_x(), rect->get_middle_point_y());
+        auto row_id = node_id.first;
+        auto col_id = node_id.second;
         auto* node = grid.get_node(row_id, col_id, true);
         node->set_col_id(col_id);
         node->set_row_id(row_id);
@@ -557,7 +567,11 @@ void VecLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, VecNodeTYpe type,
         int lly = rect->get_low_y();
         int ury = rect->get_high_y();
 
-        auto [row_1, row_2, col_1, col_2] = gridInfoInst.get_node_id_range(llx, urx, lly, ury);
+        auto node_range = gridInfoInst.get_node_id_range(llx, urx, lly, ury);
+        auto row_1 = std::get<0>(node_range);
+        auto row_2 = std::get<1>(node_range);
+        auto col_1 = std::get<2>(node_range);
+        auto col_2 = std::get<3>(node_range);
 
         for (int row = row_1; row <= row_2; ++row) {
           for (int col = col_1; col <= col_2; ++col) {
@@ -614,7 +628,11 @@ void VecLayoutInit::transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32
   }
 
   auto& grid = layout_layer->get_grid();
-  auto [row_1, row_2, col_1, col_2] = gridInfoInst.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
+   auto node_range = gridInfoInst.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
+   auto row_1 = std::get<0>(node_range);
+   auto row_2 = std::get<1>(node_range);
+   auto col_1 = std::get<2>(node_range);
+   auto col_2 = std::get<3>(node_range);
   /// net wire must only occupy one grid size
   for (int row = row_1; row <= row_2; ++row) {
     for (int col = col_1; col <= col_2; ++col) {
@@ -649,7 +667,11 @@ void VecLayoutInit::transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int
     return;
   }
   auto& grid = layout_layer->get_grid();
-  auto [row_1, row_2, col_1, col_2] = gridInfoInst.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
+   auto node_range = gridInfoInst.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
+   auto row_1 = std::get<0>(node_range);
+   auto row_2 = std::get<1>(node_range);
+   auto col_1 = std::get<2>(node_range);
+   auto col_2 = std::get<3>(node_range);
 
   for (int row = row_1; row <= row_2; ++row) {
     for (int col = col_1; col <= col_2; ++col) {
@@ -687,7 +709,11 @@ void VecLayoutInit::transNetDelta(int32_t ll_x, int32_t ll_y, int32_t ur_x, int3
     return;
   }
   auto& grid = layout_layer->get_grid();
-  auto [row_1, row_2, col_1, col_2] = gridInfoInst.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
+   auto node_range = gridInfoInst.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
+   auto row_1 = std::get<0>(node_range);
+   auto row_2 = std::get<1>(node_range);
+   auto col_1 = std::get<2>(node_range);
+   auto col_2 = std::get<3>(node_range);
 
   for (int row = row_1; row <= row_2; ++row) {
     for (int col = col_1; col <= col_2; ++col) {

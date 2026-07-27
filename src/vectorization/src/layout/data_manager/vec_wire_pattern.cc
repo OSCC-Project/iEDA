@@ -85,11 +85,11 @@ std::vector<Point> VecWirePatternGenerator::getPointList(VecNetWire& wire)
   auto& path = wire.get_paths();
   std::vector<Point> points;
   for (auto& [start, end] : path) {
-    auto start_point = Point{start->get_x(), start->get_y(), start->get_layer_id()};
+    auto start_point = Point{static_cast<int>(start->get_x()), static_cast<int>(start->get_y()), static_cast<int>(start->get_layer_id())};
     points.push_back(start_point);
   }
   auto end = path.back().second;
-  points.push_back(Point{end->get_x(), end->get_y(), end->get_layer_id()});
+  points.push_back(Point{static_cast<int>(end->get_x()), static_cast<int>(end->get_y()), static_cast<int>(end->get_layer_id())});
   return points;
 }
 

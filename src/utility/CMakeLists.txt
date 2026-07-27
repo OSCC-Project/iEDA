@@ -21,7 +21,9 @@ add_subdirectory(stdBase)
 add_subdirectory(usage)
 add_subdirectory(report)
 add_subdirectory(memory)
-add_subdirectory(notification)
+if(BUILD_NOTIFICATION)
+  add_subdirectory(notification)
+endif()
 
 option(BASE_RUN_TESTS "If ON, the tests will be run." OFF)
 

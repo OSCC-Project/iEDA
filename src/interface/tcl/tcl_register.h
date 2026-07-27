@@ -51,7 +51,9 @@
 #include "tcl_register_to.h"
 #include "tcl_register_vec.h"
 #include "tcl_register_pnp.h"
+#ifdef BUILD_NOTIFICATION
 #include "tcl_register_notification.h"
+#endif
 
 #ifdef CONTEST
 #include "tcl_register_contest.h"
@@ -121,8 +123,10 @@ int registerCommands()
 
   /// PNP
   registerCmdPNP();
-  
+
+#ifdef BUILD_NOTIFICATION
   registerCmdNotification();
+#endif
 
 #ifdef CONTEST
   registerCmdContest();

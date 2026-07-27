@@ -69,8 +69,12 @@ void VecFeatureDrc::markNodes()
   // used for recording the mapping between drc_id and drc_type (rule)
   std::map<int, std::string> drc_id_to_type;
 
-  for (auto& [rule, drc_list_map] : detail_drc_map) {
-    for (auto& [layer_name, drc_spot_list] : drc_list_map) {
+  for (auto& rule_pair : detail_drc_map) {
+    auto& rule = rule_pair.first;
+    auto& drc_list_map = rule_pair.second;
+    for (auto& layer_pair : drc_list_map) {
+      auto& layer_name = layer_pair.first;
+      auto& drc_spot_list = layer_pair.second;
 #pragma omp parallel for schedule(dynamic)
       for (int i = 0; i < (int) drc_spot_list.size(); ++i) {
         /// set to node if node data exist
@@ -84,8 +88,11 @@ void VecFeatureDrc::markNodes()
 
         /// get row & col
         bool b_find_net = false;
-        auto [row_1, row_2, co_1, col_2]
-            = gridInfoInst.get_node_id_range(drc_spot.ll_x - 1, drc_spot.ll_y + 1, drc_spot.ur_x - 1, drc_spot.ur_y + 1);
+        auto node_range = gridInfoInst.get_node_id_range(drc_spot.ll_x - 1, drc_spot.ll_y + 1, drc_spot.ur_x - 1, drc_spot.ur_y + 1);
+        auto row_1 = std::get<0>(node_range);
+        auto row_2 = std::get<1>(node_range);
+        auto co_1 = std::get<2>(node_range);
+        auto col_2 = std::get<3>(node_range);
         for (int row = row_1; row <= row_2; ++row) {
           for (int col = co_1; col <= col_2; ++col) {
             auto* node = grid.get_node(row, col);
@@ -150,7 +157,9 @@ void VecFeatureDrc::markWires()
       auto* wire_feature = wire.get_feature(true);
 
       std::set<VecNode*> node_list;
-      for (auto& [node1, node2] : wire.get_paths()) {
+      for (auto& node_pair : wire.get_paths()) {
+        auto* node1 = node_pair.first;
+        auto* node2 = node_pair.second;
         if (node1->get_layer_id() == node2->get_layer_id()) {
           auto order = node1->get_layer_id();
           auto& grid = layout_layers.findLayoutLayer(order)->get_grid();

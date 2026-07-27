@@ -23,7 +23,9 @@
 #include "GDSPlotter.hpp"
 #include "LayerAssigner.hpp"
 #include "Monitor.hpp"
+#ifdef BUILD_NOTIFICATION
 #include "NotificationUtility.h"
+#endif
 #include "PinAccessor.hpp"
 #include "RTInterface.hpp"
 #include "SpaceRouter.hpp"
@@ -1837,6 +1839,7 @@ std::vector<Segment<PlanarCoord>> RTInterface::getPlanarTopoList(std::vector<Pla
 
 void RTInterface::sendNotification(std::string stage, int32_t iter, std::map<std::string, std::string> json_path_map)
 {
+#ifdef BUILD_NOTIFICATION
   std::map<std::string, std::any> notification;
   notification["step_name"] = "routing";
   notification["stage"] = stage;
@@ -1845,6 +1848,11 @@ void RTInterface::sendNotification(std::string stage, int32_t iter, std::map<std
   if (!ieda::NotificationUtility::getInstance().sendNotification("iRT", notification).success) {
     RTLOG.warn(Loc::current(), "Failed to send notification!");
   }
+#else
+  (void)stage;
+  (void)iter;
+  (void)json_path_map;
+#endif
 }
 
 #endif

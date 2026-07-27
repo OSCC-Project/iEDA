@@ -42,11 +42,11 @@ bool VecGraphDataManager::buildGraphData(bool is_placement_mode)
     if (layer1 == layer2) {
       auto& grid = layout_layers.findLayoutLayer(layer1)->get_grid();
 
-      auto [row1, col1] = gridInfoInst.findNodeID(x1, y1);
-      auto* node1 = grid.get_node(row1, col1);
+      auto node1_id = gridInfoInst.findNodeID(x1, y1);
+      auto* node1 = grid.get_node(node1_id.first, node1_id.second);
 
-      auto [row2, col2] = gridInfoInst.findNodeID(x2, y2);
-      auto* node2 = grid.get_node(row2, col2);
+      auto node2_id = gridInfoInst.findNodeID(x2, y2);
+      auto* node2 = grid.get_node(node2_id.first, node2_id.second);
 
       if (node1 == nullptr || node1->get_node_data() == nullptr || node2 == nullptr || node2->get_node_data() == nullptr) {
         LOG_ERROR << "error node....";
@@ -58,12 +58,12 @@ bool VecGraphDataManager::buildGraphData(bool is_placement_mode)
       return std::make_pair(node1, node2);
     } else {
       auto& grid1 = layout_layers.findLayoutLayer(layer1)->get_grid();
-      auto [row1, col1] = gridInfoInst.findNodeID(x1, y1);
-      auto* node1 = grid1.get_node(row1, col1);
+      auto node1_id = gridInfoInst.findNodeID(x1, y1);
+      auto* node1 = grid1.get_node(node1_id.first, node1_id.second);
 
       auto& grid2 = layout_layers.findLayoutLayer(layer2)->get_grid();
-      auto [row2, col2] = gridInfoInst.findNodeID(x2, y2);
-      auto* node2 = grid2.get_node(row2, col2);
+      auto node2_id = gridInfoInst.findNodeID(x2, y2);
+      auto* node2 = grid2.get_node(node2_id.first, node2_id.second);
 
       if (node1 == nullptr || node1->get_node_data() == nullptr || node2 == nullptr || node2->get_node_data() == nullptr) {
         LOG_ERROR << "error node....";
@@ -78,7 +78,9 @@ bool VecGraphDataManager::buildGraphData(bool is_placement_mode)
 
   auto convert_to_routing_graph = [&](const WireGraph& wire_graph) -> NetRoutingGraph {
     NetRoutingGraph routing_graph;
-    auto [v_iter, v_end] = boost::vertices(wire_graph);
+    auto vertices = boost::vertices(wire_graph);
+    auto v_iter = vertices.first;
+    auto v_end = vertices.second;
     for (; v_iter != v_end; ++v_iter) {
       auto v = *v_iter;
       auto x = wire_graph[v].x;
@@ -92,7 +94,9 @@ bool VecGraphDataManager::buildGraphData(bool is_placement_mode)
       };
       routing_graph.vertices.emplace_back(vertex);
     }
-    auto [e_iter, e_end] = boost::edges(wire_graph);
+    auto edges = boost::edges(wire_graph);
+    auto e_iter = edges.first;
+    auto e_end = edges.second;
     for (; e_iter != e_end; ++e_iter) {
       auto e = *e_iter;
       auto source = boost::source(e, wire_graph);
@@ -104,9 +108,9 @@ bool VecGraphDataManager::buildGraphData(bool is_placement_mode)
         continue;
       }
       std::vector<NetRoutingPoint> path;
-      std::ranges::for_each(wire_path, [&](const std::pair<LayoutDefPoint, LayoutDefPoint>& point_pair) -> void {
+      for (const auto& point_pair : wire_path) {
         path.emplace_back(NetRoutingPoint{bg::get<0>(point_pair.first), bg::get<1>(point_pair.first), bg::get<2>(point_pair.first)});
-      });
+      }
       path.emplace_back(
           NetRoutingPoint{bg::get<0>(wire_path.back().second), bg::get<1>(wire_path.back().second), bg::get<2>(wire_path.back().second)});
       NetRoutingEdge edge{
@@ -165,8 +169,10 @@ bool VecGraphDataManager::buildGraphData(bool is_placement_mode)
         auto source_label = wire_graph[source];
         auto target_label = wire_graph[target];
 
-        auto [node1, node2] = get_nodes(source_label.x, source_label.y, source_label.layer_id, target_label.x, target_label.y,
-                                        target_label.layer_id, layout_layers);
+        auto node_pair = get_nodes(source_label.x, source_label.y, source_label.layer_id, target_label.x, target_label.y,
+                                   target_label.layer_id, layout_layers);
+        auto* node1 = node_pair.first;
+        auto* node2 = node_pair.second;
 
         /// ignore same node
         if (node1 == node2) {
@@ -202,11 +208,13 @@ bool VecGraphDataManager::buildGraphData(bool is_placement_mode)
       VecNode* bk_end = nullptr;
       int i = 0;
 #endif
-      std::ranges::for_each(wire_graph[edge].path, [&](auto& point_pair) -> void {
+      for (auto& point_pair : wire_graph[edge].path) {
         auto start_point = point_pair.first;
         auto end_point = point_pair.second;
-        auto [node1, node2] = get_nodes(bg::get<0>(start_point), bg::get<1>(start_point), bg::get<2>(start_point), bg::get<0>(end_point),
-                                        bg::get<1>(end_point), bg::get<2>(end_point), layout_layers);
+        auto node_pair = get_nodes(bg::get<0>(start_point), bg::get<1>(start_point), bg::get<2>(start_point), bg::get<0>(end_point),
+                                   bg::get<1>(end_point), bg::get<2>(end_point), layout_layers);
+        auto* node1 = node_pair.first;
+        auto* node2 = node_pair.second;
 
         /// ignore same node
         if (node1 != node2) {
@@ -219,10 +227,10 @@ bool VecGraphDataManager::buildGraphData(bool is_placement_mode)
           bk_start = node1;
 
           if (bk_end != bk_start) {
-            std::ranges::for_each(wire_graph[edge].path, [&](auto& p) -> void {
-              LOG_INFO << "[" << bg::get<0>(p.first) << "," << bg::get<1>(p.first) << "," << bg::get<2>(p.first) << "] ["
-                       << bg::get<0>(p.second) << "," << bg::get<1>(p.second) << "," << bg::get<2>(p.second) << "]";
-            });
+          for (auto& p : wire_graph[edge].path) {
+            LOG_INFO << "[" << bg::get<0>(p.first) << "," << bg::get<1>(p.first) << "," << bg::get<2>(p.first) << "] ["
+                     << bg::get<0>(p.second) << "," << bg::get<1>(p.second) << "," << bg::get<2>(p.second) << "]";
+          }
           }
 
           bk_end = node2;
@@ -235,7 +243,7 @@ bool VecGraphDataManager::buildGraphData(bool is_placement_mode)
           pin_ids_paths.insert(node2->get_node_data()->get_pin_id());
         }
 #endif
-      });
+      }
 
       vec_net->addWire(vec_wire);
     }
